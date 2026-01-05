@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pandas
+google-generativeai
+python-multipart
+requests
+beautifulsoup4
+yfinance
+lightweight-charts
+plotly
+python-dotenv
+GoogleNews
+pywebview
