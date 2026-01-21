@@ -1,0 +1,10 @@
+frontend/
+.git/
+deploy.tar.gz
+*.pyc
+__pycache__/
+venv/
+node_modules/
+.next/
+dist/
+build/
