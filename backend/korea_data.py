@@ -338,10 +338,10 @@ def refresh_stock_codes():
     """
     Background Task:
     Crawls Naver Finance Market Cap pages (KOSPI & KOSDAQ) to populate DYNAMIC_STOCK_MAP.
-    Fetches top ~300 stocks from each market.
+    Fetches ALL stocks from each market (approx 40-50 pages each).
     """
     global DYNAMIC_STOCK_MAP
-    print("[StockData] Starting background stock code indexing...")
+    print("[StockData] Starting background stock code indexing (Full Scan)...")
     
     try:
         new_map = {}
@@ -351,8 +351,36 @@ def refresh_stock_codes():
         
         # 0: KOSPI, 1: KOSDAQ
         for sosok in [0, 1]:
-            # Crawl first 6 pages (50 * 6 = 300 stocks per market, total 600)
-            for page in range(1, 7): 
+            market_name = "KOSPI" if sosok == 0 else "KOSDAQ"
+            print(f"[StockData] Indexing {market_name}...")
+            
+            # 1. Determine Last Page
+            last_page = 50 # Default fallback
+            try:
+                url_base = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page=1"
+                res = requests.get(url_base, headers=headers, timeout=5)
+                # Decode
+                try: 
+                    html = res.content.decode('euc-kr') 
+                except: 
+                    html = res.text
+                
+                soup = BeautifulSoup(html, 'html.parser')
+                pgRR = soup.select_one("td.pgRR a")
+                if pgRR:
+                    href = pgRR['href']
+                    match = re.search(r'page=(\d+)', href)
+                    if match:
+                        last_page = int(match.group(1))
+                        print(f"[StockData] {market_name} has {last_page} pages.")
+            except Exception as e:
+                print(f"[StockData] Failed to determine last page for {market_name} (Using default 50): {e}")
+
+            # 2. Crawl All Pages
+            # We can use ThreadPoolExecutor if speed is an issue, but sequential is safer for Naver blocking.
+            # Total ~80 pages * 0.2s = ~16s. Acceptable.
+            
+            for page in range(1, last_page + 1): 
                 try:
                     url = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page={page}"
                     res = requests.get(url, headers=headers, timeout=5)
@@ -379,24 +407,12 @@ def refresh_stock_codes():
                             norm_name = name.replace(" ", "").upper()
                             new_map[norm_name] = code
                             
-                            # Add Suffix
-                            key_k = "KS" if sosok == 0 else "KQ"
-                            # If we want detailed mapping, we could store "005930.KS"
-                            # But search_korean_stock_symbol is expected to return just the 6-digit code usually?
-                            # Looking at old logic: "return code". success.
-                            # But stock_data might prefer suffix.
-                            # Let's verify existing logic. OLD logic returned just code.
-                            # stock_data.py line 340 handles 6-digit by trying .KS and .KQ.
-                            # So storing just 6 digit is fine.
-                            new_map[norm_name] = code
-                            
                 except Exception as e:
-                    print(f"Error crawling page {page} of market {sosok}: {e}")
+                    print(f"Error crawling {market_name} page {page}: {e}")
                     
         # Update Global Map
-        count_before = len(DYNAMIC_STOCK_MAP)
         DYNAMIC_STOCK_MAP.update(new_map)
-        print(f"[StockData] Indexed {len(new_map)} stocks. Total unique: {len(DYNAMIC_STOCK_MAP)}")
+        print(f"[StockData] Full Indexing Complete. Total unique stocks: {len(DYNAMIC_STOCK_MAP)}")
         
     except Exception as e:
         print(f"[StockData] Indexing failed: {e}")

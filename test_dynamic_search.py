@@ -9,8 +9,15 @@ sys.path.append(os.path.abspath("backend"))
 from korea_data import search_korean_stock_symbol, DYNAMIC_STOCK_MAP
 
 def test_dynamic_search():
-    print("Waiting for background indexing (5 seconds)...")
-    time.sleep(5) # Wait for thread to run
+    print("Waiting for background indexing (Max 60s)...")
+    # Poll for indexing completion (expect > 3000 stocks)
+    for i in range(30):
+        if len(DYNAMIC_STOCK_MAP) > 3000:
+            break
+        print(f"Indexing... ({len(DYNAMIC_STOCK_MAP)} stocks)")
+        time.sleep(2)
+        
+    time.sleep(2) # Extra buffer
     
     print(f"Dynamic Map Size: {len(DYNAMIC_STOCK_MAP)}")
     
