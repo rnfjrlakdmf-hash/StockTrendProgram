@@ -223,6 +223,7 @@ export default function Sidebar() {
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                onClick={() => setIsMobileOpen(false)}
                                 className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95 group"
                             >
                                 <item.icon className="h-5 w-5 transition-colors group-hover:text-blue-400" />
@@ -256,69 +257,9 @@ export default function Sidebar() {
                     )}
 
                     <MarketClock />
-                    {!isPro && (
-                        <>
-                            <div className="rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 p-3 border border-white/10 shadow-lg relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Timer className="w-16 h-16 text-white" />
-                                </div>
 
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <p className="text-xs font-bold text-blue-200 mb-0.5 flex items-center gap-2">
-                                            <Crown className="w-3 h-3 text-yellow-400" /> PRO 요금제
-                                        </p>
-                                        <p className="text-[10px] text-gray-400">AI 통찰력 무제한 이용</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowProModal(true)}
-                                        className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded transition-colors"
-                                    >
-                                        UP
-                                    </button>
-                                </div>
-
-                                {/* Timer / Reward Section */}
-                                <div className="pt-2 border-t border-white/10 mt-1">
-                                    {timeLeftStr ? (
-                                        <div className="mb-2">
-                                            <div className="flex justify-between items-center text-[10px] text-gray-300 mb-1">
-                                                <span>남은 시간</span>
-                                                <span className="text-green-400 font-mono font-bold animate-pulse">{timeLeftStr}</span>
-                                            </div>
-                                            <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden border border-white/5">
-                                                <div className="bg-gradient-to-r from-green-500 to-emerald-400 h-full w-full animate-pulse" />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-[10px] text-gray-400 mb-2 text-center">
-                                            이용권이 없습니다.
-                                        </div>
-                                    )}
-
-                                    {freeTrialCount > 0 ? (
-                                        <button
-                                            onClick={handleFreeTrial}
-                                            className="w-full rounded-lg py-2 text-[10px] font-bold bg-green-600 text-white hover:bg-green-500 animate-pulse border border-green-400/30 flex items-center justify-center gap-1 shadow-md transition-colors"
-                                        >
-                                            🎁 1시간 무료 이용하기 ({freeTrialCount}회)
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => setShowAdRewardModal(true)}
-                                            className="w-full rounded-lg py-2 text-[10px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 border border-white/10 flex items-center justify-center gap-1 transition-colors"
-                                        >
-                                            <PlayCircle className="w-3 h-3 text-yellow-500" />
-                                            광고 보고 시간 충전 (30분)
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
                 </div>
 
-                <MarketClock />
                 {isPro ? (
                     <div className="rounded-xl bg-gradient-to-br from-blue-900/40 to-black p-3 border border-blue-500/30 shadow-lg flex flex-col gap-2">
                         <div className="flex items-center gap-2 text-blue-300 font-bold text-xs">

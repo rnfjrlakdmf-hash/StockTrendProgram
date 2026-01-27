@@ -1,9 +1,7 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BarChart3, DollarSign, RefreshCw, Droplet } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { BarChart3, DollarSign, RefreshCw, Droplet, Maximize2, X, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from "@/lib/config";
 
 interface MarketItem {
@@ -17,32 +15,57 @@ interface MarketListProps {
     title: string;
     icon: React.ReactNode;
     items: MarketItem[];
+    limit?: number;
+    onExpand?: () => void;
 }
 
-export const MarketList = ({ title, icon, items }: MarketListProps) => (
-    <div className="bg-white/5 rounded-2xl p-5 border border-white/5 flex flex-col h-full">
-        <h4 className="text-white font-bold mb-4 flex items-center gap-2 flex-shrink-0">
-            {icon} {title}
-        </h4>
-        <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-            {items && items.length > 0 ? (
-                items.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center group">
-                        <span className="text-gray-400 group-hover:text-white transition-colors text-sm">{item.name}</span>
-                        <div className="text-right">
-                            <div className="text-white font-mono text-sm font-bold">{item.price}</div>
-                            <div className={`text-xs ${item.is_up ? 'text-red-400' : 'text-blue-400'}`}>
-                                {item.is_up ? '+' : ''}{item.change}
+export const MarketList = ({ title, icon, items, limit, onExpand }: MarketListProps) => {
+    const displayItems = limit ? items.slice(0, limit) : items;
+    const hasMore = limit ? items.length > limit : false;
+
+    return (
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/5 flex flex-col h-full relative group">
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="text-white font-bold flex items-center gap-2 flex-shrink-0">
+                    {icon} {title}
+                </h4>
+                {hasMore && onExpand && (
+                    <button
+                        onClick={onExpand}
+                        className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                        title="전체 보기"
+                    >
+                        <Maximize2 className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+
+            <div className={`space-y-3 overflow-y-auto ${!limit ? 'max-h-[70vh]' : 'max-h-[400px]'} pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent`}>
+                {displayItems && displayItems.length > 0 ? (
+                    displayItems.map((item, i) => (
+                        <div key={i} className="flex justify-between items-center group/item hover:bg-white/5 p-2 rounded-lg transition-colors">
+                            <span className="text-gray-400 group-hover/item:text-white transition-colors text-sm">{item.name}</span>
+                            <div className="text-right">
+                                <div className="text-white font-mono text-sm font-bold">{item.price}</div>
+                                <div className={`text-xs ${item.is_up ? 'text-red-400' : 'text-blue-400'}`}>
+                                    {item.is_up ? '+' : ''}{item.change}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))
-            ) : (
-                <div className="text-center text-gray-600 text-xs py-4">데이터 로딩중...</div>
+                    ))
+                ) : (
+                    <div className="text-center text-gray-600 text-xs py-4">데이터 로딩중...</div>
+                )}
+            </div>
+
+            {hasMore && !onExpand && (
+                <div className="mt-4 pt-3 border-t border-white/5 text-center">
+                    <span className="text-xs text-gray-500">and {items.length - (limit || 0)} more...</span>
+                </div>
             )}
         </div>
-    </div>
-);
+    );
+};
 
 interface MarketIndicatorsProps {
     limit?: number; // Optional limit for items to display (default: all or 10)
@@ -51,6 +74,7 @@ interface MarketIndicatorsProps {
 export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState<{ title: string, items: MarketItem[], icon: React.ReactNode } | null>(null);
 
     const fetchAssets = async () => {
         try {
@@ -73,7 +97,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
     }, []);
 
     // Helper to process /api/assets data into MarketItem format with Korean translation
-    function processAssets(items: any[] | undefined, type: 'indices' | 'crypto' | 'forex' | 'commodity'): MarketItem[] {
+    function processAssets(items: any[] | undefined, type: 'indices' | 'crypto' | 'forex' | 'commodity' | 'interest'): MarketItem[] {
         if (!items || items.length === 0) return [];
 
         return items.map(item => {
@@ -123,6 +147,12 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 else if (name === 'Palladium') name = '팔라듐';
                 else if (name === 'Wheat') name = '소맥 (밀)';
                 else if (name === 'Soybean') name = '대두 (콩)';
+            } else if (type === 'interest') {
+                // Interest rates usually come with good names, providing minor cleanups if needed
+                if (name.includes('CD')) name = 'CD금리 (91일)';
+                else if (name.includes('CP')) name = 'CP금리 (91일)';
+                else if (name.includes('Treasury') && name.includes('3Y')) name = '국고채 3년';
+                else if (name.includes('Treasury') && name.includes('10Y')) name = '국고채 10년';
             }
 
             // Safety check for price
@@ -146,34 +176,109 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
         });
     }
 
+    const openModal = (title: string, items: MarketItem[], icon: React.ReactNode) => {
+        setSelectedCategory({ title, items, icon });
+    };
+
     if (loading && !data) return <div className="p-8 text-center text-gray-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
     if (!data) return null;
 
     const displayLimit = limit || 10;
-    const titleSuffix = limit ? `(Top ${limit})` : '(10)';
+
+    // Prepare Data
+    const indices = processAssets(data.Indices, 'indices');
+    const crypto = processAssets(data.Crypto, 'crypto');
+    const forex = processAssets(data.Forex, 'forex');
+    const commodity = processAssets(data.Commodity, 'commodity');
+    const interest = processAssets(data.Interest, 'interest'); // [New] Interest Data
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MarketList
-                title={`글로벌 주요 지수 ${titleSuffix}`}
-                icon={<BarChart3 className="text-blue-400" />}
-                items={processAssets(data.Indices, 'indices').slice(0, displayLimit)}
-            />
-            <MarketList
-                title={`암호화폐 ${titleSuffix}`}
-                icon={<DollarSign className="text-yellow-400" />}
-                items={processAssets(data.Crypto, 'crypto').slice(0, displayLimit)}
-            />
-            <MarketList
-                title={`주요 환율 ${titleSuffix}`}
-                icon={<RefreshCw className="text-green-400" />}
-                items={processAssets(data.Forex, 'forex').slice(0, displayLimit)}
-            />
-            <MarketList
-                title={`원자재 ${titleSuffix}`}
-                icon={<Droplet className="text-orange-400" />}
-                items={processAssets(data.Commodity, 'commodity').slice(0, displayLimit)}
-            />
-        </div>
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                <MarketList
+                    title="글로벌 주요 지수"
+                    icon={<BarChart3 className="text-blue-400" />}
+                    items={indices}
+                    limit={displayLimit}
+                    onExpand={() => openModal("글로벌 주요 지수 (전체)", indices, <BarChart3 className="text-blue-400" />)}
+                />
+                <MarketList
+                    title="암호화폐"
+                    icon={<DollarSign className="text-yellow-400" />}
+                    items={crypto}
+                    limit={displayLimit}
+                    onExpand={() => openModal("암호화폐 (전체)", crypto, <DollarSign className="text-yellow-400" />)}
+                />
+                <MarketList
+                    title="주요 환율"
+                    icon={<RefreshCw className="text-green-400" />}
+                    items={forex}
+                    limit={displayLimit}
+                    onExpand={() => openModal("주요 환율 (전체)", forex, <RefreshCw className="text-green-400" />)}
+                />
+                <MarketList
+                    title="원자재"
+                    icon={<Droplet className="text-orange-400" />}
+                    items={commodity}
+                    limit={displayLimit}
+                    onExpand={() => openModal("원자재 (전체)", commodity, <Droplet className="text-orange-400" />)}
+                />
+                {/* [New] Interest Rates Column */}
+                <MarketList
+                    title="금리/채권"
+                    icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M12 2v20" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>}
+                    items={interest}
+                    limit={displayLimit}
+                    onExpand={() => openModal("금리/채권 (전체)", interest, <div className="text-purple-400">🏦</div>)}
+                />
+            </div>
+
+            {/* Modal for All Data */}
+            {selectedCategory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#18181b] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                {selectedCategory.icon} {selectedCategory.title}
+                            </h3>
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 overflow-y-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {selectedCategory.items.map((item, i) => (
+                                    <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors">
+                                        <div className="font-bold text-gray-200">{item.name}</div>
+                                        <div className="text-right">
+                                            <div className="text-white font-mono font-bold text-lg">{item.price}</div>
+                                            <div className={`text-sm ${item.is_up ? 'text-red-400' : 'text-blue-400'}`}>
+                                                {item.is_up ? '+' : ''}{item.change}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-white/10 flex justify-end">
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

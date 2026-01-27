@@ -13,7 +13,8 @@ from GoogleNews import GoogleNews
 
 from korea_data import (
     get_korean_name, get_naver_flash_news, get_naver_stock_info, 
-    get_naver_daily_prices, get_naver_market_index_data, search_korean_stock_symbol
+    get_naver_daily_prices, get_naver_market_index_data, search_korean_stock_symbol,
+    search_stock_code, get_korean_stock_name
 )
 
 # [Cache] Memory Cache for Static Data
@@ -1090,10 +1091,11 @@ def get_all_assets():
         "Indices": [],
         "Crypto": [],
         "Forex": [],
-        "Commodity": []
+        "Commodity": [],
+        "Interest": []  # [New] Add Interest Rates
     }
 
-    # 1. Fetch Naver Market Data (Indices, Forex, Commodity)
+    # 1. Fetch Naver Market Data (Indices, Forex, Commodity, Interest)
     try:
         naver_data = get_naver_market_index_data()
 
@@ -1108,6 +1110,10 @@ def get_all_assets():
         # Forex (Exchange)
         if "exchange" in naver_data:
             result["Forex"] = naver_data["exchange"]
+
+        # Interest Rates (New)
+        if "interest" in naver_data:
+            result["Interest"] = naver_data["interest"]
 
         # Commodity (Oil, Gold, Raw Materials)
         if "oil" in naver_data:

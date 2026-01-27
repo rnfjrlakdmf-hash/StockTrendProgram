@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import ClosingBanner from "@/components/ClosingBanner";
+import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -35,6 +36,9 @@ export default function RootLayout({
 
               {/* Closing Report Banner */}
               <ClosingBanner />
+
+              {/* Global Progress Watcher */}
+              <GlobalProgressWatcher />
             </main>
           </div>
         </AuthProvider>

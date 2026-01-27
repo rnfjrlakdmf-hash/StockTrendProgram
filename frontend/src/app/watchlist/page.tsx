@@ -16,7 +16,13 @@ export default function WatchlistPage() {
             const res = await fetch(`${API_BASE_URL}/api/watchlist`);
             const json = await res.json();
             if (json.status === "success" && json.data.length > 0) {
-                setWatchlist(json.data.map((symbol: string) => ({ symbol })));
+                // Backend now returns {symbol, name} objects
+                // If it returns strings (legacy), map them. Validating structure.
+                const items = json.data.map((item: any) => {
+                    if (typeof item === 'string') return { symbol: item, name: item };
+                    return item;
+                });
+                setWatchlist(items);
             } else {
                 setWatchlist([]);
             }
@@ -145,7 +151,7 @@ export default function WatchlistPage() {
                                         <h3 className="text-2xl font-bold text-white">{item.symbol}</h3>
                                     </div>
                                     <p className="text-sm text-gray-400 truncate pr-8">
-                                        {data ? data.name : "로딩중..."}
+                                        {item.name || (data ? data.name : "로딩중...")}
                                     </p>
                                 </div>
 

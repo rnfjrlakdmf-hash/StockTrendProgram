@@ -36,13 +36,26 @@ from alerts import (
     get_recent_telegram_users
 )
 from chatbot import chat_with_ai
-from korea_data import get_naver_disclosures, get_naver_market_dashboard, get_naver_market_index_data, get_naver_sise_data, get_naver_main_data, get_ipo_data, get_live_investor_estimates, get_theme_heatmap_data
+from korea_data import get_naver_disclosures, get_naver_market_dashboard, get_naver_market_index_data, get_naver_sise_data, get_naver_main_data, get_ipo_data, get_live_investor_estimates, get_theme_heatmap_data, get_indexing_status, search_stock_code
 from db_manager import save_analysis_result, get_score_history, add_watchlist, remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report
 from pydantic import BaseModel, Field
 
 import urllib.parse
 import time
 import threading
+
+@app.get("/api/system/status")
+def read_system_status():
+    """시스템 상태 확인 (주식 인덱싱 진행률 등)"""
+    indexing_status = get_indexing_status()
+    return {
+        "status": "success",
+        "data": {
+            "indexing": indexing_status,
+            "server_time": time.time()
+        }
+    }
+
 
 @app.get("/api/stock/{symbol}/investors/live")
 def read_live_investors(symbol: str):
@@ -103,6 +116,18 @@ def read_stock(symbol: str, skip_ai: bool = False):
         return {"status": "success", "data": data}
     else:
         return {"status": "error", "message": f"Stock not found or error fetching data for '{symbol}'"}
+
+@app.get("/api/stock/search")
+def search_stock_api(q: str):
+    """Search for stock by name or code (Global Map)"""
+    if not q:
+        return {"status": "error", "message": "Query parameter 'q' is required"}
+        
+    result = search_stock_code(q)
+    if result:
+        return {"status": "success", "data": result}
+    else:
+        return {"status": "error", "message": f"No stock found for '{q}'"}
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):
@@ -241,7 +266,26 @@ def read_watchlist(x_user_id: str = Header(None)):
     """관심 종목 리스트 반환 (헤더 X-User-ID 필수)"""
     user_id = x_user_id if x_user_id else "guest"
     symbols = get_watchlist(user_id)
-    return {"status": "success", "data": symbols}
+    
+    # [New] Enrich with Names
+    from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+    
+    data = []
+    for sym in symbols:
+        name = sym # default
+        
+        # 1. Try Korea Data Map
+        kor_name = get_korean_stock_name(sym)
+        if kor_name:
+            name = kor_name
+        
+        # 2. Try Global Map
+        elif sym in GLOBAL_KOREAN_NAMES:
+            name = GLOBAL_KOREAN_NAMES[sym]
+            
+        data.append({"symbol": sym, "name": name})
+        
+    return {"status": "success", "data": data}
 
 @app.post("/api/watchlist")
 def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { API_BASE_URL } from "@/lib/config";
@@ -148,6 +148,26 @@ function DiscoveryContent() {
     const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'backtest' | 'history' | 'battle' | 'daily'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
+    const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
+
+    // [New] Fetch Real-time Exchange Rate
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/api/market/status`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success" && data.data.details?.usd) {
+                    const rate = parseFloat(data.data.details.usd.replace(/,/g, ''));
+                    if (!isNaN(rate)) setExchangeRate(rate);
+                }
+            })
+            .catch(err => console.error("Exchange rate fetch failed", err));
+    }, []);
+
+    const getKrwPrice = (price: string | number) => {
+        const p = parseFloat(String(price).replace(/,/g, ''));
+        if (isNaN(p)) return null;
+        return (p * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    };
 
     // [New] Handle URL Query Params
     useEffect(() => {
@@ -221,6 +241,24 @@ function DiscoveryContent() {
                     });
 
             } else {
+                // [Fallback] Search via Backend API (Global/Dynamic Map)
+                try {
+                    const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeTicker}`);
+                    const searchJson = await searchRes.json();
+
+                    if (searchJson.status === "success" && searchJson.data && searchJson.data.symbol) {
+                        // Found a better match! Retry with this symbol
+                        // Prevent infinite loop: if returned symbol is same as input, stop
+                        const foundSymbol = searchJson.data.symbol;
+                        if (foundSymbol !== ticker) {
+                            handleSearch(foundSymbol);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Search API fallback failed", e);
+                }
+
                 setStock(null);
                 setLoading(false);
                 setError("검색된 종목이 없습니다. 정확한 종목명이나 티커를 입력해주세요.");
@@ -495,10 +533,10 @@ function DiscoveryContent() {
                                                             ? `$${stock.price}`
                                                             : `${stock.currency} ${stock.price}`}
                                                 </span>
-                                                {/* [New] Show KRW for foreign stocks */}
-                                                {stock.price_krw && (
+                                                {/* [Updated] Show KRW for foreign stocks ONLY */}
+                                                {stock.currency !== 'KRW' && (stock.symbol && !stock.symbol.includes('.KS') && !stock.symbol.includes('.KQ')) && (
                                                     <span className="text-lg md:text-xl text-gray-400 font-mono">
-                                                        (₩{stock.price_krw})
+                                                        (약 ₩{getKrwPrice(stock.price)})
                                                     </span>
                                                 )}
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${stock.currency === 'KRW' ? (String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20') : (String(stock.change).startsWith('+') ? 'text-green-400 bg-green-400/20' : 'text-red-400 bg-red-400/20')}`}>
@@ -1520,9 +1558,20 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
 function PredictionReportModal({ onClose }: { onClose: () => void }) {
     const [report, setReport] = useState<PredictionReport | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
-        const fetchReport = async () => {
+        // [New] Check Google Login Status
+        const userJson = localStorage.getItem("userByGoogle");
+        if (userJson) {
+            setIsLoggedIn(true);
+            fetchReport();
+        } else {
+            setIsLoggedIn(false);
+            setLoading(false); // Stop loading to show login prompt
+        }
+
+        async function fetchReport() {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/report/prediction`);
                 const json = await res.json();
@@ -1534,18 +1583,23 @@ function PredictionReportModal({ onClose }: { onClose: () => void }) {
             } finally {
                 setLoading(false);
             }
-        };
-        fetchReport();
+        }
     }, []);
+
+    const handleGoogleLogin = () => {
+        // Redirect to Google Login (handled by Header normally, but here we can guide user)
+        alert("우측 상단 '로그인' 버튼을 통해 구글 로그인을 진행해주세요.");
+        onClose();
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-[#111] border border-white/20 rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="relative bg-[#111] border border-white/20 rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-blue-900/40 to-purple-900/40">
                     <div>
                         <h3 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
-                            🏆 AI 예측 적중률 리포트
+                            🏆 AI 예측 적중률 리포트 <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-500/30">Premium</span>
                         </h3>
                         <p className="text-gray-400 text-xs md:text-sm mt-1">지난 분석 결과와 실제 주가 변동을 비교합니다.</p>
                     </div>
@@ -1555,25 +1609,60 @@ function PredictionReportModal({ onClose }: { onClose: () => void }) {
                 </div>
 
                 {/* Body */}
-                <div className="p-6 overflow-y-auto flex-1 text-white">
+                <div className="p-6 overflow-y-auto flex-1 text-white relative">
+                    {/* [Gate] Login Required Overlay */}
+                    {!isLoggedIn && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/60 flex flex-col items-center justify-center text-center p-6 space-y-4">
+                            <div className="bg-white/10 p-4 rounded-full mb-2">
+                                <Lock className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <h4 className="text-2xl font-bold text-white">로그인이 필요한 기능입니다</h4>
+                            <p className="text-gray-400 max-w-sm">
+                                AI 예측 적중률 리포트는 신뢰도 높은 프리미엄 정보입니다.<br />
+                                구글 로그인을 하시면 무료로 투명하게 공개해 드립니다.
+                            </p>
+                            <button
+                                onClick={handleGoogleLogin}
+                                className="mt-4 bg-white text-black font-bold py-3 px-8 rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2 shadow-lg shadow-white/10"
+                            >
+                                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" />
+                                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                                구글 로그인하러 가기
+                            </button>
+                        </div>
+                    )}
+
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
                             <p>과거 데이터를 검증하고 있습니다...</p>
                         </div>
-                    ) : !report || report.total_count === 0 ? (
-                        <div className="text-center py-20 text-gray-400">
-                            <p className="text-lg">아직 검증할 충분한 데이터가 없습니다.</p>
-                            <p className="text-sm mt-2">AI 분석을 더 진행하면 데이터가 쌓입니다.</p>
+                    ) : isLoggedIn && (!report || report.total_count === 0) ? (
+                        // [Reset] Show empty state for now
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-4">
+                            <div className="bg-white/5 p-4 rounded-full">
+                                <Search className="w-8 h-8 text-gray-500" />
+                            </div>
+                            <div className="text-center">
+                                <h4 className="text-lg font-bold text-white">데이터 수집 초기 단계</h4>
+                                <p className="text-sm mt-2 text-gray-500 max-w-sm mx-auto">
+                                    지난주 리포트가 초기화되었습니다.<br />
+                                    새로운 AI 모델이 예측 데이터를 쌓기 시작했습니다. (D-Day Start)
+                                </p>
+                            </div>
                         </div>
                     ) : (
-                        <div className="space-y-8">
+                        <div className={`space-y-8 ${!isLoggedIn ? 'blur-sm select-none' : ''}`}>
                             {/* Summary Stats */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-gradient-to-br from-green-900/30 to-green-900/10 p-5 rounded-2xl border border-green-500/30 text-center">
                                     <div className="text-green-400 font-bold mb-1 text-sm md:text-base">최근 적중률</div>
-                                    <div className="text-3xl md:text-5xl font-black text-white">{report.success_rate}%</div>
-                                    <div className="text-xs text-gray-400 mt-2">{report.success_count} / {report.total_count} 건 적중</div>
+                                    <div className="text-3xl md:text-5xl font-black text-white">{report?.success_rate}%</div>
+                                    <div className="text-xs text-gray-400 mt-2">{report?.success_count} / {report?.total_count} 건 적중</div>
                                 </div>
                                 <div className="bg-white/5 p-5 rounded-2xl border border-white/10 text-center flex flex-col justify-center">
                                     <div className="text-gray-400 text-sm mb-1">분석 기간</div>
@@ -1589,7 +1678,7 @@ function PredictionReportModal({ onClose }: { onClose: () => void }) {
                             <div>
                                 <h4 className="font-bold text-lg mb-4 text-white">최근 검증 내역</h4>
                                 <div className="space-y-3">
-                                    {report.details.map((item, idx) => (
+                                    {report?.details.map((item, idx) => (
                                         <div key={idx} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-2 h-12 rounded-full ${item.is_correct ? 'bg-green-500' : 'bg-red-500'}`} />
