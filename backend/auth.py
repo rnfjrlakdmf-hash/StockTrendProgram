@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from db_manager import create_user_if_not_exists, decrement_free_trial
+from db_manager import create_user_if_not_exists, decrement_free_trial, update_user_keys
 import time
 
 router = APIRouter()
@@ -14,6 +14,12 @@ class GoogleLoginRequest(BaseModel):
 
 class UseTrialRequest(BaseModel):
     user_id: str
+
+class UserSettingsRequest(BaseModel):
+    user_id: str
+    kis_app_key: str
+    kis_secret: str
+    kis_account: str
 
 @router.post("/auth/google")
 def google_login(req: GoogleLoginRequest):
@@ -60,3 +66,13 @@ def use_trial(req: UseTrialRequest):
         return {"status": "success", "new_count": new_count}
     else:
         return {"status": "error", "message": "No trials left or user not found"}
+@router.post("/auth/settings")
+def update_settings(req: UserSettingsRequest):
+    """
+    Update User Settings (KIS Keys)
+    """
+    success = update_user_keys(req.user_id, req.kis_app_key, req.kis_secret, req.kis_account)
+    if success:
+        return {"status": "success", "message": "Settings updated"}
+    else:
+        return {"status": "error", "message": "Failed to update settings"}

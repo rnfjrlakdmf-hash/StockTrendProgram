@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { Bell, BellRing, Trash2, Plus, ArrowUp, ArrowDown, Crosshair, Zap, TrendingDown, TrendingUp } from "lucide-react";
 import AdRewardModal from "@/components/AdRewardModal";
 import { API_BASE_URL } from "@/lib/config";
+import { isFreeModeEnabled } from "@/lib/adminMode";
 
 interface Alert {
     id: number;
@@ -100,10 +101,12 @@ export default function AlertsPage() {
         if (!symbol) return;
         if (activeTab === 'price' && !targetPrice) return;
 
+
+
         // Check for Pro Mode (Only for Sniper Alerts)
         if (activeTab === 'sniper') {
             const isPro = localStorage.getItem("isPro") === "true";
-            if (!isPro && !hasPaid) {
+            if (!isPro && !hasPaid && !isFreeModeEnabled()) {
                 setShowAdModal(true);
                 return;
             }

@@ -2,281 +2,314 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import { Settings, Key, Bell, Moon, Shield, Save, Crown } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
+import { useAuth } from "@/context/AuthContext";
+import { Save, ShieldCheck, AlertTriangle, CheckCircle, Key, Loader2, User } from "lucide-react";
 
 export default function SettingsPage() {
-    const [isPro, setIsPro] = useState(false);
-    const [secretCount, setSecretCount] = useState(0);
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'general' | 'api'>('general');
 
-    // [New] Telegram Config State
-    const [telegramId, setTelegramId] = useState("");
-    const [loadingConfig, setLoadingConfig] = useState(false);
-    const [configError, setConfigError] = useState("");
+    // API State
+    const [appKey, setAppKey] = useState("");
+    const [secret, setSecret] = useState("");
+    const [account, setAccount] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    // [New] Market Close Briefing State
-    const [isSummaryEnabled, setIsSummaryEnabled] = useState(false);
+    // 🔒 Hidden Admin Mode
+    const [adminMode, setAdminMode] = useState(false);
+    const [clickCount, setClickCount] = useState(0);
+    const [lastClickTime, setLastClickTime] = useState(0);
+    const [freeMode, setFreeMode] = useState(false);
 
+    // Initialize state on client-side only
     useEffect(() => {
-        const saved = localStorage.getItem("isPro");
-        if (saved === "true") setIsPro(true);
-
-        const savedTg = localStorage.getItem("telegramId");
-        if (savedTg) setTelegramId(savedTg);
-
-        // Fetch Alert Status
-        const fetchAlertStatus = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/alerts`);
-                const json = await res.json();
-                if (json.status === "success") {
-                    // Check if WATCHLIST_SUMMARY exists for "guest" (or current user logic if we had auth)
-                    // Since we don't have robust auth on frontend yet for this specific logic, we assume backend filtering works or we just check type.
-                    // Ideally we match user_id but local storage user might not match exactly if we use "guest".
-                    // Let's just check if ANY WATCHLIST_SUMMARY alert exists for now as a simple toggle state.
-                    const hasSummary = json.data.some((a: any) => a.type === "WATCHLIST_SUMMARY");
-                    setIsSummaryEnabled(hasSummary);
-                }
-            } catch (e) {
-                console.error("Failed to fetch alerts", e);
-            }
-        };
-        fetchAlertStatus();
+        if (typeof window !== 'undefined') {
+            setFreeMode(sessionStorage.getItem('admin_free_mode') === 'true');
+        }
     }, []);
 
-    const findMyTelegramId = async () => {
-        setLoadingConfig(true);
-        setConfigError("");
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/telegram/recent-users`);
-            const json = await res.json();
-            if (json.status === "success" && json.data.length > 0) {
-                // 가장 최근 사용자 (첫번째) 선택
-                const user = json.data[0];
-                setTelegramId(user.id);
-                localStorage.setItem("telegramId", user.id);
-                alert(`ID found! Connected as ${user.name}`);
-            } else {
-                setConfigError("최근 메시지를 찾을 수 없습니다. 봇에게 메시지를 보냈는지 확인하세요.");
-            }
-        } catch (e) {
-            setConfigError("서버 연결 실패");
-        } finally {
-            setLoadingConfig(false);
+    const handleSecretClick = () => {
+        const now = Date.now();
+        // Reset if more than 2 seconds passed
+        if (now - lastClickTime > 2000) {
+            setClickCount(1);
+        } else {
+            setClickCount(prev => prev + 1);
+        }
+        setLastClickTime(now);
+
+        // Activate admin mode on 7th click
+        if (clickCount + 1 >= 7) {
+            setAdminMode(true);
+            setClickCount(0);
+            setMsg({ type: 'success', text: '🔓 관리자 모드 활성화됨' });
+            // Ensure we are on General tab to see the unexpected admin panel
+            setActiveTab('general');
         }
     };
 
-    const handleSummaryToggle = async () => {
-        if (!telegramId) {
-            alert("먼저 텔레그램 Chat ID를 설정해주세요.");
+    const toggleFreeMode = () => {
+        const newMode = !freeMode;
+        setFreeMode(newMode);
+        sessionStorage.setItem('admin_free_mode', newMode.toString());
+        setMsg({
+            type: 'success',
+            text: newMode ? '🎁 무료 모드 활성화! (앱 종료 시까지 유지)' : '무료 모드 비활성화됨'
+        });
+    };
+
+    const handleSaveApi = async () => {
+        if (!appKey || !secret || !account) {
+            setMsg({ type: 'error', text: '모든 필드를 입력해주세요.' });
             return;
         }
 
-        const newState = !isSummaryEnabled;
-        setIsSummaryEnabled(newState);
-
+        setLoading(true);
         try {
-            if (newState) {
-                // Subscribe
-                await fetch(`${API_BASE_URL}/api/alerts/summary`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: telegramId })
-                });
-            } else {
-                // Unsubscribe
-                await fetch(`${API_BASE_URL}/api/alerts/summary`, {
-                    method: "DELETE"
-                });
-            }
+            const keys = {
+                kis_app_key: appKey,
+                kis_secret: secret,
+                kis_account: account,
+                broker: "kis",
+                savedAt: Date.now()
+            };
+            localStorage.setItem("user_kis_keys", JSON.stringify(keys));
+            setMsg({ type: 'success', text: '보안 저장 완료! API 키는 오직 내 폰에만 저장됩니다.' });
         } catch (e) {
-            console.error(e);
-            setIsSummaryEnabled(!newState); // Revert on error
-            alert("설정 변경에 실패했습니다.");
+            setMsg({ type: 'error', text: '저장 오류 발생' });
+        } finally {
+            setLoading(false);
         }
     };
 
-    const togglePro = () => {
-        const newVal = !isPro;
-        setIsPro(newVal);
-        localStorage.setItem("isPro", String(newVal));
-    };
-
-    const handleSecretTap = () => {
-        const newCount = secretCount + 1;
-        setSecretCount(newCount);
-
-        if (newCount === 7) {
-            const newVal = !isPro;
-            setIsPro(newVal);
-            localStorage.setItem("isPro", String(newVal));
-            alert(newVal ? "👑 Developer Mode Activated! (Ads Removed)" : "Developer Mode Disabled.");
-            setSecretCount(0);
+    // Check existing keys on mount
+    useEffect(() => {
+        const stored = localStorage.getItem("user_kis_keys");
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            setAppKey(parsed.kis_app_key || "");
+            setSecret(parsed.kis_secret || "");
+            setAccount(parsed.kis_account || "");
         }
-    };
+    }, []);
 
     return (
-        <div className="min-h-screen pb-10 text-white">
-            <Header title="Settings" subtitle="Configure your AI preferences and API keys" />
+        <div className="min-h-screen text-white pb-20">
+            {/* Header: Click title for Secret Admin Mode */}
+            <div onClick={handleSecretClick} className="cursor-default select-none">
+                <Header title="설정" subtitle="앱 환경 설정 및 계좌 연동" />
+            </div>
 
-            <div className="p-6 max-w-4xl mx-auto space-y-8">
+            <div className="max-w-2xl mx-auto p-6 space-y-6">
 
-                {/* Developer Mode Card (Only visible if ALREADY Pro, so admin can toggle off) */}
-                {isPro && (
-                    <div className="rounded-3xl bg-gradient-to-r from-gray-900 to-black border border-white/10 p-8 relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="absolute top-0 right-0 p-6 opacity-20">
-                            <Crown className="w-24 h-24 text-yellow-500" />
-                        </div>
-                        <div className="relative z-10 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-yellow-400">
-                                    <Crown className="w-5 h-5 fill-yellow-400" /> Developer Mode (Pro)
-                                </h3>
-                                <p className="text-gray-400 text-sm max-w-md">
-                                    현재 <strong>운영자 권한</strong>이 활성화되었습니다. 모든 광고가 제거됩니다.
-                                </p>
+                {/* Tabs */}
+                <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+                    <button
+                        onClick={() => setActiveTab('general')}
+                        className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'general'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        일반 설정
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('api')}
+                        className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'api'
+                            ? 'bg-green-600 text-white shadow-lg shadow-green-900/40'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        API 연동
+                    </button>
+                </div>
+
+                {/* Tab Content: General */}
+                {activeTab === 'general' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Admin Panel (Hidden by default) */}
+                        {adminMode && (
+                            <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-black p-8 border border-purple-500/50 shadow-2xl shadow-purple-900/50">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                                        <ShieldCheck className="w-7 h-7 text-purple-400" />
+                                        관리자 패널
+                                    </h2>
+                                    <button
+                                        onClick={() => setAdminMode(false)}
+                                        className="px-3 py-1 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-sm rounded-lg"
+                                    >
+                                        숨기기
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* Free Mode Toggle */}
+                                    <div className="bg-gradient-to-r from-yellow-900/40 to-orange-900/40 p-5 rounded-xl border border-yellow-500/50 shadow-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                                    <span className="text-2xl">🎁</span>
+                                                </div>
+                                                <div>
+                                                    <div className="text-lg font-bold text-yellow-300">무료 모드</div>
+                                                    <div className="text-xs text-yellow-200/70">모든 프리미엄 기능 무제한 사용</div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={toggleFreeMode}
+                                                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${freeMode ? 'bg-green-500' : 'bg-gray-600'}`}
+                                            >
+                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${freeMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                        {freeMode && (
+                                            <div className="mt-3 text-xs text-yellow-100 bg-yellow-500/10 p-2 rounded-lg">
+                                                ✨ 무료 모드 활성화: API 호출 제한 없음, 모든 프리미엄 기능 사용 가능
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-black/40 p-4 rounded-xl border border-purple-500/20">
+                                        <div className="text-sm text-purple-300 mb-2">시스템 상태</div>
+                                        <div className="grid grid-cols-2 gap-4 text-xs">
+                                            <div><span className="text-gray-400">사용자:</span> <span className="text-white ml-2">{user?.email || 'Guest'}</span></div>
+                                            <div><span className="text-gray-400">API URL:</span> <span className="text-white ml-2">{API_BASE_URL}</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.clear();
+                                                setMsg({ type: 'success', text: '로컬 스토리지 초기화 완료' });
+                                                setTimeout(() => window.location.reload(), 1000);
+                                            }}
+                                            className="bg-red-900/20 hover:bg-red-900/40 text-red-300 px-4 py-3 rounded-lg text-sm transition-colors border border-red-500/20"
+                                        >
+                                            🗑️ 초기화
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(`${API_BASE_URL}/docs`, '_blank')}
+                                            className="bg-blue-900/20 hover:bg-blue-900/40 text-blue-300 px-4 py-3 rounded-lg text-sm transition-colors border border-blue-500/20"
+                                        >
+                                            📚 API 문서
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button
-                                onClick={togglePro}
-                                className="px-6 py-3 rounded-xl font-bold bg-yellow-500 text-black hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20"
-                            >
-                                ACTIVATED
-                            </button>
+                        )}
+
+                        {/* Default General Settings Content */}
+                        <div className="bg-white/5 rounded-3xl p-8 border border-white/10">
+                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                <User className="w-5 h-5 text-blue-400" />
+                                계정 정보
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
+                                    <span className="text-gray-400">로그인 상태</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${user ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                        {user ? '로그인됨' : '게스트'}
+                                    </span>
+                                </div>
+                                {user && (
+                                    <div className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
+                                        <span className="text-gray-400">이메일</span>
+                                        <span className="text-white text-sm">{user.email}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-6 text-center text-gray-500 text-xs">
+                            <p>StockTrend Pro v1.0.0</p>
+                            <p className="mt-1">© 2026 Gemini Antigravity. All rights reserved.</p>
+                            {/* Hint for Admin Mode */}
+                            <p className="mt-4 opacity-10 hover:opacity-100 transition-opacity cursor-pointer">
+                                (Secret: Click '설정' header 7 times)
+                            </p>
                         </div>
                     </div>
                 )}
 
-                {/* API Configuration */}
-                <div className="rounded-3xl bg-black/20 border border-white/10 p-8">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <Key className="w-5 h-5 text-blue-400" /> API Connections
-                    </h3>
-
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-300">OpenAI API Key (for Analysis)</label>
-                            <div className="relative">
-                                <input type="password" value="sk-xxxxxxxxxxxxxxxxxxxxxxxx" disabled className="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 text-gray-400 font-mono text-sm opacity-50" />
-                                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-blue-600 px-3 py-1 rounded-lg hover:bg-blue-500">Edit</button>
+                {/* Tab Content: API Connect */}
+                {activeTab === 'api' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Intro Card */}
+                        <div className="rounded-3xl bg-gradient-to-br from-green-900 to-black p-8 border border-white/10 shadow-xl relative overflow-hidden">
+                            <ShieldCheck className="absolute top-0 right-0 w-32 h-32 text-green-500/10 -mr-4 -mt-4 rotate-12" />
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Key className="w-6 h-6 text-green-400" />
+                                한국투자증권 (KIS) Open API
+                            </h2>
+                            <p className="text-gray-300 mb-6 leading-relaxed text-sm">
+                                <span className="text-green-300 font-bold">내 API 키</span>를 입력하면,
+                                내 계좌를 안전하게 연동하여 <br />초고속 실시간 시세와 트레이딩 기능을 사용할 수 있습니다.
+                            </p>
+                            <div className="bg-green-900/20 p-3 rounded-xl border border-green-500/30 flex items-start gap-3">
+                                <AlertTriangle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-xs text-green-200 leading-relaxed">
+                                    입력하신 키는 <strong>오직 내 기기(브라우저)에만 저장</strong>되며,
+                                    서버로 전송될 때는 암호화된 채널을 통해 일시적으로만 사용됩니다.
+                                </div>
                             </div>
-                            <p className="text-xs text-gray-500">Used to generate daily briefings and sentiment analysis.</p>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-300">Brokerage API (Korea Investment / Kiwoom)</label>
-                            <div className="relative">
-                                <input type="password" value="APP-xxxxxxxx-xxxx" disabled className="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 text-gray-400 font-mono text-sm opacity-50" />
-                                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-blue-600 px-3 py-1 rounded-lg hover:bg-blue-500">Edit</button>
+                        {/* Form */}
+                        <div className="bg-white/5 rounded-3xl p-8 border border-white/10 space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2">App Key</label>
+                                <input
+                                    type="password"
+                                    className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-green-500 outline-none transition-colors"
+                                    placeholder="한국투자증권 발급 App Key"
+                                    value={appKey}
+                                    onChange={e => setAppKey(e.target.value)}
+                                />
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile Notification Setup */}
-                <div className="rounded-3xl bg-black/20 border border-white/10 p-8">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <Bell className="w-5 h-5 text-green-400" /> Mobile Notification (Telegram)
-                    </h3>
-                    <div className="space-y-6">
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-300 leading-relaxed">
-                            <p className="mb-2"><strong className="text-white">1단계:</strong> 텔레그램 앱에서 <strong className="text-yellow-400">@rnfjrlAlarm_bot</strong> 을 검색하세요.</p>
-                            <p className="mb-2"><strong className="text-white">2단계:</strong> 봇에게 아무 메시지나 보내세요. (예: &quot;hello&quot;)</p>
-                            <p><strong className="text-white">3단계:</strong> 아래 <strong className="text-blue-400">&apos;내 ID 찾기&apos;</strong> 버튼을 누르면 자동으로 ID가 입력됩니다.</p>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <div className="relative flex-1">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2">App Secret</label>
+                                <input
+                                    type="password"
+                                    className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-green-500 outline-none transition-colors"
+                                    placeholder="한국투자증권 발급 App Secret"
+                                    value={secret}
+                                    onChange={e => setSecret(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2">계좌번호 (종합매매)</label>
                                 <input
                                     type="text"
-                                    value={telegramId}
-                                    onChange={(e) => {
-                                        setTelegramId(e.target.value);
-                                        localStorage.setItem("telegramId", e.target.value);
-                                    }}
-                                    placeholder="Telegram Chat ID (숫자)"
-                                    className="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 text-white font-mono text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                                    className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-green-500 outline-none transition-colors"
+                                    placeholder="예: 1234567801 (총 10자리)"
+                                    value={account}
+                                    onChange={e => setAccount(e.target.value)}
                                 />
-                                {telegramId && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 flex items-center gap-1 text-xs font-bold">
-                                        <Shield className="w-3 h-3" /> Connected
-                                    </div>
-                                )}
                             </div>
-                            <button
-                                onClick={findMyTelegramId}
-                                disabled={loadingConfig}
-                                className="bg-green-600 hover:bg-green-500 text-white px-6 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
-                            >
-                                {loadingConfig ? "찾는 중..." : "내 ID 찾기"}
-                            </button>
-                        </div>
-                        {configError && <p className="text-red-400 text-xs">{configError}</p>}
 
-                        {/* Summary Toggle */}
-                        {telegramId && (
-                            <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                                <div>
-                                    <h4 className="font-bold text-white mb-1">장 마감 브리핑 받기</h4>
-                                    <p className="text-xs text-gray-400">관심종목의 마감 시세를 매일 자동으로 받아봅니다. (15:40)</p>
-                                </div>
+                            <div className="pt-4">
                                 <button
-                                    onClick={handleSummaryToggle}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isSummaryEnabled ? 'bg-green-500' : 'bg-gray-700'}`}
+                                    onClick={handleSaveApi}
+                                    disabled={loading}
+                                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/40 transition-all flex items-center justify-center gap-2"
                                 >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isSummaryEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                                    />
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> 설정 저장하기</>}
                                 </button>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Preferences */}
-                <div className="rounded-3xl bg-black/20 border border-white/10 p-8">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <Settings className="w-5 h-5 text-purple-400" /> Preferences
-                    </h3>
-
-                    <div className="space-y-4">
-                        {[
-                            { icon: Bell, title: "Price Alerts", desc: "Push notifications for sudden price drops" },
-                            { icon: Shield, title: "Risk Auto-Check", desc: "Daily automatic portfolio health scan" },
-                            { icon: Moon, title: "Dark Mode", desc: "Always use dark theme (System default)" },
-                        ].map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-transparent hover:border-white/10 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 rounded-lg bg-white/10 text-gray-300">
-                                        <item.icon className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-sm">{item.title}</h4>
-                                        <p className="text-xs text-gray-500">{item.desc}</p>
-                                    </div>
-                                </div>
-                                <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 cursor-pointer">
-                                    <span className="inline-block h-4 w-4 transform translate-x-6 rounded-full bg-white transition" />
-                                </div>
-                            </div>
-                        ))}
+                {msg && (
+                    <div className={`p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 fixed bottom-24 left-1/2 -translate-x-1/2 shadow-2xl z-50 min-w-[300px] justify-center ${msg.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                        {msg.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                        {msg.text}
                     </div>
-                </div>
-
-                {/* Save Button */}
-                <div className="flex justify-end pt-4">
-                    <button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/20 transition-all active:scale-95">
-                        <Save className="w-5 h-5" /> Save Changes
-                    </button>
-                </div>
-
-                {/* Secret Trigger Area */}
-                <div
-                    onClick={handleSecretTap}
-                    className="mt-10 py-10 text-center text-gray-800 hover:text-gray-700 transition-colors cursor-default select-none text-xs font-mono"
-                >
-                    ANTIGRAVITY v1.1.0 (Build 20251231)
-                </div>
-
+                )}
             </div>
         </div>
     );

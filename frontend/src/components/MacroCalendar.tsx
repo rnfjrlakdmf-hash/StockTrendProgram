@@ -25,8 +25,32 @@ export default function MacroCalendar() {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/market/calendar`);
                 const json = await res.json();
-                if (json.status === "success") {
-                    setCalendar(json.data);
+                if (json.status === "success" && Array.isArray(json.data)) {
+                    // [Fix] Group flat list by date
+                    const grouped: { [key: string]: EconomicEvent[] } = {};
+                    json.data.forEach((evt: any) => {
+                        if (!grouped[evt.date]) grouped[evt.date] = [];
+                        // Normalize importance
+                        const importance = (evt.impact || "").toLowerCase() === "high" ? "High" : "Medium";
+                        grouped[evt.date].push({
+                            event: evt.event,
+                            time: evt.time,
+                            importance: importance
+                        });
+                    });
+
+                    // Convert to array
+                    const calendarData: CalendarDay[] = Object.keys(grouped).sort().map(date => {
+                        const d = new Date(date);
+                        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        return {
+                            date: date,
+                            day: days[d.getDay()],
+                            events: grouped[date]
+                        };
+                    });
+
+                    setCalendar(calendarData);
                 }
             } catch (err) {
                 console.error("Failed to fetch calendar", err);
@@ -36,7 +60,7 @@ export default function MacroCalendar() {
         };
         fetchCalendar();
 
-        const interval = setInterval(fetchCalendar, 60000); // 1분마다 갱신
+        const interval = setInterval(fetchCalendar, 60000);
         return () => clearInterval(interval);
     }, []);
 

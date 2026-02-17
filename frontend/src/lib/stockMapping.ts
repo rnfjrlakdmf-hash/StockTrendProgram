@@ -170,15 +170,7 @@ export const STOCK_KOREAN_MAP: Record<string, string> = {
     "SMENTERTAINMENT": "041510.KQ",
     "와이지엔터": "122870.KQ",
     "제이와이피엔터": "035900.KQ",
-    "에스엠엔터": "041510.KQ",
-
-    // Market & News Mapping
-    "증시": "^MARKET",
-    "시장": "^MARKET",
-    "뉴스": "^MARKET",
-    "market": "^MARKET",
-    "news": "^MARKET",
-    "주식시장": "^MARKET"
+    "에스엠엔터": "041510.KQ"
 };
 
 export function getTickerFromKorean(term: string): string {

@@ -6,6 +6,8 @@ import { API_BASE_URL } from "@/lib/config";
 import { Send, UserCheck, AlertOctagon, CheckCircle2, ShieldX, Loader2 } from "lucide-react";
 import AdRewardModal from "@/components/AdRewardModal";
 
+import { isFreeModeEnabled } from "@/lib/adminMode";
+
 export default function CoachPage() {
     const [logText, setLogText] = useState("");
     const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export default function CoachPage() {
         // Check for Pro Mode (Admin Bypass)
         const isPro = localStorage.getItem("isPro") === "true";
 
-        if (hasPaid || isPro) {
+        if (hasPaid || isPro || isFreeModeEnabled()) {
             handleSubmit();
         } else {
             setShowAdModal(true);

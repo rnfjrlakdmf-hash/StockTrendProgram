@@ -101,7 +101,7 @@ def main():
     try:
         # Check Backend first (Wait max 30s)
         print("Checking backend status...")
-        wait_for_server('http://localhost:8000/docs', timeout=30)
+        wait_for_server('http://localhost:8000/docs', timeout=60)
         
         # Wait for frontend
         print("Checking frontend status...")

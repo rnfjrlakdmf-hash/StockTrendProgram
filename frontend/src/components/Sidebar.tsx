@@ -24,7 +24,7 @@ const navigation = [
     { name: "포트폴리오", href: "/portfolio", icon: Shield },
     { name: "MY 관심종목", href: "/watchlist", icon: Star },
     { name: "가격 알림", href: "/alerts", icon: Bell },
-    { name: "설정", href: "/settings", icon: Settings },
+    { name: "설정 (API 연결)", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -40,15 +40,27 @@ export default function Sidebar() {
     const [isPro, setIsPro] = useState(false);
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/market/status`)
-            .then(res => res.json())
-            .then(data => {
+        const fetchExchangeRate = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/status`);
+
+                // [Fix] Check response status before parsing
+                if (!res.ok) {
+                    // Silently use fallback exchange rate
+                    return;
+                }
+
+                const data = await res.json();
                 if (data.status === "success" && data.data.details?.usd) {
                     const rate = parseFloat(data.data.details.usd.replace(/,/g, ''));
                     if (!isNaN(rate)) setExchangeRate(rate);
                 }
-            })
-            .catch(err => console.error(err));
+            } catch (err) {
+                // [Fix] Silently ignore - fallback exchange rate (1450) is already set
+            }
+        };
+
+        fetchExchangeRate();
     }, []);
 
     const proPriceUsd = 3.5;
@@ -74,8 +86,17 @@ export default function Sidebar() {
     // [New] Real-time Countdown Timer
     useEffect(() => {
         const updateTimer = () => {
-            // Check Pro
+            // Check Pro & Admin Free Mode
             const localPro = localStorage.getItem('isPro') === 'true';
+            const adminFree = sessionStorage.getItem('admin_free_mode') === 'true';
+
+            // Admin Free Mode overrides everything
+            if (adminFree) {
+                setIsPro(true);
+                setTimeLeftStr("관리자 모드 (무제한)");
+                return;
+            }
+
             setIsPro(localPro || user?.is_pro === true);
 
             if (localPro || user?.is_pro) {

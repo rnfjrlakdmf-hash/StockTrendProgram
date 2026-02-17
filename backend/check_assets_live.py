@@ -9,7 +9,7 @@ try:
     if response.status_code == 200:
         data = response.json()
         print("Success!")
-        print(str(data)[:200] + "...")
+        print(json.dumps(data, indent=2, ensure_ascii=False))
     else:
         print("Failed:", response.text)
 

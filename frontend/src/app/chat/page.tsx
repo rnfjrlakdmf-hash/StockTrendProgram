@@ -8,6 +8,8 @@ import Typewriter from "@/components/Typewriter";
 import ProModal from "@/components/ProModal";
 import AdRewardModal from "@/components/AdRewardModal";
 
+import { isFreeModeEnabled } from "@/lib/adminMode";
+
 interface Message {
     role: 'user' | 'ai';
     content: string;
@@ -41,7 +43,7 @@ export default function ChatPage() {
         // Check Pro & Daily Usage & Limit
         const checkStatus = () => {
             const localPro = localStorage.getItem("isPro") === "true";
-            setIsPro(localPro);
+            setIsPro(localPro || isFreeModeEnabled());
             const today = new Date().toDateString();
 
             // Usage Count

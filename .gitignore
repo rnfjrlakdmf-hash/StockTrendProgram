@@ -1,21 +1,90 @@
-# Python
+# ===== Python =====
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
-.env
+*.egg-info/
 
-# Node
+# ===== Environment & Secrets =====
+.env
+backend/.env
+*.pem
+firebase-adminsdk.json
+
+# ===== Node =====
 node_modules/
 .next/
 .next_custom/
 out/
+
+# ===== Build Artifacts =====
 build/
 dist/
+deploy.tar.gz
+*.spec
 
-# System
+# ===== Database =====
+*.db
+
+# ===== Debug & Test Files (root) =====
+debug_*.py
+test_*.py
+repro*.py
+reproduce_*.py
+verify_*.py
+check_*.py
+inspect_*.py
+diagnose_*.py
+monitor_*.py
+dump_*.py
+find_*.py
+analyze_*.py
+save_*.py
+restore_*.py
+replace_function.py
+clean_null_bytes.py
+clear_watchlist_now.py
+fix_env_encoding.py
+
+# ===== Debug HTML dumps =====
+*.html
+!frontend/**/*.html
+
+# ===== Debug output =====
+output.txt
+*.log
+app_startup.log
+story_api_response.json
+test_story_response.json
+test_diagnosis_output.txt
+dashboard_cache.json
+alerts.json
+
+# ===== OS Files =====
 .DS_Store
 Thumbs.db
 
-# Deployment archives
-deploy.tar.gz
+# ===== IDE =====
+.vscode/
+
+# ===== Backend debug files =====
+backend/debug_*.py
+backend/test_*.py
+backend/repro*.py
+backend/reproduce_*.py
+backend/inspect_*.py
+backend/find_*.py
+backend/fix_*.py
+backend/check_*.py
+backend/*.bak
+backend/*_inc
+backend/*_append.py
+backend/*_restore.py
+backend/sise_dump.html
+backend/dashboard_cache.json
+backend/alerts.json
+backend/response.json
+backend/disclosure_endpoint.txt
+backend/korean_rates_fixed.py
+backend/list_models.py
+backend/get_telegram_id.py

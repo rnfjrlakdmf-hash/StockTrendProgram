@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { API_BASE_URL } from "@/lib/config";
 import { FALLBACK_DASHBOARD_DATA } from "@/lib/fallbackData";
 import MarketIndicators from './MarketIndicators';
+import CleanStockList from './CleanStockList';
 
 interface MarketItem {
     name: string;
@@ -100,6 +101,13 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
         const fetchIndices = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/korea/indices`);
+
+                // [Fix] Check response status
+                if (!res.ok) {
+                    setLoadingIndices(false);
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success") {
                     setData(prev => {
@@ -108,7 +116,9 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                         return next;
                     });
                 }
-            } catch (e) { console.error("Indices fetch error", e); }
+            } catch (e) {
+                // [Fix] Silently ignore
+            }
             finally { setLoadingIndices(false); }
         };
 
@@ -116,6 +126,13 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
         const fetchSectors = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/korea/sectors`);
+
+                // [Fix] Check response status
+                if (!res.ok) {
+                    setLoadingSectors(false);
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success") {
                     setData(prev => {
@@ -124,7 +141,9 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                         return next;
                     });
                 }
-            } catch (e) { console.error("Sectors fetch error", e); }
+            } catch (e) {
+                // [Fix] Silently ignore
+            }
             finally { setLoadingSectors(false); }
         };
 
@@ -134,6 +153,12 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
         const fetchAssets = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/assets`);
+
+                // [Fix] Check response status
+                if (!res.ok) {
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success") {
                     setData(prev => {
@@ -142,13 +167,22 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                         return next;
                     });
                 }
-            } catch (e) { console.error("Assets fetch error", e); }
+            } catch (e) {
+                // [Fix] Silently ignore
+            }
         };
 
         // 5. Market Summary (KOSPI, KOSDAQ, Investors - Critical for Real-time)
         const fetchMarketSummary = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/korea/investors`);
+
+                // [Fix] Check response status before parsing
+                if (!res.ok) {
+                    // Silently ignore - this endpoint may be slow or unavailable
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success") {
                     setData(prev => {
@@ -161,7 +195,10 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                         return next;
                     });
                 }
-            } catch (e) { console.error("Market Summary fetch error", e); }
+            } catch (e) {
+                // [Fix] Silently ignore - fallback to cached data
+                // console.error removed to prevent console spam
+            }
         };
 
         fetchIndices();
@@ -194,7 +231,14 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
         </div>
     );
 
-    const summary = data.market_summary ? data.market_summary[activeTab] : null;
+    const summary = data.market_summary && activeTab in data.market_summary
+        ? data.market_summary[activeTab]
+        : null;
+
+    const isPositive = (val: string | undefined | null) => {
+        if (!val) return false;
+        return !val.includes('-');
+    };
 
     return (
         <div className="bg-black/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
@@ -222,12 +266,12 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                                 <span className={`text-xs md:text-base font-bold mb-1 whitespace-nowrap ${isActive ? 'text-white' : 'text-gray-400'}`}>{label}</span>
                                 {item ? (
                                     <>
-                                        <span className={`text-sm md:text-2xl font-bold font-mono ${item.percent.includes('+') ? 'text-red-500' : item.percent.includes('-') ? 'text-blue-500' : 'text-white'}`}>
-                                            {Number(String(item.value).replace(/,/g, '')).toLocaleString()}
+                                        <span className={`text-sm md:text-2xl font-bold font-mono ${isPositive(item.percent) && (item.percent || '').includes('+') ? 'text-red-500' : isPositive(item.percent) ? 'text-white' : 'text-blue-500'}`}>
+                                            {item.value ? Number(String(item.value).replace(/,/g, '')).toLocaleString() : '-'}
                                         </span>
-                                        <div className={`text-[10px] md:text-sm flex flex-col md:flex-row gap-0.5 md:gap-1 mt-1 items-center ${item.percent.includes('+') ? 'text-red-400' : item.percent.includes('-') ? 'text-blue-400' : 'text-gray-500'}`}>
-                                            <span>{item.change}</span>
-                                            <span>{item.percent}</span>
+                                        <div className={`text-[10px] md:text-sm flex flex-col md:flex-row gap-0.5 md:gap-1 mt-1 items-center ${isPositive(item.percent) && (item.percent || '').includes('+') ? 'text-red-400' : isPositive(item.percent) ? 'text-gray-500' : 'text-blue-400'}`}>
+                                            <span>{item.change || ''}</span>
+                                            <span>{item.percent || ''}</span>
                                         </div>
                                     </>
                                 ) : (
@@ -249,8 +293,8 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                     <span className="text-gray-400">개인</span>
                                 </div>
-                                <span className={`font-mono font-bold ${!summary.investors?.personal.includes('-') ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {summary.investors?.personal}
+                                <span className={`font-mono font-bold ${isPositive(summary?.investors?.personal) ? 'text-red-400' : 'text-blue-400'}`}>
+                                    {summary?.investors?.personal || '-'}
                                 </span>
                             </div>
                             <div className="h-6 w-px bg-white/10"></div>
@@ -259,8 +303,8 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                                     <span className="text-gray-400">외국인</span>
                                 </div>
-                                <span className={`font-mono font-bold ${!summary.investors?.foreigner.includes('-') ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {summary.investors?.foreigner}
+                                <span className={`font-mono font-bold ${isPositive(summary?.investors?.foreigner) ? 'text-red-400' : 'text-blue-400'}`}>
+                                    {summary?.investors?.foreigner || '-'}
                                 </span>
                             </div>
                             <div className="h-6 w-px bg-white/10"></div>
@@ -269,8 +313,8 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span className="text-gray-400">기관</span>
                                 </div>
-                                <span className={`font-mono font-bold ${!summary.investors?.institutional.includes('-') ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {summary.investors?.institutional}
+                                <span className={`font-mono font-bold ${isPositive(summary?.investors?.institutional) ? 'text-red-400' : 'text-blue-400'}`}>
+                                    {summary?.investors?.institutional || '-'}
                                 </span>
                             </div>
                         </div>
@@ -286,26 +330,26 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                             {/* Stock Counts (Breadth) */}
                             <div className="flex items-center justify-between bg-black/20 rounded-lg p-3">
                                 <span className="text-gray-400 font-bold mr-4">등락 종목</span>
-                                {summary.stock_counts ? (
+                                {summary?.stock_counts ? (
                                     <div className="flex gap-3 font-mono text-xs">
                                         <div className="text-red-500 flex items-center gap-1">
                                             <ArrowUpRight className="w-3 h-3" />
                                             <span className="text-red-400 text-[10px] opacity-70">상한</span>
-                                            {summary.stock_counts.upper}
+                                            {summary.stock_counts.upper || 0}
                                         </div>
                                         <div className="text-red-400 flex items-center gap-1">
-                                            <ArrowUpRight className="w-3 h-3" /> {summary.stock_counts.up}
+                                            <ArrowUpRight className="w-3 h-3" /> {summary.stock_counts.up || 0}
                                         </div>
                                         <div className="text-gray-400 flex items-center gap-1">
-                                            <div className="w-2 h-[2px] bg-gray-500"></div> {summary.stock_counts.equal}
+                                            <div className="w-2 h-[2px] bg-gray-500"></div> {summary.stock_counts.equal || 0}
                                         </div>
                                         <div className="text-blue-400 flex items-center gap-1">
-                                            <ArrowDownRight className="w-3 h-3" /> {summary.stock_counts.down}
+                                            <ArrowDownRight className="w-3 h-3" /> {summary.stock_counts.down || 0}
                                         </div>
                                         <div className="text-blue-500 flex items-center gap-1">
                                             <ArrowDownRight className="w-3 h-3" />
                                             <span className="text-blue-400 text-[10px] opacity-70">하한</span>
-                                            {summary.stock_counts.lower}
+                                            {summary.stock_counts.lower || 0}
                                         </div>
                                     </div>
                                 ) : (
@@ -316,14 +360,16 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                             {/* Program Trading */}
                             <div className="flex items-center justify-between bg-black/20 rounded-lg p-3">
                                 <span className="text-gray-400 font-bold mr-4">프로그램 매매</span>
-                                {summary.program_trading ? (
+                                {summary?.program_trading ? (
                                     <div className="flex gap-4 font-mono text-xs">
-                                        <div className={summary.program_trading.net.includes('-') ? 'text-blue-400' : 'text-red-400'}>
-                                            순매수 {summary.program_trading.net}
+                                        <div className={isPositive(summary.program_trading.net) ? 'text-red-400' : 'text-blue-400'}>
+                                            순매수 {summary.program_trading.net || '-'}
                                         </div>
-                                        <div className="text-gray-500">
-                                            베이시스 {summary.program_trading.change}
-                                        </div>
+                                        {summary.program_trading.label && (
+                                            <div className="text-gray-400 px-1.5 py-0.5 bg-white/5 rounded text-[10px]">
+                                                {summary.program_trading.label}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <span className="text-gray-600 text-xs">데이터 없음</span>
@@ -355,43 +401,43 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
             <ThemeHeatmapWidget onSearch={onSearch} onPrefetch={onPrefetch} />
 
             <div className="mb-8">
-                {/* 2. Top Sectors & Themes (Restored) */}
+                {/* 2. Top Sectors & Themes (Redesigned with CleanStockList) */}
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Top Sectors */}
-                        <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
-                            <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                                <PieChart className="text-purple-400" /> 업종 상위
-                            </h4>
-                            <div className="space-y-3">
-                                {data.top_sectors && data.top_sectors.slice(0, 5).map((s, i) => (
-                                    <div key={i} className="flex justify-between items-center group cursor-pointer" onClick={() => onSearch?.(s.name)}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 text-xs w-4">{i + 1}</span>
-                                            <span className="text-gray-300 group-hover:text-white transition-colors text-sm">{s.name}</span>
-                                        </div>
-                                        <span className="text-red-400 font-bold text-sm bg-red-400/10 px-1.5 rounded">{s.percent}</span>
-                                    </div>
-                                ))}
+                        <div className="bg-white/5 rounded-2xl p-0 md:p-5 border border-white/5 overflow-hidden">
+                            <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
+                                <PieChart className="text-purple-400 w-5 h-5" />
+                                <h4 className="text-white font-bold">업종 상위</h4>
                             </div>
+
+                            <CleanStockList
+                                items={data.top_sectors ? data.top_sectors.slice(0, 5).map(s => ({
+                                    symbol: s.name, // Using name as symbol for display key
+                                    name: s.name,
+                                    price: "", // No price data for sectors usually
+                                    change: s.percent
+                                })) : []}
+                                onItemClick={(sym) => onSearch?.(sym)}
+                            />
                         </div>
 
                         {/* Top Themes */}
-                        <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
-                            <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                                <Activity className="text-orange-400" /> 테마 상위
-                            </h4>
-                            <div className="space-y-3">
-                                {data.top_themes && data.top_themes.slice(0, 5).map((t, i) => (
-                                    <div key={i} className="flex justify-between items-center group cursor-pointer" onClick={() => onSearch?.(t.name)}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 text-xs w-4">{i + 1}</span>
-                                            <span className="text-gray-300 group-hover:text-white transition-colors text-sm">{t.name}</span>
-                                        </div>
-                                        <span className="text-red-400 font-bold text-sm bg-red-400/10 px-1.5 rounded">{t.percent}</span>
-                                    </div>
-                                ))}
+                        <div className="bg-white/5 rounded-2xl p-0 md:p-5 border border-white/5 overflow-hidden">
+                            <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
+                                <Activity className="text-orange-400 w-5 h-5" />
+                                <h4 className="text-white font-bold">테마 상위</h4>
                             </div>
+
+                            <CleanStockList
+                                items={data.top_themes ? data.top_themes.slice(0, 5).map(t => ({
+                                    symbol: t.name,
+                                    name: t.name,
+                                    price: "",
+                                    change: t.percent
+                                })) : []}
+                                onItemClick={(sym) => onSearch?.(sym)}
+                            />
                         </div>
                     </div>
                 </div>
@@ -399,6 +445,9 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
         </div>
     );
 }
+
+// Helper to process /api/assets data into MarketItem format with Korean translation
+// ... (kept same)
 
 // Helper to process /api/assets data into MarketItem format with Korean translation
 function processAssets(items: any[] | undefined, type: 'indices' | 'crypto' | 'forex' | 'commodity'): MarketItem[] {
@@ -484,12 +533,19 @@ function ThemeHeatmapWidget({ onSearch, onPrefetch }: { onSearch?: (term: string
         const fetchHeatmap = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/korea/heatmap`);
+
+                // [Fix] Check response status
+                if (!res.ok) {
+                    setLoading(false);
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setThemes(json.data);
                 }
             } catch (e) {
-                console.error(e);
+                // [Fix] Silently ignore
             } finally {
                 setLoading(false);
             }
@@ -600,12 +656,19 @@ function LiveChart({ symbol }: { symbol: string }) {
             try {
                 // symbol: kospi, kosdaq, kospi200
                 const res = await fetch(`${API_BASE_URL}/api/korea/chart/${symbol}`);
+
+                // [Fix] Check response status before parsing
+                if (!res.ok) {
+                    setLoading(false);
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setData(json.data);
                 }
             } catch (e) {
-                console.error("Chart fetch error", e);
+                // [Fix] Silently ignore fetch errors
             } finally {
                 setLoading(false);
             }

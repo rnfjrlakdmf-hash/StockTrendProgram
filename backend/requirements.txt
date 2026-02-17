@@ -11,3 +11,5 @@ plotly
 python-dotenv
 GoogleNews
 scipy
+firebase-admin
+pycryptodome

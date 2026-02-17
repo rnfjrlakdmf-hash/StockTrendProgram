@@ -4,6 +4,9 @@ from datetime import datetime
 
 DB_FILE = "stock_app.db"
 
+def get_db_connection():
+    return sqlite3.connect(DB_FILE)
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -32,7 +35,10 @@ def init_db():
             picture TEXT,
             is_pro BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            free_trial_count INTEGER DEFAULT 2
+            free_trial_count INTEGER DEFAULT 2,
+            kis_app_key TEXT,
+            kis_secret TEXT,
+            kis_account TEXT
         )
     ''')
     
@@ -45,6 +51,18 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN free_trial_count INTEGER DEFAULT 2")
         except Exception as e:
             print(f"Migration Warning: {e}")
+
+    # [Migration] Add KIS API Keys if not exists (Step Id: 669)
+    try:
+        cursor.execute("SELECT kis_app_key FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding KIS keys)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN kis_app_key TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN kis_secret TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN kis_account TEXT")
+        except Exception as e:
+            print(f"Migration Warning (KIS): {e}")
 
     # Watchlist Table (User Specific)
     # Check if watchlist table has user_id column
@@ -206,15 +224,60 @@ def get_score_history(symbol):
     conn.close()
     
     history = []
-    for row in rows:
-        history.append({
+    for i, row in enumerate(rows):
+        data = {
             "date": row[0],
             "score": row[1],
             "price": row[2],
             "supply": row[3],
             "financial": row[4],
-            "news": row[5]
-        })
+            "news": row[5],
+            "reason": ""
+        }
+        
+        # Generate explanation for score change (compared to previous point)
+        if i > 0:
+            prev = rows[i-1]
+            score_diff = row[1] - prev[1]
+            supply_diff = (row[3] or 0) - (prev[3] or 0)
+            financial_diff = (row[4] or 0) - (prev[4] or 0)
+            news_diff = (row[5] or 0) - (prev[5] or 0)
+            
+            reasons = []
+            
+            # Identify major factors
+            if abs(score_diff) >= 5:  # Significant change
+                if abs(supply_diff) >= 10:
+                    if supply_diff > 0:
+                        reasons.append(f"수급 점수 개선 (+{supply_diff:.0f})")
+                    else:
+                        reasons.append(f"수급 점수 하락 ({supply_diff:.0f})")
+                
+                if abs(financial_diff) >= 10:
+                    if financial_diff > 0:
+                        reasons.append(f"재무 건전성 개선 (+{financial_diff:.0f})")
+                    else:
+                        reasons.append(f"재무 지표 악화 ({financial_diff:.0f})")
+                
+                if abs(news_diff) >= 10:
+                    if news_diff > 0:
+                        reasons.append(f"긍정 뉴스/심리 (+{news_diff:.0f})")
+                    else:
+                        reasons.append(f"부정 뉴스/심리 ({news_diff:.0f})")
+                
+                # Generate full reason text
+                if reasons:
+                    data["reason"] = ", ".join(reasons)
+                elif score_diff > 0:
+                    data["reason"] = f"종합 점수 상승 (+{score_diff:.1f})"
+                else:
+                    data["reason"] = f"종합 점수 하락 ({score_diff:.1f})"
+            else:
+                data["reason"] = "소폭 변동 (전일 대비)"
+        else:
+            data["reason"] = "최초 분석"
+        
+        history.append(data)
         
     return history
 
@@ -356,6 +419,25 @@ def clear_watchlist(user_id):
     finally:
         conn.close()
 
+
+def update_user_keys(user_id, app_key, secret, account):
+    """Update KIS API keys for a user"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            UPDATE users 
+            SET kis_app_key = ?, kis_secret = ?, kis_account = ?
+            WHERE id = ?
+        ''', (app_key, secret, account, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Update Keys Error: {e}")
+        return False
+    finally:
+        conn.close()
+
 def get_watchlist(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -397,3 +479,95 @@ def get_vote_stats(symbol):
         
     conn.close()
     return stats
+
+
+# ============================================================
+# FCM Token Management (Firebase Cloud Messaging)
+# ============================================================
+
+def create_fcm_tokens_table():
+    """FCM 토큰 테이블 생성"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fcm_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            device_type TEXT,  -- 'web', 'android', 'ios'
+            device_name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+    print("[DB] FCM tokens table created")
+
+
+def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_name: str = None):
+    """FCM 토큰 저장 또는 업데이트"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO fcm_tokens (user_id, token, device_type, device_name, last_used)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(token) DO UPDATE SET
+                user_id = excluded.user_id,
+                device_type = excluded.device_type,
+                device_name = excluded.device_name,
+                last_used = CURRENT_TIMESTAMP
+        """, (user_id, token, device_type, device_name))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Save FCM token error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_user_fcm_tokens(user_id: str) -> list:
+    """사용자의 모든 FCM 토큰 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT token, device_type, device_name
+        FROM fcm_tokens
+        WHERE user_id = ?
+        ORDER BY last_used DESC
+    """, (user_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [
+        {
+            "token": row[0],
+            "device_type": row[1],
+            "device_name": row[2]
+        }
+        for row in rows
+    ]
+
+
+def delete_fcm_token(token: str):
+    """FCM 토큰 삭제"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("DELETE FROM fcm_tokens WHERE token = ?", (token,))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"[DB] Delete FCM token error: {e}")
+        return False
+    finally:
+        conn.close()

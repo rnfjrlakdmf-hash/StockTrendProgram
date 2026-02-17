@@ -8,8 +8,41 @@ import GaugeChart from "@/components/GaugeChart";
 import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
+import { useStockSocket } from "@/hooks/useStockSocket";
 import { API_BASE_URL } from "@/lib/config";
-import SentimentBattle from "@/components/SentimentBattle";
+
+import RankingWidget from "@/components/RankingWidget";
+import StoryChart from "@/components/StoryChart";
+import PriceAlertSetup from "@/components/PriceAlertSetup";
+import PriceAlertList from "@/components/PriceAlertList";
+import DisclosureTable from "@/components/DisclosureTable";
+import FCMTokenManager from "@/components/FCMTokenManager";
+import SimplePushTest from "@/components/SimplePushTest";
+
+// [WebSocket Integration] Real-time Price Updates
+// Replaces the old 5-second polling interval
+/* REMOVED BAD BLOCK
+        // Flash effect can be handled by CSS animations if needed, 
+        // but React re-render will update values immediately.
+        setStock(prev => {
+            if (!prev) return null;
+            // Avoid update if price hasn't changed to prevent unnecessary re-renders
+            if (prev.price === realtimeData.price) return prev;
+
+            return {
+                ...prev,
+                price: realtimeData.price,
+                change: realtimeData.change
+            };
+        });
+    }
+*/
+
+/* REMOVED: Legacy Polling Logic
+useEffect(() => {
+   // ...
+}, [stock?.symbol]); 
+*/
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
 
@@ -145,10 +178,30 @@ function DiscoveryContent() {
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
     const [showHealthCheck, setShowHealthCheck] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'backtest' | 'history' | 'battle' | 'daily'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
+
+    // [WebSocket Integration] Real-time Price Updates
+    // Replaces the old 5-second polling interval
+    const { realtimeData, isConnected } = useStockSocket(stock?.symbol || null);
+
+    useEffect(() => {
+        if (realtimeData && stock) {
+            setStock(prev => {
+                if (!prev) return null;
+                // Avoid update if price hasn't changed to prevent unnecessary re-renders
+                if (prev.price === realtimeData.price) return prev;
+
+                return {
+                    ...prev,
+                    price: realtimeData.price,
+                    change: realtimeData.change
+                };
+            });
+        }
+    }, [realtimeData]);
 
     // [New] Fetch Real-time Exchange Rate
     useEffect(() => {
@@ -156,7 +209,7 @@ function DiscoveryContent() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success" && data.data.details?.usd) {
-                    const rate = parseFloat(data.data.details.usd.replace(/,/g, ''));
+                    const rate = parseFloat(String(data.data.details.usd).replace(/,/g, ''));
                     if (!isNaN(rate)) setExchangeRate(rate);
                 }
             })
@@ -227,16 +280,23 @@ function DiscoveryContent() {
 
                 // Do not await UI thread? No, we need waiting for result. But React already rendered stock.
                 fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}`)
-                    .then(res => res.json())
+                    .then(res => {
+                        // [Fix] Check response status
+                        if (!res.ok) {
+                            setIsAnalyzing(false);
+                            return null;
+                        }
+                        return res.json();
+                    })
                     .then(jsonFull => {
-                        if (jsonFull.status === "success" && jsonFull.data && jsonFull.data.symbol) {
+                        if (jsonFull && jsonFull.status === "success" && jsonFull.data && jsonFull.data.symbol) {
                             setStock(jsonFull.data);
                             STOCK_CACHE[ticker] = { data: jsonFull.data, timestamp: Date.now() };
                         }
                         setIsAnalyzing(false);
                     })
                     .catch(e => {
-                        console.error("AI Analysis background update failed", e);
+                        // [Fix] Silently ignore
                         setIsAnalyzing(false);
                     });
 
@@ -280,37 +340,7 @@ function DiscoveryContent() {
         // For prefetch, maybe just basic info is enough?
     };
 
-    // Polling ... (omitted for brevity in replace, but make sure to keep existing logic)
-
-
-
-
-    // Polling for real-time price updates (every 5 seconds)
-    useEffect(() => {
-        if (!stock || !stock.symbol || (stock.symbol.toUpperCase && stock.symbol.toUpperCase().includes("MARKET")) || stock.symbol === "THEME") return; // MARKET, THEME은 실시간 가격 제외
-
-        const fetchLivePrice = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/quote/${stock.symbol}`);
-                const json = await res.json();
-                if (json.status === "success") {
-                    setStock(prev => {
-                        if (!prev) return null;
-                        return {
-                            ...prev,
-                            price: json.data.price,
-                            change: json.data.change
-                        };
-                    });
-                }
-            } catch (error) {
-                console.error("Live price update failed:", error);
-            }
-        };
-
-        const interval = setInterval(fetchLivePrice, 5000); // 5초마다 갱신
-        return () => clearInterval(interval);
-    }, [stock?.symbol]);
+    // [Removed] Old polling logic replaced by WebSocket real-time updates (lines 180-198)
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
@@ -389,6 +419,9 @@ function DiscoveryContent() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* [New] Real-time Rankings Widget */}
+                        <RankingWidget />
 
                         {/* Market Indicators Grid */}
                         <div className="mt-8">
@@ -609,7 +642,11 @@ function DiscoveryContent() {
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PER (주가수익비율)" term="PER" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">{stock.details?.pe_ratio ? `${stock.details.pe_ratio.toFixed(2)}배` : 'N/A'}</div>
+                                                    <div className="font-mono text-white">
+                                                        {(typeof stock.details?.pe_ratio === 'number')
+                                                            ? `${stock.details.pe_ratio.toFixed(2)}배`
+                                                            : (stock.details?.pe_ratio || 'N/A')}
+                                                    </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} />
@@ -618,13 +655,19 @@ function DiscoveryContent() {
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="배당수익률 (Yield)" term="배당수익률" isEasyMode={easyMode} />
                                                     <div className="font-mono text-green-400">
-                                                        {stock.details?.dividend_yield ? `${(stock.details.dividend_yield * 100).toFixed(2)}%` : 'N/A'}
+                                                        {(typeof stock.details?.dividend_yield === 'number')
+                                                            ? `${(stock.details.dividend_yield * 100).toFixed(2)}%`
+                                                            : (stock.details?.dividend_yield || 'N/A')}
                                                     </div>
                                                 </div>
 
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">{stock.details?.forward_pe ? `${stock.details.forward_pe.toFixed(2)}배` : 'N/A'}</div>
+                                                    <div className="font-mono text-white">
+                                                        {(typeof stock.details?.forward_pe === 'number')
+                                                            ? `${stock.details.forward_pe.toFixed(2)}배`
+                                                            : (stock.details?.forward_pe || 'N/A')}
+                                                    </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
@@ -636,7 +679,11 @@ function DiscoveryContent() {
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">{stock.details?.pbr ? `${stock.details.pbr.toFixed(2)}배` : 'N/A'}</div>
+                                                    <div className="font-mono text-white">
+                                                        {(typeof stock.details?.pbr === 'number')
+                                                            ? `${stock.details.pbr.toFixed(2)}배`
+                                                            : (stock.details?.pbr || 'N/A')}
+                                                    </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
@@ -710,6 +757,14 @@ function DiscoveryContent() {
                                         >
                                             일일 시세
                                         </button>
+                                        {/* Story Chart tab removed per user request - news fetching issues
+                                        <button
+                                            className={`pb-2 md:pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'story' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+                                            onClick={() => setActiveTab('story')}
+                                        >
+                                            📖 주식 위인전 <span className="text-xs bg-purple-500/20 px-2 py-0.5 rounded-full ml-1 text-purple-300">New</span>
+                                        </button>
+                                        */}
 
                                         {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                             <>
@@ -731,11 +786,12 @@ function DiscoveryContent() {
                                                 >
                                                     AI 점수 추이
                                                 </button>
+
                                                 <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'battle' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('battle')}
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'alerts' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('alerts')}
                                                 >
-                                                    개미 vs AI <Swords className="w-4 h-4 inline ml-1 mb-1" />
+                                                    🛡️ 회의 중 방어막 <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full ml-1 text-blue-300">New</span>
                                                 </button>
                                             </>
                                         )}
@@ -920,6 +976,10 @@ function DiscoveryContent() {
                                                 </table>
                                             </div>
                                         </div>
+                                    ) : activeTab === 'story' && stock.symbol ? (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <StoryChart symbol={stock.symbol} period="1y" />
+                                        </div>
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'disclosure' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <DisclosureTable symbol={stock.symbol} />
@@ -932,11 +992,18 @@ function DiscoveryContent() {
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <ScoreHistoryChart symbol={stock.symbol} />
                                         </div>
-                                    ) : (
-                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <SentimentBattle symbol={stock.symbol} aiScore={stock.score} />
+                                    ) : activeTab === 'alerts' && stock.symbol ? (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                                            <SimplePushTest />
+                                            <PriceAlertSetup
+                                                symbol={stock.symbol}
+                                                currentPrice={Number(stock.price) || 0}
+                                                buyPrice={Number(stock.price)}
+                                                quantity={100}
+                                            />
+                                            <PriceAlertList />
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             </div>
 
@@ -1119,82 +1186,9 @@ function BacktestSimulator({ symbol, currency }: { symbol: string, currency: str
 
 
 
-interface Disclosure {
-    date: string;
-    title: string;
-    publisher: string;
-    link: string;
-}
 
-function DisclosureTable({ symbol }: { symbol: string }) {
-    const [disclosures, setDisclosures] = useState<Disclosure[]>([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDisclosure = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/korea/disclosure/${symbol}`);
-                const json = await res.json();
-                if (json.status === "success") {
-                    setDisclosures(json.data);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (symbol && /\d{6}/.test(symbol)) {
-            fetchDisclosure();
-        } else {
-            setLoading(false);
-        }
-    }, [symbol]);
 
-    return (
-        <div className="space-y-4">
-            <h4 className="text-lg font-bold text-white mb-2 flex items-center justify-between">
-                <span>최근 전자공시 (DART/KIND)</span>
-                {loading && <Loader2 className="animate-spin w-4 h-4 text-blue-400" />}
-            </h4>
-
-            {!loading && disclosures.length === 0 && (
-                <div className="p-8 text-center text-gray-400 bg-white/5 rounded-xl border border-dashed border-white/10">
-                    <p>공시 내역이 없거나 한국(KRX) 종목이 아닙니다.</p>
-                    <p className="text-xs mt-2 text-gray-500">한국 종목 코드로 검색해주세요. (예: 005930.KS)</p>
-                </div>
-            )}
-
-            <div className="overflow-x-auto">
-                {/* ... table ... */}
-                <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-gray-400 uppercase border-b border-white/10">
-                        <tr>
-                            <th className="px-3 py-2">Date</th>
-                            <th className="px-3 py-2 w-1/2">Title</th>
-                            <th className="px-3 py-2">Source</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {disclosures.map((d, idx) => (
-                            <tr key={idx} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => window.open(d.link, '_blank')}>
-                                <td className="px-3 py-3 font-mono text-gray-300 whitespace-nowrap">{d.date}</td>
-                                <td className="px-3 py-3 font-bold text-white group-hover:text-blue-400 transition-colors">
-                                    {d.title}
-                                </td>
-                                <td className="px-3 py-3 text-gray-400 text-xs">
-                                    <span className="bg-white/10 px-2 py-0.5 rounded text-gray-300">{d.publisher}</span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {disclosures.length > 0 && <p className="text-xs text-gray-500 mt-2">* 데이터 출처: Naver Finance (DART)</p>}
-        </div>
-    );
-}
 
 interface ScoreHistory {
     date: string;
@@ -1250,15 +1244,44 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                             />
                             <YAxis domain={[0, 100]} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px' }}
-                                itemStyle={{ fontSize: '12px' }}
+                                content={(props: any) => {
+                                    if (!props.active || !props.payload || !props.payload.length) return null;
+                                    const data = props.payload[0].payload;
+                                    return (
+                                        <div className="bg-gray-800 border border-gray-600 rounded-xl p-3 shadow-lg">
+                                            <p className="text-xs text-gray-400 mb-2">{new Date(data.date).toLocaleDateString('ko-KR')}</p>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between gap-4">
+                                                    <span className="text-purple-400 font-bold">종합 점수:</span>
+                                                    <span className="text-white font-mono">{data.score.toFixed(1)}</span>
+                                                </div>
+                                                <div className="flex justify-between gap-4">
+                                                    <span className="text-green-400 text-xs">재무:</span>
+                                                    <span className="text-white text-xs font-mono">{(data.financial || 0).toFixed(1)}</span>
+                                                </div>
+                                                <div className="flex justify-between gap-4">
+                                                    <span className="text-amber-400 text-xs">심리:</span>
+                                                    <span className="text-white text-xs font-mono">{(data.news || 0).toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            {data.reason && (
+                                                <div className="mt-3 pt-2 border-t border-gray-600">
+                                                    <p className="text-xs text-blue-300 font-semibold mb-1">📊 변동 이유:</p>
+                                                    <p className="text-xs text-gray-300">{data.reason}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }}
                             />
                             <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} name="종합 점수" />
                             <Line type="monotone" dataKey="financial" stroke="#10b981" strokeWidth={1} dot={false} name="재무 건전성" strokeDasharray="3 3" />
                             <Line type="monotone" dataKey="news" stroke="#f59e0b" strokeWidth={1} dot={false} name="AI 심리 점수" strokeDasharray="3 3" />
                         </LineChart>
                     </ResponsiveContainer>
-                    <p className="text-xs text-center mt-2 text-gray-400">최근 50회 분석 결과 트렌드</p>
+                    <p className="text-xs text-center mt-2 text-gray-400">
+                        최근 50회 분석 결과 트렌드 • 💡 차트 포인트 위에 마우스를 올려 변동 이유를 확인하세요
+                    </p>
                 </div>
             )}
         </div>
@@ -1273,6 +1296,13 @@ function WatchlistButton({ symbol }: { symbol: string }) {
         const checkWatchlist = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/watchlist`);
+
+                // [Fix] Check response status
+                if (!res.ok) {
+                    setLoading(false);
+                    return;
+                }
+
                 const json = await res.json();
                 if (json.status === "success" && json.data.includes(symbol)) {
                     setIsWatchlisted(true);
@@ -1280,7 +1310,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
                     setIsWatchlisted(false);
                 }
             } catch (err) {
-                console.error(err);
+                // [Fix] Silently ignore
             } finally {
                 setLoading(false);
             }
@@ -1396,7 +1426,7 @@ function MarketSignalWidget() {
                     </p>
                     {signal.reason && (
                         <div className="mt-3 bg-white/5 rounded-lg p-2 text-sm text-gray-300 border border-white/5">
-                            <span className="font-bold text-blue-200">Why?</span> {signal.reason}
+                            <span className="font-bold text-blue-200">원인?</span> {signal.reason}
                         </div>
                     )}
                 </div>
@@ -1732,8 +1762,17 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                 setLoading(false);
             }
         };
+
         if (symbol && !symbol.includes("MARKET")) {
             fetchSupply();
+
+            // Auto-refresh every 3 minutes (180000ms) for real-time updates
+            const interval = setInterval(() => {
+                fetchSupply();
+            }, 180000);
+
+            // Cleanup interval on unmount
+            return () => clearInterval(interval);
         } else {
             setLoading(false);
         }
@@ -1767,7 +1806,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         <>
                             <div className="text-3xl">🌙</div>
                             <div className="text-gray-300 font-bold">지금은 장 운영 시간이 아닙니다.</div>
-                            <div className="text-sm text-gray-500">실시간 데이터는 평일 09:00 ~ 15:30 사이에 제공됩니다.</div>
+                            <div className="text-sm text-gray-500">실시간 수급 집계가 종료되었습니다. (운영시간: 09:00 ~ 15:30)</div>
                         </>
                     ) : (
                         <>
@@ -1785,22 +1824,48 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
     const last = data[data.length - 1];
     const totalForeigner = last?.foreigner || 0;
     const totalInst = last?.institution || 0;
+    const isDaily = last?.is_daily || false; // Check if this is daily confirmed data
+    const isToday = last?.is_today || false; // Check if this is today's data
 
     return (
         <div className="mt-8 pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <h4 className="text-base md:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                ⚡ 실시간 수급 포착 (잠정치) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">09:30~14:30 집계</span>
+                {isDaily ? (
+                    isToday ? (
+                        <>
+                            📊 오늘의 수급 결과 <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">확정치</span>
+                        </>
+                    ) : (
+                        <>
+                            📊 최근 수급 결과 ({last?.time}) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">확정치</span>
+                        </>
+                    )
+                ) : (
+                    !isMarketOpen ? (
+                        <>
+                            🏁 오늘의 수급 잠정치 (마감) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">장마감</span>
+                        </>
+                    ) : (
+                        <>
+                            ⚡ 실시간 수급 포착 (잠정치) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">09:30~14:30 집계</span>
+                        </>
+                    )
+                )}
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className={`p-4 rounded-xl border ${totalForeigner > 0 ? 'bg-red-900/20 border-red-500/30' : 'bg-blue-900/20 border-blue-500/30'}`}>
-                    <div className="text-sm text-gray-400 mb-1">외국인 잠정 합계</div>
+                    <div className="text-sm text-gray-400 mb-1">
+                        {isDaily ? (isToday ? '외국인 오늘 합계' : '외국인 당일 합계') : '외국인 잠정 합계'}
+                    </div>
                     <div className={`text-2xl font-bold font-mono ${totalForeigner > 0 ? 'text-red-400' : 'text-blue-400'}`}>
                         {totalForeigner > 0 ? '+' : ''}{totalForeigner.toLocaleString()}주
                     </div>
                 </div>
                 <div className={`p-4 rounded-xl border ${totalInst > 0 ? 'bg-red-900/20 border-red-500/30' : 'bg-blue-900/20 border-blue-500/30'}`}>
-                    <div className="text-xs md:text-sm text-gray-400 mb-1">기관 잠정 합계</div>
+                    <div className="text-xs md:text-sm text-gray-400 mb-1">
+                        {isDaily ? (isToday ? '기관 오늘 합계' : '기관 당일 합계') : '기관 잠정 합계'}
+                    </div>
                     <div className={`text-lg md:text-2xl font-bold font-mono ${totalInst > 0 ? 'text-red-400' : 'text-blue-400'}`}>
                         {totalInst > 0 ? '+' : ''}{totalInst.toLocaleString()}주
                     </div>

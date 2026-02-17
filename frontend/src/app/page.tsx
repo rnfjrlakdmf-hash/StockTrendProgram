@@ -189,11 +189,20 @@ function AssetTicker() {
     const fetchAssets = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/assets`);
+
+        // [Fix] Check response status before parsing
+        if (!res.ok) {
+          // Silently ignore - loading skeleton will remain
+          return;
+        }
+
         const json = await res.json();
         if (json.status === "success") {
           setAssets(json.data);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        // [Fix] Silently ignore fetch errors
+      }
     };
     fetchAssets();
 
@@ -263,12 +272,19 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
     const fetchData = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/rank/top10/${market}`);
+
+        // [Fix] Check response status before parsing
+        if (!res.ok) {
+          setLoading(false);
+          return;
+        }
+
         const json = await res.json();
         if (json.status === "success") {
           setData(json.data);
         }
       } catch (e) {
-        console.error(e);
+        // [Fix] Silently ignore fetch errors
       } finally {
         setLoading(false);
       }

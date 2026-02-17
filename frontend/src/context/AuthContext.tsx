@@ -29,12 +29,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Init: Check localStorage
         const storedUser = localStorage.getItem("stock_user");
+        const adminFree = localStorage.getItem('admin_free_mode') === 'true'; // Direct check to avoid import cycle if lib uses context
+
         if (storedUser) {
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                // [Admin Mode] Override Pro Status
+                if (adminFree) {
+                    parsedUser.is_pro = true;
+                    console.log("🎁 Admin Free Mode Active: User set to PRO");
+                }
+                setUser(parsedUser);
             } catch (e) {
                 console.error("User Parse Error", e);
             }
+        } else if (adminFree) {
+            // [Admin Mode] Create dummy user for guests to access Pro features that require login
+            const adminGuest = {
+                id: "admin_guest",
+                email: "guest@admin.mode",
+                name: "Admin Guest",
+                picture: "",
+                is_pro: true
+            };
+            setUser(adminGuest);
+            console.log("🎁 Admin Free Mode: Guest upgraded to Admin User");
         }
         setIsLoading(false);
     }, []);

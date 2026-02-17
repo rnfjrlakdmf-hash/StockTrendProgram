@@ -1,10 +1,62 @@
+# Build artifacts
 frontend/
 .git/
+.gitignore
+.vscode/
 deploy.tar.gz
+
+# Python
 *.pyc
 __pycache__/
 venv/
+*.egg-info/
+
+# Node
 node_modules/
 .next/
 dist/
 build/
+
+# Debug & Test files
+debug_*.py
+test_*.py
+repro*.py
+reproduce_*.py
+verify_*.py
+check_*.py
+inspect_*.py
+diagnose_*.py
+monitor_*.py
+dump_*.py
+analyze_*.py
+
+# Debug HTML
+*.html
+naver_*.html
+rank_dump.html
+search_dump.html
+theme_dump.html
+
+# Docs
+*.md
+*.txt
+!requirements.txt
+!runtime.txt
+!firebase-adminsdk-README.txt
+
+# Secrets (should be in env vars)
+.env
+*.pem
+firebase-adminsdk.json
+
+# Database (use Railway's DB or fresh DB)
+*.db
+
+# Misc
+*.bat
+*.ps1
+*.spec
+*.json
+!alerts.json
+*.log
+*.tar.gz

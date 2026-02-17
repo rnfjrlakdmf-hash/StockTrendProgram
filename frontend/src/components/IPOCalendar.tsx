@@ -14,7 +14,14 @@ export default function IPOCalendar() {
                 const res = await fetch(`${API_BASE_URL}/api/korea/ipo`);
                 const json = await res.json();
                 if (json.status === "success") {
-                    setIpos(json.data);
+                    // Map backend fields to frontend expectations
+                    const mapped = json.data.map((item: any) => ({
+                        ...item,
+                        subscription_date: item.date,
+                        fixed_price: item.price,
+                        price_band: ""
+                    }));
+                    setIpos(mapped);
                 }
             } catch (e) {
                 console.error(e);

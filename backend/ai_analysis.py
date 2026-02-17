@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 import google.generativeai as genai
 from typing import Dict, Any
 from dotenv import load_dotenv
+from datetime import datetime
 
 # .env 파일 로드 (명시적 경로 설정)
 env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -32,24 +33,42 @@ def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
     return genai.GenerativeModel('gemini-1.5-flash')
 
-def generate_with_retry(prompt: str, json_mode: bool = True):
+def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 30, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
+    timeout: 각 모델 시도당 최대 대기 시간 (초)
+    temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
+    models_to_try: 시도할 모델 리스트 (기본값: flash -> pro)
     """
-    models_to_try = [
-        "gemini-2.0-flash", 
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
-    ]
+    import concurrent.futures
+    
+    if models_to_try is None:
+        models_to_try = [
+            "gemini-2.0-flash", 
+            "gemini-1.5-flash",
+            "gemini-1.5-pro"
+        ]
     
     last_error = None
     
+    def _generate(model_name):
+        """Helper function to generate content with a specific model"""
+        config = {"response_mime_type": "application/json", "temperature": temperature} if json_mode else {"temperature": temperature}
+        model = genai.GenerativeModel(model_name, generation_config=config)
+        return model.generate_content(prompt)
+    
     for model_name in models_to_try:
         try:
-            config = {"response_mime_type": "application/json"} if json_mode else {}
-            model = genai.GenerativeModel(model_name, generation_config=config)
-            response = model.generate_content(prompt)
-            return response
+            # Use ThreadPoolExecutor with timeout
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_generate, model_name)
+                try:
+                    response = future.result(timeout=timeout)
+                    return response
+                except concurrent.futures.TimeoutError:
+                    print(f"[WARNING] Model {model_name} timed out after {timeout}s")
+                    last_error = TimeoutError(f"Gemini API call timed out after {timeout} seconds")
+                    continue
         except Exception as e:
             print(f"[WARNING] Model {model_name} failed: {e}")
             last_error = e
@@ -86,40 +105,58 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         safe_financials = str(raw_fin)
 
-    # 프롬프트 구성
+    # 프롬프트 구성 - 간결하고 가독성 높은 분석
     prompt = f"""
-    You are a professional stock market analyst from Wall Street. 
-    Analyze the following stock data and provide a structured JSON response.
-
-    Stock Information:
-    - Symbol: {stock_data.get('symbol')}
-    - Name: {stock_data.get('name')}
-    - Price: {stock_data.get('price')} {stock_data.get('currency')}
-    - Sector: {stock_data.get('sector')}
-    - Financials: {json.dumps(safe_financials, ensure_ascii=False)}
+    You are a professional investment analyst. Provide a CONCISE, READABLE investment analysis.
     
-    Recent News Headlines (Source & Time):
-    {json.dumps([f"[{n['publisher']}] {n['title']} ({n.get('published','')})" for n in stock_data.get('news', [])], ensure_ascii=False)}
-
-    Instructions:
-    1. Evaluate the stock's health based on the financials (PER, PBR, ROE, Growth).
-    2. Analyze the 'Recent News Headlines' to determine the market sentiment (Positive/Negative/Neutral).
-    3. Assign a 'Total Score' (0-100) combining financials and sentiment.
-    4. Assign sub-scores for 'Supply/Demand' (Technical), 'Financials' (Fundamental), and 'Sentiment' (News - based on actual headlines).
-    5. Write a brief 'Investment Briefing' (Korean, 3 sentences max) summarizing WHY you gave this score.
-    6. **Translate and summarize** the top 5 news headlines into Korean.
-    7. Trading Strategy:
-    8. 3-Line Rationale:
-       - 'supply': Supply/Demand argument.
-       - 'momentum': Momentum argument.
-       - 'risk': Major risk factor.
-    9. Identify 5 'Related Stocks' (Peers/Competitors) in the same industry/sector.
-       - If the stock is Korean (e.g. Samsung Electronics), prioritize Korean peers if possible, or global leaders.
-       - If the stock is Global (e.g. Apple), prioritize Global peers.
-       - Provide 'Symbol' (Correct ticker for Yahoo Finance or Naver) and 'Name'.
-       - Brief reason (Korean) why it's related.
+    Stock: {stock_data.get('symbol')} - {stock_data.get('name')}
+    Price: {stock_data.get('price')} {stock_data.get('currency')}
+    Sector: {stock_data.get('sector')}
+    Financials: {json.dumps(safe_financials, ensure_ascii=False)}
     
-    Response Format (JSON only):
+    Recent News:
+    {json.dumps([f"[{n.get('press', n.get('publisher', 'N/A'))}] {n['title']}" for n in stock_data.get('news', [])[:5]], ensure_ascii=False)}
+
+    CRITICAL: Keep Korean text CONCISE and SCANNABLE. Use bullet points!
+
+    Required Analysis (JSON format):
+    
+    1. **Scores** (0-100):
+       - Overall score
+       - Supply/Demand (Technical)
+       - Financials (Fundamental)
+       - News Sentiment
+    
+    2. **Investment Case** (Korean - MAX 4 bullet points):
+       Format as:
+       ✅ [핵심 강점 1] (구체적 근거)
+       ✅ [핵심 강점 2] (수치 포함)
+       ⚠️ [주요 리스크] (명확하게)
+       💡 [투자 전략] (타이밍)
+       
+       Example:
+       ✅ 시장 지배력: 반도체 점유율 1위 (45%)
+       ✅ 재무 건전성: PER 12배, 업계 평균 15배 대비 저평가
+       ⚠️ 주요 리스크: 메모리 가격 하락 가능성
+       💡  진입 타이밍: 현재가 대비 -5% 조정 시 분할 매수
+    
+    3. **Trading Strategy**:
+       - target: 목표가 (number)
+       - stop_loss: 손절가 (number)
+       - win_rate: 승률 % (number)
+       - entry_timing: "간단한 진입 타이밍 설명" (Korean, 1 sentence)
+    
+    4. **3-Line Analysis** (Korean - each 1 sentence max):
+       - supply: 수급 분석
+       - momentum: 모멘텀 분석
+       - risk: 핵심 리스크
+    
+    5. **Translate Top 3 News** (Korean title + 1-line summary)
+    
+    6. **Related Stocks** (3 competitors only):
+       - symbol, name, reason (Korean, brief)
+
+    Response Format (JSON):
     {{
         "score": <0-100>,
         "metrics": {{
@@ -127,19 +164,20 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
             "financials": <0-100>,
             "news": <0-100>
         }},
-        "analysis_summary": "<Korean analysis text>",
+        "analysis_summary": "✅ [강점1]\\n✅ [강점2]\\n⚠️ [리스크]\\n💡 [전략]",
         "strategy": {{
             "target": <number>,
             "stop_loss": <number>,
-            "win_rate": <number>
+            "win_rate": <number>,
+            "entry_timing": "<Korean 1 sentence>"
         }},
         "rationale": {{
-            "supply": "<Korean text>",
-            "momentum": "<Korean text>",
-            "risk": "<Korean text>"
+            "supply": "<Korean 1 sentence>",
+            "momentum": "<Korean 1 sentence>",
+            "risk": "<Korean 1 sentence>"
         }},
         "translated_news": [
-            {{ "original_title": "...", "title": "<Korean Title>", "summary": "<Korean 1-line summary>" }},
+            {{ "original_title": "...", "title": "<Korean>", "summary": "<Korean 1-line>" }},
             ...
         ],
         "related_stocks": [
@@ -155,13 +193,6 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         print(f"AI Analysis Error: {e}")
-        # 에러 발생 시 fallback으로 모델 변경 시도
-        try:
-             # 재시도 로직이 generate_with_retry에 있으므로 여기선 생략
-             pass
-        except:
-            pass
-            
         return get_mock_analysis(stock_data, error_msg=str(e))
 
 def get_mock_analysis(stock_data, error_msg: str = None):
@@ -360,32 +391,40 @@ def analyze_theme(theme_keyword: str):
     model = get_json_model()
     
     prompt = f"""
-    Analyze the investment theme or user's daily life context: "{theme_keyword}".
-    
+    Analyze the Stock Theme '{theme_keyword}' for the Korean Market (KOSPI/KOSDAQ).
+
     Instructions:
-    1. If the input is a daily situation (e.g., "It's too hot"), interpret it into investment themes.
-    2. Briefly explain what this theme is about and why it's trending (Korean).
-    3. Identify 5 'Leading Stocks' (대장주) related to this theme.
-       - **PRIORITIZE KOREAN STOCKS** (KOSPI/KOSDAQ) if possible.
-       - If Korean stocks are not available, use Global leaders.
-       - **IMPORTANT**: For Korean stocks, the Symbol MUST include the suffix '.KS' (KOSPI) or '.KQ' (KOSDAQ). Example: '005930.KS', '035720.KQ'.
-    4. Identify 5 'Related Stocks' (Followers/관련주) that might follow the trend.
-       - Same rules apply for symbols.
-    5. Provide 'Symbol', 'Name', and a brief 'Reason' (Korean) for both lists.
-    6. Provide a 'Risk Factor' for this theme.
-    
+    1. Identify the 'Theme Description' and 'Key Risk Factor'.
+    2. **[New] Theme Lifecycle Clock**: Determine the current phase of this theme.
+       - 'Morning' (07:00): Birth/Early Stage (태동기) - High Potential, High Risk.
+       - 'Noon' (12:00): Growth/Explosion (성장기) - Everyone knows it, prices soaring.
+       - 'Evening' (18:00): Maturity (성숙기) - Growth slowing, established players dominate.
+       - 'Night' (23:00): Decline/Bubble Burst (쇠퇴기) - Hype over, prices falling. 
+       - Provide 'phase' (Morning/Noon/Evening/Night) and 'time' (e.g., "07:00").
+       - Provide short 'comment' (e.g., "지금은 파티가 끝나는 시간입니다.").
+    3. List 3 'Leaders' (대장주) and 3 'Followers' (부대장주).
+       - **PRIORITIZE KOREAN STOCKS**.
+    4. **[New] Real vs Fake Detector**: For EACH stock, determine if it's a REAL beneficiary or FAKE (Hype only).
+       - 'is_real': true if >10% revenue comes from this theme or core tech exists.
+       - 'is_real': false if just news/rumors without logic.
+       - 'reason': Short reason (e.g., "매출 90% 배터리" or "단순 지분 투자설").
+    5. Translate everything to Korean.
+
     Response Format (JSON):
     {{
-        "theme": "Interpreted Theme Name",
-        "description": "Theme definition and momentum reason (Korean)...",
-        "risk_factor": "One major risk (Korean)...",
+        "theme": "{theme_keyword}",
+        "description": "Short description...",
+        "risk_factor": "One key risk...",
+        "lifecycle": {{
+            "phase": "Morning",
+            "time": "07:00",
+            "comment": "남들 모를 때 선점하세요!"
+        }},
         "leaders": [
-            {{"symbol": "...", "name": "...", "reason": "..."}},
-            ...
+            {{"name": "Stock A", "symbol": "005930", "is_real": true, "reason": "Global No.1 Market Share"}}
         ],
         "followers": [
-            {{"symbol": "...", "name": "...", "reason": "..."}},
-            ...
+            {{"name": "Stock B", "symbol": "000660", "is_real": false, "reason": "No direct revenue yet"}}
         ]
     }}
     """
@@ -395,17 +434,23 @@ def analyze_theme(theme_keyword: str):
         return json.loads(response.text)
     except Exception as e:
         print(f"Theme Analysis Error: {e}")
-        # Fallback Mock Data on Error
+        # Fallback Mock Data
         return {
             "theme": theme_keyword,
-            "description": f"AI 분석 중 오류가 발생하여 기본 정보를 제공합니다. ({str(e)})",
-            "risk_factor": "데이터 수신 불안정",
+            "description": "AI 호출 실패로 인한 예시 데이터입니다.",
+            "risk_factor": "데이터 부족",
+            "lifecycle": {
+                "phase": "Noon",
+                "time": "12:00",
+                "comment": "지금이 가장 뜨거운 시간입니다!"
+            },
             "leaders": [
-                {"symbol": "NVDA", "name": "NVIDIA", "reason": "AI 대표주 (Fallback)"},
-                {"symbol": "MSFT", "name": "Microsoft", "reason": "AI 플랫폼 (Fallback)"},
-                {"symbol": "005930.KS", "name": "삼성전자", "reason": "반도체 (Fallback)"}
+                {"name": "예시전자", "symbol": "005930.KS", "is_real": true, "reason": "예시: 진짜 수혜주"},
+                {"name": "예시반도체", "symbol": "000660.KS", "is_real": true, "reason": "예시: 핵심 기술 보유"}
             ],
-            "followers": []
+            "followers": [
+                {"name": "예시건설", "symbol": "000720.KS", "is_real": false, "reason": "주의: 구체적 사업 없음"}
+            ]
         }
 
     """
@@ -464,49 +509,82 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     특정 기업의 공급망(Supply Chain) 및 경쟁 관계를 분석하여
     상관관계 맵(Graph Data)을 생성합니다.
     """
+    today = datetime.now().strftime("%Y-%m-%d")
+
     if not API_KEY:
         return {
-        "symbol": symbol,
-        "nodes": [
-            {"id": symbol, "group": "target", "label": symbol},
-            {"id": "Supplier", "group": "supplier", "label": "주요 공급사"},
-            {"id": "Customer", "group": "customer", "label": "주요 고객사"},
-            {"id": "Competitor", "group": "competitor", "label": "경쟁사"}
-        ],
-        "links": [
-            {"source": "Supplier", "target": symbol, "value": "Supply"},
-            {"source": symbol, "target": "Customer", "value": "Sales"},
-            {"source": symbol, "target": "Competitor", "value": "Compete"}
-        ],
-        "summary": "API 키 미설정으로 인한 데모 데이터입니다."
-    }
+            "symbol": symbol,
+            "commodities": [
+                {"name": "국제 유가 (Crude Oil)", "type": "Risk", "ticker": "CL=F", "reason": "운송 비용 상승", "price_display": "$78.50", "change_display": "+1.2%", "change_value": 1.2},
+                {"name": "알루미늄 (Aluminum)", "type": "Benefit", "ticker": "ALI=F", "reason": "차체 경량화 소재", "price_display": "$2,200", "change_display": "-0.5%", "change_value": -0.5}
+            ],
+            "nodes": [
+                {"id": symbol, "group": "target", "label": symbol, "ticker": symbol, "event": {"name": "실적 발표 (Earnings)", "d_day": "D-5", "date": "2024-05-15"}},
+                {"id": "Supplier", "group": "supplier", "label": "LG Energy", "ticker": "373220.KS", "price_display": "₩390,000", "change_display": "+2.1%", "change_value": 2.1},
+                {"id": "Customer", "group": "customer", "label": "Hertz", "ticker": "HTZ"},
+                {"id": "Competitor", "group": "competitor", "label": "BYD", "ticker": "1211.HK"}
+            ],
+            "links": [
+                {"source": "Supplier", "target": symbol, "value": "Battery Supply", "weight": 0.9, "width_type": "artery"},
+                {"source": symbol, "target": "Customer", "value": "Fleet Sales", "weight": 0.3, "width_type": "capillary"},
+                {"source": symbol, "target": "Competitor", "value": "Global EV M/S", "weight": 0.5, "width_type": "capillary"}
+            ],
+            "summary": "API 키 미설정으로 인한 데모 데이터 (Supply Chain 2.0)"
+        }
 
     model = get_json_model()
     
     prompt = f"""
     Analyze the Global Supply Chain and Value Chain for {symbol}.
+    Current Date: {today}
 
     Instructions:
     1. Identify key 'Suppliers' (Tier 1/2), 'Customers' (Major Clients), and 'Competitors'.
     2. Define relationships (Supply, Sales, Compete).
-    3. Output graph data compatible with network visualization.
-    4. Provide a 'Supply Chain Summary' in Korean.
-    5. IMPORTANT: Translate the 'label' of the node groups to Korean if possible.
-    6. **CRITICAL**: Provide the Stock Ticker for each company if public (e.g., "AAPL", "005930.KS"). If private, leave ticker empty.
+    3. **Revenue Dependency**: Estimate dependency weight (0.1-1.0) and width_type (artery/capillary).
+    4. **Commodities**: Identify 1-2 key raw materials (Benefit/Risk).
+       - **Name**: Must be in Korean logic (e.g., "국제 유가", "구리", "리튬").
+       - **Reason**: Brief context in Korean (e.g., "원자재 비용 상승", "판매가 인상 수혜").
+    5. **[New] Upcoming Events (D-Day) for ALL Nodes**: 
+       - Identify 1 pivotal upcoming event for **EACH** company (Target, Supplier, Customer, Competitor).
+       - e.g. "Earnings", "New Model Launch", "Litigation".
+       - **Date**: Provide the specific date (YYYY-MM-DD) if known.
+       - **Label**: 'd_day' (e.g. D-14, D-30) relative to {today}.
+       - If exact date unknown, use "D-??" and date="Unknown".
+    6. Provide a 'Supply Chain Summary' in Korean.
+       - **Format as 3 distinct bullet points**:
+         1. **Positions**: Market dominance/role.
+         2. **Partners**: Key dependency (Supplier/Client).
+         3. **Risks/Opps**: Main risk or opportunity factor.
+       - Keep it short and impactful.
+    7. Translate node labels to sensible Korean/English (e.g., "Apple (애플)").
+    8. **CRITICAL**: Provide the Stock Ticker for each company if public.
 
     Response Format (JSON):
     {{
         "symbol": "{symbol}",
+        "commodities": [
+            {{"name": "국제 유가", "type": "Risk", "ticker": "CL=F", "reason": "운송 및 제조 원가 상승 부담"}},
+            {{"name": "구리", "type": "Benefit", "ticker": "HG=F", "reason": "전선 수요 증가로 판가 전가 가능"}}
+        ],
         "nodes": [
-            {{"id": "{symbol}", "group": "target", "label": "{symbol}", "ticker": "{symbol}"}},
-            {{"id": "TSMC", "group": "supplier", "label": "TSMC", "ticker": "TSM"}},
-            {{"id": "Apple", "group": "customer", "label": "Apple", "ticker": "AAPL"}},
-            {{"id": "AMD", "group": "competitor", "label": "AMD", "ticker": "AMD"}}
+            {{
+                "id": "{symbol}", "group": "target", "label": "{symbol} (Kor Name)", "ticker": "{symbol}",
+                "event": {{"name": "신제품 발표 (New Product)", "d_day": "D-30", "date": "2024-06-15"}} 
+            }},
+            {{
+                "id": "TSMC", "group": "supplier", "label": "TSMC (대만)", "ticker": "TSM",
+                "event": {{"name": "실적 발표 (Earnings)", "d_day": "D-14", "date": "2024-05-30"}}
+            }},
+            {{
+                "id": "Apple", "group": "customer", "label": "Apple (미국)", "ticker": "AAPL",
+                "event": {{"name": "WWDC 2024", "d_day": "D-60", "date": "2024-07-15"}}
+            }}
         ],
         "links": [
-            {{"source": "TSMC", "target": "{symbol}", "value": "Foundry"}},
-            {{"source": "{symbol}", "target": "Apple", "value": "GPU Sales"}},
-            {{"source": "{symbol}", "target": "AMD", "value": "Competition"}}
+            {{"source": "TSMC", "target": "{symbol}", "value": "AP Supply", "weight": 0.8, "width_type": "artery"}},
+            {{"source": "{symbol}", "target": "Apple", "value": "Camera Module", "weight": 0.9, "width_type": "artery"}},
+            {{"source": "{symbol}", "target": "AMD", "value": "Competition", "weight": 0.5, "width_type": "capillary"}}
         ],
         "summary": "Korean summary..."
     }}
@@ -516,19 +594,17 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         response = generate_with_retry(prompt, json_mode=True)
         data = json.loads(response.text)
 
-        # [New] Enrich with Real-time Stock Data
+        # [New] Enrich with Real-time Stock Data (Nodes & Commodities)
         import yfinance as yf
+        
+        # 1. Enrich Nodes
         for node in data.get("nodes", []):
             ticker_sym = node.get("ticker")
             if ticker_sym:
                 try:
-                    # Clean ticker (sometimes AI gives 'Kr:005930')
-                    if ":" in ticker_sym:
-                         ticker_sym = ticker_sym.split(":")[-1]
-                    
-                    # Korean ticker correction logic
-                    if ticker_sym.isdigit() and len(ticker_sym) == 6:
-                         ticker_sym += ".KS" # Default to KOSPI
+                    # Clean ticker
+                    if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
+                    if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
                     
                     yt = yf.Ticker(ticker_sym)
                     price = yt.fast_info.last_price
@@ -536,20 +612,128 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                     
                     if price and prev:
                         change = ((price - prev) / prev) * 100
-                        
-                        # Currency symbol
                         curr = "₩" if ".KS" in ticker_sym or ".KQ" in ticker_sym else "$"
                         
                         node["price_display"] = f"{curr}{price:,.0f}" if curr == "₩" else f"{curr}{price:,.2f}"
                         node["change_display"] = f"{change:+.2f}%"
-                        node["change_value"] = change # For color coding
-                except:
-                    pass # Ignore if ticker is invalid or data fetch fails
+                        node["change_value"] = change
+                except: pass
+
+        # 2. Enrich Commodities (Oil, etc.)
+        for comm in data.get("commodities", []):
+            ticker_sym = comm.get("ticker")
+            if ticker_sym:
+                try:
+                    yt = yf.Ticker(ticker_sym)
+                    price = yt.fast_info.last_price
+                    prev = yt.fast_info.previous_close
+                    if price and prev:
+                        change = ((price - prev) / prev) * 100
+                        comm["price_display"] = f"${price:,.2f}"
+                        comm["change_display"] = f"{change:+.2f}%"
+                        comm["change_value"] = change
+                except: pass
 
         return data
 
     except Exception as e:
         print(f"Supply Chain Analysis Error: {e}")
+        return None
+
+def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Dict[str, Any]:
+    """
+    Butterfly Effect Simulator:
+    Generates a causal chain from a keyword (e.g., "Typhoon") to related stocks.
+    If target_symbol is provided, analyzes the impact specifically on that company.
+    """
+    if not API_KEY:
+        summary_text = f"'{keyword}' 키워드가 '{target_symbol}'에게 미치는 나비효과 분석입니다." if target_symbol else "API 키 미설정으로 인한 데모 시나리오입니다."
+        return {
+            "scenario": keyword,
+            "paths": [
+                {"step": "태풍 발생", "impact": "Negative"},
+                {"step": "농작물 피해 (밀/옥수수)", "impact": "Price UP"},
+                {"step": "사료 가격 인상", "impact": "Cost UP"},
+                {"step": "육계(닭고기) 가격 인상", "impact": "Revenue UP"},
+                {"step": "하림/마니커 주가 상승", "impact": "Positive"}
+            ],
+            "final_stocks": [
+                {"name": target_symbol if target_symbol else "하림", "symbol": target_symbol if target_symbol else "136480.KQ", "reason": "닭고기 가격 상승 수혜"}
+            ],
+            "summary": summary_text
+        }
+        
+    model = get_json_model()
+    
+    if target_symbol:
+        prompt = f"""
+        TASK: Connect the "Event" to the "Target Company" via a causal chain.
+        
+        INPUTS:
+        - Event: "{keyword}"
+        - Target Company: "{target_symbol}"
+        
+        CONSTRAINTS:
+        1. The output JSON **MUST** have "{target_symbol}" as the ONLY item in 'final_stocks'.
+        2. You MUST construct a logical path from "{keyword}" to "{target_symbol}".
+           - Example logic: Event -> Market Change -> Industry Impact -> "{target_symbol}" Impact.
+        3. Rate the final impact specific to "{target_symbol}" (Positive or Negative).
+        
+        REQUIRED JSON OUTPUT FORMAT:
+        {{
+            "scenario": "{keyword} -> {target_symbol}",
+            "paths": [
+                {{"step": "{keyword}", "impact": "Neutral"}},
+                {{"step": "Intermediate Step 1", "impact": "..."}},
+                {{"step": "Intermediate Step 2", "impact": "..."}},
+                {{"step": "Impact on {target_symbol}", "impact": "Positive/Negative"}}
+            ],
+            "final_stocks": [
+                {{
+                    "name": "{target_symbol}", 
+                    "symbol": "{target_symbol}", 
+                    "reason": "Explain how the chain affects this specific company (Sales/Cost/Sentiment)."
+                }}
+            ],
+            "summary": "One sentence summary."
+        }}
+        """
+    else:
+        prompt = f"""
+        Analyze the 'Butterfly Effect' (Causal Chain) for the keyword: "{keyword}".
+        
+        Instructions:
+        1. Create a logical chain of events starting from the keyword.
+           - e.g. Typhoon -> Crop Damage -> Grain Price Up -> Feed Cost Up -> Chicken Price Up -> Harim Stock Up.
+        2. Identify the final beneficiary stocks (Korean preferred).
+        3. Output the path steps and the final stock recommendations.
+        
+        Response Format (JSON):
+        {{
+            "scenario": "{keyword}",
+            "paths": [
+                {{"step": "Event 1", "impact": "Neutral/Positive/Negative"}},
+                {{"step": "Result 2", "impact": "Price UP/DOWN"}},
+                ...
+            ],
+            "final_stocks": [
+                {{"name": "Stock Name", "symbol": "Ticker", "reason": "Why it benefits"}}
+            ],
+            "summary": "Short Korean explanation of the logic."
+        }}
+        """
+    
+    try:
+        # Temperature 1.0 to break strong probability associations
+        # Use gemini-1.5-pro for better instruction following on forced scenarios
+        temp = 1.0 if target_symbol else 0.4
+        models = ["gemini-1.5-pro", "gemini-2.0-flash"] if target_symbol else None
+        
+        # Increase timeout for complex reasoning
+        response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)
+        return json.loads(response.text)
+    except Exception as e:
+        print(f"Scenario Analysis Error: {e}")
         return None
 
 def analyze_chart_patterns(symbol: str) -> Dict[str, Any]:
@@ -965,6 +1149,16 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
         print(f"Risk Analysis Error: {e}")
         return None
 
+# ==========================================
+# [New] Portfolio Analysis Integration
+# ==========================================
+
+from portfolio_analysis import (
+    analyze_portfolio_nutrition,
+    get_dividend_calendar,
+    analyze_portfolio_factors
+)
+
 def diagnose_portfolio_health(portfolio_items: list[str]) -> Dict[str, Any]:
     """
     사용자의 보유 종목 리스트를 받아 포트폴리오 건강 상태를 진단합니다.
@@ -978,41 +1172,69 @@ def diagnose_portfolio_health(portfolio_items: list[str]) -> Dict[str, Any]:
             "details": {
                 "sector_risk": "Unknown",
                 "diversification": "Unknown"
-            }
+            },
+            # Return empty structures for frontend safety
+            "nutrition": {"nutrition": [], "sectors": {}},
+            "calendar": [],
+            "factors": {}
         }
         
     portfolio_str = ", ".join(portfolio_items)
     
+    # 1. Run Data Analysis (Nutrition, Dividend, Factors)
+    try:
+        nutrition_data = analyze_portfolio_nutrition(portfolio_items)
+        calendar_data = get_dividend_calendar(portfolio_items)
+        factor_data = analyze_portfolio_factors(portfolio_items)
+    except Exception as e:
+        print(f"Portfolio Data Analysis Error: {e}")
+        nutrition_data = {}
+        calendar_data = []
+        factor_data = {}
+
+    # Prepare Context for AI
+    nutrition_summary = f"Nutrient Breakdown: {nutrition_data.get('nutrition', [])}"
+    factor_summary = f"Factor Scores (0-100): {factor_data}"
+    
     model = get_json_model()
     
     prompt = f"""
-    You are a 'Stock Portfolio Doctor'.
+    You are a 'Stock Portfolio Doctor' (Account Nutritionist).
     Patient's Portfolio: [{portfolio_str}]
     
-    Instructions:
-    1. Analyze the diversification and risk of this portfolio.
-    2. Assign a 'Health Score' (0-100).
-       - < 50: Sick (Too risky or concentrated)
-       - 50-75: Average (Needs care)
-       - > 75: Healthy (Well balanced)
-    3. provide a 'Diagnosis' using a medical metaphor (e.g., 'High Risk Obesity', 'Tech Addiction', 'Anemia').
-    4. Provide a 'Prescription' (Actionable advice, e.g., "Take some Vitamin D (Dividend stocks)").
+    Clinical Data:
+    1. Nutrition (Sector Balance): {nutrition_summary}
+    2. Vital Signs (Factors): {factor_summary}
     
-    Response Format (JSON):
+    Instructions:
+    1. Give a 'Health Score' (0-100).
+    2. Diagnose the portfolio's condition (e.g., "Tech Overdose", "Anemic Defense").
+    3. Write a 'Prescription' (Actionable advice) in **Korean**.
+    
+    Response Format (JSON) - MUST BE IN KOREAN:
     {{
-        "score": 65,
-        "diagnosis": "Technical Sector Obesity (Korean)",
-        "prescription": "Add defensive stocks like ... (Korean)",
+        "score": 75,
+        "diagnosis": "기술주 과다 복용 (편식)",
+        "prescription": "단백질(금융/산업재)과 비타민(헬스케어) 종목을 추가하여 영양 균형을 맞추세요. 현재 변동성이 너무 높습니다.",
         "details": {{
-            "sector_bias": "Heavily skewed to Tech (Korean)",
-            "risk_level": "High/Medium/Low"
+            "sector_risk": "High (Tech Concentrated)",
+            "diversification": "Low"
         }}
     }}
     """
     
+
+    
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        result = json.loads(response.text)
+        
+        # Inject the calculated data into the result for the frontend
+        result["nutrition"] = nutrition_data
+        result["calendar"] = calendar_data
+        result["factors"] = factor_data
+        
+        return result
     except Exception as e:
         print(f"Portfolio Diagnosis Error: {e}")
         return {

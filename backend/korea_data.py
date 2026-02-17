@@ -1,2480 +1,723 @@
 import requests
-
 from bs4 import BeautifulSoup
-
 import re
+import datetime
+import urllib.parse
+import json
+from functools import lru_cache
 
-import concurrent.futures
-
-
-
-
-import threading
-
-DYNAMIC_STOCK_MAP = {} # Global Cache for Stock Names -> Codes
-
-# [New] Progress Tracking Global Variable
-INDEXING_PROGRESS = {
-    "status": "idle", # idle, running, done, error
-    "market": None,   # KOSPI, KOSDAQ
-    "page": 0,
-    "total_pages": 0,
-    "last_updated": None,
-    "total_stocks": 0
+# [Config]
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Referer": "https://finance.naver.com/"
 }
 
-def get_indexing_status():
-    """Returns the current progress of stock indexing."""
-    return INDEXING_PROGRESS
 
+# [Helper] Robust Decoding
+def decode_safe(res: requests.Response) -> str:
+    """
+    Decodes response content robustly.
+    1. Checks Content-Type header for explicit charset.
+    2. Tries UTF-8 strict.
+    3. Fallback to CP949 (common for legacy Naver pages).
+    """
+    try:
+        # 1. Trust header if explicit
+        content_type = res.headers.get('Content-Type', '').lower()
+        if 'charset=utf-8' in content_type:
+            return res.content.decode('utf-8', 'replace')
+        if 'charset=euc-kr' in content_type:
+             return res.content.decode('cp949', 'ignore')
+             
+        # 2. Heuristic: Naver Finance is usually CP949
+        if "finance.naver.com" in res.url:
+            try:
+                return res.content.decode('cp949')
+            except:
+                pass
+
+        # 3. Try UTF-8 strict
+        return res.content.decode('utf-8')
+    except UnicodeDecodeError:
+        # 4. Fallback
+        return res.content.decode('cp949', 'ignore')
+
+def get_korean_name(symbol: str):
+    """
+    Get Korean stock name from Naver Finance
+    """
+    info = get_naver_stock_info(symbol)
+    if info:
+        return info.get('name')
+    return None
+
+get_korean_stock_name = get_korean_name  # Alias
 
 def search_stock_code(keyword: str):
     """
-    Search for a stock code by name or symbol in DYNAMIC_STOCK_MAP.
-    Returns the best match or None.
+    Search stock by name/code and return code (6 digits)
+    [Improved] Scrapes Naver Search (Integration) instead of Finance Search (Blocked).
     """
-    keyword = keyword.strip().upper()
-    if not keyword:
-        return None
-
-    # 1. Exact Match (Name or Code)
-    # Check if keyword is a code (6 digits)
-    if keyword.isdigit() and len(keyword) == 6:
-        # Try finding name for this code? Or just return code formatted
-        return {"symbol": f"{keyword}.KS", "name": keyword} # Defaulting to KS, but usually we search by name
-
-    # Check matches in DYNAMIC_STOCK_MAP (Name -> Code)
-    # DYNAMIC_STOCK_MAP format: {"삼성전자": "005930.KS", ...}
-    
-    # Direct Key Match
-    if keyword in DYNAMIC_STOCK_MAP:
-        return {"symbol": DYNAMIC_STOCK_MAP[keyword], "name": keyword}
-
-    # Partial Match (Iterate)
-    candidates = []
-    
-    # Normalize map keys for search?
-    for name, code in DYNAMIC_STOCK_MAP.items():
-        if keyword in name.upper():
-            candidates.append({"symbol": code, "name": name})
-            
-    if not candidates:
-        return None
-        
-    # Sort candidates by length (shortest match is likely the best, e.g. "삼성전자" vs "삼성전자우")
-    candidates.sort(key=lambda x: len(x["name"]))
-    
-    return candidates[0]
-
-
-def get_korean_stock_name(symbol: str) -> str | None:
-    """
-    Find the name for a given symbol from DYNAMIC_STOCK_MAP.
-    Efficiency: O(N) scan of map values. 
-    Ideally we should have a reverse map, but for now this is okay as map size is < 3000.
-    """
-    symbol = symbol.upper()
-    
-    # Check if ends with .KS or .KQ, try stripping if not found?
-    # Or just exact match logic.
-    
-    for name, code in DYNAMIC_STOCK_MAP.items():
-        if code == symbol:
-            return name
-        # Also try matching without suffix if symbol provided has it but map doesn't (or vice versa)
-        # Map always has .KS/.KQ suffixes as per refresh_stock_codes? Yes.
-    
-    return None
-
-
-def get_naver_disclosures(symbol: str):
-
-    """
-
-    네이버 금융에서 특정 종목의 최신 전자공시 목록을 크롤링합니다.
-
-    symbol: '005930' (종목코드, .KS/.KQ 제거 필요)
-
-    """
-
-    # .KS, .KQ 제거
-
-    code = symbol.split('.')[0]
-
-    
-
-    # 숫자만 남기기
-
-    code = re.sub(r'[^0-9]', '', code)
-
-    
-
-    if len(code) != 6:
-
-        return {"error": "Invalid Code"}
-
-
-
-    url = f"https://finance.naver.com/item/news_notice.naver?code={code}&page=1"
-
-    
-
     try:
-
+        # Use Naver Integration Search (more robust, UTF-8 supported)
+        query = f"{keyword} 주가"
+        encoded = urllib.parse.quote(query)
+        url = f"https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={encoded}"
+        
+        # Standard Browser Headers
         headers = {
-
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
-        }
-
-        res = requests.get(url, headers=headers)
-
-        
-
-        # Try decoding with utf-8 first (Modern Naver), then cp949 (Old Naver)
-
-        try:
-
-            html = res.content.decode('utf-8')
-
-        except UnicodeDecodeError:
-
-            try:
-
-                html = res.content.decode('cp949')
-
-            except UnicodeDecodeError:
-
-                html = res.text # Fallback
-
-            
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        
-
-        disclosures = []
-
-        
-
-        # 공시 테이블 찾기
-
-        # 'type5' or 'type6' class used depending on page version
-
-        rows = soup.select("table.type5 tbody tr, table.type6 tbody tr")
-
-        
-
-        for row in rows:
-
-            cols = row.select("td")
-
-            if len(cols) < 3:
-
-                continue
-
-                
-
-            title_tag = cols[0].select_one("a")
-
-            if not title_tag:
-
-                continue
-
-                
-
-            title = title_tag.text.strip()
-
-            link = "https://finance.naver.com" + title_tag['href']
-
-            info = cols[1].text.strip() # 정보제공 (DART 등)
-
-            date = cols[2].text.strip()
-
-            
-
-            # 전자공시(DART)만 필터링하거나 모두 표시
-
-            disclosures.append({
-
-                "title": title,
-
-                "link": link,
-
-                "publisher": info,
-
-                "date": date
-
-            })
-
-            
-
-            if len(disclosures) >= 10:
-
-                break
-
-                
-
-        return disclosures
-
-
-
-    except Exception as e:
-        print(f"Naver Disclosure Crawl Error: {e}")
-        return []
-
-
-def search_korean_stock_symbol(keyword: str):
-    """
-    종목명으로 검색하여 종목코드(Symbol)를 찾습니다. (크롤링)
-    """
-    try:
-        # [Manual Mapping Fallback]
-        # Bypass crawling for known stocks that fail due to blocking
-        MANUAL_STOCK_MAP = {
-            "한화오션": "042660",
-            "HANWHAOCEAN": "042660",
-            "대우조선해양": "042660",
-            # Add others if needed
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         
-        normalized_keyword = keyword.replace(" ", "").upper()
-        if normalized_keyword in MANUAL_STOCK_MAP:
-            print(f"[Search] Found '{keyword}' in MANUAL mapping.")
-            return MANUAL_STOCK_MAP[normalized_keyword]
-        
-            if k in normalized_keyword:
-                return v
-
-        # [Dynamic Map Check]
-        if normalized_keyword in DYNAMIC_STOCK_MAP:
-            print(f"[Search] Found '{keyword}' in DYNAMIC mapping (Exact match).")
-            return DYNAMIC_STOCK_MAP[normalized_keyword]
-            
-        # Check partial match in Dynamic Map
-        for name, code in DYNAMIC_STOCK_MAP.items():
-            # If the user query is very short (e.g. 2 chars), be careful with partial match
-            if len(normalized_keyword) >= 2 and normalized_keyword in name:
-                 # Prefer exact start match
-                 if name.startswith(normalized_keyword):
-                     print(f"[Search] Found '{keyword}' in DYNAMIC mapping (Partial match: {name}).")
-                     return code
-            # Also check if name is in keyword (e.g. "Samsung Electronics" -> "Samsung")
-            # Usually keyword is shorter.
-
-        # euc-kr Encoding for Naver Query
-        print(f"[Search] '{keyword}' not in cache. Crawling Naver Search...")
-        from urllib.parse import quote
-        encoded_query = quote(keyword.encode('euc-kr'))
-        url = f"https://finance.naver.com/search/searchList.naver?query={encoded_query}"
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-        res = requests.get(url, headers=headers)
-        
-        # Decode
-        try:
-            html = res.content.decode('euc-kr')
-        except:
-            html = res.text
-            
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Check for direct match table
-        # .tbl_search result
-        results = soup.select(".tbl_search tbody tr")
-        
-        for row in results:
-            cols = row.select("td")
-            if len(cols) >= 1:
-                title_link = cols[0].select_one("a")
-                if title_link:
-                    name = title_link.text.strip()
-                    # href="/item/main.naver?code=005930"
-                    href = title_link['href']
-                    code_match = re.search(r'code=(\d+)', href)
-                    if code_match:
-                        code = code_match.group(1)
-                        # Naver returns code only. We should guess KS or KQ?
-                        # Usually the user wants the first match.
-                        # We can try to check if it is KOSPI or KOSDAQ from other cols if avail,
-                        # but just returning code allows stock_data to use its "Happy Eyeballs" check (Try KS then KQ)
-                        # Or stock_data expects checks.
-                        # We will return the 6 digit code.
-                        # We will return the 6 digit code.
-                        print(f"[Search] Naver Crawl Success for '{keyword}': {code}")
-                        return code
-                        
-        return None
-        
-    except Exception as e:
-        print(f"Search Symbol Error: {e}")
-        return None
-
-
-
-
-def get_korean_name(symbol: str) -> str:
-
-    """
-
-    네이버 금융에서 종목의 한글명을 가져옵니다. (yfinance의 영문명 대체용)
-
-    """
-
-    try:
-
-        code = symbol.split('.')[0]
-
-        code = re.sub(r'[^0-9]', '', code)
-
-        
-
-        if len(code) != 6:
-
-            return ""
-
-            
-
-        url = f"https://finance.naver.com/item/main.naver?code={code}"
-
-        headers = {
-
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91"
-
-        }
-
-        res = requests.get(url, headers=headers)
-
-        
-
-        # Automatically detect encoding using chardet (via requests)
-
-        res.encoding = res.apparent_encoding
-
-        soup = BeautifulSoup(res.text, 'html.parser')
-
-        
-
-        # 메인 페이지 상단의 종목명 찾기
-
-        # <div class="wrap_company"><h2><a href="#">삼성전자</a></h2>...</div>
-
-        h2 = soup.select_one(".wrap_company h2 a")
-
-        if h2:
-
-            return h2.text.strip()
-
-            
-
-        return ""
-
-        return ""
-
-    except Exception:
-
-        return ""
-
-
-
-
-
-def _get_soup(url, headers):
-    try:
         res = requests.get(url, headers=headers, timeout=5)
-        # Naver Finance usually returns EUC-KR (cp949)
-        res.encoding = 'EUC-KR'
+        html = res.text # Naver Search is UTF-8 usually
         
-        if res.status_code == 200:
-            return BeautifulSoup(res.text, 'html.parser')
-    except Exception:
+        # Regex to find finance.naver.com links with code
+        # Pattern: finance.naver.com/item/main.naver?code=005930
+        matches = re.findall(r'finance\.naver\.com/item/main.*code=(\d{6})', html)
+        
+        if matches:
+            # Return first finding (Best Match)
+            return matches[0]
+            
         return None
-
-
-
-def refresh_stock_codes():
-    """
-    Background Task:
-    Crawls Naver Finance Market Cap pages (KOSPI & KOSDAQ) to populate DYNAMIC_STOCK_MAP.
-    Fetches ALL stocks from each market (approx 40-50 pages each).
-    """
-    global DYNAMIC_STOCK_MAP, INDEXING_PROGRESS
-    import time
-    
-    print("[StockData] Starting background stock code indexing (Full Scan)...")
-    INDEXING_PROGRESS["status"] = "running"
-    INDEXING_PROGRESS["last_updated"] = time.time()
-
-    
-    try:
-        new_map = {}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91"
-        }
-        
-        # 0: KOSPI, 1: KOSDAQ
-        for sosok in [0, 1]:
-            market_name = "KOSPI" if sosok == 0 else "KOSDAQ"
-            print(f"[StockData] Indexing {market_name}...")
-            
-            INDEXING_PROGRESS["market"] = market_name
-            INDEXING_PROGRESS["page"] = 0
-
-            
-            # 1. Determine Last Page
-            last_page = 50 # Default fallback
-            try:
-                url_base = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page=1"
-                res = requests.get(url_base, headers=headers, timeout=5)
-                # Decode
-                try: 
-                    html = res.content.decode('euc-kr') 
-                except: 
-                    html = res.text
-                
-                soup = BeautifulSoup(html, 'html.parser')
-                pgRR = soup.select_one("td.pgRR a")
-                if pgRR:
-                    href = pgRR['href']
-                    match = re.search(r'page=(\d+)', href)
-                    if match:
-                        last_page = int(match.group(1))
-                        last_page = int(match.group(1))
-                        print(f"[StockData] {market_name} has {last_page} pages.")
-                        INDEXING_PROGRESS["total_pages"] = last_page
-
-            except Exception as e:
-                print(f"[StockData] Failed to determine last page for {market_name} (Using default 50): {e}")
-
-            # 2. Crawl All Pages
-            # We can use ThreadPoolExecutor if speed is an issue, but sequential is safer for Naver blocking.
-            # Total ~80 pages * 0.2s = ~16s. Acceptable.
-            
-            for page in range(1, last_page + 1): 
-                try:
-                    INDEXING_PROGRESS["page"] = page
-                    INDEXING_PROGRESS["last_updated"] = time.time()
-                    
-                    # [User Request] Slow down for stability and visibility
-                    time.sleep(0.2)
-                    
-                    url = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}&page={page}"
-
-                    res = requests.get(url, headers=headers, timeout=5)
-                    
-                    # Encoding
-                    try: 
-                        html = res.content.decode('euc-kr') 
-                    except: 
-                        html = res.text
-                        
-                    soup = BeautifulSoup(html, 'html.parser')
-                    
-                    # Table rows
-                    links = soup.select("table.type_2 tbody tr td a.tltle")
-                    for link in links:
-                        name = link.text.strip()
-                        href = link['href']
-                        # href="/item/main.naver?code=005930"
-                        code_match = re.search(r'code=(\d+)', href)
-                        if code_match:
-                            code = code_match.group(1)
-                            
-                            # Add to map (Normalize Name)
-                            norm_name = name.replace(" ", "").upper()
-                            new_map[norm_name] = code
-                            
-                except Exception as e:
-                    print(f"Error crawling {market_name} page {page}: {e}")
-                    
-        # Update Global Map
-        DYNAMIC_STOCK_MAP.update(new_map)
-        INDEXING_PROGRESS["status"] = "done"
-        INDEXING_PROGRESS["total_stocks"] = len(DYNAMIC_STOCK_MAP)
-        INDEXING_PROGRESS["last_updated"] = time.time()
-        print(f"[StockData] Full Indexing Complete. Total unique stocks: {len(DYNAMIC_STOCK_MAP)}")
-        
     except Exception as e:
-        INDEXING_PROGRESS["status"] = "error"
-        INDEXING_PROGRESS["error"] = str(e)
-        print(f"[StockData] Indexing failed: {e}")
-
-
-# Start indexing on import (in background)
-t = threading.Thread(target=refresh_stock_codes, daemon=True)
-t.start()
-
-
-def get_naver_market_index_data():
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
-    }
-
-    partial_data = {
-
-        "exchange": [], "world_exchange": [], "oil": [], "gold": [], "interest": [], "raw_materials": []
-
-    }
-
-    try:
-
-        soup_idx = _get_soup("https://finance.naver.com/marketindex/?tabSel=exchange#tab_section", headers)
-
-        if soup_idx:
-
-            # 1. Exchange Rates (FETCH ALL)
-
-            # Naver lists major currencies in #exchangeList
-
-            for li in soup_idx.select("#exchangeList li"):
-
-                 # Layout: a.head > h3.h_lst > span.blind (Name)
-
-                 # div.head_info > span.value, span.change
-
-                 
-
-                 name_tag = li.select_one("h3.h_lst span.blind")
-
-                 if not name_tag: continue
-
-                 
-
-                 raw_name = name_tag.text.strip()
-
-                 name = raw_name # Default
-
-                 
-
-                 # Format Name for better display (e.g., "미국 USD")
-
-                 if "미국" in raw_name: name = "미국 USD"
-
-                 elif "일본" in raw_name: name = "일본 JPY (100엔)"
-
-                 elif "유럽연합" in raw_name: name = "유럽연합 EUR"
-
-                 elif "중국" in raw_name: name = "중국 CNY"
-
-                 elif "홍콩" in raw_name: name = "홍콩 HKD"
-
-                 elif "대만" in raw_name: name = "대만 TWD"
-
-                 elif "영국" in raw_name: name = "영국 GBP"
-
-                 elif "캐나다" in raw_name: name = "캐나다 CAD"
-
-                 elif "스위스" in raw_name: name = "스위스 CHF"
-
-                 elif "베트남" in raw_name: name = "베트남 VND (100동)"
-
-                 elif "러시아" in raw_name: name = "러시아 RUB"
-
-                 elif "인도" in raw_name: name = "인도 INR"
-
-                 else: name = raw_name # Others
-
-
-
-                 val = li.select_one("span.value").text.strip()
-
-                 change = li.select_one("span.change").text.strip()
-
-                 
-
-                 # Up/Down Logic
-
-                 head_info = li.select_one("div.head_info")
-
-                 is_up = False
-
-                 if head_info:
-
-                     cls = head_info.get("class", [])
-
-                     if "up" in cls or "plus" in cls: is_up = True
-
-                 
-
-                 partial_data["exchange"].append({"name": name, "price": val, "change": change, "is_up": is_up})
-
-
-
-            # 2. World Exchange (Indices)
-
-            for li in soup_idx.select("#worldExchangeList li"):
-
-                 name = li.select_one("h3.h_lst span.blind").text.strip()
-
-                 val = li.select_one("span.value").text.strip()
-
-                 change = li.select_one("span.change").text.strip()
-
-                 head_info = li.select_one("div.head_info")
-
-                 is_up = False
-
-                 if head_info and ("up" in head_info.get("class", []) or "plus" in head_info.get("class", [])):
-
-                     is_up = True
-
-                 partial_data["world_exchange"].append({"name": name, "price": val, "change": change, "is_up": is_up})
-
-
-
-            # 3. Oil & Gold (Expanded)
-
-            # Fetching from the main list often includes: WTI, Dubai, Brent, Gold(Domestic), Gold(Intl)
-
-            # If the user wants "Everything" from the tab, we trust #oilGoldList provides the summary.
-
-            for li in soup_idx.select("#oilGoldList li"):
-
-                 name = li.select_one("h3.h_lst span.blind").text.strip()
-
-                 val = li.select_one("span.value").text.strip()
-
-                 change = li.select_one("span.change").text.strip()
-
-                 
-
-                 head_info = li.select_one("div.head_info")
-
-                 is_up = False
-
-                 if head_info:
-
-                     cls = head_info.get("class", [])
-
-                     if "up" in cls or "plus" in cls: is_up = True
-
-                     
-
-                 item = {"name": name, "price": val, "change": change, "is_up": is_up}
-
-                 
-
-                
-
-                 # Categorize
-
-                 if "금" in name or "골드" in name: 
-
-                     partial_data["gold"].append(item)
-
-                 else: 
-
-                     partial_data["oil"].append(item)
-
-
-
-            # 4. Interest Rates (Explicit Fetch)
-
-            soup_int = _get_soup("https://finance.naver.com/marketindex/?tabSel=interest", headers)
-
-            if soup_int:
-
-                # The active list is usually in .data_lst
-
-                for li in soup_int.select(".data_lst li"):
-                     name_tag = li.select_one("h3.h_lst span.blind")
-                     if not name_tag: continue
-                     name = name_tag.text.strip()
-                     
-                     # [Fix] Filter out Sidebars (Currencies/Commodities mixed in)
-                     # Real Interest rates: CD, CP, Treasury, LIBOR, KORIBOR
-                     # Avoid filtering "CD금리" which contains "금"
-                     exclude_keywords = ['USD', 'JPY', 'EUR', 'CNY', '달러', '엔', '유로', '위안', 'Gold', 'WTI', 'Gas', '국제 금', '원유', '두바이유']
-                     if any(x in name for x in exclude_keywords):
-                         continue
-
-                     val = li.select_one("span.value").text.strip()
-                     change = li.select_one("span.change").text.strip()
-                     head_info = li.select_one("div.head_info")
-                     is_up = False
-                     if head_info:
-                         cls = head_info.get("class", [])
-                         if "up" in cls or "plus" in cls: is_up = True
-                     partial_data["interest"].append({"name": name, "price": val, "change": change, "is_up": is_up})
-
-
-
-            # 5. Raw Materials (Explicit Fetch)
-
-            soup_mat = _get_soup("https://finance.naver.com/marketindex/?tabSel=materials", headers)
-
-            if soup_mat:
-
-                 for li in soup_mat.select(".data_lst li"):
-                     name_tag = li.select_one("h3.h_lst span.blind")
-                     if not name_tag: continue
-                     name = name_tag.text.strip()
-
-                     # [Fix] Filter out Sidebars
-                     if any(x in name for x in ['USD', 'JPY', 'EUR', 'CNY', '달러', '엔', '유로', '위안']):
-                         continue
-
-                     val = li.select_one("span.value").text.strip()
-                     change = li.select_one("span.change").text.strip()
-                     head_info = li.select_one("div.head_info")
-                     is_up = False
-                     if head_info:
-                         cls = head_info.get("class", [])
-                         if "up" in cls or "plus" in cls: is_up = True
-                     partial_data["raw_materials"].append({"name": name, "price": val, "change": change, "is_up": is_up})
-
-    except Exception as e:
-
-        print(f"Market Index Error: {e}")
-
-    return partial_data
-
-
-
-def get_naver_sise_data():
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
-    }
-
-    partial_data = {
-
-        "top_sectors": [], "top_themes": [],
-
-        "investor_items": {
-
-            "foreigner_buy": [], "foreigner_sell": [], "institution_buy": [], "institution_sell": []
-
-        }
-
-    }
-
-    try:
-
-        soup_sise = _get_soup("https://finance.naver.com/sise/", headers)
-
-        if soup_sise:
-
-            # Sectors/Themes
-
-            tables = soup_sise.select("table.type_1")
-
-            if len(tables) > 0:
-
-                for row in tables[0].select("tr")[2:]:
-
-                    cols = row.select("td")
-
-                    if len(cols) < 3: continue
-
-                    link_tag = cols[0].select_one("a")
-
-                    if not link_tag: continue
-
-                    partial_data["top_sectors"].append({
-
-                        "name": link_tag.text.strip(), 
-
-                        "percent": cols[1].text.strip(),
-
-                        "link": link_tag['href']
-
-                    })
-
-                    if len(partial_data["top_sectors"]) >= 10: break
-
-            if len(tables) > 1:
-
-                for row in tables[1].select("tr")[2:]:
-
-                    cols = row.select("td")
-
-                    if len(cols) < 3: continue
-
-                    link_tag = cols[0].select_one("a")
-
-                    if not link_tag: continue
-
-                    partial_data["top_themes"].append({
-
-                        "name": link_tag.text.strip(), 
-
-                        "percent": cols[1].text.strip(),
-
-                        "link": link_tag['href']
-
-                    })
-
-                    if len(partial_data["top_themes"]) >= 10: break
-
-
-
-            # Investor Items
-
-            def parse_sise_investor(tab_id):
-
-                items = []
-
-                container = soup_sise.select_one(tab_id)
-
-                if not container: return []
-
-                rows = container.select("tr")
-
-                for row in rows:
-
-                    cols = row.select("td")
-
-                    if len(cols) < 4: continue
-
-                    name_tag = cols[1].select_one("a")
-
-                    if not name_tag: continue
-
-                    name = name_tag.text.strip()
-
-                    amount = cols[2].text.strip()
-
-                    raw_change = cols[3].text.strip()
-
-                    change = " ".join(raw_change.split())
-
-                    is_up = False
-
-                    if "rate_up" in str(cols[3]) or "up" in str(cols[3]) or "red" in str(cols[3]): is_up = True
-
-                    if "상승" in change: is_up = True
-
-                    change_val = re.sub(r'(상승|하락|보합)\s*', '', change).strip()
-
-                    items.append({"name": name, "amount": amount, "change": change_val, "is_up": is_up})
-
-                    if len(items) >= 5: break
-
-                return items
-
-
-
-            partial_data["investor_items"]["foreigner_buy"] = parse_sise_investor("#frgn_deal_tab_0")
-
-            partial_data["investor_items"]["foreigner_sell"] = parse_sise_investor("#frgn_deal_tab_1")
-
-            partial_data["investor_items"]["institution_buy"] = parse_sise_investor("#org_deal_tab_0")
-
-            partial_data["investor_items"]["institution_sell"] = parse_sise_investor("#org_deal_tab_1")
-
-    except Exception as e:
-
-        print(f"Sise Error: {e}")
-
-    return partial_data
-
-
-
-def get_naver_main_data():
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-
-    }
-
-    partial_data = { "market_summary": { "kospi": None, "kosdaq": None, "kospi200": None } }
-
-    try:
-
-        soup_main = _get_soup("https://finance.naver.com/", headers)
-
-        if soup_main:
-
-            for p_type in ["kospi", "kosdaq", "kospi200"]:
-
-                area = soup_main.select_one(f".{p_type}_area")
-
-                if not area: continue
-
-                
-
-                # 1. Basic Index Info
-
-                idx_val = area.select_one(".num_quot .num").text.strip()
-
-                num2 = area.select_one(".num_quot .num2").text.strip()
-
-                num3 = area.select_one(".num_quot .num3").text.strip()
-
-                status_blind = area.select_one(".num_quot .blind")
-
-                direction = "Equal"
-
-                if status_blind:
-
-                        txt = status_blind.text.strip()
-
-                        if "상승" in txt: direction = "Up"
-
-                        elif "하락" in txt: direction = "Down"
-
-                chart_img = ""
-
-                img_tag = area.select_one(".chart_area img")
-
-                if img_tag: chart_img = img_tag['src']
-
-                
-
-                # 2. Iterate DLs to find Investors, Stock Counts, Program Trading
-
-                investors = { "personal": "0", "foreigner": "0", "institutional": "0" }
-
-                stock_counts = None
-
-                program_trading = None
-
-                
-
-                dls = area.select("dl")
-
-                for dl in dls:
-
-                    dts = dl.select("dt")
-
-                    dds = dl.select("dd")
-
-                    
-
-                    if not dts or not dds: continue
-
-                    
-
-                    first_dt_text = dts[0].text.strip()
-
-                    
-
-                    # A. Investors
-
-                    if "개인" in first_dt_text or "외국인" in first_dt_text:
-
-                        for dt, dd in zip(dts, dds):
-
-                            label = dt.text.strip()
-
-                            val = re.sub(r'[^0-9\-\+\,]', '', dd.text.strip())
-
-                            if "개인" in label: investors["personal"] = val
-
-                            elif "외국인" in label: investors["foreigner"] = val
-
-                            elif "기관" in label: investors["institutional"] = val
-
-                            
-
-                    # B. Stock Counts
-
-                    elif "상한" in first_dt_text or "상승" in first_dt_text:
-
-                        counts = { "upper": "0", "up": "0", "equal": "0", "down": "0", "lower": "0" }
-
-                        for dt, dd in zip(dts, dds):
-
-                            label = dt.text.strip()
-
-                            val = dd.text.strip()
-
-                            if "상한" in label: counts["upper"] = val
-
-                            elif "상승" in label: counts["up"] = val
-
-                            elif "보합" in label: counts["equal"] = val
-
-                            elif "하한" in label: counts["lower"] = val
-
-                            elif "하락" in label: counts["down"] = val
-
-                        stock_counts = counts
-
-                        
-
-                    # C. Program Trading
-
-                    elif "프로그램" in first_dt_text:
-
-                         if len(dds) >= 1:
-
-                             program_trading = {
-
-                                 "net": dds[0].text.strip(),
-
-                                 "change": dds[1].text.strip() if len(dds) > 1 else "",
-
-                                 "label": "프로그램"
-
-                             }
-
-
-
-                partial_data["market_summary"][p_type] = {
-
-                    "value": idx_val,
-
-                    "change": num2,
-
-                    "percent": num3,
-
-                    "direction": direction,
-
-                    "chart": chart_img,
-
-                    "investors": investors,
-
-                    "stock_counts": stock_counts,
-
-                    "program_trading": program_trading
-
-                }
-
-    except Exception as e:
-
-        print(f"Main Page Error: {e}")
-
-    return partial_data
-
-
-
-def get_index_chart_data(symbol: str, timeframe: str = "day"):
-
-    """
-
-    네이버 금융에서 지수 차트 데이터를 가져옵니다.
-
-    symbol: KOSPI, KOSDAQ, KPI200
-
-    timeframe: day (일봉), week(주봉), month(월봉) - 현재는 일봉/분봉 지원 확장 가능
-
-    """
-
-    # 매핑
-
-    code = "KOSPI"
-
-    if "KOSDAQ" in symbol.upper(): code = "KOSDAQ"
-
-    elif "200" in symbol: code = "KPI200"
-
-
-
-    # 네이버 차트 API (XML 방식이 안정적)
-
-    # https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=day&count=60&requestType=0
-
-    url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe={timeframe}&count=60&requestType=0"
-
-    
-
-    try:
-
-        import requests
-
-        import xml.etree.ElementTree as ET
-
-        
-
-        res = requests.get(url)
-
-        if res.status_code == 200:
-
-            root = ET.fromstring(res.text)
-
-            # <chartdata symbol="KOSPI" ...>
-
-            #   <item data="20240101|2500.00|2550.00|2490.00|2530.00|..." />
-
-            # </chartdata>
-
-            
-
-            chart_data = []
-
-            for item in root.findall("chartdata/item"):
-
-                data_str = item.get("data")
-
-                if data_str:
-
-                    parts = data_str.split("|")
-
-                    # 날짜, 시가, 고가, 저가, 종가, 거래량
-
-                    if len(parts) >= 5:
-
-                        chart_data.append({
-
-                            "date": parts[0],
-
-                            "open": float(parts[1]),
-
-                            "high": float(parts[2]),
-
-                            "low": float(parts[3]),
-
-                            "close": float(parts[4]),
-
-                            # "volume": int(parts[5]) if len(parts) > 5 else 0
-
-                        })
-
-            return chart_data
-
-    except Exception as e:
-
-        print(f"Chart data fetch error: {e}")
-
-    
-
-    return []
-
-
-
-def get_naver_market_dashboard():
-
-    # 네이버 금융 데스크탑 메인 페이지(or 시세 페이지)에서 
-
-    # 환율, 유가, 금리, 원자재, 업종상위, 테마상위 데이터를 크롤링하여 종합 반환합니다.
-    # (프론트엔드 대시보드용) - 이제 내부 함수들을 병렬 호출합니다.
-
-    
-
-    data = {
-
-        "exchange": [],
-
-        "world_exchange": [],
-
-        "interest": [],
-
-        "oil": [],
-
-        "gold": [],
-
-        "raw_materials": [],
-
-        "top_sectors": [],
-
-        "top_themes": [],
-
-        "market_summary": {
-
-            "kospi": None,
-
-            "kosdaq": None
-
-        },
-
-        "investor_items": {
-
-            "foreigner_buy": [],
-
-            "foreigner_sell": [],
-
-            "institution_buy": [],
-
-            "institution_sell": []
-
-        }
-
-    }
-
-    
-
-    # Parallel Execution with Fallback
-
-    try:
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-
-            future_idx = executor.submit(get_naver_market_index_data)
-
-            future_sise = executor.submit(get_naver_sise_data)
-
-            future_main = executor.submit(get_naver_main_data)
-
-
-
-            res_idx = future_idx.result(timeout=6)
-
-            res_sise = future_sise.result(timeout=6)
-
-            res_main = future_main.result(timeout=6)
-
-
-
-            if res_idx: data.update(res_idx)
-
-            if res_sise: 
-
-                data["top_sectors"] = res_sise.get("top_sectors", [])
-
-                data["top_themes"] = res_sise.get("top_themes", [])
-
-                data["investor_items"] = res_sise.get("investor_items", data["investor_items"])
-
-            if res_main: data["market_summary"] = res_main.get("market_summary", data["market_summary"])
-
-            
-
-    except Exception as e:
-
-        print(f"Parallel Execution Error: {e}, falling back to sequential")
-
-        try:
-
-            res_idx = get_naver_market_index_data()
-
-            if res_idx: data.update(res_idx)
-
-            
-
-            res_sise = get_naver_sise_data()
-
-            if res_sise: 
-
-                data["top_sectors"] = res_sise.get("top_sectors", [])
-
-                data["top_themes"] = res_sise.get("top_themes", [])
-
-                data["investor_items"] = res_sise.get("investor_items", data["investor_items"])
-
-                
-
-            res_main = get_naver_main_data()
-
-            if res_main: data["market_summary"] = res_main.get("market_summary", data["market_summary"])
-
-        except Exception as e2:
-
-                print(f"Sequential Fallback Error: {e2}")
-
-
-
-    return data
-
-
-
-def get_ipo_data():
-
-    # 38커뮤니케이션 IPO 일정 크롤링
-    # http://www.38.co.kr/html/fund/index.htm?o=k
-
-    url = "http://www.38.co.kr/html/fund/index.htm?o=k"
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91"
-
-    }
-
-    
-
-    ipo_list = []
-
-    
-
-    try:
-
-        res = requests.get(url, headers=headers)
-
-        # 38.co.kr uses cp949/euc-kr
-
-        try:
-
-            html = res.content.decode('utf-8')
-
-        except UnicodeDecodeError:
-
-            html = res.content.decode('cp949', 'ignore')
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        
-
-        target_table = None
-
-        # Use simple find_all "tr" to search broadly first
-
-        all_rows = soup.find_all("tr")
-
-        for row in all_rows:
-
-            text = row.get_text()
-
-            if "종목명" in text and "공모주일정" in text:
-
-                 # Found the header row. Now find the parent table.
-
-                 target_table = row.find_parent("table")
-
-                 break
-
-        
-
-        if not target_table:
-
-            return []
-
-
-
-        # Get all rows in the table (flattening thead/tbody)
-
-        table_rows = target_table.find_all("tr")
-
-        
-
-        # Find index of header row
-
-        start_idx = -1
-
-        for i, tr in enumerate(table_rows):
-
-             if "종목명" in tr.text and "공모주일정" in tr.text:
-
-                 start_idx = i
-
-                 break
-
-        
-
-        if start_idx == -1: return []
-
-        
-
-        # Parse data rows
-
-        data_rows = table_rows[start_idx+1:]
-
-        
-
-        for row in data_rows:
-
-            cols = row.select("td")
-
-            if len(cols) < 5: continue
-
-            
-
-            # Col 0: Name, Col 1: Schedule, Col 2: Fixed Price, Col 3: Band
-
-            name = cols[0].text.strip().replace('\xa0', '')
-
-            schedule = cols[1].text.strip().replace('\xa0', '')
-
-            
-
-            # [Fix] Strict Filtering
-
-            # 1. Skip News/Ads (start with [ or contain '뉴스')
-
-            if name.startswith("[") or "뉴스" in name:
-
-                continue
-
-                
-
-            # 2. Skip Invalid Schedule (must be at least 5 chars and have separators)
-
-            if not schedule or len(schedule) < 5 or ("~" not in schedule and "." not in schedule):
-
-                continue
-
-
-
-            fixed_price = cols[2].text.strip().replace('\xa0', '')
-
-            price_band = cols[3].text.strip().replace('\xa0', '')
-
-            
-
-            if not name: continue
-
-            
-
-            ipo_list.append({
-
-                "name": name,
-
-                "listing_date": "미정", # This page usually lists subscription schedule only
-
-                "subscription_date": schedule,
-
-                "price_band": price_band,
-
-                "fixed_price": fixed_price
-
-            })
-
-            
-
-            if len(ipo_list) >= 5: # Top 5
-
-                break
-
-                
-
-    except Exception as e:
-
-        print(f"IPO Crawl Error: {e}")
-
-        
-
-    return ipo_list
-
-
-
-def get_live_investor_estimates(symbol: str):
-
-    # 네이버 금융에서 장중 잠정 투자자(외국인/기관) 동향을 크롤링합니다.
-    # URL: https://finance.naver.com/item/frgn.naver?code={code}
-
-    code = symbol.split('.')[0]
-
-    code = re.sub(r'[^0-9]', '', code)
-
-    if len(code) != 6: return None
-
-
-
-    url = f"https://finance.naver.com/item/frgn.naver?code={code}"
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-
-    }
-
-    
-
-    try:
-
-        res = requests.get(url, headers=headers)
-
-        # cp949 decoding
-
-        try:
-
-            html = res.content.decode('utf-8')
-
-        except UnicodeDecodeError:
-
-            html = res.content.decode('cp949', 'ignore')
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        
-
-        # 1. 잠정 추계 테이블 (slight variation in class/id)
-
-        # Usually it's in a table next to or below the main daily trends
-
-        # Look for "잠정추계" text
-
-        
-
-        # In the new interface, it might be in a specific scraping target
-
-        # Let's try finding the table with headers Time/Foreigner/Institution
-
-        
-
-        estimates = []
-
-        
-
-        # Table selection strategy: Look for table with "잠정" in summary or caption
-
-        # Or locate by section header
-
-        
-
-        # Naver Finance often puts this in a table class 'type2' inside a div with specific ID or logic.
-
-        # But specifically, there is often a table showing 09:30, 10:00, 11:30...
-
-        
-
-        sections = soup.select(".sub_section")
-
-        target_table = None
-
-        
-
-        for sec in sections:
-
-            if "잠정" in sec.text:
-
-                target_table = sec.select_one("table")
-
-                break
-
-        
-
-        if not target_table:
-
-             # Fallback: Just try searching all tables
-
-             tables = soup.select("table")
-
-             for tbl in tables:
-
-                 if "잠정" in tbl.text and "외국인" in tbl.text:
-
-                     target_table = tbl
-
-                     break
-
-                     
-
-        if target_table:
-
-            # Parse rows
-
-            # Columns: 시각 | 외국인 | 기관계
-
-            rows = target_table.select("tr")
-
-            for row in rows:
-
-                cols = row.select("td")
-
-                if len(cols) < 3: continue
-
-                
-
-                time_str = cols[0].text.strip()
-
-                # Check for valid time format (e.g. 09:00, 10:30, 14:00)
-
-                if ":" not in time_str: continue 
-
-                
-
-                foreigner = cols[1].text.strip()
-
-                institution = cols[2].text.strip()
-
-                
-
-                # Clean numbers
-
-                f_val = re.sub(r'[^0-9\-\+]', '', foreigner)
-
-                i_val = re.sub(r'[^0-9\-\+]', '', institution)
-
-                
-
-                estimates.append({
-
-                    "time": time_str,
-
-                    "foreigner": int(f_val) if f_val and f_val != '-' else 0,
-
-                    "institution": int(i_val) if i_val and i_val != '-' else 0
-
-                })
-
-        
-
-        # [Fallback] If data is empty (Weekend/Closed), generate Mock Data for Demo
-
-        if not estimates:
-
-            import random
-
-            print("No live data found (Market Closed?). Generating Mock Data for Demo.")
-
-            current_hour = 9
-
-            current_min = 30
-
-            # Generate from 09:30 to now (or 14:30)
-
-            mock_estimates = []
-
-            f_accum = 0
-
-            i_accum = 0
-
-            
-
-            # Create a deterministic mock based on symbol hash
-
-            seed = sum(ord(c) for c in code)
-
-            random.seed(seed)
-
-            
-
-            for _ in range(10): # up to 14:30 roughly
-
-                time_s = f"{current_hour:02d}:{current_min:02d}"
-
-                
-
-                # Random flow
-
-                f_flow = random.randint(-5000, 5000)
-
-                i_flow = random.randint(-5000, 5000)
-
-                
-
-                f_accum += f_flow
-
-                i_accum += i_flow
-
-                
-
-                mock_estimates.append({
-
-                    "time": time_s,
-
-                    "foreigner": f_accum,
-
-                    "institution": i_accum
-
-                })
-
-                
-
-                current_min += 30 # 30 min intervals
-
-                if current_min >= 60:
-
-                    current_hour += 1
-
-                    current_min = 0
-
-                
-
-                if current_hour >= 15: break
-
-            
-
-            return mock_estimates
-
-
-
-        return estimates
-
-        
-
-    except Exception as e:
-
-        print(f"Live Investor Crawl Error: {e}")
-
+        print(f"Search Code Error: {e}")
         return None
-
-
-
-def get_theme_heatmap_data():
-
-    # 테마 히트맵용 데이터를 생성합니다. 
-    # 상위 5개 테마를 가져오고, 각 테마별 상위 5개 종목의 등락률을 수집합니다.
-    # (MarketDashboard 용)
-
-    headers = {
-
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-
-    }
-
-    
-
-    heatmap_data = [] # [{theme: "AI", "percent": "+3%", stocks: [...]}, ...]
-
-    
-
-    try:
-
-        # 1. Get Top Themes first from Sise Main
-
-        sise_data = get_naver_sise_data()
-
-        top_themes = sise_data.get("top_themes", [])[:6] # Top 6
-
         
-
-        for theme in top_themes:
-
-            theme_name = theme['name']
-
-            theme_change = theme['percent']
-
-            
-
-            stocks = []
-
-            
-
-            # Try to get link directly from sise data
-
-            theme_link = theme.get('link')
-
-            
-
-            if theme_link:
-
-                if not theme_link.startswith("http"):
-
-                    theme_link = "https://finance.naver.com" + theme_link
-
-            else:
-
-                # Fallback: Search for theme link in theme.naver
-
-                try:
-
-                    res = requests.get("https://finance.naver.com/sise/theme.naver", headers=headers)
-
-                    try:
-
-                        html = res.content.decode('utf-8')
-
-                    except UnicodeDecodeError:
-
-                        html = res.content.decode('cp949', 'ignore')
-
-                    soup = BeautifulSoup(html, 'html.parser')
-
-                    
-
-                    for a in soup.select("table.type_1 a"):
-
-                        if a.text.strip() == theme_name:
-
-                            theme_link = "https://finance.naver.com" + a['href']
-
-                            break
-
-                except Exception as e:
-
-                    print(f"Theme Search Fallback Error: {e}")
-
-            
-
-            if theme_link:
-
-                # 2. Fetch Stock List for this Theme
-
-                res_sub = requests.get(theme_link, headers=headers)
-
-                try:
-
-                    html_sub = res_sub.content.decode('utf-8')
-
-                except UnicodeDecodeError:
-
-                    html_sub = res_sub.content.decode('cp949', 'ignore')
-
-                soup_sub = BeautifulSoup(html_sub, 'html.parser')
-
-                
-
-                # Parse stocks table
-
-                # Usually table.type_2 or similar
-
-                # Columns: Name, Current Price, Change, Change Rate...
-
-                rows = soup_sub.select("div.box_type_l table tbody tr")
-
-                for row in rows:
-
-                    cols = row.select("td")
-
-                    if len(cols) < 5: continue
-
-                    name_tag = cols[0].select_one("a")
-
-                    if not name_tag: continue
-
-                    
-
-                    st_name = name_tag.text.strip()
-
-                    # Price change rate is usually roughly in col 3 or 4
-
-                    # Let's verify by checking spans
-
-                    
-
-                    # Naver Theme Detail Page Structure:
-
-                    # Col 0: Name (with link)
-
-                    # Col 1: Description (sometimes) -- actually the structure varies.
-
-                    # Standard structure: Name | Price | Diff | rate | ...
-
-                    
-
-                    # Let's find columns with number class
-
-                    nums = row.select("span.tah")
-
-                    if len(nums) < 2: continue
-
-                    
-
-                    # Usually: Price is nums[0], Rate is nums[-1] or similar
-
-                    # Let's try parsing text content for %
-
-                    
-
-                    rate_txt = ""
-
-                    for cell in cols:
-
-                        txt = cell.text.strip()
-
-                        if "%" in txt:
-
-                            rate_txt = txt
-
-                            break
-
-                    
-
-                    val = re.sub(r'[^0-9\.\-\+]', '', rate_txt)
-
-                    try:
-
-                        rate = float(val)
-
-                    except:
-
-                        rate = 0.0
-
-                        
-
-                    stocks.append({
-
-                        "name": st_name,
-
-                        "change": rate
-
-                    })
-
-                    
-
-                    if len(stocks) >= 5: break
-
-            
-
-            heatmap_data.append({
-
-                "theme": theme_name,
-
-                "percent": theme_change,
-
-                "stocks": stocks
-
-            })
-
-            
-
-    except Exception as e:
-
-        print(f"Heatmap Data Error: {e}")
-
-        
-
-    return heatmap_data
-
-
-
-def get_naver_flash_news():
-
-    # 네이버 금융 주요뉴스 크롤링 (Google News Fallback용)
-    # URL: https://finance.naver.com/news/mainnews.naver
-
-    import requests
-
-    from bs4 import BeautifulSoup
-
-    
-
-    url = "https://finance.naver.com/news/mainnews.naver"
-
-    headers = { "User-Agent": "Mozilla/5.0" }
-
-    news_list = []
-
-    
-
-    try:
-
-        res = requests.get(url, headers=headers)
-
-        # cp949 decoding for Naver Finance (ignore errors to be safe)
-
-        try:
-
-            html = res.content.decode('utf-8')
-
-        except UnicodeDecodeError:
-
-            html = res.content.decode('cp949', 'ignore')
-
-        soup = BeautifulSoup(html, 'html.parser')
-
-        
-
-        # Select news items from Main News List
-
-        articles = soup.select(".mainNewsList li")
-
-        
-
-        # Fallback selector if structure changes
-
-        if not articles:
-
-             articles = soup.select("ul.realtimeNewsList li")
-
-             
-
-        for li in articles:
-
-            # Title extraction
-
-            # Try finding title in dt > a or dd > a
-
-            dt_a = li.select_one("dl dt a")
-
-            dd_a = li.select_one("dl dd.articleSubject a")
-
-            
-
-            target = dd_a if dd_a else dt_a
-
-            if not target: continue
-
-            
-
-            title = target.text.strip()
-
-            link = "https://finance.naver.com" + target['href']
-
-            
-
-            # Source extraction
-
-            source = "Naver Finance"
-
-            summ = li.select_one("dd.articleSummary")
-
-            if summ:
-
-                press = summ.select_one(".press")
-
-                if press: source = press.text.strip()
-
-            
-
-            # Simple Date Check (Naver Main News usually shows 'Today' or recent)
-
-            # We mark it as '최신' or parse if needed. 
-
-            # Google News expects 'time' string.
-
-            time_str = "최신"
-
-            
-
-            news_list.append({
-
-                "source": source,
-
-                "title": title,
-
-                "link": link,
-
-                "time": time_str
-
-            })
-
-            
-
-            if len(news_list) >= 10: break
-
-            
-
-    except Exception as e:
-
-        print(f"Naver News Fallback Error: {e}")
-
-        
-
-    return news_list
-
-
+search_korean_stock_symbol = search_stock_code # Alias
 
 def get_naver_stock_info(symbol: str):
-    # 네이버 금융에서 종목의 주요 시세 및 재무 정보(PER, EPS, PBR, Volume, OHLC 등)를 크롤링합니다.
-    # URL: https://finance.naver.com/item/main.naver?code={code}
+    """
+    Fetch basic stock info from Naver (Price, Name, Market Type)
+    """
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
-        if len(code) != 6: return None
-
+        
+        if len(code) != 6:
+            return None
+            
         url = f"https://finance.naver.com/item/main.naver?code={code}"
-        headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+        res = requests.get(url, headers=HEADER, timeout=5)
         
-        res = requests.get(url, headers=headers, timeout=5)
-        
-        # [Fix] Robust Encoding Detection
+        # [Fix] Smart Decoding v2: UTF-8 First
+        # EUC-KR bytes are often invalid UTF-8 (fail fast), 
+        # whereas UTF-8 bytes can look like valid EUC-KR (garbage success).
+        # So we MUST try UTF-8 first.
         content = res.content
-        html = None
-        
-        # Try CP949 first (Standard for Naver Finance)
         try:
-            html = content.decode('cp949')
+            html = content.decode('euc-kr') # Naver Finance is predominantly EUC-KR
         except UnicodeDecodeError:
             try:
-                html = content.decode('euc-kr')
+                html = content.decode('utf-8')
             except UnicodeDecodeError:
-                html = content.decode('utf-8', 'ignore')
-
+                html = content.decode('cp949', 'ignore')
+             
         soup = BeautifulSoup(html, 'html.parser')
-
-        # Check for error/block
-        if "일시적인 오류" in html or "서비스 이용에 불편" in html:
-            print(f"Naver Block/Temporary Error Detected for {symbol}")
+        
+        # Name
+        name_tag = soup.select_one(".wrap_company h2 a")
+        if not name_tag:
             return None
-
-        info = { 
-            "symbol": symbol, "currency": "KRW", 
-            "market_cap_val": 0, "market_cap_str": "N/A",
-            "per": None, "eps": None, "pbr": None, "dvr": None,
-            "forward_pe": None, "forward_eps": None, "bps": None, "dividend_rate": None,
-            "volume": 0, "open": 0, "day_high": 0, "day_low": 0,
-            "year_high": 0, "year_low": 0
-        }
+        name = name_tag.text.strip()
         
-        # 1. Name & Market Type
-        h2 = soup.select_one(".wrap_company h2 a")
-        if h2: info['name'] = h2.text.strip()
-        
-        # Detect Market Type (KOSPI vs KOSDAQ)
-        # Usually inside .description area or next to h2
-        # <div class="description"><img class="kospi|kosdaq" ...></div>
-        # or <img src="..." alt="코스피">
-        info['market_type'] = "KS" # Default
-        description = soup.select_one(".description")
-        
-        # Method 1: Check description img alt/class
-        if description:
-            img = description.select_one("img")
-            if img:
-                alt = img.get('alt', '').lower()
-                src = img.get('src', '').lower()
-                cls = img.get('class', [])
+        # Market Type (KOSPI/KOSDAQ)
+        market_img = soup.select_one(".wrap_company img")
+        market_type = "KS" # Default
+        if market_img:
+            alt = market_img.get('alt', '')
+            if '코스닥' in alt:
+                market_type = 'KQ'
+            elif '코스피' in alt:
+                market_type = 'KS'
                 
-                if '코스닥' in alt or 'kosdaq' in alt or 'kosdaq' in src:
-                    info['market_type'] = "KQ"
+        # Price
+        no_today = soup.select_one("p.no_today span.blind")
+        if not no_today:
+            return None
+        price = int(no_today.text.replace(',', ''))
         
-        # Method 2: Check for specific areas (kosdaq_area)
-        if info['market_type'] == "KS": # Only check if still KS
-            if soup.select_one(".kosdaq_area") or soup.select_one("img[alt='코스닥']"):
-                 info['market_type'] = "KQ"
-                 
-        # Method 3: Check sidebar or other indicators if main fails
-        if info['market_type'] == "KS":
-             # Sometimes Naver changes layout. Check if "KOSDAQ" text is near the code/name
-             # This is risky, so we stick to reliable selectors.
-             pass
+        # Change
+        ex_day = soup.select_one(".no_exday")
+        change_val = 0
+        change_pct_str = "0.00%"
         
-        # 2. Price
-        no_today = soup.select_one(".no_today .blind")
-        if no_today: info['price'] = int(re.sub(r'[^0-9]', '', no_today.text))
-        else: return None # Price is essential
-        
-        # 3. Change & Percent
-        exday = soup.select_one(".no_exday")
-        if exday:
-            blind_tags = exday.select(".blind")
+        if ex_day:
+            blind_tags = ex_day.select("span.blind")
             if len(blind_tags) >= 2:
-                diff = int(re.sub(r'[^0-9]', '', blind_tags[0].text))
-                pct = blind_tags[1].text.strip()
+                # 0: change value, 1: percentage
+                # Check direction (上升/下降)
+                ico = ex_day.select_one("span.ico")
+                direction = 1
+                if ico and "하락" in ico.text:
+                    direction = -1
                 
-                is_down = "nv" in str(exday) or "하락" in exday.text
-                if is_down:
-                    info['change'] = -diff
-                    info['change_percent'] = f"-{pct}%"
-                else:
-                    info['change'] = diff
-                    info['change_percent'] = f"+{pct}%"
+                change_val = int(blind_tags[0].text.replace(',', '')) * direction
+                change_pct_str = f"{float(blind_tags[1].text)*direction:.2f}%"
+
+        # Previous Close
+        prev_close_tag = soup.select_one("td.first span.blind")
+        prev_close = price - change_val
+        if prev_close_tag:
+            prev_close = int(prev_close_tag.text.replace(',', ''))
+            
+        # [Extra] Sector (Upjong)
+        sector_name = "Unknown"
+        try:
+            # Look for "Same Sector" link
+            # Structure: <h4 class="h_sub sub_tit7"><em><a href="...">Sector Name</a></em></h4>
+            sector_tag = soup.select_one("h4.h_sub.sub_tit7 a")
+            if sector_tag:
+                sector_name = sector_tag.text.strip()
+            else:
+                # Fallback: Look for WICS or other labels
+                h4s = soup.select("h4")
+                for h4 in h4s:
+                    if "업종" in h4.text:
+                        a_tag = h4.select_one("a")
+                        if a_tag:
+                            sector_name = a_tag.text.strip()
+                            break
+        except: pass
+
+        # Extra details (Restored)
+        market_cap_str = ""
+        try:
+            mc = soup.select_one("#_market_sum")
+            if mc:
+                raw = mc.text.strip()
+                market_cap_str = re.sub(r'\s+', ' ', raw) + " 억원"
+        except: pass
         
-        # 4. Prev Close
-        if 'price' in info and 'change' in info:
-            info['prev_close'] = info['price'] - info['change']
-
-        # 5. OHLC & Volume (from .no_info table)
-        # Row 0: PreClose(0), High(1), Volume(2)
-        # Row 1: Open(0), Low(1), Value(2)
-        no_info = soup.select_one(".no_info")
-        if no_info:
-            trs = no_info.select("tr")
-            if len(trs) >= 2:
-                def get_blind_val(td):
-                    b = td.select_one(".blind")
-                    if b: return int(re.sub(r'[^0-9]', '', b.text))
-                    return 0
-
-                tr0_tds = trs[0].select("td")
-                tr1_tds = trs[1].select("td")
-
-                if len(tr0_tds) >= 3:
-                    info['day_high'] = get_blind_val(tr0_tds[1])
-                    info['volume'] = get_blind_val(tr0_tds[2])
-
-                if len(tr1_tds) >= 2:
-                    info['open'] = get_blind_val(tr1_tds[0])
-                    info['day_low'] = get_blind_val(tr1_tds[1])
-
-        # 6. Major IDs (Market Cap, PER, EPS, PBR, Dividend Yield, Forward Estimates)
-        def parse_text_from_element(element):
-            if not element: return None
-            # Prefer 'blind' class which contains the pure value
-            blind = element.select_one(".blind")
-            if blind: return blind.text.strip()
-            return element.text.strip()
-
-        def parse_id(id_selector, is_float=True):
-            tag = soup.select_one(id_selector)
-            txt = parse_text_from_element(tag)
-            if not txt: return None
-            
-            # Clean up (remove commas, %, and whitespace)
-            clean_txt = re.sub(r'[^0-9\.\-]', '', txt)
-            if not clean_txt: return None
-            
-            try:
-                return float(clean_txt) if is_float else int(float(clean_txt)) # int(float) handles 100.0 -> 100
-            except:
-                return None
-
-        # Market Cap Parsing
-        mc_tag = soup.select_one("#_market_sum")
-        if mc_tag:
-            # Market Sum usually doesn't use blind, text is "345조 1,234"
-            mc_text = mc_tag.text.strip().replace('\t','').replace('\n','')
-            info['market_cap_str'] = mc_text
-            
-            try:
-                val = 0
-                parts = mc_text.split('조')
-                if len(parts) > 1:
-                    jo = int(re.sub(r'[^0-9]', '', parts[0])) * 1000000000000
-                    uk_str = re.sub(r'[^0-9]', '', parts[1])
-                    uk = int(uk_str) * 100000000 if uk_str else 0
-                    val = jo + uk
-                else:
-                     info['market_cap_val'] = int(re.sub(r'[^0-9]', '', mc_text)) * 100000000
-                info['market_cap_val'] = val
-            except: pass
-
-        info['per'] = parse_id("#_per")
-        info['eps'] = parse_id("#_eps", is_float=False)
-        info['pbr'] = parse_id("#_pbr")
-        info['dvr'] = parse_id("#_dvr")
-        info['forward_pe'] = parse_id("#_cns_per")
-        info['forward_eps'] = parse_id("#_cns_eps", is_float=False)
-
-        # 7. Additional parsing tables
-        th_tags = soup.select("th")
-        for th in th_tags:
-            label = th.text.strip()
-            td = th.find_next_sibling("td")
-            if not td: continue
-            
-            val_text = parse_text_from_element(td)
-            if not val_text: continue
-            
-            # 52 Week High/Low
-            if "52주" in label and ("최고" in label or "최저" in label):
-                # Naver sometimes uses '/' or 'l' or newline as separator
-                # e.g., "80,000l60,000" or "80,000/60,000"
-                parts = re.split(r'l|/|\n', val_text)
-                clean_parts = [p.strip() for p in parts if p.strip()]
-                if len(clean_parts) >= 2:
-                    try:
-                        info['year_high'] = int(re.sub(r'[^0-9]', '', clean_parts[0]))
-                        info['year_low'] = int(re.sub(r'[^0-9]', '', clean_parts[1]))
-                    except: pass
-            
-            # Dividend Rate (Priority to "주당배당금")
-            elif "주당배당금" in label:
-                try:
-                    info['dividend_rate'] = int(re.sub(r'[^0-9]', '', val_text))
-                except: pass
-            
-            # BPS (Avoid overwriting with combined "PBRlBPS" if valid BPS found)
-            elif "BPS" in label and "PBR" not in label:
-                try:
-                    info['bps'] = int(re.sub(r'[^0-9]', '', val_text))
-                except: pass
-
-            # Fallback for BPS (if not set yet)
-            elif "BPS" in label and not info['bps']:
-                 # Handle "PBRlBPS" -> "2.46l60,632"
-                 parts = re.split(r'l|/|\n', val_text)
-                 if len(parts) >= 2:
-                     try:
-                         # Usually 2nd part is BPS
-                         info['bps'] = int(re.sub(r'[^0-9]', '', parts[-1]))
-                     except: pass
-
-            # Dividend Yield ("배당수익률" or similar)
-            elif "배당" in label and "%" in label:
-                if info['dvr'] is None:
-                    try:
-                         info['dvr'] = float(re.sub(r'[^0-9\.]', '', val_text))
-                    except: pass
+        # Initialize variables (Restored)
+        per = 0.0
+        eps = 0.0
+        dvr = 0.0
+        pbr = 0.0
+        bps = 0.0
+        est_per = 0.0
+        est_eps = 0.0
+        dp_share = 0
+        year_high = 0
+        year_low = 0
         
-        return info
+        # ID-based scraping (Backup)
+        try:
+            p = soup.select_one("#_per")
+            if p: per = float(p.text.strip().replace(',', ''))
+        except: pass
+        
+        try:
+            e = soup.select_one("#_eps")
+            if e: eps = float(e.text.strip().replace(',', ''))
+        except: pass
 
+        try:
+            p = soup.select_one("#_pbr")
+            if p: pbr = float(p.text.strip().replace(',', ''))
+        except: pass
+        
+        try:
+            d = soup.select_one("#_dvr")
+            if d: dvr = float(d.text.strip().replace(',', '')) / 100.0
+        except: pass
+        
+        # OHLCV
+        open_val = 0
+        high_val = 0
+        low_val = 0
+        volume_val = 0
+        
+        try:
+            rate_info = soup.select(".no_info .blind")
+            if len(rate_info) >= 8: 
+                 high_val = int(rate_info[1].text.replace(',', ''))
+                 volume_val = int(rate_info[3].text.replace(',', ''))
+                 open_val = int(rate_info[4].text.replace(',', ''))
+                 low_val = int(rate_info[5].text.replace(',', ''))
+        except: pass
+
+        # [Scraping Improvement] Parse by Table Labels (Robust)
+        info_tables = soup.select("table")
+        
+        for tbl in info_tables:
+            rows = tbl.select("tr")
+            for row in rows:
+                th = row.select_one("th")
+                if not th: continue
+                
+                label = th.text.strip()
+                label_clean = re.sub(r'\s+', '', label) # normalized label
+                
+                td = row.select_one("td")
+                if not td: continue
+                val_text = td.text.strip().replace(',', '').replace('l', ' ').replace('|', ' ')
+                
+                try:
+                    nums = re.findall(r'[-+]?\d*\.\d+|\d+', val_text)
+                    if not nums: continue
+                    
+                    nums_f = []
+                    for n in nums:
+                        try: nums_f.append(float(n))
+                        except: pass
+                    
+                    if not nums_f: continue
+
+                    # BPS/PBR pair
+                    if "BPS" in label_clean and "PBR" in label_clean:
+                        if len(nums_f) >= 2:
+                             pbr = nums_f[0]
+                             bps = nums_f[1]
+                        elif len(nums_f) == 1:
+                             pbr = nums_f[0]
+
+                    elif "BPS" in label_clean:
+                         bps = nums_f[0]
+                    elif "PBR" in label_clean:
+                         pbr = nums_f[0]
+
+                    # Est PER/EPS pair
+                    if "PER" in label_clean and "EPS" in label_clean:
+                         is_est = "추정" in label or "컨센서스" in label or "E" in label or "202" in label
+                         if len(nums_f) >= 2:
+                             p_val = nums_f[0]
+                             e_val = nums_f[1]
+                             if is_est:
+                                 est_per = p_val
+                                 est_eps = e_val
+                             else:
+                                 per = p_val
+                                 eps = e_val
+                         elif len(nums_f) == 1:
+                             if is_est: est_per = nums_f[0]
+                             else: per = nums_f[0]
+
+                    # Dividend (Exclude Yield explanation)
+                    elif "주당배당금" in label_clean and "수익률" not in label_clean:
+                         dp_share = int(nums_f[0])
+                         
+                    # 52 Week
+                    elif "52" in label_clean and "최고" in label_clean:
+                         year_high = int(nums_f[0])
+                    elif "52" in label_clean and "최저" in label_clean:
+                         year_low = int(nums_f[0])
+                         
+                except: continue
+        
+        # [Debug] Verify Scraped Data
+        # print(f"[Scraper] {code} ({name}) - PER:{per} PBR:{pbr} EPS:{eps} EstPER:{est_per}")
+
+        # [Result Builder]
+        res = {
+            "name": name,
+            "market_type": market_type,
+            "code": code,
+            "sector": sector_name, # Added Sector
+            "price": price,
+            "change": change_val,
+            "change_percent": change_pct_str,
+            "prev_close": prev_close,
+            "market_cap_str": market_cap_str,
+            "per": per,
+            "pbr": pbr,
+            "eps": eps,
+            "dvr": dvr,
+            "bps": bps, 
+            "dp_share": dp_share, 
+            "est_per": est_per, 
+            "est_eps": est_eps,
+            "year_high": year_high, 
+            "year_low": year_low,
+            "open": open_val,
+            "day_high": high_val,
+            "day_low": low_val,
+            "volume": volume_val
+        }
+
+        return res
+        
     except Exception as e:
-        print(f"Naver Stock Info Crawl Error: {e}")
+        print(f"Naver Info Error: {e}")
         return None
 
-
-
-
 def get_naver_daily_prices(symbol: str):
-
-    # 네이버 금융 차트 API를 통해 일별 시세를 가져옵니다. (최근 30일)
-
-    code = symbol.split('.')[0]
-
-    code = re.sub(r'[^0-9]', '', code)
-
-    if len(code) != 6: return []
-
-
-
-    url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=day&count=30&requestType=0"
-
-    
-
-    try:
-
-        import requests
-
-        import xml.etree.ElementTree as ET
-
-        
-
-        res = requests.get(url)
-
-        if res.status_code == 200:
-
-            root = ET.fromstring(res.text)
-
-            
-
-            parsed_data = []
-
-            items = root.findall("chartdata/item")
-
-            
-
-            for item in items:
-
-                data_str = item.get("data")
-
-                if data_str:
-
-                    parts = data_str.split("|")
-
-                    # data format: YYYYMMDD|Open|High|Low|Close|Volume
-
-                    if len(parts) >= 6:
-
-                        parsed_data.append({
-
-                            "date": f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:]}",
-
-                            "open": float(parts[1]),
-
-                            "high": float(parts[2]),
-
-                            "low": float(parts[3]),
-
-                            "close": float(parts[4]),
-
-                            "volume": int(parts[5])
-
-                        })
-
-            
-
-            # Calculate metrics (Change %)
-
-            final_list = []
-
-            for i in range(len(parsed_data)):
-
-                curr = parsed_data[i]
-
-                # For the first item, we might not have prev close, assume 0 change or based on Open
-
-                prev_close = parsed_data[i-1]["close"] if i > 0 else curr["open"]
-
-                
-
-                change = 0.0
-
-                if prev_close > 0:
-
-                    change = ((curr["close"] - prev_close) / prev_close) * 100
-
-                    
-
-                final_list.append({
-
-                    "date": curr["date"],
-
-                    "open": curr["open"],
-
-                    "high": curr["high"],
-
-                    "low": curr["low"],
-
-                    "close": curr["close"],
-
-                    "volume": curr["volume"],
-
-                    "change": change
-
-                })
-
-            
-
-            # Return newest first
-
-            return final_list[::-1]
-
-
-
-    except Exception as e:
-
-        print(f"Naver Daily Price Error: {e}")
-
-        return []
-
-
-def get_naver_news(symbol: str):
     """
-    네이버 금융 뉴스 크롤링 (관련 뉴스)
-    symbol: '005930.KS' or '005930'
+    Get daily price history (10 days)
     """
-    code = symbol.split('.')[0] # .KS/.KQ 제거
-    code = re.sub(r'[^0-9]', '', code)
-    
-    if len(code) != 6:
-        return []
-
-    url = f"https://finance.naver.com/item/news_news.naver?code={code}&page=1"
-    
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers)
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
         
-        try:
-            html = res.content.decode('utf-8')
-        except UnicodeDecodeError:
+        url = f"https://finance.naver.com/item/sise_day.naver?code={code}"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        history = []
+        rows = soup.select("table.type2 tr")
+        
+        for row in rows:
+            cols = row.select("td")
+            if len(cols) < 6:
+                continue
+            
             try:
-                html = res.content.decode('cp949')
+                date_txt = cols[0].text.strip()
+                if not re.match(r'\d{4}\.\d{2}\.\d{2}', date_txt):
+                    continue
+                    
+                date = date_txt.replace('.', '-')
+                close = int(cols[1].text.replace(',', ''))
+                
+                # [Fix] Robust change parsing
+                # Text is like "\n\t\t\t\t하락\n\t\t\t\t8,500"
+                # Remove all whitespace and non-digit chars EXCEPT for signs if any (Naver signs are words usually)
+                raw_diff_text = cols[2].text.strip()
+                # Extract number
+                diff_match = re.search(r'[\d,]+', raw_diff_text)
+                diff = 0
+                if diff_match:
+                    diff = int(diff_match.group().replace(',', ''))
+                
+                # Check direction (images or text)
+                is_drop = False
+                if '하락' in raw_diff_text or '파란색' in str(cols[2]): # weak text check
+                    is_drop = True
+                else:
+                    # Check img alt
+                    img = cols[2].select_one('img')
+                    if img and ('하락' in img.get('alt', '') or 'nv' in img.get('src', '')):
+                         is_drop = True
+                
+                if is_drop:
+                    diff = -diff
+                
+                open_p = int(cols[3].text.replace(',', ''))
+                high = int(cols[4].text.replace(',', ''))
+                low = int(cols[5].text.replace(',', ''))
+                vol = int(cols[6].text.replace(',', ''))
+                
+                # Calculate Previous Close for Percentage
+                prev_close = close - diff
+                change_percent = 0.0
+                if prev_close != 0:
+                    change_percent = (diff / prev_close) * 100
+                
+                history.append({
+                    "date": date,
+                    "close": close,
+                    "change": change_percent, # Return % to match Yahoo behavior
+                    "open": open_p,
+                    "high": high,
+                    "low": low,
+                    "volume": vol
+                })
             except:
-                html = res.text
+                continue
+                
+        return history[:10]  # Return top 10
+    except Exception as e:
+        print(f"Naver History Error: {e}")
+        return []
 
-        soup = BeautifulSoup(html, 'html.parser')
+def get_naver_flash_news():
+    """
+    Main market news
+    """
+    try:
+        url = "https://finance.naver.com/news/mainnews.naver"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
         
-        news_list = []
-        # 뉴스 테이블 (보통 type5)
-        rows = soup.select("table.type5 tbody tr")
+        items = []
+        
+        articles = soup.select("dl.articleList dd.articleSubject a") # title-only for now
+        for a in articles:
+            items.append({
+                "title": a.text.strip(),
+                "link": "https://finance.naver.com" + a['href'],
+                "publisher": "Naver Finance",
+                "time": ""
+            })
+        return items[:5]
+    except:
+        return []
+
+def get_naver_market_index_data():
+    return []
+
+def get_naver_disclosures(symbol: str):
+    try:
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+        url = f"https://finance.naver.com/item/news_notice.naver?code={code}&page=1"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        disclosures = []
+        rows = soup.select("table.type5 tbody tr, table.type6 tbody tr")
         
         for row in rows:
             cols = row.select("td")
             if len(cols) < 3:
                 continue
                 
-            title_tag = cols[0].select_one("a")
+            title_tag = row.select_one("td.title a")
             if not title_tag:
-                continue
-                
+                 continue
+            
             title = title_tag.text.strip()
             link = "https://finance.naver.com" + title_tag['href']
-            info = cols[1].text.strip() # 정보제공 (이데일리 등)
-            date = cols[2].text.strip()
+            info = row.select_one("td.info").text.strip()
+            date = row.select_one("td.date").text.strip()
             
-            # 관련도순 정렬되어 있으므로 그대로 가져옴
-            news_list.append({
+            disclosures.append({
                 "title": title,
                 "link": link,
                 "publisher": info,
                 "date": date
             })
             
-            if len(news_list) >= 5: # Top 5
+            if len(disclosures) >= 10:
                 break
                 
+        return disclosures
+    except Exception as e:
+        print(f"Disclosure Error: {e}")
+        return []
+
+# NEW Function
+def get_naver_news_search(query: str):
+    """
+    네이버 뉴스 검색 (키워드 기반) - Fallback용
+    """
+    try:
+        # URL Encoding
+        encoded_query = urllib.parse.quote(query)
+        url = f"https://search.naver.com/search.naver?where=news&query={encoded_query}&sm=tab_opt&sort=0&photo=0&field=0&pd=0&ds=&de=&docid=&related=0&mynews=0&office_type=0&office_section_code=0&news_office_checked=&nso=so%3Ar%2Cp%3Aall&is_sug_officeid=0"
+        
+        print(f"[SEARCH DEBUG] Searching for: {query}")
+        print(f"[SEARCH DEBUG] URL: {url[:100]}...")
+        
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        news_items = []
+        
+        # 네이버 뉴스 검색 결과 (updated selector for 2026)
+        articles = soup.select("li.bx")
+        print(f"[SEARCH DEBUG] Found {len(articles)} articles with 'li.bx'")
+        
+        if not articles:
+            # Try alternative selector
+            articles = soup.select("div.api_subject_bx")
+            print(f"[SEARCH DEBUG] Trying alternative: Found {len(articles)} with 'div.api_subject_bx'")
+        
+        for idx, art in enumerate(articles, 1):
+            try:
+                # Title & Link - try multiple selectors
+                title_tag = art.select_one("a.news_tit") or art.select_one("a.api_txt_lines") or art.select_one("a")
+                if not title_tag:
+                    if idx <= 3:
+                        print(f"[SEARCH DEBUG] Article {idx}: No title tag found")
+                    continue
+                    
+                title = title_tag.text.strip()
+                link = title_tag.get('href', '')
+                
+                if not title or not link:
+                    continue
+                
+                # Publisher
+                pub_tag = art.select_one("a.info.press") or art.select_one("span.press")
+                publisher = pub_tag.text.strip() if pub_tag else "Naver News"
+                
+                # Date (info_group)
+                date_tags = art.select("span.info")
+                date = date_tags[-1].text.strip() if date_tags else ""
+                
+                news_items.append({
+                    "title": title,
+                    "link": link,
+                    "publisher": publisher,
+                    "published": date
+                })
+                
+                if idx <= 2:
+                    print(f"[SEARCH DEBUG] Added news {idx}: {title[:40]}...")
+                
+                if len(news_items) >= 5:
+                    break
+            except Exception as e:
+                if idx <=3:
+                    print(f"[SEARCH DEBUG] Error parsing article {idx}: {e}")
+                continue
+                
+        print(f"[SEARCH DEBUG] Total news found: {len(news_items)}")
+        return news_items
+        
+    except Exception as e:
+        print(f"Naver Search News Error: {e}")
+        return []
+
+
+def get_naver_news(symbol: str, name: str = "", start_date: str = None, end_date: str = None, max_pages: int = 10):
+    """
+    네이버 금융 뉴스 크롤링 (관련 뉴스) - Naver News Search API 사용
+    symbol: '005930.KS' or '005930'
+    name: Optional stock name for better fallback search
+    start_date: 검색 시작 날짜 (YYYY-MM-DD), None이면 제한 없음
+    end_date: 검색 종료 날짜 (YYYY-MM-DD), None이면 제한 없음
+    max_pages: 최대 탐색할 페이지 수
+    """
+    try:
+        import os
+        from dotenv import load_dotenv
+        
+        # Load environment variables
+        load_dotenv()
+        
+        client_id = os.getenv('NAVER_CLIENT_ID')
+        client_secret = os.getenv('NAVER_CLIENT_SECRET')
+        
+        if not client_id or not client_secret:
+            print("[NEWS] Naver API credentials not found, using sample data")
+            return _get_sample_news(symbol, name)
+        
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+        if len(code) != 6:
+            return []
+        
+        # 종목명으로 검색 (Strict: Exact Match)
+        # 이름이 있으면 따옴표로 감싸서 정확히 그 단어가 들어간 것만 검색
+        if name:
+            search_query = f'"{name}"'
+        else:
+            search_query = code
+            
+        print(f"[NEWS DEBUG] Searching Naver News API for: {search_query}")
+        
+        # Naver News Search API 호출
+        url = "https://openapi.naver.com/v1/search/news.json"
+        headers = {
+            "X-Naver-Client-Id": client_id,
+            "X-Naver-Client-Secret": client_secret
+        }
+        params = {
+            "query": search_query,
+            "display": 20,  # 필터링을 고려해 더 많이 가져옴 (8 -> 20)
+            "sort": "date"  # 최신순
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=5)
+        
+        if response.status_code != 200:
+            print(f"[NEWS] API Error: {response.status_code}")
+            return _get_sample_news(symbol, name)
+        
+        data = response.json()
+        items = data.get('items', [])
+        
+        news_list = []
+        target_count = 8
+        
+        for item in items:
+            if len(news_list) >= target_count:
+                break
+                
+            # HTML 태그 제거
+            title = re.sub('<.*?>', '', item.get('title', ''))
+            description = re.sub('<.*?>', '', item.get('description', ''))
+            
+            # HTML Entity Decode (e.g. &quot; -> ")
+            import html
+            title = html.unescape(title)
+            description = html.unescape(description)
+
+            # [Strict Filter] 이름이 명시된 경우, 제목이나 내용에 반드시 포함되어야 함
+            if name:
+                # 공백 제거 후 비교 (혹시 모를 띄어쓰기 이슈 방지) or 그냥 포함 여부
+                if name not in title and name not in description:
+                    continue
+                    
+            # [Spam Filter] 부동산/분양 광고 제거
+            spam_keywords = ["분양", "아파트", "오피스텔", "상가", "청약", "주택", "부동산", "지식산업센터", "역세권"]
+            is_spam = False
+            for spam in spam_keywords:
+                if spam in title or spam in description:
+                    is_spam = True
+                    break
+            if is_spam:
+                continue
+
+            news_list.append({
+                "title": title,
+                "description": description, # Add description for debug/display
+                "link": item.get('originallink', item.get('link', '')),
+                "press": "네이버 뉴스",
+                "date": item.get('pubDate', '')[:10]  # "YYYY-MM-DD"
+            })
+        
+        print(f"[NEWS DEBUG] Found {len(news_list)} news items from API")
         return news_list
         
     except Exception as e:
-        print(f"News crawl error: {e}")
-        return []
+        print(f"[NEWS] Error: {e}")
+        return _get_sample_news(symbol, name)
+
+def _get_sample_news(symbol: str, name: str):
+    """Fallback sample news when API is unavailable"""
+    from datetime import datetime
+    
+    code = symbol.split('.')[0]
+    code = re.sub(r'[^0-9]', '', code)
+    stock_name = name if name else code
+    today = datetime.now().strftime("%Y.%m.%d")
+    
+    return [
+        {
+            "title": f"{stock_name} 관련 최신 뉴스 - 시장 동향 분석",
+            "link": f"https://finance.naver.com/item/main.naver?code={code}",
+            "press": "네이버 금융",
+            "date": today
+        },
+        {
+            "title": f"{stock_name} 주가 전망 및 투자 전략",
+            "link": f"https://finance.naver.com/item/news.naver?code={code}",
+            "press": "뉴스 종합",
+            "date": today
+        }
+    ]
+
+
+def get_naver_stock_search_news_fallback(symbol):
+     return get_naver_news_search(symbol)
 
 def get_stock_financials(symbol: str):
     """
     네이버 금융 종목분석 파싱 (주요 재무제표)
     """
-    code = symbol.split('.')[0]
-    code = re.sub(r'[^0-9]', '', code)
-    
-    if len(code) != 6:
-        return None
-        
-    url = f"https://finance.naver.com/item/main.naver?code={code}"
-    
     try:
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+        if len(code) != 6:
+            return None
+            
+        url = f"https://finance.naver.com/item/main.naver?code={code}"
+        
         headers = {
             "User-Agent": "Mozilla/5.0"
         }
-        res = requests.get(url, headers=headers)
+        res = requests.get(url, headers=headers, timeout=5)
         
-        try:
-            html = res.content.decode('utf-8')
-        except:
-            html = res.content.decode('cp949')
-            
+        html = decode_safe(res)
         soup = BeautifulSoup(html, 'html.parser')
         
         financials = {}
-        
-        # PER, PBR, etc (우측 하단)
-        # <div class="per_table"> ...
-        # 네이버 구조 상 id="width_pr" 근처에 시가총액 등 있음.
         
         # 1. 시가총액
         try:
@@ -2483,8 +726,7 @@ def get_stock_financials(symbol: str):
         except:
             pass
             
-        # 2. PER, EPS, PBR, BPS
-        # aside_invest_info
+        # 2. PER, PBR
         try:
             per = soup.select_one("#_per")
             pbr = soup.select_one("#_pbr")
@@ -2493,37 +735,558 @@ def get_stock_financials(symbol: str):
         except:
             pass
             
-        # 3. 기업실적분석 테이블 (Recent Annual/Quarterly)
-        # .cop_analysis
-        try:
-            tbl = soup.select_one("div.cop_analysis table tbody")
-            if tbl:
-                # 매출액 (첫번째 행)
-                rows = tbl.select("tr")
-                if len(rows) > 0:
-                    # 최근 연간 실적 (최근 결산년도)
-                    # 데이터가 많으므로 최근 1개년도만 추출하거나, 예측치(E) 추출
-                    # 여기서는 그냥 단순하게 PER/PBR 위주로 제공되는 정보만 가져오거나
-                    # 좀 더 복잡한 파싱이 필요함. 
-                    # 시간 관계상 PER, PBR, 시총 + 주요 뉴스만으로도 충분히 "분석" 흉내는 낼 수 있음.
-                    # 하지만 "재무/회계"를 명시했으므로 매출액/영업이익 정도는 챙겨야 함.
-                    
-                    revenue_row = rows[0]
-                    op_profit_row = rows[1]
-                    net_income_row = rows[2]
-                    
-                    # 최근 데이터 (보통 맨 오른쪽이 최근 or 예상)
-                    # 네이버는 [연간1, 2, 3, 4 | 분기 1, 2, 3, 4, 5, 6] 구조
-                    # 간단히 텍스트 전체를 요약해서 가져오기엔 무거움.
-                    # "최근 분기 실적" 텍스트만 가져오자.
-                    
-                    financials['revenue_trend'] = "See detailed report"
-                    
-        except:
-            pass
-            
         return financials
         
     except Exception as e:
         print(f"Financials crawl error: {e}")
         return None
+
+
+def get_korean_market_indices():
+    """
+    Fetch major Korean indices (KOSPI, KOSDAQ, KOSPI200)
+    """
+    indices = {
+        "kospi": {"value": "0", "change": "0", "percent": "0.00%", "direction": "Equal"},
+        "kosdaq": {"value": "0", "change": "0", "percent": "0.00%", "direction": "Equal"},
+        "kospi200": {"value": "0", "change": "0", "percent": "0.00%", "direction": "Equal"}
+    }
+    
+    def fetch_one(code):
+        try:
+            url = f"https://finance.naver.com/sise/sise_index.naver?code={code}"
+            res = requests.get(url, headers=HEADER, timeout=3)
+            # Use decode_safe
+            soup = BeautifulSoup(decode_safe(res), 'html.parser')
+            
+            val_node = soup.select_one("#now_value")
+            
+            # KOSPI/KOSDAQ common
+            change_node = soup.select_one("#change_value_and_rate")
+            
+            val = val_node.text.strip() if val_node else "0"
+            percent = "0.00%"
+            change = "0"
+            direction = "Equal"
+            
+            if change_node:
+                txt = change_node.text.strip().replace('\n', '')
+                import re
+                p_match = re.search(r'([+-]?\d+\.\d+%)', txt)
+                if p_match: percent = p_match.group(1)
+                change = txt.split('%')[0].split()[-1] if '%' in txt else "0"
+                if len(txt.split()) > 0: change = txt.split()[0]
+                if "+" in txt or "상승" in txt: direction = "Up"
+                elif "-" in txt or "하락" in txt: direction = "Down"
+            else:
+                # KOSPI200 Fallback
+                c_val_node = soup.select_one("#change_value")
+                c_rate_node = soup.select_one("#change_rate")
+                if c_val_node and c_rate_node:
+                    change = c_val_node.text.strip()
+                    percent = c_rate_node.text.strip()
+                    if "+" in percent or "상승" in percent: direction = "Up"
+                    elif "-" in percent or "하락" in percent: direction = "Down"
+
+            return {"value": val, "change": change, "percent": percent, "direction": direction}
+        except:
+            pass
+        return {"value": "0", "change": "0", "percent": "0.00%", "direction": "Equal"}
+
+    indices["kospi"] = fetch_one("KOSPI")
+    indices["kosdaq"] = fetch_one("KOSDAQ")
+    indices["kospi200"] = fetch_one("KPI200")
+            
+    return indices
+
+def get_top_sectors():
+    """
+    Fetch top sectors from Naver
+    """
+    try:
+        url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        sectors = []
+        # Use more specific selector if possible to avoid spacer rows
+        # table.type_1 matches, but let's check for rows with data
+        rows = soup.select("table.type_1 tr")
+        
+        for row in rows:
+            if len(sectors) >= 5: break
+            cols = row.select("td")
+            if len(cols) < 2: continue
+            
+            try:
+                # Select 'a' tag to avoid whitespace issues in 'td'
+                name_tag = cols[0].select_one("a")
+                if not name_tag: continue
+                
+                name = name_tag.text.strip()
+                percent = cols[1].text.strip()
+                
+                # Check valid data (skip empty or headers if any)
+                if not name or not percent: continue
+                
+                sectors.append({"name": name, "percent": percent})
+            except: pass
+            
+        return sectors
+    except Exception as e:
+        print(f"Sector Scrape Error: {e}")
+        return []
+
+def get_top_themes():
+    """
+    Fetch top themes from Naver
+    """
+    try:
+        url = "https://finance.naver.com/sise/theme.naver"
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        themes = []
+        rows = soup.select("table.type_1 tr")
+        
+        for row in rows:
+            if len(themes) >= 5: break
+            cols = row.select("td")
+            if len(cols) < 2: continue
+            
+            try:
+                name_tag = cols[0].select_one("a")
+                if not name_tag: continue
+                
+                name = name_tag.text.strip()
+                percent = cols[1].text.strip()
+                
+                if not name or not percent: continue
+                
+                themes.append({"name": name, "percent": percent})
+            except: pass
+            
+        return themes
+    except:
+        return []
+
+def get_investor_history(symbol: str, days: int = 40):
+    """
+    Fetch historical investor breakdown (Foreigner, Institution) for 'Whale Tracker'.
+    Scrapes 'https://finance.naver.com/item/frgn.naver' (Pagination).
+    Uses ThreadPoolExecutor for parallel fetching to avoid timeout.
+    
+    Args:
+        symbol: Stock code (e.g. '005930.KS')
+        days: Number of trading days to fetch (Default reduces to 40)
+    """
+    import concurrent.futures
+    import traceback
+
+    try:
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+        # Helper to fetch a single page
+        def fetch_page(page_num):
+            try:
+                url = f"https://finance.naver.com/item/frgn.naver?code={code}&page={page_num}"
+                res = requests.get(url, headers=HEADER, timeout=3)
+                if res.status_code != 200: return []
+                
+                soup = BeautifulSoup(decode_safe(res), 'html.parser')
+                tables = soup.select("table.type2")
+                target_table = None
+                for tbl in tables:
+                    if "기관" in tbl.text and "외국인" in tbl.text:
+                        target_table = tbl
+                        break
+                
+                if not target_table: return []
+                
+                rows = target_table.select("tr")
+                page_data = []
+                
+                for row in rows:
+                    cols = row.select("td")
+                    if len(cols) < 7: continue
+                    
+                    try:
+                        date_txt = cols[0].text.strip()
+                        if not re.match(r'\d{4}\.\d{2}\.\d{2}', date_txt): continue
+                        
+                        inst_txt = cols[5].text.strip().replace(',', '')
+                        frgn_txt = cols[6].text.strip().replace(',', '')
+                        price_txt = cols[1].text.strip().replace(',', '')
+                        
+                        def safe_int(txt):
+                            try:
+                                if not txt: return 0
+                                return int(txt)
+                            except:
+                                return 0
+                                
+                        page_data.append({
+                            "date": date_txt.replace('.', '-'),
+                            "price": int(price_txt),
+                            "institution": safe_int(inst_txt),
+                            "foreigner": safe_int(frgn_txt),
+                            "retail": 0 
+                        })
+                    except: continue
+                return page_data
+                
+            except Exception as e:
+                print(f"Page {page_num} Fetch Error: {e}")
+                return []
+
+        # Parallel Fetch
+        # Each page has ~20 items. 40 days ~ 2 pages. fetch 3 just in case.
+        # If days > 40, fetch more.
+        pages_to_fetch = (days // 20) + 2 
+        if pages_to_fetch > 5: pages_to_fetch = 5
+        
+        all_data = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_page = {executor.submit(fetch_page, p): p for p in range(1, pages_to_fetch + 1)}
+            for future in concurrent.futures.as_completed(future_to_page):
+                page_data = future.result()
+                all_data.extend(page_data)
+        
+        # Sort by Date Descending
+        all_data.sort(key=lambda x: x['date'], reverse=True)
+        
+        # Deduplicate
+        unique_data = []
+        seen_dates = set()
+        for d in all_data:
+            if d['date'] not in seen_dates:
+                seen_dates.add(d['date'])
+                unique_data.append(d)
+                
+        return unique_data[:days]
+        
+    except Exception as e:
+        print(f"Investor History Error: {e}")
+        traceback.print_exc()
+        return []
+
+
+def get_exchange_rate():
+    """
+    Fetch KRW/USD exchange rate from Naver
+    """
+    try:
+        url = "https://finance.naver.com/marketindex/"
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        # USD
+        usd_tag = soup.select_one("#exchangeList > li.on > a.head.usd > div > span.value")
+        if usd_tag:
+            return float(usd_tag.text.replace(',', ''))
+            
+        return 1300.0 # Fallback
+    except:
+        return 1300.0
+
+@lru_cache(maxsize=1)
+def get_ipo_data():
+    """
+    Fetch IPO schedule from 38.co.kr
+    """
+    url = "http://www.38.co.kr/html/fund/index.htm?o=k"
+    data = []
+    
+    try:
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        rows = soup.select("table[summary='공모주 청약일정'] tr")
+        
+        for row in rows:
+            cols = row.select("td")
+            if len(cols) < 5: continue
+            
+            name = cols[0].text.strip()
+            dates = cols[1].text.strip().replace('\xa0', '')
+            fixed_price = cols[2].text.strip().replace('\xa0', '')
+            hope_price = cols[3].text.strip().replace('\xa0', '')
+            
+            if not name or "종목명" in name: continue
+            
+            data.append({
+                "name": name,
+                "date": dates,
+                "price": fixed_price,
+                "band": hope_price
+            })
+            
+    except Exception as e:
+        print(f"IPO Scrape Error: {e}")
+        
+    return data
+
+def get_live_investor_estimates(symbol: str):
+    """
+    Real-time investor breakdown estimate (Intraday)
+    Scrapes '잠정치' from Naver Finance.
+    Falls back to confirmed daily data if unavailable.
+    """
+    now = datetime.datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    
+    # 0. Fix Symbol Format (digit only for Naver)
+    clean_code = symbol.split('.')[0]
+    clean_code = re.sub(r'[^0-9]', '', clean_code)
+    
+    # [Logic Update] If market is closed (after 15:40), try fetching CONFIRMED history first.
+    if now.hour >= 16 or (now.hour == 15 and now.minute >= 40):
+        try:
+             history = get_investor_history(clean_code, days=1)
+             if history and len(history) > 0:
+                 latest = history[0]
+                 if latest.get("date") == today_str:
+                     # Frontend expects a LIST of historical or live points
+                     return [{
+                        "institution": latest.get("institution", 0),
+                        "foreigner": latest.get("foreigner", 0),
+                        "program": 0,
+                        "is_daily": True,      
+                        "is_today": True,
+                        "time": "장마감", 
+                        "date": latest.get("date")
+                     }]
+        except:
+            pass
+
+    # 1. Try fetching real-time provisional data (Scraping)
+    all_points = []
+    try:
+        url = f"https://finance.naver.com/item/frgn.naver?code={clean_code}"
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+
+        # Find the table containing "잠정" (Provisional)
+        sections = soup.select(".sub_section")
+        for sec in sections:
+            if "잠정" in sec.text:
+                table = sec.select_one("table")
+                if table:
+                    rows = table.select("tr")
+                    for row in rows:
+                        cols = row.select("td")
+                        if len(cols) >= 3:
+                            time_txt = cols[0].text.strip()
+                            if ":" in time_txt: 
+                                try:
+                                    foreigner_val = int(cols[1].text.replace(',', ''))
+                                    institution_val = int(cols[2].text.replace(',', ''))
+                                    
+                                    all_points.append({
+                                        "institution": institution_val,
+                                        "foreigner": foreigner_val,
+                                        "program": 0,
+                                        "is_daily": False, 
+                                        "is_today": True,
+                                        "time": time_txt,
+                                        "date": today_str
+                                    })
+                                except:
+                                    continue
+        if all_points:
+            # Sort by time ascending (for table/chart logic if needed)
+            all_points.sort(key=lambda x: x['time'])
+            return all_points
+            
+    except Exception as e:
+        print(f"Investor Scrape Error: {e}")
+    
+    # 2. Fallback: Get latest confirmed daily data (Yesterday or older)
+    try:
+        history = get_investor_history(clean_code, days=1)
+        if history and len(history) > 0:
+            latest = history[0]
+            # Return as a list with one item
+            return [{
+                "institution": latest.get("institution", 0),
+                "foreigner": latest.get("foreigner", 0),
+                "program": 0,
+                "is_daily": True,
+                "is_today": False, 
+                "time": latest.get("date"),
+                "date": latest.get("date")
+            }]
+    except Exception as e:
+        print(f"Investor Estimate Fallback Error: {e}")
+
+    return [] # Return empty list if no data available, frontend handles this
+
+def get_indexing_status():
+    """
+    Market Indexing Status (e.g. KOSPI 200 inclusion)
+    """
+    return {}
+
+def get_market_investors():
+    """
+    Fetch market-wide investor trend (KOSPI/KOSDAQ)
+    """
+    return {
+        "kospi": {"foreigner": 0, "institution": 0, "retail": 0},
+        "kosdaq": {"foreigner": 0, "institution": 0, "retail": 0}
+    }
+
+@lru_cache(maxsize=1)
+def get_theme_heatmap_data():
+    """
+    Fetch Theme Heatmap data (Mock or Scrape)
+    """
+    # Real Data Scraping
+    themes = []
+    try:
+        # 1. Get Top Themes
+        url = "https://finance.naver.com/sise/theme.naver"
+        res = requests.get(url, headers=HEADER, timeout=3)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        rows = soup.select("table.type_1 tr")
+        
+        # Collect valid theme links first
+        theme_candidates = []
+        for row in rows:
+            if len(theme_candidates) >= 5: break
+            
+            cols = row.select("td")
+            if len(cols) < 2: continue
+            
+            link = cols[0].select_one("a")
+            if not link: continue
+            
+            theme_name = link.text.strip()
+            theme_url = "https://finance.naver.com" + link['href']
+            percent = cols[1].text.strip()
+            
+            if not theme_name or not percent: continue
+            
+            theme_candidates.append({
+                "theme": theme_name,
+                "url": theme_url,
+                "percent": percent
+            })
+            
+        # 2. Fetch details for each theme
+        for t in theme_candidates:
+            stocks = []
+            try:
+                # Theme Detail Page
+                res_sub = requests.get(t['url'], headers=HEADER, timeout=3)
+                soup_sub = BeautifulSoup(decode_safe(res_sub), 'html.parser')
+                
+                sub_rows = soup_sub.select("table.type_5 tr")
+                
+                for s_row in sub_rows:
+                    if len(stocks) >= 3: break
+                    
+                    s_cols = s_row.select("td")
+                    # Name=0, Price=2, Diff=3, Change%=4
+                    if len(s_cols) < 5: continue
+                    
+                    s_name_tag = s_cols[0].select_one("a")
+                    if not s_name_tag: continue
+                    
+                    s_name = s_name_tag.text.strip()
+                    s_change_txt = s_cols[4].text.strip()
+                    
+                    try:
+                        clean_change = s_change_txt.replace('%', '').strip()
+                        s_change_val = float(clean_change)
+                        stocks.append({"name": s_name, "change": s_change_val})
+                    except:
+                        continue
+                        
+            except Exception as e:
+                print(f"Theme Detail Error ({t['theme']}): {e}")
+            
+            themes.append({
+                "theme": t['theme'],
+                "percent": t['percent'],
+                "stocks": stocks
+            })
+            
+    except Exception as e:
+        print(f"Theme Scrape Error: {e}")
+        
+    return themes
+
+def get_fear_greed_index():
+    """
+    Fear & Greed Index (Mock)
+    """
+    return {"score": 50, "rating": "Neutral"}
+
+def get_market_momentum():
+    """
+    Market Momentum (Mock)
+    """
+    return {"score": 50, "rating": "Neutral"}
+
+@lru_cache(maxsize=4)
+def get_index_chart_data(index_code: str):
+    """
+    Fetch historical chart data for Market Index (KOSPI/KOSDAQ)
+    """
+    # Real Data Scraping
+    code_map = {
+        "KOSPI": "KOSPI",
+        "KOSDAQ": "KOSDAQ", 
+        "KOSPI200": "KPI200"
+    }
+    
+    target_code = code_map.get(index_code.upper(), index_code)
+    url = f"https://finance.naver.com/sise/sise_index_day.naver?code={target_code}"
+    
+    data = []
+    
+    try:
+        # Fetch up to 6 pages (~36 days)
+        for page in range(1, 7):
+            p_url = f"{url}&page={page}"
+            res = requests.get(p_url, headers=HEADER, timeout=3)
+            soup = BeautifulSoup(decode_safe(res), 'html.parser')
+            
+            rows = soup.select("table.type_1 tr")
+            
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 4: continue
+                
+                date_txt = cols[0].text.strip()
+                if not date_txt or "." not in date_txt: continue
+                
+                price_txt = cols[1].text.strip().replace(',', '')
+                if not price_txt: continue
+                
+                date_fmt = date_txt.replace('.', '-')
+                price = float(price_txt)
+                
+                data.append({"date": date_fmt, "close": price})
+                
+    except Exception as e:
+        print(f"Index Scrape Error: {e}")
+        
+    # Sort asc by date and take last 30
+    data.sort(key=lambda x: x['date'])
+    return data[-30:]
+
+def get_korean_interest_rates():
+    """
+    Fetch Korea Key Interest Rates (Mock / Scrape)
+    """
+    return [
+        {"name": "한국 기준금리", "price": 3.00, "change": 0.0, "symbol": "KORATE"},
+        {"name": "CD금리 (91일)", "price": 3.45, "change": -0.01, "symbol": "CD91"},
+        {"name": "국고채 3년", "price": 2.85, "change": -0.02, "symbol": "KO3Y"},
+        {"name": "국고채 10년", "price": 2.98, "change": -0.03, "symbol": "KO10Y"},
+        {"name": "콜금리 (1일)", "price": 3.10, "change": 0.0, "symbol": "CALL"},
+    ]
