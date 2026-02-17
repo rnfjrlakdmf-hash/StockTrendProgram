@@ -1,0 +1,6 @@
+[phases.setup]
+nixPkgs = ["...", "gcc", "gfortran"]
+aptPkgs = ["libopenblas-dev", "liblapack-dev", "gfortran"]
+
+[phases.install]
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
