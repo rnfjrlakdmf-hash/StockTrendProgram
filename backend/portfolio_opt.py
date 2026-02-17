@@ -1,7 +1,13 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import scipy.optimize as sco
+try:
+    import scipy.optimize as sco
+    SCIPY_AVAILABLE = True
+except ImportError:
+    sco = None
+    SCIPY_AVAILABLE = False
+    print("[WARNING] scipy not installed. Portfolio optimization will be unavailable.")
 
 # Common Korean stock name to ticker mapping
 NAME_TO_TICKER = {
@@ -106,6 +112,9 @@ def optimize_portfolio(symbols: list):
     주어진 종목 리스트에 대해 샤프 지수를 최대화하는 포트폴리오 비중을 계산합니다.
     """
     try:
+        if not SCIPY_AVAILABLE:
+            return {"error": "scipy is not installed on this server. Portfolio optimization is unavailable."}
+        
         if len(symbols) < 2:
             return {"error": "At least 2 symbols are required."}
 
