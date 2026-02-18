@@ -318,16 +318,16 @@ export default function PortfolioPage() {
                                                 <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
                                                         <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정'
-                                                                ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30'
-                                                                : 'text-green-400 bg-green-900/30'
+                                                            ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30'
+                                                            : 'text-green-400 bg-green-900/30'
                                                             }`}>
                                                             {new Date(event.date).getMonth() + 1}/{new Date(event.date).getDate()}
                                                         </span>
                                                         <span className="font-bold text-xs">{event.symbol}</span>
                                                         {event.type && (
                                                             <span className={`text-[9px] px-1 py-0.5 rounded ${event.source === '확정'
-                                                                    ? 'text-emerald-300 bg-emerald-900/20'
-                                                                    : 'text-purple-400 bg-purple-900/20'
+                                                                ? 'text-emerald-300 bg-emerald-900/20'
+                                                                : 'text-purple-400 bg-purple-900/20'
                                                                 }`}>
                                                                 {event.type}
                                                             </span>
@@ -342,9 +342,14 @@ export default function PortfolioPage() {
                                     </div>
                                     {analysisResult?.calendar?.length > 0 && (
                                         <div className="mt-2 pt-2 border-t border-white/10 text-right text-xs text-gray-500">
-                                            Total: <span className="text-green-400 font-bold">
-                                                ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}
-                                            </span>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] text-gray-600">
+                                                    Data: SEIBRO, Naver, Yahoo
+                                                </span>
+                                                <span className="text-green-400 font-bold">
+                                                    Total: ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}
+                                                </span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
