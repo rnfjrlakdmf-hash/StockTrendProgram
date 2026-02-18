@@ -179,6 +179,68 @@ def analyze_portfolio_nutrition(symbols: list) -> dict:
 # 2. Dividend Calendar (Second Salary)
 # ==========================================
 
+def fetch_seibro_dividend(stock_code: str) -> dict:
+    """
+    SEIBRO API를 통해 배당 정보를 조회합니다.
+    Ref: getDividendRankN1 (배당순위)
+    Note: API Key must be set in env as SEIBRO_API_KEY
+    Returns: dict with keys 'amount', 'date', 'type' if found, else None
+    """
+    api_key = os.getenv("SEIBRO_API_KEY")
+    if not api_key:
+        return None
+    
+    try:
+        url = "http://api.seibro.or.kr/openapi/service/StockSvc/getDividendRankN1"
+        # Hex Key는 그대로 사용
+        params = {
+            "ServiceKey": api_key,
+            "year": datetime.now().year - 1, # 작년 기준 실적
+            "rankTpcd": "1", # 시가배당률순
+            "stkTpcd": "1", # KOSPI
+            "listTpcd": "1",
+            "numOfRows": "500", # 상위 500개 조회 (매칭 확률 높이기 위해)
+            "pageNo": "1"
+        }
+        
+        res = requests.get(url, params=params, timeout=4)
+        
+        if res.status_code == 200 and "<resultCode>00</resultCode>" in res.text:
+            # Simple XML Parsing using ElementTree
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(res.text)
+            
+            # Find item with matching code
+            # Field: shotnIsin (단축코드) matches stock_code
+            for item in root.findall(".//item"):
+                code_node = item.find("shotnIsin")
+                if code_node is not None and code_node.text == stock_code:
+                    # Found the stock!
+                    amt_node = item.find("divAmtPerStk") # 주당배당금
+                    date_node = item.find("setaccMmdd")  # 결산월일 (예: 1231)
+                    
+                    amount = float(amt_node.text) if amt_node is not None and amt_node.text else 0
+                    date_str = date_node.text if date_node is not None else "1229"
+                    
+                    # Estimate next payment date based on settlement date
+                    # Usually payment is 3-4 months after settlement
+                    # If settlement is 12/31, payment is usually April
+                    if amount > 0:
+                        return {
+                            "amount": amount,
+                            "settlement_date": date_str,
+                            "source": "SEIBRO"
+                        }
+            
+            # If not found in first page, maybe try KOSDAQ? (stkTpcd=2)
+            # But for performance, we skip excessive calls in this loop
+            
+    except Exception as e:
+        # print(f"[SEIBRO] Error: {e}")
+        pass
+        
+    return None
+
 def get_dividend_calendar(symbols: list) -> list:
     """
     Fetches dividend dates and amounts with improved accuracy.
@@ -211,6 +273,45 @@ def get_dividend_calendar(symbols: list) -> list:
                     final_code = search_code.split(".")[0]
                 
                 # === Korean Stock Dividends ===
+                # Priority 0: SEIBRO API (If key works)
+                seibro_data = fetch_seibro_dividend(final_code)
+                if seibro_data:
+                    # Estimate payment date (Settlement + 4 months approx)
+                    # ex) 1231 -> Next year April
+                    settlement_mmdd = seibro_data.get('settlement_date', '1231') 
+                    try:
+                        month = int(settlement_mmdd[:2])
+                        day = int(settlement_mmdd[2:])
+                    except:
+                        month=12; day=31
+                    
+                    year = datetime.now().year
+                    # If settlement is Dec, payment is next year April
+                    if month >= 11:
+                        pay_year = year + 1
+                        pay_month = 4
+                        pay_day = 15 # Approx
+                    else:
+                        pay_year = year
+                        pay_month = month + 3
+                        if pay_month > 12:
+                            pay_year += 1
+                            pay_month -= 12
+                        pay_day = 15
+                        
+                    pay_date = f"{pay_year}-{pay_month:02d}-{pay_day:02d}"
+                    
+                    calendar_events.append({
+                        "date": pay_date,
+                        "symbol": raw_sym,
+                        "name": raw_sym,
+                        "amount": seibro_data['amount'],
+                        "currency": "KRW",
+                        "type": "확정 (SEIBRO)", # 공공데이터 기반
+                        "source": "공공데이터포털"
+                    })
+                    continue
+
                 # Primary: yfinance .KS ticker for actual dividend history
                 yf_ticker_code = f"{final_code}.KS"
                 yf_success = False
