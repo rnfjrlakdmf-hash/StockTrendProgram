@@ -322,7 +322,7 @@ export default function PortfolioPage() {
                                                         </span>
                                                         <span className="font-bold">{event.symbol}</span>
                                                     </div>
-                                                    <span className="text-gray-300 text-xs">+{event.amount.toFixed(0)}</span>
+                                                    <span className="text-gray-300 text-xs">+₩{event.amount.toLocaleString()}</span>
                                                 </div>
                                             ))
                                         ) : (
@@ -332,7 +332,7 @@ export default function PortfolioPage() {
                                     {analysisResult?.calendar?.length > 0 && (
                                         <div className="mt-2 pt-2 border-t border-white/10 text-right text-xs text-gray-500">
                                             Total: <span className="text-green-400 font-bold">
-                                                ${analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toFixed(0)}
+                                                ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}
                                             </span>
                                         </div>
                                     )}
@@ -406,9 +406,18 @@ export default function PortfolioPage() {
                                                     <div className="flex items-center justify-between mb-0.5">
                                                         <div className="flex items-center gap-1.5 overflow-hidden">
                                                             <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: n.fill }} />
-                                                            <span className="text-gray-200 font-semibold truncate max-w-[90px]">{n.name.split(' ')[0]}</span>
+                                                            <span className="text-gray-200 font-semibold truncate max-w-[120px]">{n.name}</span>
                                                         </div>
                                                         <span className="font-bold text-gray-400">{n.value}%</span>
+                                                    </div>
+                                                    {/* Nutrient Description */}
+                                                    <div className="pl-3.5 text-[10px] text-gray-400 mb-0.5">
+                                                        {n.name.includes('단백질') && '💪 안정적인 기초 종목 (금융/산업/부동산)'}
+                                                        {n.name.includes('탄수화물') && '🚀 성장과 에너지 (IT/통신/소비재)'}
+                                                        {n.name.includes('비타민') && '🛡️ 방어력 (헬스케어/필수소비/유틸리티)'}
+                                                        {n.name.includes('지방') && '⛽ 고밀도 에너지원 (에너지/소재)'}
+                                                        {n.name.includes('물') && '💧 안전 자산 (현금성)'}
+                                                        {n.name.includes('식이섬유') && '🌿 기타 및 미분류 섹터'}
                                                     </div>
                                                     {/* Symbol List */}
                                                     <div className="pl-3.5 text-[10px] text-gray-500 truncate">
