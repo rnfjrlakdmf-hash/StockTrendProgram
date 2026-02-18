@@ -41,6 +41,7 @@ theme_dump.html
 *.md
 *.txt
 !requirements.txt
+!backend/requirements.txt
 !runtime.txt
 !firebase-adminsdk-README.txt
 

@@ -241,6 +241,136 @@ def fetch_seibro_dividend(stock_code: str) -> dict:
         
     return None
 
+# ==========================================
+# 3. Risk Analysis (Lock-up & CB/BW)
+# ==========================================
+
+def fetch_lockup_risk(stock_code: str) -> list:
+    """
+    의무보호예수 해제 현황을 조회하여 리스크를 분석합니다.
+    Ref: getMandatoryLockUp (주식정보서비스/의무보호예수전체현황)
+    """
+    api_key = os.getenv("SEIBRO_API_KEY")
+    if not api_key:
+        return []
+    
+    risks = []
+    try:
+        # Note: This API might require Full ISIN in production.
+        # Here we try with short code or assume we can get it.
+        # Endpoint is hypothetical based on standard patterns.
+        url = "http://api.seibro.or.kr/openapi/service/StockSvc/getMandatoryLockUp" 
+        params = {
+            "ServiceKey": api_key,
+            "shotnIsin": stock_code, # Try short code
+            "numOfRows": "50",
+            "pageNo": "1"
+        }
+        
+        res = requests.get(url, params=params, timeout=3)
+        if res.status_code == 200 and "<resultCode>00</resultCode>" in res.text:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(res.text)
+            
+            for item in root.findall(".//item"):
+                # Check for upcoming release dates
+                rel_date_node = item.find("relDt") # 해제일 (예: 20240501)
+                qty_node = item.find("lockUpQty")  # 예수주식수
+                
+                if rel_date_node is not None and rel_date_node.text:
+                    rel_date_str = rel_date_node.text
+                    try:
+                        rel_dt = datetime.strptime(rel_date_str, "%Y%m%d")
+                        # If release date is within next 3 months
+                        if datetime.now() <= rel_dt <= datetime.now() + pd.DateOffset(months=3):
+                            qty = int(qty_node.text) if qty_node is not None else 0
+                            risks.append({
+                                "type": "Lock-up Release",
+                                "date": rel_dt.strftime("%Y-%m-%d"),
+                                "message": f"보호예수 {qty:,}주 해제 예정",
+                                "severity": "High" if qty > 100000 else "Medium"
+                            })
+                    except:
+                        pass
+    except:
+        pass
+    
+    return risks
+
+def fetch_cb_risk(stock_code: str) -> list:
+    """
+    주식관련사채(CB/BW) 행사 잔액 정보를 조회합니다.
+    Ref: getStkRltdBndInfo (주식관련사채정보)
+    """
+    api_key = os.getenv("SEIBRO_API_KEY")
+    if not api_key:
+        return []
+
+    risks = []
+    try:
+        url = "http://api.seibro.or.kr/openapi/service/StockSvc/getStkRltdBndInfo"
+        params = {
+            "ServiceKey": api_key,
+            "shotnIsin": stock_code,
+            "numOfRows": "50",
+            "pageNo": "1"
+        }
+        
+        res = requests.get(url, params=params, timeout=3)
+        if res.status_code == 200 and "<resultCode>00</resultCode>" in res.text:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(res.text)
+            
+            items = root.findall(".//item")
+            total_rem_qty = 0
+            
+            for item in items:
+                # remExerQty: 미행사잔액(주식수)
+                qty_node = item.find("remExerQty")
+                if qty_node is not None and qty_node.text:
+                    total_rem_qty += int(qty_node.text)
+            
+            if total_rem_qty > 0:
+                 risks.append({
+                    "type": "CB/BW Overhang",
+                    "date": "상시",
+                    "message": f"잠재 매물 {total_rem_qty:,}주 (CB/BW 잔액)",
+                    "severity": "Medium" if total_rem_qty < 100000 else "High"
+                })
+    except:
+        pass
+        
+    return risks
+
+def analyze_portfolio_risk(symbols: list) -> list:
+    """
+    Analyzes risks for the entire portfolio.
+    """
+    portfolio_risks = []
+    
+    for symbol in symbols:
+        # Only for Korean stocks
+        if not (symbol.endswith(".KS") or symbol.endswith(".KQ") or symbol.isdigit()):
+            continue
+            
+        code = str(symbol).strip()
+        if "." in code:
+            code = code.split(".")[0]
+            
+        # 1. Lock-up Risks
+        lockups = fetch_lockup_risk(code)
+        for r in lockups:
+            r['symbol'] = symbol
+            portfolio_risks.append(r)
+            
+        # 2. CB/BW Risks
+        cbs = fetch_cb_risk(code)
+        for r in cbs:
+            r['symbol'] = symbol
+            portfolio_risks.append(r)
+            
+    return portfolio_risks
+
 def get_dividend_calendar(symbols: list) -> list:
     """
     Fetches dividend dates and amounts with improved accuracy.

@@ -18,6 +18,7 @@ import PriceAlertList from "@/components/PriceAlertList";
 import DisclosureTable from "@/components/DisclosureTable";
 import FCMTokenManager from "@/components/FCMTokenManager";
 import SimplePushTest from "@/components/SimplePushTest";
+import RiskAlert from "@/components/RiskAlert";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -837,6 +838,11 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* [New] Risk Radar (SEIBRO) */}
+                                            <div className="mb-6">
+                                                <RiskAlert symbols={[stock.symbol]} />
+                                            </div>
 
                                             {/* [New] Strategy Card */}
                                             {stock.strategy && (stock.strategy.target > 0) && (

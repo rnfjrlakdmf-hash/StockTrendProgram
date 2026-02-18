@@ -301,7 +301,16 @@ from korea_data import (
 )
 from db_manager import save_analysis_result, get_score_history, add_watchlist, remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report
 from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from portfolio_analysis import analyze_portfolio_risk
+
+class PortfolioItem(BaseModel):
+    symbol: str
+    weight: float
+
+class PortfolioAnalysisRequest(BaseModel):
+    allocation: List[PortfolioItem]
 
 import urllib.parse
 import time
@@ -1202,6 +1211,19 @@ def get_market_calendar():
 
 
 # ============================================================
+# Portfolio Risk API Models
+# ============================================================
+
+from typing import List
+
+class PortfolioItem(BaseModel):
+    symbol: str
+    weight: float
+
+class PortfolioAnalysisRequest(BaseModel):
+    allocation: List[PortfolioItem]
+
+# ============================================================
 # Price Alert System (가격 알림 시스템)
 # ============================================================
 
@@ -1594,6 +1616,19 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
 
 
 
+
+@app.post("/api/portfolio/risk")
+def check_portfolio_risk_api(request: PortfolioAnalysisRequest):
+    """
+    포트폴리오 리스크(Lock-up, CB/BW) 분석
+    """
+    try:
+        symbols = [item.symbol for item in request.allocation]
+        risks = analyze_portfolio_risk(symbols)
+        return {"status": "success", "risks": risks}
+    except Exception as e:
+        print(f"Risk Analysis Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
