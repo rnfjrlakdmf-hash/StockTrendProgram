@@ -316,18 +316,24 @@ export default function PortfolioPage() {
                                         {analysisResult?.calendar?.length > 0 ? (
                                             analysisResult.calendar.map((event: any, i: number) => (
                                                 <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-green-400 font-bold text-xs bg-green-900/30 px-1.5 py-0.5 rounded">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정'
+                                                                ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30'
+                                                                : 'text-green-400 bg-green-900/30'
+                                                            }`}>
                                                             {new Date(event.date).getMonth() + 1}/{new Date(event.date).getDate()}
                                                         </span>
-                                                        <span className="font-bold">{event.symbol}</span>
+                                                        <span className="font-bold text-xs">{event.symbol}</span>
                                                         {event.type && (
-                                                            <span className="text-[10px] text-purple-400 bg-purple-900/20 px-1 py-0.5 rounded">
+                                                            <span className={`text-[9px] px-1 py-0.5 rounded ${event.source === '확정'
+                                                                    ? 'text-emerald-300 bg-emerald-900/20'
+                                                                    : 'text-purple-400 bg-purple-900/20'
+                                                                }`}>
                                                                 {event.type}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className="text-gray-300 text-xs">+{event.currency === 'KRW' ? '₩' : '$'}{event.amount.toLocaleString()}</span>
+                                                    <span className="text-gray-300 text-xs font-medium">+{event.currency === 'KRW' ? '₩' : '$'}{event.amount.toLocaleString()}</span>
                                                 </div>
                                             ))
                                         ) : (
