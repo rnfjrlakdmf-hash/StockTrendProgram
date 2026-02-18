@@ -321,8 +321,13 @@ export default function PortfolioPage() {
                                                             {new Date(event.date).getMonth() + 1}/{new Date(event.date).getDate()}
                                                         </span>
                                                         <span className="font-bold">{event.symbol}</span>
+                                                        {event.type && (
+                                                            <span className="text-[10px] text-purple-400 bg-purple-900/20 px-1 py-0.5 rounded">
+                                                                {event.type}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    <span className="text-gray-300 text-xs">+₩{event.amount.toLocaleString()}</span>
+                                                    <span className="text-gray-300 text-xs">+{event.currency === 'KRW' ? '₩' : '$'}{event.amount.toLocaleString()}</span>
                                                 </div>
                                             ))
                                         ) : (

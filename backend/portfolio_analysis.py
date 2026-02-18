@@ -213,10 +213,55 @@ def get_dividend_calendar(symbols: list) -> list:
                 if "." in search_code and search_code.split('.')[0].isdigit():
                     final_code = search_code.split(".")[0]
 
+                # Try yfinance first for dividend history (supports quarterly dividends)
+                yf_ticker_code = f"{final_code}.KS"
+                try:
+                    ticker = yf.Ticker(yf_ticker_code)
+                    dividends = ticker.dividends
+                    
+                    if not dividends.empty:
+                        # Get last 18 months of dividends to detect frequency
+                        now = pd.Timestamp.now()
+                        if dividends.index.tz is not None:
+                            now = pd.Timestamp.now(tz=dividends.index.tz)
+                        
+                        eighteen_months_ago = now - pd.DateOffset(months=18)
+                        recent_divs = dividends[dividends.index > eighteen_months_ago]
+                        
+                        if not recent_divs.empty:
+                            for date, amount in recent_divs.items():
+                                projected_date = date + pd.DateOffset(years=1)
+                                
+                                current_time = pd.Timestamp.now(tz=date.tz) if date.tz else pd.Timestamp.now()
+                                if projected_date < current_time:
+                                    projected_date += pd.DateOffset(years=1)
+                                
+                                # Determine dividend type based on frequency
+                                num_divs = len(recent_divs)
+                                if num_divs >= 4:
+                                    div_type = "분기배당"
+                                elif num_divs >= 2:
+                                    div_type = "반기배당"
+                                else:
+                                    div_type = "연간배당"
+                                
+                                calendar_events.append({
+                                    "date": projected_date.strftime("%Y-%m-%d"),
+                                    "symbol": raw_sym,
+                                    "name": raw_sym,
+                                    "amount": float(amount),
+                                    "currency": "KRW",
+                                    "type": div_type
+                                })
+                            continue
+                except Exception as e:
+                    print(f"[Dividend] yfinance failed for {yf_ticker_code}: {e}")
+
+                # Fallback: Naver stock info (annual only)
                 info = get_naver_stock_info(final_code)
                 if info and info.get('dvr', 0) > 0:
                     stock_name = info.get('name', raw_sym)
-                    dvr_pct = info.get('dvr', 0) * 100  # Convert back to percentage for display
+                    dvr_pct = info.get('dvr', 0) * 100
                     
                     calendar_events.append({
                         "date": f"{datetime.now().year}-12-29",
@@ -225,7 +270,7 @@ def get_dividend_calendar(symbols: list) -> list:
                         "amount": info.get('dp_share', 0),
                         "yield": round(dvr_pct, 2),
                         "currency": "KRW",
-                        "type": "Projected (Annual)"
+                        "type": "연간배당 (예상)"
                     })
                 continue
 
