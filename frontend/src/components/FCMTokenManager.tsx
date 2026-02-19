@@ -113,12 +113,14 @@ export default function FCMTokenManager() {
                     body: '이제 앱이 꺼져있어도 가격 알림을 받을 수 있습니다.',
                     icon: '/icon.png'
                 });
+                // [Debug] Success Alert
+                alert(`✅ 서버 연결 성공!\n토큰이 등록되었습니다.\n(서버 응답: ${data.message})`);
             } else {
-                alert('❌ 알림 설정에 실패했습니다.\n\n' + (data.message || '알 수 없는 오류'));
+                alert('❌ 서버 등록 실패\n\n' + (data.message || '알 수 없는 오류'));
             }
         } catch (error) {
             console.error('[FCM] Registration failed:', error);
-            alert('❌ 알림 설정 중 오류가 발생했습니다.');
+            alert(`❌ 네트워크 오류 발생\n\n${error}\nAPI URL: ${API_BASE_URL}`);
         } finally {
             setLoading(false);
         }
