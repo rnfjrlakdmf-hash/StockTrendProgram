@@ -16,10 +16,7 @@ export default function FCMTokenManager() {
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
     const [buySignalData, setBuySignalData] = useState<any>(null);
-    const [mounted, setMounted] = useState(false);
-
     useEffect(() => {
-        setMounted(true);
         const safePermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
         console.log("FCMTokenManager Mounted! Permission:", safePermission);
 
@@ -60,8 +57,6 @@ export default function FCMTokenManager() {
             });
         });
     }, []);
-
-    if (!mounted) return null;
 
     const syncTokenToServer = async () => {
         try {
@@ -134,7 +129,7 @@ export default function FCMTokenManager() {
     // Connected State (Minimal & Sleek)
     if (permission === 'granted' && registered) {
         return (
-            <>
+            <div suppressHydrationWarning>
                 <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-bottom-5 fade-in duration-700">
                     <div className="group relative flex items-center justify-center">
                         {/* Pulse Effect */}
@@ -165,7 +160,7 @@ export default function FCMTokenManager() {
                     onClose={() => setBuySignalData(null)}
                     data={buySignalData}
                 />
-            </>
+            </div>
         );
     }
 
@@ -184,7 +179,7 @@ export default function FCMTokenManager() {
     // Denied State (Subtle Toast)
     if (permission === 'denied') {
         return (
-            <div className="fixed bottom-6 right-6 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-500">
+            <div className="fixed bottom-6 right-6 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-500" suppressHydrationWarning>
                 <div className="bg-[#111]/90 backdrop-blur-md border border-red-500/30 rounded-2xl p-4 shadow-2xl flex items-center gap-3 pr-10 relative max-w-sm">
                     <button
                         onClick={() => setIsVisible(false)}
@@ -206,7 +201,7 @@ export default function FCMTokenManager() {
 
     // Default Request State (Premium Card)
     return (
-        <>
+        <div suppressHydrationWarning>
             <div className="fixed bottom-6 right-6 z-[9999] max-w-[340px] w-full animate-in slide-in-from-right-5 fade-in duration-700">
                 <div className="bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-2xl relative overflow-hidden group hover:border-blue-500/30 transition-colors duration-500">
 
@@ -268,6 +263,6 @@ export default function FCMTokenManager() {
                 onClose={() => setBuySignalData(null)}
                 data={buySignalData}
             />
-        </>
+        </div>
     );
 }
