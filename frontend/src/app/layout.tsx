@@ -5,7 +5,9 @@ import ClosingBanner from "@/components/ClosingBanner";
 import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
-import FCMTokenManager from "@/components/FCMTokenManager";
+
+
+import FCMWrapper from "@/components/FCMWrapper";
 
 // ... (in return JSX)
 {/* Global FCM Token Manager (Disabled for Debugging Crash) */ }
@@ -69,8 +71,8 @@ export default function RootLayout({
               <GlobalProgressWatcher />
             </main>
 
-            {/* Global FCM Token Manager (Fixed Widget) - Moved outside main to avoid overflow clipping */}
-            <FCMTokenManager />
+            {/* Global FCM Token Manager (Client-Only Wrapper) */}
+            <FCMWrapper />
           </div>
         </AuthProvider>
       </body>
