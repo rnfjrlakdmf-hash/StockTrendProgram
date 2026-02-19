@@ -116,8 +116,6 @@ export default function FCMTokenManager() {
                     body: '이제 앱이 꺼져있어도 가격 알림을 받을 수 있습니다.',
                     icon: '/icon.png'
                 });
-            } else {
-                alert('❌ 알림 설정에 실패했습니다.\n\n' + (data.message || '알 수 없는 오류'));
             }
         } catch (error) {
             console.error('[FCM] Registration failed:', error);
