@@ -20,15 +20,14 @@ if (process.env.NEXT_PUBLIC_API_URL) {
 } else if (typeof window !== 'undefined') {
     if (isAndroid) {
         // Android Emulator or Device in Dev Mode
-        // If you want to test on real device with local backend, use your PC's IP or Ngrok
-        // For production build, NEXT_PUBLIC_API_URL should be set in .env.production
-        apiBase = "http://10.0.2.2:8000"; // Default Android Emulator Loopback
+        apiBase = "http://10.0.2.2:8000";
     } else {
         // Web Browser / Desktop
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             apiBase = "http://localhost:8000";
         } else {
-            apiBase = `http://${window.location.hostname}:8000`;
+            // [Fix] Production Backend URL (Railway)
+            apiBase = "https://stocktrendprogram-production.up.railway.app";
         }
     }
     console.log(`[Config] Running on ${isAndroid ? 'Android' : 'Web'}, API URL: ${apiBase}`);
