@@ -123,7 +123,7 @@ def send_push_notification(
                 require_interaction=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
-                link=data.get('url', '/') if data else '/'
+                link=data.get('url', 'https://stock-trend-program.vercel.app') if data else 'https://stock-trend-program.vercel.app'
             )
         )
         
