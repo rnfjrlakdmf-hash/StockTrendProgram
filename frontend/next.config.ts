@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
-const isVercel = process.env.VERCEL === '1';
+// [Debug] Force Web Mode for Vercel Debugging
+// const isVercel = process.env.VERCEL === '1';
 
 const nextConfig: NextConfig = {
   // Vercel deployment uses default build output and serverless functions
   // Mobile export uses static export to specific folder
-  distDir: isVercel ? '.next' : '.next_custom',
-  output: isVercel ? undefined : 'export',
+  // 강제로 기본 빌드 (.next) 사용 -> Vercel 호환
+  distDir: '.next',
+  // output: 'export', // <--- Disable explicit export!
 
   images: {
     unoptimized: true, // Keep unoptimized for consistency, or change if needed

@@ -4,10 +4,10 @@ import { Bell } from "lucide-react";
 
 export default function DebugBanner() {
     return (
-        <div className="bg-blue-600 text-white text-center py-2 px-4 font-bold relative z-[99999] flex items-center justify-between">
+        <div className="bg-red-600 text-white text-center py-2 px-4 font-bold relative z-[99999] flex items-center justify-between animate-pulse">
             <span className="flex items-center gap-2 text-sm">
                 <Bell className="w-4 h-4" />
-                알림이 안 보이시나요? 여기서 켜주세요! (v1.5)
+                [긴급 점검] 배포 테스트 v2.0 - 알림 설정
             </span>
             <button
                 onClick={() => {
