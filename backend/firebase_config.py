@@ -12,6 +12,8 @@ from typing import Dict, List, Optional
 _firebase_initialized = False
 
 
+import json
+
 def initialize_firebase():
     """Firebase Admin SDK 초기화"""
     global _firebase_initialized
@@ -23,6 +25,20 @@ def initialize_firebase():
         _firebase_initialized = True
         return
     
+    # 1. Try Environment Variable (Production)
+    env_creds = os.environ.get('FIREBASE_CREDENTIALS')
+    if env_creds:
+        try:
+            cred_dict = json.loads(env_creds)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            print("[Firebase] Admin SDK initialized via Environment Variable")
+            return
+        except Exception as e:
+            print(f"[Firebase] Failed to load credentials from Env Var: {e}")
+
+    # 2. Try Local File (Development)
     cred_path = os.path.join(os.path.dirname(__file__), 'firebase-adminsdk.json')
     
     if os.path.exists(cred_path):
@@ -30,13 +46,13 @@ def initialize_firebase():
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             _firebase_initialized = True
-            print("[Firebase] Admin SDK initialized successfully")
+            print("[Firebase] Admin SDK initialized successfully from file")
         except Exception as e:
-            print(f"[Firebase] Initialization failed: {e}")
+            print(f"[Firebase] Initialization failed from file: {e}")
     else:
-        print("[Firebase] Warning: firebase-adminsdk.json not found")
+        print("[Firebase] Warning: firebase-adminsdk.json not found and FIREBASE_CREDENTIALS not set")
         print("[Firebase] Push notifications will not work")
-        print("[Firebase] Please download the Admin SDK key from Firebase Console")
+
 
 
 def send_push_notification(
