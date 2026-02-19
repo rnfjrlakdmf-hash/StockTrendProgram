@@ -120,7 +120,7 @@ export default function RiskAlert({ symbols }: RiskAlertProps) {
             {/* Footer Source */}
             <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-center z-10 relative">
                 <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                    <Info className="w-3 h-3" /> 본 정보는 한국예탁결제원(SEIBRO)의 공공데이터를 활용하였습니다.
+                    <Info className="w-3 h-3" /> 본 정보는 한국거래소(KRX) 및 한국예탁결제원(KSD)의 데이터를 활용하였습니다.
                 </span>
             </div>
         </div>
