@@ -6,6 +6,12 @@ const FCMTokenManager = dynamic(() => import("./FCMTokenManager"), {
     ssr: false,
 });
 
+import SafeErrorBoundary from "./SafeErrorBoundary";
+
 export default function FCMWrapper() {
-    return <FCMTokenManager />;
+    return (
+        <SafeErrorBoundary fallback={null}>
+            <FCMTokenManager />
+        </SafeErrorBoundary>
+    );
 }
