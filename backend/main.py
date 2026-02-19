@@ -1,33 +1,67 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
 import sys
 import os
 import pydantic
+import concurrent.futures
+import sqlite3
+import time
+import urllib.parse
+import threading
 
-# [Fix] Ensure backend directory is in sys.path so strictly relative modules like 'sockets' can be imported
-# even if backend is treated as a package.
+# [Fix] Ensure backend directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from sockets import manager
-import concurrent.futures
-from stock_data import get_simple_quote
+from stock_data import (
+    get_simple_quote, get_all_market_assets, get_stock_info, get_market_data, 
+    get_market_news, calculate_technical_sentiment, get_insider_trading, 
+    get_macro_calendar, get_all_assets, fetch_google_news, get_korean_stock_name, 
+    GLOBAL_KOREAN_NAMES
+)
 from kis_api import KisApi
-from kis_api import KisApi
-from db_manager import get_db_connection
-from user_session import session_manager # [NEW] User Session Manager
-import sqlite3
-import time
+from db_manager import (
+    get_db_connection, save_analysis_result, get_score_history, add_watchlist, 
+    remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, 
+    save_fcm_token, delete_fcm_token, clear_watchlist
+)
+from user_session import session_manager
+from ai_analysis import (
+    analyze_stock, generate_market_briefing, analyze_portfolio, analyze_theme, 
+    analyze_earnings_impact, analyze_supply_chain, analyze_chart_patterns, 
+    analyze_trading_log
+)
+from rank_data import get_realtime_top10
+from risk_monitor import check_portfolio_risk
+from backtest import run_backtest
+from portfolio_opt import optimize_portfolio
+from alerts import (
+    add_alert, get_alerts, delete_alert, check_alerts,
+    get_recent_telegram_users
+)
+from chatbot import chat_with_ai
+from korea_data import (
+    get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
+    get_live_investor_estimates, get_indexing_status, search_stock_code,
+    get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
+    get_market_investors, get_index_chart_data
+)
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from portfolio_analysis import analyze_portfolio_risk
+from auth import router as auth_router
 
 app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 
-# Force Reload Trigger 5
+# Force Reload Trigger 6
 # CORS 설정 (Frontend인 localhost:3000 에서의 접근 허용)
 origins = [
     "http://localhost:3000",
     "https://stock-trend-program.vercel.app",
-    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app", # Vercel Preview/Branch URL just in case
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stocktrendprogram-production.up.railway.app" # Allowed Railway Domain
 ]
 
 app.add_middleware(
@@ -64,6 +98,9 @@ def read_assets():
 
 @app.on_event("startup")
 async def startup_event():
+    # Start Ranking Background Task
+    t_rank = threading.Thread(target=ranking_bg_looper, daemon=True)
+    t_rank.start()
     # Start WS Broadcast Loop
     asyncio.create_task(broadcast_stock_updates())
     
@@ -284,29 +321,6 @@ def read_root():
         "version": "1.0.0"
     }
 
-from stock_data import get_stock_info, get_simple_quote, get_market_data, get_market_news, calculate_technical_sentiment, get_insider_trading, get_macro_calendar, get_all_assets, fetch_google_news
-from ai_analysis import analyze_stock, generate_market_briefing, analyze_portfolio, analyze_theme, analyze_earnings_impact, analyze_supply_chain, analyze_chart_patterns, analyze_trading_log
-from rank_data import get_realtime_top10
-from risk_monitor import check_portfolio_risk
-from backtest import run_backtest
-from portfolio_opt import optimize_portfolio
-from alerts import (
-    add_alert, get_alerts, delete_alert, check_alerts,
-    get_recent_telegram_users
-)
-from chatbot import chat_with_ai
-from korea_data import (
-    get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
-    get_live_investor_estimates, get_indexing_status, search_stock_code,
-    get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
-    get_market_investors, get_index_chart_data
-)
-from db_manager import save_analysis_result, get_score_history, add_watchlist, remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, save_fcm_token, delete_fcm_token
-from pydantic import BaseModel, Field
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from portfolio_analysis import analyze_portfolio_risk
-
 class PortfolioItem(BaseModel):
     symbol: str
     weight: float
@@ -314,9 +328,8 @@ class PortfolioItem(BaseModel):
 class PortfolioAnalysisRequest(BaseModel):
     allocation: List[PortfolioItem]
 
-import urllib.parse
-import time
-import threading
+
+
 
 @app.get("/api/system/status")
 def read_system_status():
@@ -658,7 +671,7 @@ app.include_router(auth_router, prefix="/api")
 class WatchlistRequest(BaseModel):
     symbol: str
 
-from fastapi import Header
+
 
 @app.get("/api/watchlist")
 def read_watchlist(x_user_id: str = Header(None)):
@@ -788,12 +801,6 @@ def ranking_bg_looper():
         except Exception as e:
             print(f"Ranking Background Update Error: {e}")
         time.sleep(20) # 20초마다 갱신
-
-@app.on_event("startup")
-def start_background_tasks():
-    # Keep only ranking background updater
-    t_rank = threading.Thread(target=ranking_bg_looper, daemon=True)
-    t_rank.start()
 
 @app.get("/api/korea/chart/{symbol}")
 def get_korea_chart(symbol: str):
