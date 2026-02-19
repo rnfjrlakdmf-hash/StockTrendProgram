@@ -1,11 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const FCMTokenManager = dynamic(() => import("./FCMTokenManager"), {
-    ssr: false,
-});
-
+import FCMTokenManager from "./FCMTokenManager";
 import SafeErrorBoundary from "./SafeErrorBoundary";
 
 export default function FCMWrapper() {
