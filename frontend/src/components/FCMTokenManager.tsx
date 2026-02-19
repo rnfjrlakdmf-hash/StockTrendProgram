@@ -18,7 +18,8 @@ export default function FCMTokenManager() {
     const [buySignalData, setBuySignalData] = useState<any>(null);
 
     useEffect(() => {
-        console.log("FCMTokenManager Mounted! Permission:", Notification.permission);
+        const safePermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
+        console.log("FCMTokenManager Mounted! Permission:", safePermission);
 
         // 현재 권한 상태 확인
         const currentPermission = getNotificationPermission();

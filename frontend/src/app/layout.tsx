@@ -15,7 +15,6 @@ export const metadata: Metadata = {
 
 
 import FCMTokenManager from "@/components/FCMTokenManager";
-import DebugBanner from "@/components/DebugBanner";
 
 // ... imports
 
