@@ -34,8 +34,8 @@ export default function RootLayout({
             <main className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">
 
               {/* [Debug/Fix] Force Notification Banner */}
-              {/* [Debug/Fix] Force Notification Banner */}
-              <DebugBanner />
+              {/* [Debug] Emergency Banner Hidden */}
+              {/* <DebugBanner /> */}
               {/* Background Glow Effects */}
               <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
