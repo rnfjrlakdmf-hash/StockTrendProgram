@@ -152,93 +152,105 @@ export default function FCMTokenManager() {
         );
     }
 
-    if (!isVisible) return null;
+}
 
-    // 권한이 거부된 경우 (플로팅 경고)
-    if (permission === 'denied') {
-        return (
-            <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-500">
-                <div className="bg-[#111] border border-red-500/50 rounded-2xl p-5 shadow-2xl relative">
-                    <button
-                        onClick={() => setIsVisible(false)}
-                        className="absolute top-2 right-2 text-gray-500 hover:text-white p-1"
-                    >
-                        ✕
-                    </button>
-                    <div className="flex items-start gap-4">
-                        <div className="bg-red-500/20 p-3 rounded-full">
-                            <BellOff className="w-6 h-6 text-red-400" />
-                        </div>
-                        <div className="flex-1">
-                            <h4 className="font-bold text-white mb-1 text-lg">알림이 차단됨</h4>
-                            <p className="text-sm text-gray-300 mb-3 leading-relaxed">
-                                브라우저 주소창 옆 🔒자물쇠를 눌러<br />
-                                <span className="text-red-300 font-bold">알림 권한을 허용</span>해주세요.
-                            </p>
-                            <div className="text-xs text-gray-500 bg-white/5 p-2 rounded">
-                                * 새로고침 필요
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+// [Fix] Listen for global event from layout banner
+useEffect(() => {
+    const handleOpenRequest = () => {
+        setIsVisible(true);
+        handleEnableNotifications();
+    };
+    window.addEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
+    return () => window.removeEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
+}, []);
 
-    // 기본: 알림 요청 플로팅 위젯
+if (!isVisible) return null;
+
+// 권한이 거부된 경우 (플로팅 경고)
+if (permission === 'denied') {
     return (
-        <>
-            <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-500">
-                <div className="bg-[#111] border-2 border-blue-500/50 rounded-2xl p-5 shadow-2xl relative overflow-hidden group hover:border-blue-400 transition-colors">
-                    {/* Background Effect */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-                    <button
-                        onClick={() => setIsVisible(false)}
-                        className="absolute top-2 right-2 text-gray-400 hover:text-white p-1 z-10"
-                    >
-                        ✕
-                    </button>
-
-                    <div className="flex items-start gap-4 z-10 relative">
-                        <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                            <Bell className="w-6 h-6 text-white animate-pulse" />
-                        </div>
-                        <div className="flex-1">
-                            <h4 className="font-bold text-white mb-1 text-lg flex items-center gap-2">
-                                실시간 매수 신호
-                                <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
-                            </h4>
-                            <p className="text-sm text-gray-300 mb-4 leading-relaxed">
-                                AI가 포착한 <span className="text-blue-300 font-bold">급등 예상 종목</span>을<br />
-                                즉시 알려드립니다.
-                            </p>
-
-                            <button
-                                onClick={handleEnableNotifications}
-                                disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 active:scale-95"
-                            >
-                                {loading ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        연결 중...
-                                    </>
-                                ) : (
-                                    <>
-                                        🔔 알림 켜기 (무료)
-                                    </>
-                                )}
-                            </button>
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-500">
+            <div className="bg-[#111] border border-red-500/50 rounded-2xl p-5 shadow-2xl relative">
+                <button
+                    onClick={() => setIsVisible(false)}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-white p-1"
+                >
+                    ✕
+                </button>
+                <div className="flex items-start gap-4">
+                    <div className="bg-red-500/20 p-3 rounded-full">
+                        <BellOff className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-white mb-1 text-lg">알림이 차단됨</h4>
+                        <p className="text-sm text-gray-300 mb-3 leading-relaxed">
+                            브라우저 주소창 옆 🔒자물쇠를 눌러<br />
+                            <span className="text-red-300 font-bold">알림 권한을 허용</span>해주세요.
+                        </p>
+                        <div className="text-xs text-gray-500 bg-white/5 p-2 rounded">
+                            * 새로고침 필요
                         </div>
                     </div>
                 </div>
             </div>
-            <BuySignalModal
-                isOpen={!!buySignalData}
-                onClose={() => setBuySignalData(null)}
-                data={buySignalData}
-            />
-        </>
+        </div>
     );
+}
+
+// 기본: 알림 요청 플로팅 위젯
+return (
+    <>
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-500">
+            <div className="bg-[#111] border-2 border-blue-500/50 rounded-2xl p-5 shadow-2xl relative overflow-hidden group hover:border-blue-400 transition-colors">
+                {/* Background Effect */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                <button
+                    onClick={() => setIsVisible(false)}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-white p-1 z-10"
+                >
+                    ✕
+                </button>
+
+                <div className="flex items-start gap-4 z-10 relative">
+                    <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                        <Bell className="w-6 h-6 text-white animate-pulse" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-white mb-1 text-lg flex items-center gap-2">
+                            실시간 매수 신호
+                            <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">LIVE</span>
+                        </h4>
+                        <p className="text-sm text-gray-300 mb-4 leading-relaxed">
+                            AI가 포착한 <span className="text-blue-300 font-bold">급등 예상 종목</span>을<br />
+                            즉시 알려드립니다.
+                        </p>
+
+                        <button
+                            onClick={handleEnableNotifications}
+                            disabled={loading}
+                            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 active:scale-95"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    연결 중...
+                                </>
+                            ) : (
+                                <>
+                                    🔔 알림 켜기 (무료)
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <BuySignalModal
+            isOpen={!!buySignalData}
+            onClose={() => setBuySignalData(null)}
+            data={buySignalData}
+        />
+    </>
+);
 }
