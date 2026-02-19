@@ -2,7 +2,9 @@ import sqlite3
 import os
 from datetime import datetime
 
-DB_FILE = "stock_app.db"
+# DB File Path (Absolute)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "stock_app.db")
 
 def get_db_connection():
     return sqlite3.connect(DB_FILE)
@@ -93,6 +95,20 @@ def init_db():
         )
     ''')
     
+    
+    # [NEW] FCM Tokens Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fcm_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            device_type TEXT,
+            device_name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
 

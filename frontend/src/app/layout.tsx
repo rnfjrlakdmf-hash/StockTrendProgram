@@ -14,6 +14,8 @@ export const metadata: Metadata = {
 
 
 
+import FCMTokenManager from "@/components/FCMTokenManager";
+
 // ... imports
 
 export default function RootLayout({
@@ -40,6 +42,9 @@ export default function RootLayout({
               {/* Global Progress Watcher */}
               <GlobalProgressWatcher />
             </main>
+
+            {/* Global FCM Token Manager (Fixed Widget) - Moved outside main to avoid overflow clipping */}
+            <FCMTokenManager />
           </div>
         </AuthProvider>
       </body>

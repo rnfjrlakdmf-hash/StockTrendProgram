@@ -299,7 +299,7 @@ from korea_data import (
     get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
     get_market_investors, get_index_chart_data
 )
-from db_manager import save_analysis_result, get_score_history, add_watchlist, remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report
+from db_manager import save_analysis_result, get_score_history, add_watchlist, remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, save_fcm_token, delete_fcm_token
 from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -619,6 +619,36 @@ def read_recent_telegram_users():
     """최근 봇과 대화한 사용자 목록 반환"""
     users = get_recent_telegram_users()
     return {"status": "success", "data": users}
+
+# ============================================================
+# FCM Token Management
+# ============================================================
+class FCMRegisterRequest(BaseModel):
+    token: str
+    device_type: str = "web"
+    device_name: str = None
+
+@app.post("/api/fcm/register")
+def register_fcm_token(req: FCMRegisterRequest, x_user_id: str = Header(None)):
+    """FCM 토큰 등록 (알림 수신용)"""
+    user_id = x_user_id if x_user_id else "guest"
+    
+    success = save_fcm_token(user_id, req.token, req.device_type, req.device_name)
+    
+    if success:
+        print(f"[FCM] Registered token for user {user_id}: {req.token[:10]}...")
+        return {"status": "success", "message": "FCM token registered"}
+    else:
+        return {"status": "error", "message": "Failed to register FCM token"}
+
+@app.post("/api/fcm/unregister")
+def unregister_fcm_token(req: FCMRegisterRequest):
+    """FCM 토큰 삭제 (로그아웃 시)"""
+    success = delete_fcm_token(req.token)
+    if success:
+        return {"status": "success", "message": "FCM token unregistered"}
+    else:
+        return {"status": "error", "message": "Failed to unregister FCM token"}
 
 from auth import router as auth_router
 app.include_router(auth_router, prefix="/api")

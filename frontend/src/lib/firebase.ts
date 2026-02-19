@@ -61,8 +61,13 @@ export async function requestFCMToken(): Promise<string | null> {
         // VAPID 키 (Firebase Console → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서)
         const vapidKey = 'BIoE99fZeoSM68hPLzw2Rl9YTke57JByI0217I02xl4tdUt6fpILEVQezkq-fYrxx_QkhRJA8JrU5uywCdDM7Bs';
 
-        // FCM 토큰 가져오기
-        const token = await getToken(messaging, { vapidKey });
+        // FCM 토큰 가져오기 (타임아웃 적용: 10초)
+        const tokenPromise = getToken(messaging, { vapidKey });
+        const timeoutPromise = new Promise<string | null>((_, reject) =>
+            setTimeout(() => reject(new Error('FCM Token Request Timed Out')), 10000)
+        );
+
+        const token = await Promise.race([tokenPromise, timeoutPromise]);
 
         if (token) {
             console.log('[Firebase] FCM Token:', token);
@@ -73,7 +78,7 @@ export async function requestFCMToken(): Promise<string | null> {
         }
     } catch (error) {
         console.error('[Firebase] Error getting FCM token:', error);
-        return null;
+        return null; // Return null on error so caller can handle gracefully
     }
 }
 

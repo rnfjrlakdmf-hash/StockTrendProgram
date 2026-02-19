@@ -444,6 +444,14 @@ function DiscoveryContent() {
                     />
                 )}
 
+                {showAlertModal && stock && (
+                    <PriceAlertModal
+                        symbol={stock.symbol}
+                        currentPrice={parseFloat(String(stock.price || "0").replace(/,/g, ''))}
+                        onClose={() => setShowAlertModal(false)}
+                    />
+                )}
+
                 {/* Results Section */}
                 {stock && stock.symbol === "THEME" ? (
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
