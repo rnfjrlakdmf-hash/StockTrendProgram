@@ -16,6 +16,8 @@ export default function FCMTokenManager() {
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
     const [buySignalData, setBuySignalData] = useState<any>(null);
+    const [isVisible, setIsVisible] = useState(true);
+
     useEffect(() => {
         const safePermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
         console.log("FCMTokenManager Mounted! Permission:", safePermission);
@@ -122,7 +124,15 @@ export default function FCMTokenManager() {
         }
     };
 
-    const [isVisible, setIsVisible] = useState(true);
+    // [Fix] Listen for global event from layout banner
+    useEffect(() => {
+        const handleOpenRequest = () => {
+            setIsVisible(true);
+            handleEnableNotifications();
+        };
+        window.addEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
+        return () => window.removeEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
+    }, []);
 
     // [Enhancement] Premium UI Design for Notification Status
 
@@ -163,16 +173,6 @@ export default function FCMTokenManager() {
             </div>
         );
     }
-
-    // [Fix] Listen for global event from layout banner
-    useEffect(() => {
-        const handleOpenRequest = () => {
-            setIsVisible(true);
-            handleEnableNotifications();
-        };
-        window.addEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
-        return () => window.removeEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
-    }, []);
 
     if (!isVisible) return null;
 
