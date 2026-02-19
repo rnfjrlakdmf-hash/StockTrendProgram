@@ -1,12 +1,17 @@
 import type { NextConfig } from "next";
 
+const isVercel = process.env.VERCEL === '1';
+
 const nextConfig: NextConfig = {
-  distDir: '.next_custom',
-  output: 'export', // 안드로이드/iOS 앱 빌드(정적 내보내기)를 위해 활성화
+  // Vercel deployment uses default build output and serverless functions
+  // Mobile export uses static export to specific folder
+  distDir: isVercel ? '.next' : '.next_custom',
+  output: isVercel ? undefined : 'export',
+
   images: {
-    unoptimized: true, // 정적 내보내기 시 이미지 최적화 비활성화 필수
+    unoptimized: true, // Keep unoptimized for consistency, or change if needed
   },
-  // 웹 서버 헤더는 모바일 앱(정적 파일)에서는 무시됨
+  // Headers work on Vercel (Serverless) but are ignored in static export
   async headers() {
     return [
       {
