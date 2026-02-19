@@ -5,7 +5,11 @@ import ClosingBanner from "@/components/ClosingBanner";
 import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
-import FCMTokenManager from "@/components/FCMTokenManager";
+// import FCMTokenManager from "@/components/FCMTokenManager";
+
+// ... (in return JSX)
+{/* Global FCM Token Manager (Disabled for Debugging Crash) */ }
+{/* <FCMTokenManager /> */ }
 
 export const metadata: Metadata = {
   title: "AI Stock Analyst - 실시간 주식 세 및 급등주 포착",
@@ -66,7 +70,7 @@ export default function RootLayout({
             </main>
 
             {/* Global FCM Token Manager (Fixed Widget) - Moved outside main to avoid overflow clipping */}
-            <FCMTokenManager />
+            {/* <FCMTokenManager /> */}
           </div>
         </AuthProvider>
       </body>
