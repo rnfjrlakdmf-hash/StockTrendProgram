@@ -23,6 +23,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // [Deploy Trigger] Force Vercel Re-deploy
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
