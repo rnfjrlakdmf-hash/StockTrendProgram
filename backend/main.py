@@ -25,7 +25,9 @@ app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 # Force Reload Trigger 5
 # CORS 설정 (Frontend인 localhost:3000 에서의 접근 허용)
 origins = [
-    "*",
+    "http://localhost:3000",
+    "https://stock-trend-program.vercel.app",
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app", # Vercel Preview/Branch URL just in case
 ]
 
 app.add_middleware(
