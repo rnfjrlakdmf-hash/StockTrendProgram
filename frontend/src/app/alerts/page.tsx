@@ -210,101 +210,156 @@ export default function AlertsPage() {
                         onClick={() => setShowSettings(!showSettings)}
                         className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-lg font-bold transition-colors"
                     >
-                        {showSettings ? "설정 닫기" : "알림 설정"}
+                        {showSettings ? "설정 닫기" : "알림 설정 관리"}
                     </button>
                 </div>
 
-                {/* Easy Connect Settings Panel */}
+                {/* Settings Panel */}
                 {showSettings && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-3xl bg-neutral-900 border border-white/10 p-6 shadow-xl space-y-6">
-                        <div className="text-center">
-                            <h3 className="text-xl font-bold text-white mb-2">🚀 30초 만에 알림 설정하기</h3>
-                            <p className="text-gray-400 text-sm">한 번만 연결하면 스마트폰으로 실시간 알림을 보내드립니다.</p>
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
+
+                        {/* 1. Web Push Notification Setting */}
+                        <div className="rounded-3xl bg-neutral-900 border border-white/10 p-6 shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                                <div className="flex-1 text-center md:text-left">
+                                    <h3 className="text-lg font-bold text-white flex items-center justify-center md:justify-start gap-2 mb-2">
+                                        <BellRing className="w-5 h-5 text-blue-400" />
+                                        실시간 웹 푸시 알림
+                                        <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">권장</span>
+                                    </h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                        앱을 켜두지 않아도 중요한 매수 신호를 브라우저 알림으로 즉시 받아볼 수 있습니다.<br />
+                                        <span className="text-gray-500 text-xs">* PC/모바일 모두 지원</span>
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm("실시간 매수 신호 알림을 활성화하시겠습니까?")) {
+                                            const { requestFCMToken, showNotification } = await import("@/lib/firebase");
+                                            const { API_BASE_URL } = await import("@/lib/config");
+                                            try {
+                                                const token = await requestFCMToken();
+                                                if (token) {
+                                                    const userId = localStorage.getItem('user_id') || 'guest';
+                                                    await fetch(`${API_BASE_URL}/api/fcm/register`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+                                                        body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
+                                                    });
+                                                    localStorage.setItem('fcm_registered', 'true');
+                                                    alert("✅ 알림이 성공적으로 설정되었습니다!");
+                                                    showNotification("알림 테스트", { body: "이제 매수 신호를 받을 수 있습니다." });
+                                                } else {
+                                                    alert("❌ 알림 권한이 차단되었습니다. 브라우저 설정에서 권한을 허용해주세요.");
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                                alert("설정 중 오류가 발생했습니다.");
+                                            }
+                                        }
+                                    }}
+                                    className="w-full md:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+                                >
+                                    🔔 푸시 알림 켜기
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6 relative">
-                            {/* Step 1 */}
-                            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center hover:bg-white/10 transition-colors">
-                                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-4 text-2xl shadow-lg shadow-blue-600/30">
-                                    1
-                                </div>
-                                <h4 className="font-bold text-lg mb-2">알림 봇 시작하기</h4>
-                                <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                                    텔레그램 봇에게 말을 걸어야<br />알림을 보낼 수 있어요.
-                                </p>
-                                <a
-                                    href="https://t.me/rnfjrlAlarm_bot"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all hover:scale-105 shadow-xl flex items-center justify-center gap-2"
-                                >
-                                    🤖 봇 연결하고 '시작' 누르기
-                                </a>
-                                <p className="text-xs text-blue-300 mt-3 animate-pulse">
-                                    * 앱이 열리면 하단의 <strong>시작(Start)</strong>을 꼭 눌러주세요!
-                                </p>
+                        {/* 2. Telegram Bot Setting */}
+                        <div className="rounded-3xl bg-neutral-900 border border-white/10 p-6 shadow-xl">
+                            <div className="text-center mb-6">
+                                <h3 className="text-lg font-bold text-white mb-1 flex items-center justify-center gap-2">
+                                    <Zap className="w-5 h-5 text-yellow-400" /> 텔레그램 연동
+                                </h3>
+                                <p className="text-gray-400 text-sm">텔레그램 메신저로도 알림을 동시에 받아보세요.</p>
                             </div>
 
-                            {/* Arrow for PC layout */}
-                            <div className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-600">
-                                <ArrowUp className="rotate-90 w-8 h-8" />
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className={`bg-white/5 rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center transition-colors ${chatId ? 'border-green-500/50 bg-green-500/10' : 'hover:bg-white/10'}`}>
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 text-2xl shadow-lg ${chatId ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300'}`}>
-                                    {chatId ? <Zap /> : "2"}
-                                </div>
-                                <h4 className="font-bold text-lg mb-2">
-                                    {chatId ? "연결 성공!" : "내 연결 ID 가져오기"}
-                                </h4>
-                                <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                                    {chatId ? "이제 알림을 받을 준비가 완료되었습니다." : "봇에게 메시지를 보낸 후 아래 버튼을 눌러주세요."}
-                                </p>
-
-                                {chatId ? (
-                                    <div className="w-full py-3 rounded-xl bg-green-500/20 text-green-400 font-bold border border-green-500/30 flex items-center justify-center gap-2">
-                                        ✅ 설정 완료됨
+                            <div className="grid md:grid-cols-2 gap-6 relative">
+                                {/* Step 1 */}
+                                <div className="bg-white/5 rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center hover:bg-white/10 transition-colors">
+                                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center mb-4 text-2xl shadow-lg shadow-blue-600/30">
+                                        1
                                     </div>
-                                ) : (
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                const res = await fetch(`${API_BASE_URL}/api/telegram/recent-users`);
-                                                const json = await res.json();
-                                                if (json.status === "success" && json.data.length > 0) {
-                                                    const user = json.data[0];
-                                                    // Auto confirm for better UX if name matches logic or just show generic
-                                                    setChatId(user.id);
-                                                    saveSettings_Direct(user.id); // Helper function needed or duplicate logic
-                                                    alert(`${user.name}님 환영합니다! 연결되었습니다.`);
-                                                } else {
-                                                    alert("아직 봇에게 메시지가 도착하지 않았습니다. 1번 버튼을 눌러 '시작'을 먼저 눌러주세요!");
-                                                }
-                                            } catch {
-                                                alert("서버 연결 실패");
-                                            }
-                                        }}
-                                        className="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition-all border border-white/10 flex items-center justify-center gap-2"
+                                    <h4 className="font-bold text-lg mb-2">알림 봇 시작하기</h4>
+                                    <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                                        텔레그램 봇에게 말을 걸어야<br />알림을 보낼 수 있어요.
+                                    </p>
+                                    <a
+                                        href="https://t.me/rnfjrlAlarm_bot"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all hover:scale-105 shadow-xl flex items-center justify-center gap-2"
                                     >
-                                        🔄 연결 확인하기 (자동)
-                                    </button>
-                                )}
+                                        🤖 봇 연결하고 '시작' 누르기
+                                    </a>
+                                    <p className="text-xs text-blue-300 mt-3 animate-pulse">
+                                        * 앱이 열리면 하단의 <strong>시작(Start)</strong>을 꼭 눌러주세요!
+                                    </p>
+                                </div>
 
-                                {!chatId && (
-                                    <button
-                                        onClick={() => {
-                                            const inputId = prompt("텔레그램 Chat ID를 알고 계신가요? 9~10자리 숫자를 입력해주세요.");
-                                            if (inputId && inputId.trim()) {
-                                                setChatId(inputId.trim());
-                                                saveSettings_Direct(inputId.trim());
-                                            }
-                                        }}
-                                        className="text-xs text-gray-500 mt-4 underline hover:text-gray-300"
-                                    >
-                                        이미 ID를 알고 계신가요? 직접 입력
-                                    </button>
-                                )}
+                                {/* Arrow for PC layout */}
+                                <div className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-600">
+                                    <ArrowUp className="rotate-90 w-8 h-8" />
+                                </div>
+
+                                {/* Step 2 */}
+                                <div className={`bg-white/5 rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center transition-colors ${chatId ? 'border-green-500/50 bg-green-500/10' : 'hover:bg-white/10'}`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 text-2xl shadow-lg ${chatId ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                                        {chatId ? <Zap /> : "2"}
+                                    </div>
+                                    <h4 className="font-bold text-lg mb-2">
+                                        {chatId ? "연결 성공!" : "내 연결 ID 가져오기"}
+                                    </h4>
+                                    <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                                        {chatId ? "이제 알림을 받을 준비가 완료되었습니다." : "봇에게 메시지를 보낸 후 아래 버튼을 눌러주세요."}
+                                    </p>
+
+                                    {chatId ? (
+                                        <div className="w-full py-3 rounded-xl bg-green-500/20 text-green-400 font-bold border border-green-500/30 flex items-center justify-center gap-2">
+                                            ✅ 설정 완료됨
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await fetch(`${API_BASE_URL}/api/telegram/recent-users`);
+                                                    const json = await res.json();
+                                                    if (json.status === "success" && json.data.length > 0) {
+                                                        const user = json.data[0];
+                                                        // Auto confirm for better UX if name matches logic or just show generic
+                                                        setChatId(user.id);
+                                                        saveSettings_Direct(user.id); // Helper function needed or duplicate logic
+                                                        alert(`${user.name}님 환영합니다! 연결되었습니다.`);
+                                                    } else {
+                                                        alert("아직 봇에게 메시지가 도착하지 않았습니다. 1번 버튼을 눌러 '시작'을 먼저 눌러주세요!");
+                                                    }
+                                                } catch {
+                                                    alert("서버 연결 실패");
+                                                }
+                                            }}
+                                            className="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition-all border border-white/10 flex items-center justify-center gap-2"
+                                        >
+                                            🔄 연결 확인하기 (자동)
+                                        </button>
+                                    )}
+
+                                    {!chatId && (
+                                        <button
+                                            onClick={() => {
+                                                const inputId = prompt("텔레그램 Chat ID를 알고 계신가요? 9~10자리 숫자를 입력해주세요.");
+                                                if (inputId && inputId.trim()) {
+                                                    setChatId(inputId.trim());
+                                                    saveSettings_Direct(inputId.trim());
+                                                }
+                                            }}
+                                            className="text-xs text-gray-500 mt-4 underline hover:text-gray-300"
+                                        >
+                                            이미 ID를 알고 계신가요? 직접 입력
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
