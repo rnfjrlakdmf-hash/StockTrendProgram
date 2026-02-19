@@ -146,21 +146,31 @@ export default function FCMTokenManager() {
                         <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl group-hover:bg-blue-500/30 transition-all duration-500 scale-150 animate-pulse"></div>
 
                         {/* Status Badge */}
-                        <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-3 rounded-full hover:scale-105 transition-transform cursor-default shadow-2xl relative overflow-hidden">
+                        <div
+                            onClick={handleEnableNotifications}
+                            className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-3 rounded-full hover:scale-105 transition-transform cursor-pointer shadow-2xl relative overflow-hidden active:scale-95"
+                            title="클릭하여 연결 상태 새로고침"
+                        >
                             {/* Shiny Gradient Border */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-                            <Check className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                            {loading ? (
+                                <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <Check className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                            )}
                         </div>
 
                         {/* Hover Tooltip (Smooth Appearance) */}
                         <div className="absolute bottom-full right-0 mb-3 w-max max-w-[200px] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
                             <div className="bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-xs">
                                 <p className="text-white font-bold mb-0.5 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                    실시간 알림 수신 중
+                                    <span className={`w-1.5 h-1.5 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`}></span>
+                                    {loading ? '연결 재설정 중...' : '실시간 알림 수신 중'}
                                 </p>
-                                <p className="text-gray-400 font-medium">안전하게 연결되었습니다.</p>
+                                <p className="text-gray-400 font-medium">
+                                    {loading ? '잠시만 기다려주세요.' : '클릭하여 연결을 갱신할 수 있습니다.'}
+                                </p>
                             </div>
                         </div>
                     </div>
