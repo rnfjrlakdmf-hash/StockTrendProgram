@@ -16,14 +16,17 @@ export default function FCMTokenManager() {
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
     const [buySignalData, setBuySignalData] = useState<any>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const safePermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
         console.log("FCMTokenManager Mounted! Permission:", safePermission);
 
         // 현재 권한 상태 확인
         const currentPermission = getNotificationPermission();
         setPermission(currentPermission);
+
 
         // 로컬 스토리지에서 등록 상태 확인
         const isRegistered = localStorage.getItem('fcm_registered') === 'true';
@@ -57,6 +60,8 @@ export default function FCMTokenManager() {
             });
         });
     }, []);
+
+    if (!mounted) return null;
 
     const syncTokenToServer = async () => {
         try {
