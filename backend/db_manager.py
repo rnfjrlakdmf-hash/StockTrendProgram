@@ -587,3 +587,20 @@ def delete_fcm_token(token: str):
         return False
     finally:
         conn.close()
+
+def get_all_fcm_tokens() -> list:
+    """모든 사용자의 유효한 FCM 토큰 조회 (브로드캐스트용)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 중복 제거 (혹시 몰라서 DISTINCT)
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens")
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"[DB] Get all FCM tokens error: {e}")
+        return []
+    finally:
+        conn.close()
+

@@ -104,6 +104,14 @@ async def startup_event():
     # Start WS Broadcast Loop
     asyncio.create_task(broadcast_stock_updates())
     
+    # [NEW] Start Disclosure Scheduler (KIND Scraper)
+    try:
+        from scheduler import disclosure_scheduler_loop
+        asyncio.create_task(disclosure_scheduler_loop())
+        print("[Main] Disclosure Scheduler Started")
+    except Exception as e:
+        print(f"[Main] Failed to start Disclosure Scheduler: {e}")
+    
     # [KIS WebSocket Init]
     try:
         from kis_api import KisApi
@@ -789,7 +797,36 @@ dashboard_cache = {
 CACHE_DURATION = 5 # seconds
 CACHE_FILE_PATH = "dashboard_cache.json"
 
-def ranking_bg_looper():
+
+# [TEMP] Test Endpoint for Trade Alert
+@app.get("/api/test/trade-alert")
+def trigger_test_trade_alert():
+    """
+    Manually trigger a trade alert to all registered devices.
+    For testing 'Jump to App' feature.
+    """
+    from firebase_config import send_multicast_notification
+    from db_manager import get_all_fcm_tokens
+    
+    tokens = get_all_fcm_tokens()
+    if not tokens:
+        return {"status": "error", "message": "No FCM tokens found in DB."}
+        
+    symbol = "005930"
+    price = "75000"
+    title = f"🔔 [테스트] {symbol} 매수 신호"
+    body = f"현재가 {price}원. 클릭하여 증권사 앱으로 이동하세요."
+    
+    data_payload = {
+        "type": "TRADING_ALERT",
+        "symbol": symbol,
+        "price": price,
+        "url": f"/trade?symbol={symbol}&price={price}"
+    }
+    
+    result = send_multicast_notification(tokens, title, body, data_payload)
+    return {"status": "success", "result": result}
+
     """Background task to keep top 10 ranking cache warm"""
     print("Starting ranking background updater...")
     while True:
@@ -1703,6 +1740,68 @@ def check_portfolio_risk_api(request: PortfolioAnalysisRequest):
         return {"status": "success", "risks": risks}
     except Exception as e:
         print(f"Risk Analysis Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+class TradeOrderRequest(BaseModel):
+    symbol: str
+    order_type: str # BUY or SELL
+    price: int
+    qty: int
+    app_key: Optional[str] = None
+    app_secret: Optional[str] = None
+    account: Optional[str] = None
+
+@app.post("/api/trade/order")
+def place_trade_order(req: TradeOrderRequest, x_user_id: str = Header(None)):
+    """
+    Place a stock order (Buy/Sell) via KIS API.
+    Uses provided keys OR stored keys for the user.
+    """
+    try:
+        app_key = req.app_key
+        app_secret = req.app_secret
+        account = req.account
+        
+        # Fallback to stored keys if not provided
+        if not (app_key and app_secret and account):
+            if x_user_id:
+                user = get_user(x_user_id)
+                if user:
+                    # fetch keys from user record (migrated in db_manager)
+                    # get_user returns dict, check keys keys?
+                    # wait, get_user in db_manager returns: id, email, name, picture, is_pro, free_trial_count
+                    # It does NOT return kis keys yet in return statement of get_user!
+                    # I need to verify get_user implementation in db_manager.
+                    # It selects: SELECT id, email, name, picture, is_pro, free_trial_count FROM users...
+                    # It needs to select kis_app_key, etc.
+                    
+                    # Let's fix get_user query inside db_manager first? 
+                    # Or just fetch here using raw query to be safe?
+                    # Main.py has db_manager imports.
+                    # Let's use get_db_connection and fetch manually here for safety/speed without editing db_manager again.
+                    from db_manager import get_db_connection
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute("SELECT kis_app_key, kis_secret, kis_account FROM users WHERE id = ?", (x_user_id,))
+                    row = cur.fetchone()
+                    conn.close()
+                    
+                    if row:
+                        if not app_key: app_key = row[0]
+                        if not app_secret: app_secret = row[1]
+                        if not account: account = row[2]
+        
+        if not (app_key and app_secret and account):
+            return {"status": "error", "message": "Missing KIS API Credentials. Please set them in Settings or provide in request."}
+
+        # Execute Order
+        kis = KisApi(app_key, app_secret, account)
+        result = kis.place_order(req.symbol, req.order_type, req.price, req.qty)
+        
+        return result
+
+    except Exception as e:
+        print(f"Trade Order Error: {e}")
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":

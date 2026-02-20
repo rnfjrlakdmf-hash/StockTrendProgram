@@ -113,14 +113,18 @@ export default function FCMTokenManager() {
                     body: '이제 앱이 꺼져있어도 가격 알림을 받을 수 있습니다.',
                     icon: '/icon.png'
                 });
-                // [Debug] Success Alert
-                alert(`✅ 서버 연결 성공!\n토큰이 등록되었습니다.\n(서버 응답: ${data.message})`);
+
+                // [Debug] Success Alert with strict details
+                alert(`✅ 서버 연결 성공!\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.\n다시 백엔드에서 테스트를 진행해주세요.`);
+                console.log("[FCM] Registered to:", API_BASE_URL, "Token:", token);
+
             } else {
-                alert('❌ 서버 등록 실패\n\n' + (data.message || '알 수 없는 오류'));
+                alert(`❌ 서버 등록 실패\n(API: ${API_BASE_URL})\n\n응답: ${data.message}`);
+                console.error("[FCM] Server Error:", data);
             }
         } catch (error) {
             console.error('[FCM] Registration failed:', error);
-            alert(`❌ 네트워크 오류 발생\n\n${error}\nAPI URL: ${API_BASE_URL}`);
+            alert(`❌ 네트워크/코드 오류 발생\n\n${error}\nAPI URL: ${API_BASE_URL}`);
         } finally {
             setLoading(false);
         }

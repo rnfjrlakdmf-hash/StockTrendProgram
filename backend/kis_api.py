@@ -271,3 +271,66 @@ class KisApi:
         except Exception as e:
             # print(f"[KIS] Ranking Exception: {e}")
             return []
+    def place_order(self, symbol: str, order_type: str, price: int, qty: int):
+        """
+        Place Order (Buy/Sell).
+        order_type: "BUY" or "SELL"
+        price: 0 for Market Order (if supported), or specific price.
+        qty: Quantity
+        
+        API: /uapi/domestic-stock/v1/trading/order-cash
+        TR_ID:
+            TTTC0802U (Buy)
+            TTTC0801U (Sell)
+        """
+        token = self.get_access_token()
+        if not token:
+            return {"rt_cd": "1", "msg1": "Token Error"}
+
+        url = f"{BASE_URL}/uapi/domestic-stock/v1/trading/order-cash"
+        
+        # Select TR_ID
+        tr_id = "TTTC0802U" if order_type.upper() == "BUY" else "TTTC0801U"
+        
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "authorization": f"Bearer {token}",
+            "appkey": self.app_key,
+            "appsecret": self.app_secret,
+            "tr_id": tr_id,
+        }
+        
+        # Order Class Code (00: Limit, 01: Market)
+        ord_dv_sn = "00" if price > 0 else "01"
+        ord_p = str(price) if price > 0 else "0"
+        
+        body = {
+            "CANO": self.account[:8],
+            "ACNT_PRDT_CD": "01",
+            "PDNO": symbol,
+            "ORD_DVSN": ord_dv_sn,
+            "ORD_QTY": str(qty),
+            "ORD_UNPR": ord_p
+        }
+        
+        try:
+            res = requests.post(url, headers=headers, data=json.dumps(body))
+            data = res.json()
+            
+            if data['rt_cd'] == '0':
+                return {
+                    "status": "success",
+                    "msg": data['msg1'],
+                    "order_no": data['output']['ODNO'] # Order Number
+                }
+            else:
+                return {
+                    "status": "error",
+                    "msg": f"KIS Order Error: {data['msg1']}",
+                    "code": data['rt_cd']
+                }
+        except Exception as e:
+            return {
+                "status": "error", 
+                "msg": f"Order Exception: {str(e)}"
+            }

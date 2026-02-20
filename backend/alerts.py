@@ -210,6 +210,41 @@ def trigger_alert(alert, price, triggered_list, extra_msg=""):
     if alert.get("chat_id"):
         send_telegram_message(alert, price, extra_msg)
 
+    # [NEW] FCM Push Notification (Deep Link to Trade)
+    try:
+        from db_manager import get_user_fcm_tokens
+        from firebase_config import send_multicast_notification
+        
+        user_id = alert.get("user_id", "guest")
+        tokens = [t['token'] for t in get_user_fcm_tokens(user_id)]
+        
+        if tokens:
+            symbol = alert["symbol"]
+            cond = alert["condition"]
+            
+            # Message Construct
+            title = f"🔔 {symbol} 목표가 도달!"
+            body = f"현재가 {int(price):,}원이 목표가({alert.get('target_price')})에 도달했습니다.\n터치하여 주문하기 👆"
+            
+            if alert["type"] != "PRICE":
+                 title = f"🔔 {symbol} 알림"
+                 body = f"{extra_msg}\n터치하여 확인하기"
+
+            # Deep Link Payload
+            # /trade?symbol=005930&mode=ORDER
+            link_url = f"/trade?symbol={symbol}&price={price}"
+            
+            data_payload = {
+                "type": "TRADING_ALERT",
+                "symbol": symbol,
+                "price": str(price),
+                "url": link_url
+            }
+            
+            send_multicast_notification(tokens, title, body, data_payload)
+            
+    except Exception as e:
+        print(f"FCM Alert Error: {e}")
 
 def send_telegram_message(alert, current_price, extra_msg=""):
     """
@@ -222,6 +257,11 @@ def send_telegram_message(alert, current_price, extra_msg=""):
         cond_str = "이상" if alert["condition"] == 'above' else "이하"
         title = "📢 *가격 도달 알림*"
         body = f"📈 *{symbol}* 목표가 도달!\n\n현재가: *{current_price}*\n목표가: {alert['target_price']} ({cond_str})"
+        
+        # Add Trade Button Link if possible in Telegram?
+        # Telegram supports InlineKeyboard but standard sendMessage is text.
+        # We can add a link in text.
+        # body += f"\n\n[매매하기](https://stock-trend-program.vercel.app/trade?symbol={symbol})"
     
     elif alert["type"] == "RSI_OVERSOLD":
         title = "💎 *스나이퍼 포착 (과매도)*"
@@ -247,7 +287,7 @@ def send_telegram_message(alert, current_price, extra_msg=""):
         title = "🔔 *알림*"
         body = f"*{symbol}* 알림 조건 충족\n현재가: {current_price}"
 
-    message = f"{title}\n\n{body}\n\n[StockAI App에서 확인하기]"
+    message = f"{title}\n\n{body}\n\n[StockAI App에서 매매하기]"
 
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
