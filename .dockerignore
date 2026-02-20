@@ -44,6 +44,7 @@ theme_dump.html
 !backend/requirements.txt
 !runtime.txt
 !firebase-adminsdk-README.txt
+!backend/
 
 # Secrets (should be in env vars)
 .env
