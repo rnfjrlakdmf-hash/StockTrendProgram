@@ -1,20 +1,17 @@
 # Python 3.11 Base Image
 FROM python:3.11-slim
 
-# Set working directory
-WORKDIR /app
-
-# Copy backend requirements explicitly for caching
-COPY backend/requirements.txt .
+# Copy requirements (assuming context is backend root)
+COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire build context (files allowed by .dockerignore)
+# Copy all files (assuming context is backend root)
 COPY . .
 
-# Switch to backend directory where main.py resides
-WORKDIR /app/backend
+# Set WORKDIR to /app (files are already here)
+WORKDIR /app
 
 # Expose port (Railway sets PORT env var dynamically)
 EXPOSE 8000
