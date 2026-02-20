@@ -155,6 +155,13 @@ function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, is
 const STOCK_CACHE: Record<string, { data: any, timestamp: number }> = {};
 const CACHE_DURATION = 60 * 1000; // 1 minute cache for fast re-navigation
 
+
+const RiskAlertWrapper = ({ symbol }: { symbol: string }) => {
+    // Memoize the array so it doesn't change reference on every render (price update)
+    const symbols = useMemo(() => [symbol], [symbol]);
+    return <RiskAlert symbols={symbols} />;
+};
+
 export default function DiscoveryPage() {
     return (
         <Suspense fallback={
@@ -1472,11 +1479,7 @@ function MarketSignalWidget() {
     );
 }
 
-const RiskAlertWrapper = ({ symbol }: { symbol: string }) => {
-    // Memoize the array so it doesn't change reference on every render (price update)
-    const symbols = useMemo(() => [symbol], [symbol]);
-    return <RiskAlert symbols={symbols} />;
-};
+
 
 function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
     const [portfolioText, setPortfolioText] = useState("");
