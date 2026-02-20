@@ -41,10 +41,13 @@ theme_dump.html
 *.md
 *.txt
 !requirements.txt
-!backend/requirements.txt
 !runtime.txt
 !firebase-adminsdk-README.txt
+
+# Force include backend and its requirements
 !backend/
+!backend/requirements.txt
+!backend/**/*.txt
 
 # Secrets (should be in env vars)
 .env
