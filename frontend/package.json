@@ -19,6 +19,7 @@
     "@capacitor/core": "^8.0.0",
     "@react-oauth/google": "^0.12.1",
     "firebase": "^12.8.0",
+    "framer-motion": "^12.34.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
