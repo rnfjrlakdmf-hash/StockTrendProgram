@@ -609,7 +609,8 @@ function DiscoveryContent() {
                                                         <span className="hidden sm:inline">알림</span>
                                                     </button>
                                                 )}
-                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                                {/* Adjusted Condition for Visibility */}
+                                                {stock.symbol && (
                                                     <a
                                                         href={`/trade?symbol=${stock.symbol}&price=${String(stock.price).replace(/,/g, '')}`}
                                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 border border-blue-400/50 transition-all shadow-lg shadow-blue-500/20 animate-pulse-subtle"
@@ -1466,6 +1467,16 @@ function MarketSignalWidget() {
                     </div>
                 </div>
             </div>
+
+            {/* [DEBUG] Emergency Floating Button to verify deployment */}
+            <a
+                href={`/trade?symbol=${stock?.symbol || '005930'}&price=${stock?.price || '0'}`}
+                className="fixed bottom-24 right-6 z-[9999] bg-red-600 text-white font-bold px-6 py-4 rounded-full shadow-2xl border-4 border-white animate-bounce flex items-center gap-2"
+                style={{ boxShadow: '0 0 20px rgba(255, 0, 0, 0.5)' }}
+            >
+                <Zap className="w-6 h-6 fill-white" />
+                <span>강제 매매 버튼 (보이나요?)</span>
+            </a>
 
             <div className="mt-6 flex items-center gap-4 text-sm text-gray-400 z-10">
                 <div className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
