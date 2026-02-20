@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
@@ -858,7 +858,7 @@ function DiscoveryContent() {
 
                                             {/* [New] Risk Radar (SEIBRO) */}
                                             <div className="mb-6">
-                                                <RiskAlert symbols={[stock.symbol]} />
+                                                <RiskAlertWrapper symbol={stock.symbol} />
                                             </div>
 
                                             {/* [New] Strategy Card */}
@@ -1471,6 +1471,12 @@ function MarketSignalWidget() {
         </div>
     );
 }
+
+const RiskAlertWrapper = ({ symbol }: { symbol: string }) => {
+    // Memoize the array so it doesn't change reference on every render (price update)
+    const symbols = useMemo(() => [symbol], [symbol]);
+    return <RiskAlert symbols={symbols} />;
+};
 
 function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
     const [portfolioText, setPortfolioText] = useState("");

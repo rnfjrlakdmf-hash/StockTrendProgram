@@ -28,7 +28,8 @@ export default function RiskAlert({ symbols }: RiskAlertProps) {
             setRisks([]);
             setScanned(false);
         }
-    }, [symbols]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(symbols)]); // [Optimization] Deep compare to prevent re-fetch on new array ref
 
     const checkRisks = async () => {
         setLoading(true);
