@@ -46,8 +46,8 @@ export default function ClosingBanner() {
                         setMarketType(type);
                         setVisible(true);
                     }
-                } catch (e) {
-                    console.error("Failed to fetch closing summary");
+                } catch (e: any) {
+                    console.warn("[ClosingBanner] Failed to fetch closing summary (backend might be offline):", e.message || e);
                 }
             }
         };
