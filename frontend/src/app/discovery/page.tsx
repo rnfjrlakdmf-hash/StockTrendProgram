@@ -602,6 +602,15 @@ function DiscoveryContent() {
                                                         <span className="hidden sm:inline">알림</span>
                                                     </button>
                                                 )}
+                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                                    <a
+                                                        href={`/trade?symbol=${stock.symbol}&price=${String(stock.price).replace(/,/g, '')}`}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 border border-blue-400/50 transition-all shadow-lg shadow-blue-500/20 animate-pulse-subtle"
+                                                    >
+                                                        <Zap className="w-4 h-4 fill-white" />
+                                                        <span className="hidden sm:inline">매매</span>
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
