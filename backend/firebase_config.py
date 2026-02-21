@@ -226,7 +226,7 @@ def send_multicast_notification(
         )
         
         # 발송
-        response = messaging.send_multicast(message)
+        response = messaging.send_each_for_multicast(message)
         
         print(f"[Firebase] Multicast sent: {response.success_count}/{len(tokens)} successful")
         
