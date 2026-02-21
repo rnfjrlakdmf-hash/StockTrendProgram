@@ -215,31 +215,32 @@ def send_multicast_notification(
             )
         )
         
-        # 멀티캐스트 메시지 생성
-        message = messaging.MulticastMessage(
-            notification=notification,
-            data=data or {},
-            tokens=tokens,
-            android=android_config,
-            apns=apns_config,
-            webpush=webpush_config
-        )
+        # 개별 발송 (SDK 버전 호환성 최대화)
+        success_count = 0
+        failure_count = 0
         
-        # 발송
-        response = messaging.send_each_for_multicast(message)
+        for idx, token in enumerate(tokens):
+            try:
+                msg = messaging.Message(
+                    notification=notification,
+                    data=data or {},
+                    token=token,
+                    android=android_config,
+                    apns=apns_config,
+                    webpush=webpush_config
+                )
+                messaging.send(msg)
+                success_count += 1
+            except Exception as token_err:
+                failure_count += 1
+                print(f"[Firebase] Failed to send to token {idx}: {token_err}")
         
-        print(f"[Firebase] Multicast sent: {response.success_count}/{len(tokens)} successful")
-        
-        # 실패한 토큰 로깅
-        if response.failure_count > 0:
-            for idx, resp in enumerate(response.responses):
-                if not resp.success:
-                    print(f"[Firebase] Failed to send to token {idx}: {resp.exception}")
+        print(f"[Firebase] Sent: {success_count}/{len(tokens)} successful")
         
         return {
             "success": True,
-            "success_count": response.success_count,
-            "failure_count": response.failure_count
+            "success_count": success_count,
+            "failure_count": failure_count
         }
     
     except Exception as e:
