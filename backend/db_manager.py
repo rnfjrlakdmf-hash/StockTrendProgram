@@ -2,9 +2,11 @@ import sqlite3
 import os
 from datetime import datetime
 
-# DB File Path (Absolute)
+# DB File Path
+# Production (Railway): Set DB_PATH=/data/stock_app.db (with Volume mounted at /data)
+# Development: Falls back to local directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_FILE = os.path.join(BASE_DIR, "stock_app.db")
+DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 
 def get_db_connection():
     return sqlite3.connect(DB_FILE)

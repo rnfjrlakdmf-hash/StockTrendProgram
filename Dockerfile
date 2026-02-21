@@ -13,6 +13,12 @@ COPY . .
 # Set WORKDIR to /app (files are already here)
 WORKDIR /app
 
+# Create persistent data directory (mount as Railway Volume)
+RUN mkdir -p /data
+
+# Set DB path to persistent volume
+ENV DB_PATH=/data/stock_app.db
+
 # Expose port (Railway sets PORT env var dynamically)
 EXPOSE 8000
 
