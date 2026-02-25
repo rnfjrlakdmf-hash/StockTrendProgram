@@ -127,8 +127,7 @@ const TERM_EXPLANATIONS: Record<string, string> = {
     "주당배당금": "1주를 갖고 있을 때 회사가 꽂아주는 현금 보너스 액수!",
     "추정 PER": "내년 실적을 미리 예상해본 가성비 점수예요.",
     "추정 EPS": "내년에 1주당 얼마를 벌 것 같은지 예상한 금액이에요.",
-    "손절가": "더 큰 손해를 막기 위해, 눈물을 머금고 조금만 손해 보고 파는 가격이에요.",
-    "목표가": "욕심부리지 말고 이 가격이 되면 이익을 챙기고 나오세요.",
+
     "PEG": "성장성 대비 주가가 싼지 비싼지 보는 지표예요. 낮을수록 좋아요!",
 };
 
@@ -610,16 +609,7 @@ function DiscoveryContent() {
                                                         <span className="hidden sm:inline">알림</span>
                                                     </button>
                                                 )}
-                                                {/* Adjusted Condition for Visibility */}
-                                                {stock.symbol && (
-                                                    <a
-                                                        href={`/trade?symbol=${stock.symbol}&price=${String(stock.price).replace(/,/g, '')}`}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 border border-blue-400/50 transition-all shadow-lg shadow-blue-500/20 animate-pulse-subtle"
-                                                    >
-                                                        <Zap className="w-4 h-4 fill-white" />
-                                                        <span className="hidden sm:inline">매매</span>
-                                                    </a>
-                                                )}
+
                                             </div>
                                         </div>
                                     </div>
@@ -870,71 +860,7 @@ function DiscoveryContent() {
                                                 <RiskAlertWrapper symbol={stock.symbol} />
                                             </div>
 
-                                            {/* [New] Strategy Card */}
-                                            {stock.strategy && (stock.strategy.target > 0) && (
-                                                <div className="bg-gradient-to-br from-gray-900 to-black border border-blue-500/50 p-6 rounded-2xl mb-6 shadow-lg relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">AI Trading Strategy</div>
-                                                    <div className="flex flex-col md:flex-row items-center gap-8">
 
-                                                        {/* Win Rate */}
-                                                        {/* Win Rate */}
-                                                        <div className="text-center md:border-r border-white/10 md:pr-8 mb-4 md:mb-0">
-                                                            <div className="text-gray-400 text-xs md:text-sm mb-1">과거 패턴 승률</div>
-                                                            <div className="text-2xl md:text-4xl font-black text-green-400 drop-shadow-md">{stock.strategy.win_rate}%</div>
-                                                            <div className="text-[10px] md:text-xs text-gray-500 mt-1">지난 3개월 유사 패턴</div>
-                                                        </div>
-
-                                                        {/* Targets */}
-                                                        <div className="flex-1 w-full space-y-4">
-                                                            <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                                                                {easyMode ? (
-                                                                    <div className="group relative inline-flex items-center cursor-help">
-                                                                        <span className="text-red-400 font-bold flex items-center gap-2 border-b border-dashed border-red-400/50">
-                                                                            📉 손절가 <span className="text-[10px]">🎓</span>
-                                                                        </span>
-                                                                        <div className="absolute bottom-full left-0 mb-2 w-52 p-3 bg-indigo-900/95 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md border border-white/10 leading-relaxed font-medium">
-                                                                            <span className="text-yellow-300 font-bold block mb-1">💡 손절가 말랑 풀이</span>
-                                                                            {TERM_EXPLANATIONS["손절가"]}
-                                                                            <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-indigo-900/95"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-red-400 font-bold flex items-center gap-2">📉 손절가 (Stop Loss)</span>
-                                                                )}
-                                                                <span className="text-xl font-mono text-white">
-                                                                    {stock.currency === 'KRW' ? '₩' : '$'}
-                                                                    {stock.strategy.stop_loss.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center bg-blue-900/20 p-3 rounded-lg border border-blue-500/30">
-                                                                {easyMode ? (
-                                                                    <div className="group relative inline-flex items-center cursor-help">
-                                                                        <span className="text-blue-400 font-bold flex items-center gap-2 border-b border-dashed border-blue-400/50">
-                                                                            🎯 목표가 <span className="text-[10px]">🎓</span>
-                                                                        </span>
-                                                                        <div className="absolute bottom-full left-0 mb-2 w-52 p-3 bg-indigo-900/95 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md border border-white/10 leading-relaxed font-medium">
-                                                                            <span className="text-yellow-300 font-bold block mb-1">💡 목표가 말랑 풀이</span>
-                                                                            {TERM_EXPLANATIONS["목표가"]}
-                                                                            <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-indigo-900/95"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-blue-400 font-bold flex items-center gap-2">🎯 목표가 (Target)</span>
-                                                                )}
-                                                                <span className="text-xl font-mono text-white">
-                                                                    {stock.currency === 'KRW' ? '₩' : '$'}
-                                                                    {stock.strategy.target.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-4 text-center">
-                                                        <p className="text-xs text-gray-500">
-                                                            * 이 데이터는 기술적 분석(지지/저항)에 기반한 참고용입니다. 모든 투자의 책임은 본인에게 있습니다.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
 
                                             <div className="mt-6 p-4 bg-blue-900/20 rounded-xl border border-blue-500/30">
                                                 <p className="text-blue-200 text-sm flex items-center gap-2">

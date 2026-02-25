@@ -288,43 +288,5 @@ def send_price_alert_notification(
     }
     
 
-def send_buy_signal_alert(
-    tokens: List[str],
-    stock_code: str,
-    stock_name: str,
-    target_price: float,
-    qty: int,
-    message: Optional[str] = None
-) -> Dict:
-    """
-    매수 신호 (BUY_SIGNAL) 전용 푸시 발송
-    
-    Args:
-        tokens: FCM 토큰 리스트
-        stock_code: 종목 코드 (예: 005930)
-        stock_name: 종목명 (예: 삼성전자)
-        target_price: 목표 매수가
-        qty: 추천 수량
-        message: 커스텀 메시지 (없으면 자동 생성)
-    """
-    
-    # 1. 메시지 자동 생성 (없을 경우)
-    if not message:
-        message = f"목표가 {int(target_price):,}원 도달! (추천: {qty}주)"
-        
-    title = f"🚨 [매수신호] {stock_name} 포착"
-    
-    # 2. 데이터 페이로드 구성 (앱 라우팅용)
-    data = {
-        "type": "BUY_SIGNAL",
-        "stock_code": stock_code,
-        "stock_name": stock_name,
-        "target_price": str(target_price),
-        "qty": str(qty),
-        # 딥링크 URL (필요 시 사용)
-        "url": f"/buy?code={stock_code}&price={target_price}&qty={qty}",
-        "click_action": "FLUTTER_NOTIFICATION_CLICK" # 범용적인 클릭 액션
-    }
-    
-    # 3. 발송 (멀티캐스트 재활용)
-    return send_multicast_notification(tokens, title, message, data)
+
+

@@ -186,7 +186,7 @@ export default function AlertsPage() {
 
     return (
         <div className="min-h-screen pb-10 text-white">
-            <Header title="가격 알림 센터" subtitle="목표가 및 스나이퍼 매매 신호 알림" />
+            <Header title="가격 알림 센터" subtitle="관심 종목 가격 변동 모니터링" />
 
             <AdRewardModal
                 isOpen={showAdModal}
@@ -230,13 +230,13 @@ export default function AlertsPage() {
                                         <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">권장</span>
                                     </h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">
-                                        앱을 켜두지 않아도 중요한 매수 신호를 브라우저 알림으로 즉시 받아볼 수 있습니다.<br />
+                                        앱을 켜두지 않아도 중요한 가격 변동을 브라우저 알림으로 즉시 받아볼 수 있습니다.<br />
                                         <span className="text-gray-500 text-xs">* PC/모바일 모두 지원</span>
                                     </p>
                                 </div>
                                 <button
                                     onClick={async () => {
-                                        if (confirm("실시간 매수 신호 알림을 활성화하시겠습니까?")) {
+                                        if (confirm("실시간 가격 변동 알림을 활성화하시겠습니까?")) {
                                             const { requestFCMToken, showNotification } = await import("@/lib/firebase");
                                             const { API_BASE_URL } = await import("@/lib/config");
                                             try {
@@ -250,7 +250,7 @@ export default function AlertsPage() {
                                                     });
                                                     localStorage.setItem('fcm_registered', 'true');
                                                     alert("✅ 알림이 성공적으로 설정되었습니다!");
-                                                    showNotification("알림 테스트", { body: "이제 매수 신호를 받을 수 있습니다." });
+                                                    showNotification("알림 테스트", { body: "이제 가격 변동 알림을 받을 수 있습니다." });
                                                 } else {
                                                     alert("❌ 알림 권한이 차단되었습니다. 브라우저 설정에서 권한을 허용해주세요.");
                                                 }

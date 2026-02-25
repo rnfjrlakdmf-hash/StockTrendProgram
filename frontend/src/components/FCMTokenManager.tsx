@@ -40,15 +40,7 @@ export default function FCMTokenManager() {
         onForegroundMessage((payload) => {
             console.log('[FCM] Received foreground message:', payload);
 
-            if (payload.data?.type === 'BUY_SIGNAL') {
-                setBuySignalData({
-                    stockName: payload.data.stock_name,
-                    stockCode: payload.data.stock_code,
-                    targetPrice: payload.data.target_price,
-                    qty: payload.data.qty
-                });
-                return;
-            }
+
 
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
@@ -240,10 +232,10 @@ export default function FCMTokenManager() {
                             </div>
                             <div>
                                 <h4 className="font-bold text-white text-[15px] leading-tight flex items-center gap-2">
-                                    AI 매수 신호 알림
+                                    가격 변동 알림
                                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                                 </h4>
-                                <p className="text-[11px] text-blue-300 font-medium">실시간 포착 시 즉시 발송</p>
+                                <p className="text-[11px] text-blue-300 font-medium">관심 종목 가격 변동 시 즉시 발송</p>
                             </div>
                         </div>
 

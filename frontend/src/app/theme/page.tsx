@@ -226,39 +226,39 @@ export default function ThemePage() {
 
                                     {/* Investment Guide by Phase */}
                                     <div className={`w-full rounded-xl p-3 mt-1 text-left ${result.lifecycle?.phase === 'Morning' ? 'bg-blue-500/10 border border-blue-500/20' :
-                                            result.lifecycle?.phase === 'Noon' ? 'bg-red-500/10 border border-red-500/20' :
-                                                result.lifecycle?.phase === 'Evening' ? 'bg-orange-500/10 border border-orange-500/20' :
-                                                    'bg-gray-500/10 border border-gray-500/20'
+                                        result.lifecycle?.phase === 'Noon' ? 'bg-red-500/10 border border-red-500/20' :
+                                            result.lifecycle?.phase === 'Evening' ? 'bg-orange-500/10 border border-orange-500/20' :
+                                                'bg-gray-500/10 border border-gray-500/20'
                                         }`}>
                                         {result.lifecycle?.phase === 'Morning' && (
                                             <>
-                                                <div className="text-blue-400 font-bold text-xs mb-1">✅ 초기 진입 기회</div>
+                                                <div className="text-blue-400 font-bold text-xs mb-1">ℹ️ 테마 초기 단계</div>
                                                 <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    아직 많은 사람이 주목하지 않는 초기 단계입니다. <strong className="text-blue-300">선점 투자에 유리</strong>하지만, 테마가 실패할 위험도 있으므로 <strong className="text-yellow-400">소액 분할매수</strong>를 추천합니다.
+                                                    아직 많은 사람이 주목하지 않는 초기 단계입니다. 테마가 실현될지는 <strong className="text-yellow-400">불확실성이 높은</strong> 구간이며, 충분한 조사가 필요합니다.
                                                 </p>
                                             </>
                                         )}
                                         {result.lifecycle?.phase === 'Noon' && (
                                             <>
-                                                <div className="text-red-400 font-bold text-xs mb-1">⚠️ 고점 매수 주의</div>
+                                                <div className="text-red-400 font-bold text-xs mb-1">⚠️ 과열 구간 주의</div>
                                                 <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    모두가 주목하는 과열 구간입니다. 이미 가격이 많이 올랐을 가능성이 높아 <strong className="text-red-300">지금 진입하면 고점에 물릴 위험</strong>이 큽니다. 기존 보유자는 <strong className="text-yellow-400">일부 익절</strong>을 고려하세요.
+                                                    모두가 주목하는 과열 구간입니다. 이미 가격이 많이 올랐을 가능성이 높아 <strong className="text-red-300">변동성이 큰 구간</strong>입니다. 투자 판단 전 충분한 분석이 필요합니다.
                                                 </p>
                                             </>
                                         )}
                                         {result.lifecycle?.phase === 'Evening' && (
                                             <>
-                                                <div className="text-orange-400 font-bold text-xs mb-1">📉 수익 실현 타이밍</div>
+                                                <div className="text-orange-400 font-bold text-xs mb-1">📉 성숙 단계 진입</div>
                                                 <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    테마의 열기가 식어가는 단계입니다. <strong className="text-red-300">신규 진입은 비추천</strong>합니다. 보유 중이라면 <strong className="text-yellow-400">단계적으로 매도</strong>하여 수익을 확보하세요.
+                                                    테마의 열기가 식어가는 단계입니다. <strong className="text-orange-300">변동성이 줄어드는</strong> 시기이며, 향후 방향성에 대한 충분한 분석이 필요합니다.
                                                 </p>
                                             </>
                                         )}
                                         {result.lifecycle?.phase === 'Night' && (
                                             <>
-                                                <div className="text-gray-400 font-bold text-xs mb-1">🚫 투자 비추천</div>
+                                                <div className="text-gray-400 font-bold text-xs mb-1">💤 쇠퇴기 진입</div>
                                                 <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    테마가 시장의 관심에서 벗어난 쇠퇴기입니다. <strong className="text-red-400">신규 투자는 피하세요.</strong> 다음 사이클이 올 때까지 <strong className="text-yellow-400">관망</strong>을 추천합니다.
+                                                    테마가 시장의 관심에서 벗어난 쇠퇴기입니다. <strong className="text-gray-300">거래량과 관심도가 감소</strong>하는 시기이며, 다음 사이클이 올 때까지 <strong className="text-yellow-400">관망</strong>이 필요한 구간입니다.
                                                 </p>
                                             </>
                                         )}

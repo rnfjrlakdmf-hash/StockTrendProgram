@@ -223,16 +223,14 @@ def trigger_alert(alert, price, triggered_list, extra_msg=""):
             cond = alert["condition"]
             
             # Message Construct
-            title = f"🔔 {symbol} 목표가 도달!"
-            body = f"현재가 {int(price):,}원이 목표가({alert.get('target_price')})에 도달했습니다.\n터치하여 주문하기 👆"
+            title = f"🔔 {symbol} 목표 가격 도달!"
+            body = f"현재가 {int(price):,}원이 목표가({alert.get('target_price')})에 도달했습니다.\n터치하여 확인하기 👆"
             
             if alert["type"] != "PRICE":
                  title = f"🔔 {symbol} 알림"
                  body = f"{extra_msg}\n터치하여 확인하기"
 
-            # Deep Link Payload
-            # /trade?symbol=005930&mode=ORDER
-            link_url = f"/trade?symbol={symbol}&price={price}"
+            link_url = f"/discovery?q={symbol}"
             
             data_payload = {
                 "type": "TRADING_ALERT",
