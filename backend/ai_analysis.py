@@ -1150,6 +1150,122 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
         return None
 
 # ==========================================
+# [New] AI 1분 브리핑 (Smart Signal)
+# ==========================================
+
+def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
+    """
+    종목의 재무·뉴스·수급·공시를 종합하여 중립적 1분 요약을 생성합니다.
+    절대 투자 추천을 하지 않고 팩트만 전달합니다.
+    """
+    # 1. 데이터 수집
+    news_data = []
+    disclosure_data = []
+    investor_data = {}
+    price_data = {}
+    
+    try:
+        from stock_data import get_simple_quote, fetch_google_news
+        quote = get_simple_quote(symbol)
+        if quote:
+            price_data = {
+                "price": quote.get("price", "N/A"),
+                "change": quote.get("change", "N/A"),
+                "change_pct": quote.get("change_pct", "N/A"),
+            }
+    except Exception as e:
+        print(f"[Briefing] Price data error: {e}")
+    
+    try:
+        from stock_data import fetch_google_news
+        news = fetch_google_news(symbol, max_results=5)
+        news_data = [n.get("title", "") for n in (news or [])]
+    except Exception as e:
+        print(f"[Briefing] News data error: {e}")
+    
+    try:
+        from dart_disclosure import get_dart_disclosures
+        disclosures = get_dart_disclosures(symbol)
+        disclosure_data = [d.get("title", "") for d in (disclosures or [])[:3]]
+    except Exception as e:
+        print(f"[Briefing] Disclosure data error: {e}")
+    
+    try:
+        from korea_data import get_investor_history
+        history = get_investor_history(symbol, days=5)
+        if history and len(history) > 0:
+            latest = history[0]
+            investor_data = {
+                "foreign_net": latest.get("foreign_net", 0),
+                "institution_net": latest.get("institution_net", 0),
+            }
+    except Exception as e:
+        print(f"[Briefing] Investor data error: {e}")
+    
+    # 2. AI 요약 생성
+    if not API_KEY:
+        return {
+            "symbol": symbol,
+            "briefing": f"{symbol} 종목의 AI 브리핑을 생성하려면 Gemini API 키가 필요합니다.",
+            "price": price_data,
+            "news_count": len(news_data),
+            "disclosure_count": len(disclosure_data),
+            "disclaimer": "본 정보는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
+        }
+    
+    context = f"""
+    종목: {symbol}
+    현재가: {price_data.get('price', 'N/A')} (변동: {price_data.get('change_pct', 'N/A')}%)
+    최근 뉴스: {json.dumps(news_data, ensure_ascii=False)}
+    최근 공시: {json.dumps(disclosure_data, ensure_ascii=False)}
+    수급 현황: 외국인 순매수 {investor_data.get('foreign_net', 'N/A')}주, 기관 순매수 {investor_data.get('institution_net', 'N/A')}주
+    """
+    
+    prompt = f"""
+    당신은 중립적인 금융 데이터 분석가입니다.
+    아래 데이터를 사실 기반으로 200자 이내 한국어 브리핑으로 요약해주세요.
+    
+    [절대 금지 사항]
+    - 매수/매도 추천 금지
+    - "~하세요", "~을 추천합니다" 등의 조언 금지
+    - "~할 것으로 보입니다" 등의 예측 금지
+    
+    [사용할 어조]
+    - "~입니다", "~했습니다" 등 사실 전달 어조만 사용
+    - 객관적 데이터 중심
+    
+    데이터:
+    {context}
+    
+    Response Format (JSON):
+    {{
+        "briefing": "한국어 브리핑 텍스트 (200자 이내)",
+        "key_points": ["포인트1", "포인트2", "포인트3"],
+        "sentiment_score": <0-100 중립=50>
+    }}
+    """
+    
+    try:
+        response = generate_with_retry(prompt, json_mode=True, timeout=15)
+        result = json.loads(response.text)
+        result["symbol"] = symbol
+        result["price"] = price_data
+        result["news_count"] = len(news_data)
+        result["disclosure_count"] = len(disclosure_data)
+        result["investor"] = investor_data
+        result["disclaimer"] = "본 정보는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
+        return result
+    except Exception as e:
+        print(f"[Briefing] AI generation error: {e}")
+        return {
+            "symbol": symbol,
+            "briefing": f"{symbol} 종목 브리핑 생성 중 오류가 발생했습니다.",
+            "price": price_data,
+            "disclaimer": "본 정보는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
+        }
+
+
+# ==========================================
 # [New] Portfolio Analysis Integration
 # ==========================================
 

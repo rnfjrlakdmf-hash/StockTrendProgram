@@ -25,7 +25,10 @@ from kis_api import KisApi
 from db_manager import (
     get_db_connection, save_analysis_result, get_score_history, add_watchlist, 
     remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, 
-    save_fcm_token, delete_fcm_token, clear_watchlist
+    save_fcm_token, delete_fcm_token, clear_watchlist,
+    create_signals_table, create_votes_table,
+    save_signal, get_recent_signals, get_signals_by_symbol,
+    save_vote, get_vote_results, get_user_vote
 )
 from user_session import session_manager
 from ai_analysis import (
@@ -1717,6 +1720,146 @@ def check_portfolio_risk_api(request: PortfolioAnalysisRequest):
         return {"status": "error", "message": str(e)}
 
 
+# ============================================================
+# Smart Signal APIs (스마트 시그널)
+# ============================================================
+
+# DB 테이블 초기화
+try:
+    create_signals_table()
+    create_votes_table()
+except Exception as e:
+    print(f"[Init] Signal/Vote table init error: {e}")
+
+
+@app.get("/api/signals")
+def get_signals_feed(limit: int = 50):
+    """최근 시그널 피드 조회"""
+    try:
+        signals = get_recent_signals(limit)
+        return {"status": "success", "data": signals}
+    except Exception as e:
+        print(f"Signals feed error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/signals/{symbol}")
+def get_symbol_signals(symbol: str, limit: int = 20):
+    """특정 종목 시그널 조회"""
+    try:
+        signals = get_signals_by_symbol(symbol.upper(), limit)
+        return {"status": "success", "data": signals}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/signals/scan")
+def scan_signals_now():
+    """
+    관심 종목 시그널 스캔 (수동 트리거)
+    거래량 폭증, 공시, 수급 이상을 한번에 감지
+    """
+    try:
+        from smart_signals import scan_watchlist_signals
+        
+        # 기본 모니터링 종목 (인기 종목)
+        default_symbols = [
+            "005930", "000660", "373220", "035420", "035720",
+            "051910", "006400", "068270", "028260", "207940"
+        ]
+        
+        detected = scan_watchlist_signals(default_symbols)
+        
+        # DB에 저장
+        saved = []
+        for sig in detected:
+            sig_id = save_signal(
+                symbol=sig["symbol"],
+                signal_type=sig["signal_type"],
+                title=sig["title"],
+                summary=sig["summary"],
+                data=sig.get("data", {})
+            )
+            if sig_id:
+                sig["id"] = sig_id
+                saved.append(sig)
+        
+        return {
+            "status": "success",
+            "detected": len(detected),
+            "saved": len(saved),
+            "signals": saved
+        }
+    except Exception as e:
+        print(f"Signal scan error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/signals/{symbol}/briefing")
+def get_ai_briefing(symbol: str):
+    """
+    AI 1분 브리핑 — 종목의 재무·뉴스·수급을 중립적으로 요약
+    """
+    try:
+        from ai_analysis import generate_stock_briefing
+        result = generate_stock_briefing(symbol.upper())
+        return {"status": "success", "data": result}
+    except Exception as e:
+        print(f"AI Briefing error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+class VoteRequest(pydantic.BaseModel):
+    direction: str  # "up" or "down"
+
+
+@app.post("/api/votes/{symbol}")
+def submit_vote(symbol: str, req: VoteRequest, x_user_id: str = Header(None)):
+    """종목 투표 (오를것/내릴것)"""
+    try:
+        user_id = x_user_id or "anonymous"
+        if req.direction not in ("up", "down"):
+            return {"status": "error", "message": "direction must be 'up' or 'down'"}
+        
+        result = save_vote(symbol.upper(), user_id, req.direction)
+        vote_results = get_vote_results(symbol.upper())
+        
+        return {
+            "status": "success",
+            "vote": result,
+            "results": vote_results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/votes/{symbol}")
+def read_vote_results(symbol: str, x_user_id: str = Header(None)):
+    """종목 투표 결과 조회"""
+    try:
+        results = get_vote_results(symbol.upper())
+        user_vote = None
+        if x_user_id:
+            user_vote = get_user_vote(symbol.upper(), x_user_id)
+        
+        return {
+            "status": "success",
+            "data": results,
+            "user_vote": user_vote
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/investors/top")
+def read_investor_top():
+    """외국인/기관 순매수 상위 종목"""
+    try:
+        from smart_signals import get_investor_top_stocks
+        data = get_investor_top_stocks()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

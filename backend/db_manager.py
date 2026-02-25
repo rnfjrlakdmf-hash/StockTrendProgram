@@ -606,3 +606,196 @@ def get_all_fcm_tokens() -> list:
     finally:
         conn.close()
 
+
+# ============================================================
+# Smart Signals (스마트 시그널)
+# ============================================================
+
+def create_signals_table():
+    """시그널 테이블 생성"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            signal_type TEXT NOT NULL,
+            title TEXT,
+            summary TEXT,
+            data_json TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+    print("[DB] Signals table created")
+
+
+def save_signal(symbol: str, signal_type: str, title: str, summary: str, data: dict = None):
+    """시그널 저장"""
+    import json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO signals (symbol, signal_type, title, summary, data_json)
+            VALUES (?, ?, ?, ?, ?)
+        """, (symbol, signal_type, title, summary, json.dumps(data or {}, ensure_ascii=False)))
+        conn.commit()
+        return cursor.lastrowid
+    except Exception as e:
+        print(f"[DB] Save signal error: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def get_recent_signals(limit: int = 50) -> list:
+    """최근 시그널 조회"""
+    import json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id, symbol, signal_type, title, summary, data_json, created_at
+            FROM signals ORDER BY created_at DESC LIMIT ?
+        """, (limit,))
+        rows = cursor.fetchall()
+        return [{
+            "id": r[0], "symbol": r[1], "signal_type": r[2],
+            "title": r[3], "summary": r[4],
+            "data": json.loads(r[5]) if r[5] else {},
+            "created_at": r[6]
+        } for r in rows]
+    except Exception as e:
+        print(f"[DB] Get signals error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def get_signals_by_symbol(symbol: str, limit: int = 20) -> list:
+    """종목별 시그널 조회"""
+    import json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id, symbol, signal_type, title, summary, data_json, created_at
+            FROM signals WHERE symbol = ? ORDER BY created_at DESC LIMIT ?
+        """, (symbol, limit))
+        rows = cursor.fetchall()
+        return [{
+            "id": r[0], "symbol": r[1], "signal_type": r[2],
+            "title": r[3], "summary": r[4],
+            "data": json.loads(r[5]) if r[5] else {},
+            "created_at": r[6]
+        } for r in rows]
+    except Exception as e:
+        print(f"[DB] Get signals by symbol error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+# ============================================================
+# Votes (종목 투표)
+# ============================================================
+
+def create_votes_table():
+    """투표 테이블 생성"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS votes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(symbol, user_id, created_at)
+        )
+    """)
+    conn.commit()
+    conn.close()
+    print("[DB] Votes table created")
+
+
+def save_vote(symbol: str, user_id: str, direction: str) -> dict:
+    """투표 저장 (1인 1일 1표)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 오늘 이미 투표한 경우 업데이트
+        cursor.execute("""
+            SELECT id FROM votes
+            WHERE symbol = ? AND user_id = ? AND DATE(created_at) = DATE('now')
+        """, (symbol, user_id))
+        existing = cursor.fetchone()
+
+        if existing:
+            cursor.execute("""
+                UPDATE votes SET direction = ? WHERE id = ?
+            """, (direction, existing[0]))
+        else:
+            cursor.execute("""
+                INSERT INTO votes (symbol, user_id, direction) VALUES (?, ?, ?)
+            """, (symbol, user_id, direction))
+
+        conn.commit()
+        return {"success": True, "updated": existing is not None}
+    except Exception as e:
+        print(f"[DB] Save vote error: {e}")
+        return {"success": False, "error": str(e)}
+    finally:
+        conn.close()
+
+
+def get_vote_results(symbol: str) -> dict:
+    """종목 투표 결과 조회 (최근 24시간)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT direction, COUNT(*) as cnt
+            FROM votes
+            WHERE symbol = ? AND created_at >= datetime('now', '-1 day')
+            GROUP BY direction
+        """, (symbol,))
+        rows = cursor.fetchall()
+        results = {"up": 0, "down": 0}
+        for row in rows:
+            if row[0] == "up":
+                results["up"] = row[1]
+            elif row[0] == "down":
+                results["down"] = row[1]
+
+        total = results["up"] + results["down"]
+        results["total"] = total
+        results["up_pct"] = round(results["up"] / total * 100) if total > 0 else 50
+        results["down_pct"] = round(results["down"] / total * 100) if total > 0 else 50
+        return results
+    except Exception as e:
+        print(f"[DB] Get votes error: {e}")
+        return {"up": 0, "down": 0, "total": 0, "up_pct": 50, "down_pct": 50}
+    finally:
+        conn.close()
+
+
+def get_user_vote(symbol: str, user_id: str) -> str:
+    """사용자의 오늘 투표 확인"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT direction FROM votes
+            WHERE symbol = ? AND user_id = ? AND DATE(created_at) = DATE('now')
+        """, (symbol, user_id))
+        row = cursor.fetchone()
+        return row[0] if row else None
+    except Exception as e:
+        print(f"[DB] Get user vote error: {e}")
+        return None
+    finally:
+        conn.close()
+
