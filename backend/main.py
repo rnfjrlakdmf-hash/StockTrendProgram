@@ -2078,6 +2078,43 @@ def get_calendar_events():
         return {"status": "error", "message": str(e)}
 
 
+# ============================================================
+# 프로 분석 APIs (퀀트 / 재무 / 동종비교)
+# ============================================================
+
+@app.get("/api/quant/{symbol}")
+def read_quant_scorecard(symbol: str):
+    """퀀트 스코어카드 (5축 팩터 분석)"""
+    try:
+        from pro_analysis import get_quant_scorecard
+        data = get_quant_scorecard(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/financial-health/{symbol}")
+def read_financial_health(symbol: str):
+    """재무 건전성 스캐너 (Z-Score + F-Score)"""
+    try:
+        from pro_analysis import get_financial_health
+        data = get_financial_health(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/peer-compare")
+def read_peer_comparison(symbols: str = Query(..., description="쉼표 구분 종목코드")):
+    """동종업계 비교 분석"""
+    try:
+        from pro_analysis import get_peer_comparison
+        symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
+        data = get_peer_comparison(symbol_list)
+        return {"status": "success", **data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
