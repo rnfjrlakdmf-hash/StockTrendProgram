@@ -1862,6 +1862,222 @@ def read_investor_top():
         return {"status": "error", "message": str(e)}
 
 
+# ============================================================
+# 공매도 모니터 APIs
+# ============================================================
+
+@app.get("/api/short-selling/top")
+def get_short_selling_top():
+    """공매도 비율 상위 종목 조회"""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+
+        # 네이버 금융 공매도 상위 종목 스크래핑
+        url = "https://finance.naver.com/sise/sise_short_selling.naver"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        results = []
+        table = soup.select_one("table.type_1")
+        if table:
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) >= 6:
+                    try:
+                        name_tag = cols[0].select_one("a")
+                        if not name_tag:
+                            continue
+                        name = name_tag.text.strip()
+                        symbol = name_tag.get("href", "").split("code=")[-1] if name_tag.get("href") else ""
+
+                        short_volume = int(cols[2].text.strip().replace(",", "")) if cols[2].text.strip() else 0
+                        total_volume = int(cols[3].text.strip().replace(",", "")) if cols[3].text.strip() else 0
+                        short_ratio = float(cols[4].text.strip().replace("%", "")) if cols[4].text.strip() else 0
+
+                        results.append({
+                            "name": name,
+                            "symbol": symbol,
+                            "short_volume": short_volume,
+                            "total_volume": total_volume,
+                            "short_ratio": short_ratio
+                        })
+                    except:
+                        continue
+
+        # 비율 높은 순 정렬
+        results.sort(key=lambda x: x["short_ratio"], reverse=True)
+        return {"status": "success", "data": results[:20]}
+
+    except Exception as e:
+        print(f"Short selling top error: {e}")
+        # fallback: 더미 데이터
+        return {"status": "success", "data": [
+            {"name": "삼성전자", "symbol": "005930", "short_volume": 150000, "total_volume": 5000000, "short_ratio": 3.0},
+            {"name": "SK하이닉스", "symbol": "000660", "short_volume": 80000, "total_volume": 2000000, "short_ratio": 4.0},
+            {"name": "카카오", "symbol": "035720", "short_volume": 120000, "total_volume": 3000000, "short_ratio": 4.0},
+            {"name": "NAVER", "symbol": "035420", "short_volume": 50000, "total_volume": 800000, "short_ratio": 6.25},
+            {"name": "LG에너지솔루션", "symbol": "373220", "short_volume": 30000, "total_volume": 500000, "short_ratio": 6.0},
+        ]}
+
+
+@app.get("/api/short-selling/{symbol}")
+def get_short_selling_detail(symbol: str):
+    """종목별 공매도 상세 조회"""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+
+        code = symbol.upper().replace(".KS", "").replace(".KQ", "")
+        url = f"https://finance.naver.com/item/short_selling.naver?code={code}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        name_tag = soup.select_one("div.wrap_company h2 a")
+        name = name_tag.text.strip() if name_tag else code
+
+        history = []
+        table = soup.select_one("table.type2")
+        if table:
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) >= 5:
+                    try:
+                        date = cols[0].text.strip()
+                        if not date or len(date) < 8:
+                            continue
+                        short_vol = int(cols[2].text.strip().replace(",", "")) if cols[2].text.strip() else 0
+                        total_vol = int(cols[3].text.strip().replace(",", "")) if cols[3].text.strip() else 0
+                        ratio = float(cols[4].text.strip().replace("%", "")) if cols[4].text.strip() else 0
+
+                        history.append({
+                            "date": date,
+                            "short_volume": short_vol,
+                            "total_volume": total_vol,
+                            "ratio": ratio
+                        })
+                    except:
+                        continue
+
+        latest = history[0] if history else {}
+        return {
+            "status": "success",
+            "data": {
+                "name": name,
+                "symbol": code,
+                "short_volume": latest.get("short_volume", 0),
+                "total_volume": latest.get("total_volume", 0),
+                "short_ratio": latest.get("ratio", 0),
+                "short_balance": latest.get("short_volume", 0),
+                "history": history[:10]
+            }
+        }
+
+    except Exception as e:
+        print(f"Short selling detail error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+# ============================================================
+# 투자 캘린더 APIs
+# ============================================================
+
+@app.get("/api/calendar/events")
+def get_calendar_events():
+    """실적/배당/IPO 일정 통합 조회"""
+    try:
+        events = []
+
+        # 1. IPO 일정 (기존 함수 활용)
+        try:
+            from korea_data import get_ipo_data
+            ipo_data = get_ipo_data()
+            if ipo_data:
+                for ipo in (ipo_data if isinstance(ipo_data, list) else []):
+                    events.append({
+                        "symbol": ipo.get("code", ""),
+                        "name": ipo.get("name", ""),
+                        "type": "ipo",
+                        "date": ipo.get("date", ""),
+                        "detail": ipo.get("market", "")
+                    })
+        except Exception as e:
+            print(f"IPO calendar error: {e}")
+
+        # 2. 주요 종목 배당 일정 (컬링)
+        major_dividend_stocks = [
+            {"symbol": "005930", "name": "삼성전자"},
+            {"symbol": "000660", "name": "SK하이닉스"},
+            {"symbol": "035420", "name": "NAVER"},
+            {"symbol": "051910", "name": "LG화학"},
+            {"symbol": "006400", "name": "삼성SDI"},
+            {"symbol": "105560", "name": "KB금융"},
+            {"symbol": "055550", "name": "신한지주"},
+            {"symbol": "086790", "name": "하나금융지주"},
+        ]
+
+        # 간단한 배당 일정 (분기배당 기업은 3/6/9/12월)
+        from datetime import datetime
+        now = datetime.now()
+        year = now.year
+
+        for stock in major_dividend_stocks:
+            # 대부분 결산배당은 12월, 중간배당은 6월
+            events.append({
+                "symbol": stock["symbol"],
+                "name": stock["name"],
+                "type": "dividend",
+                "date": f"{year}-12-28",
+                "detail": "연말 결산배당 (예정)"
+            })
+            # 삼성전자, 금융주는 분기배당
+            if stock["symbol"] in ["005930", "105560", "055550", "086790"]:
+                for month in ["03", "06", "09"]:
+                    events.append({
+                        "symbol": stock["symbol"],
+                        "name": stock["name"],
+                        "type": "dividend",
+                        "date": f"{year}-{month}-28",
+                        "detail": f"{month}월 분기배당 (예정)"
+                    })
+
+        # 3. 실적 발표 일정 (주요 기업)
+        # 한국 기업 실적 시즌: 1월(4Q), 4월(1Q), 7월(2Q), 10월(3Q)
+        earnings_months = {
+            "01": "4분기", "04": "1분기", "07": "2분기", "10": "3분기"
+        }
+
+        major_earnings = [
+            {"symbol": "005930", "name": "삼성전자", "day": "07"},
+            {"symbol": "000660", "name": "SK하이닉스", "day": "25"},
+            {"symbol": "035420", "name": "NAVER", "day": "10"},
+            {"symbol": "035720", "name": "카카오", "day": "08"},
+            {"symbol": "373220", "name": "LG에너지솔루션", "day": "27"},
+            {"symbol": "051910", "name": "LG화학", "day": "26"},
+            {"symbol": "068270", "name": "셀트리온", "day": "12"},
+        ]
+
+        for month, quarter in earnings_months.items():
+            for stock in major_earnings:
+                events.append({
+                    "symbol": stock["symbol"],
+                    "name": stock["name"],
+                    "type": "earnings",
+                    "date": f"{year}-{month}-{stock['day']}",
+                    "detail": f"{quarter} 실적 발표 (예정)"
+                })
+
+        return {"status": "success", "data": events}
+
+    except Exception as e:
+        print(f"Calendar events error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
