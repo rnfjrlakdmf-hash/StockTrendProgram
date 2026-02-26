@@ -301,7 +301,7 @@ export default function PatternPage() {
                         AI 차트 분석 <span className="text-emerald-500">PRO</span>
                     </h1>
                     <p className="text-gray-400 text-lg">
-                        패턴 날씨 예보, 세력 평단가 추적, 캔들 성분 분석을 한번에.
+                        패턴 분석 리포트, 투자자별 수급 추적, 캔들 성분 분석을 한번에.
                     </p>
 
                     {!isPro && (
@@ -378,53 +378,41 @@ export default function PatternPage() {
                 {result && (
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-8">
 
-                        {/* 1. Weather Results */}
+                        {/* 1. Pattern Analysis Summary */}
                         <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-white/10 p-8 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                 <Crown className="w-32 h-32 text-white" />
                             </div>
                             <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
                                 <div className="flex-shrink-0">
-                                    {result.weather?.weather?.includes("맑음") ? (
-                                        <Sun className="w-32 h-32 text-orange-500 animate-pulse drop-shadow-[0_0_30px_rgba(249,115,22,0.5)]" />
-                                    ) : result.weather?.weather?.includes("구름") ? (
-                                        <CloudSun className="w-32 h-32 text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.3)]" />
-                                    ) : (
-                                        <CloudRain className="w-32 h-32 text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.3)]" />
-                                    )}
+                                    <LineChart className="w-24 h-24 text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]" />
                                 </div>
                                 <div className="flex-1 text-center md:text-left space-y-4">
                                     <div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold mb-2">
-                                            내일의 날씨 예보
+                                            패턴 분석 결과
                                         </span>
-                                        <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">
-                                            "{result.weather?.weather || '분석 불가'}"
+                                        <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                                            {result.weather?.pattern || '패턴 없음'}
                                         </h2>
                                     </div>
                                     <p className="text-gray-300 text-lg">
-                                        현재 <span className="text-emerald-400 font-bold">'{result.weather?.pattern || '패턴 없음'}'</span> (과거 {result.weather?.count || 0}회).<br />
-                                        내일 상승 확률 <span className="text-3xl font-black text-white">{result.weather?.probability || 0}%</span>
-                                        {result.weather?.avg_return !== 0 && (
-                                            <span className="ml-2 text-lg text-gray-400">
-                                                (예상 수익 <span className={`${result.weather?.avg_return > 0 ? 'text-red-400' : 'text-blue-400'} font-bold`}>
-                                                    {result.weather?.avg_return > 0 ? '+' : ''}{result.weather?.avg_return}%
-                                                </span>)
-                                            </span>
-                                        )}
+                                        과거 유사 패턴 <span className="text-emerald-400 font-bold">{result.weather?.count || 0}회</span> 발생.
+                                        <br />
+                                        <span className="text-sm text-gray-500">* 과거 통계 데이터이며 미래 수익을 보장하지 않습니다.</span>
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* 2. Whale Tracker */}
+                        {/* 2. Investor Flow Tracker */}
                         {result.whale && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="rounded-3xl bg-gray-900 border border-white/10 p-6 relative overflow-hidden">
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h3 className="text-gray-400 font-bold text-sm flex items-center gap-2">
-                                                <Globe className="w-4 h-4" /> 외국인 세력 평단가
+                                                <Globe className="w-4 h-4" /> 외국인 추정 매입단가
                                             </h3>
                                             <div className="text-3xl font-black text-white mt-2">
                                                 {result.whale?.foreigner?.avg_price?.toLocaleString(undefined, { maximumFractionDigits: 0 })}원
@@ -435,14 +423,14 @@ export default function PatternPage() {
                                         </div>
                                     </div>
                                     <div className="text-xs text-right text-gray-500 mt-2">
-                                        추정 손익률
+                                        현재가 대비 괴리율 (추정)
                                     </div>
                                 </div>
                                 <div className="rounded-3xl bg-gray-900 border border-white/10 p-6 relative overflow-hidden">
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h3 className="text-gray-400 font-bold text-sm flex items-center gap-2">
-                                                <Building2 className="w-4 h-4" /> 기관 세력 평단가
+                                                <Building2 className="w-4 h-4" /> 기관 추정 매입단가
                                             </h3>
                                             <div className="text-3xl font-black text-white mt-2">
                                                 {result.whale?.institution?.avg_price?.toLocaleString(undefined, { maximumFractionDigits: 0 })}원
@@ -453,7 +441,7 @@ export default function PatternPage() {
                                         </div>
                                     </div>
                                     <div className="text-xs text-right text-gray-500 mt-2">
-                                        추정 손익률
+                                        현재가 대비 괴리율 (추정)
                                     </div>
                                 </div>
                             </div>
@@ -467,7 +455,7 @@ export default function PatternPage() {
                                         "{result.weather.comment}"
                                     </p>
                                     <p className="text-gray-400 text-sm mt-2">
-                                        * 과거 {result.weather.count}번의 사례를 분석한 통계적 결과입니다.
+                                        * 과거 {result.weather.count}번의 유사 사례를 통계 분석한 참고 자료입니다. 투자 판단의 근거로 사용하지 마세요.
                                     </p>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -485,7 +473,7 @@ export default function PatternPage() {
                                                 </div>
                                                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
                                                     <div className="text-right">
-                                                        <div className="text-xs text-gray-500">주도 세력</div>
+                                                        <div className="text-xs text-gray-500">주요 매수 주체</div>
                                                         <div className={`font-bold ${day.winner === '외국인' ? 'text-orange-400' : day.winner === '기관' ? 'text-green-400' : 'text-gray-400'}`}>
                                                             {day.winner}
                                                         </div>
