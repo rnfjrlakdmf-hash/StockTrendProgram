@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
-import { Save, ShieldCheck, AlertTriangle, CheckCircle, Key, Loader2, User } from "lucide-react";
+import { Save, ShieldCheck, AlertTriangle, CheckCircle, Key, Loader2, User, Smartphone, ExternalLink } from "lucide-react";
 
 export default function SettingsPage() {
     const { user } = useAuth();
@@ -222,6 +222,52 @@ export default function SettingsPage() {
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Broker Quick Links */}
+                        <div className="bg-white/5 rounded-3xl p-8 border border-white/10">
+                            <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                <Smartphone className="w-5 h-5 text-green-400" />
+                                증권사 앱 바로가기
+                            </h3>
+                            <p className="text-xs text-gray-500 mb-5">자주 사용하는 증권사 앱을 빠르게 실행할 수 있습니다.</p>
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {[
+                                    { name: "토스증권", color: "from-blue-600 to-blue-800", deepLink: "supertoss://", webUrl: "https://tossinvest.com" },
+                                    { name: "KB증권", color: "from-yellow-600 to-yellow-800", deepLink: "kb-mable://", webUrl: "https://www.kbsec.com" },
+                                    { name: "미래에셋", color: "from-orange-600 to-orange-800", deepLink: "miraeasset-mstock://", webUrl: "https://securities.miraeasset.com" },
+                                    { name: "NH나무증권", color: "from-green-600 to-green-800", deepLink: "nh-namuh://", webUrl: "https://www.nhqv.com" },
+                                    { name: "삼성증권", color: "from-indigo-600 to-indigo-800", deepLink: "samsungpop://", webUrl: "https://www.samsungpop.com" },
+                                    { name: "카카오페이증권", color: "from-amber-500 to-amber-700", deepLink: "kakaopaysec://", webUrl: "https://securities.kakaopay.com" },
+                                ].map((broker) => (
+                                    <button
+                                        key={broker.name}
+                                        onClick={() => {
+                                            // 모바일이면 Deep link, PC면 웹사이트
+                                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                            if (isMobile) {
+                                                // 앱이 없으면 웹으로 fallback
+                                                const timeout = setTimeout(() => {
+                                                    window.open(broker.webUrl, '_blank');
+                                                }, 1500);
+                                                window.location.href = broker.deepLink;
+                                                window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
+                                            } else {
+                                                window.open(broker.webUrl, '_blank');
+                                            }
+                                        }}
+                                        className={`bg-gradient-to-br ${broker.color} p-4 rounded-xl text-white font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 border border-white/10`}
+                                    >
+                                        {broker.name}
+                                        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                                    </button>
+                                ))}
+                            </div>
+
+                            <p className="text-[10px] text-gray-600 mt-4 text-center">
+                                * 편의 기능이며, 특정 종목 추천과 무관합니다.
+                            </p>
                         </div>
 
                         <div className="p-6 text-center text-gray-500 text-xs">
