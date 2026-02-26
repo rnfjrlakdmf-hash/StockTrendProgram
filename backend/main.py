@@ -1729,15 +1729,32 @@ except Exception as e:
 
 
 @app.get("/api/signals")
-def get_signals_feed(limit: int = 50):
-    """최근 시그널 피드 조회"""
+def get_signals_feed(limit: int = Query(30)):
+    """
+    최근 감지된 스마트 시그널 반환
+    """
     try:
-        signals = get_recent_signals(limit)
-        return {"status": "success", "data": signals}
+        signals = db_manager.get_recent_signals(limit=limit)
+        return {
+            "status": "success",
+            "data": signals
+        }
     except Exception as e:
-        print(f"Signals feed error: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"[Signals Feed Error] {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch signals")
 
+@app.post("/api/signals/scan")
+def trigger_signals_scan():
+    """
+    관심 종목 대상 수동 스마트 시그널 스캔 트리거
+    """
+    try:
+        from smart_signals import scan_watchlist_signals
+        scan_watchlist_signals()
+        return {"status": "success", "message": "Signal scan completed"}
+    except Exception as e:
+        logger.error(f"[Signal Scan Error] {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to run signal scan")
 
 @app.get("/api/signals/{symbol}")
 def get_symbol_signals(symbol: str, limit: int = 20):
