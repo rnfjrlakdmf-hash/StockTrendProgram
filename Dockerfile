@@ -1,16 +1,16 @@
 # Python 3.11 Base Image
 FROM python:3.11-slim
 
-# Copy requirements
-COPY backend/requirements.txt .
+# Copy requirements (assuming context is backend root)
+COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all backend files to /app
-COPY backend/ /app/
+# Copy all files (assuming context is backend root)
+COPY . .
 
-# Set WORKDIR to /app (files are now here)
+# Set WORKDIR to /app (files are already here)
 WORKDIR /app
 
 # Create persistent data directory (mount as Railway Volume)
