@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Star, Menu, PlayCircle, Timer, History, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Star, Menu, PlayCircle, Timer, History, BarChart3, Activity } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
