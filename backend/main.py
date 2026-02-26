@@ -415,11 +415,8 @@ def read_live_investors(symbol: str):
 
 
 
-@app.get("/api/report/prediction")
-def read_prediction_report():
-    """지난 AI 예측 적중률 리포트"""
-    report = get_prediction_report()
-    return {"status": "success", "data": report}
+
+
 
 @app.get("/api/stock/{symbol}")
 def read_stock(symbol: str, skip_ai: bool = False):
@@ -439,7 +436,7 @@ def read_stock(symbol: str, skip_ai: bool = False):
                     "score": ai_result.get("score", 50),
                     "metrics": ai_result.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
                     "summary": ai_result.get("analysis_summary", data["summary"]),
-                    "strategy": ai_result.get("strategy", {}),
+
                     "rationale": ai_result.get("rationale", {}),
                     "related_stocks": ai_result.get("related_stocks", [])
                 })
