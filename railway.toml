@@ -1,7 +1,5 @@
 [build]
-# Use root Dockerfile
-dockerfilePath = "Dockerfile"
-
+# Use default root detection (which is backend/ for this Railway project)
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
