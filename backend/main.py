@@ -801,8 +801,7 @@ CACHE_DURATION = 5 # seconds
 CACHE_FILE_PATH = "dashboard_cache.json"
 
 
-
-
+def ranking_bg_looper():
 
     """Background task to keep top 10 ranking cache warm"""
     print("Starting ranking background updater...")
