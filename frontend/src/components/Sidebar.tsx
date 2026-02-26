@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Star, Menu, PlayCircle, Timer, History } from "lucide-react";
+import { LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Star, Menu, PlayCircle, Timer, History, BarChart3 } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -13,9 +13,11 @@ import AdRewardModal from "./AdRewardModal"; // Import Modal
 
 const navigation = [
     { name: "대시보드", href: "/", icon: LayoutDashboard },
+    { name: "시장 인텔리전스", href: "/signals", icon: Activity },
     { name: "경제/공모주 일정", href: "/schedule", icon: CalendarDays },
 
     { name: "종목 발굴", href: "/discovery", icon: Compass },
+    { name: "종목 심층분석", href: "/analysis", icon: BarChart3 },
     { name: "이슈 테마", href: "/theme", icon: Sparkles },
     { name: "차트 분석", href: "/pattern", icon: LineChart },
     { name: "AI 코치", href: "/coach", icon: UserCheck },
