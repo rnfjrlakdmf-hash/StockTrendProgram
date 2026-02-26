@@ -86,7 +86,7 @@ def health_check():
         "status": "ok",
         "service": "AI Stock Analyst Backend",
         "websocket": "available",
-        "version": "1.0.0"
+        "version": "1.0.1"
     }
 
 
