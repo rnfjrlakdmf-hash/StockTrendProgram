@@ -65,3 +65,5 @@ firebase-adminsdk.json
 !alerts.json
 *.log
 *.tar.gz
+
+!Dockerfile
