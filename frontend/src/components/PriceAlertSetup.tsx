@@ -217,7 +217,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                     </div>
                 )}
                 {mode === 'shield' && !buyPrice && stopLossEnabled && (
-                    <p className="ml-8 text-xs text-yellow-400">매수가 정보가 필요합니다 (지정가 모드 사용 권장)</p>
+                    <p className="ml-8 text-xs text-yellow-400">기준가 정보가 필요합니다 (지정가 모드 사용 권장)</p>
                 )}
             </div>
 
@@ -278,7 +278,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                     </div>
                 )}
                 {mode === 'shield' && !buyPrice && takeProfitEnabled && (
-                    <p className="ml-8 text-xs text-yellow-400">매수가 정보가 필요합니다 (지정가 모드 사용 권장)</p>
+                    <p className="ml-8 text-xs text-yellow-400">기준가 정보가 필요합니다 (지정가 모드 사용 권장)</p>
                 )}
             </div>
 

@@ -387,7 +387,7 @@ export default function Sidebar() {
                                 <BenefitItem
                                     icon={<LineChart className="w-5 h-5 text-green-400" />}
                                     title="실시간 스나이퍼 알림"
-                                    desc="RSI 과매도, 골든크로스 등 매수 타이밍을 놓치지 마세요."
+                                    desc="RSI, 골든크로스 등 기술 지표 변동을 분석합니다."
                                 />
                                 <BenefitItem
                                     icon={<Newspaper className="w-5 h-5 text-blue-400" />}

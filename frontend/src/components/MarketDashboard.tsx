@@ -566,7 +566,7 @@ function ThemeHeatmapWidget({ onSearch, onPrefetch }: { onSearch?: (term: string
         <div className="mb-8 bg-white/5 rounded-2xl border border-white/5 p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                 🔥 테마별 주도주 Heatmap
-                <span className="text-xs font-normal text-gray-500 bg-black/30 px-2 py-0.5 rounded">실시간 주도주 포착</span>
+                <span className="text-xs font-normal text-gray-500 bg-black/30 px-2 py-0.5 rounded">실시간 거래량 상위</span>
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -9,13 +9,13 @@ import { useEffect, useState } from "react";
 import { requestFCMToken, onForegroundMessage, getNotificationPermission, showNotification } from "@/lib/firebase";
 import { API_BASE_URL } from "@/lib/config";
 import { Bell, BellOff, Check } from "lucide-react";
-import BuySignalModal from "./BuySignalModal";
+
 
 export default function FCMTokenManager() {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [buySignalData, setBuySignalData] = useState<any>(null);
+
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
@@ -173,11 +173,7 @@ export default function FCMTokenManager() {
                         </div>
                     </div>
                 </div>
-                <BuySignalModal
-                    isOpen={!!buySignalData}
-                    onClose={() => setBuySignalData(null)}
-                    data={buySignalData}
-                />
+
             </div>
         );
     }
@@ -241,8 +237,8 @@ export default function FCMTokenManager() {
 
                         {/* Content */}
                         <p className="text-sm text-gray-400 leading-relaxed mb-4 font-medium">
-                            놓치지 마세요. <br />
-                            급등 예상 종목을 가장 먼저 알려드립니다.
+                            시장 변동 알림을 <br />
+                            실시간으로 받아보세요.
                         </p>
 
                         {/* Action Button */}
@@ -266,11 +262,7 @@ export default function FCMTokenManager() {
                     </div>
                 </div>
             </div>
-            <BuySignalModal
-                isOpen={!!buySignalData}
-                onClose={() => setBuySignalData(null)}
-                data={buySignalData}
-            />
+
         </div>
     );
 }

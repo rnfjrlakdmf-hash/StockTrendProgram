@@ -119,8 +119,8 @@ export default function PriceAlertList() {
                     <button
                         onClick={() => setActiveTab('active')}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'active'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
                             }`}
                     >
                         활성 ({alerts.length})
@@ -128,8 +128,8 @@ export default function PriceAlertList() {
                     <button
                         onClick={() => setActiveTab('history')}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'history'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
                             }`}
                     >
                         히스토리
@@ -168,7 +168,7 @@ export default function PriceAlertList() {
                                                 </p>
                                             ) : (
                                                 <p className="text-sm text-gray-300">
-                                                    매수가: ₩{alert.buy_price?.toLocaleString()} |
+                                                    기준가: ₩{alert.buy_price?.toLocaleString()} |
                                                     조건: {alert.threshold}%
                                                 </p>
                                             )}

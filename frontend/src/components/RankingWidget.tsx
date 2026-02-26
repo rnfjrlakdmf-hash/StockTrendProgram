@@ -79,7 +79,7 @@ export default function RankingWidget() {
             {/* Gainers */}
             <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/20 rounded-3xl p-5 shadow-lg">
                 <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" /> {market === 'US' ? '미국 대형주 상승' : '실시간 급등 (Top 5)'}
+                    <TrendingUp className="w-5 h-5" /> {market === 'US' ? '미국 대형주 상승' : '실시간 상승 (Top 5)'}
                 </h3>
                 <div className="space-y-3">
                     {data.gainers.length > 0 ? data.gainers.map((item, idx) => (

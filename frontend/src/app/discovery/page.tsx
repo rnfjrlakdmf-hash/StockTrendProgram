@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
@@ -615,7 +615,7 @@ function DiscoveryContent() {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="기관/외국인 매수 강도" color="#3b82f6" />
+                                        <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="기관/외국인 수급 강도" color="#3b82f6" />
                                         <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="성장성 및 수익성" color="#10b981" />
                                         <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="긍정/부정 뉴스 분석" color="#f59e0b" />
                                     </div>
@@ -857,7 +857,7 @@ function DiscoveryContent() {
 
                                             {/* [New] Risk Radar (SEIBRO) */}
                                             <div className="mb-6">
-                                                <RiskAlertWrapper symbol={stock.symbol} />
+                                                <RiskAlert symbols={[stock.symbol]} />
                                             </div>
 
 
@@ -1870,7 +1870,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                 <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
                     <div className="font-bold text-gray-200 mb-2 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                        수급이 높을 때 (순매수) 🛒
+                        순매수 시
                     </div>
                     <ul className="space-y-2 text-gray-400 pl-1 custom-list">
                         <li className="flex gap-2">
@@ -1886,7 +1886,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                 <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
                     <div className="font-bold text-gray-200 mb-2 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                        수급이 낮을 때 (순매도) 👋
+                        순매도 시
                     </div>
                     <ul className="space-y-2 text-gray-400 pl-1 custom-list">
                         <li className="flex gap-2">

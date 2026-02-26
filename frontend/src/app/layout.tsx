@@ -14,12 +14,12 @@ import FCMWrapper from "@/components/FCMWrapper";
 {/* <FCMTokenManager /> */ }
 
 export const metadata: Metadata = {
-  title: "AI Stock Analyst - 실시간 주식 세 및 급등주 포착",
-  description: "AI가 분석하는 실시간 주식 시장 트렌드. 급등 신호 포착 알림을 무료로 받아보세요.",
+  title: "AI Stock Analyst - 실시간 주식 시세 분석",
+  description: "AI 기반 실시간 주식 시장 데이터 분석 서비스. 본 정보는 투자 참고용이며 투자 권유가 아닙니다.",
   metadataBase: new URL('https://stock-trend-program.vercel.app'),
   openGraph: {
     title: "AI Stock Analyst",
-    description: "인공지능 기반 주식 분석 및 실시간 급등 신호 알림 서비스",
+    description: "인공지능 기반 실시간 주식 시장 데이터 분석 서비스",
     url: 'https://stock-trend-program.vercel.app',
     siteName: 'AI Stock Analyst',
     images: [
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: "AI Stock Analyst - 실시간 주식 분석",
-    description: "AI 급등주 포착 알림을 받아보세요.",
+    description: "실시간 주식 시세 분석 서비스",
     images: ['/og-image.png'],
     creator: '@StockTrendAI',
   },
