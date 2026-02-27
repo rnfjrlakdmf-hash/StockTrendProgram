@@ -21,14 +21,14 @@ export default function SignalsPage() {
     const tabs = [
         { id: "signals" as const, label: "시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
         { id: "heatmap" as const, label: "히트맵", icon: <BarChart3 className="w-4 h-4" />, gradient: "from-red-600 to-pink-600" },
-        { id: "supply" as const, label: "수급·공매도", icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
+        { id: "supply" as const, label: "시장 주도주", icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
         { id: "calendar" as const, label: "캘린더", icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
         { id: "vote" as const, label: "투표", icon: <ThumbsUp className="w-4 h-4" />, gradient: "from-purple-600 to-indigo-600" },
     ];
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="시장 인텔리전스" subtitle="시그널 · 히트맵 · 수급 · 캘린더 · 투표" />
+            <Header title="시장 인텔리전스" subtitle="시그널 · 히트맵 · 주도주 · 캘린더 · 투표" />
             <div className="max-w-5xl mx-auto p-4 space-y-6">
                 {/* Tab Bar */}
                 <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide">
@@ -42,7 +42,7 @@ export default function SignalsPage() {
 
                 {activeTab === "signals" && <SignalsFeedTab router={router} />}
                 {activeTab === "heatmap" && <HeatmapTab router={router} />}
-                {activeTab === "supply" && <SupplyShortTab router={router} />}
+                {activeTab === "supply" && <MarketInsightsTab router={router} />}
                 {activeTab === "calendar" && <CalendarTab router={router} />}
                 {activeTab === "vote" && <VoteTab />}
 
@@ -226,92 +226,65 @@ function HeatmapTab({ router }: { router: any }) {
     );
 }
 
-// ============ TAB 3: SUPPLY + SHORT SELLING (통합) ============
-function SupplyShortTab({ router }: { router: any }) {
-    const [subTab, setSubTab] = useState<"investor" | "short">("investor");
+// ============ TAB 3: MARKET INSIGHTS (구 수급/공매도) ============
+function MarketInsightsTab({ router }: { router: any }) {
+    const [insightsData, setInsightsData] = useState<any>(null);
     const [investorData, setInvestorData] = useState<any>(null);
-    const [shortData, setShortData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // 공매도 개별 조회
-    const [searchSym, setSearchSym] = useState("");
-    const [singleShort, setSingleShort] = useState<any>(null);
-    const [singleLoading, setSingleLoading] = useState(false);
+    const [subTab, setSubTab] = useState<"volume" | "value">("volume");
 
     useEffect(() => {
         (async () => {
             try {
-                const [invRes, shortRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/investors/top`),
-                    fetch(`${API_BASE_URL}/api/short-selling/top`)
-                ]);
-                const ij = await invRes.json(), sj = await shortRes.json();
-                if (ij.status === "success") setInvestorData(ij.data);
-                if (sj.status === "success") setShortData(sj.data || []);
+                // 1. 거래량 및 상승률 상위 (기존 API)
+                const r1 = await fetch(`${API_BASE_URL}/api/investors/top`);
+                const j1 = await r1.json();
+                if (j1.status === "success") setInvestorData(j1.data);
+
+                // 2. 실시간 검색 및 거래대금 상위 (신규 API)
+                const r2 = await fetch(`${API_BASE_URL}/api/market-insights`);
+                const j2 = await r2.json();
+                if (j2.status === "success") setInsightsData(j2.data);
             } catch { } finally { setLoading(false); }
         })();
     }, []);
 
-    const searchShort = async () => {
-        if (!searchSym) return;
-        setSingleLoading(true); setSingleShort(null);
-        try { const r = await fetch(`${API_BASE_URL}/api/short-selling/${searchSym}`); const j = await r.json(); if (j.status === "success") setSingleShort(j.data); } catch { } finally { setSingleLoading(false); }
-    };
-
-    const getRatioColor = (r: number) => r >= 20 ? "text-red-400" : r >= 10 ? "text-orange-400" : r >= 5 ? "text-yellow-400" : "text-gray-400";
-    const getRatioBarColor = (r: number) => r >= 20 ? "bg-red-500" : r >= 10 ? "bg-orange-500" : r >= 5 ? "bg-yellow-500" : "bg-gray-600";
+    const renderList = (title: string, items: any[], color: string, icon: any, sliceNum: number = 10) => (
+        <div className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
+            <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
+            {(items || []).slice(0, sliceNum).map((item: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer"
+                    onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}>
+                    <span className="font-medium truncate max-w-[120px]">{i + 1}. {item.name}</span>
+                    <span className={`text-${color}-400 font-mono text-[10px]`}>{item.amount || item.value || ""}</span>
+                </div>
+            ))}
+            {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">데이터 없음</p>}
+        </div>
+    );
 
     return (
         <div className="space-y-4">
             <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setSubTab("investor")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "investor" ? "bg-green-600 text-white" : "text-gray-400"}`}>🔥 시장 주도주</button>
-                <button onClick={() => setSubTab("short")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "short" ? "bg-orange-600 text-white" : "text-gray-400"}`}>📉 공매도 잔고</button>
+                <button onClick={() => setSubTab("volume")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "volume" ? "bg-green-600 text-white" : "text-gray-400"}`}>🔥 급등·거래량 상위</button>
+                <button onClick={() => setSubTab("value")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "value" ? "bg-orange-600 text-white" : "text-gray-400"}`}>💰 검색·거래대금 상위</button>
             </div>
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div>
-                : subTab === "investor" ? (
+                : subTab === "volume" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {[
-                            { title: "KOSPI 거래량 TOP", data: investorData?.foreign_top, color: "green", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                            { title: "KOSDAQ 거래량 TOP", data: investorData?.institution_top, color: "blue", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                            { title: "KOSPI 상승률 TOP", data: investorData?.foreign_sell, color: "red", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                            { title: "KOSDAQ 상승률 TOP", data: investorData?.institution_sell, color: "purple", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                        ].map(({ title, data: items, color, icon }) => (
-                            <div key={title} className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
-                                <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
-                                {(items || []).slice(0, 7).map((item: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer"
-                                        onClick={() => router.push(`/discovery?q=${item.code || item.symbol || item.name}`)}>
-                                        <span className="font-medium truncate max-w-[120px]">{i + 1}. {item.name || item.symbol}</span>
-                                        <span className={`text-${color}-400 font-mono text-[10px]`}>{item.amount || item.value || ""}</span>
-                                    </div>
-                                ))}
-                                {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">데이터 없음</p>}
-                            </div>
-                        ))}
+                        {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
                     </div>
                 ) : (
-                ) : (
-                    <div className="space-y-4 pt-6">
-                        <div className="bg-orange-900/10 border border-orange-500/30 rounded-xl p-8 text-center space-y-4">
-                            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                <AlertTriangle className="w-8 h-8 text-orange-400" />
-                            </div>
-                            <h3 className="text-lg font-bold text-orange-400">국내 주식 공매도 전면 금지 안내</h3>
-                            <div className="text-sm text-gray-300 leading-relaxed max-w-sm mx-auto">
-                                2023년 11월부터 대한민국 주식시장의 <br/>
-                                <span className="font-bold text-orange-300">공매도(Short Selling)가 전면 금지</span>되었습니다.<br/>
-                                <br/>
-                                이에 따라 당분간 공매도 잔고 및 종목별 <br/>비율 데이터는 제공되지 않습니다.
-                            </div>
-                            <div className="text-xs text-gray-500 bg-black/40 inline-block px-3 py-1.5 rounded-full mt-4">
-                                금지 조치 종료 예정일: 2025년 3월 30일
-                            </div>
-                        </div >
-                    </div >
-                )
-}
-        </div >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {renderList("실시간 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
+                        {renderList("거래대금 상위 (실수급/큰손 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
+                    </div>
+                )}
+        </div>
     );
 }
 

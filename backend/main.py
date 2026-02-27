@@ -1928,124 +1928,88 @@ def read_investor_top():
 
 
 # ============================================================
-# 공매도 모니터 APIs
+# 시장 인사이트 APIs (구 공매도 대체)
 # ============================================================
 
-@app.get("/api/short-selling/top")
-def get_short_selling_top():
-    """공매도 비율 상위 종목 조회"""
+@app.get("/api/market-insights")
+def get_market_insights():
+    """실시간 검색 상위 및 거래대금 상위 종목 조회"""
     try:
         import requests
         from bs4 import BeautifulSoup
+        from korea_data import decode_safe
 
-        # 네이버 금융 공매도 상위 종목 스크래핑
-        url = "https://finance.naver.com/sise/sise_short_selling.naver"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        res = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
+        headers = {"User-Agent": "Mozilla/5.0"}
 
-        results = []
-        table = soup.select_one("table.type_1")
-        if table:
-            rows = table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) >= 6:
+        def scrape_table(url: str, limit: int = 20, is_search: bool = False):
+            try:
+                res = requests.get(url, headers=headers, timeout=8)
+                soup = BeautifulSoup(decode_safe(res), "html.parser")
+                results = []
+                
+                # 검색 상위는 table.type_5, 거래대금은 table.type_2
+                table = soup.select_one("table.type_5" if is_search else "table.type_2")
+                if not table:
+                    return results
+
+                rows = table.select("tr")
+                for row in rows:
+                    if len(results) >= limit:
+                        break
+                    cols = row.select("td")
+                    if len(cols) < 5:
+                        continue
                     try:
-                        name_tag = cols[0].select_one("a")
+                        # 이름 파싱
+                        name_idx = 1 if not is_search else 1
+                        name_tag = cols[name_idx].select_one("a")
                         if not name_tag:
                             continue
                         name = name_tag.text.strip()
                         symbol = name_tag.get("href", "").split("code=")[-1] if name_tag.get("href") else ""
-
-                        short_volume = int(cols[2].text.strip().replace(",", "")) if cols[2].text.strip() else 0
-                        total_volume = int(cols[3].text.strip().replace(",", "")) if cols[3].text.strip() else 0
-                        short_ratio = float(cols[4].text.strip().replace("%", "")) if cols[4].text.strip() else 0
+                        
+                        price = cols[2 if not is_search else 3].text.strip()
+                        change = cols[4 if not is_search else 5].text.strip()
+                        
+                        # 거래대금/검색비율 파싱
+                        if is_search:
+                            amount_val = cols[2].text.strip() # 검색비율
+                        else:
+                            # 거래대금의 경우 단위가 백만 또는 억 (sise_quant_high.naver)
+                            amount_val = cols[6].text.strip() + "백만"
 
                         results.append({
                             "name": name,
                             "symbol": symbol,
-                            "short_volume": short_volume,
-                            "total_volume": total_volume,
-                            "short_ratio": short_ratio
+                            "price": price,
+                            "change": change,
+                            "amount": amount_val
                         })
                     except:
                         continue
+                return results
+            except Exception as e:
+                print(f"[Insights] scrape error {url}: {e}")
+                return []
 
-        # 비율 높은 순 정렬
-        results.sort(key=lambda x: x["short_ratio"], reverse=True)
-        return {"status": "success", "data": results[:20]}
+        # 1. 실시간 검색 상위 (20개)
+        search_top = scrape_table("https://finance.naver.com/sise/lastsearch2.naver", limit=20, is_search=True)
+        
+        # 2. 거래대금 상위 (KOSPI 10개, KOSDAQ 10개)
+        val_kospi = scrape_table("https://finance.naver.com/sise/sise_quant_high.naver?sosok=0", limit=10)
+        val_kosdaq = scrape_table("https://finance.naver.com/sise/sise_quant_high.naver?sosok=1", limit=10)
 
-    except Exception as e:
-        print(f"Short selling top error: {e}")
-        # fallback: 더미 데이터
-        return {"status": "success", "data": [
-            {"name": "삼성전자", "symbol": "005930", "short_volume": 150000, "total_volume": 5000000, "short_ratio": 3.0},
-            {"name": "SK하이닉스", "symbol": "000660", "short_volume": 80000, "total_volume": 2000000, "short_ratio": 4.0},
-            {"name": "카카오", "symbol": "035720", "short_volume": 120000, "total_volume": 3000000, "short_ratio": 4.0},
-            {"name": "NAVER", "symbol": "035420", "short_volume": 50000, "total_volume": 800000, "short_ratio": 6.25},
-            {"name": "LG에너지솔루션", "symbol": "373220", "short_volume": 30000, "total_volume": 500000, "short_ratio": 6.0},
-        ]}
-
-
-@app.get("/api/short-selling/{symbol}")
-def get_short_selling_detail(symbol: str):
-    """종목별 공매도 상세 조회"""
-    try:
-        import requests
-        from bs4 import BeautifulSoup
-
-        code = symbol.upper().replace(".KS", "").replace(".KQ", "")
-        url = f"https://finance.naver.com/item/short_selling.naver?code={code}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        res = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        name_tag = soup.select_one("div.wrap_company h2 a")
-        name = name_tag.text.strip() if name_tag else code
-
-        history = []
-        table = soup.select_one("table.type2")
-        if table:
-            rows = table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) >= 5:
-                    try:
-                        date = cols[0].text.strip()
-                        if not date or len(date) < 8:
-                            continue
-                        short_vol = int(cols[2].text.strip().replace(",", "")) if cols[2].text.strip() else 0
-                        total_vol = int(cols[3].text.strip().replace(",", "")) if cols[3].text.strip() else 0
-                        ratio = float(cols[4].text.strip().replace("%", "")) if cols[4].text.strip() else 0
-
-                        history.append({
-                            "date": date,
-                            "short_volume": short_vol,
-                            "total_volume": total_vol,
-                            "ratio": ratio
-                        })
-                    except:
-                        continue
-
-        latest = history[0] if history else {}
         return {
             "status": "success",
             "data": {
-                "name": name,
-                "symbol": code,
-                "short_volume": latest.get("short_volume", 0),
-                "total_volume": latest.get("total_volume", 0),
-                "short_ratio": latest.get("ratio", 0),
-                "short_balance": latest.get("short_volume", 0),
-                "history": history[:10]
+                "search_top": search_top,
+                "value_top": val_kospi + val_kosdaq # 합쳐서 20개
             }
         }
 
     except Exception as e:
-        print(f"Short selling detail error: {e}")
+        print(f"Market insights error: {e}")
         return {"status": "error", "message": str(e)}
-
 
 # ============================================================
 # 투자 캘린더 APIs
