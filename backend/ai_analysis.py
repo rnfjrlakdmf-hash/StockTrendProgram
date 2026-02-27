@@ -1168,17 +1168,19 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
         from stock_data import get_simple_quote, fetch_google_news
         quote = get_simple_quote(symbol)
         if quote:
+            # get_simple_quote returns "change", not "change_pct" explicitly
             price_data = {
                 "price": quote.get("price", "N/A"),
                 "change": quote.get("change", "N/A"),
-                "change_pct": quote.get("change_pct", "N/A"),
+                "change_pct": quote.get("change", "N/A"), # Fallback to standard change
             }
     except Exception as e:
         print(f"[Briefing] Price data error: {e}")
     
     try:
         from stock_data import fetch_google_news
-        news = fetch_google_news(symbol, max_results=5)
+        # Avoid blocking too long, limit results or use naver/google.
+        news = fetch_google_news(symbol, max_results=3)
         news_data = [n.get("title", "") for n in (news or [])]
     except Exception as e:
         print(f"[Briefing] News data error: {e}")
@@ -1191,13 +1193,17 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
         print(f"[Briefing] Disclosure data error: {e}")
     
     try:
+        # Use valid target for history
+        target_symbol = symbol + ".KS" if len(symbol) == 6 else symbol
         from korea_data import get_investor_history
-        history = get_investor_history(symbol, days=5)
+        history = get_investor_history(target_symbol, days=5)
         if history and len(history) > 0:
             latest = history[0]
+            f_net = latest.get("foreign_net", 0)
+            i_net = latest.get("institution_net", 0)
             investor_data = {
-                "foreign_net": latest.get("foreign_net", 0),
-                "institution_net": latest.get("institution_net", 0),
+                "foreign_net": f"{f_net:,}",
+                "institution_net": f"{i_net:,}",
             }
     except Exception as e:
         print(f"[Briefing] Investor data error: {e}")
@@ -1215,33 +1221,30 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
     
     context = f"""
     종목: {symbol}
-    현재가: {price_data.get('price', 'N/A')} (변동: {price_data.get('change_pct', 'N/A')}%)
+    현재가: {price_data.get('price', 'N/A')}원 (일간 변동: {price_data.get('change_pct', 'N/A')})
     최근 뉴스: {json.dumps(news_data, ensure_ascii=False)}
     최근 공시: {json.dumps(disclosure_data, ensure_ascii=False)}
-    수급 현황: 외국인 순매수 {investor_data.get('foreign_net', 'N/A')}주, 기관 순매수 {investor_data.get('institution_net', 'N/A')}주
+    수급 현황 (최근 1일 순매수): 외국인 {investor_data.get('foreign_net', 'N/A')}주, 기관 {investor_data.get('institution_net', 'N/A')}주
     """
     
     prompt = f"""
-    당신은 중립적인 금융 데이터 분석가입니다.
-    아래 데이터를 사실 기반으로 200자 이내 한국어 브리핑으로 요약해주세요.
+    당신은 친절하면서도 전문적인 금융 AI 애널리스트입니다.
+    아래 시장 데이터를 바탕으로, 투자자가 시그널을 확인하고 한눈에 진행 상황을 파악할 수 있도록 **매우 가독성 높고 깔끔한** 1분 브리핑을 작성해주세요.
+
+    [작성 규칙]
+    1. 적절한 이모지(🔥, 📈, 📉, 🏢, 💡 등)를 적극적으로 활용해 시각적 가독성을 극대화하세요.
+    2. 매수/매도 권유는 절대 금지합니다. 오직 객관적 사실과 흐름만을 요약하세요.
+    3. '가격변동은 없습니다', '0주씩 순매수했습니다' 같이 무의미한 데이터는 강조하지 말고, 의미 있는 뉴스나 공시, 또는 수급 변동을 중심으로 서술해주세요.
+    4. 줄바꿈을 적절히 사용하여 글이 빼곡해 보이지 않게 하세요 (문단 2~3개 권장).
     
-    [절대 금지 사항]
-    - 매수/매도 추천 금지
-    - "~하세요", "~을 추천합니다" 등의 조언 금지
-    - "~할 것으로 보입니다" 등의 예측 금지
-    
-    [사용할 어조]
-    - "~입니다", "~했습니다" 등 사실 전달 어조만 사용
-    - 객관적 데이터 중심
-    
-    데이터:
+    [데이터]
     {context}
     
     Response Format (JSON):
     {{
-        "briefing": "한국어 브리핑 텍스트 (200자 이내)",
-        "key_points": ["포인트1", "포인트2", "포인트3"],
-        "sentiment_score": <0-100 중립=50>
+        "briefing": "여기에 줄바꿈(\\n)과 이모지가 포함된 가독성 높은 한글 요약을 200~300자 내외로 작성하세요.",
+        "key_points": ["🔥 포인트 1", "📈 포인트 2", "💡 포인트 3"],
+        "sentiment_score": <0-100 사이 중립 50>
     }}
     """
     

@@ -216,10 +216,31 @@ function SignalsFeedTab({ router }: { router: any }) {
                         {briefingLoading ? <div className="text-center py-8"><Bot className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-pulse" /><p className="text-gray-400">AI 분석 중...</p></div>
                             : briefing ? (
                                 <div className="space-y-4">
-                                    {briefing.price && <div className="flex items-center gap-4 bg-white/5 rounded-xl p-3"><span className="text-2xl font-black">{briefing.price.price}</span><span className={`text-sm font-bold ${parseFloat(briefing.price.change_pct) >= 0 ? "text-red-400" : "text-blue-400"}`}>{briefing.price.change_pct}%</span></div>}
-                                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4"><p className="text-sm text-gray-200 leading-relaxed">{briefing.briefing}</p></div>
-                                    {briefing.key_points && <div className="space-y-2"><h4 className="text-xs font-bold text-gray-400">핵심 포인트</h4>{briefing.key_points.map((p: string, i: number) => <div key={i} className="flex items-start gap-2 text-sm"><span className="text-blue-400">•</span><span className="text-gray-300">{p}</span></div>)}</div>}
-                                    <p className="text-[10px] text-gray-600 text-center">{briefing.disclaimer}</p>
+                                    {briefing.price && (
+                                        <div className="flex items-center gap-4 bg-white/5 rounded-xl p-3">
+                                            <span className="text-2xl font-black">{briefing.price.price !== "N/A" ? briefing.price.price : ""}</span>
+                                            {briefing.price.change_pct !== "N/A" && (
+                                                <span className={`text-sm font-bold ${parseFloat(briefing.price.change_pct) >= 0 ? "text-red-400" : "text-blue-400"}`}>
+                                                    {briefing.price.change_pct.includes('%') ? briefing.price.change_pct : `${briefing.price.change_pct}%`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                                        <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{briefing.briefing}</p>
+                                    </div>
+                                    {briefing.key_points && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-gray-400">핵심 포인트</h4>
+                                            {briefing.key_points.map((p: string, i: number) => (
+                                                <div key={i} className="flex items-start gap-2 text-sm bg-gray-800/50 p-2 rounded-lg border border-white/5">
+                                                    <span className="text-blue-400 mt-0.5">•</span>
+                                                    <span className="text-gray-300 leading-relaxed">{p}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p className="text-[10px] text-gray-600 text-center mt-2">{briefing.disclaimer}</p>
                                 </div>
                             ) : <p className="text-gray-500 text-center py-8">불러올 수 없습니다</p>}
                     </div>
