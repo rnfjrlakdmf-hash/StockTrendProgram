@@ -146,13 +146,28 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     return (
         <div className="space-y-4">
+            {/* 시그널 안내 패널 (신규 추가) */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start justify-between">
+                <div className="flex-1">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                        <Zap className="w-4 h-4 text-orange-400" /> 팩트 기반 실시간 시그널
+                    </h3>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                        전체 시장 데이터에서 특정 알고리즘 조건(<span className="text-orange-300">거래량 폭증</span>, <span className="text-blue-300">주요 공시</span>, <span className="text-green-300">수급 급변</span>)을 만족한 주요 이벤트만 감지합니다.
+                    </p>
+                </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
-                    <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-400" />최근 감지된 시그널</h3>
-                    <label className="flex items-center gap-1.5 text-xs text-blue-300 font-bold cursor-pointer hover:text-blue-200 transition-colors w-max bg-blue-900/10 px-2 py-1.5 rounded-lg border border-blue-500/20">
+                    <h3 className="text-lg font-bold flex items-center gap-2">감지된 시그널 탭</h3>
+                    <label
+                        className="flex items-center gap-1.5 text-xs text-blue-300 font-bold cursor-pointer hover:text-blue-200 transition-colors w-max bg-blue-900/10 px-2 py-1.5 rounded-lg border border-blue-500/20"
+                        title="전체 시장의 수많은 시그널 중, 내가 관심 있는 종목의 이벤트만 필터링해서 봅니다."
+                    >
                         <input type="checkbox" className="rounded bg-black border-blue-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 w-3.5 h-3.5"
                             checked={showWatchlistOnly} onChange={(e) => setShowWatchlistOnly(e.target.checked)} />
-                        내 관심종목 전용만 보기
+                        관심종목 시그널만 필터링
                     </label>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
