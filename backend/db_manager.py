@@ -656,9 +656,16 @@ def get_recent_signals(limit: int = 50) -> list:
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # 그룹바이를 통해 동일 종목/동일 유형 최신 시그널만 가져오기 (중복 방지)
         cursor.execute("""
             SELECT id, symbol, signal_type, title, summary, data_json, created_at
-            FROM signals ORDER BY created_at DESC LIMIT ?
+            FROM signals 
+            WHERE id IN (
+                SELECT MAX(id) 
+                FROM signals 
+                GROUP BY symbol, signal_type
+            )
+            ORDER BY created_at DESC LIMIT ?
         """, (limit,))
         rows = cursor.fetchall()
         return [{
