@@ -63,6 +63,9 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [briefing, setBriefing] = useState<any>(null);
     const [briefingLoading, setBriefingLoading] = useState(false);
 
+    // 신규 추가: 공시 상세 모달 상태
+    const [selectedDisclosure, setSelectedDisclosure] = useState<Signal | null>(null);
+
     // 신규 추가: 종목 검색어 상태
     const [searchQuery, setSearchQuery] = useState("");
     const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
@@ -186,8 +189,17 @@ function SignalsFeedTab({ router }: { router: any }) {
                     </div>
                 ) : filteredSignals.map(sig => {
                     const badge = getBadge(sig.signal_type);
+
+                    const handleSignalClick = () => {
+                        if (sig.signal_type === "DISCLOSURE") {
+                            setSelectedDisclosure(sig);
+                        } else {
+                            router.push(`/discovery?q=${sig.symbol}`);
+                        }
+                    };
+
                     return (
-                        <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={() => router.push(`/discovery?q=${sig.symbol}`)}>
+                        <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={handleSignalClick}>
                             <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -243,6 +255,60 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     <p className="text-[10px] text-gray-600 text-center mt-2">{briefing.disclaimer}</p>
                                 </div>
                             ) : <p className="text-gray-500 text-center py-8">불러올 수 없습니다</p>}
+                    </div>
+                </div>
+            )}
+
+            {/* 공시 상세 모달 */}
+            {selectedDisclosure && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedDisclosure(null)}>
+                    <div className="bg-gray-900 border border-white/20 rounded-3xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-4">
+                            <h3 className="text-lg font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400" />공시 상세</h3>
+                            <button onClick={() => setSelectedDisclosure(null)} className="text-gray-500 hover:text-white text-xl">✕</button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-full text-xs font-bold">
+                                    {selectedDisclosure.data?.type || "공시"}
+                                </span>
+                                {selectedDisclosure.data?.is_important && (
+                                    <span className="px-2 py-0.5 bg-red-500/20 text-red-300 border border-red-500/40 rounded-full text-xs font-bold">
+                                        주요
+                                    </span>
+                                )}
+                                <span className="text-xs text-gray-400">
+                                    {selectedDisclosure.data?.date || new Date(selectedDisclosure.created_at).toLocaleDateString()}
+                                </span>
+                            </div>
+
+                            <h4 className="text-xl font-bold text-white leading-snug">
+                                {selectedDisclosure.data?.full_title || selectedDisclosure.title}
+                            </h4>
+
+                            <p className="text-sm text-gray-400">
+                                관련 종목: <span className="text-white font-bold">{selectedDisclosure.symbol}</span>
+                            </p>
+
+                            {selectedDisclosure.data?.link && (
+                                <a
+                                    href={selectedDisclosure.data.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full py-3 mt-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors"
+                                >
+                                    <FileText className="w-4 h-4" /> DART/네이버 공시 원문 보기
+                                </a>
+                            )}
+
+                            <button
+                                onClick={() => router.push(`/discovery?q=${selectedDisclosure.symbol}`)}
+                                className="flex items-center justify-center gap-2 w-full py-3 mt-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold transition-colors"
+                            >
+                                <Search className="w-4 h-4" /> 종목 분석으로 이동
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
