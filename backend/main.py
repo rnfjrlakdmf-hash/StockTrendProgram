@@ -1979,12 +1979,19 @@ def get_market_insights():
         from bs4 import BeautifulSoup
         from korea_data import decode_safe
 
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Connection": "keep-alive"
+        }
 
         def scrape_table(url: str, limit: int = 20, is_search: bool = False):
             try:
-                res = requests.get(url, headers=headers, timeout=8)
-                soup = BeautifulSoup(decode_safe(res), "html.parser")
+                res = requests.get(url, headers=headers, timeout=10)
+                # Naver Finance uses EUC-KR
+                res.encoding = 'euc-kr'
+                soup = BeautifulSoup(res.text, "html.parser")
                 results = []
                 
                 # 검색 상위는 table.type_5, 거래대금은 table.type_2
@@ -2001,22 +2008,22 @@ def get_market_insights():
                         continue
                     try:
                         # 이름 파싱
-                        name_idx = 1 if not is_search else 1
+                        name_idx = 1 if is_search else 2
                         name_tag = cols[name_idx].select_one("a")
                         if not name_tag:
                             continue
                         name = name_tag.text.strip()
                         symbol = name_tag.get("href", "").split("code=")[-1] if name_tag.get("href") else ""
                         
-                        price = cols[2 if not is_search else 3].text.strip()
-                        change = cols[4 if not is_search else 5].text.strip()
-                        
-                        # 거래대금/검색비율 파싱
                         if is_search:
-                            amount_val = cols[2].text.strip() # 검색비율
+                            price = cols[3].text.strip() if len(cols) > 3 else ""
+                            change = cols[5].text.strip() if len(cols) > 5 else ""
+                            amount_val = cols[2].text.strip() if len(cols) > 2 else "" # 검색비율
                         else:
-                            # 거래대금의 경우 단위가 백만 또는 억 (sise_quant_high.naver)
-                            amount_val = cols[6].text.strip() + "백만"
+                            price = cols[3].text.strip() if len(cols) > 3 else ""
+                            change = cols[5].text.strip() if len(cols) > 5 else ""
+                            # 거래대금 상위 페이지의 경우 6번째 컬럼이 거래대금(단위: 백만)
+                            amount_val = cols[6].text.strip() + "백만" if len(cols) > 6 else ""
 
                         results.append({
                             "name": name,
@@ -2025,7 +2032,7 @@ def get_market_insights():
                             "change": change,
                             "amount": amount_val
                         })
-                    except:
+                    except Exception as ex:
                         continue
                 return results
             except Exception as e:
