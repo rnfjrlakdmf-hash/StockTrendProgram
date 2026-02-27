@@ -291,38 +291,27 @@ function SupplyShortTab({ router }: { router: any }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {/* 공매도 검색 */}
-                        <div className="flex gap-2">
-                            <input type="text" placeholder="종목코드 (예: 005930)" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono"
-                                value={searchSym} onChange={e => setSearchSym(e.target.value)} onKeyDown={e => { if (e.key === "Enter") searchShort(); }} />
-                            <button onClick={searchShort} className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 rounded-xl font-bold text-sm">조회</button>
-                        </div>
-
-                        {singleLoading && <div className="text-center py-4 text-gray-500"><RefreshCw className="w-5 h-5 animate-spin mx-auto" /></div>}
-                        {singleShort && (
-                            <div className="bg-orange-900/10 border border-orange-500/30 rounded-xl p-4 space-y-3">
-                                <div className="flex justify-between"><div><h4 className="font-bold">{singleShort.name || searchSym}</h4><p className="text-xs text-gray-500">{searchSym}</p></div><div className="text-right"><span className={`text-xl font-black ${getRatioColor(singleShort.short_ratio || 0)}`}>{(singleShort.short_ratio || 0).toFixed(2)}%</span><p className="text-[10px] text-gray-500">공매도 비율</p></div></div>
-                                {singleShort.history?.slice(0, 5).map((h: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-2 text-xs"><span className="text-gray-500 w-20">{h.date}</span><div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div className={`h-full ${getRatioBarColor(h.ratio || 0)} rounded-full`} style={{ width: `${Math.min((h.ratio || 0) / 30 * 100, 100)}%` }} /></div><span className={`font-bold w-12 text-right ${getRatioColor(h.ratio || 0)}`}>{(h.ratio || 0).toFixed(2)}%</span></div>
-                                ))}
+                ) : (
+                    <div className="space-y-4 pt-6">
+                        <div className="bg-orange-900/10 border border-orange-500/30 rounded-xl p-8 text-center space-y-4">
+                            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <AlertTriangle className="w-8 h-8 text-orange-400" />
                             </div>
-                        )}
-
-                        {/* 공매도 TOP */}
-                        <h4 className="font-bold text-sm text-gray-400 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" />공매도 비율 상위</h4>
-                        {shortData.map((item, i) => (
-                            <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 cursor-pointer" onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-sm font-bold">{i + 1}. {item.name} <span className="text-gray-500 text-xs">{item.symbol}</span></span>
-                                    <span className={`font-black ${getRatioColor(item.short_ratio || 0)}`}>{(item.short_ratio || 0).toFixed(2)}%</span>
-                                </div>
-                                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden"><div className={`h-full ${getRatioBarColor(item.short_ratio || 0)} rounded-full`} style={{ width: `${Math.min((item.short_ratio || 0) / 30 * 100, 100)}%` }} /></div>
+                            <h3 className="text-lg font-bold text-orange-400">국내 주식 공매도 전면 금지 안내</h3>
+                            <div className="text-sm text-gray-300 leading-relaxed max-w-sm mx-auto">
+                                2023년 11월부터 대한민국 주식시장의 <br/>
+                                <span className="font-bold text-orange-300">공매도(Short Selling)가 전면 금지</span>되었습니다.<br/>
+                                <br/>
+                                이에 따라 당분간 공매도 잔고 및 종목별 <br/>비율 데이터는 제공되지 않습니다.
                             </div>
-                        ))}
-                    </div>
-                )}
-        </div>
+                            <div className="text-xs text-gray-500 bg-black/40 inline-block px-3 py-1.5 rounded-full mt-4">
+                                금지 조치 종료 예정일: 2025년 3월 30일
+                            </div>
+                        </div >
+                    </div >
+                )
+}
+        </div >
     );
 }
 
