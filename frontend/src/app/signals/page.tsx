@@ -63,7 +63,10 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [briefing, setBriefing] = useState<any>(null);
     const [briefingLoading, setBriefingLoading] = useState(false);
 
-    const fetchSignals = async () => { try { const r = await fetch(`${API_BASE_URL}/api/signals?limit=30`); const j = await r.json(); if (j.status === "success") setSignals(j.data || []); } catch { } finally { setLoading(false); } };
+    // 신규 추가: 종목 검색어 상태
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const fetchSignals = async () => { try { const r = await fetch(`${API_BASE_URL}/api/signals?limit=50`); const j = await r.json(); if (j.status === "success") setSignals(j.data || []); } catch { } finally { setLoading(false); } };
     const scanSignals = async () => { setScanning(true); try { await fetch(`${API_BASE_URL}/api/signals/scan`, { method: "POST" }); fetchSignals(); } catch { } finally { setScanning(false); } };
     const fetchBriefing = async (sym: string) => { setBriefingSymbol(sym); setBriefingLoading(true); setBriefing(null); try { const r = await fetch(`${API_BASE_URL}/api/signals/${sym}/briefing`); const j = await r.json(); if (j.status === "success") setBriefing(j.data); } catch { } finally { setBriefingLoading(false); } };
 
@@ -76,23 +79,45 @@ function SignalsFeedTab({ router }: { router: any }) {
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
+    // 검색어 필터링 로직: 이름 또는 심볼(코드)에 검색어가 포함된 시그널만 표시
+    const filteredSignals = signals.filter(sig =>
+        !searchQuery ||
+        sig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sig.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-400" />최근 감지된 시그널</h3>
-                <button onClick={scanSignals} disabled={scanning} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-xl text-sm font-bold disabled:opacity-50">
-                    <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "스캔 중..." : "지금 스캔"}
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-48">
+                        <input
+                            type="text"
+                            placeholder="종목명 또는 코드 검색"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                        />
+                        <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-xs z-10">✕</button>
+                        )}
+                    </div>
+                    <button onClick={scanSignals} disabled={scanning} className="shrink-0 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-xl text-sm font-bold disabled:opacity-50">
+                        <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "스캔 중" : "전체 스캔"}
+                    </button>
+                </div>
             </div>
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
-                : signals.length === 0 ? (
+                : filteredSignals.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                         <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-500 mb-4">아직 감지된 시그널이 없습니다</p>
-                        <button onClick={scanSignals} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">🔍 첫 스캔 실행</button>
+                        <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다'}</p>
+                        {!searchQuery && <button onClick={scanSignals} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">🔍 첫 스캔 실행</button>}
                     </div>
-                ) : signals.map(sig => {
+                ) : filteredSignals.map(sig => {
                     const badge = getBadge(sig.signal_type);
                     return (
                         <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={() => router.push(`/discovery?q=${sig.symbol}`)}>
