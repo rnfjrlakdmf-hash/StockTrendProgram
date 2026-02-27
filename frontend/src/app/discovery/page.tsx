@@ -833,11 +833,6 @@ function DiscoveryContent() {
                                                 </div>
                                             )}
 
-                                            {/* [New] Risk Radar (SEIBRO) */}
-                                            <div className="mb-6">
-                                                <RiskAlert symbols={[stock.symbol]} />
-                                            </div>
-
 
 
                                             <div className="mt-6 p-4 bg-blue-900/20 rounded-xl border border-blue-500/30">
