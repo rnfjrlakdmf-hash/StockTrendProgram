@@ -18,6 +18,14 @@ import PriceAlertList from "@/components/PriceAlertList";
 import DisclosureTable from "@/components/DisclosureTable";
 import FCMTokenManager from "@/components/FCMTokenManager";
 import SimplePushTest from "@/components/SimplePushTest";
+import FinancialsTable from "@/components/FinancialsTable";
+import LiveSupplyWidget from "@/components/LiveSupplyWidget";
+import WatchlistButton from "@/components/WatchlistButton";
+import PriceAlertModal from "@/components/PriceAlertModal";
+import MarketSignalWidget from "@/components/MarketSignalWidget";
+import PortfolioHealthModal from "@/components/PortfolioHealthModal";
+import ScoreHistoryChart from "@/components/ScoreHistoryChart";
+import CompanyHealthScore from "@/components/CompanyHealthScore";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -107,6 +115,12 @@ interface StockData {
         price?: string;
         change?: string;
     }[];
+    health_data?: {
+        raw_data?: any;
+        score: number;
+        grade: string;
+        details: any;
+    } | null;
 }
 
 
@@ -133,10 +147,10 @@ function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, is
     return (
         <div className="group relative inline-flex items-center cursor-help mb-1">
             <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-xs font-bold flex items-center gap-1">
-                {label} <span className="text-[10px] text-yellow-400 opacity-80">🎓</span>
+                {label} <span className="text-[10px] text-yellow-400 opacity-80">📋</span>
             </span>
             <div className="absolute bottom-full left-0 mb-2 w-52 p-3 bg-indigo-900/95 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md border border-white/10 leading-relaxed font-medium">
-                <span className="text-yellow-300 font-bold block mb-1">💡 {term} 말랑 풀이</span>
+                <span className="text-yellow-300 font-bold block mb-1">💡 {term} 지표 풀이</span>
                 {explanation || "쉬운 설명이 준비 중이에요!"}
                 <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-indigo-900/95"></div>
             </div>
@@ -175,7 +189,7 @@ function DiscoveryContent() {
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
     const [showHealthCheck, setShowHealthCheck] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
@@ -638,62 +652,64 @@ function DiscoveryContent() {
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PER (주가수익비율)" term="PER" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {(typeof stock.details?.pe_ratio === 'number')
+                                                        {(typeof stock.details?.pe_ratio === 'number' && stock.details.pe_ratio !== 0)
                                                             ? `${stock.details.pe_ratio.toFixed(2)}배`
-                                                            : (stock.details?.pe_ratio || 'N/A')}
+                                                            : '-'}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">{stock.details?.eps ? stock.details.eps.toLocaleString() : 'N/A'}</div>
+                                                    <div className="font-mono text-white">
+                                                        {typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}
+                                                    </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="배당수익률 (Yield)" term="배당수익률" isEasyMode={easyMode} />
                                                     <div className="font-mono text-green-400">
-                                                        {(typeof stock.details?.dividend_yield === 'number')
+                                                        {(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0)
                                                             ? `${(stock.details.dividend_yield * 100).toFixed(2)}%`
-                                                            : (stock.details?.dividend_yield || 'N/A')}
+                                                            : '-'}
                                                     </div>
                                                 </div>
 
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {(typeof stock.details?.forward_pe === 'number')
+                                                        {(typeof stock.details?.forward_pe === 'number' && stock.details.forward_pe !== 0)
                                                             ? `${stock.details.forward_pe.toFixed(2)}배`
-                                                            : (stock.details?.forward_pe || 'N/A')}
+                                                            : '-'}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {stock.details?.forward_eps
+                                                        {typeof stock.details?.forward_eps === 'number'
                                                             ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : 'N/A'}
+                                                            : '-'}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {(typeof stock.details?.pbr === 'number')
+                                                        {(typeof stock.details?.pbr === 'number' && stock.details.pbr !== 0)
                                                             ? `${stock.details.pbr.toFixed(2)}배`
-                                                            : (stock.details?.pbr || 'N/A')}
+                                                            : '-'}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {stock.details?.bps
+                                                        {typeof stock.details?.bps === 'number'
                                                             ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : 'N/A'}
+                                                            : '-'}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {stock.details?.dividend_rate
+                                                        {(typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate !== 0)
                                                             ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : 'N/A'}
+                                                            : '-'}
                                                     </div>
                                                 </div>
 
@@ -738,7 +754,7 @@ function DiscoveryContent() {
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'analysis' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('analysis')}
                                         >
-                                            AI 투자의견
+                                            데이터 종합 분석
                                         </button>
                                         <button
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'news' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
@@ -768,6 +784,12 @@ function DiscoveryContent() {
                                                     onClick={() => setActiveTab('disclosure')}
                                                 >
                                                     공시(DART) <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
+                                                </button>
+                                                <button
+                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'financials' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('financials')}
+                                                >
+                                                    재무제표
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
@@ -813,7 +835,20 @@ function DiscoveryContent() {
                                                 ) : (
                                                     stock.summary || "분석 내용이 없습니다."
                                                 )}
+                                                <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-[11px] text-gray-400 leading-relaxed">
+                                                    ⚠️ **주의**: 본 분석 결과는 객관적 재무 지표와 공시 정보를 바탕으로 알고리즘이 생성한 '참고용' 요약입니다. 어떠한 경우에도 투자 권유나 수익 보장을 의미하지 않으며, 모든 투자 결정에 대한 책임은 투자자 본인에게 있습니다.
+                                                </div>
                                             </div>
+
+                                            {/* [New] Healthcare Analysis Integration */}
+                                            {stock.symbol && !stock.symbol.includes("MARKET") && (
+                                                <div className="mt-8 pt-8 border-t border-white/10">
+                                                    <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                                                        <ShieldCheck className="h-6 w-6 text-green-400" /> 재무 지표 현황 분석 (알고리즘 산출)
+                                                    </h4>
+                                                    <CompanyHealthScore symbol={stock.symbol} autoLoad={true} />
+                                                </div>
+                                            )}
 
                                             {/* [New] 3-Line Rationale */}
                                             {stock.rationale && stock.rationale.supply && (
@@ -914,6 +949,10 @@ function DiscoveryContent() {
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'disclosure' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <DisclosureTable symbol={stock.symbol} />
+                                        </div>
+                                    ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'financials' ? (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <FinancialsTable data={stock.health_data?.raw_data} />
                                         </div>
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'backtest' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
@@ -1337,7 +1376,7 @@ function MarketSignalWidget() {
             <div className="flex justify-between items-start z-10">
                 <div>
                     <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                        🚦 오늘 시장은?
+                        📈 시장 데이터 요약
                     </h3>
                     <p className={`text-lg font-bold leading-tight ${signal.signal === 'red' ? 'text-red-400' :
                         signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
@@ -1418,7 +1457,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
             <div className="relative z-[110] bg-[#111] border border-white/20 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-gray-800 to-black">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        🏥 AI 포트폴리오 진단
+                        📊 AI 포트폴리오 분석
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">✕</button>
                 </div>
@@ -1455,27 +1494,27 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
                                     ) : (
                                         <ShieldCheck key="icon" />
                                     )}
-                                    <span>{loading ? "AI 진단 중..." : "건강검진 시작"}</span>
+                                    <span>{loading ? "AI 분석 중..." : "데이터 분석 시작"}</span>
                                 </span>
                             </button>
                         </div>
                     ) : (
                         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
                             <div className="text-center">
-                                <div className="text-gray-400 text-sm mb-2">회원님의 주식 건강 점수</div>
+                                <div className="text-gray-400 text-sm mb-2">포트폴리오 종합 지수</div>
                                 <div className={`text-6xl font-black mb-4 ${result.score >= 80 ? 'text-green-400' :
                                     result.score >= 50 ? 'text-yellow-400' : 'text-red-400'
                                     }`}>
                                     {result.score}점
                                 </div>
                                 <div className="inline-block bg-white/10 px-4 py-2 rounded-full text-lg font-bold border border-white/20">
-                                    진단명: {result.diagnosis}
+                                    상태 요약: {result.diagnosis}
                                 </div>
                             </div>
 
                             <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                                 <h4 className="text-blue-400 font-bold mb-2 md:mb-3 flex items-center gap-2 text-sm md:text-base">
-                                    💊 AI 의사 처방전
+                                    📋 AI 분석 데이터 요약
                                 </h4>
                                 <p className="text-sm md:text-lg leading-relaxed whitespace-pre-wrap text-gray-200">
                                     {result.prescription}
@@ -1561,7 +1600,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
         return (
             <div className="mt-8 pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    ⚡ 실시간 수급 포착 (잠정치)
+                    📊 실시간 수급 집계 현황 (잠정)
                 </h4>
                 <div className="p-6 bg-white/5 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-3">
                     {isWeekend ? (
@@ -1615,7 +1654,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         </>
                     ) : (
                         <>
-                            ⚡ 실시간 수급 포착 (잠정치) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">09:30~14:30 집계</span>
+                            📊 실시간 수급 분석 데이터 <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">09:30~14:30 집계</span>
                         </>
                     )
                 )}

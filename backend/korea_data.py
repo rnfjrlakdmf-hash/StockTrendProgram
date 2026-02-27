@@ -5,6 +5,7 @@ import datetime
 import urllib.parse
 import json
 from functools import lru_cache
+from typing import Dict, List, Optional
 
 # [Config]
 HEADER = {
@@ -190,58 +191,79 @@ def get_naver_stock_info(symbol: str):
                 market_cap_str = re.sub(r'\s+', ' ', raw) + " 억원"
         except: pass
         
-        # Initialize variables (Restored)
-        per = 0.0
-        eps = 0.0
-        dvr = 0.0
-        pbr = 0.0
-        bps = 0.0
-        est_per = 0.0
-        est_eps = 0.0
-        dp_share = 0
-        year_high = 0
-        year_low = 0
+        # Initialize variables (None instead of 0.0 to distinguish 'not found')
+        per = None
+        eps = None
+        dvr = None
+        pbr = None
+        bps = None
+        est_per = None
+        est_eps = None
+        dp_share = None
+        year_high = None
+        year_low = None
         
         # ID-based scraping (Backup)
         try:
             p = soup.select_one("#_per")
-            if p: per = float(p.text.strip().replace(',', ''))
+            if p and p.text.strip().replace(',', '').replace('배', '') not in ["N/A", "-"]: 
+                per = float(p.text.strip().replace(',', '').replace('배', ''))
         except: pass
         
         try:
             e = soup.select_one("#_eps")
-            if e: eps = float(e.text.strip().replace(',', ''))
+            if e and e.text.strip().replace(',', '').replace('원', '') not in ["N/A", "-"]: 
+                eps = float(e.text.strip().replace(',', '').replace('원', ''))
         except: pass
 
         try:
             p = soup.select_one("#_pbr")
-            if p: pbr = float(p.text.strip().replace(',', ''))
+            if p and p.text.strip().replace(',', '').replace('배', '') not in ["N/A", "-"]: 
+                pbr = float(p.text.strip().replace(',', '').replace('배', ''))
         except: pass
         
         try:
             d = soup.select_one("#_dvr")
-            if d: dvr = float(d.text.strip().replace(',', '')) / 100.0
+            if d and d.text.strip().replace(',', '').replace('%', '') not in ["N/A", "-"]: 
+                dvr = float(d.text.strip().replace(',', '').replace('%', '')) / 100.0
         except: pass
         
-        # OHLCV
-        open_val = 0
-        high_val = 0
-        low_val = 0
-        volume_val = 0
-        
         try:
-            rate_info = soup.select(".no_info .blind")
-            if len(rate_info) >= 8: 
-                 high_val = int(rate_info[1].text.replace(',', ''))
-                 volume_val = int(rate_info[3].text.replace(',', ''))
-                 open_val = int(rate_info[4].text.replace(',', ''))
-                 low_val = int(rate_info[5].text.replace(',', ''))
+            # New Robust OHLCV parsing: Aggregate by TD
+            no_info_area = soup.select_one(".no_info")
+            if no_info_area:
+                tds = no_info_area.select("td")
+                for td in tds:
+                    txt = td.text.strip()
+                    # Find the primary value (usually in .blind)
+                    blind = td.select_one(".blind")
+                    if not blind: continue
+                    
+                    val_str = blind.text.strip().replace(',', '')
+                    if not val_str or not val_str.replace('.', '', 1).isdigit(): continue
+                    val = int(float(val_str))
+                    
+                    if "시가" in txt: open_val = val
+                    elif "고가" in txt: high_val = val
+                    elif "저가" in txt: low_val = val
+                    elif "거래량" in txt: volume_val = val
+
+            # Fallback to old index-based if above failed
+            if open_val is None:
+                rate_info = soup.select(".no_info .blind")
+                if len(rate_info) >= 8: 
+                     high_val = int(rate_info[1].text.replace(',', ''))
+                     volume_val = int(rate_info[3].text.replace(',', ''))
+                     open_val = int(rate_info[4].text.replace(',', ''))
+                     low_val = int(rate_info[5].text.replace(',', ''))
         except: pass
 
         # [Scraping Improvement] Parse by Table Labels (Robust)
         info_tables = soup.select("table")
         
         for tbl in info_tables:
+            # Skip the main price table we just processed
+            if 'no_info' in tbl.get('class', []): continue
             rows = tbl.select("tr")
             for row in rows:
                 th = row.select_one("th")
@@ -265,21 +287,34 @@ def get_naver_stock_info(symbol: str):
                     
                     if not nums_f: continue
 
-                    # BPS/PBR pair
+                    # 1. Skip Sector-only rows for Stock main stats
+                    # Example label: "동일업종 PER" -> Skip for main stock per
+                    if "업종" in label_clean:
+                        continue
+
+                    # 2. BPS/PBR pair (Fix: Naver often swaps labels/values, use magnitude)
                     if "BPS" in label_clean and "PBR" in label_clean:
                         if len(nums_f) >= 2:
-                             pbr = nums_f[0]
-                             bps = nums_f[1]
+                             # Generally BPS > 100 and PBR < 100 (for most stocks)
+                             # In "BPS l PBR", Naver normally puts BPS first.
+                             # But let's be safe.
+                             v1, v2 = nums_f[0], nums_f[1]
+                             if v1 > v2: # 724 > 0.79 -> v1 is bps
+                                 bps, pbr = v1, v2
+                             else:
+                                 pbr, bps = v1, v2
                         elif len(nums_f) == 1:
-                             pbr = nums_f[0]
+                             # Guess based on magnitude if only one found
+                             if nums_f[0] > 100: bps = nums_f[0]
+                             else: pbr = nums_f[0]
 
                     elif "BPS" in label_clean:
                          bps = nums_f[0]
                     elif "PBR" in label_clean:
                          pbr = nums_f[0]
 
-                    # Est PER/EPS pair
-                    if "PER" in label_clean and "EPS" in label_clean:
+                    # 3. PER/EPS pair (Standard ordering is PER then EPS)
+                    elif "PER" in label_clean and "EPS" in label_clean:
                          is_est = "추정" in label or "컨센서스" in label or "E" in label or "202" in label
                          if len(nums_f) >= 2:
                              p_val = nums_f[0]
@@ -291,23 +326,44 @@ def get_naver_stock_info(symbol: str):
                                  per = p_val
                                  eps = e_val
                          elif len(nums_f) == 1:
-                             if is_est: est_per = nums_f[0]
-                             else: per = nums_f[0]
+                             # If stock has negative EPS, PER is often N/A. The found number is likely EPS.
+                             val = nums_f[0]
+                             if is_est: est_eps = val
+                             else: eps = val
 
-                    # Dividend (Exclude Yield explanation)
+                    # 4. Dividend (Exclude Yield explanation)
                     elif "주당배당금" in label_clean and "수익률" not in label_clean:
                          dp_share = int(nums_f[0])
                          
-                    # 52 Week
-                    elif "52" in label_clean and "최고" in label_clean:
-                         year_high = int(nums_f[0])
-                    elif "52" in label_clean and "최저" in label_clean:
-                         year_low = int(nums_f[0])
+                    # 5. 52 Week (Handle both high/low in one if both labels present)
+                    elif "52" in label_clean:
+                        if "최고" in label_clean and "최저" in label_clean and len(nums_f) >= 2:
+                             year_high = int(nums_f[0])
+                             year_low = int(nums_f[1])
+                        elif "최고" in label_clean:
+                             year_high = int(nums_f[0])
+                        elif "최저" in label_clean:
+                             year_low = int(nums_f[0])
+                        elif len(nums_f) >= 2: # No explicit labels but has 2 numbers
+                             year_high = int(nums_f[0])
+                             year_low = int(nums_f[1])
                          
                 except: continue
         
         # [Debug] Verify Scraped Data
         # print(f"[Scraper] {code} ({name}) - PER:{per} PBR:{pbr} EPS:{eps} EstPER:{est_per}")
+
+        # [Fallback] If weekend/market closed and OHLC are 0 or None, try to get from daily history
+        if volume_val in [0, None] or open_val in [0, None]:
+            try:
+                daily = get_naver_daily_prices(symbol)
+                if daily and len(daily) > 0:
+                    latest = daily[0] # Most recent day
+                    if volume_val in [0, None]: volume_val = latest.get('volume', 0)
+                    if open_val in [0, None]: open_val = latest.get('open', 0)
+                    if high_val in [0, None]: high_val = latest.get('high', 0)
+                    if low_val in [0, None]: low_val = latest.get('low', 0)
+            except: pass
 
         # [Result Builder]
         res = {
@@ -696,46 +752,167 @@ def _get_sample_news(symbol: str, name: str):
 def get_naver_stock_search_news_fallback(symbol):
      return get_naver_news_search(symbol)
 
-def get_stock_financials(symbol: str):
+def get_detailed_financials(symbol: str) -> Dict:
     """
-    네이버 금융 종목분석 파싱 (주요 재무제표)
+    네이버 금융 기업실적분석 테이블 크롤링 (매출액, 영업이익, ROE, 부채비율 등)
     """
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
         
         if len(code) != 6:
-            return None
-            
+            return {}
+
         url = f"https://finance.naver.com/item/main.naver?code={code}"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+
+        # 1. 기업실적분석 섹션 찾기
+        cop_analysis = soup.select_one("div.section.cop_analysis")
+        if not cop_analysis:
+            return {}
+
+        # 2. 날짜 헤더 파싱 (연간/분기)
+        # thead tr:nth-child(2) 에 연도/분기 정보가 있음
+        date_headers = cop_analysis.select("thead tr:nth-child(2) th")
+        dates = [th.text.strip() for th in date_headers]
         
-        headers = {
-            "User-Agent": "Mozilla/5.0"
+        # 3. 데이터 로우 파싱
+        # 주요 지표 (매출액, 영업이익, 당기순이익, 영업이익률, ROE, 부채비율, 당좌비율, 유보율, EPS, PER, PBR, 주당배당금, 시가배당률, 배당성향)
+        rows = cop_analysis.select("tbody tr")
+        
+        fin_data = {}
+        for row in rows:
+            # 로우 이름 (주요지표명)
+            row_title_tag = row.select_one("th")
+            if not row_title_tag:
+                continue
+            
+            row_title = row_title_tag.text.strip()
+            
+            # 데이터 값들
+            cells = row.select("td")
+            values = [cell.text.strip().replace(',', '') for cell in cells]
+            
+            # 숫자 변환 도우미
+            def safe_float(v):
+                try:
+                    v = v.replace('%', '')
+                    if not v or v == '-' or v == 'N/A':
+                        return None
+                    return float(v)
+                except:
+                    return None
+
+            # 매핑 정의 (검색어 -> 키) - Use substring matching but prefer longer matches
+            row_title_clean = row_title.replace(" ", "").replace("\n", "").replace("\t", "")
+            
+            mapping = {
+                "매출액": "revenue",
+                "영업이익률": "operating_margin",
+                "영업이익": "operating_income",
+                "순이익률": "net_income_margin",
+                "당기순이익": "net_income",
+                "ROE": "roe",
+                "ROA": "roa",
+                "부채비율": "debt_ratio",
+                "당좌비율": "quick_ratio",
+                "유보율": "reserve_ratio",
+                "EPS": "eps",
+                "BPS": "bps",
+                "PER": "per",
+                "PBR": "pbr",
+                "주당배당금": "dps",
+                "시가배당률": "dividend_yield",
+                "배당성향": "payout_ratio"
+            }
+
+            key = None
+            # Sort by length descending to match longest label first
+            for k in sorted(mapping.keys(), key=len, reverse=True):
+                if k in row_title_clean:
+                    key = mapping[k]
+                    break
+            
+            if key:
+                # 최근 데이터가 가장 오른쪽(예상치) 또는 그 전(확정치)
+                # 보통 연간 4개, 분기 6개 정도 나옴
+                # 우리는 breakdown을 위해 전체 리스트를 저장하거나, 최신 확정치를 저장
+                fin_data[key] = {
+                    "dates": dates,
+                    "values": [safe_float(v) for v in values]
+                }
+
+        # 요약 정보 구성 (최근 확정 연간 실적 우선)
+        # index 0~3: Annual, 4~9: Quarterly
+        summary = {}
+        for k, v in fin_data.items():
+            annual_values = v["values"][:4]
+            quarterly_values = v["values"][4:]
+            
+            # 1. Try to get latest Annual
+            valid_annual = [val for val in annual_values if val is not None]
+            if valid_annual:
+                summary[k] = valid_annual[-1] 
+            else:
+                # 2. Fallback to latest Quarterly if no annual
+                valid_quarterly = [val for val in quarterly_values if val is not None]
+                if valid_quarterly:
+                    summary[k] = valid_quarterly[-1]
+
+        return {
+            "full_data": fin_data,
+            "summary": summary,
+            "success": True
         }
-        res = requests.get(url, headers=headers, timeout=5)
+
+    except Exception as e:
+        print(f"Detailed Financials Error for {symbol}: {e}")
+        return {"success": False, "error": str(e)}
+
+def get_stock_financials(symbol: str):
+    """
+    네이버 금융 종목분석 파싱 (주요 재무제표)
+    기존 버전 호환성을 유지하면서 상세 데이터를 활용
+    """
+    try:
+        # 상세 데이터 가져오기 시도
+        detailed = get_detailed_financials(symbol)
         
-        html = decode_safe(res)
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        financials = {}
-        
-        # 1. 시가총액
-        try:
-            market_cap = soup.select_one("#_market_sum").text.strip().replace('\t', '').replace('\n', '')
-            financials['market_cap'] = market_cap + " 억원"
-        except:
-            pass
+        if detailed.get("success"):
+            summary = detailed.get("summary", {})
             
-        # 2. PER, PBR
-        try:
-            per = soup.select_one("#_per")
-            pbr = soup.select_one("#_pbr")
-            financials['per'] = per.text.strip() if per else "N/A"
-            financials['pbr'] = pbr.text.strip() if pbr else "N/A"
-        except:
-            pass
+            # 기존 포맷으로 변환
+            financials = {}
             
-        return financials
+            # 시가총액은 별도로 다시 가져오거나 메인 페이지 soup에서 유지
+            code = symbol.split('.')[0]
+            code = re.sub(r'[^0-9]', '', code)
+            url = f"https://finance.naver.com/item/main.naver?code={code}"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), 'html.parser')
+            
+            try:
+                market_cap = soup.select_one("#_market_sum").text.strip().replace('\t', '').replace('\n', '')
+                financials['market_cap'] = market_cap + " 억원"
+            except:
+                pass
+
+            # 상세 정보 매핑
+            financials['per'] = str(summary.get('per', 'N/A'))
+            financials['pbr'] = str(summary.get('pbr', 'N/A'))
+            financials['roe'] = summary.get('roe')
+            financials['revenue'] = summary.get('revenue')
+            financials['operating_income'] = summary.get('operating_income')
+            financials['debt_ratio'] = summary.get('debt_ratio')
+            
+            # 상세 데이터 자체도 포함 (추후 확장용)
+            financials['detailed'] = detailed
+            
+            return financials
+        
+        # Fallback (상세 실패 시 기존 로직)
+        return {"per": "N/A", "pbr": "N/A", "success": False}
         
     except Exception as e:
         print(f"Financials crawl error: {e}")
