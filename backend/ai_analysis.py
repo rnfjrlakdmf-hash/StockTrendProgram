@@ -1199,8 +1199,9 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
         history = get_investor_history(target_symbol, days=5)
         if history and len(history) > 0:
             latest = history[0]
-            f_net = latest.get("foreign_net", 0)
-            i_net = latest.get("institution_net", 0)
+            # korea_data returns 'foreigner' and 'institution', not 'foreign_net' / 'institution_net'
+            f_net = latest.get("foreigner", 0)
+            i_net = latest.get("institution", 0)
             investor_data = {
                 "foreign_net": f"{f_net:,}",
                 "institution_net": f"{i_net:,}",
