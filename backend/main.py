@@ -1855,7 +1855,7 @@ def read_vote_results(symbol: str, x_user_id: str = Header(None)):
 
 @app.get("/api/investors/top")
 def read_investor_top():
-    """외국인/기관 순매수/순매도 상위 종목 - 네이버 금융 스크래핑"""
+    """시장 주도주 (수급 대체): KOSPI/KOSDAQ 거래량 및 상승률 상위 - 네이버 금융 스크래핑"""
     try:
         import requests
         from bs4 import BeautifulSoup
@@ -1863,80 +1863,67 @@ def read_investor_top():
 
         headers = {"User-Agent": "Mozilla/5.0"}
 
-        def scrape_investor_top(investor_type: str, order: str, limit: int = 5):
-            """
-            investor_type: "1"=외국인, "2"=기관
-            order: "1"=순매수 상위(매수-매도 큰순), "2"=순매도 상위
-            """
+        def scrape_market_leaders(url: str, limit: int = 7):
             try:
-                url = f"https://finance.naver.com/sise/sise_net_buy.naver?sosok=0&invrType={investor_type}&order={order}"
                 res = requests.get(url, headers=headers, timeout=8)
                 soup = BeautifulSoup(decode_safe(res), "html.parser")
-
                 results = []
+                
                 table = soup.select_one("table.type_2")
                 if not table:
-                    table = soup.select_one("table")
+                    return results
 
-                if table:
-                    rows = table.select("tr")
-                    for row in rows:
-                        if len(results) >= limit:
-                            break
-                        cols = row.select("td")
-                        if len(cols) < 4:
+                rows = table.select("tr")
+                for row in rows:
+                    if len(results) >= limit:
+                        break
+                    cols = row.select("td")
+                    if len(cols) < 5:
+                        continue
+                    try:
+                        name_tag = cols[1].select_one("a")
+                        if not name_tag:
                             continue
-                        try:
-                            name_tag = cols[0].select_one("a") or cols[1].select_one("a")
-                            if not name_tag:
-                                continue
-                            name = name_tag.text.strip()
-                            if not name:
-                                continue
-
-                            # 순매수량, 현재가, 등락률 파싱
-                            net_buy_txt = ""
-                            price_txt = ""
-                            change_txt = ""
-                            for col in cols[1:]:
-                                t = col.text.strip().replace(",", "")
-                                if not net_buy_txt and t.lstrip("-").isdigit():
-                                    net_buy_txt = t
-                                elif t.lstrip("-").isdigit() and not price_txt:
-                                    price_txt = t
-
-                            net_buy = int(net_buy_txt) if net_buy_txt.lstrip("-").isdigit() else 0
-                            price = int(price_txt) if price_txt.lstrip("-").isdigit() else 0
-
-                            results.append({
-                                "name": name,
-                                "net_buy": net_buy,
-                                "price": price
-                            })
-                        except:
-                            continue
-
+                        name = name_tag.text.strip()
+                        
+                        price = cols[2].text.strip()
+                        change = cols[4].text.strip() # 상승률의 경우
+                        volume = cols[5].text.strip() # 거래량의 경우
+                        
+                        if "quant" in url:
+                            amount_val = f"{volume}주"
+                        else:
+                            amount_val = change
+                        
+                        results.append({
+                            "name": name,
+                            "price": price,
+                            "amount": amount_val
+                        })
+                    except:
+                        continue
                 return results
             except Exception as e:
-                print(f"[InvestorTop] scrape error type={investor_type} order={order}: {e}")
+                print(f"[MarketLeaders] scrape error {url}: {e}")
                 return []
 
-        foreign_buy = scrape_investor_top("1", "1")
-        foreign_sell = scrape_investor_top("1", "2")
-        inst_buy = scrape_investor_top("2", "1")
-        inst_sell = scrape_investor_top("2", "2")
+        # 기존 프론트엔드 키(foreign_top 등)를 그대로 사용하여 데이터만 교체
+        quant_kospi = scrape_market_leaders("https://finance.naver.com/sise/sise_quant.naver?sosok=0")
+        quant_kosdaq = scrape_market_leaders("https://finance.naver.com/sise/sise_quant.naver?sosok=1")
+        rise_kospi = scrape_market_leaders("https://finance.naver.com/sise/sise_rise.naver?sosok=0")
+        rise_kosdaq = scrape_market_leaders("https://finance.naver.com/sise/sise_rise.naver?sosok=1")
 
         return {
             "status": "success",
             "data": {
-                "foreign_top": foreign_buy,
-                "foreign_sell": foreign_sell,
-                "institution_top": inst_buy,
-                "institution_sell": inst_sell
+                "foreign_top": quant_kospi,
+                "institution_top": quant_kosdaq,
+                "foreign_sell": rise_kospi,       
+                "institution_sell": rise_kosdaq   
             }
         }
     except Exception as e:
-        print(f"[InvestorTop] Error: {e}")
+        print(f"[MarketLeaders] Error: {e}")
         return {"status": "error", "message": str(e)}
 
 

@@ -264,7 +264,7 @@ function SupplyShortTab({ router }: { router: any }) {
     return (
         <div className="space-y-4">
             <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setSubTab("investor")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "investor" ? "bg-green-600 text-white" : "text-gray-400"}`}>👥 외국인·기관 수급</button>
+                <button onClick={() => setSubTab("investor")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "investor" ? "bg-green-600 text-white" : "text-gray-400"}`}>🔥 시장 주도주</button>
                 <button onClick={() => setSubTab("short")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "short" ? "bg-orange-600 text-white" : "text-gray-400"}`}>📉 공매도 잔고</button>
             </div>
 
@@ -272,10 +272,10 @@ function SupplyShortTab({ router }: { router: any }) {
                 : subTab === "investor" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {[
-                            { title: "외국인 순매수 TOP", data: investorData?.foreign_top, color: "green", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                            { title: "기관 순매수 TOP", data: investorData?.institution_top, color: "blue", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                            { title: "외국인 순매도 TOP", data: investorData?.foreign_sell, color: "red", icon: <TrendingDown className="w-3.5 h-3.5" /> },
-                            { title: "기관 순매도 TOP", data: investorData?.institution_sell, color: "purple", icon: <TrendingDown className="w-3.5 h-3.5" /> },
+                            { title: "KOSPI 거래량 TOP", data: investorData?.foreign_top, color: "green", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                            { title: "KOSDAQ 거래량 TOP", data: investorData?.institution_top, color: "blue", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                            { title: "KOSPI 상승률 TOP", data: investorData?.foreign_sell, color: "red", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                            { title: "KOSDAQ 상승률 TOP", data: investorData?.institution_sell, color: "purple", icon: <TrendingUp className="w-3.5 h-3.5" /> },
                         ].map(({ title, data: items, color, icon }) => (
                             <div key={title} className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
                                 <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
