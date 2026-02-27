@@ -1137,7 +1137,6 @@ def get_market_investors():
         "kosdaq": {"foreigner": 0, "institution": 0, "retail": 0}
     }
 
-@lru_cache(maxsize=1)
 def get_theme_heatmap_data():
     """
     Fetch Theme Heatmap data (Mock or Scrape)
