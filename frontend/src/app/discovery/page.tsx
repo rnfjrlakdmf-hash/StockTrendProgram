@@ -18,7 +18,6 @@ import PriceAlertList from "@/components/PriceAlertList";
 import DisclosureTable from "@/components/DisclosureTable";
 import FCMTokenManager from "@/components/FCMTokenManager";
 import SimplePushTest from "@/components/SimplePushTest";
-import RiskAlert from "@/components/RiskAlert";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -580,11 +579,6 @@ function DiscoveryContent() {
                                             </div>
                                             <div className="w-full md:w-auto mt-2 md:mt-2 flex items-center justify-end gap-2">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && <WatchlistButton symbol={stock.symbol} />}
-                                                {/* Memoize array to prevent infinite fetch loop in RiskAlert useEffect */}
-                                                {activeTab === 'analysis' && React.createElement(() => {
-                                                    const symbols = useMemo(() => [stock.symbol], [stock.symbol]);
-                                                    return <RiskAlert symbols={symbols} />;
-                                                })}
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <button
                                                         onClick={() => setShowAlertModal(true)}
@@ -594,7 +588,6 @@ function DiscoveryContent() {
                                                         <span className="hidden sm:inline">알림</span>
                                                     </button>
                                                 )}
-
                                             </div>
                                         </div>
                                     </div>
