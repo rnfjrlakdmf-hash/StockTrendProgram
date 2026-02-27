@@ -1855,12 +1855,88 @@ def read_vote_results(symbol: str, x_user_id: str = Header(None)):
 
 @app.get("/api/investors/top")
 def read_investor_top():
-    """외국인/기관 순매수 상위 종목"""
+    """외국인/기관 순매수/순매도 상위 종목 - 네이버 금융 스크래핑"""
     try:
-        from smart_signals import get_investor_top_stocks
-        data = get_investor_top_stocks()
-        return {"status": "success", "data": data}
+        import requests
+        from bs4 import BeautifulSoup
+        from korea_data import decode_safe
+
+        headers = {"User-Agent": "Mozilla/5.0"}
+
+        def scrape_investor_top(investor_type: str, order: str, limit: int = 5):
+            """
+            investor_type: "1"=외국인, "2"=기관
+            order: "1"=순매수 상위(매수-매도 큰순), "2"=순매도 상위
+            """
+            try:
+                url = f"https://finance.naver.com/sise/sise_net_buy.naver?sosok=0&invrType={investor_type}&order={order}"
+                res = requests.get(url, headers=headers, timeout=8)
+                soup = BeautifulSoup(decode_safe(res), "html.parser")
+
+                results = []
+                table = soup.select_one("table.type_2")
+                if not table:
+                    table = soup.select_one("table")
+
+                if table:
+                    rows = table.select("tr")
+                    for row in rows:
+                        if len(results) >= limit:
+                            break
+                        cols = row.select("td")
+                        if len(cols) < 4:
+                            continue
+                        try:
+                            name_tag = cols[0].select_one("a") or cols[1].select_one("a")
+                            if not name_tag:
+                                continue
+                            name = name_tag.text.strip()
+                            if not name:
+                                continue
+
+                            # 순매수량, 현재가, 등락률 파싱
+                            net_buy_txt = ""
+                            price_txt = ""
+                            change_txt = ""
+                            for col in cols[1:]:
+                                t = col.text.strip().replace(",", "")
+                                if not net_buy_txt and t.lstrip("-").isdigit():
+                                    net_buy_txt = t
+                                elif t.lstrip("-").isdigit() and not price_txt:
+                                    price_txt = t
+
+                            net_buy = int(net_buy_txt) if net_buy_txt.lstrip("-").isdigit() else 0
+                            price = int(price_txt) if price_txt.lstrip("-").isdigit() else 0
+
+                            results.append({
+                                "name": name,
+                                "net_buy": net_buy,
+                                "price": price
+                            })
+                        except:
+                            continue
+
+                return results
+            except Exception as e:
+                print(f"[InvestorTop] scrape error type={investor_type} order={order}: {e}")
+                return []
+
+        foreign_buy = scrape_investor_top("1", "1")
+        foreign_sell = scrape_investor_top("1", "2")
+        inst_buy = scrape_investor_top("2", "1")
+        inst_sell = scrape_investor_top("2", "2")
+
+        return {
+            "status": "success",
+            "data": {
+                "foreign_top": foreign_buy,
+                "foreign_sell": foreign_sell,
+                "institution_top": inst_buy,
+                "institution_sell": inst_sell
+            }
+        }
     except Exception as e:
+        print(f"[InvestorTop] Error: {e}")
         return {"status": "error", "message": str(e)}
 
 
