@@ -321,15 +321,23 @@ function HeatmapTab({ router }: { router: any }) {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-3">
                                 <h4 className="font-bold text-red-400 text-sm mb-2 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" />상승 TOP</h4>
-                                {[...sectors].sort((a, b) => (b.change || 0) - (a.change || 0)).slice(0, 5).map((s, i) => (
-                                    <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-red-400 font-bold">+{(s.change || 0).toFixed(2)}%</span></div>
-                                ))}
+                                {(() => {
+                                    const ups = sectors.filter(s => (s.change || 0) > 0).sort((a, b) => (b.change || 0) - (a.change || 0)).slice(0, 5);
+                                    if (ups.length === 0) return <div className="text-xs text-gray-500 py-2 text-center">상승 업종 없음</div>;
+                                    return ups.map((s, i) => (
+                                        <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-red-400 font-bold">+{(s.change || 0).toFixed(2)}%</span></div>
+                                    ));
+                                })()}
                             </div>
                             <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-3">
                                 <h4 className="font-bold text-blue-400 text-sm mb-2 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" />하락 TOP</h4>
-                                {[...sectors].sort((a, b) => (a.change || 0) - (b.change || 0)).slice(0, 5).map((s, i) => (
-                                    <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-blue-400 font-bold">{(s.change || 0).toFixed(2)}%</span></div>
-                                ))}
+                                {(() => {
+                                    const downs = sectors.filter(s => (s.change || 0) < 0).sort((a, b) => (a.change || 0) - (b.change || 0)).slice(0, 5);
+                                    if (downs.length === 0) return <div className="text-xs text-gray-500 py-2 text-center">하락 업종 없음</div>;
+                                    return downs.map((s, i) => (
+                                        <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-blue-400 font-bold">{(s.change || 0).toFixed(2)}%</span></div>
+                                    ));
+                                })()}
                             </div>
                         </div>
                     )}
