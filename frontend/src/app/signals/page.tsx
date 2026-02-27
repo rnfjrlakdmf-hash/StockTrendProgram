@@ -151,13 +151,23 @@ function HeatmapTab({ router }: { router: any }) {
                 const sj = await s.json(), hj = await h.json();
                 if (sj.status === "success") {
                     const raw = sj.data || [];
-                    // API가 top_sectors {name, change} 또는 [{name, percent}] 형식 모두 처리
-                    setSectors(raw.top_sectors || raw.map((s: any) => ({
-                        name: s.name,
-                        change: parseFloat(String(s.percent || s.change || "0").replace(/[^0-9.-]/g, "")) || 0
-                    })));
+                    // sectors API: [{name, percent: "+2.96%"}]
+                    const normalized = Array.isArray(raw) ? raw.map((s: any) => ({
+                        name: s.name || s.theme || "",
+                        change: parseFloat(String(s.percent || s.change || "0").replace(/[^0-9.-]/g, "")) * (String(s.percent || "").includes("-") ? -1 : 1)
+                    })) : (raw.top_sectors || []);
+                    setSectors(normalized);
                 }
-                if (hj.status === "success") setHeatmap(hj.data || []);
+                if (hj.status === "success") {
+                    const raw2 = hj.data || [];
+                    // heatmap API: [{theme, percent: "+3.29%", stocks: [...]}]
+                    const normalized2 = Array.isArray(raw2) ? raw2.map((h: any) => ({
+                        name: h.theme || h.name || "",
+                        change: parseFloat(String(h.percent || h.change || "0").replace(/[^0-9.-]/g, "")) * (String(h.percent || "").includes("-") ? -1 : 1),
+                        stocks: h.stocks || []
+                    })) : [];
+                    setHeatmap(normalized2);
+                }
             } catch { } finally { setLoading(false); }
         })();
     }, []);
