@@ -149,7 +149,14 @@ function HeatmapTab({ router }: { router: any }) {
             try {
                 const [s, h] = await Promise.all([fetch(`${API_BASE_URL}/api/korea/sectors`), fetch(`${API_BASE_URL}/api/korea/heatmap`)]);
                 const sj = await s.json(), hj = await h.json();
-                if (sj.status === "success") setSectors(sj.data?.top_sectors || []);
+                if (sj.status === "success") {
+                    const raw = sj.data || [];
+                    // API가 top_sectors {name, change} 또는 [{name, percent}] 형식 모두 처리
+                    setSectors(raw.top_sectors || raw.map((s: any) => ({
+                        name: s.name,
+                        change: parseFloat(String(s.percent || s.change || "0").replace(/[^0-9.-]/g, "")) || 0
+                    })));
+                }
                 if (hj.status === "success") setHeatmap(hj.data || []);
             } catch { } finally { setLoading(false); }
         })();
