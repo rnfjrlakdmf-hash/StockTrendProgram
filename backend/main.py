@@ -1796,6 +1796,46 @@ def scan_signals_now():
         print(f"Signal scan error: {e}")
         return {"status": "error", "message": str(e)}
 
+@app.post("/api/signals/scan/watchlist")
+def scan_my_watchlist_signals(x_user_id: str = Header(None)):
+    """
+    내 관심종목 전용 실시간 시그널 스캔
+    """
+    try:
+        user_id = x_user_id or "guest"
+        from db_manager import get_watchlist
+        my_watchlist = get_watchlist(user_id)
+        
+        if not my_watchlist:
+            return {"status": "error", "message": "관심종목이 없습니다."}
+            
+        from smart_signals import scan_watchlist_signals
+        detected = scan_watchlist_signals(my_watchlist)
+        
+        # DB에 저장
+        saved = []
+        for sig in detected:
+            sig_id = save_signal(
+                symbol=sig["symbol"],
+                signal_type=sig["signal_type"],
+                title=sig["title"],
+                summary=sig["summary"],
+                data=sig.get("data", {})
+            )
+            if sig_id:
+                sig["id"] = sig_id
+                saved.append(sig)
+        
+        return {
+            "status": "success",
+            "detected": len(detected),
+            "saved": len(saved),
+            "signals": saved
+        }
+    except Exception as e:
+        print(f"My Watchlist Signal scan error: {e}")
+        return {"status": "error", "message": str(e)}
+
 
 @app.get("/api/signals/{symbol}/briefing")
 def get_ai_briefing(symbol: str):

@@ -67,7 +67,41 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [searchQuery, setSearchQuery] = useState("");
 
     const fetchSignals = async () => { try { const r = await fetch(`${API_BASE_URL}/api/signals?limit=50`); const j = await r.json(); if (j.status === "success") setSignals(j.data || []); } catch { } finally { setLoading(false); } };
-    const scanSignals = async () => { setScanning(true); try { await fetch(`${API_BASE_URL}/api/signals/scan`, { method: "POST" }); fetchSignals(); } catch { } finally { setScanning(false); } };
+
+    // Auth Token Helper
+    const getAuthToken = async () => {
+        try {
+            const { getAuth } = await import("firebase/auth");
+            const auth = getAuth();
+            if (auth.currentUser) return await auth.currentUser.getIdToken();
+        } catch { }
+        return null; // Guest
+    };
+
+    const scanSignals = async (type: 'all' | 'watchlist' = 'all') => {
+        setScanning(true);
+        try {
+            const endpoint = type === 'watchlist' ? '/api/signals/scan/watchlist' : '/api/signals/scan';
+            const token = await getAuthToken();
+            const headers: any = { "Content-Type": "application/json" };
+            if (token) headers["x-user-id"] = token;
+
+            const r = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: "POST",
+                headers
+            });
+            const j = await r.json();
+            if (j.status === "error" && type === 'watchlist') {
+                alert(j.message || "관심종목 스캔에 실패했습니다.");
+            } else {
+                fetchSignals();
+            }
+        } catch {
+        } finally {
+            setScanning(false);
+        }
+    };
+
     const fetchBriefing = async (sym: string) => { setBriefingSymbol(sym); setBriefingLoading(true); setBriefing(null); try { const r = await fetch(`${API_BASE_URL}/api/signals/${sym}/briefing`); const j = await r.json(); if (j.status === "success") setBriefing(j.data); } catch { } finally { setBriefingLoading(false); } };
 
     useEffect(() => { fetchSignals(); }, []);
@@ -90,11 +124,11 @@ function SignalsFeedTab({ router }: { router: any }) {
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-400" />최근 감지된 시그널</h3>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                     <div className="relative flex-1 sm:w-48">
                         <input
                             type="text"
-                            placeholder="종목명 또는 코드 검색"
+                            placeholder="종목명/코드 검색"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
@@ -104,7 +138,12 @@ function SignalsFeedTab({ router }: { router: any }) {
                             <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-xs z-10">✕</button>
                         )}
                     </div>
-                    <button onClick={scanSignals} disabled={scanning} className="shrink-0 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-xl text-sm font-bold disabled:opacity-50">
+
+                    <button onClick={() => scanSignals('watchlist')} disabled={scanning} className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 border border-blue-500/30 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors">
+                        <Users className="w-4 h-4" />내 종목 스캔
+                    </button>
+
+                    <button onClick={() => scanSignals('all')} disabled={scanning} className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-500 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors">
                         <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "스캔 중" : "전체 스캔"}
                     </button>
                 </div>
@@ -115,7 +154,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                     <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                         <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
                         <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다'}</p>
-                        {!searchQuery && <button onClick={scanSignals} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">🔍 첫 스캔 실행</button>}
+                        {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">🔍 첫 스캔 실행</button>}
                     </div>
                 ) : filteredSignals.map(sig => {
                     const badge = getBadge(sig.signal_type);
