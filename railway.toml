@@ -1,6 +1,8 @@
 [build]
-# Use default root detection (which is backend/ for this Railway project)
-[deploy]
+# Use backend Dockerfile with root as build context
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = ["backend/**"]
+
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
