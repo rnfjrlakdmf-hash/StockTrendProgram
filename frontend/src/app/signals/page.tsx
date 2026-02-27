@@ -65,6 +65,8 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     // 신규 추가: 종목 검색어 상태
     const [searchQuery, setSearchQuery] = useState("");
+    const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
+    const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
 
     const fetchSignals = async () => { try { const r = await fetch(`${API_BASE_URL}/api/signals?limit=50`); const j = await r.json(); if (j.status === "success") setSignals(j.data || []); } catch { } finally { setLoading(false); } };
 
@@ -95,12 +97,31 @@ function SignalsFeedTab({ router }: { router: any }) {
                 alert(j.message || "관심종목 스캔에 실패했습니다.");
             } else {
                 fetchSignals();
+                if (type === 'watchlist' && !showWatchlistOnly) {
+                    setShowWatchlistOnly(true);
+                }
             }
         } catch {
         } finally {
             setScanning(false);
         }
     };
+
+    useEffect(() => {
+        if (showWatchlistOnly && watchlistSymbols.length === 0) {
+            (async () => {
+                const token = await getAuthToken();
+                if (!token) { alert("로그인이 필요합니다."); setShowWatchlistOnly(false); return; }
+                try {
+                    const r = await fetch(`${API_BASE_URL}/api/watchlist`, { headers: { "x-user-id": token } });
+                    const j = await r.json();
+                    if (j.status === "success" && j.data) {
+                        setWatchlistSymbols(j.data.map((item: any) => item.symbol));
+                    }
+                } catch { }
+            })();
+        }
+    }, [showWatchlistOnly, watchlistSymbols.length]);
 
     const fetchBriefing = async (sym: string) => { setBriefingSymbol(sym); setBriefingLoading(true); setBriefing(null); try { const r = await fetch(`${API_BASE_URL}/api/signals/${sym}/briefing`); const j = await r.json(); if (j.status === "success") setBriefing(j.data); } catch { } finally { setBriefingLoading(false); } };
 
@@ -113,17 +134,24 @@ function SignalsFeedTab({ router }: { router: any }) {
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
-    // 검색어 필터링 로직: 이름 또는 심볼(코드)에 검색어가 포함된 시그널만 표시
-    const filteredSignals = signals.filter(sig =>
-        !searchQuery ||
-        sig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        sig.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // 검색어 필터링 로직: 이름 또는 심볼(코드)에 검색어가 포함된 시그널만 표시, 수급 관점 매칭
+    const filteredSignals = signals.filter(sig => {
+        const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchWatch = !showWatchlistOnly || watchlistSymbols.includes(sig.symbol);
+        return matchSearch && matchWatch;
+    });
 
     return (
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-400" />최근 감지된 시그널</h3>
+                <div className="flex flex-col gap-1.5">
+                    <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-orange-400" />최근 감지된 시그널</h3>
+                    <label className="flex items-center gap-1.5 text-xs text-blue-300 font-bold cursor-pointer hover:text-blue-200 transition-colors w-max bg-blue-900/10 px-2 py-1.5 rounded-lg border border-blue-500/20">
+                        <input type="checkbox" className="rounded bg-black border-blue-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 w-3.5 h-3.5"
+                            checked={showWatchlistOnly} onChange={(e) => setShowWatchlistOnly(e.target.checked)} />
+                        내 관심종목 전용만 보기
+                    </label>
+                </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                     <div className="relative flex-1 sm:w-48">
                         <input
