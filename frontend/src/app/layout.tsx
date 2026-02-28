@@ -9,6 +9,8 @@ import { AuthProvider } from "@/context/AuthContext";
 
 import FCMWrapper from "@/components/FCMWrapper";
 
+
+
 // ... (in return JSX)
 {/* Global FCM Token Manager (Disabled for Debugging Crash) */ }
 {/* <FCMTokenManager /> */ }
@@ -66,6 +68,7 @@ export default function RootLayout({
 
               {/* Closing Report Banner */}
               <ClosingBanner />
+
 
               {/* Global Progress Watcher */}
               <GlobalProgressWatcher />

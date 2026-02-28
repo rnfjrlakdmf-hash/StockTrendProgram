@@ -10,15 +10,15 @@ import {
 
 export default function AnalysisPage() {
     const [symbol, setSymbol] = useState("");
-    const [activeTab, setActiveTab] = useState<"quant" | "health" | "peer">("quant");
+    const [activeTab, setActiveTab] = useState<"quant" | "financial" | "peer">("quant");
 
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
     const [quantLoading, setQuantLoading] = useState(false);
 
-    // Health State
-    const [healthData, setHealthData] = useState<any>(null);
-    const [healthLoading, setHealthLoading] = useState(false);
+    // Financial Analysis State
+    const [financialData, setFinancialData] = useState<any>(null);
+    const [financialLoading, setFinancialLoading] = useState(false);
 
     // Peer State
     const [peerSymbols, setPeerSymbols] = useState("005930,000660,035420");
@@ -36,15 +36,15 @@ export default function AnalysisPage() {
         finally { setQuantLoading(false); }
     };
 
-    const fetchHealth = async (sym: string) => {
+    const fetchFinancial = async (sym: string) => {
         if (!sym) return;
-        setHealthLoading(true);
+        setFinancialLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/financial-health/${sym}`);
             const json = await res.json();
-            if (json.status === "success") setHealthData(json.data);
+            if (json.status === "success") setFinancialData(json.data);
         } catch (err) { console.error(err); }
-        finally { setHealthLoading(false); }
+        finally { setFinancialLoading(false); }
     };
 
     const fetchPeer = async () => {
@@ -61,7 +61,7 @@ export default function AnalysisPage() {
     const handleSearch = () => {
         if (!symbol) return;
         if (activeTab === "quant") fetchQuant(symbol);
-        else if (activeTab === "health") fetchHealth(symbol);
+        else if (activeTab === "financial") fetchFinancial(symbol);
     };
 
     const getGradeStyle = (grade: string) => {
@@ -136,7 +136,7 @@ export default function AnalysisPage() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="프로 분석" subtitle="퀀트 · 재무 건전성 · 동종비교" />
+            <Header title="프로 분석" subtitle="퀀트 · 재무 분석 · 동종비교" />
 
             <div className="max-w-5xl mx-auto p-4 space-y-6">
                 {/* Tabs */}
@@ -145,9 +145,9 @@ export default function AnalysisPage() {
                         className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "quant" ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg" : "text-gray-400"}`}>
                         <Activity className="w-4 h-4" /> 퀀트 스코어
                     </button>
-                    <button onClick={() => setActiveTab("health")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "health" ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg" : "text-gray-400"}`}>
-                        <Shield className="w-4 h-4" /> 재무 건전성
+                    <button onClick={() => setActiveTab("financial")}
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "financial" ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg" : "text-gray-400"}`}>
+                        <Shield className="w-4 h-4" /> 재무 분석
                     </button>
                     <button onClick={() => setActiveTab("peer")}
                         className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "peer" ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg" : "text-gray-400"}`}>
@@ -155,8 +155,8 @@ export default function AnalysisPage() {
                     </button>
                 </div>
 
-                {/* Search (Quant & Health) */}
-                {(activeTab === "quant" || activeTab === "health") && (
+                {/* Search (Quant & Financial) */}
+                {(activeTab === "quant" || activeTab === "financial") && (
                     <div className="flex gap-2">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
@@ -229,27 +229,27 @@ export default function AnalysisPage() {
                     </div>
                 )}
 
-                {/* ===== HEALTH TAB ===== */}
-                {activeTab === "health" && (
+                {/* ===== FINANCIAL TAB ===== */}
+                {activeTab === "financial" && (
                     <div className="space-y-6">
-                        {healthLoading ? (
-                            <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 건전성 분석 중...</p></div>
-                        ) : healthData ? (
+                        {financialLoading ? (
+                            <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
+                        ) : financialData ? (
                             <div className="space-y-6 animate-in fade-in duration-300">
-                                {/* Health Overview */}
+                                {/* Analysis Overview */}
                                 <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
                                     <div className="flex items-center justify-between mb-6">
                                         <div>
-                                            <h2 className="text-2xl font-black">{healthData.name}</h2>
-                                            <p className="text-gray-400 text-sm">{healthData.symbol} · 재무 건전성 리포트</p>
+                                            <h2 className="text-2xl font-black">{financialData.name}</h2>
+                                            <p className="text-gray-400 text-sm">{financialData.symbol} · 재무 분석 리포트</p>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(healthData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>
-                                                {healthData.grade}
+                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>
+                                                {financialData.grade}
                                             </div>
                                             <div className="text-right">
-                                                <span className={`text-4xl font-black ${getScoreColor(healthData.health_score)}`}>{healthData.health_score}</span>
-                                                <p className="text-xs text-gray-500">건전성 점수</p>
+                                                <span className={`text-4xl font-black ${getScoreColor(financialData.health_score)}`}>{financialData.health_score}</span>
+                                                <p className="text-xs text-gray-500">분석 점수</p>
                                             </div>
                                         </div>
                                     </div>
@@ -259,14 +259,14 @@ export default function AnalysisPage() {
                                         <div className="bg-black/40 rounded-2xl p-4 border border-white/10">
                                             <h4 className="text-sm font-bold text-gray-400 mb-2">📐 Altman Z-Score</h4>
                                             <div className="flex items-end gap-3">
-                                                <span className="text-3xl font-black">{healthData.z_score?.value}</span>
-                                                <span className={`text-sm font-bold pb-1 ${healthData.z_score?.color === "green" ? "text-green-400" : healthData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
-                                                    {healthData.z_score?.zone}
+                                                <span className="text-3xl font-black">{financialData.z_score?.value}</span>
+                                                <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
+                                                    {financialData.z_score?.zone}
                                                 </span>
                                             </div>
                                             <div className="mt-2 h-2 bg-gray-800 rounded-full overflow-hidden">
-                                                <div className={`h-full rounded-full transition-all ${healthData.z_score?.color === "green" ? "bg-green-500" : healthData.z_score?.color === "yellow" ? "bg-yellow-500" : "bg-red-500"}`}
-                                                    style={{ width: `${Math.min((healthData.z_score?.value || 0) / 5 * 100, 100)}%` }} />
+                                                <div className={`h-full rounded-full transition-all ${financialData.z_score?.color === "green" ? "bg-green-500" : financialData.z_score?.color === "yellow" ? "bg-yellow-500" : "bg-red-500"}`}
+                                                    style={{ width: `${Math.min((financialData.z_score?.value || 0) / 5 * 100, 100)}%` }} />
                                             </div>
                                             <div className="flex justify-between text-[9px] text-gray-500 mt-1">
                                                 <span>위험 (&lt;1.8)</span>
@@ -278,12 +278,12 @@ export default function AnalysisPage() {
                                         <div className="bg-black/40 rounded-2xl p-4 border border-white/10">
                                             <h4 className="text-sm font-bold text-gray-400 mb-2">🏋️ Piotroski F-Score</h4>
                                             <div className="flex items-end gap-3">
-                                                <span className="text-3xl font-black">{healthData.f_score?.value}</span>
-                                                <span className="text-sm text-gray-500 pb-1">/ {healthData.f_score?.max}</span>
+                                                <span className="text-3xl font-black">{financialData.f_score?.value}</span>
+                                                <span className="text-sm text-gray-500 pb-1">/ {financialData.f_score?.max}</span>
                                             </div>
                                             <div className="flex gap-1 mt-2">
                                                 {Array.from({ length: 9 }, (_, i) => (
-                                                    <div key={i} className={`h-3 flex-1 rounded-full ${i < (healthData.f_score?.value || 0) ? "bg-emerald-500" : "bg-gray-700"}`} />
+                                                    <div key={i} className={`h-3 flex-1 rounded-full ${i < (financialData.f_score?.value || 0) ? "bg-emerald-500" : "bg-gray-700"}`} />
                                                 ))}
                                             </div>
                                             <p className="text-[9px] text-gray-500 mt-1">0-3: 약함 | 4-6: 보통 | 7-9: 강함</p>
@@ -295,7 +295,7 @@ export default function AnalysisPage() {
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                                     <h4 className="font-bold text-sm text-gray-400 mb-3">F-Score 세부 항목</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-                                        {(healthData.f_score?.details || []).map((d: string, i: number) => (
+                                        {(financialData.f_score?.details || []).map((d: string, i: number) => (
                                             <div key={i} className="text-xs py-1.5 px-2 bg-black/30 rounded-lg">{d}</div>
                                         ))}
                                     </div>
@@ -305,7 +305,7 @@ export default function AnalysisPage() {
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                                     <h4 className="font-bold text-sm text-gray-400 mb-3">핵심 재무 비율</h4>
                                     <div className="grid grid-cols-4 gap-3">
-                                        {Object.entries(healthData.ratios || {}).map(([k, v]: any) => (
+                                        {Object.entries(financialData.ratios || {}).map(([k, v]: any) => (
                                             <div key={k} className="text-center bg-black/30 rounded-xl p-3">
                                                 <p className="text-[10px] text-gray-500">{k}</p>
                                                 <p className="text-sm font-black text-white mt-0.5">{v}</p>
@@ -317,7 +317,7 @@ export default function AnalysisPage() {
                         ) : (
                             <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                 <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" />
-                                <p className="text-gray-500">종목코드를 입력하면 재무 건강검진을 시작합니다</p>
+                                <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p>
                                 <p className="text-xs text-gray-600 mt-2">Altman Z-Score · Piotroski F-Score · 핵심 비율</p>
                             </div>
                         )}

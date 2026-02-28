@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
@@ -72,8 +72,6 @@ export default function PortfolioPage() {
 
             if (json.status === "success" && json.data?.holdings) {
                 const holdings = json.data.holdings;
-                // KIS returns numbers like 005930. We can format them or backend handles it.
-                // Backend now handles raw numbers as Korean.
                 const formattedSymbols = holdings.map((h: any) => h.symbol);
 
                 setSymbols(formattedSymbols);
@@ -131,7 +129,7 @@ export default function PortfolioPage() {
                 }
             }
 
-            // 2. Portfolio Diagnosis (Nutrition, Dividend, Factors)
+            // 2. Portfolio Analysis
             const resDiag = await fetch(`${API_BASE_URL}/api/portfolio/diagnosis?_t=${Date.now()}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -215,13 +213,12 @@ export default function PortfolioPage() {
                 featureName="AI Portfolio Optimizer"
             />
 
-            {/* Main Content Area - Scrollable if needed but optimized for single view */}
+            {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
                 <div className="max-w-[1600px] mx-auto h-full flex flex-col gap-4">
 
-                    {/* 1. Top Control Bar (Compact Input + KIS) */}
+                    {/* 1. Top Control Bar */}
                     <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 shrink-0 backdrop-blur-md">
-                        {/* KIS Button */}
                         <button
                             onClick={() => setShowKisModal(true)}
                             className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border transition-all ${isKisConnected ? 'bg-green-900/20 text-green-400 border-green-500/50' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}
@@ -266,16 +263,15 @@ export default function PortfolioPage() {
                     {(result || analysisResult) ? (
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 min-h-0">
 
-                            {/* Left Column: Metrics & Doctor (4 cols) */}
+                            {/* Left Column */}
                             <div className="md:col-span-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
-                                {/* Doctor Card */}
                                 <div className="bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-500/30 rounded-2xl p-5 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-4 opacity-10">
                                         <Activity className="w-24 h-24 text-white" />
                                     </div>
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="bg-blue-500 text-xs font-bold px-2 py-0.5 rounded text-white">AI 진단</span>
+                                            <span className="bg-blue-500 text-xs font-bold px-2 py-0.5 rounded text-white">AI 데이터 분석</span>
                                             <h3 className="text-lg font-bold text-white leading-tight">
                                                 {analysisResult?.diagnosis || "분석 중..."}
                                             </h3>
@@ -289,7 +285,6 @@ export default function PortfolioPage() {
                                     </div>
                                 </div>
 
-                                {/* Key Metrics Grid */}
                                 {result && (
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-gray-800/50 border border-white/10 p-4 rounded-2xl text-center">
@@ -307,7 +302,6 @@ export default function PortfolioPage() {
                                     </div>
                                 )}
 
-                                {/* Dividend Mini Calendar */}
                                 <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 flex-1 min-h-[150px] flex flex-col">
                                     <h4 className="text-sm font-bold text-gray-400 mb-3 flex items-center gap-2">
                                         <Calendar className="w-4 h-4" /> 배당 캘린더
@@ -317,21 +311,10 @@ export default function PortfolioPage() {
                                             analysisResult.calendar.map((event: any, i: number) => (
                                                 <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정'
-                                                            ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30'
-                                                            : 'text-green-400 bg-green-900/30'
-                                                            }`}>
+                                                        <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정' ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30' : 'text-green-400 bg-green-900/30'}`}>
                                                             {new Date(event.date).getMonth() + 1}/{new Date(event.date).getDate()}
                                                         </span>
                                                         <span className="font-bold text-xs">{event.symbol}</span>
-                                                        {event.type && (
-                                                            <span className={`text-[9px] px-1 py-0.5 rounded ${event.source === '확정'
-                                                                ? 'text-emerald-300 bg-emerald-900/20'
-                                                                : 'text-purple-400 bg-purple-900/20'
-                                                                }`}>
-                                                                {event.type}
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     <span className="text-gray-300 text-xs font-medium">+{event.currency === 'KRW' ? '₩' : '$'}{event.amount.toLocaleString()}</span>
                                                 </div>
@@ -343,36 +326,29 @@ export default function PortfolioPage() {
                                     {analysisResult?.calendar?.length > 0 && (
                                         <div className="mt-2 pt-2 border-t border-white/10 text-right text-xs text-gray-500">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-[10px] text-gray-600">
-                                                    Data: SEIBRO, Naver, Yahoo
-                                                </span>
-                                                <span className="text-green-400 font-bold">
-                                                    Total: ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}
-                                                </span>
+                                                <span className="text-[10px] text-gray-600">Data: SEIBRO, Naver, Yahoo</span>
+                                                <span className="text-green-400 font-bold">Total: ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Center Column: Radar & Nutrition (5 cols) */}
+                            {/* Center Column */}
                             <div className="md:col-span-5 flex flex-col gap-4">
-                                {/* Factor Radar */}
-                                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-2 relative flex-1 min-h-[250px]">
-                                    <div className="absolute top-3 left-4 z-10">
-                                        <h4 className="text-sm font-bold text-purple-400 flex items-center gap-2">
-                                            <Activity className="w-4 h-4" /> 6각 팩터 진단
-                                        </h4>
-                                    </div>
-                                    <div className="w-full h-full relative group">
+                                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 relative flex-1 min-h-[250px] flex flex-col">
+                                    <h4 className="text-sm font-bold text-purple-400 mb-4 flex items-center gap-2">
+                                        <Activity className="w-4 h-4" /> 6각 팩터 데이터맵
+                                    </h4>
+                                    <div className="flex-1 w-full relative">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <RadarChart cx="50%" cy="55%" outerRadius="70%" data={[
-                                                { subject: '베타', A: analysisResult?.factors?.beta || 0, fullMark: 100, help: "시장 민감도 (높을수록 변동성 큼)" },
-                                                { subject: '알파', A: analysisResult?.factors?.alpha || 0, fullMark: 100, help: "초과 수익률 (실력)" },
-                                                { subject: '모멘텀', A: analysisResult?.factors?.momentum || 0, fullMark: 100, help: "상승 추세 강도" },
-                                                { subject: '밸류', A: analysisResult?.factors?.value || 0, fullMark: 100, help: "저평가 정도 (PER/PBR)" },
-                                                { subject: '변동성', A: analysisResult?.factors?.volatility || 0, fullMark: 100, help: "가격 등락폭 (위험)" },
-                                                { subject: '배당', A: analysisResult?.factors?.yield || 0, fullMark: 100, help: "배당 수익률" },
+                                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                                                { subject: '베타', A: analysisResult?.factors?.beta || 0 },
+                                                { subject: '알파', A: analysisResult?.factors?.alpha || 0 },
+                                                { subject: '모멘텀', A: analysisResult?.factors?.momentum || 0 },
+                                                { subject: '밸류', A: analysisResult?.factors?.value || 0 },
+                                                { subject: '변동성', A: analysisResult?.factors?.volatility || 0 },
+                                                { subject: '배당', A: analysisResult?.factors?.yield || 0 },
                                             ]}>
                                                 <PolarGrid stroke="#333" />
                                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 10 }} />
@@ -381,20 +357,9 @@ export default function PortfolioPage() {
                                                 <RechartsTooltip contentStyle={{ backgroundColor: '#000', borderRadius: '8px', border: '1px solid #333', fontSize: '12px' }} />
                                             </RadarChart>
                                         </ResponsiveContainer>
-
-                                        {/* Hover Help */}
-                                        <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-[10px] text-gray-300 rounded pointer-events-none whitespace-pre-line z-10 border border-white/10">
-                                            베타: 시장 민감도{"\n"}
-                                            알파: 초과 수익{"\n"}
-                                            모멘텀: 상승 추세{"\n"}
-                                            밸류: 저평가{"\n"}
-                                            변동성: 위험도{"\n"}
-                                            배당: 배당 수익
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Nutrition Pie */}
                                 <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 h-[180px] flex items-center justify-between">
                                     <div className="w-1/2 h-full relative">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -414,39 +379,22 @@ export default function PortfolioPage() {
                                             <PieChartIcon className="w-5 h-5 text-gray-600" />
                                         </div>
                                     </div>
-                                    <div className="w-1/2 pl-2 space-y-1">
-                                        <h4 className="text-xs font-bold text-orange-400 mb-2">계좌 영양소</h4>
-                                        <div className="overflow-y-auto max-h-[140px] pr-1 space-y-2 custom-scrollbar">
-                                            {(analysisResult?.nutrition?.nutrition || []).map((n: any) => (
-                                                <div key={n.name} className="flex flex-col text-xs">
-                                                    <div className="flex items-center justify-between mb-0.5">
-                                                        <div className="flex items-center gap-1.5 overflow-hidden">
-                                                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: n.fill }} />
-                                                            <span className="text-gray-200 font-semibold truncate max-w-[120px]">{n.name}</span>
-                                                        </div>
-                                                        <span className="font-bold text-gray-400">{n.value}%</span>
-                                                    </div>
-                                                    {/* Nutrient Description */}
-                                                    <div className="pl-3.5 text-[10px] text-gray-400 mb-0.5">
-                                                        {n.name.includes('단백질') && '💪 안정적인 기초 종목 (금융/산업/부동산)'}
-                                                        {n.name.includes('탄수화물') && '🚀 성장과 에너지 (IT/통신/소비재)'}
-                                                        {n.name.includes('비타민') && '🛡️ 방어력 (헬스케어/필수소비/유틸리티)'}
-                                                        {n.name.includes('지방') && '⛽ 고밀도 에너지원 (에너지/소재)'}
-                                                        {n.name.includes('물') && '💧 안전 자산 (현금성)'}
-                                                        {n.name.includes('식이섬유') && '🌿 기타 및 미분류 섹터'}
-                                                    </div>
-                                                    {/* Symbol List */}
-                                                    <div className="pl-3.5 text-[10px] text-gray-500 truncate">
-                                                        {n.symbols && n.symbols.length > 0 ? n.symbols.join(", ") : "없음"}
-                                                    </div>
+                                    <div className="w-1/2 pl-2 space-y-1 overflow-y-auto h-full scrollbar-hide">
+                                        <h4 className="text-xs font-bold text-orange-400 mb-2">자산 구성 요소</h4>
+                                        {(analysisResult?.nutrition?.nutrition || []).map((n: any) => (
+                                            <div key={n.name} className="flex items-center justify-between text-xs">
+                                                <div className="flex items-center gap-1.5 truncate">
+                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: n.fill }} />
+                                                    <span className="text-gray-300 truncate">{n.name}</span>
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <span className="font-bold text-gray-500">{n.value}%</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Right Column: Allocation (3 cols) */}
+                            {/* Right Column */}
                             <div className="md:col-span-3 bg-gray-900/60 border border-white/10 rounded-2xl p-4 flex flex-col">
                                 <h4 className="text-sm font-bold text-gray-300 mb-4 flex items-center justify-between">
                                     <span>최적 비중</span>
@@ -470,7 +418,6 @@ export default function PortfolioPage() {
                                                 </PieChart>
                                             </ResponsiveContainer>
                                         </div>
-
                                         <div className="mt-4 flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 max-h-[300px]">
                                             {result.allocation.map((item: any, i: number) => (
                                                 <div key={i} className="flex items-center justify-between text-sm bg-white/5 p-2 rounded-lg">
@@ -485,26 +432,22 @@ export default function PortfolioPage() {
                                     </>
                                 )}
                             </div>
-
                         </div>
                     ) : (
-                        /* Empty State */
                         <div className="flex-1 flex flex-col items-center justify-center text-gray-500 border border-white/10 rounded-3xl bg-black/20 m-4">
                             <Zap className="w-20 h-20 mb-6 opacity-20 text-blue-500 animate-pulse" />
-                            <h3 className="text-2xl font-bold text-gray-300 mb-2">포트폴리오 정밀 진단</h3>
+                            <h3 className="text-2xl font-bold text-gray-300 mb-2">포트폴리오 데이터 분석</h3>
                             <button
                                 onClick={() => setShowKisModal(true)}
-                                className="mt-4 bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-full font-bold shadow-lg transition-transform hover:scale-105"
+                                className="mt-4 bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-full font-bold shadow-lg"
                             >
                                 증권사 계좌 연결하기 🚀
                             </button>
                             <p className="mt-4 text-sm opacity-60">또는 종목 코드를 직접 입력하세요.</p>
-
                         </div>
                     )}
-
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

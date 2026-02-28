@@ -383,8 +383,8 @@ export default function Sidebar() {
                             <div className="space-y-4 mb-8">
                                 <BenefitItem
                                     icon={<Zap className="w-5 h-5 text-yellow-400" />}
-                                    title="무제한 AI 분석 & 진단"
-                                    desc="하루 제한 없이 종목 발굴과 포트폴리오 진단을 이용하세요."
+                                    title="무제한 AI 데이터 분석"
+                                    desc="하루 제한 없이 종목 발굴과 포트폴리오 분석을 이용하세요."
                                 />
                                 <BenefitItem
                                     icon={<LineChart className="w-5 h-5 text-green-400" />}

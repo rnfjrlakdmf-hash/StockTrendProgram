@@ -29,10 +29,8 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
             setProgress(0);
             setIsLoadingAd(false);
 
-            // AdMob 초기화
-            AdMob.initialize({
-                initializeForTesting: false,
-            }).catch(err => console.error("AdMob Init Fail:", err));
+            // AdMob 초기화 (옵션은 capacitor.config.ts에서 관리)
+            AdMob.initialize({}).catch(err => console.error("AdMob Init Fail:", err));
 
             // 리스너 설정
             const setupListeners = async () => {
@@ -81,11 +79,19 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
 
     const handleAdDismissed = (currentProgress: number) => {
         if (currentProgress >= targetCount) {
-            // 목표 달성
-            grantReward(targetRewardTime);
+            // 목표 달성 (시간 충전 시도)
+            const result = grantReward(targetRewardTime);
             onReward();
             onClose();
-            alert(`${targetRewardTime}분 무료 이용권이 지급되었습니다!`);
+
+            if (result.success) {
+                alert(result.isFull
+                    ? `${targetRewardTime}분 지급 완료! (최대 한도 10시간에 도달했습니다)`
+                    : `${targetRewardTime}분 무료 이용권이 지급되었습니다!`
+                );
+            } else {
+                alert(result.message); // "최대 충전 한도에 도달했습니다"
+            }
         } else {
             // 다음 광고 안내
             if (confirm(`광고 ${currentProgress}/${targetCount} 시청 완료! 다음 광고를 보시겠습니까?`)) {

@@ -19,13 +19,7 @@ import DisclosureTable from "@/components/DisclosureTable";
 import FCMTokenManager from "@/components/FCMTokenManager";
 import SimplePushTest from "@/components/SimplePushTest";
 import FinancialsTable from "@/components/FinancialsTable";
-import LiveSupplyWidget from "@/components/LiveSupplyWidget";
-import WatchlistButton from "@/components/WatchlistButton";
-import PriceAlertModal from "@/components/PriceAlertModal";
-import MarketSignalWidget from "@/components/MarketSignalWidget";
-import PortfolioHealthModal from "@/components/PortfolioHealthModal";
-import ScoreHistoryChart from "@/components/ScoreHistoryChart";
-import CompanyHealthScore from "@/components/CompanyHealthScore";
+import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -188,7 +182,7 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
-    const [showHealthCheck, setShowHealthCheck] = useState(false);
+    const [showPortfolioAnalysis, setShowPortfolioAnalysis] = useState(false);
     const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
@@ -359,7 +353,7 @@ function DiscoveryContent() {
 
     return (
         <div className="min-h-screen pb-10 text-white">
-            <Header title="종목 발굴 & 건강검진" subtitle="AI가 분석하는 종목의 핵심 건강 상태" />
+            <Header title="종목 발굴 & 데이터 분석" subtitle="AI가 분석하는 종목의 핵심 데이터 현황" />
 
             <div className="p-6 space-y-8">
                 {/* Initial View: Search, Widgets, Dashboard */}
@@ -368,9 +362,9 @@ function DiscoveryContent() {
                         {/* Search / Hero Section */}
                         <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 overflow-hidden shadow-xl">
                             <div className="relative z-10 max-w-2xl">
-                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">종목 건강검진 (AI Health Check)</h2>
+                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">종목 데이터 분석 (AI Analysis)</h2>
                                 <p className="text-gray-200 mb-4 text-sm md:text-base">
-                                    종목 코드(티커)를 입력하여 기업의 재무 상태와 심리를 분석하세요.<br />
+                                    종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.<br />
                                     <span className="text-xs text-gray-400">예시: AAPL, 삼성전자 (테마 검색 불가)</span>
                                 </p>
 
@@ -403,21 +397,21 @@ function DiscoveryContent() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <MarketSignalWidget />
                             <div
-                                onClick={() => setShowHealthCheck(true)}
+                                onClick={() => setShowPortfolioAnalysis(true)}
                                 className="cursor-pointer group relative rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-white/10 p-6 overflow-hidden hover:border-blue-500/50 transition-all shadow-lg"
                             >
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <ShieldCheck className="w-32 h-32 text-blue-400" />
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                                    🏥 내 계좌 건강검진 (AI)
+                                    📊 내 계좌 데이터 분석 (AI)
                                 </h3>
                                 <p className="text-gray-400 text-sm mb-4 group-hover:text-gray-300 transition-colors">
-                                    내 포트폴리오는 비만일까 빈혈일까?<br />
-                                    AI 의사에게 진단받고 처방전을 확인하세요.
+                                    내 포트폴리오의 자산 배분 비중은 적절할까?<br />
+                                    AI 분석 리포트를 통해 최적화 비중을 확인하세요.
                                 </p>
                                 <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
-                                    지금 진단하기 →
+                                    지금 분석하기 →
                                 </div>
                             </div>
                         </div>
@@ -435,7 +429,21 @@ function DiscoveryContent() {
                     </div>
                 )}
 
-                {showHealthCheck && <PortfolioHealthModal onClose={() => setShowHealthCheck(false)} />}
+                {showPortfolioAnalysis && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-[#111] border border-white/20 rounded-3xl w-full max-w-lg p-8 text-center">
+                        <h3 className="text-2xl font-bold mb-4">포트폴리오 분석 페이지로 이동</h3>
+                        <p className="text-gray-400 mb-8">상세한 포트폴리오 최적화 분석은 [Portfolio] 메뉴에서 확인하실 수 있습니다.</p>
+                        <button
+                            onClick={() => {
+                                setShowPortfolioAnalysis(false);
+                                window.location.href = '/portfolio';
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-xl font-bold transition-all"
+                        >
+                            Portfolio 메뉴로 바로가기
+                        </button>
+                    </div>
+                </div>}
                 {showAlertModal && stock && (
                     <PriceAlertModal
                         symbol={stock.symbol}
@@ -846,7 +854,7 @@ function DiscoveryContent() {
                                                     <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
                                                         <ShieldCheck className="h-6 w-6 text-green-400" /> 재무 지표 현황 분석 (알고리즘 산출)
                                                     </h4>
-                                                    <CompanyHealthScore symbol={stock.symbol} autoLoad={true} />
+                                                    <CompanyAnalysisScore symbol={stock.symbol} autoLoad={true} />
                                                 </div>
                                             )}
 
@@ -1420,7 +1428,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
 
     const handleAnalyze = async () => {
         if (!portfolioText.trim()) {
-            setError("진단할 종목을 입력해주세요.");
+            setError("분석할 종목을 입력해주세요.");
             return;
         }
 
@@ -1538,7 +1546,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
                                 onClick={() => setResult(null)}
                                 className="w-full bg-gray-700 hover:bg-gray-600 py-3 rounded-xl font-bold transition-colors"
                             >
-                                다른 포트폴리오 진단하기
+                                다른 포트폴리오 분석하기
                             </button>
                         </div>
                     )}
@@ -1720,7 +1728,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                     <ul className="space-y-2 text-gray-400 pl-1 custom-list">
                         <li className="flex gap-2">
                             <span className="text-red-300 font-bold whitespace-nowrap">외국인:</span>
-                            <span>&quot;이 주식 지금 싸다!&quot; 큰손들이 장바구니에 담고 있어요. 주가 상승에 긍정적인 신호예요.</span>
+                            <span>&quot;매수 유입 확인&quot; 주요 주체들의 수급량이 증가하며 자금이 유입되고 있습니다. 수급 측면에서의 긍정적 지표입니다.</span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-red-300 font-bold whitespace-nowrap">기관:</span>

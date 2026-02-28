@@ -53,27 +53,27 @@ KOR_SECTOR_MAP = {
     "방송": "Communication Services", "엔터테인먼트": "Communication Services"
 }
 
-NUTRIENT_COLOR_MAP = {
-    "탄수화물 (성장/에너지)": "#f59e0b", # Amber (Rice/Bread)
-    "단백질 (기초체력)": "#ef4444",    # Red (Meat)
-    "비타민 (면역/방어)": "#10b981",    # Green (Veggie)
-    "지방 (고밀도 에너지)": "#eab308",  # Yellow (Oil)
-    "물 (필수 수분)": "#3b82f6",       # Blue (Water)
-    "기타 (식이섬유)": "#94a3b8"       # Gray
+CHARACTER_COLOR_MAP = {
+    "기술/성장주 (에너지)": "#f59e0b", 
+    "안정/기초 (기반 자산)": "#ef4444",   
+    "방어/저변동 (안전망)": "#10b981",    
+    "자원/원자재 (고밀도)": "#eab308",  
+    "유동성 (현금성 자산)": "#3b82f6",       
+    "기타 (미분류)": "#94a3b8"       
 }
 
-def get_korean_nutrient(kor_sector_name):
+def get_korean_character(kor_sector_name):
     # Heuristic mapping
     for key, val in KOR_SECTOR_MAP.items():
         if key in kor_sector_name:
-            return SECTOR_NUTRIENT_MAP.get(val, "기타 (식이섬유)")
-    return "기타 (식이섬유)"
+            return SECTOR_CHARACTER_MAP.get(val, "기타 (미분류)")
+    return "기타 (미분류)"
 
-def analyze_portfolio_nutrition(symbols: list) -> dict:
+def analyze_portfolio_composition(symbols: list) -> dict:
     """
-    Analyzes portfolio sectors and maps them to 'Nutrients'.
+    Analyzes portfolio sectors and maps them to 'Asset Characteristics'.
     """
-    nutrient_counts = {}
+    char_counts = {}
     sector_breakdown = {}
     details = [] # [New] Store per-symbol details
     
@@ -110,22 +110,20 @@ def analyze_portfolio_nutrition(symbols: list) -> dict:
                 info = get_naver_stock_info(final_code)
                 if info:
                     sector = info.get('sector', 'Unknown')
-                    nutrient = get_korean_nutrient(sector)
+                    character = get_korean_character(sector)
                 else:
                     sector = "Unknown (KR)"
+                    character = "기타 (미분류)"
             else:
                 # US Stock via yfinance
                 ticker = yf.Ticker(search_code)
                 info = ticker.info
-                # Use mapped sector or directly
-                # For US, yfinance returns english sectors "Technology", etc.
-                # Use SECTOR_NUTRIENT_MAP directly
                 raw_sector = info.get('sector', 'Unknown')
-                sector = raw_sector # Keep English for now or map?
-                nutrient = SECTOR_NUTRIENT_MAP.get(raw_sector, "기타 (식이섬유)")
+                sector = raw_sector
+                character = SECTOR_CHARACTER_MAP.get(raw_sector, "기타 (미분류)")
             
             # Count
-            nutrient_counts[nutrient] = nutrient_counts.get(nutrient, 0) + 1
+            char_counts[character] = char_counts.get(character, 0) + 1
             sector_breakdown[sector] = sector_breakdown.get(sector, 0) + 1
             valid_symbols += 1
             
@@ -134,42 +132,42 @@ def analyze_portfolio_nutrition(symbols: list) -> dict:
                 "symbol": raw_sym,
                 "code": search_code,
                 "sector": sector,
-                "nutrient": nutrient
+                "character": character
             })
             
         except Exception as e:
             print(f"Error fetching sector for {symbol}: {e}")
-            nutrient_counts["기타 (식이섬유)"] = nutrient_counts.get("기타 (식이섬유)", 0) + 1
+            char_counts["기타 (미분류)"] = char_counts.get("기타 (미분류)", 0) + 1
             details.append({
                 "symbol": symbol,
                 "code": symbol,
                 "sector": "Error",
-                "nutrient": "기타 (식이섬유)"
+                "character": "기타 (미분류)"
             })
             
     # Calculate Percentages
-    nutrition_data = []
+    composition_data = []
     total = max(valid_symbols, 1) # Avoid div by zero
     
-    for nutrient, count in nutrient_counts.items():
+    for character, count in char_counts.items():
         percent = round((count / total) * 100, 1)
         
-        # [New] Group symbols by nutrient for frontend display
-        relevant_symbols = [d['symbol'] for d in details if d['nutrient'] == nutrient]
+        # [New] Group symbols by characteristic for frontend display
+        relevant_symbols = [d['symbol'] for d in details if d['character'] == character]
         
-        nutrition_data.append({
-            "name": nutrient,
+        composition_data.append({
+            "name": character,
             "value": percent,
             "count": count,
-            "fill": NUTRIENT_COLOR_MAP.get(nutrient, "#94a3b8"),
-            "symbols": relevant_symbols # List of symbols in this nutrient
+            "fill": CHARACTER_COLOR_MAP.get(character, "#94a3b8"),
+            "symbols": relevant_symbols 
         })
         
     # Sort by value
-    nutrition_data.sort(key=lambda x: x['value'], reverse=True)
+    composition_data.sort(key=lambda x: x['value'], reverse=True)
         
     return {
-        "nutrition": nutrition_data,
+        "composition": composition_data,
         "sectors": sector_breakdown,
         "total_assets": valid_symbols,
         "details": details 
@@ -598,7 +596,7 @@ def get_dividend_calendar(symbols: list) -> list:
     return calendar_events
 
 # ==========================================
-# 3. Factor Precision Diagnosis (Radar)
+# 3. Factor Analysis (Radar)
 # ==========================================
 
 def analyze_portfolio_factors(symbols: list) -> dict:

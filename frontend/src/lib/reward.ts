@@ -17,17 +17,35 @@ export const checkReward = (): boolean => {
     return false;
 };
 
-export const grantReward = (minutes: number) => {
+export const MAX_REWARD_HOURS = 10;
+export const MAX_REWARD_MS = MAX_REWARD_HOURS * 60 * 60 * 1000;
+
+export const grantReward = (minutes: number): { success: boolean, message: string, isFull: boolean } => {
     const now = Date.now();
-    // Add time to existing expiry if valid, else start from now
     const currentExpiry = localStorage.getItem("rewardExpiry");
     let baseTime = now;
+
     if (currentExpiry && parseInt(currentExpiry) > now) {
         baseTime = parseInt(currentExpiry);
     }
 
-    const newExpiry = baseTime + (minutes * 60 * 1000);
+    // 이미 최대 시간을 초과한 경우
+    if (baseTime - now >= MAX_REWARD_MS) {
+        return { success: false, message: `이미 최대 충전 한도(${MAX_REWARD_HOURS}시간)에 도달했습니다.`, isFull: true };
+    }
+
+    const addedMs = minutes * 60 * 1000;
+    let newExpiry = baseTime + addedMs;
+
+    // 최대 시간(10시간)을 넘지 않도록 캡핑(Capping)
+    if (newExpiry - now > MAX_REWARD_MS) {
+        newExpiry = now + MAX_REWARD_MS;
+    }
+
     localStorage.setItem("rewardExpiry", newExpiry.toString());
+
+    const isFullNow = (newExpiry - now) >= MAX_REWARD_MS;
+    return { success: true, message: `${minutes}분 충전 완료!`, isFull: isFullNow };
 };
 
 export const getRewardTimeLeft = (): string => {

@@ -80,7 +80,7 @@ app.add_middleware(
 def health_check():
     """
     서버 상태 확인 엔드포인트
-    WebSocket 연결 문제 진단에 사용
+    WebSocket 연결 문제 확인에 사용
     """
     return {
         "status": "ok",
@@ -524,9 +524,9 @@ def create_portfolio_optimization(req: PortfolioRequest):
     if "error" in result:
         return {"status": "error", "message": result["error"]}
     
-    # AI 닥터 리포트 추가
-    doctor_note = analyze_portfolio(result['allocation'])
-    result['doctor_note'] = doctor_note
+    # AI 분석 리포트 추가
+    analysis_note = analyze_portfolio(result['allocation'])
+    result['analysis_note'] = analysis_note
     
     return result
 
@@ -775,7 +775,7 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 def chat_endpoint(req: ChatRequest):
-    """AI 주식 상담 챗봇"""
+    """AI 데이터 분석 챗봇"""
     response = chat_with_ai(req.message)
     return {"status": "success", "reply": response}
 
@@ -952,7 +952,7 @@ from korea_data import (
     get_naver_disclosures,
     get_ipo_data
 )
-from ai_analysis import diagnose_portfolio_health
+
 
 
 @app.get("/api/korea/indices")
@@ -1008,7 +1008,7 @@ def read_rank_top10(market: str):
 
 @app.get("/api/market/status")
 def read_market_status():
-    """시장 신호등 상태 반환"""
+    """시장 상태 분석 결과 반환"""
     status = get_market_status()
     return {"status": "success", "data": status}
 
@@ -1018,13 +1018,13 @@ def read_ipo_calendar():
     data = get_ipo_data()
     return {"status": "success", "data": data}
 
-class DiagnosisRequest(BaseModel):
+class AnalysisRequest(BaseModel):
     portfolio: list[str]
 
-@app.post("/api/portfolio/diagnosis")
-def create_portfolio_diagnosis(req: DiagnosisRequest):
-    """내 계좌 건강검진 (AI 진단)"""
-    result = diagnose_portfolio_health(req.portfolio)
+@app.post("/api/portfolio/analysis")
+def create_portfolio_analysis(req: AnalysisRequest):
+    """내 계좌 데이터 분석 (AI 분석)"""
+    result = analyze_portfolio_data(req.portfolio)
     return {"status": "success", "data": result}
 
 
@@ -1137,7 +1137,7 @@ def get_stock_risk(symbol: str):
 def get_detailed_risk_report(symbol: str):
     """
     종목 위험도 상세 리포트 (Premium - 광고 시청 후)
-    AI 분석 + 뉴스 리스크 + 상세 진단
+    AI 분석 + 뉴스 리스크 + 상세 분석
     """
     # 기본 위험도 분석
     risk_analysis = analyze_stock_risk(symbol)
@@ -1166,17 +1166,16 @@ def get_detailed_risk_report(symbol: str):
         from ai_analysis import generate_ai_response
         
         ai_prompt = f"""
-다음은 {risk_analysis['company_name']} ({symbol})의 위험도 분석 리포트입니다:
+다음은 {risk_analysis['company_name']} ({symbol})의 위험도 데이터 분석 결과입니다:
 
 {detailed_report}
 
-주식 초보자를 위해 다음 내용을 쉽게 설명해주세요:
-1. 이 종목의 가장 큰 위험 요인 3가지
-2. 투자 시 주의해야 할 점
-3. 유사한 과거 사례가 있다면 어떻게 되었는지
-4. 투자 여부에 대한 최종 의견
+데이터 분석가의 관점에서 다음 내용을 객관적으로 요약해주세요:
+1. 데이터상으로 나타나는 주요 리스크 요인 3가지
+2. 재무 및 지표 측면에서 주의 깊게 살펴봐야 할 수치
+3. 과거 유사한 지표 패턴을 보였던 사례의 통계적 추이
 
-감정적이고 공감하는 톤으로 작성해주세요.
+전문적이고 객관적인 톤으로 작성해주세요.
 """
         
         ai_analysis = generate_ai_response(ai_prompt, model="gpt-4")
@@ -1197,18 +1196,18 @@ def get_detailed_risk_report(symbol: str):
 
 
 # ============================================================
-# Company Health Score (회사 건강도 점수)
+# Company Analysis Score (회사 데이터 분석 점수)
 # ============================================================
 
-from risk_analyzer import calculate_health_score
+from risk_analyzer import calculate_analysis_score
 
 @app.get("/api/health/{symbol}")
-def get_company_health_score(symbol: str):
+def get_company_analysis_score(symbol: str):
     """
-    회사 건강도 점수 조회 (0-100)
+    회사 데이터 분석 점수 조회 (0-100)
     재무제표를 단일 점수와 캐릭터로 시각화
     """
-    result = calculate_health_score(symbol)
+    result = calculate_analysis_score(symbol)
     
     if not result.get("success"):
         return {"status": "error", "message": result.get("error", "분석 실패")}
@@ -2068,84 +2067,50 @@ def get_calendar_events():
     try:
         events = []
 
-        # 1. IPO 일정 (기존 함수 활용)
+        # 1. IPO 일정
         try:
             from korea_data import get_ipo_data
+            import datetime
             ipo_data = get_ipo_data()
+            current_year = datetime.datetime.now().year
+            
             if ipo_data:
                 for ipo in (ipo_data if isinstance(ipo_data, list) else []):
+                    # 날짜 정제 로직 (Ex: "2025.12.02~12.03" -> "2025-12-02")
+                    raw_date = ipo.get("date", "")
+                    if "~" in raw_date:
+                        raw_date = raw_date.split("~")[0].strip()
+                        
+                    parts = raw_date.split('.')
+                    if len(parts) == 3:
+                        formatted_date = f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
+                    elif len(parts) == 2:
+                        formatted_date = f"{current_year}-{parts[0].zfill(2)}-{parts[1].zfill(2)}"
+                    else:
+                        formatted_date = raw_date.replace(".", "-")
+
+                    # 종목 코드가 비어있는 경우 대응
+                    code = ipo.get("code", "")
+                    if not code:
+                        code = "IPO"
+
                     events.append({
-                        "symbol": ipo.get("code", ""),
+                        "symbol": code,
                         "name": ipo.get("name", ""),
                         "type": "ipo",
-                        "date": ipo.get("date", ""),
-                        "detail": ipo.get("market", "")
+                        "date": formatted_date,
+                        "detail": "공모 청약"
                     })
         except Exception as e:
             print(f"IPO calendar error: {e}")
 
-        # 2. 주요 종목 배당 일정 (컬링)
-        major_dividend_stocks = [
-            {"symbol": "005930", "name": "삼성전자"},
-            {"symbol": "000660", "name": "SK하이닉스"},
-            {"symbol": "035420", "name": "NAVER"},
-            {"symbol": "051910", "name": "LG화학"},
-            {"symbol": "006400", "name": "삼성SDI"},
-            {"symbol": "105560", "name": "KB금융"},
-            {"symbol": "055550", "name": "신한지주"},
-            {"symbol": "086790", "name": "하나금융지주"},
-        ]
-
-        # 간단한 배당 일정 (분기배당 기업은 3/6/9/12월)
-        from datetime import datetime
-        now = datetime.now()
-        year = now.year
-
-        for stock in major_dividend_stocks:
-            # 대부분 결산배당은 12월, 중간배당은 6월
-            events.append({
-                "symbol": stock["symbol"],
-                "name": stock["name"],
-                "type": "dividend",
-                "date": f"{year}-12-28",
-                "detail": "연말 결산배당 (예정)"
-            })
-            # 삼성전자, 금융주는 분기배당
-            if stock["symbol"] in ["005930", "105560", "055550", "086790"]:
-                for month in ["03", "06", "09"]:
-                    events.append({
-                        "symbol": stock["symbol"],
-                        "name": stock["name"],
-                        "type": "dividend",
-                        "date": f"{year}-{month}-28",
-                        "detail": f"{month}월 분기배당 (예정)"
-                    })
-
-        # 3. 실적 발표 일정 (주요 기업)
-        # 한국 기업 실적 시즌: 1월(4Q), 4월(1Q), 7월(2Q), 10월(3Q)
-        earnings_months = {
-            "01": "4분기", "04": "1분기", "07": "2분기", "10": "3분기"
-        }
-
-        major_earnings = [
-            {"symbol": "005930", "name": "삼성전자", "day": "07"},
-            {"symbol": "000660", "name": "SK하이닉스", "day": "25"},
-            {"symbol": "035420", "name": "NAVER", "day": "10"},
-            {"symbol": "035720", "name": "카카오", "day": "08"},
-            {"symbol": "373220", "name": "LG에너지솔루션", "day": "27"},
-            {"symbol": "051910", "name": "LG화학", "day": "26"},
-            {"symbol": "068270", "name": "셀트리온", "day": "12"},
-        ]
-
-        for month, quarter in earnings_months.items():
-            for stock in major_earnings:
-                events.append({
-                    "symbol": stock["symbol"],
-                    "name": stock["name"],
-                    "type": "earnings",
-                    "date": f"{year}-{month}-{stock['day']}",
-                    "detail": f"{quarter} 실적 발표 (예정)"
-                })
+        # 2 & 3. 실적 & 배당 일정 (실제 데이터 연동)
+        try:
+            from stock_data import get_real_stock_events
+            real_events = get_real_stock_events()
+            events.extend(real_events)
+        except Exception as e:
+            print(f"Real stock events error: {e}")
 
         return {"status": "success", "data": events}
 

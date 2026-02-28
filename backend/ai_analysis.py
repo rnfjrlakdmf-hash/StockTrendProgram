@@ -105,9 +105,8 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         safe_financials = str(raw_fin)
 
-    # 프롬프트 구성 - 간결하고 가독성 높은 분석
     prompt = f"""
-    You are a professional investment analyst. Provide a CONCISE, READABLE investment analysis.
+    You are a professional financial data analyst. Provide a CONCISE, READABLE data summary.
     
     Stock: {stock_data.get('symbol')} - {stock_data.get('name')}
     Price: {stock_data.get('price')} {stock_data.get('currency')}
@@ -118,38 +117,38 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     {json.dumps([f"[{n.get('press', n.get('publisher', 'N/A'))}] {n['title']}" for n in stock_data.get('news', [])[:5]], ensure_ascii=False)}
 
     CRITICAL: Keep Korean text CONCISE and SCANNABLE. Use bullet points!
+    NEVER provide direct buy/sell recommendations or specific price targets.
 
     Required Analysis (JSON format):
     
-    1. **Scores** (0-100):
-       - Overall score
-       - Supply/Demand (Technical)
-       - Financials (Fundamental)
-       - News Sentiment
+    1. **Data Scores** (0-100):
+       - Overall analysis score
+       - Supply/Demand Trend Intensity
+       - Financial Stability/Strength
+       - News Sentiment Factor
     
-    2. **Investment Case** (Korean - MAX 4 bullet points):
+    2. **Key Context** (Korean - MAX 4 bullet points):
        Format as:
-       ✅ [핵심 강점 1] (구체적 근거)
-       ✅ [핵심 강점 2] (수치 포함)
-       ⚠️ [주요 리스크] (명확하게)
-       💡 [투자 전략] (타이밍)
+       📊 [데이터 포인트 1] (객관적 사실)
+       📊 [데이터 포인트 2] (수치 포함)
+       ⚠️ [유의 사항] (리스크 요인)
+       📝 [시장 관찰] (데이터 흐름 요약)
        
        Example:
-       ✅ 시장 지배력: 반도체 점유율 1위 (45%)
-       ✅ 재무 건전성: PER 12배, 업계 평균 15배 대비 저평가
-       ⚠️ 주요 리스크: 메모리 가격 하락 가능성
-       💡  진입 타이밍: 현재가 대비 -5% 조정 시 분할 매수
+       📊 시장 지배력: 반도체 점유율 1위 (45%) 확인
+       📊 재무 지표: PER 12배로 업계 평균(15배) 대비 수치적 차이 존재
+       ⚠️ 유의 사항: 원자재 가격 변동에 따른 수익성 영향 가능성
+       📝 시장 관찰: 외국인 매수세 지속 여부가 지표에 영향
     
-    3. **Trading Strategy**:
-       - target: 목표가 (number)
-       - stop_loss: 손절가 (number)
-       - win_rate: 승률 % (number)
-       - entry_timing: "간단한 진입 타이밍 설명" (Korean, 1 sentence)
+    3. **Data Indicators**:
+       - volatility: 변동성 수준 (number)
+       - trend_strength: 추세 강도 % (number)
+       - observation_point: "주요 데이터 관찰 포인트" (Korean, 1 sentence)
     
-    4. **3-Line Analysis** (Korean - each 1 sentence max):
-       - supply: 수급 분석
-       - momentum: 모멘텀 분석
-       - risk: 핵심 리스크
+    4. **3-Line Data Summary** (Korean - each 1 sentence max):
+       - supply: 수급 데이터 요약
+       - momentum: 추세 흐름 요약
+       - risk: 주요 변량/리스크 데이터
     
     5. **Translate Top 3 News** (Korean title + 1-line summary)
     
@@ -164,12 +163,11 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
             "financials": <0-100>,
             "news": <0-100>
         }},
-        "analysis_summary": "✅ [강점1]\\n✅ [강점2]\\n⚠️ [리스크]\\n💡 [전략]",
+        "analysis_summary": "📊 [포인트1]\\n📊 [포인트2]\\n⚠️ [유의사항]\\n📝 [요약]",
         "strategy": {{
-            "target": <number>,
-            "stop_loss": <number>,
-            "win_rate": <number>,
-            "entry_timing": "<Korean 1 sentence>"
+            "volatility": <number>,
+            "trend_strength": <number>,
+            "observation_point": "<Korean 1 sentence>"
         }},
         "rationale": {{
             "supply": "<Korean 1 sentence>",
@@ -341,11 +339,11 @@ def compare_stocks(stock1_data: Dict[str, Any], stock2_data: Dict[str, Any]) -> 
 
 def analyze_portfolio(allocation: list) -> str:
     """
-    포트폴리오 구성(종목 및 비중)을 받아 AI 닥터 리포트(문자열)를 생성합니다.
+    포트폴리오 구성(종목 및 비중)을 받아 AI 분석 리포트(문자열)를 생성합니다.
     allocation example: [{"symbol": "AAPL", "weight": 40}, ...]
     """
     if not API_KEY:
-        return "API 키가 없어 AI 포트폴리오 진단이 불가능합니다."
+        return "API 키가 없어 AI 포트폴리오 분석이 불가능합니다."
 
     model = get_text_model() # 텍스트 모델 사용
     
@@ -364,7 +362,7 @@ def analyze_portfolio(allocation: list) -> str:
     3. Suggest ONE improvement or compliment in Korean.
     
     Output Format:
-    Write a 3-sentence 'Doctor's Note' in Korean. Be professional but witty.
+    Write a 3-sentence 'Analyst Note' in Korean. Be professional and objective.
     """
     
     try:
@@ -781,20 +779,20 @@ def analyze_chart_patterns(symbol: str) -> Dict[str, Any]:
     model = get_json_model()
     
     prompt = f"""
-    Analyze the technical chart patterns for {symbol} based on recent price action trends (Conceptually).
+    Analyze the technical chart data for {symbol} based on recent price action trends (Conceptually).
     Recent 20 days closing prices: {price_str}
 
     Instructions:
     1. Identify the dominant 'Chart Pattern' (e.g., Double Bottom, Head & Shoulders, Bull Flag, Uptrend). Please provide the pattern name in Korean (e.g., "이중 바닥형", "상승 깃발형").
-    2. Determine key 'Support' and 'Resistance' levels (Approximation).
-    3. Give a 'Trading Signal' (Buy / Sell / Hold).
-    4. Provide a 'Confidence Score' (0-100).
-    5. Write a short 'Technical Analysis' in Korean.
+    2. Determine key 'Price Concentration Zones' (Support and Resistance Approximation).
+    3. Identify the 'Trend Category' (Rising Consensus / Declining Consensus / Side Trend).
+    4. Provide a 'Pattern Consistency Score' (0-100).
+    5. Write a short 'Technical Data Summary' in Korean.
 
     Response Format (JSON):
     {{
         "pattern": "상승 깃발형",
-        "signal": "Buy",
+        "signal": "Rising Consensus",
         "confidence": 85,
         "support": 150.5,
         "resistance": 175.0,
@@ -1120,8 +1118,8 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
     model = get_json_model()
     
     prompt = f"""
-    You are a 'Financial Auditor'.
-    Analyze the delisting risk (Financial Health) of {symbol} based on:
+    You are a 'Technical Financial Analyst'.
+    Analyze the financial stability and delisting risk metrics of {symbol} based on:
     {financial_summary}
     
     Instructions:
@@ -1131,7 +1129,7 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
        - 51-80: High Risk (Warning)
        - 81-100: Critical (Delisting Imminent)
     2. Determine the 'Risk Level' (Safe / Caution / Danger / Critical).
-    3. Provide a 'Audit Report' summary in Korean, explaining WHY (e.g., "3년 연속 적자", "부채비율 500% 초과").
+    3. Provide a 'Data Analysis Report' summary in Korean, explaining WHY (e.g., "3년 연속 적자", "부채비율 500% 초과").
     
     Response Format (JSON):
     {{
@@ -1150,7 +1148,7 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
         return None
 
 # ==========================================
-# [New] AI 1분 브리핑 (Smart Signal)
+# [New] AI 1분 브리핑 (Stock Insight)
 # ==========================================
 
 def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
@@ -1229,7 +1227,7 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
     """
     
     prompt = f"""
-    당신은 1초 만에 핵심만 짚어주는 월스트리트 출신 AI 트레이더입니다.
+    당신은 객관적 지표를 신속하게 요약해주는 'AI 데이터 분석 비서'입니다.
     투자자가 화면을 볼 때 위쪽(요약문)과 아래쪽(핵심포인트)이 완전히 똑같은 내용으로 중복 표기되지 않게 **명확히 분리해서** 작성해주세요.
 
     [작성 규칙]
@@ -1274,21 +1272,21 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
 # ==========================================
 
 from portfolio_analysis import (
-    analyze_portfolio_nutrition,
+    analyze_portfolio_composition,
     get_dividend_calendar,
     analyze_portfolio_factors
 )
 
-def diagnose_portfolio_health(portfolio_items: list[str]) -> Dict[str, Any]:
+def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     """
-    사용자의 보유 종목 리스트를 받아 포트폴리오 건강 상태를 진단합니다.
+    사용자의 보유 종목 리스트를 받아 포트폴리오 자산 배분 상태를 분석합니다.
     (예: "삼성전자, TSLA, NVDA")
     """
     if not API_KEY:
         return {
             "score": 60,
-            "diagnosis": "API 키 미설정 (검진 불가)",
-            "prescription": "정밀 진단을 위해 API 키를 설정해주세요.",
+            "analysis": "API 키 미설정 (분석 불가)",
+            "report": "정밀 분석을 위해 API 키를 설정해주세요.",
             "details": {
                 "sector_risk": "Unknown",
                 "diversification": "Unknown"
@@ -1301,44 +1299,44 @@ def diagnose_portfolio_health(portfolio_items: list[str]) -> Dict[str, Any]:
         
     portfolio_str = ", ".join(portfolio_items)
     
-    # 1. Run Data Analysis (Nutrition, Dividend, Factors)
+    # 1. Run Data Analysis (Composition, Dividend, Factors)
     try:
-        nutrition_data = analyze_portfolio_nutrition(portfolio_items)
+        composition_data = analyze_portfolio_composition(portfolio_items)
         calendar_data = get_dividend_calendar(portfolio_items)
         factor_data = analyze_portfolio_factors(portfolio_items)
     except Exception as e:
         print(f"Portfolio Data Analysis Error: {e}")
-        nutrition_data = {}
+        composition_data = {}
         calendar_data = []
         factor_data = {}
 
     # Prepare Context for AI
-    nutrition_summary = f"Nutrient Breakdown: {nutrition_data.get('nutrition', [])}"
+    composition_summary = f"Asset Composition Breakdown: {composition_data.get('composition', [])}"
     factor_summary = f"Factor Scores (0-100): {factor_data}"
     
     model = get_json_model()
     
     prompt = f"""
-    You are a 'Stock Portfolio Doctor' (Account Nutritionist).
-    Patient's Portfolio: [{portfolio_str}]
+    You are a 'Data Allocation Analyst'.
+    Portfolio: [{portfolio_str}]
     
-    Clinical Data:
-    1. Nutrition (Sector Balance): {nutrition_summary}
-    2. Vital Signs (Factors): {factor_summary}
+    Data:
+    1. Sector Distribution: {nutrition_summary}
+    2. Factor Metrics: {factor_summary}
     
     Instructions:
-    1. Give a 'Health Score' (0-100).
-    2. Diagnose the portfolio's condition (e.g., "Tech Overdose", "Anemic Defense").
-    3. Write a 'Prescription' (Actionable advice) in **Korean**.
+    1. Give a 'Balance Score' (0-100).
+    2. Summarize the portfolio's allocation style (e.g., "Tech High Concentration", "Value/Balanced").
+    3. Write an 'Analysis Report' (Actionable data summary) in **Korean**.
     
     Response Format (JSON) - MUST BE IN KOREAN:
     {{
         "score": 75,
-        "diagnosis": "기술주 과다 복용 (편식)",
-        "prescription": "단백질(금융/산업재)과 비타민(헬스케어) 종목을 추가하여 영양 균형을 맞추세요. 현재 변동성이 너무 높습니다.",
+        "analysis": "기술 섹터 집중형 자산 구성",
+        "report": "현재 기술주 비중이 높게 나타납니다. 데이터 분석 결과, 다른 섹터로의 자산 배분 조정을 통한 분산 효과 증대를 고려해 볼 수 있는 데이터입니다.",
         "details": {{
-            "sector_risk": "High (Tech Concentrated)",
-            "diversification": "Low"
+            "sector_risk": "Concentration noted",
+            "diversification": "Below average based on asset mix"
         }}
     }}
     """
@@ -1350,16 +1348,16 @@ def diagnose_portfolio_health(portfolio_items: list[str]) -> Dict[str, Any]:
         result = json.loads(response.text)
         
         # Inject the calculated data into the result for the frontend
-        result["nutrition"] = nutrition_data
+        result["composition"] = composition_data
         result["calendar"] = calendar_data
         result["factors"] = factor_data
         
         return result
     except Exception as e:
-        print(f"Portfolio Diagnosis Error: {e}")
+        print(f"Portfolio Analysis Error: {e}")
         return {
             "score": 0,
-            "diagnosis": "진단 실패",
-            "prescription": "오류가 발생했습니다.",
+            "analysis": "분석 실패",
+            "report": "오류가 발생했습니다.",
             "details": {}
         }

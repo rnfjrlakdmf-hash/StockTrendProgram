@@ -192,7 +192,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
                     ) : (
                         <>
                             <FileText className="w-4 h-4" />
-                            정밀 진단 리포트 보기
+                            정밀 분석 리포트 보기
                         </>
                     )}
                 </button>
@@ -206,7 +206,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
                         <div className="flex items-center justify-between p-6 border-b border-white/10">
                             <div className="flex items-center gap-3">
                                 <Shield className="w-6 h-6 text-blue-400" />
-                                <h2 className="text-2xl font-bold text-white">정밀 진단 리포트</h2>
+                                <h2 className="text-2xl font-bold text-white">정밀 분석 리포트</h2>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}

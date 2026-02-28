@@ -134,7 +134,7 @@ export default function RiskPage() {
 
                     {/* Right: Portfolio Health Gauge */}
                     <div className="rounded-3xl bg-black/40 border border-white/20 p-6 flex flex-col items-center justify-center text-center shadow-lg">
-                        <h3 className="text-xl font-bold mb-2 text-white">포트폴리오 안전 진단</h3>
+                        <h3 className="text-xl font-bold mb-2 text-white">포트폴리오 분석 리포트</h3>
                         <p className="text-sm text-gray-300 mb-8 font-medium">변동성과 기술적 지표(RSI)를 기반으로 분석</p>
 
                         <div className="scale-125 mb-8">

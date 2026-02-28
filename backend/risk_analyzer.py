@@ -57,7 +57,7 @@ def analyze_stock_risk(symbol: str) -> Dict:
             "risk_score": min(risk_score, 100),  # 최대 100점
             "risk_level": risk_level,
             "risk_factors": risk_factors,
-            "recommendation": get_recommendation(risk_level),
+            "analysis_observation": get_analysis_observation(risk_level),
             "analyzed_at": datetime.now().isoformat()
         }
         
@@ -211,15 +211,15 @@ def get_risk_level(score: int) -> str:
         return "안전"
 
 
-def get_recommendation(risk_level: str) -> str:
-    """위험도 레벨별 추천 메시지"""
-    recommendations = {
-        "안전": "✅ 재무적으로 안정적인 기업입니다.",
-        "주의": "⚠️ 일부 위험 요인이 있으니 신중한 투자가 필요합니다.",
-        "위험": "🚨 높은 위험도! 투자 전 충분한 검토가 필요합니다.",
-        "매우 위험": "🔴 폭발 위험! 상장폐지 또는 대규모 손실 가능성이 있습니다."
+def get_analysis_observation(risk_level: str) -> str:
+    """위험도 레벨별 분석 의견"""
+    observations = {
+        "안전": "✅ 데이터 지표상 안정적인 범주에 속해 있습니다.",
+        "주의": "⚠️ 일부 지표에서 변동성 유의가 필요한 데이터가 관찰됩니다.",
+        "위험": "🚨 데이터 지표 위험! 객관적 수치에 대한 심층적 검토가 권장됩니다.",
+        "매우 위험": "🔴 경고 지표 감지! 재무 건전성 지표가 극히 취약한 상태입니다."
     }
-    return recommendations.get(risk_level, "")
+    return observations.get(risk_level, "")
 
 
 def get_risk_emoji(risk_level: str) -> str:
@@ -296,7 +296,7 @@ def generate_detailed_report(symbol: str, risk_analysis: Dict, news_data: Option
 ## 종합 위험도
 - **위험 점수**: {risk_analysis['risk_score']}/100
 - **위험 등급**: {get_risk_emoji(risk_analysis['risk_level'])} {risk_analysis['risk_level']}
-- **추천**: {risk_analysis['recommendation']}
+- **분석 의견**: {risk_analysis['analysis_observation']}
 
 ## 위험 요인 상세
 
@@ -333,27 +333,69 @@ def generate_detailed_report(symbol: str, risk_analysis: Dict, news_data: Option
 
 
 # ============================================================
-# Company Health Score (회사 건강도 점수)
+# Company Data Analysis Score (회사 데이터 분석 점수)
 # ============================================================
 
-def calculate_health_score(symbol: str) -> Dict:
+def get_korean_financial_adapter(symbol: str) -> Optional[Dict]:
     """
-    회사 건강도 점수 계산 (0-100)
-    재무제표를 단일 점수와 캐릭터로 시각화
-    
-    Args:
-        symbol: 종목 코드
-    
-    Returns:
-        건강도 점수 결과
+    네이버에서 크롤링한 데이터를 yfinance info 스타일로 변환
     """
     try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.info
+        from korea_data import get_detailed_financials
+        detailed = get_detailed_financials(symbol)
+        if not detailed.get("success") or not detailed.get("summary"):
+            return None
         
+        summary = detailed.get("summary", {})
+        full_data = detailed.get("full_data", {})
+        
+        # yfinance info 스타일로 매핑
+        adapter_info = {
+            "longName": symbol, # 실제 이름은 호출부에서 처리
+            "profitMargins": (summary.get("operating_margin", 0) / 100) if summary.get("operating_margin") else 0,
+            "returnOnEquity": (summary.get("roe", 0) / 100) if summary.get("roe") else 0,
+            "debtToEquity": summary.get("debt_ratio", 0),
+            "currentRatio": (summary.get("quick_ratio", 100) / 100), # 당좌비율로 대체
+            "bookValue": summary.get("bps", 0),
+            "marketCap": summary.get("market_cap", 0) * 100_000_000, # 억원 단위 변환
+            "trailingPE": summary.get("per"),
+            "priceToBook": summary.get("pbr"),
+            "is_korean_adapter": True,
+            "full_data": full_data,
+            "summary": summary # 평가 로직에서 사용
+        }
+        
+        return adapter_info
+    except:
+        return None
+
+def calculate_analysis_score(symbol: str) -> Dict:
+    """
+    회사 데이터 분석 점수 계산 (0-100)
+    한국 종목의 경우 네이버 크롤링 데이터를 우선 활용
+    """
+    try:
+        is_korean = re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ'))
+        info = None
+        ticker = None
+        
+        # 1. 한국 종목이면 네이버 데이터 시도
+        if is_korean:
+            info = get_korean_financial_adapter(symbol)
+            if info:
+                # 한국 종목 이름 가져오기
+                from korea_data import get_korean_name
+                info["longName"] = get_korean_name(symbol) or symbol
+        
+        # 2. 데이터가 없거나 외국 종목이면 yfinance 시도
+        if not info:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            if not info or not info.get("marketCap"):
+                return {"success": False, "error": "재무 데이터를 찾을 수 없습니다."}
+
         score = 0
         details = {}
-        breakdown = {}
         
         # 1. 수익성 평가 (30점)
         profitability_result = evaluate_profitability_score(info)
@@ -366,39 +408,46 @@ def calculate_health_score(symbol: str) -> Dict:
         details["stability"] = stability_result
         
         # 3. 성장성 평가 (20점)
-        growth_result = evaluate_growth_score(ticker)
+        # 한국 종목 어댑터인 경우 info 내의 full_data 사용
+        growth_result = evaluate_growth_score(info if info.get("is_korean_adapter") else ticker)
         score += growth_result["score"]
         details["growth"] = growth_result
         
         # 4. 현금흐름 평가 (20점)
-        cashflow_result = evaluate_cashflow_score(ticker)
+        cashflow_result = evaluate_cashflow_score(info if info.get("is_korean_adapter") else ticker)
         score += cashflow_result["score"]
         details["cashflow"] = cashflow_result
         
-        # 건강 등급 결정
-        health_grade = get_health_grade(score)
-        character = get_health_character(health_grade)
-        message = get_health_message(health_grade)
-        color = get_health_color(health_grade)
+        # 분석 등급 결정
+        analysis_grade = get_analysis_grade(score)
+        character = get_analysis_character(analysis_grade)
+        message = get_analysis_message(analysis_grade)
+        color = get_analysis_color(analysis_grade)
         
         return {
             "success": True,
             "symbol": symbol,
-            "company_name": info.get("longName", symbol),
+            "company_name": info.get("longName", info.get("shortName", symbol)),
             "score": round(score, 1),
-            "grade": health_grade,
+            "grade": analysis_grade,
             "character": character,
             "message": message,
             "color": color,
             "details": details,
-            "analyzed_at": datetime.now().isoformat()
+            "raw_data": info.get("full_data") if info.get("is_korean_adapter") else None, # [New] Pass raw metrics for table
+            "analyzed_at": datetime.now().isoformat(),
+            "disclaimer": "본 분석 결과는 객관적 재무 지표를 알고리즘에 따라 산출한 수치이며, 특정 종목에 대한 투자 권유나 추천이 아닙니다."
         }
         
     except Exception as e:
+        import traceback
+        print(f"Analysis Score Error: {traceback.format_exc()}")
         return {
             "success": False,
-            "error": f"건강도 분석 중 오류 발생: {str(e)}"
+            "error": f"데이터 분석 중 오류 발생: {str(e)}"
         }
+
+import re # Need re for symbol check
 
 
 def evaluate_profitability_score(info: Dict) -> Dict:
@@ -499,177 +548,153 @@ def evaluate_stability_score(info: Dict) -> Dict:
     }
 
 
-def evaluate_growth_score(ticker) -> Dict:
+def evaluate_growth_score(ticker_or_info) -> Dict:
     """성장성 평가 (20점)"""
     score = 0
     breakdown = {}
     
     try:
-        # 재무제표 가져오기
-        financials = ticker.financials
-        
+        # 어댑터 데이터 (한국 종목) 처리
+        if isinstance(ticker_or_info, dict) and ticker_or_info.get("is_korean_adapter"):
+            full_data = ticker_or_info.get("full_data", {})
+            if "revenue" in full_data and len(full_data["revenue"]["values"]) >= 2:
+                revs = [v for v in full_data["revenue"]["values"] if v is not None]
+                if len(revs) >= 2:
+                    revenue_growth = ((revs[-1] - revs[-2]) / abs(revs[-2])) * 100 if revs[-2] != 0 else 0
+                    
+                    if revenue_growth >= 20: revenue_score = 10
+                    elif revenue_growth >= 10: revenue_score = 7
+                    elif revenue_growth >= 0: revenue_score = 4
+                    else: revenue_score = 0
+                    
+                    score += revenue_score
+                    breakdown["revenue_growth"] = {"value": round(revenue_growth, 2), "score": revenue_score, "max": 10}
+
+            if "operating_income" in full_data and len(full_data["operating_income"]["values"]) >= 2:
+                incs = [v for v in full_data["operating_income"]["values"] if v is not None]
+                if len(incs) >= 2:
+                    income_growth = ((incs[-1] - incs[-2]) / abs(incs[-2])) * 100 if incs[-2] != 0 else 0
+                    
+                    if income_growth >= 20: income_score = 10
+                    elif income_growth >= 10: income_score = 7
+                    elif income_growth >= 0: income_score = 4
+                    else: income_score = 0
+                    
+                    score += income_score
+                    breakdown["income_growth"] = {"value": round(income_growth, 2), "score": income_score, "max": 10}
+            
+            return {"score": score, "max": 20, "breakdown": breakdown, "label": "성장성"}
+
+        # yfinance 스타일 처리
+        financials = ticker_or_info.financials
         if not financials.empty and len(financials.columns) >= 2:
-            # 매출 성장률 (10점)
             if "Total Revenue" in financials.index:
                 revenue_current = financials.loc["Total Revenue"].iloc[0]
                 revenue_previous = financials.loc["Total Revenue"].iloc[1]
-                
                 if revenue_previous != 0:
                     revenue_growth = ((revenue_current - revenue_previous) / abs(revenue_previous)) * 100
-                    
-                    if revenue_growth >= 20:
-                        revenue_score = 10
-                    elif revenue_growth >= 10:
-                        revenue_score = 7
-                    elif revenue_growth >= 0:
-                        revenue_score = 4
-                    else:
-                        revenue_score = 0
-                    
-                    score += revenue_score
-                    breakdown["revenue_growth"] = {
-                        "value": round(revenue_growth, 2),
-                        "score": revenue_score,
-                        "max": 10
-                    }
+                    rev_score = 10 if revenue_growth >= 20 else 7 if revenue_growth >= 10 else 4 if revenue_growth >= 0 else 0
+                    score += rev_score
+                    breakdown["revenue_growth"] = {"value": round(revenue_growth, 2), "score": rev_score, "max": 10}
             
-            # 영업이익 성장률 (10점)
             if "Operating Income" in financials.index:
                 income_current = financials.loc["Operating Income"].iloc[0]
                 income_previous = financials.loc["Operating Income"].iloc[1]
-                
                 if income_previous != 0:
                     income_growth = ((income_current - income_previous) / abs(income_previous)) * 100
-                    
-                    if income_growth >= 20:
-                        income_score = 10
-                    elif income_growth >= 10:
-                        income_score = 7
-                    elif income_growth >= 0:
-                        income_score = 4
-                    else:
-                        income_score = 0
-                    
-                    score += income_score
-                    breakdown["income_growth"] = {
-                        "value": round(income_growth, 2),
-                        "score": income_score,
-                        "max": 10
-                    }
+                    inc_score = 10 if income_growth >= 20 else 7 if income_growth >= 10 else 4 if income_growth >= 0 else 0
+                    score += inc_score
+                    breakdown["income_growth"] = {"value": round(income_growth, 2), "score": inc_score, "max": 10}
     except:
-        pass  # 데이터 없으면 0점
+        pass
     
-    return {
-        "score": score,
-        "max": 20,
-        "breakdown": breakdown,
-        "label": "성장성"
-    }
+    return {"score": score, "max": 20, "breakdown": breakdown, "label": "성장성"}
 
 
-def evaluate_cashflow_score(ticker) -> Dict:
+def evaluate_cashflow_score(ticker_or_info) -> Dict:
     """현금흐름 평가 (20점)"""
     score = 0
     breakdown = {}
     
     try:
-        cashflow = ticker.cashflow
-        
+        # 어댑터 데이터 (한국 종목) 처리 - 네이버는 현금흐름표가 별도 탭에 있어 cop_analysis에는 없을 수 있음
+        # 하지만 영업이익과 당기순이익이 양수면 가산점 부여 (간이 방식)
+        if isinstance(ticker_or_info, dict) and ticker_or_info.get("is_korean_adapter"):
+            summary = ticker_or_info.get("summary", {})
+            if summary.get("operating_income", 0) > 0:
+                score += 10
+                breakdown["operating_cashflow"] = {"value": "플러스(추정)", "score": 10, "max": 10}
+            if summary.get("net_income", 0) > 0:
+                score += 10
+                breakdown["free_cashflow"] = {"value": "플러스(추정)", "score": 10, "max": 10}
+            return {"score": score, "max": 20, "breakdown": breakdown, "label": "현금흐름"}
+
+        # yfinance 스타일 처리
+        cashflow = ticker_or_info.cashflow
         if not cashflow.empty:
-            # 영업활동 현금흐름 (10점)
             if "Operating Cash Flow" in cashflow.index:
                 operating_cf = cashflow.loc["Operating Cash Flow"].iloc[0]
-                
-                if operating_cf > 0:
-                    cf_score = 10
-                    breakdown["operating_cashflow"] = {
-                        "value": "플러스",
-                        "score": cf_score,
-                        "max": 10
-                    }
-                    score += cf_score
-                else:
-                    breakdown["operating_cashflow"] = {
-                        "value": "마이너스",
-                        "score": 0,
-                        "max": 10
-                    }
+                cf_score = 10 if operating_cf > 0 else 0
+                score += cf_score
+                breakdown["operating_cashflow"] = {"value": "플러스" if operating_cf > 0 else "마이너스", "score": cf_score, "max": 10}
             
-            # 잉여현금흐름 (10점)
             if "Free Cash Flow" in cashflow.index:
                 free_cf = cashflow.loc["Free Cash Flow"].iloc[0]
-                
-                if free_cf > 0:
-                    fcf_score = 10
-                    breakdown["free_cashflow"] = {
-                        "value": "플러스",
-                        "score": fcf_score,
-                        "max": 10
-                    }
-                    score += fcf_score
-                else:
-                    breakdown["free_cashflow"] = {
-                        "value": "마이너스",
-                        "score": 0,
-                        "max": 10
-                    }
+                fcf_score = 10 if free_cf > 0 else 0
+                score += fcf_score
+                breakdown["free_cashflow"] = {"value": "플러스" if free_cf > 0 else "마이너스", "score": fcf_score, "max": 10}
     except:
-        pass  # 데이터 없으면 0점
+        pass
     
-    return {
-        "score": score,
-        "max": 20,
-        "breakdown": breakdown,
-        "label": "현금흐름"
-    }
+    return {"score": score, "max": 20, "breakdown": breakdown, "label": "현금흐름"}
 
 
-def get_health_grade(score: float) -> str:
-    """점수를 등급으로 변환"""
+def get_analysis_grade(score: float) -> str:
+    """점수를 등급으로 변환 (중립적 명칭으로 변경)"""
     if score >= 90:
-        return "슈퍼 튼튼"
+        return "종합 지표 매우 높음"
     elif score >= 70:
-        return "건강함"
+        return "종합 지표 높음"
     elif score >= 50:
-        return "보통"
+        return "종합 지표 보통"
     elif score >= 30:
-        return "비실비실"
+        return "종합 지표 낮음"
     else:
-        return "위험"
+        return "종합 지표 매우 낮음"
 
 
-def get_health_character(grade: str) -> str:
+def get_analysis_character(grade: str) -> str:
     """등급별 캐릭터 이모지"""
     characters = {
-        "슈퍼 튼튼": "💪",
-        "건강함": "😊",
-        "보통": "😐",
-        "비실비실": "🤒",
-        "위험": "💀"
+        "종합 지표 매우 높음": "📊",
+        "종합 지표 높음": "📈",
+        "종합 지표 보통": "📋",
+        "종합 지표 낮음": "📉",
+        "종합 지표 매우 낮음": "⚠️"
     }
     return characters.get(grade, "😐")
 
 
-def get_health_message(grade: str) -> str:
+def get_analysis_message(grade: str) -> str:
     """등급별 메시지"""
     messages = {
-        "슈퍼 튼튼": "이 회사는 돈도 잘 벌고 빚도 없어요! 아주 튼튼해요.",
-        "건강함": "건강한 회사예요. 안정적으로 수익을 내고 있어요.",
-        "보통": "그럭저럭 괜찮아요. 하지만 주의 깊게 지켜봐야 해요.",
-        "비실비실": "요즘 적자가 나서 몸이 안 좋아요. 조심하세요.",
-        "위험": "매우 위험해요! 투자하지 마세요."
+        "종합 지표 매우 높음": "주요 재무 지표(수익성, 안정성 등)가 종합적으로 매우 높게 나타납니다.",
+        "종합 지표 높음": "전반적인 재무 지표가 안정적이고 수익성이 양호한 수준입니다.",
+        "종합 지표 보통": "재무 지표가 평균적인 수준이며 특이 사항이 적습니다.",
+        "종합 지표 낮음": "일부 재무 지표(수익성 또는 부채 등)에서 주의가 필요한 수치가 확인됩니다.",
+        "종합 지표 매우 낮음": "전반적인 재무 지표가 낮게 산출되었으므로 상세 데이터를 확인하시기 바랍니다."
     }
     return messages.get(grade, "")
 
 
-def get_health_color(grade: str) -> str:
+def get_analysis_color(grade: str) -> str:
     """등급별 색상"""
     colors = {
-        "슈퍼 튼튼": "green",
-        "건강함": "blue",
-        "보통": "yellow",
-        "비실비실": "orange",
-        "위험": "red"
+        "종합 지표 매우 높음": "green",
+        "종합 지표 높음": "blue",
+        "종합 지표 보통": "yellow",
+        "종합 지표 낮음": "orange",
+        "종합 지표 매우 낮음": "red"
     }
     return colors.get(grade, "gray")
 

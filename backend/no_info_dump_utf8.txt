@@ -1,0 +1,350 @@
+﻿--- .no_info HTML for 227950 ---
+<table class="no_info" summary="二쇱슂 떆꽭(쟾씪醫낃, 떆怨좎媛, 嫄곕옒웾, 嫄곕옒湲)쓣 젣怨듯빀땲떎.">
+ <caption>
+  二쇱슂 떆꽭
+ </caption>
+ <colgroup>
+  <col/>
+  <col width="214"/>
+  <col width="157"/>
+ </colgroup>
+ <tr>
+  <td class="first">
+   <span class="sptxt sp_txt2">
+    쟾씪
+   </span>
+   <em>
+    <span class="blind">
+     601
+    </span>
+    <span class="no6">
+     6
+    </span>
+    <span class="no0">
+     0
+    </span>
+    <span class="no1">
+     1
+    </span>
+   </em>
+  </td>
+  <td>
+   <span class="sptxt sp_txt4">
+    怨좉
+   </span>
+   <em class="no_up">
+    <span class="blind">
+     755
+    </span>
+    <span class="no7">
+     7
+    </span>
+    <span class="no5">
+     5
+    </span>
+    <span class="no5">
+     5
+    </span>
+   </em>
+   <span class="sptxt sp_txt6">
+    (긽븳媛
+   </span>
+   <em class="no_cha">
+    <span class="blind">
+     781
+    </span>
+    <span class="no7">
+     7
+    </span>
+    <span class="no8">
+     8
+    </span>
+    <span class="no1">
+     1
+    </span>
+   </em>
+   <span class="sptxt sp_txt8">
+    )
+   </span>
+  </td>
+  <td>
+   <span class="sptxt sp_txt9">
+    嫄곕옒웾
+   </span>
+   <em>
+    <span class="blind">
+     37,230,521
+    </span>
+    <span class="no3">
+     3
+    </span>
+    <span class="no7">
+     7
+    </span>
+    <span class="shim">
+     ,
+    </span>
+    <span class="no2">
+     2
+    </span>
+    <span class="no3">
+     3
+    </span>
+    <span class="no0">
+     0
+    </span>
+    <span class="shim">
+     ,
+    </span>
+    <span class="no5">
+     5
+    </span>
+    <span class="no2">
+     2
+    </span>
+    <span class="no0">
+     0
+    </span>
+   </em>
+  </td>
+ </tr>
+ <tr>
+  <td class="first">
+   <span class="sptxt sp_txt3">
+    떆媛
+   </span>
+   <em class="no_up">
+    <span class="blind">
+     657
+    </span>
+    <span class="no6">
+     6
+    </span>
+    <span class="no5">
+     5
+    </span>
+    <span class="no7">
+     7
+    </span>
+   </em>
+  </td>
+  <td>
+   <span class="sptxt sp_txt5">
+    媛
+   </span>
+   <em class="no_down">
+    <span class="blind">
+     540
+    </span>
+    <span class="no5">
+     5
+    </span>
+    <span class="no4">
+     4
+    </span>
+    <span class="no0">
+     0
+    </span>
+   </em>
+   <span class="sptxt sp_txt7">
+    (븯븳媛
+   </span>
+   <em class="no_cha">
+    <span class="no4">
+     4
+    </span>
+    <span class="no2">
+     2
+    </span>
+    <span class="no1">
+     1
+    </span>
+   </em>
+   <span class="sptxt sp_txt8">
+    )
+   </span>
+  </td>
+  <td>
+   <span class="sptxt sp_txt10">
+    嫄곕옒湲
+   </span>
+   <em>
+    <span class="blind">
+     25,116
+    </span>
+    <span class="no2">
+     2
+    </span>
+    <span class="no5">
+     5
+    </span>
+    <span class="shim">
+     ,
+    </span>
+    <span class="no1">
+     1
+    </span>
+    <span class="no1">
+     1
+    </span>
+    <span class="no6">
+     6
+    </span>
+   </em>
+   <span class="sptxt sp_txt11">
+    諛깅쭔
+   </span>
+  </td>
+ </tr>
+</table>
+
+
+--- Children of .no_info ---
+[0] caption - class:None - text: 二쇱슂 떆꽭
+[1] colgroup - class:None - text: 
+[2] col - class:None - text: 
+[3] col - class:None - text: 
+[4] col - class:None - text: 
+[5] tr - class:None - text: 쟾씪
+
+601
+601
+
+
+
+怨좉
+
+755755
+
+(긽븳媛
+
+781781
+
+)
+
+
+嫄곕옒웾
+
+37,230,521
+37,230,520
+[6] td - class:['first'] - text: 쟾씪
+
+601
+601
+[7] span - class:['sptxt', 'sp_txt2'] - text: 쟾씪
+[8] em - class:None - text: 601
+601
+[9] span - class:['blind'] - text: 601
+[10] span - class:['no6'] - text: 6
+[11] span - class:['no0'] - text: 0
+[12] span - class:['no1'] - text: 1
+[13] td - class:None - text: 怨좉
+
+755755
+
+(긽븳媛
+
+781781
+
+)
+[14] span - class:['sptxt', 'sp_txt4'] - text: 怨좉
+[15] em - class:['no_up'] - text: 755755
+[16] span - class:['blind'] - text: 755
+[17] span - class:['no7'] - text: 7
+[18] span - class:['no5'] - text: 5
+[19] span - class:['no5'] - text: 5
+[20] span - class:['sptxt', 'sp_txt6'] - text: (긽븳媛
+[21] em - class:['no_cha'] - text: 781781
+[22] span - class:['blind'] - text: 781
+[23] span - class:['no7'] - text: 7
+[24] span - class:['no8'] - text: 8
+[25] span - class:['no1'] - text: 1
+[26] span - class:['sptxt', 'sp_txt8'] - text: )
+[27] td - class:None - text: 嫄곕옒웾
+
+37,230,521
+37,230,520
+[28] span - class:['sptxt', 'sp_txt9'] - text: 嫄곕옒웾
+[29] em - class:None - text: 37,230,521
+37,230,520
+[30] span - class:['blind'] - text: 37,230,521
+[31] span - class:['no3'] - text: 3
+[32] span - class:['no7'] - text: 7
+[33] span - class:['shim'] - text: ,
+[34] span - class:['no2'] - text: 2
+[35] span - class:['no3'] - text: 3
+[36] span - class:['no0'] - text: 0
+[37] span - class:['shim'] - text: ,
+[38] span - class:['no5'] - text: 5
+[39] span - class:['no2'] - text: 2
+[40] span - class:['no0'] - text: 0
+[41] tr - class:None - text: 떆媛
+
+657657
+
+
+
+媛
+
+540540
+
+(븯븳媛
+
+421
+
+)
+
+
+嫄곕옒湲
+
+25,116
+25,116
+
+諛깅쭔
+[42] td - class:['first'] - text: 떆媛
+
+657657
+[43] span - class:['sptxt', 'sp_txt3'] - text: 떆媛
+[44] em - class:['no_up'] - text: 657657
+[45] span - class:['blind'] - text: 657
+[46] span - class:['no6'] - text: 6
+[47] span - class:['no5'] - text: 5
+[48] span - class:['no7'] - text: 7
+[49] td - class:None - text: 媛
+
+540540
+
+(븯븳媛
+
+421
+
+)
+[50] span - class:['sptxt', 'sp_txt5'] - text: 媛
+[51] em - class:['no_down'] - text: 540540
+[52] span - class:['blind'] - text: 540
+[53] span - class:['no5'] - text: 5
+[54] span - class:['no4'] - text: 4
+[55] span - class:['no0'] - text: 0
+[56] span - class:['sptxt', 'sp_txt7'] - text: (븯븳媛
+[57] em - class:['no_cha'] - text: 421
+[58] span - class:['no4'] - text: 4
+[59] span - class:['no2'] - text: 2
+[60] span - class:['no1'] - text: 1
+[61] span - class:['sptxt', 'sp_txt8'] - text: )
+[62] td - class:None - text: 嫄곕옒湲
+
+25,116
+25,116
+
+諛깅쭔
+[63] span - class:['sptxt', 'sp_txt10'] - text: 嫄곕옒湲
+[64] em - class:None - text: 25,116
+25,116
+[65] span - class:['blind'] - text: 25,116
+[66] span - class:['no2'] - text: 2
+[67] span - class:['no5'] - text: 5
+[68] span - class:['shim'] - text: ,
+[69] span - class:['no1'] - text: 1
+[70] span - class:['no1'] - text: 1
+[71] span - class:['no6'] - text: 6
+[72] span - class:['sptxt', 'sp_txt11'] - text: 諛깅쭔

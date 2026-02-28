@@ -140,43 +140,57 @@ def generate_stock_summary(info, news_list):
         per = info.get('per', 'N/A')
         pbr = info.get('pbr', 'N/A')
         
-        # 1. Price Trend Analysis
-        trend_pro = "강한 모멘텀 유지" if change_val > 2 else "완만한 상승 추세" if change_val > 0 else "기간 조정 진행 중" if change_val > -2 else "하락 추세 전환 우려"
-        trend_easy = "불기둥이 솟았어요! 🔥" if change_val > 2 else "기분 좋은 상승세예요. 😊" if change_val > 0 else "잠시 숨 고르기 중이에요. ☕" if change_val > -2 else "파란불이 켜졌어요. 📉"
+        # 1. Price Trend Analysis (Neutralized)
+        trend_pro = f"최근 {change_str} 변동성 기록"
+        trend_easy = f"최근 가격이 {change_str} 정도 변화했어요."
 
-        # 2. Valuation Analysis
+        # Helper to parse metrics
+        def parse_val(v):
+            if isinstance(v, (int, float)): return v
+            if isinstance(v, str):
+                try: 
+                    cleaned = re.sub(r'[^0-9.]', '', v)
+                    return float(cleaned) if cleaned else None
+                except: return None
+            return None
+
+        per_val = parse_val(per)
+        pbr_val = parse_val(pbr)
+
+        # 2. Valuation Analysis (Neutralized)
         val_pro = ""
         val_easy = ""
         
-        if isinstance(pbr, (int, float)) and pbr < 0.8:
-            val_pro = f"PBR {pbr}배로 자산가치 대비 저평가 상태(저PBR주)"
-            val_easy = "지금 회사를 팔아도 주가보다 돈이 더 많이 남는 '바겐세일' 구간이에요! 🛒"
-        elif isinstance(per, (int, float)) and per > 50:
-            val_pro = f"PER {per}배로 고성장 기대감 반영(프리미엄 구간)"
-            val_easy = "인기가 많아서 몸값이 좀 비싸요. 미래에 돈을 엄청 잘 벌 거란 기대가 커요! ⭐"
-        elif isinstance(per, (int, float)) and per < 10:
-            val_pro = f"PER {per}배로 이익 대비 저평가(Value Stock)"
-            val_easy = "버는 돈은 많은데 주가는 싸네요. 가성비 좋은 '알짜배기' 상태입니다. 💎"
+        if pbr_val is not None and pbr_val < 0.8:
+            val_pro = f"PBR {pbr_val}배로 자산가치 대비 낮은 지표 기록"
+            val_easy = "회사가 가진 재산 가치보다 주가가 낮게 형성되어 있는 상태예요."
+        elif per_val is not None and per_val > 50:
+            val_pro = f"PER {per_val}배로 시장의 높은 성장 기대 지표 반영"
+            val_easy = "미래에 대한 기대감이 주가에 많이 반영되어 있는 지표를 보이고 있어요."
+        elif per_val is not None and per_val < 10:
+            val_pro = f"PER {per_val}배로 이익 규모 대비 낮은 지표 기록"
+            val_easy = "벌어들이는 이익에 비해 주가 지표가 낮게 나타나고 있어요."
         else:
-            val_pro = f"PER {per}배, PBR {pbr}배로 적정 밸류에이션 형성"
-            val_easy = "비싸지도 싸지도 않은, 딱 적당한 가격대로 보여요. 👌"
+            val_pro = f"PER {per}배, PBR {pbr}배 기록"
+            val_easy = "현재 시장 지표상 평이한 수준의 가격대를 보이고 있습니다."
 
-        # Construct Hybrid Summary
-        summary = f"📊 [전문가 분석]\n"
-        summary += f"현재가 {price:,}원으로 {trend_pro} ({change_str}).\n"
-        summary += f"밸류에이션: {val_pro}. "
+        # Construct Hybrid Summary (Neutralized)
+        summary = f"📊 [데이터 종합 분석]\n"
+        summary += f"현재 지표: {price:,}원 ({change_str}).\n"
+        summary += f"재무 지표 현황: {val_pro}. "
         
         if news_list and len(news_list) > 0:
-            summary += f"\n주요 이슈: '{news_list[0]['title']}' 등이 투자 심리에 영향."
+            summary += f"\n참고 뉴스: '{news_list[0]['title']}' 등이 시장 데이터에 포함됨."
             
-        summary += "\n\n💡 [쉬운 설명]\n"
-        summary += f"\"주식 초보자를 위해 쉽게 풀었어요!\"\n"
-        summary += f"1. {trend_easy} ({change_str})\n"
+        summary += "\n\n💡 [지표 쉽게 보기]\n"
+        summary += f"\"데이터가 복잡하신 분들을 위한 요약이에요.\"\n"
+        summary += f"1. {trend_easy}\n"
         summary += f"2. {val_easy}\n"
+        summary += "\n* 주의: 본 분석은 객관적 데이터에 기반한 요약이며 투자 권유가 아닙니다."
 
         return summary
     except Exception as e:
-        return f"{info.get('name')} 데이터 분석 중입니다. ({str(e)})"
+        return f"{info.get('name')} 데이터 분석 요약 중입니다."
 
 
 
@@ -278,15 +292,15 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     t_symbol = t_symbol.replace('.KQ', '.KS')
                     
                 # Parallel fetch for extras (Daily Prices & News)
-                # [OPTIMIZATION] Skip these when skip_ai=True for FAST mode
                 daily_data = []
                 news_data = []
 
                 if not skip_ai:
                     print(f"[DEBUG] Fetching full data (news + daily prices)")
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                         f_daily = executor.submit(get_naver_daily_prices, t_symbol)
                         f_news = executor.submit(korea_data.get_naver_news, t_symbol, naver_info.get('name', symbol))
+                        f_analysis = executor.submit(calculate_analysis_score, t_symbol)
 
                         try:
                             daily_data = f_daily.result(timeout=5)
@@ -297,6 +311,13 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                             news_data = f_news.result(timeout=5)
                         except Exception as e:
                             print(f"News Fetch Error: {e}")
+                        
+                        try:
+                            analysis_res = f_analysis.result(timeout=5)
+                            if analysis_res.get("success"):
+                                health_data = analysis_res # Keep key as health_data for front-end compatibility, but content is neutralized
+                        except Exception as e:
+                            print(f"Analysis Score Integration Error: {e}")
                 else:
                     print(f"[DEBUG] FAST mode - skipping news & daily prices")
 
@@ -313,7 +334,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "financials": {
                         "pe_ratio": naver_info.get('per'),
                         "pbr": naver_info.get('pbr'),
-                        "market_cap": naver_info.get('market_cap_str')
+                        "market_cap": naver_info.get('market_cap_str'),
+                        "score": health_data.get("score", 50)
                     },
                     "details": {
                         "prev_close": naver_info.get('prev_close'),
@@ -328,16 +350,21 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                         "volume": naver_info.get('volume'),
                         "year_high": naver_info.get('year_high'),
                         "year_low": naver_info.get('year_low'),
-                        # [Fix] Map correct keys from korea_data.py
                         "forward_pe": naver_info.get('est_per'),
                         "forward_eps": naver_info.get('est_eps'),
                         "bps": naver_info.get('bps'),
-                        "dividend_rate": naver_info.get('dp_share')
+                        "dividend_rate": naver_info.get('dp_share'),
+                        "health_score": health_data.get("score")
                     },
                     "daily_prices": daily_data,
                     "news": news_data,
-                    "score": 50,
-                    "metrics": {"supplyDemand": 50, "financials": 50, "news": 50}
+                    "score": health_data.get("score", 50),
+                    "metrics": {
+                        "supplyDemand": 50, 
+                        "financials": health_data.get("score", 50), 
+                        "news": 50
+                    },
+                    "health_data": health_data  # Pass full health data for UI components
                 }
 
                 # Update Cache
@@ -1087,55 +1114,138 @@ def get_insider_trading(symbol):
 
 def get_macro_calendar():
     """
-    Fetch major economic calendar events from Naver Finance / Investing.com mock.
+    Fetch major economic calendar events from Yahoo Finance (Real Data).
+    Features today and tomorrow's events.
     """
+    import datetime
+    import requests
+    from bs4 import BeautifulSoup
+    import concurrent.futures
+
+    events = []
+    
+    def fetch_date(date_obj):
+        date_str = date_obj.strftime("%Y-%m-%d")
+        url = f"https://finance.yahoo.com/calendar/economic?day={date_str}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        day_events = []
+        try:
+            res = requests.get(url, headers=headers, timeout=5)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            
+            rows = soup.select('table tbody tr')
+            for row in rows:
+                cols = row.select('td')
+                if len(cols) >= 6:
+                    event_name = cols[0].text.strip()
+                    country = cols[1].text.strip()
+                    event_time = cols[2].text.strip()
+                    actual = cols[4].text.strip()
+                    estimate = cols[5].text.strip()
+                    prior = cols[6].text.strip() if len(cols) > 6 else "-"
+                    
+                    # Filter major countries
+                    if country not in ['US', 'KR', 'CN', 'JP', 'EU', 'GB', 'DE']:
+                        continue
+                        
+                    impact = "high" if country in ['US', 'CN'] else "medium"
+                    
+                    day_events.append({
+                        "date": date_str,
+                        "time": event_time,
+                        "event": f"[{country}] {event_name}",
+                        "impact": impact,
+                        "actual": actual if actual else "-",
+                        "forecast": estimate if estimate else "-",
+                        "previous": prior if prior else "-"
+                    })
+        except Exception as e:
+            print(f"Yahoo Calendar Fetch Error for {date_str}: {e}")
+            
+        return day_events
+
     try:
-        # For now, let's provide a rich set of current events for the week
-        # In a real scenario, we would scrape Investing.com or similar.
-        # Returning current major events to ensure user sees data.
         now = datetime.datetime.now()
-        events = [
-            {
-                "date": now.strftime("%Y-%m-%d"),
-                "time": "22:30",
-                "event": "미국 비농업 고용지수 (Nonfarm Payrolls)",
-                "impact": "high",
-                "actual": "-",
-                "forecast": "180K",
-                "previous": "216K"
-            },
-            {
-                "date": now.strftime("%Y-%m-%d"),
-                "time": "22:30",
-                "event": "미국 실업률 (Unemployment Rate)",
-                "impact": "high",
-                "actual": "-",
-                "forecast": "3.8%",
-                "previous": "3.7%"
-            },
-            {
-                "date": (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
-                "time": "00:00",
-                "event": "미국 ISM 비제조업 구매관리자지수 (PMI)",
-                "impact": "medium",
-                "actual": "-",
-                "forecast": "52.0",
-                "previous": "50.6"
-            },
-            {
-                "date": (now + datetime.timedelta(days=4)).strftime("%Y-%m-%d"),
-                "time": "22:30",
-                "event": "미국 소비자물가지수 (CPI) 발표",
-                "impact": "high",
-                "actual": "-",
-                "forecast": "3.1%",
-                "previous": "3.4%"
-            }
-        ]
+        dates_to_fetch = [now, now + datetime.timedelta(days=1), now + datetime.timedelta(days=2)]
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            future_to_date = {executor.submit(fetch_date, d): d for d in dates_to_fetch}
+            for future in concurrent.futures.as_completed(future_to_date):
+                events.extend(future.result())
+                
+        # 시간순/날짜순 정렬
         return events
     except Exception as e:
-        print(f"Calendar Scrape Error: {e}")
+        print(f"Calendar Master Scrape Error: {e}")
         return []
+
+_events_cache = {"data": None, "time": 0}
+
+def get_real_stock_events():
+    """
+    yfinance를 활용하여 삼성전자, SK하이닉스 등 주요 10여개 종목의 향후 실적발표일과 배당락일을 가져옵니다.
+    반환 포맷은 메인 캘린더 API 포맷과 호환되게 맞춥니다.
+    """
+    global _events_cache
+    import time
+    import datetime
+    import yfinance as yf
+    
+    # 12시간(43200초) 캐싱
+    if _events_cache["data"] is not None and time.time() - _events_cache["time"] < 43200:
+        return _events_cache["data"]
+
+    events = []
+    major_stocks = [
+        {"symbol": "005930.KS", "code": "005930", "name": "삼성전자"},
+        {"symbol": "000660.KS", "code": "000660", "name": "SK하이닉스"},
+        {"symbol": "035420.KS", "code": "035420", "name": "NAVER"},
+        {"symbol": "051910.KS", "code": "051910", "name": "LG화학"},
+        {"symbol": "006400.KS", "code": "006400", "name": "삼성SDI"},
+        {"symbol": "105560.KS", "code": "105560", "name": "KB금융"},
+        {"symbol": "055550.KS", "code": "055550", "name": "신한지주"},
+        {"symbol": "086790.KS", "code": "086790", "name": "하나금융지주"},
+        {"symbol": "373220.KS", "code": "373220", "name": "LG에너지솔루션"},
+        {"symbol": "068270.KS", "code": "068270", "name": "셀트리온"},
+        {"symbol": "035720.KS", "code": "035720", "name": "카카오"},
+    ]
+    
+    for stock in major_stocks:
+        try:
+            ticker = yf.Ticker(stock["symbol"])
+            cal = getattr(ticker, 'calendar', None)
+            if cal and isinstance(cal, dict):
+                # 1. 실적발표일
+                earning_dates = cal.get('Earnings Date', [])
+                if earning_dates and isinstance(earning_dates, list) and len(earning_dates) > 0:
+                    e_date = earning_dates[0]
+                    if hasattr(e_date, 'strftime'):
+                        events.append({
+                            "symbol": stock["code"],
+                            "name": stock["name"],
+                            "type": "earnings",
+                            "date": e_date.strftime("%Y-%m-%d"),
+                            "detail": "실적 발표 (예정)"
+                        })
+                # 2. 배당락일
+                div_date = cal.get('Ex-Dividend Date', None)
+                if div_date and hasattr(div_date, 'strftime'):
+                    events.append({
+                        "symbol": stock["code"],
+                        "name": stock["name"],
+                        "type": "dividend",
+                        "date": div_date.strftime("%Y-%m-%d"),
+                        "detail": "배당락일 (예상)"
+                    })
+        except Exception as e:
+            print(f"[Events API] Failed to fetch for {stock['name']}: {e}")
+            
+    _events_cache["data"] = events
+    _events_cache["time"] = time.time()
+    return events
+
 
 def get_all_assets():
     """
