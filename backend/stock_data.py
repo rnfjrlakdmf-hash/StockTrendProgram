@@ -1222,22 +1222,24 @@ def get_real_stock_events():
                 if earning_dates and isinstance(earning_dates, list) and len(earning_dates) > 0:
                     e_date = earning_dates[0]
                     if hasattr(e_date, 'strftime'):
+                        # TODO(B안): DART Open API 연동하여 '결산실적공시예고' 원문 존재 시 -> detail: "실적 발표 (확정✅)" 으로 변경 가능
                         events.append({
                             "symbol": stock["code"],
                             "name": stock["name"],
                             "type": "earnings",
                             "date": e_date.strftime("%Y-%m-%d"),
-                            "detail": "실적 발표 (예정)"
+                            "detail": "실적 발표"
                         })
                 # 2. 배당락일
                 div_date = cal.get('Ex-Dividend Date', None)
                 if div_date and hasattr(div_date, 'strftime'):
+                    # TODO(B안): 기업 분기보고서/결산공시의 '현금ㆍ현물배당결정' 여부 확인 시 -> detail: "배당락일 (확정✅)" 으로 변경 가능
                     events.append({
                         "symbol": stock["code"],
                         "name": stock["name"],
                         "type": "dividend",
                         "date": div_date.strftime("%Y-%m-%d"),
-                        "detail": "배당락일 (예상)"
+                        "detail": "배당락일"
                     })
         except Exception as e:
             print(f"[Events API] Failed to fetch for {stock['name']}: {e}")
