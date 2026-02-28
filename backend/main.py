@@ -2112,7 +2112,15 @@ def get_calendar_events():
         except Exception as e:
             print(f"Real stock events error: {e}")
 
-        return {"status": "success", "data": events}
+        # 과거 일정(오늘 기준 이전 날짜) 표기 제외 필터
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        filtered_events = []
+        for ev in events:
+            # 날짜 형식이 YYYY-MM-DD 인지 확인 후 오늘보다 크거나 같으면 통과
+            if ev.get("date") and ev.get("date") >= today_str:
+                filtered_events.append(ev)
+
+        return {"status": "success", "data": filtered_events}
 
     except Exception as e:
         print(f"Calendar events error: {e}")
