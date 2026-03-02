@@ -17,6 +17,7 @@ from korea_data import (
     search_stock_code, get_korean_stock_name, get_korean_market_indices, get_exchange_rate
 )
 import korea_data
+from risk_analyzer import calculate_analysis_score
 
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
