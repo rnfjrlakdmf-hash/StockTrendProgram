@@ -294,6 +294,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 # Parallel fetch for extras (Daily Prices & News)
                 daily_data = []
                 news_data = []
+                health_data = {}
 
                 if not skip_ai:
                     print(f"[DEBUG] Fetching full data (news + daily prices)")

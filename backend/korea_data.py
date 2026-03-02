@@ -315,7 +315,7 @@ def get_naver_stock_info(symbol: str):
 
                     # 3. PER/EPS pair (Standard ordering is PER then EPS)
                     elif "PER" in label_clean and "EPS" in label_clean:
-                         is_est = "추정" in label or "컨센서스" in label or "E" in label or "202" in label
+                         is_est = "추정" in label or "컨센서스" in label or "(E)" in label
                          if len(nums_f) >= 2:
                              p_val = nums_f[0]
                              e_val = nums_f[1]
