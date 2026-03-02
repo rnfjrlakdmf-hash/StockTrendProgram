@@ -544,77 +544,58 @@ def get_naver_disclosures(symbol: str):
         print(f"Disclosure Error: {e}")
         return []
 
-# NEW Function
 def get_naver_news_search(query: str):
     """
-    네이버 뉴스 검색 (키워드 기반) - Fallback용
+    네이버 뉴스 검색 (키워드 기반) - Fallback용 대체 (Google RSS로 우회)
+    네이버 뉴스 구조 난독화로 인해 가장 안정적인 Google RSS를 활용합니다.
     """
+    import urllib.request
+    import urllib.parse
+    import xml.etree.ElementTree as ET
+    from datetime import datetime
+    
     try:
-        # URL Encoding
         encoded_query = urllib.parse.quote(query)
-        url = f"https://search.naver.com/search.naver?where=news&query={encoded_query}&sm=tab_opt&sort=0&photo=0&field=0&pd=0&ds=&de=&docid=&related=0&mynews=0&office_type=0&office_section_code=0&news_office_checked=&nso=so%3Ar%2Cp%3Aall&is_sug_officeid=0"
+        url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
         
-        print(f"[SEARCH DEBUG] Searching for: {query}")
-        print(f"[SEARCH DEBUG] URL: {url[:100]}...")
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        response = urllib.request.urlopen(req, timeout=5)
+        xml_data = response.read()
+        root = ET.fromstring(xml_data)
         
-        res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(res.text, 'html.parser')
+        channel = root.find('channel')
+        items = channel.findall('item')
+        
         news_items = []
-        
-        # 네이버 뉴스 검색 결과 (updated selector for 2026)
-        articles = soup.select("li.bx")
-        print(f"[SEARCH DEBUG] Found {len(articles)} articles with 'li.bx'")
-        
-        if not articles:
-            # Try alternative selector
-            articles = soup.select("div.api_subject_bx")
-            print(f"[SEARCH DEBUG] Trying alternative: Found {len(articles)} with 'div.api_subject_bx'")
-        
-        for idx, art in enumerate(articles, 1):
+        for item in items[:8]:  # 최대 8개 가져오기
+            title = item.find('title').text if item.find('title') is not None else ""
+            link = item.find('link').text if item.find('link') is not None else ""
+            pub_date_node = item.find('pubDate')
+            pub_date = pub_date_node.text if pub_date_node is not None else ""
+            source_node = item.find('source')
+            publisher = source_node.text if source_node is not None else "Google News"
+            
+            # Convert RFC-822 date to string if possible
+            date_str = pub_date
             try:
-                # Title & Link - try multiple selectors
-                title_tag = art.select_one("a.news_tit") or art.select_one("a.api_txt_lines") or art.select_one("a")
-                if not title_tag:
-                    if idx <= 3:
-                        print(f"[SEARCH DEBUG] Article {idx}: No title tag found")
-                    continue
-                    
-                title = title_tag.text.strip()
-                link = title_tag.get('href', '')
+                # e.g., "Sun, 01 Mar 2026 20:20:00 GMT" -> "2026-03-01"
+                dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
+                date_str = dt.strftime("%Y-%m-%d")
+            except:
+                pass
                 
-                if not title or not link:
-                    continue
-                
-                # Publisher
-                pub_tag = art.select_one("a.info.press") or art.select_one("span.press")
-                publisher = pub_tag.text.strip() if pub_tag else "Naver News"
-                
-                # Date (info_group)
-                date_tags = art.select("span.info")
-                date = date_tags[-1].text.strip() if date_tags else ""
-                
-                news_items.append({
-                    "title": title,
-                    "link": link,
-                    "publisher": publisher,
-                    "published": date
-                })
-                
-                if idx <= 2:
-                    print(f"[SEARCH DEBUG] Added news {idx}: {title[:40]}...")
-                
-                if len(news_items) >= 5:
-                    break
-            except Exception as e:
-                if idx <=3:
-                    print(f"[SEARCH DEBUG] Error parsing article {idx}: {e}")
-                continue
-                
-        print(f"[SEARCH DEBUG] Total news found: {len(news_items)}")
+            news_items.append({
+                "title": title,
+                "link": link,
+                "publisher": publisher,
+                "published": date_str
+            })
+            
+        print(f"[FALLBACK DEBUG] Gathered {len(news_items)} news from Google RSS for {query}")
         return news_items
         
     except Exception as e:
-        print(f"Naver Search News Error: {e}")
+        print(f"Fallback News RSS Error: {e}")
         return []
 
 
@@ -713,8 +694,8 @@ def get_naver_news(symbol: str, name: str = "", start_date: str = None, end_date
                 "title": title,
                 "description": description, # Add description for debug/display
                 "link": item.get('originallink', item.get('link', '')),
-                "press": "네이버 뉴스",
-                "date": item.get('pubDate', '')[:10]  # "YYYY-MM-DD"
+                "publisher": "네이버 뉴스",
+                "published": item.get('pubDate', '')[:10]  # "YYYY-MM-DD"
             })
         
         print(f"[NEWS DEBUG] Found {len(news_list)} news items from API")
@@ -737,14 +718,14 @@ def _get_sample_news(symbol: str, name: str):
         {
             "title": f"{stock_name} 관련 최신 뉴스 - 시장 동향 분석",
             "link": f"https://finance.naver.com/item/main.naver?code={code}",
-            "press": "네이버 금융",
-            "date": today
+            "publisher": "네이버 금융",
+            "published": today
         },
         {
             "title": f"{stock_name} 주가 전망 및 투자 전략",
             "link": f"https://finance.naver.com/item/news.naver?code={code}",
-            "press": "뉴스 종합",
-            "date": today
+            "publisher": "뉴스 종합",
+            "published": today
         }
     ]
 
