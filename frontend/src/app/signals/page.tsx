@@ -745,6 +745,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 "USD/KRW": "달러/원", "JPY/KRW": "엔/원", "EUR/KRW": "유로/원", "CNY/KRW": "위안/원",
                                                 "Gold": "금", "Silver": "은", "Crude Oil": "WTI 원유", "Brent Oil": "브렌트유",
                                                 "Natural Gas": "천연가스", "Copper": "구리",
+                                                "국제 금": "국제 금", "국제 은": "국제 은",
                                                 "US 10Y": "미국채 10년", "US 2Y": "미국채 2년", "US 30Y": "미국채 30년", "US 5Y": "미국채 5년", "US 13W": "미국채 3개월",
                                                 "Treasury 10Y": "미국채 10년", "Treasury 30Y": "미국채 30년", "Treasury 5Y": "미국채 5년", "Treasury 13W": "미국채 3개월",
                                                 "US 2Y Note": "미국채 2년",
@@ -756,11 +757,24 @@ function CalendarTab({ router }: { router: any }) {
                                                 items.forEach(item => {
                                                     const chg = Number(item.change || 0);
                                                     const p = Number(String(item.price).replace(/,/g, ""));
-                                                    const priceStr = key === "Bonds" || key === "Interest" ? `${p.toFixed(2)}%` : key === "Crypto" || (key === "Commodity" && !item.name?.includes("국내")) ? `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : (key === "Forex" || (key === "Commodity" && item.name?.includes("국내"))) ? `₩${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : p.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
                                                     // 한글화 매핑 적용
                                                     let name = item.name?.replace(" Market", "") || "";
                                                     if (KOREAN_MAP[name]) name = KOREAN_MAP[name];
+
+                                                    // 가격 표시 로직 (국내 원자재는 ₩ 표시)
+                                                    let priceStr = "";
+                                                    if (key === "Bonds" || key === "Interest") {
+                                                        priceStr = `${p.toFixed(2)}%`;
+                                                    } else if (key === "Crypto") {
+                                                        priceStr = `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                                                    } else if (key === "Forex" || name.includes("국내")) {
+                                                        priceStr = `₩${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                                                    } else if (key === "Commodity") {
+                                                        priceStr = `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                                                    } else {
+                                                        priceStr = p.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                                    }
 
                                                     const normItem = {
                                                         name,

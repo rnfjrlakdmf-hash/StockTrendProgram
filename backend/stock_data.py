@@ -1519,11 +1519,13 @@ def get_all_assets():
             {"symbol": "EURKRW=X", "name": "EUR/KRW"}
         ],
         "Commodity": [
-            {"symbol": "GC=F", "name": "Gold", "twelve_symbol": "XAU/USD"}, # Twelve Data Priority
-            {"symbol": "SI=F", "name": "Silver"},
-            {"symbol": "CL=F", "name": "Crude Oil"}, # WTI
-            {"symbol": "NG=F", "name": "Natural Gas"},
-            {"symbol": "HG=F", "name": "Copper"}
+            {"symbol": "DOMESTIC_GOLD", "name": "국내 금"},
+            {"symbol": "DOMESTIC_SILVER", "name": "국내 은"},
+            {"symbol": "GC=F", "name": "국제 금", "twelve_symbol": "XAU/USD"}, # Twelve Data Priority
+            {"symbol": "SI=F", "name": "국제 은"},
+            {"symbol": "CL=F", "name": "WTI 원유"}, # WTI
+            {"symbol": "NG=F", "name": "천연가스"},
+            {"symbol": "HG=F", "name": "구리"}
         ],
         "Interest": [
             {"symbol": "^TNX", "name": "US 10Y"},
@@ -1555,6 +1557,36 @@ def get_all_assets():
         price = 0.0
         change = 0.0
         
+        # [NEW] 국내 원자재 스크래핑 (네이버 금융)
+        if symbol == "DOMESTIC_GOLD" or symbol == "DOMESTIC_SILVER":
+            try:
+                headers = {"User-Agent": "Mozilla/5.0"}
+                # 금: marketindex/goldDetail.naver, 은: marketindex/worldSilverDetail.naver (국내 시세 기준)
+                # 실제로는 marketindex 메인에서 가져오는 것이 빠름
+                url = "https://finance.naver.com/marketindex/"
+                res = requests.get(url, headers=headers, timeout=5)
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(res.text, "html.parser")
+                
+                if symbol == "DOMESTIC_GOLD":
+                    # 국제금 말고 국내금(신한은행 기준) 찾기
+                    gold_el = soup.select_one("a.head.gold_domestic div.head_info span.value")
+                    if gold_el:
+                        price = float(gold_el.text.replace(",", ""))
+                elif symbol == "DOMESTIC_SILVER":
+                    # 은은 메인에 없을 수 있으므로 상세 페이지 혹은 기본값
+                    silver_el = soup.select_one("a.head.silver div.head_info span.value") # 국제 은 기준일 수 있음
+                    if silver_el:
+                        price = float(silver_el.text.replace(",", ""))
+            except:
+                pass
+            return {
+                "symbol": symbol,
+                "name": name,
+                "price": price,
+                "change": 0.0 # 스크래핑 시 변동률은 일단 0
+            }
+
         # 1. Try Twelve Data for Commodities (Gold)
         if category == "Commodity" and "twelve_symbol" in item:
             td_price = fetch_twelve_price(item["twelve_symbol"])
