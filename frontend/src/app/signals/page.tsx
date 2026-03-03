@@ -738,13 +738,27 @@ function CalendarTab({ router }: { router: any }) {
 
                                         // 글로벌 데이터 매핑
                                         if (globalAssets) {
+                                            const KOREAN_MAP: Record<string, string> = {
+                                                "S&P 500": "S&P 500", "Nasdaq": "나스닥", "Dow Jones": "다우존스", "Russell 2000": "러셀 2000",
+                                                "VIX": "VIX 공포지수", "Nikkei 225": "니케이 225", "Euro Stoxx 50": "유로스톡스 50",
+                                                "Shanghai Composite": "상해종합", "Hang Seng": "항셍",
+                                                "USD/KRW": "달러/원", "JPY/KRW": "엔/원", "EUR/KRW": "유로/원", "CNY/KRW": "위안/원",
+                                                "Gold": "금", "Silver": "은", "Crude Oil": "WTI 원유", "Brent Oil": "브렌트유",
+                                                "Natural Gas": "천연가스", "Copper": "구리",
+                                                "US 10Y": "미국채 10년", "US 2Y": "미국채 2년", "US 30Y": "미국채 30년", "US 5Y": "미국채 5년", "US 13W": "미국채 3개월",
+                                                "Bitcoin": "비트코인", "Ethereum": "이더리움", "Ripple": "리플", "Solana": "솔라나", "Dogecoin": "도지코인",
+                                            };
+
                                             Object.entries(globalAssets).forEach(([key, items]: [string, any]) => {
                                                 if (!Array.isArray(items)) return;
                                                 items.forEach(item => {
                                                     const chg = Number(item.change || 0);
                                                     const p = Number(String(item.price).replace(/,/g, ""));
-                                                    const priceStr = key === "Bonds" ? `${p.toFixed(2)}%` : key === "Crypto" || (key === "Commodity" && !item.name?.includes("국내")) ? `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : (key === "Forex" || (key === "Commodity" && item.name?.includes("국내"))) ? `₩${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : p.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                                    const name = item.name?.replace(" Market", "").replace("USD/KRW", "달러/원").replace("JPY/KRW", "엔/원").replace("EUR/KRW", "유로/원").replace("CNY/KRW", "위안/원");
+                                                    const priceStr = key === "Bonds" || key === "Interest" ? `${p.toFixed(2)}%` : key === "Crypto" || (key === "Commodity" && !item.name?.includes("국내")) ? `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : (key === "Forex" || (key === "Commodity" && item.name?.includes("국내"))) ? `₩${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : p.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+                                                    // 한글화 매핑 적용
+                                                    let name = item.name?.replace(" Market", "") || "";
+                                                    if (KOREAN_MAP[name]) name = KOREAN_MAP[name];
 
                                                     const normItem = {
                                                         name,
@@ -757,7 +771,7 @@ function CalendarTab({ router }: { router: any }) {
                                                     };
 
                                                     if (key === "Indices") sections["🏦 주가지수"].push(normItem);
-                                                    else if (key === "Bonds") sections["📋 채권 / 금리"].push(normItem);
+                                                    else if (key === "Bonds" || key === "Interest") sections["📋 채권 / 금리"].push(normItem);
                                                     else if (key === "Forex") sections["💱 주요 환율"].push(normItem);
                                                     else if (key === "Commodity") sections["⛽ 원자재"].push(normItem);
                                                     else if (key === "Crypto") sections["₿ 암호화폐"].push(normItem);
