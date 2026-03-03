@@ -81,15 +81,10 @@ app.add_middleware(
 # Health Check Endpoint
 @app.get("/api/health")
 def health_check():
-    """
-    서버 상태 확인 엔드포인트
-    WebSocket 연결 문제 확인에 사용
-    """
     return {
         "status": "ok",
-        "service": "AI Stock Analyst Backend",
-        "websocket": "available",
-        "version": "1.0.1"
+        "version": "20260304-dedup-v2",
+        "service": "AI Stock Analyst Backend"
     }
 
 
