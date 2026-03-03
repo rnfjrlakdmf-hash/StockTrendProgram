@@ -1056,27 +1056,27 @@ def get_all_market_assets():
                 final_results[cat].append(data)
             except: pass
 
-    ASSETS_CACHE['data'] = final_results
-    ASSETS_CACHE['timestamp'] = time.time()
-    return final_results
-    
-    # Fetch Korean Interest Rates (추가)
+    # Fetch Korean Interest Rates (확장)
     try:
         from korea_data import get_korean_interest_rates
         korean_rates = get_korean_interest_rates()
         if korean_rates:
-            results['Interest'].extend(korean_rates)
+            # 기존 Interest 리스트에 병합 (KORATE, CD91 등 중복 방지하며 추가)
+            existing_syms = {item['symbol'] for item in final_results.get('Interest', [])}
+            for r in korean_rates:
+                if r['symbol'] not in existing_syms:
+                    final_results['Interest'].append(r)
     except Exception as e:
         print(f"Failed to fetch Korean interest rates: {e}")
     
-    # Update Cache if we have data
+    # Update Cache and Return
     # Ensure we have at least some data to avoid caching empty failure
-    has_data = any(len(v) > 0 for v in results.values())
+    has_data = any(len(v) > 0 for v in final_results.values())
     if has_data:
-        ASSETS_CACHE['data'] = results
+        ASSETS_CACHE['data'] = final_results
         ASSETS_CACHE['timestamp'] = time.time()
     
-    return results
+    return final_results
 
 
 def get_market_news():
