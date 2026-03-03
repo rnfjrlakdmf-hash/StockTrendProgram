@@ -671,39 +671,75 @@ function CalendarTab({ router }: { router: any }) {
                     {/* 한국 경제 지표 */}
                     {countryFilter === "kr" && (
                         <>
-                            <p className="text-xs text-gray-500">🇰🇷 한국 주요 경제 지표 (실시간, yfinance / 네이버금융)</p>
+                            <p className="text-xs text-gray-500">🇰🇷 한국 주요 경제 지표 (실시간)</p>
                             {krLoading ? (
                                 <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
                             ) : krEvents.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
                                     <p>한국 경제 지표를 불러올 수 없습니다.</p>
                                 </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {krEvents.map((evt, i) => (
-                                        <div key={i} className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-3 hover:bg-blue-900/20 transition-colors">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="font-bold text-sm text-white">{evt.event_kr || evt.event}</span>
-                                                        {evt.category && (
-                                                            <span className="text-[9px] bg-blue-900/50 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded font-bold">{evt.category}</span>
-                                                        )}
+                            ) : (() => {
+                                // 카테고리별 그룹화
+                                const CATEGORY_ORDER = ["🏦 주가지수", "📋 채권금리", "💱 환율", "⛽ 원자재", "😨 시장심리", "🌐 글로벌지수", "₿ 가상자산"];
+                                const grouped: Record<string, any[]> = {};
+                                krEvents.forEach(evt => {
+                                    const cat = evt.category || "기타";
+                                    if (!grouped[cat]) grouped[cat] = [];
+                                    grouped[cat].push(evt);
+                                });
+                                const CAT_STYLE: Record<string, { bg: string; border: string; badge: string }> = {
+                                    "🏦 주가지수": { bg: "bg-blue-900/15", border: "border-blue-500/20", badge: "bg-blue-900/50 text-blue-300 border-blue-500/30" },
+                                    "📋 채권금리": { bg: "bg-purple-900/15", border: "border-purple-500/20", badge: "bg-purple-900/50 text-purple-300 border-purple-500/30" },
+                                    "💱 환율": { bg: "bg-green-900/15", border: "border-green-500/20", badge: "bg-green-900/50 text-green-300 border-green-500/30" },
+                                    "⛽ 원자재": { bg: "bg-orange-900/15", border: "border-orange-500/20", badge: "bg-orange-900/50 text-orange-300 border-orange-500/30" },
+                                    "😨 시장심리": { bg: "bg-red-900/15", border: "border-red-500/20", badge: "bg-red-900/50 text-red-300 border-red-500/30" },
+                                    "🌐 글로벌지수": { bg: "bg-indigo-900/15", border: "border-indigo-500/20", badge: "bg-indigo-900/50 text-indigo-300 border-indigo-500/30" },
+                                    "₿ 가상자산": { bg: "bg-yellow-900/15", border: "border-yellow-500/20", badge: "bg-yellow-900/50 text-yellow-300 border-yellow-500/30" },
+                                };
+                                const ordered = [...CATEGORY_ORDER.filter(k => grouped[k]), ...Object.keys(grouped).filter(k => !CATEGORY_ORDER.includes(k))];
+                                return (
+                                    <div className="space-y-4">
+                                        {ordered.map(cat => {
+                                            const items = grouped[cat];
+                                            const style = CAT_STYLE[cat] || { bg: "bg-white/5", border: "border-white/10", badge: "bg-white/10 text-gray-300 border-white/20" };
+                                            return (
+                                                <div key={cat} className={`${style.bg} border ${style.border} rounded-2xl p-4`}>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <span className="font-black text-sm text-white">{cat}</span>
+                                                        <span className={`text-[9px] border px-1.5 py-0.5 rounded font-bold ${style.badge}`}>{items.length}개</span>
                                                     </div>
-                                                    {evt.actual && evt.actual !== "-" && (
-                                                        <div className="flex gap-3 mt-1.5 text-[11px] text-gray-400">
-                                                            <span>현재 <span className="text-green-400 font-mono font-bold text-sm">{evt.actual}</span></span>
-                                                            {evt.previous && evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
-                                                            {evt.change && <span className={`font-bold font-mono ${evt.change.startsWith("+") ? "text-red-400" : "text-blue-400"}`}>{evt.change}</span>}
-                                                        </div>
-                                                    )}
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {items.map((evt, i) => {
+                                                            const chgVal = evt.change_val;
+                                                            const isUp = chgVal !== null && chgVal !== undefined ? chgVal > 0 : evt.change?.startsWith("+");
+                                                            const isDown = chgVal !== null && chgVal !== undefined ? chgVal < 0 : evt.change?.startsWith("-");
+                                                            // 지표 이름 간략화 (카테고리 prefix "[한국]" 제거)
+                                                            const label = (evt.event_kr || evt.event || "").replace(/^\[한국\]\s*/, "").trim();
+                                                            return (
+                                                                <div key={i} className="bg-black/30 rounded-xl p-3 flex flex-col gap-1 hover:bg-black/50 transition-colors">
+                                                                    <span className="text-[10px] text-gray-400 font-medium leading-tight">{label}</span>
+                                                                    <div className="flex items-end justify-between gap-1">
+                                                                        <span className="text-base font-black text-white font-mono leading-none">{evt.actual || "-"}</span>
+                                                                        {evt.change && evt.change !== "" && (
+                                                                            <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${isUp ? "bg-red-500/20 text-red-400" : isDown ? "bg-blue-500/20 text-blue-400" : "bg-gray-700/50 text-gray-400"}`}>
+                                                                                {evt.change}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {evt.previous && evt.previous !== "-" && (
+                                                                        <span className="text-[9px] text-gray-600 font-mono">전일 {evt.previous}</span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                                <span className="text-[9px] text-gray-500 whitespace-nowrap pt-1">{evt.time}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                            );
+                                        })}
+                                        <p className="text-[10px] text-gray-600 text-center">* 실시간 데이터 (yfinance 기준) · 한국 상승=🔴 하락=🔵</p>
+                                    </div>
+                                );
+                            })()}
                         </>
                     )}
                 </div>
