@@ -492,70 +492,243 @@ function MarketInsightsTab({ router }: { router: any }) {
 
 // ============ TAB 4: CALENDAR ============
 function CalendarTab({ router }: { router: any }) {
+    // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
+    const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
+
+    // ── 경제지표 ──
+    const [macroEvents, setMacroEvents] = useState<any[]>([]);
+    const [macroLoading, setMacroLoading] = useState(true);
+
+    // ── 실적·배당 ──
     const [events, setEvents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [calTab, setCalTab] = useState<"earnings" | "dividend" | "ipo">("earnings");
+    const [earndivLoading, setEarndivLoading] = useState(true);
+    const [calTab, setCalTab] = useState<"earnings" | "dividend">("earnings");
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    useEffect(() => { (async () => { try { const r = await fetch(`${API_BASE_URL}/api/calendar/events`); const j = await r.json(); if (j.status === "success") setEvents(j.data || []); } catch { } finally { setLoading(false); } })(); }, []);
+    // ── 공모주(IPO) ──
+    const [ipos, setIpos] = useState<any[]>([]);
+    const [ipoLoading, setIpoLoading] = useState(true);
 
+    // 경제지표 데이터 fetch
+    useEffect(() => {
+        (async () => {
+            try {
+                const r = await fetch(`${API_BASE_URL}/api/market/calendar`);
+                const j = await r.json();
+                if (j.status === "success") setMacroEvents(j.data || []);
+            } catch { }
+            finally { setMacroLoading(false); }
+        })();
+    }, []);
+
+    // 실적·배당 데이터 fetch
+    useEffect(() => {
+        (async () => {
+            try {
+                const r = await fetch(`${API_BASE_URL}/api/calendar/events`);
+                const j = await r.json();
+                if (j.status === "success") setEvents(j.data || []);
+            } catch { }
+            finally { setEarndivLoading(false); }
+        })();
+    }, []);
+
+    // 공모주 데이터 fetch
+    useEffect(() => {
+        if (mainTab !== "ipo") return;
+        (async () => {
+            try {
+                const r = await fetch(`${API_BASE_URL}/api/korea/ipo`);
+                const j = await r.json();
+                if (j.status === "success") {
+                    setIpos(j.data.map((item: any) => ({
+                        ...item,
+                        subscription_date: item.date,
+                        fixed_price: item.price,
+                        price_band: ""
+                    })));
+                }
+            } catch { }
+            finally { setIpoLoading(false); }
+        })();
+    }, [mainTab]);
+
+    // 실적·배당 달력 계산
     const filtered = events.filter(e => e.type === calTab);
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-    const isToday = (d: number) => { const n = new Date(); return n.getFullYear() === currentMonth.getFullYear() && n.getMonth() === currentMonth.getMonth() && n.getDate() === d; };
-
+    const isToday = (d: number) => {
+        const n = new Date();
+        return n.getFullYear() === currentMonth.getFullYear() && n.getMonth() === currentMonth.getMonth() && n.getDate() === d;
+    };
     const getEventsForDay = (d: number) => {
         const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         return filtered.filter(e => e.date === ds);
     };
-
     const icon = (t: string) => t === "earnings" ? "📊" : t === "dividend" ? "💰" : "🆕";
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📊 실적</button>
-                <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 배당</button>
-                <button onClick={() => setCalTab("ipo")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "ipo" ? "bg-purple-600 text-white" : "text-gray-400"}`}>🆕 IPO</button>
+            {/* 메인 서브탭 */}
+            <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
+                <button onClick={() => setMainTab("economic")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "economic" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}>
+                    📈 경제 지표
+                </button>
+                <button onClick={() => setMainTab("earndiv")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "earndiv" ? "bg-orange-600 text-white" : "text-gray-400 hover:text-white"}`}>
+                    📊 실적·배당
+                </button>
+                <button onClick={() => setMainTab("ipo")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "ipo" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"}`}>
+                    🆕 공모주
+                </button>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
-                    <h3 className="text-lg font-black">{currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}</h3>
-                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 mb-1">
-                    {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className={`text-center text-[10px] font-bold py-1 ${d === "일" ? "text-red-400" : d === "토" ? "text-blue-400" : "text-gray-500"}`}>{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: firstDay }, (_, i) => <div key={`e-${i}`} className="min-h-[55px]" />)}
-                    {Array.from({ length: daysInMonth }, (_, i) => {
-                        const day = i + 1, evs = getEventsForDay(day), dow = (firstDay + i) % 7;
-                        return (
-                            <div key={day} className={`min-h-[55px] rounded-lg p-1 border ${isToday(day) ? "border-orange-500/50 bg-orange-500/10" : evs.length > 0 ? "border-white/10 bg-white/5" : "border-transparent"}`}>
-                                <span className={`text-[10px] font-bold ${isToday(day) ? "text-orange-400" : dow === 0 ? "text-red-400" : dow === 6 ? "text-blue-400" : "text-gray-300"}`}>{day}</span>
-                                {evs.slice(0, 2).map((ev, j) => <div key={j} className="text-[8px] truncate rounded px-0.5 py-0.5 bg-white/5 mt-0.5 cursor-pointer" onClick={() => router.push(`/discovery?q=${ev.symbol}`)} title={ev.name}>{icon(ev.type)} {ev.name}</div>)}
-                                {evs.length > 2 && <span className="text-[8px] text-gray-500">+{evs.length - 2}</span>}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Upcoming List */}
-            <h4 className="font-bold text-sm text-gray-400">다가오는 일정</h4>
-            {loading ? <div className="text-center py-6"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-gray-500" /></div>
-                : filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10).map((ev, i) => {
-                    const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
-                    return (
-                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 cursor-pointer flex justify-between items-center" onClick={() => router.push(`/discovery?q=${ev.symbol}`)}>
-                            <div className="flex items-center gap-2"><span className="text-lg">{icon(ev.type)}</span><div><span className="font-bold text-sm">{ev.name}</span><span className="text-gray-500 text-xs ml-1">{ev.symbol}</span><p className="text-[10px] text-gray-400">{ev.detail}</p></div></div>
-                            <div className="text-right"><div className="text-xs font-mono text-gray-400">{ev.date}</div><span className={`text-xs font-bold ${dDay <= 3 ? "text-red-400" : dDay <= 7 ? "text-yellow-400" : "text-gray-400"}`}>{dDay > 0 ? `D-${dDay}` : dDay === 0 ? "오늘" : `D+${Math.abs(dDay)}`}</span></div>
+            {/* ── 경제 지표 탭 ── */}
+            {mainTab === "economic" && (
+                <div className="space-y-3">
+                    <p className="text-xs text-gray-500">오늘 주요 경제 지표 발표 일정 (Yahoo Finance)</p>
+                    {macroLoading ? (
+                        <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
+                    ) : macroEvents.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                            <p>오늘 주요 경제 일정이 없습니다.</p>
                         </div>
-                    );
-                })}
+                    ) : (
+                        <div className="space-y-2">
+                            {macroEvents.map((evt, i) => (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex flex-col items-center min-w-[70px]">
+                                            <span className={`text-xs font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>
+                                                {evt.time}
+                                            </span>
+                                            {evt.impact === "high" && (
+                                                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className={`font-bold text-sm break-words ${evt.impact === "high" ? "text-white" : "text-gray-200"}`}>
+                                                {evt.event_kr || evt.event}
+                                            </div>
+                                            {evt.event_kr && evt.event_kr !== evt.event && (
+                                                <div className="text-[10px] text-gray-500 mt-0.5">{evt.event}</div>
+                                            )}
+                                            {(evt.forecast !== "-" || evt.previous !== "-") && (
+                                                <div className="flex gap-3 mt-1 text-[11px] text-gray-400">
+                                                    {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
+                                                    {evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
+                                                    {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {evt.impact === "high" && (
+                                            <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+                                                HIGH
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex items-center justify-end gap-2 text-[10px] text-gray-500 pt-1">
+                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> High Impact
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── 실적·배당 탭 ── */}
+            {mainTab === "earndiv" && (
+                <div className="space-y-4">
+                    <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
+                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📊 실적</button>
+                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 배당</button>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
+                            <h3 className="text-lg font-black">{currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}</h3>
+                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className={`text-center text-[10px] font-bold py-1 ${d === "일" ? "text-red-400" : d === "토" ? "text-blue-400" : "text-gray-500"}`}>{d}</div>)}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                            {Array.from({ length: firstDay }, (_, i) => <div key={`e-${i}`} className="min-h-[55px]" />)}
+                            {Array.from({ length: daysInMonth }, (_, i) => {
+                                const day = i + 1, evs = getEventsForDay(day), dow = (firstDay + i) % 7;
+                                return (
+                                    <div key={day} className={`min-h-[55px] rounded-lg p-1 border ${isToday(day) ? "border-orange-500/50 bg-orange-500/10" : evs.length > 0 ? "border-white/10 bg-white/5" : "border-transparent"}`}>
+                                        <span className={`text-[10px] font-bold ${isToday(day) ? "text-orange-400" : dow === 0 ? "text-red-400" : dow === 6 ? "text-blue-400" : "text-gray-300"}`}>{day}</span>
+                                        {evs.slice(0, 2).map((ev, j) => <div key={j} className="text-[8px] truncate rounded px-0.5 py-0.5 bg-white/5 mt-0.5 cursor-pointer" onClick={() => router.push(`/discovery?q=${ev.symbol}`)} title={ev.name}>{icon(ev.type)} {ev.name}</div>)}
+                                        {evs.length > 2 && <span className="text-[8px] text-gray-500">+{evs.length - 2}</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <h4 className="font-bold text-sm text-gray-400">다가오는 일정</h4>
+                    {earndivLoading ? <div className="text-center py-6"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-gray-500" /></div>
+                        : filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10).map((ev, i) => {
+                            const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
+                            return (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 cursor-pointer flex justify-between items-center" onClick={() => router.push(`/discovery?q=${ev.symbol}`)}>
+                                    <div className="flex items-center gap-2"><span className="text-lg">{icon(ev.type)}</span><div><span className="font-bold text-sm">{ev.name}</span><span className="text-gray-500 text-xs ml-1">{ev.symbol}</span><p className="text-[10px] text-gray-400">{ev.detail}</p></div></div>
+                                    <div className="text-right"><div className="text-xs font-mono text-gray-400">{ev.date}</div><span className={`text-xs font-bold ${dDay <= 3 ? "text-red-400" : dDay <= 7 ? "text-yellow-400" : "text-gray-400"}`}>{dDay > 0 ? `D-${dDay}` : dDay === 0 ? "오늘" : `D+${Math.abs(dDay)}`}</span></div>
+                                </div>
+                            );
+                        })}
+                </div>
+            )}
+
+            {/* ── 공모주(IPO) 탭 ── */}
+            {mainTab === "ipo" && (
+                <div className="space-y-3">
+                    <p className="text-xs text-gray-500">한국 공모주 청약 일정 (38커뮤니케이션 제공)</p>
+                    {ipoLoading ? (
+                        <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
+                    ) : ipos.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                            <p>예정된 공모주가 없습니다.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                            <div className="max-h-[400px] overflow-y-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-white/10 text-gray-300 text-xs font-bold sticky top-0 backdrop-blur-md z-10">
+                                        <tr>
+                                            <th className="p-3 whitespace-nowrap">종목명</th>
+                                            <th className="p-3 whitespace-nowrap text-center">공모일정</th>
+                                            <th className="p-3 whitespace-nowrap text-right">공모가</th>
+                                            <th className="p-3 whitespace-nowrap text-center">정보</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-sm">
+                                        {ipos.map((ipo, idx) => (
+                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-3 font-bold text-white align-middle">{ipo.name}</td>
+                                                <td className="p-3 text-gray-300 text-xs align-middle text-center font-mono">{ipo.subscription_date}</td>
+                                                <td className="p-3 text-right align-middle">
+                                                    {ipo.fixed_price && ipo.fixed_price !== "-" && (
+                                                        <span className="text-red-400 font-bold font-mono text-xs bg-red-900/20 px-1.5 py-0.5 rounded">{ipo.fixed_price}</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 text-center align-middle">
+                                                    <button
+                                                        onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
+                                                        className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5"
+                                                    >정보</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -14,7 +14,6 @@ import AdRewardModal from "./AdRewardModal"; // Import Modal
 const navigation = [
     { name: "대시보드", href: "/", icon: LayoutDashboard },
     { name: "시장 인텔리전스", href: "/signals", icon: Activity },
-    { name: "경제/공모주 일정", href: "/schedule", icon: CalendarDays },
 
     { name: "종목 발굴", href: "/discovery", icon: Compass },
     { name: "종목 심층분석", href: "/analysis", icon: BarChart3 },
