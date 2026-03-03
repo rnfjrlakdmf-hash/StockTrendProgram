@@ -844,41 +844,52 @@ def get_korean_market_indices():
 
 def get_top_sectors():
     """
-    Fetch top sectors from Naver
+    Fetch ALL sectors from Naver (상승/하락 모두 포함)
     """
     try:
         url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
-        res = requests.get(url, headers=HEADER, timeout=3)
+        res = requests.get(url, headers=HEADER, timeout=5)
         soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        
+
         sectors = []
-        # Use more specific selector if possible to avoid spacer rows
-        # table.type_1 matches, but let's check for rows with data
         rows = soup.select("table.type_1 tr")
-        
+
         for row in rows:
-            if len(sectors) >= 5: break
             cols = row.select("td")
-            if len(cols) < 2: continue
-            
+            if len(cols) < 2:
+                continue
             try:
-                # Select 'a' tag to avoid whitespace issues in 'td'
                 name_tag = cols[0].select_one("a")
-                if not name_tag: continue
-                
+                if not name_tag:
+                    continue
+
                 name = name_tag.text.strip()
-                percent = cols[1].text.strip()
-                
-                # Check valid data (skip empty or headers if any)
-                if not name or not percent: continue
-                
-                sectors.append({"name": name, "percent": percent})
-            except: pass
-            
+                percent_text = cols[1].text.strip()
+
+                if not name or not percent_text:
+                    continue
+
+                # 숫자 추출 및 부호 처리
+                # 네이버는 ▲ (상승) / ▼ (하락) 텍스트를 포함할 수 있음
+                raw = percent_text.replace(",", "").replace("%", "").strip()
+                if "▼" in raw or "-" in raw:
+                    val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
+                elif "▲" in raw or "+" in raw:
+                    val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
+                else:
+                    # 숫자만 있는 경우
+                    nums = raw.replace("▲", "").replace("▼", "").strip()
+                    val = float(nums) if nums else 0.0
+
+                sectors.append({"name": name, "percent": f"{val:+.2f}", "change": val})
+            except Exception as ex:
+                continue
+
         return sectors
     except Exception as e:
         print(f"Sector Scrape Error: {e}")
         return []
+
 
 def get_top_themes():
     """

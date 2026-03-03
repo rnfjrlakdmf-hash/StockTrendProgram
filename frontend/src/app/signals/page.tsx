@@ -347,8 +347,13 @@ function HeatmapTab({ router }: { router: any }) {
                 if (sj.status === "success") {
                     const raw = sj.data || [];
                     const normalized = Array.isArray(raw) ? raw.map((s: any) => {
-                        const pStr = String(s.percent || s.change || "0");
-                        const isNeg = pStr.includes("-");
+                        // 백엔드가 change(숫자)를 직접 보내주면 우선 사용
+                        if (typeof s.change === "number") {
+                            return { name: s.name || s.theme || "", change: s.change };
+                        }
+                        // fallback: percent 문자열 파싱 (+/- 부호 포함)
+                        const pStr = String(s.percent || "0");
+                        const isNeg = pStr.includes("-") || pStr.includes("▼");
                         const val = parseFloat(pStr.replace(/[^0-9.]/g, "")) || 0;
                         return { name: s.name || s.theme || "", change: isNeg ? -val : val };
                     }) : (raw.top_sectors || []);
