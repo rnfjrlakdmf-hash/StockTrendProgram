@@ -5,7 +5,8 @@ import { API_BASE_URL } from "@/lib/config";
 import { CalendarDays, AlertTriangle, Loader2 } from "lucide-react";
 
 interface EconomicEvent {
-    event: string;
+    event: string;       // 원본 영어
+    event_kr?: string;   // 한국어 번역
     importance: string;
     time: string;
 }
@@ -34,6 +35,7 @@ export default function MacroCalendar() {
                         const importance = (evt.impact || "").toLowerCase() === "high" ? "High" : "Medium";
                         grouped[evt.date].push({
                             event: evt.event,
+                            event_kr: evt.event_kr || evt.event,
                             time: evt.time,
                             importance: importance
                         });
@@ -42,7 +44,7 @@ export default function MacroCalendar() {
                     // Convert to array
                     const calendarData: CalendarDay[] = Object.keys(grouped).sort().map(date => {
                         const d = new Date(date);
-                        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
                         return {
                             date: date,
                             day: days[d.getDay()],
@@ -88,7 +90,7 @@ export default function MacroCalendar() {
                             {/* Day Header */}
                             <div className={`px-4 py-2 flex items-center justify-between ${isTodayChk ? 'bg-blue-500/20' : 'bg-white/5'}`}>
                                 <div className="flex items-center gap-2">
-                                    <span className={`font-bold ${['Saturday', 'Sunday'].includes(day.day) ? 'text-red-400' : 'text-gray-200'}`}>
+                                    <span className={`font-bold ${['토요일', '일요일'].includes(day.day) ? 'text-red-400' : 'text-gray-200'}`}>
                                         {day.day}
                                     </span>
                                     <span className="text-xs text-gray-500 font-mono">{day.date}</span>
@@ -111,9 +113,12 @@ export default function MacroCalendar() {
                                                 )}
                                             </div>
 
-                                            {/* Event Name */}
+                                            {/* Event Name - 한국어 우선 표시 */}
                                             <div className={`flex-1 break-words ${evt.importance === 'High' ? 'font-bold text-white' : 'text-gray-300'}`}>
-                                                {evt.event}
+                                                <div>{evt.event_kr || evt.event}</div>
+                                                {evt.event_kr && evt.event_kr !== evt.event && (
+                                                    <div className="text-xs text-gray-500 mt-0.5">{evt.event}</div>
+                                                )}
                                             </div>
                                         </div>
                                     ))

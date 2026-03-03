@@ -1111,12 +1111,115 @@ def get_insider_trading(symbol):
 def get_macro_calendar():
     """
     Fetch major economic calendar events.
-    - 오늘 이벤트: Yahoo Finance 실시간 크롤링
-    - 이후 날짜: 현재 실시간 지원 없음 (TODO: Investing.com 또는 유료 API 적용 필요)
+    - 오늘 이벤트: Yahoo Finance 실시간 크롤링 (한국어 번역 포함)
     """
     import datetime
     import requests
     from bs4 import BeautifulSoup
+
+    # ====================================================
+    # 경제 지표 한국어 번역 테이블
+    # ====================================================
+    INDICATOR_KR = {
+        # 물가
+        "CPI": "소비자물가지수",
+        "HICP": "조화소비자물가지수",
+        "PPI": "생산자물가지수",
+        "PCE": "개인소비지출물가",
+        "Core CPI": "근원 소비자물가지수",
+        "Core PCE": "근원 개인소비지출물가",
+        "Inflation": "인플레이션",
+        "Consumer Price": "소비자물가",
+        "Producer Price": "생산자물가",
+        "Import Price": "수입물가",
+        "Export Price": "수출물가",
+        "Wholesale Price": "도매물가",
+
+        # 고용
+        "Nonfarm Payrolls": "비농업고용",
+        "NFP": "비농업고용",
+        "Unemployment": "실업률",
+        "Jobless Claims": "신규실업수당청구",
+        "Initial Claims": "신규실업수당청구",
+        "Continuing Claims": "연속실업수당청구",
+        "ADP": "ADP 고용보고서",
+        "Employment": "고용",
+        "Labor Market": "노동시장",
+        "Wages": "임금",
+        "Average Hourly Earnings": "평균시간당임금",
+
+        # 성장/GDP
+        "GDP": "국내총생산(GDP)",
+        "GNP": "국민총생산(GNP)",
+        "Retail Sales": "소매판매",
+        "Industrial Production": "산업생산",
+        "Manufacturing": "제조업",
+        "Factory Orders": "공장주문",
+        "Durable Goods": "내구재주문",
+        "Trade Balance": "무역수지",
+        "Current Account": "경상수지",
+        "Budget Balance": "재정수지",
+        "Business Inventories": "기업재고",
+
+        # 소비/심리
+        "Consumer Confidence": "소비자신뢰지수",
+        "Consumer Sentiment": "소비자심리지수",
+        "Michigan": "미시간대 소비자심리",
+        "ISM": "ISM 지수",
+        "PMI": "구매관리자지수(PMI)",
+        "Services PMI": "서비스업 PMI",
+        "Manufacturing PMI": "제조업 PMI",
+        "Composite PMI": "종합 PMI",
+        "Non-Manufacturing": "비제조업",
+
+        # 부동산
+        "Housing": "주택",
+        "Home Sales": "주택판매",
+        "Building Permits": "건축허가",
+        "Housing Starts": "주택착공",
+        "Existing Home": "기존주택",
+        "New Home": "신규주택",
+        "Case-Shiller": "케이스쉴러 주택가격지수",
+
+        # 금리/통화
+        "Fed": "연준",
+        "FOMC": "FOMC 회의",
+        "Interest Rate": "기준금리",
+        "Rate Decision": "금리결정",
+        "Money Supply": "통화량",
+        "Treasury": "미국국채",
+
+        # 에너지/원자재
+        "Crude Oil": "원유재고",
+        "Oil Inventories": "원유재고",
+        "Natural Gas": "천연가스재고",
+
+        # 지표 시점 접미사
+        "YY": "(전년비)",
+        "MM": "(전월비)",
+        "QQ": "(전분기비)",
+        "Prelim": "[예비치]",
+        "Flash": "[속보치]",
+        "Final": "[확정치]",
+        "Revised": "[수정치]",
+
+        # 레드북
+        "Redbook": "레드북 소매판매",
+    }
+
+    COUNTRY_KR = {
+        "US": "미국", "KR": "한국", "CN": "중국", "JP": "일본",
+        "EU": "유럽", "GB": "영국", "DE": "독일", "FR": "프랑스", "IT": "이탈리아"
+    }
+
+    def translate_event(event_name: str) -> str:
+        """경제 지표명을 한국어로 번역합니다."""
+        translated = event_name
+        # 접미사 처리 (YY, MM 등) - 먼저 치환하면 다른 단어와 혼동제거
+        for en, kr in sorted(INDICATOR_KR.items(), key=lambda x: -len(x[0])):
+            if en in translated:
+                translated = translated.replace(en, kr)
+        return translated.strip()
 
     events = []
     today_str = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -1161,11 +1264,16 @@ def get_macro_calendar():
             seen_keys.add(key)
 
             impact = "high" if country in ['US', 'CN'] else "medium"
+            country_kr = COUNTRY_KR.get(country, country)
+            event_kr = translate_event(event_name)
 
             events.append({
-                "date": today_str,  # Yahoo는 오늘 데이터만 반환
+                "date": today_str,
                 "time": event_time,
-                "event": f"[{country}] {event_name}",
+                "event": f"[{country}] {event_name}",          # 원본 영어 (호환성)
+                "event_kr": f"[{country_kr}] {event_kr}",      # 한국어 번역
+                "country": country,
+                "country_kr": country_kr,
                 "period": period,
                 "impact": impact,
                 "actual": actual if actual else "-",
