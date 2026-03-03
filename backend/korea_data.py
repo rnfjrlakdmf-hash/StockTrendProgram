@@ -544,18 +544,97 @@ def get_naver_disclosures(symbol: str):
         print(f"Disclosure Error: {e}")
         return []
 
-def get_naver_news_search(query: str):
+def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = ""):
     """
-    네이버 뉴스 검색 (키워드 기반) - Fallback용 대체 (Google RSS로 우회)
-    네이버 뉴스 구조 난독화로 인해 가장 안정적인 Google RSS를 활용합니다.
+    통합 뉴스 수집 엔진 (Tier 1: Naver API -> Tier 2: Google RSS)
     """
+    import os
+    import re
+    from dotenv import load_dotenv
     import urllib.request
     import urllib.parse
     import xml.etree.ElementTree as ET
     from datetime import datetime
+    import requests
+    import html
+
+    news_list = []
     
+    code = ""
+    if symbol:
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+    search_name = name
+    if not search_name and len(code) == 6:
+        search_name = code
+        
+    search_query = f'"{search_name}"' if search_name and not search_name.isdigit() else (query or search_name or code)
+    fallback_query = search_name if (search_name and not search_name.isdigit()) else (query or code)
+
+    # [Tier 1] Naver News API
+    load_dotenv()
+    client_id = os.getenv('NAVER_CLIENT_ID')
+    client_secret = os.getenv('NAVER_CLIENT_SECRET')
+
+    if client_id and client_secret:
+        try:
+            print(f"[NEWS DEBUG] Searching Naver News API for: {search_query}")
+            url = "https://openapi.naver.com/v1/search/news.json"
+            headers = {
+                "X-Naver-Client-Id": client_id,
+                "X-Naver-Client-Secret": client_secret
+            }
+            params = {
+                "query": search_query,
+                "display": 20,
+                "sort": "date"
+            }
+            
+            response = requests.get(url, headers=headers, params=params, timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get('items', [])
+                
+                for item in items:
+                    if len(news_list) >= 8:
+                        break
+                        
+                    title = html.unescape(re.sub('<.*?>', '', item.get('title', '')))
+                    description = html.unescape(re.sub('<.*?>', '', item.get('description', '')))
+                    
+                    if search_name and not search_name.isdigit() and (search_name not in title and search_name not in description):
+                        continue
+                        
+                    spam_keywords = ["분양", "아파트", "오피스텔", "상가", "청약", "주택", "부동산", "지식산업센터", "역세권"]
+                    is_spam = any(spam in title or spam in description for spam in spam_keywords)
+                    if is_spam: continue
+
+                    news_list.append({
+                        "title": title,
+                        "description": description,
+                        "link": item.get('originallink', item.get('link', '')),
+                        "publisher": "네이버 뉴스",
+                        "published": item.get('pubDate', '')[:10]
+                    })
+                
+                if news_list:
+                    print(f"[NEWS DEBUG] Found {len(news_list)} news items from API")
+                    return news_list
+            else:
+                print(f"[NEWS] API Error: {response.status_code}")
+        except Exception as e:
+            print(f"[NEWS] API Exception: {e}")
+
+    # [Tier 2] Google News RSS Fallback
     try:
-        encoded_query = urllib.parse.quote(query)
+        if not fallback_query:
+            return []
+            
+        print(f"[NEWS DEBUG] Using Google RSS Fallback for: {fallback_query}")
+        
+        encoded_query = urllib.parse.quote(fallback_query)
         url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
         
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -566,8 +645,7 @@ def get_naver_news_search(query: str):
         channel = root.find('channel')
         items = channel.findall('item')
         
-        news_items = []
-        for item in items[:8]:  # 최대 8개 가져오기
+        for item in items[:8]:
             title = item.find('title').text if item.find('title') is not None else ""
             link = item.find('link').text if item.find('link') is not None else ""
             pub_date_node = item.find('pubDate')
@@ -575,163 +653,25 @@ def get_naver_news_search(query: str):
             source_node = item.find('source')
             publisher = source_node.text if source_node is not None else "Google News"
             
-            # Convert RFC-822 date to string if possible
             date_str = pub_date
             try:
-                # e.g., "Sun, 01 Mar 2026 20:20:00 GMT" -> "2026-03-01"
                 dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
                 date_str = dt.strftime("%Y-%m-%d")
             except:
                 pass
                 
-            news_items.append({
+            news_list.append({
                 "title": title,
                 "link": link,
                 "publisher": publisher,
                 "published": date_str
             })
             
-        print(f"[FALLBACK DEBUG] Gathered {len(news_items)} news from Google RSS for {query}")
-        return news_items
-        
+        print(f"[FALLBACK DEBUG] Gathered {len(news_list)} news from Google RSS for {fallback_query}")
+        return news_list
     except Exception as e:
         print(f"Fallback News RSS Error: {e}")
         return []
-
-
-def get_naver_news(symbol: str, name: str = "", start_date: str = None, end_date: str = None, max_pages: int = 10):
-    """
-    네이버 금융 뉴스 크롤링 (관련 뉴스) - Naver News Search API 사용
-    symbol: '005930.KS' or '005930'
-    name: Optional stock name for better fallback search
-    start_date: 검색 시작 날짜 (YYYY-MM-DD), None이면 제한 없음
-    end_date: 검색 종료 날짜 (YYYY-MM-DD), None이면 제한 없음
-    max_pages: 최대 탐색할 페이지 수
-    """
-    try:
-        import os
-        from dotenv import load_dotenv
-        
-        # Load environment variables
-        load_dotenv()
-        
-        client_id = os.getenv('NAVER_CLIENT_ID')
-        client_secret = os.getenv('NAVER_CLIENT_SECRET')
-        
-        if not client_id or not client_secret:
-            print("[NEWS] Naver API credentials not found, using sample data")
-            return _get_sample_news(symbol, name)
-        
-        code = symbol.split('.')[0]
-        code = re.sub(r'[^0-9]', '', code)
-        
-        if len(code) != 6:
-            return []
-        
-        # 종목명으로 검색 (Strict: Exact Match)
-        # 이름이 있으면 따옴표로 감싸서 정확히 그 단어가 들어간 것만 검색
-        if name:
-            search_query = f'"{name}"'
-        else:
-            search_query = code
-            
-        print(f"[NEWS DEBUG] Searching Naver News API for: {search_query}")
-        
-        # Naver News Search API 호출
-        url = "https://openapi.naver.com/v1/search/news.json"
-        headers = {
-            "X-Naver-Client-Id": client_id,
-            "X-Naver-Client-Secret": client_secret
-        }
-        params = {
-            "query": search_query,
-            "display": 20,  # 필터링을 고려해 더 많이 가져옴 (8 -> 20)
-            "sort": "date"  # 최신순
-        }
-        
-        response = requests.get(url, headers=headers, params=params, timeout=5)
-        
-        if response.status_code != 200:
-            print(f"[NEWS] API Error: {response.status_code}")
-            return _get_sample_news(symbol, name)
-        
-        data = response.json()
-        items = data.get('items', [])
-        
-        news_list = []
-        target_count = 8
-        
-        for item in items:
-            if len(news_list) >= target_count:
-                break
-                
-            # HTML 태그 제거
-            title = re.sub('<.*?>', '', item.get('title', ''))
-            description = re.sub('<.*?>', '', item.get('description', ''))
-            
-            # HTML Entity Decode (e.g. &quot; -> ")
-            import html
-            title = html.unescape(title)
-            description = html.unescape(description)
-
-            # [Strict Filter] 이름이 명시된 경우, 제목이나 내용에 반드시 포함되어야 함
-            if name:
-                # 공백 제거 후 비교 (혹시 모를 띄어쓰기 이슈 방지) or 그냥 포함 여부
-                if name not in title and name not in description:
-                    continue
-                    
-            # [Spam Filter] 부동산/분양 광고 제거
-            spam_keywords = ["분양", "아파트", "오피스텔", "상가", "청약", "주택", "부동산", "지식산업센터", "역세권"]
-            is_spam = False
-            for spam in spam_keywords:
-                if spam in title or spam in description:
-                    is_spam = True
-                    break
-            if is_spam:
-                continue
-
-            news_list.append({
-                "title": title,
-                "description": description, # Add description for debug/display
-                "link": item.get('originallink', item.get('link', '')),
-                "publisher": "네이버 뉴스",
-                "published": item.get('pubDate', '')[:10]  # "YYYY-MM-DD"
-            })
-        
-        print(f"[NEWS DEBUG] Found {len(news_list)} news items from API")
-        return news_list
-        
-    except Exception as e:
-        print(f"[NEWS] Error: {e}")
-        return _get_sample_news(symbol, name)
-
-def _get_sample_news(symbol: str, name: str):
-    """Fallback sample news when API is unavailable"""
-    from datetime import datetime
-    
-    code = symbol.split('.')[0]
-    code = re.sub(r'[^0-9]', '', code)
-    stock_name = name if name else code
-    today = datetime.now().strftime("%Y.%m.%d")
-    
-    return [
-        {
-            "title": f"{stock_name} 관련 최신 뉴스 - 시장 동향 분석",
-            "link": f"https://finance.naver.com/item/main.naver?code={code}",
-            "publisher": "네이버 금융",
-            "published": today
-        },
-        {
-            "title": f"{stock_name} 주가 전망 및 투자 전략",
-            "link": f"https://finance.naver.com/item/news.naver?code={code}",
-            "publisher": "뉴스 종합",
-            "published": today
-        }
-    ]
-
-
-def get_naver_stock_search_news_fallback(symbol):
-     return get_naver_news_search(symbol)
 
 def get_detailed_financials(symbol: str) -> Dict:
     """

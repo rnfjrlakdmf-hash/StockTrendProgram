@@ -301,7 +301,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     print(f"[DEBUG] Fetching full data (news + daily prices)")
                     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                         f_daily = executor.submit(get_naver_daily_prices, t_symbol)
-                        f_news = executor.submit(korea_data.get_naver_news, t_symbol, naver_info.get('name', symbol))
+                        f_news = executor.submit(korea_data.get_integrated_stock_news, symbol=t_symbol, name=naver_info.get('name', symbol))
                         f_analysis = executor.submit(calculate_analysis_score, t_symbol)
 
                         try:
@@ -790,8 +790,8 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
             print(f"[News] Google News Timeout for '{query}'")
             # Timeout -> Fallback
             if lang == 'ko':
-                 from korea_data import get_naver_news_search
-                 return get_naver_news_search(query)
+                 from korea_data import get_integrated_stock_news
+                 return get_integrated_stock_news(query=query)
             return []
         except Exception as e:
             print(f"[News] Google News Internal Error: {e}")
@@ -831,8 +831,8 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
         # 2. Fallback if empty (Only for Korean queries)
         if not cleaned_results and lang == 'ko':
             print(f"[News] Google News empty for '{query}'. Trying Naver Fallback...")
-            from korea_data import get_naver_news_search
-            return get_naver_news_search(query)
+            from korea_data import get_integrated_stock_news
+            return get_integrated_stock_news(query=query)
             
         return cleaned_results
 
@@ -840,8 +840,8 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
         print(f"Google News Error: {e}")
         # Fallback on error
         if lang == 'ko':
-             from korea_data import get_naver_news_search
-             return get_naver_news_search(query)
+             from korea_data import get_integrated_stock_news
+             return get_integrated_stock_news(query=query)
         return []
 
 
