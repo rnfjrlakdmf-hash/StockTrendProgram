@@ -990,7 +990,7 @@ def get_all_market_assets():
             {"symbol": "^FVX", "name": "미국채 5년"},
             {"symbol": "^TNX", "name": "미국채 10년"},
             {"symbol": "^TYX", "name": "미국채 30년"},
-            # 한국 금리는 get_korean_interest_rates()에서 일괄 수집되므로 여기서는 중복 방지 위해 제거
+            # 한국 금리는 get_korean_interest_rates()에서 전용 스크래핑으로 수집되므로 여기서는 제거
         ]
     }
 

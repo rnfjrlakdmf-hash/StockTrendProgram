@@ -837,11 +837,16 @@ function CalendarTab({ router }: { router: any }) {
                                                         isKr: false
                                                     };
 
-                                                    if (key === "Indices") sections["🏦 주가지수"].push(normItem);
+                                                    // [Fix] 심볼 기반 중복 제거 로직 강화 (한국 지표 중복 방지)
+                                                    const sym = item.symbol || "";
+                                                    const isKrIndex = sym === "^KS11" || sym === "^KQ11" || sym === "^KS200";
+                                                    const isKrRate = sym === "KORATE" || sym === "CD91" || sym === "CALL" || sym === "KO3Y" || sym === "KO10Y" || sym === "KR_BASE_RATE" || sym.includes("KR10YBT=X");
+
+                                                    if (key === "Indices") {
+                                                        if (!isKrIndex) sections["🏦 주가지수"].push(normItem);
+                                                    }
                                                     else if (key === "Bonds" || key === "Interest") {
-                                                        // [Fix] 이미 krEvents에서 한국 지표가 추가된 경우 글로벌 리스트에서 중복 제외
-                                                        const isDuplicateKr = name.includes("국고채") || name.includes("기준금리") || name.includes("콜금리") || name.includes("CD금리");
-                                                        if (!isDuplicateKr) {
+                                                        if (!isKrRate && !name.includes("국고채") && !name.includes("기준금리")) {
                                                             sections["📋 채권 / 금리"].push(normItem);
                                                         }
                                                     }
