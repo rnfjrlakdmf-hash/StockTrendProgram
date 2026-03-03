@@ -988,11 +988,10 @@ def get_all_market_assets():
             {"symbol": "HG=F", "name": "Copper"},
         ],
         "Interest": [
-            {"symbol": "^IRX", "name": "Treasury 13W"},
-            {"symbol": "^FVX", "name": "Treasury 5Y"},
-            {"symbol": "^TNX", "name": "Treasury 10Y"},
-            {"symbol": "^TYX", "name": "Treasury 30Y"},
-            {"symbol": "^DJT", "name": "US 2Y Note"},
+            {"symbol": "^IRX", "name": "미국채 3개월"},
+            {"symbol": "^FVX", "name": "미국채 5년"},
+            {"symbol": "^TNX", "name": "미국채 10년"},
+            {"symbol": "^TYX", "name": "미국채 30년"},
         ]
     }
 
