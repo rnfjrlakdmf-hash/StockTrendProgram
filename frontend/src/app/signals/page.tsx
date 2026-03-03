@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -509,9 +509,11 @@ function CalendarTab({ router }: { router: any }) {
     // ── 경제지표 ──
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
-    const [countryFilter, setCountryFilter] = useState<"global" | "kr">("global");
+    const [countryFilter, setCountryFilter] = useState<"global" | "kr" | "global-market">("global");
     const [krEvents, setKrEvents] = useState<any[]>([]);
     const [krLoading, setKrLoading] = useState(false);
+    const [globalAssets, setGlobalAssets] = useState<any>(null);
+    const [globalAssetsLoading, setGlobalAssetsLoading] = useState(false);
 
     // ── 실적·배당 ──
     const [events, setEvents] = useState<any[]>([]);
@@ -538,7 +540,7 @@ function CalendarTab({ router }: { router: any }) {
     // 한국 경제지표 fetch (필터 변경 시)
     useEffect(() => {
         if (countryFilter !== "kr") return;
-        if (krEvents.length > 0) return; // 이미 로드됨
+        if (krEvents.length > 0) return;
         setKrLoading(true);
         (async () => {
             try {
@@ -547,6 +549,21 @@ function CalendarTab({ router }: { router: any }) {
                 if (j.status === "success") setKrEvents(j.data || []);
             } catch { }
             finally { setKrLoading(false); }
+        })();
+    }, [countryFilter]);
+
+    // 글로벌 시장 모니터 fetch (필터 변경 시)
+    useEffect(() => {
+        if (countryFilter !== "global-market") return;
+        if (globalAssets) return; // 이미 로드됨
+        setGlobalAssetsLoading(true);
+        (async () => {
+            try {
+                const r = await fetch(`${API_BASE_URL}/api/assets`);
+                const j = await r.json();
+                if (j.status === "success") setGlobalAssets(j.data || {});
+            } catch { }
+            finally { setGlobalAssetsLoading(false); }
         })();
     }, [countryFilter]);
 
@@ -614,16 +631,20 @@ function CalendarTab({ router }: { router: any }) {
             {/* ── 경제 지표 탭 ── */}
             {mainTab === "economic" && (
                 <div className="space-y-3">
-                    {/* 국가 필터 */}
-                    <div className="flex gap-2">
+                    {/* 국가 필터 3버튼 */}
+                    <div className="flex gap-2 flex-wrap">
                         <button
                             onClick={() => setCountryFilter("global")}
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${countryFilter === "global" ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
-                        >🌐 글로벌</button>
+                        >📅 글로벌 일정</button>
                         <button
                             onClick={() => setCountryFilter("kr")}
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${countryFilter === "kr" ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
-                        >🇰🇷 한국</button>
+                        >🇰🇷 한국 지표</button>
+                        <button
+                            onClick={() => setCountryFilter("global-market")}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${countryFilter === "global-market" ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
+                        >🌍 글로벌 시장</button>
                     </div>
 
                     {/* 글로벌 지표 (Yahoo Finance) */}
@@ -737,6 +758,56 @@ function CalendarTab({ router }: { router: any }) {
                                             );
                                         })}
                                         <p className="text-[10px] text-gray-600 text-center">* 실시간 데이터 (yfinance 기준) · 한국 상승=🔴 하락=🔵</p>
+                                    </div>
+                                );
+                            })()}
+                        </>
+                    )}
+                    {/* 글로벌 시장 모니터 (/api/assets) */}
+                    {countryFilter === "global-market" && (
+                        <>
+                            <p className="text-xs text-gray-500">🌍 글로벌 시장 모니터 (지수·암호화폐·환율·원자재·금리채권)</p>
+                            {globalAssetsLoading ? (
+                                <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
+                            ) : !globalAssets ? (
+                                <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10"><p>데이터를 불러올 수 없습니다.</p></div>
+                            ) : (() => {
+                                const SECTIONS = [
+                                    { key: "Indices",   label: "🏦 글로벌 주요 지수",  bg: "bg-blue-900/15",   border: "border-blue-500/20" },
+                                    { key: "Bonds",     label: "📋 금리 / 채권",       bg: "bg-purple-900/15", border: "border-purple-500/20" },
+                                    { key: "Forex",     label: "💱 주요 환율",          bg: "bg-green-900/15",  border: "border-green-500/20" },
+                                    { key: "Commodity", label: "⛽ 원자재",             bg: "bg-orange-900/15", border: "border-orange-500/20" },
+                                    { key: "Crypto",    label: "₿ 암호화폐",           bg: "bg-yellow-900/15", border: "border-yellow-500/20" },
+                                ];
+                                return (
+                                    <div className="space-y-4">
+                                        {SECTIONS.filter(s => globalAssets[s.key] && globalAssets[s.key].length > 0).map(sec => (
+                                            <div key={sec.key} className={`${sec.bg} border ${sec.border} rounded-2xl p-4`}>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="font-black text-sm text-white">{sec.label}</span>
+                                                    <span className="text-[9px] text-gray-500">{globalAssets[sec.key].length}개</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {globalAssets[sec.key].map((item: any, i: number) => {
+                                                        const chg = Number(item.change || 0);
+                                                        const isUp = chg > 0; const isDown = chg < 0;
+                                                        const p = Number(String(item.price).replace(/,/g, ""));
+                                                        const priceStr = sec.key === "Bonds" ? `${p.toFixed(2)}%` : sec.key === "Crypto" || sec.key === "Commodity" ? `$${p.toLocaleString(undefined,{maximumFractionDigits:2})}` : sec.key === "Forex" ? `₩${p.toLocaleString(undefined,{maximumFractionDigits:2})}` : p.toLocaleString(undefined,{maximumFractionDigits:2});
+                                                        const n = item.name?.replace(" Market","").replace("USD/KRW","달러/원").replace("JPY/KRW","엔/원").replace("EUR/KRW","유로/원").replace("CNY/KRW","위안/원");
+                                                        return (
+                                                            <div key={i} className="bg-black/30 rounded-xl p-3 flex flex-col gap-1 hover:bg-black/50 transition-colors">
+                                                                <span className="text-[10px] text-gray-400 font-medium leading-tight truncate">{n}</span>
+                                                                <div className="flex items-end justify-between gap-1">
+                                                                    <span className="text-sm font-black text-white font-mono leading-none">{priceStr}</span>
+                                                                    <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${isUp?"bg-red-500/20 text-red-400":isDown?"bg-blue-500/20 text-blue-400":"bg-gray-700/50 text-gray-400"}`}>{chg>=0?"+":""}{chg.toFixed(2)}%</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <p className="text-[10px] text-gray-600 text-center">* 실시간 10초 갱신 · 상승=🔴 하락=🔵</p>
                                     </div>
                                 );
                             })()}
