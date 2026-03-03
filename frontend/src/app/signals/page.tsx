@@ -29,7 +29,7 @@ export default function SignalsPage() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="시장 인텔리전스" subtitle="시그널 · 히트맵 · 주도주 · 캘린더 · 투표" />
+            <Header title="시장 인텔리전스" subtitle="실시간 시그널 · 글로벌 캘린더 · 시장 주도주 분석" />
             <div className="max-w-5xl mx-auto p-4 space-y-6">
                 {/* Tab Bar */}
                 <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide">
@@ -204,10 +204,10 @@ function SignalsFeedTab({ router }: { router: any }) {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start justify-between">
                 <div className="flex-1">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
-                        <Zap className="w-4 h-4 text-orange-400" /> 팩트 기반 실시간 시그널
+                        <Zap className="w-4 h-4 text-orange-400" /> 데이터 기반 시장 모니터링
                     </h3>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                        전체 시장 데이터에서 특정 알고리즘 조건(<span className="text-orange-300">거래량 폭증</span>, <span className="text-blue-300">주요 공시</span>, <span className="text-green-300">수급 급변</span>)을 만족한 주요 이벤트만 감지합니다.
+                        전체 시장의 노이즈를 제거하고 정교한 알고리즘 조건(<span className="text-orange-300">거래량 급증</span>, <span className="text-blue-300">핵심 공시</span>, <span className="text-green-300">주요 수급 변화</span>)에 부합하는 유의미한 시그널을 실시간으로 포착합니다.
                     </p>
                 </div>
             </div>
