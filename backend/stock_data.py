@@ -1053,30 +1053,38 @@ def get_all_market_assets():
         for future in concurrent.futures.as_completed(future_to_item):
             try:
                 cat, data = future.result(timeout=10)
-                final_results[cat].append(data)
+                # [Filter] 값이 0인 데이터는 아예 넣지 않음 (사용자 요청)
+                if data and data.get('price', 0) > 0:
+                    final_results[cat].append(data)
             except: pass
 
-    # Fetch Korean Interest Rates (확장)
+    # Fetch Korean Interest Rates (확장 및 중시)
     try:
         from korea_data import get_korean_interest_rates
         korean_rates = get_korean_interest_rates()
         if korean_rates:
-            # 기존 Interest 리스트에 병합 (KORATE, CD91 등 중복 방지하며 추가)
+            # 기존 Interest 리스트에서 중복(주로 0.0 플레이스홀더) 제거 후 병합
+            # 이미 위에서 0인 것은 필터링했으므로, 같은 심볼이 있으면 덮어쓰거나 무시
             existing_syms = {item['symbol'] for item in final_results.get('Interest', [])}
             for r in korean_rates:
-                if r['symbol'] not in existing_syms:
+                if r['symbol'] not in existing_syms and r.get('price', 0) > 0:
                     final_results['Interest'].append(r)
     except Exception as e:
         print(f"Failed to fetch Korean interest rates: {e}")
     
+    # [Final Clean] 전 카테고리에 걸쳐 0인 항목 최종 필터링 및 이름순 정렬(옵션)
+    clean_results = {}
+    for cat, items in final_results.items():
+        # 가격이 0이거나 이름이 없는 것 제외
+        valid_items = [it for it in items if it.get('price', 0) > 0 and it.get('name')]
+        clean_results[cat] = valid_items
+
     # Update Cache and Return
-    # Ensure we have at least some data to avoid caching empty failure
-    has_data = any(len(v) > 0 for v in final_results.values())
-    if has_data:
-        ASSETS_CACHE['data'] = final_results
+    if any(len(v) > 0 for v in clean_results.values()):
+        ASSETS_CACHE['data'] = clean_results
         ASSETS_CACHE['timestamp'] = time.time()
     
-    return final_results
+    return clean_results
 
 
 def get_market_news():
@@ -1392,10 +1400,24 @@ def get_korea_economic_indicators():
     except Exception as e:
         print(f"[KR Indicators] 금리 수집 오류: {e}")
 
+    # [Filter] 값이 0이거나 누락된 데이터 제외 (사용자 요청)
+    filtered = []
+    for item in indicators:
+        actual = item.get("actual", "-")
+        # 0, 0.00, -, 0.00% 등 다양한 형태의 0 체크
+        clean_actual = re.sub(r'[^0-9.]', '', str(actual))
+        try:
+            val = float(clean_actual) if clean_actual else 0
+        except:
+            val = 0
+            
+        if val > 0 and actual != "-":
+            filtered.append(item)
+
     # 중복 제거 및 정렬 (이미 unique하지만 안전장치)
     seen = set()
     unique = []
-    for item in indicators:
+    for item in filtered:
         key = item.get("event_kr", "")
         if key not in seen:
             seen.add(key)
