@@ -1054,20 +1054,6 @@ def get_all_market_assets():
                     final_results[cat].append(data)
             except: pass
 
-    # Fetch Korean Interest Rates (확장 및 중시)
-    try:
-        from korea_data import get_korean_interest_rates
-        korean_rates = get_korean_interest_rates()
-        if korean_rates:
-            # 기존 Interest 리스트에서 중복(주로 0.0 플레이스홀더) 제거 후 병합
-            # 이미 위에서 0인 것은 필터링했으므로, 같은 심볼이 있으면 덮어쓰거나 무시
-            existing_syms = {item['symbol'] for item in final_results.get('Interest', [])}
-            for r in korean_rates:
-                if r['symbol'] not in existing_syms and r.get('price', 0) > 0:
-                    final_results['Interest'].append(r)
-    except Exception as e:
-        print(f"Failed to fetch Korean interest rates: {e}")
-    
     # [Final Clean] 전 카테고리에 걸쳐 0인 항목 최종 필터링 및 이름순 정렬(옵션)
     clean_results = {}
     for cat, items in final_results.items():
