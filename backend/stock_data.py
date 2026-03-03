@@ -943,13 +943,8 @@ def get_market_data():
 
 def get_all_market_assets():
     """
-    Fetch comprehensive market data for:
-    - Indices (Major Global)
-    - Crypto
-    - Forex
-    - Commodity
-    - Interest Rates
-    Using ThreadPool for parallel execution with timeout.
+    통합 시장 데이터 조회 (지수, 환율, 원자재, 금리 등)
+    국내 금/은 스크래핑 및 야후 파이낸스 하이브리드 방식 사용.
     """
     global ASSETS_CACHE
     if time.time() - ASSETS_CACHE['timestamp'] < 30 and ASSETS_CACHE['data']:
@@ -982,8 +977,10 @@ def get_all_market_assets():
             {"symbol": "CNYKRW=X", "name": "위안/원"},
         ],
         "Commodity": [
-            {"symbol": "GC=F", "name": "금"},
-            {"symbol": "SI=F", "name": "은"},
+            {"symbol": "DOMESTIC_GOLD", "name": "국내 금"},
+            {"symbol": "DOMESTIC_SILVER", "name": "국내 은"},
+            {"symbol": "GC=F", "name": "국제 금"},
+            {"symbol": "SI=F", "name": "국제 은"},
             {"symbol": "CL=F", "name": "WTI 원유"},
             {"symbol": "NG=F", "name": "천연가스"},
             {"symbol": "HG=F", "name": "구리"},
@@ -993,44 +990,75 @@ def get_all_market_assets():
             {"symbol": "^FVX", "name": "미국채 5년"},
             {"symbol": "^TNX", "name": "미국채 10년"},
             {"symbol": "^TYX", "name": "미국채 30년"},
+            {"symbol": "KORATE", "name": "한국 기준금리"},
+            {"symbol": "CD91", "name": "CD금리 (91일)"},
+            {"symbol": "KO3Y", "name": "국고채 3년"},
+            {"symbol": "KO10Y", "name": "국고채 10년"},
+            {"symbol": "CALL", "name": "콜금리 (1일)"},
         ]
     }
 
-    results = {k: [] for k in assets.keys()}
+    final_results = {k: [] for k in assets.keys()}
 
-    def _fetch(category, item):
+    def _fetch_item(category, item):
+        symbol = item["symbol"]
+        name = item["name"]
+        price = 0.0
+        change = 0.0
+
+        # [특수] 국내 지표 처리 (스크래핑 등)
+        if symbol == "DOMESTIC_GOLD" or symbol == "DOMESTIC_SILVER":
+            try:
+                headers = {"User-Agent": "Mozilla/5.0"}
+                url = "https://finance.naver.com/marketindex/"
+                res = requests.get(url, headers=headers, timeout=5)
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(res.text, "html.parser")
+                if symbol == "DOMESTIC_GOLD":
+                    val = soup.select_one("a.head.gold_domestic div.head_info span.value")
+                    if val: price = float(val.text.replace(",", ""))
+                else:
+                    val = soup.select_one("a.head.silver div.head_info span.value")
+                    if val: price = float(val.text.replace(",", ""))
+            except: pass
+            return category, {"name": name, "symbol": symbol, "price": price, "change": 0.0}
+
+        if symbol in ["KORATE", "CD91", "KO3Y", "KO10Y", "CALL"]:
+            # 기존 한국 금리 데이터 (Scraped by korea_data)
+            try:
+                rates = korea_data.get_korean_market_indices()
+                for r in rates:
+                    if r['symbol'] == symbol:
+                        return category, {"name": name, "symbol": symbol, "price": r['price'], "change": r['change']}
+            except: pass
+            return category, {"name": name, "symbol": symbol, "price": 0.0, "change": 0.0}
+
+        # [일반] Yahoo Finance
         try:
-            ticker = yf.Ticker(item["symbol"])
+            ticker = yf.Ticker(symbol)
             price = ticker.fast_info.last_price
             prev = ticker.fast_info.previous_close
-            change = ((price - prev) / prev) * 100
-            return category, {
-                "name": item["name"],
-                "symbol": item["symbol"],
-                "price": price,
-                "change": change
-            }
+            if prev and prev != 0:
+                change = ((price - prev) / prev) * 100
+            return category, {"name": name, "symbol": symbol, "price": price, "change": change}
         except:
-            return category, {
-                "name": item["name"],
-                "symbol": item["symbol"],
-                "price": "Error",
-                "change": 0
-            }
+            return category, {"name": name, "symbol": symbol, "price": 0.0, "change": 0.0}
 
-    # Parallel Fetch
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        futures = []
+        future_to_item = {}
         for cat, items in assets.items():
             for item in items:
-                futures.append(executor.submit(_fetch, cat, item))
+                future_to_item[executor.submit(_fetch_item, cat, item)] = cat
         
-        for future in concurrent.futures.as_completed(futures):
+        for future in concurrent.futures.as_completed(future_to_item):
             try:
-                cat, data = future.result(timeout=4) # 4s timeout per item
-                results[cat].append(data)
-            except:
-                pass
+                cat, data = future.result(timeout=10)
+                final_results[cat].append(data)
+            except: pass
+
+    ASSETS_CACHE['data'] = final_results
+    ASSETS_CACHE['timestamp'] = time.time()
+    return final_results
     
     # Fetch Korean Interest Rates (추가)
     try:
@@ -1587,167 +1615,6 @@ def get_dart_risk_alerts():
         return []
 
 
-def get_all_assets():
-    """
-    Fetch all major assets (Indices, Crypto, Forex, Commodities, Interest Rates).
-    Hybrid: Twelve Data (Gold) + Yahoo Finance (Others)
-    """
-    
-    # 1. Define Asset List
-    assets = {
-        "Indices": [
-            {"symbol": "^GSPC", "name": "S&P 500"},
-            {"symbol": "^IXIC", "name": "Nasdaq"},
-            {"symbol": "^DJI", "name": "Dow Jones"},
-            {"symbol": "^RUT", "name": "Russell 2000"},
-            {"symbol": "^VIX", "name": "VIX"},
-            {"symbol": "^KS11", "name": "KOSPI"},
-            {"symbol": "^KQ11", "name": "KOSDAQ"},
-            {"symbol": "^N225", "name": "Nikkei 225"},
-            {"symbol": "^STOXX50E", "name": "Euro Stoxx 50"},
-            {"symbol": "000001.SS", "name": "Shanghai Composite"}
-        ],
-        "Crypto": [
-            {"symbol": "BTC-USD", "name": "Bitcoin"},
-            {"symbol": "ETH-USD", "name": "Ethereum"},
-            {"symbol": "XRP-USD", "name": "Ripple"},
-            {"symbol": "SOL-USD", "name": "Solana"},
-            {"symbol": "DOGE-USD", "name": "Dogecoin"}
-        ],
-        "Forex": [
-            {"symbol": "KRW=X", "name": "USD/KRW"},
-            {"symbol": "JPYKRW=X", "name": "JPY/KRW"},
-            {"symbol": "EURKRW=X", "name": "EUR/KRW"}
-        ],
-        "Commodity": [
-            {"symbol": "DOMESTIC_GOLD", "name": "국내 금"},
-            {"symbol": "DOMESTIC_SILVER", "name": "국내 은"},
-            {"symbol": "GC=F", "name": "국제 금", "twelve_symbol": "XAU/USD"}, # Twelve Data Priority
-            {"symbol": "SI=F", "name": "국제 은"},
-            {"symbol": "CL=F", "name": "WTI 원유"}, # WTI
-            {"symbol": "NG=F", "name": "천연가스"},
-            {"symbol": "HG=F", "name": "구리"}
-        ],
-        "Interest": [
-            {"symbol": "^TNX", "name": "US 10Y"},
-            {"symbol": "^IRX", "name": "US 13W"},
-            {"symbol": "^TYX", "name": "US 30Y"}
-        ]
-    }
-    
-    results = {k: [] for k in assets.keys()}
-    
-    # helper for twelve data
-    twelvedata_api_key = os.getenv("TWELVEDATA_API_KEY")
-    
-    def fetch_twelve_price(symbol):
-        if not twelvedata_api_key: return None
-        try:
-            url = f"https://api.twelvedata.com/price?symbol={symbol}&apikey={twelvedata_api_key}"
-            res = requests.get(url, timeout=3)
-            data = res.json()
-            if "price" in data:
-                return float(data["price"])
-        except:
-            pass
-        return None
-
-    def fetch_item(category, item):
-        symbol = item["symbol"]
-        name = item["name"]
-        price = 0.0
-        change = 0.0
-        
-        # [NEW] 국내 원자재 스크래핑 (네이버 금융)
-        if symbol == "DOMESTIC_GOLD" or symbol == "DOMESTIC_SILVER":
-            try:
-                headers = {"User-Agent": "Mozilla/5.0"}
-                # 금: marketindex/goldDetail.naver, 은: marketindex/worldSilverDetail.naver (국내 시세 기준)
-                # 실제로는 marketindex 메인에서 가져오는 것이 빠름
-                url = "https://finance.naver.com/marketindex/"
-                res = requests.get(url, headers=headers, timeout=5)
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(res.text, "html.parser")
-                
-                if symbol == "DOMESTIC_GOLD":
-                    # 국제금 말고 국내금(신한은행 기준) 찾기
-                    gold_el = soup.select_one("a.head.gold_domestic div.head_info span.value")
-                    if gold_el:
-                        price = float(gold_el.text.replace(",", ""))
-                elif symbol == "DOMESTIC_SILVER":
-                    # 은은 메인에 없을 수 있으므로 상세 페이지 혹은 기본값
-                    silver_el = soup.select_one("a.head.silver div.head_info span.value") # 국제 은 기준일 수 있음
-                    if silver_el:
-                        price = float(silver_el.text.replace(",", ""))
-            except:
-                pass
-            return {
-                "symbol": symbol,
-                "name": name,
-                "price": price,
-                "change": 0.0 # 스크래핑 시 변동률은 일단 0
-            }
-
-        # 1. Try Twelve Data for Commodities (Gold)
-        if category == "Commodity" and "twelve_symbol" in item:
-            td_price = fetch_twelve_price(item["twelve_symbol"])
-            if td_price:
-                # Twelve Data doesn't give 'change' in /price endpoint easily without prev close or /quote
-                # We will fetch /quote for change if needed, but for now let's just use price and try to get change from yf or just 0
-                # Actually, let's use YF for change % if we use TD for price? Or just rely on YF for everything if TD fails?
-                # Better: Use TD for price, and if successful, we mock change or fetch quote. 
-                # Let's simple: If TD price exists, use it. Change is harder.
-                # Let's try to get change from YF still, but override price with TD.
-                price = td_price
-        
-        # 2. Fetch from Yahoo Finance (Main Source)
-        try:
-            ticker = yf.Ticker(symbol)
-            # fast_info
-            yf_price = ticker.fast_info.last_price
-            prev_close = ticker.fast_info.previous_close
-            
-            # If we didn't get price from TD (or not strict), use YF
-            if price == 0.0:
-                price = yf_price
-                
-            # Always calculate change based on YF prev_close (best approx)
-            if prev_close and prev_close != 0:
-                change = ((price - prev_close) / prev_close) * 100
-                
-        except Exception:
-            pass
-            
-        return {
-            "symbol": symbol,
-            "name": name,
-            "price": price,
-            "change": change
-        }
-
-    # Parallel Fetch
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        futures = []
-        for cat, items in assets.items():
-            for item in items:
-                futures.append(executor.submit(fetch_item, cat, item))
-                
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                # Find which category this belongs to is tricky without mapping
-                # So let's just make fetch_item return (cat, res)
-                pass 
-            except:
-                pass
-    
-    # To keep code clean, let's just do simple loop or smarter map
-    # Re-structure for clean result collection
-    final_results = {}
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        future_map = {}
-        for cat, items in assets.items():
-            final_results[cat] = []
             for item in items:
                 f = executor.submit(fetch_item, cat, item)
                 future_map[f] = cat
