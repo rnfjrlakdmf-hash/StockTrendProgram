@@ -1313,7 +1313,7 @@ def get_korea_economic_indicators():
             ("KR3YT=RR", "한국 국채 3년",  "📋 채권금리", "high"),
             ("KR10YT=RR","한국 국채 10년", "📋 채권금리", "high"),
         ]
-        ]
+
 
         for sym, name_kr, cat, impact in TICKERS:
             try:
