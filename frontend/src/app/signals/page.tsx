@@ -746,6 +746,8 @@ function CalendarTab({ router }: { router: any }) {
                                                 "Gold": "금", "Silver": "은", "Crude Oil": "WTI 원유", "Brent Oil": "브렌트유",
                                                 "Natural Gas": "천연가스", "Copper": "구리",
                                                 "US 10Y": "미국채 10년", "US 2Y": "미국채 2년", "US 30Y": "미국채 30년", "US 5Y": "미국채 5년", "US 13W": "미국채 3개월",
+                                                "Treasury 10Y": "미국채 10년", "Treasury 30Y": "미국채 30년", "Treasury 5Y": "미국채 5년", "Treasury 13W": "미국채 3개월",
+                                                "US 2Y Note": "미국채 2년",
                                                 "Bitcoin": "비트코인", "Ethereum": "이더리움", "Ripple": "리플", "Solana": "솔라나", "Dogecoin": "도지코인",
                                             };
 
