@@ -1193,83 +1193,92 @@ def get_market_investors():
 
 def get_theme_heatmap_data():
     """
-    Fetch Theme Heatmap data (Mock or Scrape)
+    Fetch Theme Heatmap data - 상승/하락 테마 모두 포함
     """
-    # Real Data Scraping
     themes = []
     try:
-        # 1. Get Top Themes
         url = "https://finance.naver.com/sise/theme.naver"
-        res = requests.get(url, headers=HEADER, timeout=3)
+        res = requests.get(url, headers=HEADER, timeout=5)
         soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        
+
         rows = soup.select("table.type_1 tr")
-        
-        # Collect valid theme links first
+
         theme_candidates = []
         for row in rows:
-            if len(theme_candidates) >= 5: break
-            
+            if len(theme_candidates) >= 30: break  # 최대 30개 (상승+하락 모두)
+
             cols = row.select("td")
             if len(cols) < 2: continue
-            
+
             link = cols[0].select_one("a")
             if not link: continue
-            
+
             theme_name = link.text.strip()
             theme_url = "https://finance.naver.com" + link['href']
-            percent = cols[1].text.strip()
-            
-            if not theme_name or not percent: continue
-            
+            percent_text = cols[1].text.strip()
+
+            if not theme_name or not percent_text: continue
+
+            # 부호 파싱 (▲/▼ 또는 +/-)
+            raw = percent_text.replace(",", "").replace("%", "").strip()
+            if "▼" in raw or raw.startswith("-"):
+                val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
+            elif "▲" in raw or raw.startswith("+"):
+                val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
+            else:
+                try:
+                    val = float(raw.replace("▲", "").replace("▼", "").strip())
+                except:
+                    continue
+
             theme_candidates.append({
                 "theme": theme_name,
                 "url": theme_url,
-                "percent": percent
+                "percent": percent_text,
+                "change": val
             })
-            
-        # 2. Fetch details for each theme
+
+        # 각 테마의 대표 종목 fetch
         for t in theme_candidates:
             stocks = []
             try:
-                # Theme Detail Page
                 res_sub = requests.get(t['url'], headers=HEADER, timeout=3)
                 soup_sub = BeautifulSoup(decode_safe(res_sub), 'html.parser')
-                
+
                 sub_rows = soup_sub.select("table.type_5 tr")
-                
+
                 for s_row in sub_rows:
                     if len(stocks) >= 3: break
-                    
+
                     s_cols = s_row.select("td")
-                    # Name=0, Price=2, Diff=3, Change%=4
                     if len(s_cols) < 5: continue
-                    
+
                     s_name_tag = s_cols[0].select_one("a")
                     if not s_name_tag: continue
-                    
+
                     s_name = s_name_tag.text.strip()
                     s_change_txt = s_cols[4].text.strip()
-                    
+
                     try:
                         clean_change = s_change_txt.replace('%', '').strip()
                         s_change_val = float(clean_change)
                         stocks.append({"name": s_name, "change": s_change_val})
                     except:
                         continue
-                        
+
             except Exception as e:
                 print(f"Theme Detail Error ({t['theme']}): {e}")
-            
+
             themes.append({
                 "theme": t['theme'],
                 "percent": t['percent'],
+                "change": t['change'],  # 숫자 change 필드 추가
                 "stocks": stocks
             })
-            
+
     except Exception as e:
         print(f"Theme Scrape Error: {e}")
-        
+
     return themes
 
 def get_fear_greed_index():
