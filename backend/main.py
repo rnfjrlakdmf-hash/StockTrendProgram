@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
+﻿from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -1202,6 +1202,18 @@ def get_market_calendar():
     except Exception as e:
         print(f"Calendar Error: {e}")
         return {"status": "error", "message": "일정을 불러올 수 없습니다"}
+
+
+@app.get("/api/market/calendar/korea")
+def get_korea_calendar():
+    """한국 경제 지표 전용 API"""
+    try:
+        from stock_data import get_korea_economic_indicators
+        data = get_korea_economic_indicators()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        print(f"Korea Calendar Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 # ============================================================

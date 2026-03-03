@@ -509,6 +509,9 @@ function CalendarTab({ router }: { router: any }) {
     // ── 경제지표 ──
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
+    const [countryFilter, setCountryFilter] = useState<"global" | "kr">("global");
+    const [krEvents, setKrEvents] = useState<any[]>([]);
+    const [krLoading, setKrLoading] = useState(false);
 
     // ── 실적·배당 ──
     const [events, setEvents] = useState<any[]>([]);
@@ -520,7 +523,7 @@ function CalendarTab({ router }: { router: any }) {
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
 
-    // 경제지표 데이터 fetch
+    // 경제지표 데이터 fetch (글로벌)
     useEffect(() => {
         (async () => {
             try {
@@ -531,6 +534,21 @@ function CalendarTab({ router }: { router: any }) {
             finally { setMacroLoading(false); }
         })();
     }, []);
+
+    // 한국 경제지표 fetch (필터 변경 시)
+    useEffect(() => {
+        if (countryFilter !== "kr") return;
+        if (krEvents.length > 0) return; // 이미 로드됨
+        setKrLoading(true);
+        (async () => {
+            try {
+                const r = await fetch(`${API_BASE_URL}/api/market/calendar/korea`);
+                const j = await r.json();
+                if (j.status === "success") setKrEvents(j.data || []);
+            } catch { }
+            finally { setKrLoading(false); }
+        })();
+    }, [countryFilter]);
 
     // 실적·배당 데이터 fetch
     useEffect(() => {
@@ -596,53 +614,97 @@ function CalendarTab({ router }: { router: any }) {
             {/* ── 경제 지표 탭 ── */}
             {mainTab === "economic" && (
                 <div className="space-y-3">
-                    <p className="text-xs text-gray-500">오늘 주요 경제 지표 발표 일정 (Yahoo Finance)</p>
-                    {macroLoading ? (
-                        <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
-                    ) : macroEvents.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                            <p>오늘 주요 경제 일정이 없습니다.</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {macroEvents.map((evt, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex flex-col items-center min-w-[70px]">
-                                            <span className={`text-xs font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>
-                                                {evt.time}
-                                            </span>
-                                            {evt.impact === "high" && (
-                                                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className={`font-bold text-sm break-words ${evt.impact === "high" ? "text-white" : "text-gray-200"}`}>
-                                                {evt.event_kr || evt.event}
-                                            </div>
-                                            {evt.event_kr && evt.event_kr !== evt.event && (
-                                                <div className="text-[10px] text-gray-500 mt-0.5">{evt.event}</div>
-                                            )}
-                                            {(evt.forecast !== "-" || evt.previous !== "-") && (
-                                                <div className="flex gap-3 mt-1 text-[11px] text-gray-400">
-                                                    {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
-                                                    {evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
-                                                    {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
+                    {/* 국가 필터 */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setCountryFilter("global")}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${countryFilter === "global" ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
+                        >🌐 글로벌</button>
+                        <button
+                            onClick={() => setCountryFilter("kr")}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${countryFilter === "kr" ? "bg-blue-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
+                        >🇰🇷 한국</button>
+                    </div>
+
+                    {/* 글로벌 지표 (Yahoo Finance) */}
+                    {countryFilter === "global" && (
+                        <>
+                            <p className="text-xs text-gray-500">오늘 주요 경제 지표 발표 일정 (Yahoo Finance)</p>
+                            {macroLoading ? (
+                                <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
+                            ) : macroEvents.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                    <p>오늘 주요 경제 일정이 없습니다.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {macroEvents.map((evt, i) => (
+                                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                                            <div className="flex items-start gap-3">
+                                                <div className="flex flex-col items-center min-w-[70px]">
+                                                    <span className={`text-xs font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>{evt.time}</span>
+                                                    {evt.impact === "high" && <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
                                                 </div>
-                                            )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className={`font-bold text-sm break-words ${evt.impact === "high" ? "text-white" : "text-gray-200"}`}>{evt.event_kr || evt.event}</div>
+                                                    {evt.event_kr && evt.event_kr !== evt.event && <div className="text-[10px] text-gray-500 mt-0.5">{evt.event}</div>}
+                                                    {(evt.forecast !== "-" || evt.previous !== "-") && (
+                                                        <div className="flex gap-3 mt-1 text-[11px] text-gray-400">
+                                                            {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
+                                                            {evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
+                                                            {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {evt.impact === "high" && <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold flex-shrink-0">HIGH</span>}
+                                            </div>
                                         </div>
-                                        {evt.impact === "high" && (
-                                            <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
-                                                HIGH
-                                            </span>
-                                        )}
+                                    ))}
+                                    <div className="flex items-center justify-end gap-2 text-[10px] text-gray-500 pt-1">
+                                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> High Impact
                                     </div>
                                 </div>
-                            ))}
-                            <div className="flex items-center justify-end gap-2 text-[10px] text-gray-500 pt-1">
-                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> High Impact
-                            </div>
-                        </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* 한국 경제 지표 */}
+                    {countryFilter === "kr" && (
+                        <>
+                            <p className="text-xs text-gray-500">🇰🇷 한국 주요 경제 지표 (실시간, yfinance / 네이버금융)</p>
+                            {krLoading ? (
+                                <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
+                            ) : krEvents.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                    <p>한국 경제 지표를 불러올 수 없습니다.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {krEvents.map((evt, i) => (
+                                        <div key={i} className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-3 hover:bg-blue-900/20 transition-colors">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-bold text-sm text-white">{evt.event_kr || evt.event}</span>
+                                                        {evt.category && (
+                                                            <span className="text-[9px] bg-blue-900/50 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded font-bold">{evt.category}</span>
+                                                        )}
+                                                    </div>
+                                                    {evt.actual && evt.actual !== "-" && (
+                                                        <div className="flex gap-3 mt-1.5 text-[11px] text-gray-400">
+                                                            <span>현재 <span className="text-green-400 font-mono font-bold text-sm">{evt.actual}</span></span>
+                                                            {evt.previous && evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
+                                                            {evt.change && <span className={`font-bold font-mono ${evt.change.startsWith("+") ? "text-red-400" : "text-blue-400"}`}>{evt.change}</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="text-[9px] text-gray-500 whitespace-nowrap pt-1">{evt.time}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             )}
