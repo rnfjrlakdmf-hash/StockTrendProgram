@@ -88,9 +88,9 @@ def search_stock_code(keyword: str):
         
 search_korean_stock_symbol = search_stock_code # Alias
 
-def get_naver_stock_info(symbol: str):
+def gather_naver_stock_data(symbol: str):
     """
-    Fetch basic stock info from Naver (Price, Name, Market Type)
+    Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials) in ONE request.
     """
     try:
         code = symbol.split('.')[0]
@@ -365,6 +365,60 @@ def get_naver_stock_info(symbol: str):
                     if low_val in [0, None]: low_val = latest.get('low', 0)
             except: pass
 
+        # [New] Parse Detailed Financial Data (cop_analysis) to avoid multiple requests
+        fin_data = {}
+        fin_summary = {}
+        detailed_success = False
+        try:
+            cop_analysis = soup.select_one("div.section.cop_analysis")
+            if cop_analysis:
+                date_headers = cop_analysis.select("thead tr:nth-child(2) th")
+                dates = [th.text.strip() for th in date_headers]
+                f_rows = cop_analysis.select("tbody tr")
+                
+                for r in f_rows:
+                    r_th = r.select_one("th")
+                    if not r_th: continue
+                    r_title = r_th.text.strip()
+                    cells = r.select("td")
+                    f_values = [c.text.strip().replace(',', '') for c in cells]
+                    
+                    def _s_float(v):
+                        try:
+                            v = v.replace('%', '')
+                            if not v or v == '-' or v == 'N/A': return None
+                            return float(v)
+                        except: return None
+                        
+                    r_title_clean = r_title.replace(" ", "").replace("\n", "").replace("\t", "")
+                    mapping = {
+                        "매출액": "revenue", "영업이익률": "operating_margin", "영업이익": "operating_income",
+                        "순이익률": "net_income_margin", "당기순이익": "net_income", "ROE": "roe", "ROA": "roa",
+                        "부채비율": "debt_ratio", "당좌비율": "quick_ratio", "유보율": "reserve_ratio",
+                        "EPS": "eps", "BPS": "bps", "PER": "per", "PBR": "pbr",
+                        "주당배당금": "dps", "시가배당률": "dividend_yield", "배당성향": "payout_ratio"
+                    }
+                    key = None
+                    for k in sorted(mapping.keys(), key=len, reverse=True):
+                        if k in r_title_clean:
+                            key = mapping[k]
+                            break
+                    if key:
+                        fin_data[key] = {"dates": dates, "values": [_s_float(v) for v in f_values]}
+                
+                for k, v in fin_data.items():
+                    annual_values = v["values"][:4]
+                    quarterly_values = v["values"][4:]
+                    valid_annual = [val for val in annual_values if val is not None]
+                    if valid_annual: fin_summary[k] = valid_annual[-1] 
+                    else:
+                        valid_quarterly = [val for val in quarterly_values if val is not None]
+                        if valid_quarterly: fin_summary[k] = valid_quarterly[-1]
+                
+                detailed_success = True
+        except Exception as e:
+            print(f"Internal Financial Parse Error: {e}")
+
         # [Result Builder]
         res = {
             "name": name,
@@ -389,7 +443,13 @@ def get_naver_stock_info(symbol: str):
             "open": open_val,
             "day_high": high_val,
             "day_low": low_val,
-            "volume": volume_val
+            "volume": volume_val,
+            # [Added] Unified detailed dict
+            "detailed_financials": {
+                "full_data": fin_data,
+                "summary": fin_summary,
+                "success": detailed_success
+            }
         }
 
         return res
@@ -673,168 +733,53 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "")
         print(f"Fallback News RSS Error: {e}")
         return []
 
-def get_detailed_financials(symbol: str) -> Dict:
-    """
-    네이버 금융 기업실적분석 테이블 크롤링 (매출액, 영업이익, ROE, 부채비율 등)
-    """
-    try:
-        code = symbol.split('.')[0]
-        code = re.sub(r'[^0-9]', '', code)
-        
-        if len(code) != 6:
-            return {}
+def get_naver_stock_info(symbol: str):
+    """ Legacy Wrapper for basic stock info """
+    return gather_naver_stock_data(symbol)
 
-        url = f"https://finance.naver.com/item/main.naver?code={code}"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+# ============================================================
+# [호환성 유지] 구 API 이름 → 통합 함수로 리다이렉트
+# 이전에 사용하던 함수 이름들을 그대로 import해도 오류가 나지 않도록 별칭을 제공합니다.
+# ============================================================
+def get_naver_news(symbol: str = "", *args, **kwargs):
+    """ Legacy alias → get_integrated_stock_news """
+    return get_integrated_stock_news(symbol=symbol)
 
-        # 1. 기업실적분석 섹션 찾기
-        cop_analysis = soup.select_one("div.section.cop_analysis")
-        if not cop_analysis:
-            return {}
+def get_naver_news_search(query: str):
+    """ Legacy alias → get_integrated_stock_news """
+    return get_integrated_stock_news(query=query)
 
-        # 2. 날짜 헤더 파싱 (연간/분기)
-        # thead tr:nth-child(2) 에 연도/분기 정보가 있음
-        date_headers = cop_analysis.select("thead tr:nth-child(2) th")
-        dates = [th.text.strip() for th in date_headers]
-        
-        # 3. 데이터 로우 파싱
-        # 주요 지표 (매출액, 영업이익, 당기순이익, 영업이익률, ROE, 부채비율, 당좌비율, 유보율, EPS, PER, PBR, 주당배당금, 시가배당률, 배당성향)
-        rows = cop_analysis.select("tbody tr")
-        
-        fin_data = {}
-        for row in rows:
-            # 로우 이름 (주요지표명)
-            row_title_tag = row.select_one("th")
-            if not row_title_tag:
-                continue
-            
-            row_title = row_title_tag.text.strip()
-            
-            # 데이터 값들
-            cells = row.select("td")
-            values = [cell.text.strip().replace(',', '') for cell in cells]
-            
-            # 숫자 변환 도우미
-            def safe_float(v):
-                try:
-                    v = v.replace('%', '')
-                    if not v or v == '-' or v == 'N/A':
-                        return None
-                    return float(v)
-                except:
-                    return None
+def get_naver_stock_search_news_fallback(query: str = "", symbol: str = ""):
+    """ Legacy alias → get_integrated_stock_news """
+    return get_integrated_stock_news(symbol=symbol, query=query)
 
-            # 매핑 정의 (검색어 -> 키) - Use substring matching but prefer longer matches
-            row_title_clean = row_title.replace(" ", "").replace("\n", "").replace("\t", "")
-            
-            mapping = {
-                "매출액": "revenue",
-                "영업이익률": "operating_margin",
-                "영업이익": "operating_income",
-                "순이익률": "net_income_margin",
-                "당기순이익": "net_income",
-                "ROE": "roe",
-                "ROA": "roa",
-                "부채비율": "debt_ratio",
-                "당좌비율": "quick_ratio",
-                "유보율": "reserve_ratio",
-                "EPS": "eps",
-                "BPS": "bps",
-                "PER": "per",
-                "PBR": "pbr",
-                "주당배당금": "dps",
-                "시가배당률": "dividend_yield",
-                "배당성향": "payout_ratio"
-            }
-
-            key = None
-            # Sort by length descending to match longest label first
-            for k in sorted(mapping.keys(), key=len, reverse=True):
-                if k in row_title_clean:
-                    key = mapping[k]
-                    break
-            
-            if key:
-                # 최근 데이터가 가장 오른쪽(예상치) 또는 그 전(확정치)
-                # 보통 연간 4개, 분기 6개 정도 나옴
-                # 우리는 breakdown을 위해 전체 리스트를 저장하거나, 최신 확정치를 저장
-                fin_data[key] = {
-                    "dates": dates,
-                    "values": [safe_float(v) for v in values]
-                }
-
-        # 요약 정보 구성 (최근 확정 연간 실적 우선)
-        # index 0~3: Annual, 4~9: Quarterly
-        summary = {}
-        for k, v in fin_data.items():
-            annual_values = v["values"][:4]
-            quarterly_values = v["values"][4:]
-            
-            # 1. Try to get latest Annual
-            valid_annual = [val for val in annual_values if val is not None]
-            if valid_annual:
-                summary[k] = valid_annual[-1] 
-            else:
-                # 2. Fallback to latest Quarterly if no annual
-                valid_quarterly = [val for val in quarterly_values if val is not None]
-                if valid_quarterly:
-                    summary[k] = valid_quarterly[-1]
-
-        return {
-            "full_data": fin_data,
-            "summary": summary,
-            "success": True
-        }
-
-    except Exception as e:
-        print(f"Detailed Financials Error for {symbol}: {e}")
-        return {"success": False, "error": str(e)}
+def get_detailed_financials(symbol: str) -> dict:
+    """ Legacy Wrapper to prevent duplicated requests """
+    res = gather_naver_stock_data(symbol)
+    if res and "detailed_financials" in res:
+        return res["detailed_financials"]
+    return {"success": False, "error": "Fetch failed"}
 
 def get_stock_financials(symbol: str):
-    """
-    네이버 금융 종목분석 파싱 (주요 재무제표)
-    기존 버전 호환성을 유지하면서 상세 데이터를 활용
-    """
+    """ Legacy Wrapper to prevent duplicated requests """
     try:
-        # 상세 데이터 가져오기 시도
-        detailed = get_detailed_financials(symbol)
+        res = gather_naver_stock_data(symbol)
+        if not res or not res.get("detailed_financials", {}).get("success"):
+            return {"per": "N/A", "pbr": "N/A", "success": False}
+            
+        summary = res["detailed_financials"]["summary"]
         
-        if detailed.get("success"):
-            summary = detailed.get("summary", {})
-            
-            # 기존 포맷으로 변환
-            financials = {}
-            
-            # 시가총액은 별도로 다시 가져오거나 메인 페이지 soup에서 유지
-            code = symbol.split('.')[0]
-            code = re.sub(r'[^0-9]', '', code)
-            url = f"https://finance.naver.com/item/main.naver?code={code}"
-            res = requests.get(url, headers=HEADER, timeout=5)
-            soup = BeautifulSoup(decode_safe(res), 'html.parser')
-            
-            try:
-                market_cap = soup.select_one("#_market_sum").text.strip().replace('\t', '').replace('\n', '')
-                financials['market_cap'] = market_cap + " 억원"
-            except:
-                pass
-
-            # 상세 정보 매핑
-            financials['per'] = str(summary.get('per', 'N/A'))
-            financials['pbr'] = str(summary.get('pbr', 'N/A'))
-            financials['roe'] = summary.get('roe')
-            financials['revenue'] = summary.get('revenue')
-            financials['operating_income'] = summary.get('operating_income')
-            financials['debt_ratio'] = summary.get('debt_ratio')
-            
-            # 상세 데이터 자체도 포함 (추후 확장용)
-            financials['detailed'] = detailed
-            
-            return financials
-        
-        # Fallback (상세 실패 시 기존 로직)
-        return {"per": "N/A", "pbr": "N/A", "success": False}
-        
+        financials = {
+            "market_cap": res.get("market_cap_str", "N/A"),
+            "per": str(summary.get('per', 'N/A')),
+            "pbr": str(summary.get('pbr', 'N/A')),
+            "roe": summary.get('roe'),
+            "revenue": summary.get('revenue'),
+            "operating_income": summary.get('operating_income'),
+            "debt_ratio": summary.get('debt_ratio'),
+            "detailed": res["detailed_financials"]
+        }
+        return financials
     except Exception as e:
         print(f"Financials crawl error: {e}")
         return None

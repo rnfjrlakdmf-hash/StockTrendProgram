@@ -812,11 +812,6 @@ def ranking_bg_looper():
             print(f"Ranking Background Update Error: {e}")
         time.sleep(20) # 20초마다 갱신
 
-@app.get("/api/korea/chart/{symbol}")
-def get_korea_chart(symbol: str):
-    from korea_data import get_index_chart_data
-    data = get_index_chart_data(symbol)
-    return {"status": "success", "data": data}
 
 @app.get("/api/market")
 def read_market():
@@ -824,17 +819,7 @@ def read_market():
     data = get_market_data()
     return {"status": "success", "data": data}
 
-@app.get("/api/assets")
-def read_all_assets():
-    """모든 자산군(주식, 코인, 환율 등)의 시세 반환"""
-    data = get_all_assets()
-    return {"status": "success", "data": data}
 
-@app.get("/api/market/calendar")
-def read_market_calendar():
-    """경제 캘린더 데이터 반환"""
-    data = get_macro_calendar()
-    return {"status": "success", "data": data}
 
 @app.get("/api/earnings/{symbol}")
 def read_earnings_whisper(symbol: str):
@@ -953,45 +938,6 @@ from korea_data import (
     get_ipo_data
 )
 
-
-
-@app.get("/api/korea/indices")
-def read_korea_indices():
-    """국내 증시 지수 (코스피/코스닥/200)"""
-    data = get_korean_market_indices()
-    return {"status": "success", "data": data}
-
-@app.get("/api/korea/sectors")
-def read_korea_sectors():
-    """업종 상위"""
-    data = get_top_sectors()
-    return {"status": "success", "data": {"top_sectors": data}}
-
-@app.get("/api/korea/themes")
-def read_korea_themes():
-    """테마 상위 (사용 여부 확인 필요, 보통 heatmap이 대체)"""
-    data = get_top_themes()
-    return {"status": "success", "data": {"top_themes": data}}
-
-@app.get("/api/korea/investors")
-def read_korea_investors():
-    """투자자별 매매동향"""
-    data = get_market_investors()
-    return {"status": "success", "data": data}
-
-@app.get("/api/korea/heatmap")
-def read_korea_heatmap():
-    """테마 히트맵"""
-    data = get_theme_heatmap_data()
-    return {"status": "success", "data": data}
-
-@app.get("/api/korea/chart/{symbol}")
-def read_korea_chart(symbol: str):
-    """지수/종목 미니 차트 데이터 (Mock)"""
-    # Simply return mock line data for now
-    import random
-    mock_data = [{"date": i, "close": 2000 + random.randint(-50, 50)} for i in range(20)]
-    return {"status": "success", "data": mock_data}
 
 
 from rank_data import get_realtime_top10

@@ -79,10 +79,7 @@ def get_market_context(message: str):
             
     return context
 
-from ai_analysis import analyze_theme
-
-from ai_analysis import analyze_theme
-from korea_data import search_stock_code, get_naver_news, get_stock_financials
+from korea_data import search_stock_code, get_integrated_stock_news, get_stock_financials
 
 def chat_with_ai(message: str) -> str:
     if not API_KEY:
@@ -165,7 +162,7 @@ def chat_with_ai(message: str) -> str:
         # C. 최신 뉴스 (News) - 네이버 뉴스 크롤링
         news_list = []
         if ".KS" in symbol or ".KQ" in symbol:
-            news_list = get_naver_news(symbol)
+            news_list = get_integrated_stock_news(symbol=symbol, name=name)
         else:
              # 미국 주식은 yfinance news
              try:

@@ -232,27 +232,6 @@ def get_daily_prices_data(ticker):
         return []
 
 
-def fetch_basic_quote(symbol):
-    """
-    Fastest possible check for price using fast_info.
-    Returns dict with essential data and the ticker object.
-    """
-    try:
-        t = yf.Ticker(symbol)
-        # Trigger fast_info access
-        price = t.fast_info.last_price
-        if price and price > 0:
-            return {
-                "symbol": symbol,
-                "price": price,
-                "prev_close": t.fast_info.previous_close,
-                "currency": t.fast_info.currency,
-                "market_cap": t.fast_info.market_cap,
-                "ticker": t
-            }
-    except BaseException:
-        pass
-    return None
 
 
 def fetch_full_info(ticker):
@@ -396,8 +375,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
 
         quote_futures = {
             executor.submit(
-                fetch_basic_quote,
-                s): s for s in candidates}
+                get_simple_quote,
+                s, None, True): s for s in candidates}
 
         winner_data = None
 
@@ -520,9 +499,17 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     fetch_google_news, stock_name, 'ko', 'KR')
 
         # 4. Finalize Values
-        current_price = winner_data['price']
-        previous_close = winner_data['prev_close']
-        currency = winner_data['currency']
+        # Use raw_price (numeric) from get_simple_quote to avoid str/float issues
+        current_price = winner_data.get('raw_price') or winner_data.get('price', 0)
+        if isinstance(current_price, str):
+            try:
+                current_price = float(current_price.replace(',', ''))
+            except:
+                current_price = 0
+        previous_close = winner_data.get('prev_close', 0)
+        if not previous_close:
+            previous_close = 0
+        currency = winner_data.get('currency', None)
 
         # KRW Fix
         if target_symbol.endswith(('.KS', '.KQ')):
@@ -662,7 +649,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         return None
 
 
-def get_simple_quote(symbol: str, broker_client=None):
+def get_simple_quote(symbol: str, broker_client=None, strict=False):
     """
     관심 종목 표시를 위해 가격과 등락률만 빠르게 조회합니다.
     뉴스 검색이나 AI 분석을 수행하지 않습니다.
@@ -720,6 +707,8 @@ def get_simple_quote(symbol: str, broker_client=None):
 
         # 데이터가 없거나 0인 경우 처리
         if not current_price:
+            if strict: return None  # Fast fail for validation
+
             # [Fallback] If fetching fails, use simulated data
             import hashlib
             h = int(hashlib.sha256(symbol.encode()).hexdigest(), 16) % 100000
@@ -748,9 +737,14 @@ def get_simple_quote(symbol: str, broker_client=None):
             "symbol": symbol,
             "price": price_str,
             "change": change_str,
-            "name": symbol
+            "name": symbol,
+            "ticker": ticker,
+            "raw_price": current_price,
+            "prev_close": previous_close
         }
     except Exception as e:
+        if strict: return None  # Fast fail for validation
+        
         # Fallback for ANY error
         # Generate specific mock price for consistent testing
         import hashlib

@@ -471,11 +471,11 @@ def enrich_event_with_news(symbol: str, event_date: str, event: Dict) -> Dict:
         
         # 1. 뉴스 검색 - 이벤트 날짜 범위의 과거 뉴스 직접 검색
         try:
-            from korea_data import get_naver_news
+            from korea_data import get_integrated_stock_news
             print(f"[DEBUG] Fetching historical news for {symbol} between {start_date} and {end_date}...")
             
-            # 날짜 범위를 지정하여 과거 뉴스 검색
-            news_list = get_naver_news(symbol, start_date=start_date, end_date=end_date, max_pages=10)
+            # 통합 뉴스 함수로 심볼 기반 검색
+            news_list = get_integrated_stock_news(symbol=symbol)
             
             print(f"[DEBUG] Found {len(news_list)} news items in date range")
             
