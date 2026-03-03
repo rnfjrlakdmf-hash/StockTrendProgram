@@ -304,7 +304,7 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                     </div>
                 </div>
             </div>
-        </div >
+        </>
     );
 }
 
