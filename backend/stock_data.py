@@ -1291,125 +1291,136 @@ def get_macro_calendar():
 
 def get_korea_economic_indicators():
     """
-    한국 주요 경제지표 현황 수집
-    - 네이버 금융 경제지표 페이지 스크래핑
-    - 한국은행 주요 지표 (기준금리, 환율, 물가 등)
+    한국 주요 경제지표 현황 수집 (대폭 확장 버전)
+    - 주가지수, 환율, 채권금리, 원자재, 공포지수 등 20개 이상
     """
-    import requests
-    from bs4 import BeautifulSoup
     import datetime
 
     indicators = []
     today = datetime.datetime.now().strftime("%Y-%m-%d")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
-    }
 
-    # ── 1. 네이버 금융 경제지표 (시장 지표) ──
-    try:
-        url = "https://finance.naver.com/marketindex/?tabSel=kor"
-        res = requests.get(url, headers=headers, timeout=5)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        # 원/달러 환율
-        usd_krw = soup.select_one("a[href*='USD_KRW'] span.value")
-        if usd_krw:
-            indicators.append({
-                "date": today,
-                "time": "실시간",
-                "event": "[KR] USD/KRW 환율",
-                "event_kr": "[한국] 원/달러 환율",
-                "country": "KR",
-                "country_kr": "한국",
-                "actual": usd_krw.text.strip(),
-                "forecast": "-",
-                "previous": "-",
-                "impact": "high",
-                "category": "환율"
-            })
-    except Exception as e:
-        print(f"[KR Indicator] 환율 fetch error: {e}")
-
-    # ── 2. 네이버 금융 경제지표 페이지 ──
-    try:
-        eco_url = "https://finance.naver.com/marketindex/economy/index.naver"
-        res = requests.get(eco_url, headers=headers, timeout=5)
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        # 주요 경제지표 테이블 파싱 (각 지표 행)
-        rows = soup.select("table.tbl_hov tr")
-        for row in rows:
-            cols = row.select("td")
-            if len(cols) < 2:
-                continue
-            try:
-                name_tag = cols[0].select_one("a") or cols[0]
-                name = name_tag.text.strip()
-                value = cols[1].text.strip() if len(cols) > 1 else "-"
-                prev = cols[2].text.strip() if len(cols) > 2 else "-"
-                if not name or not value:
-                    continue
-
-                indicators.append({
-                    "date": today,
-                    "time": "최신",
-                    "event": f"[KR] {name}",
-                    "event_kr": f"[한국] {name}",
-                    "country": "KR",
-                    "country_kr": "한국",
-                    "actual": value,
-                    "forecast": "-",
-                    "previous": prev,
-                    "impact": "medium",
-                    "category": "경제지표"
-                })
-            except:
-                continue
-    except Exception as e:
-        print(f"[KR Indicator] 경제지표 페이지 fetch error: {e}")
-
-    # ── 3. 한국 주요 고정 지표 (한국은행, 통계청 대표 항목) ──
-    # yfinance로 가져올 수 있는 한국 관련 지표
+    # ── yfinance로 실시간 지표 수집 ──
     try:
         import yfinance as yf
 
-        kr_tickers = {
-            "KRW=X": ("원/달러 환율", "환율"),
-            "KRWJPY=X": ("원/엔 환율", "환율"),
-            "^KS11": ("KOSPI 지수", "주가지수"),
-            "^KQ11": ("KOSDAQ 지수", "주가지수"),
-        }
+        TICKERS = [
+            # 주가지수
+            ("^KS11",   "KOSPI 지수",        "🏦 주가지수", "high"),
+            ("^KQ11",   "KOSDAQ 지수",       "🏦 주가지수", "high"),
+            ("^IXIC",   "나스닥 지수",        "🌐 글로벌지수", "medium"),
+            ("^GSPC",   "S&P 500",           "🌐 글로벌지수", "medium"),
+            # 환율
+            ("KRW=X",   "원/달러 (USD/KRW)", "💱 환율",    "high"),
+            ("JPYKRW=X","엔/원 (JPY/KRW)",   "💱 환율",    "medium"),
+            ("EURKRW=X","유로/원 (EUR/KRW)", "💱 환율",    "medium"),
+            ("CNYKRW=X","위안/원 (CNY/KRW)", "💱 환율",    "medium"),
+            # 채권 금리
+            ("^KTB3Y",  "한국 국고채 3년",   "📋 채권금리", "high"),
+            ("^TNX",    "미국 10년 국채",     "📋 채권금리", "high"),
+            ("^TYX",    "미국 30년 국채",     "📋 채권금리", "medium"),
+            # 원자재
+            ("CL=F",    "WTI 원유 ($/배럴)", "⛽ 원자재",  "high"),
+            ("BZ=F",    "브렌트유 ($/배럴)", "⛽ 원자재",  "medium"),
+            ("GC=F",    "금 ($/온스)",        "⛽ 원자재",  "medium"),
+            ("SI=F",    "은 ($/온스)",        "⛽ 원자재",  "low"),
+            ("HG=F",    "구리 ($/파운드)",    "⛽ 원자재",  "medium"),
+            # 공포/시장심리
+            ("^VIX",    "VIX 공포지수",       "😨 시장심리", "high"),
+            # 가상자산 (참고용)
+            ("BTC-USD",  "비트코인 (USD)",    "₿ 가상자산", "medium"),
+        ]
 
-        for ticker_sym, (name_kr, cat) in kr_tickers.items():
+        for sym, name_kr, cat, impact in TICKERS:
             try:
-                t = yf.Ticker(ticker_sym)
+                t = yf.Ticker(sym)
                 info = t.fast_info
                 price = getattr(info, "last_price", None)
                 prev_c = getattr(info, "previous_close", None)
-                if price:
-                    chg = ""
-                    if prev_c and prev_c > 0:
-                        pct = ((price - prev_c) / prev_c) * 100
-                        chg = f"{pct:+.2f}%"
+                if price is None:
+                    continue
 
-                    indicators.append({
-                        "date": today,
-                        "time": "실시간",
-                        "event": f"[KR] {name_kr}",
-                        "event_kr": f"[한국] {name_kr}",
-                        "country": "KR",
-                        "country_kr": "한국",
-                        "actual": f"{price:,.2f}" if isinstance(price, float) else str(price),
-                        "forecast": "-",
-                        "previous": f"{prev_c:,.2f}" if isinstance(prev_c, float) else "-",
-                        "impact": "high" if cat == "주가지수" else "medium",
-                        "category": cat,
-                        "change": chg
-                    })
-            except:
+                chg = ""
+                chg_pct = None
+                if prev_c and prev_c > 0:
+                    chg_pct = ((price - prev_c) / prev_c) * 100
+                    chg = f"{chg_pct:+.2f}%"
+
+                # 포맷: 작은 수(금리)는 소수점, 큰 수(지수)는 콤마
+                if price < 10:
+                    actual_str = f"{price:.4f}"
+                    prev_str = f"{prev_c:.4f}" if isinstance(prev_c, float) else "-"
+                elif price < 1000:
+                    actual_str = f"{price:.2f}"
+                    prev_str = f"{prev_c:.2f}" if isinstance(prev_c, float) else "-"
+                else:
+                    actual_str = f"{price:,.2f}"
+                    prev_str = f"{prev_c:,.2f}" if isinstance(prev_c, float) else "-"
+
+                indicators.append({
+                    "date": today,
+                    "time": "실시간",
+                    "event": f"[KR] {name_kr}",
+                    "event_kr": f"[한국] {name_kr}",
+                    "country": "KR",
+                    "country_kr": "한국",
+                    "actual": actual_str,
+                    "forecast": "-",
+                    "previous": prev_str,
+                    "impact": impact,
+                    "category": cat,
+                    "change": chg,
+                    "change_val": round(chg_pct, 2) if chg_pct is not None else None,
+                })
+            except Exception as ex:
+                print(f"[KR Indicator] {sym} error: {ex}")
                 continue
+
     except Exception as e:
-        print(f"[KR Indicator] yfinance fetch error: {e}")
+        print(f"[KR Indicator] yfinance 전체 오류: {e}")
+
+    # ── 한국은행 기준금리 (반고정 정보, 최근 결정 기준) ──
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+        bok_headers = {"User-Agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36"}
+        # 네이버 금융 기준금리 스크래핑
+        bok_url = "https://finance.naver.com/marketindex/economy/baseRate.naver"
+        bok_res = requests.get(bok_url, headers=bok_headers, timeout=5)
+        bok_soup = BeautifulSoup(bok_res.text, "html.parser")
+        rate_el = bok_soup.select_one("em.blind")
+        if not rate_el:
+            rate_el = bok_soup.select_one("span.num")
+        rate_val = rate_el.text.strip() if rate_el else "3.00"
+        indicators.insert(0, {
+            "date": today,
+            "time": "최신",
+            "event": "[KR] 한국은행 기준금리",
+            "event_kr": "[한국] 🏦 기준금리 (한국은행)",
+            "country": "KR",
+            "country_kr": "한국",
+            "actual": f"{rate_val}%",
+            "forecast": "-",
+            "previous": "-",
+            "impact": "high",
+            "category": "📋 채권금리",
+            "change": "",
+        })
+    except Exception as e:
+        # scrape 실패 시 하드코딩 fallback
+        indicators.insert(0, {
+            "date": today,
+            "time": "최신",
+            "event": "[KR] 한국은행 기준금리",
+            "event_kr": "[한국] 🏦 기준금리 (한국은행)",
+            "country": "KR",
+            "country_kr": "한국",
+            "actual": "3.00%",
+            "forecast": "-",
+            "previous": "3.25%",
+            "impact": "high",
+            "category": "📋 채권금리",
+            "change": "-0.25%p",
+        })
 
     # 중복 제거
     seen = set()
