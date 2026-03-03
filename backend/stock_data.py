@@ -1305,29 +1305,32 @@ def get_korea_economic_indicators():
 
         TICKERS = [
             # 주가지수
-            ("^KS11",   "KOSPI 지수",        "🏦 주가지수", "high"),
-            ("^KQ11",   "KOSDAQ 지수",       "🏦 주가지수", "high"),
-            ("^IXIC",   "나스닥 지수",        "🌐 글로벌지수", "medium"),
-            ("^GSPC",   "S&P 500",           "🌐 글로벌지수", "medium"),
+            ("^KS11",    "KOSPI 지수",           "🏦 주가지수", "high"),
+            ("^KS200",   "KOSPI 200 지수",        "🏦 주가지수", "high"),
+            ("^KQ11",    "KOSDAQ 지수",           "🏦 주가지수", "high"),
+            ("^IXIC",    "나스닥 지수",            "🌐 글로벌지수", "medium"),
+            ("^GSPC",    "S&P 500",               "🌐 글로벌지수", "medium"),
             # 환율
-            ("KRW=X",   "원/달러 (USD/KRW)", "💱 환율",    "high"),
-            ("JPYKRW=X","엔/원 (JPY/KRW)",   "💱 환율",    "medium"),
-            ("EURKRW=X","유로/원 (EUR/KRW)", "💱 환율",    "medium"),
-            ("CNYKRW=X","위안/원 (CNY/KRW)", "💱 환율",    "medium"),
-            # 채권 금리
-            ("^KTB3Y",  "한국 국고채 3년",   "📋 채권금리", "high"),
-            ("^TNX",    "미국 10년 국채",     "📋 채권금리", "high"),
-            ("^TYX",    "미국 30년 국채",     "📋 채권금리", "medium"),
+            ("KRW=X",    "원/달러 (USD/KRW)",     "💱 환율",    "high"),
+            ("JPYKRW=X", "엔/원 (JPY/KRW)",       "💱 환율",    "medium"),
+            ("EURKRW=X", "유로/원 (EUR/KRW)",     "💱 환율",    "medium"),
+            ("CNYKRW=X", "위안/원 (CNY/KRW)",     "💱 환율",    "medium"),
+            # 채권 금리 (Reuters 코드 사용)
+            ("KR2YT=RR", "한국 국채 2년",         "📋 채권금리", "high"),
+            ("KR3YT=RR", "한국 국채 3년",         "📋 채권금리", "high"),
+            ("KR10YT=RR","한국 국채 10년",        "📋 채권금리", "high"),
+            ("^TNX",     "미국 국채 10년",        "📋 채권금리", "medium"),
+            ("^TYX",     "미국 국채 30년",        "📋 채권금리", "medium"),
             # 원자재
-            ("CL=F",    "WTI 원유 ($/배럴)", "⛽ 원자재",  "high"),
-            ("BZ=F",    "브렌트유 ($/배럴)", "⛽ 원자재",  "medium"),
-            ("GC=F",    "금 ($/온스)",        "⛽ 원자재",  "medium"),
-            ("SI=F",    "은 ($/온스)",        "⛽ 원자재",  "low"),
-            ("HG=F",    "구리 ($/파운드)",    "⛽ 원자재",  "medium"),
+            ("CL=F",    "WTI 원유 ($/배럴)",     "⛽ 원자재",  "high"),
+            ("BZ=F",    "브렌트유 ($/배럴)",     "⛽ 원자재",  "medium"),
+            ("GC=F",    "금 ($/온스)",            "⛽ 원자재",  "medium"),
+            ("SI=F",    "은 ($/온스)",            "⛽ 원자재",  "low"),
+            ("HG=F",    "구리 ($/파운드)",        "⛽ 원자재",  "medium"),
             # 공포/시장심리
-            ("^VIX",    "VIX 공포지수",       "😨 시장심리", "high"),
+            ("^VIX",    "VIX 공포지수",           "😨 시장심리", "high"),
             # 가상자산 (참고용)
-            ("BTC-USD",  "비트코인 (USD)",    "₿ 가상자산", "medium"),
+            ("BTC-USD",  "비트코인 (USD)",        "₿ 가상자산", "medium"),
         ]
 
         for sym, name_kr, cat, impact in TICKERS:
