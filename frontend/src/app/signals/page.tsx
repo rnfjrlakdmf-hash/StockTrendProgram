@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
@@ -735,14 +736,23 @@ function CalendarTab({ router }: { router: any }) {
 
 // ============ TAB 5: VOTE ============
 function VoteTab() {
+    const { user } = useAuth();  // 로그인 상태 확인
     const [voteSymbol, setVoteSymbol] = useState("");
     const [voteResults, setVoteResults] = useState<VoteResult | null>(null);
     const [userVote, setUserVote] = useState<string | null>(null);
     const [voting, setVoting] = useState(false);
     const pops = ["005930", "000660", "373220", "035420", "068270", "AAPL", "TSLA", "NVDA"];
 
-    const fetchVotes = async (sym: string) => { try { const uid = localStorage.getItem("user_id") || "guest"; const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { headers: { "X-User-Id": uid } }); const j = await r.json(); if (j.status === "success") { setVoteResults(j.data); setUserVote(j.user_vote); } } catch { } };
-    const submitVote = async (sym: string, dir: string) => { setVoting(true); try { const uid = localStorage.getItem("user_id") || "guest"; const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-Id": uid }, body: JSON.stringify({ direction: dir }) }); const j = await r.json(); if (j.status === "success") { setVoteResults(j.results); setUserVote(dir); } } catch { } finally { setVoting(false); } };
+    const fetchVotes = async (sym: string) => { try { const uid = user?.id || "guest"; const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { headers: { "X-User-Id": uid } }); const j = await r.json(); if (j.status === "success") { setVoteResults(j.data); setUserVote(j.user_vote); } } catch { } };
+    const submitVote = async (sym: string, dir: string) => {
+        if (!user) return; // 로그인 필수
+        setVoting(true);
+        try {
+            const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-Id": user.id }, body: JSON.stringify({ direction: dir }) });
+            const j = await r.json();
+            if (j.status === "success") { setVoteResults(j.results); setUserVote(dir); }
+        } catch { } finally { setVoting(false); }
+    };
 
     return (
         <div className="space-y-6">
@@ -768,11 +778,23 @@ function VoteTab() {
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-700 rounded-r-full" style={{ width: `${voteResults.down_pct}%` }} />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => submitVote(voteSymbol, "up")} disabled={voting} className={`py-4 rounded-2xl font-black text-lg active:scale-95 ${userVote === "up" ? "bg-red-500 text-white ring-2 ring-red-300" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}><ThumbsUp className="w-5 h-5 mx-auto mb-1" />오를것 👆</button>
-                        <button onClick={() => submitVote(voteSymbol, "down")} disabled={voting} className={`py-4 rounded-2xl font-black text-lg active:scale-95 ${userVote === "down" ? "bg-blue-500 text-white ring-2 ring-blue-300" : "bg-blue-500/20 text-blue-400 border border-blue-500/30"}`}><ThumbsDown className="w-5 h-5 mx-auto mb-1" />내릴것 👇</button>
-                    </div>
-                    {userVote && <p className="text-center text-xs text-gray-500">✅ 오늘 투표 완료 ({userVote === "up" ? "오를것" : "내릴것"})</p>}
+                    {/* 로그인 상태에 따라 투표 UI 다르게 표시 */}
+                    {user ? (
+                        <>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => submitVote(voteSymbol, "up")} disabled={voting} className={`py-4 rounded-2xl font-black text-lg active:scale-95 ${userVote === "up" ? "bg-red-500 text-white ring-2 ring-red-300" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}><ThumbsUp className="w-5 h-5 mx-auto mb-1" />오를것 👆</button>
+                                <button onClick={() => submitVote(voteSymbol, "down")} disabled={voting} className={`py-4 rounded-2xl font-black text-lg active:scale-95 ${userVote === "down" ? "bg-blue-500 text-white ring-2 ring-blue-300" : "bg-blue-500/20 text-blue-400 border border-blue-500/30"}`}><ThumbsDown className="w-5 h-5 mx-auto mb-1" />내릴것 👇</button>
+                            </div>
+                            {userVote && <p className="text-center text-xs text-gray-500">✅ 오늘 투표 완료 ({userVote === "up" ? "오를것" : "내릴것"})</p>}
+                        </>
+                    ) : (
+                        <div className="text-center border border-purple-500/30 bg-purple-900/10 rounded-2xl p-5">
+                            <p className="text-3xl mb-2">🔒</p>
+                            <p className="font-bold text-white text-sm mb-1">로그인 후 투표할 수 있어요</p>
+                            <p className="text-gray-500 text-xs mb-4">구글 계정으로 로그인하면 투표에 참여할 수 있습니다.</p>
+                            <p className="text-[10px] text-gray-600">* 투표 결과는 누구나 조회할 수 있습니다</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
