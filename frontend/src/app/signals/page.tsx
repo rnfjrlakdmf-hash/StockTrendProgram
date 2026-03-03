@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@/lib/config";
 import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
-    Activity, AlertTriangle, Search, Calendar, ChevronLeft
+    Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink
 } from "lucide-react";
 
 // ============ Shared Types ============
@@ -514,6 +514,8 @@ function CalendarTab({ router }: { router: any }) {
     const [krLoading, setKrLoading] = useState(false);
     const [globalAssets, setGlobalAssets] = useState<any>(null);
     const [globalAssetsLoading, setGlobalAssetsLoading] = useState(false);
+    const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
+    const [riskLoading, setRiskLoading] = useState(false);
 
     // ── 실적·배당 ──
     const [events, setEvents] = useState<any[]>([]);
@@ -548,16 +550,19 @@ function CalendarTab({ router }: { router: any }) {
         const fetchMarketData = async () => {
             try {
                 // 병렬로 데이터 호출
-                const [krRes, globalRes] = await Promise.all([
+                const [krRes, globalRes, riskRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
-                    fetch(`${API_BASE_URL}/api/assets`)
+                    fetch(`${API_BASE_URL}/api/assets`),
+                    fetch(`${API_BASE_URL}/api/market/risk-alerts`)
                 ]);
 
                 const krJson = await krRes.json();
                 const globalJson = await globalRes.json();
+                const riskJson = await riskRes.json();
 
                 if (krJson.status === "success") setKrEvents(krJson.data || []);
                 if (globalJson.status === "success") setGlobalAssets(globalJson.data || {});
+                if (riskJson.status === "success") setRiskAlerts(riskJson.data || []);
             } catch (error) {
                 console.error("Market data fetch error:", error);
             } finally {
@@ -703,6 +708,41 @@ function CalendarTab({ router }: { router: any }) {
                                 <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-blue-500" /></div>
                             ) : (
                                 <div className="space-y-4">
+                                    {/* [NEW] 오늘의 주요 공시 리스크 알림 위젯 */}
+                                    {riskAlerts.length > 0 && (
+                                        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-2 backdrop-blur-md">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <AlertTriangle className="w-5 h-5 text-red-500" />
+                                                <h4 className="text-sm font-black text-red-400 uppercase tracking-tighter">오늘의 주요 공시 (주의 요망)</h4>
+                                                <span className="ml-auto text-[10px] font-bold text-red-500/60 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">실시간 탐지</span>
+                                            </div>
+                                            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {riskAlerts.map((alert, idx) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={alert.link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-between p-2.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/5 transition-all group"
+                                                    >
+                                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black text-white bg-red-500/20 px-1.5 rounded truncate max-w-[80px]">{alert.name}</span>
+                                                                <span className="text-xs text-gray-300 font-bold truncate group-hover:text-white transition-colors">
+                                                                    {alert.title}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[9px] text-gray-500 font-mono">{alert.date} • DART 공식 공시 원문</span>
+                                                        </div>
+                                                        <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-white transition-colors flex-shrink-0" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                            <p className="mt-3 text-[9px] text-gray-500 font-bold leading-relaxed text-center border-t border-white/5 pt-2 italic">
+                                                💡 본 서비스는 공시 원문에 포함된 검색 키워드를 기반으로 한 단순 정보 제공이며, 투자의 최종 결정은 본인에게 있습니다.
+                                            </p>
+                                        </div>
+                                    )}
                                     {(() => {
                                         // 1. 데이터 정규화 및 통합
                                         const sections: Record<string, any[]> = {

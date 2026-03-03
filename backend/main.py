@@ -91,12 +91,19 @@ def health_check():
 
 
 
-# [NEW] Assets Endpoint (Moved to top for priority)
-from stock_data import get_all_market_assets
+# [NEW] Assets & Risk Alerts Endpoints
+from stock_data import get_all_market_assets, get_dart_risk_alerts
+
 @app.get("/api/assets")
 def read_assets():
     """모든 글로벌 자산 데이터 반환"""
     data = get_all_market_assets()
+    return {"status": "success", "data": data}
+
+@app.get("/api/market/risk-alerts")
+def read_risk_alerts():
+    """최근 공시 리스크 탐지 결과 반환 (유상증자 등)"""
+    data = get_dart_risk_alerts()
     return {"status": "success", "data": data}
 
 @app.on_event("startup")
