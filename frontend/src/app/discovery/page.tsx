@@ -419,13 +419,7 @@ function DiscoveryContent() {
                         {/* [New] Real-time Rankings Widget */}
                         <RankingWidget />
 
-                        {/* Market Indicators Grid */}
-                        <div className="mt-8">
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                                <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">글로벌 시장 모니터</span>
-                            </h2>
-                            <MarketIndicators limit={10} />
-                        </div>
+                        {/* Market Indicators Grid Removed (Redundant with Market Intelligence) */}
                     </div>
                 )}
 
