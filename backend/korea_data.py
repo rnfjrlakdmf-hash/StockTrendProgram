@@ -1343,12 +1343,72 @@ def get_index_chart_data(index_code: str):
 
 def get_korean_interest_rates():
     """
-    Fetch Korea Key Interest Rates (Mock / Scrape)
+    Fetch Korea Key Interest Rates from Naver Finance Market Index
     """
-    return [
-        {"name": "한국 기준금리", "price": 3.00, "change": 0.0, "symbol": "KORATE"},
-        {"name": "CD금리 (91일)", "price": 3.45, "change": -0.01, "symbol": "CD91"},
-        {"name": "국고채 3년", "price": 2.85, "change": -0.02, "symbol": "KO3Y"},
-        {"name": "국고채 10년", "price": 2.98, "change": -0.03, "symbol": "KO10Y"},
-        {"name": "콜금리 (1일)", "price": 3.10, "change": 0.0, "symbol": "CALL"},
-    ]
+    import requests
+    from bs4 import BeautifulSoup
+    
+    rates = []
+    try:
+        url = "https://finance.naver.com/marketindex/interestList.naver?key=market"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        rows = soup.select("table.tbl_exchange tbody tr")
+        
+        # Mapping for symbols used in get_all_market_assets
+        # TICKER_MAP: Title -> Symbol
+        ticker_map = {
+            "한국은행 기준금리": "KORATE",
+            "CD금리(91일)": "CD91",
+            "국고채(3년)": "KO3Y",
+            "국고채(10년)": "KO10Y",
+            "콜금리": "CALL"
+        }
+
+        for row in rows:
+            title_td = row.select_one("td.tit")
+            num_td = row.select_one("td.num")
+            if not title_td or not num_td: continue
+            
+            title = title_td.text.strip().replace(" ", "")
+            # Find matching symbol
+            match_sym = None
+            for k, v in ticker_map.items():
+                if k.replace(" ", "") in title:
+                    match_sym = v
+                    break
+            
+            if not match_sym: continue
+            
+            try:
+                price_val = float(num_td.text.strip().replace(',', ''))
+                # Change parsing (Naver often uses 'up', 'down' classes or arrows)
+                change_val = 0.0
+                change_td = row.select_one("td.num:nth-of-type(3)") # usually the 3rd td is change
+                if change_td:
+                    txt = change_td.text.strip().replace(',', '')
+                    direction = 1
+                    if "하락" in str(row) or "▼" in txt: direction = -1
+                    change_val = float(re.sub(r'[^0-9.]', '', txt)) * direction
+                
+                rates.append({
+                    "name": title_td.text.strip(),
+                    "price": price_val,
+                    "change": change_val,
+                    "symbol": match_sym
+                })
+            except: continue
+            
+    except Exception as e:
+        print(f"Interest Rates Scrape Error: {e}")
+        # Fallback if scrape fails completely
+        return [
+            {"name": "한국 기준금리", "price": 3.25, "change": 0.0, "symbol": "KORATE"},
+            {"name": "CD금리 (91일)", "price": 3.40, "change": 0.0, "symbol": "CD91"},
+            {"name": "국고채 3년", "price": 2.90, "change": 0.0, "symbol": "KO3Y"},
+            {"name": "국고채 10년", "price": 3.00, "change": 0.0, "symbol": "KO10Y"},
+            {"name": "콜금리 (1일)", "price": 3.25, "change": 0.0, "symbol": "CALL"},
+        ]
+        
+    return rates
