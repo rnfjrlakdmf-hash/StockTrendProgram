@@ -1,4 +1,5 @@
 ﻿"use client";
+// [Deployment Trigger] symbol-based deduplication v2 - 2026-03-04
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
