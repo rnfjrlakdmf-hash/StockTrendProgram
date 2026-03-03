@@ -838,7 +838,13 @@ function CalendarTab({ router }: { router: any }) {
                                                     };
 
                                                     if (key === "Indices") sections["🏦 주가지수"].push(normItem);
-                                                    else if (key === "Bonds" || key === "Interest") sections["📋 채권 / 금리"].push(normItem);
+                                                    else if (key === "Bonds" || key === "Interest") {
+                                                        // [Fix] 이미 krEvents에서 한국 지표가 추가된 경우 글로벌 리스트에서 중복 제외
+                                                        const isDuplicateKr = name.includes("국고채") || name.includes("기준금리") || name.includes("콜금리") || name.includes("CD금리");
+                                                        if (!isDuplicateKr) {
+                                                            sections["📋 채권 / 금리"].push(normItem);
+                                                        }
+                                                    }
                                                     else if (key === "Forex") sections["💱 주요 환율"].push(normItem);
                                                     else if (key === "Commodity") sections["⛽ 원자재"].push(normItem);
                                                     else if (key === "Crypto") sections["₿ 암호화폐"].push(normItem);

@@ -990,11 +990,7 @@ def get_all_market_assets():
             {"symbol": "^FVX", "name": "미국채 5년"},
             {"symbol": "^TNX", "name": "미국채 10년"},
             {"symbol": "^TYX", "name": "미국채 30년"},
-            {"symbol": "KORATE", "name": "한국 기준금리"},
-            {"symbol": "CD91", "name": "CD금리 (91일)"},
-            {"symbol": "KO3Y", "name": "국고채 3년"},
-            {"symbol": "KO10Y", "name": "국고채 10년"},
-            {"symbol": "CALL", "name": "콜금리 (1일)"},
+            # 한국 금리는 get_korean_interest_rates()에서 일괄 수집되므로 여기서는 중복 방지 위해 제거
         ]
     }
 
