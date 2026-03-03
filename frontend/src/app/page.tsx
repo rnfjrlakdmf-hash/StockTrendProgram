@@ -61,13 +61,6 @@ export default function Home() {
       <Header onSearch={handleSearch} />
 
       <div className="p-6 space-y-8">
-        {/* Top Section: Weather & Asset Ticker */}
-        <div className="flex flex-col xl:flex-row gap-6">
-          {/* Assets Ticker (Full Width) */}
-          <div className="w-full">
-            <AssetTicker />
-          </div>
-        </div>
 
         {/* Real-time Top 10 Ranking */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
