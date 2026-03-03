@@ -1343,72 +1343,98 @@ def get_index_chart_data(index_code: str):
 
 def get_korean_interest_rates():
     """
-    Fetch Korea Key Interest Rates from Naver Finance Market Index
+    Fetch Korea Key Interest Rates from Naver Finance Market Index.
+    URL:      https://finance.naver.com/marketindex/
+    Structure: <tr class='up|down|same'>
+                 <th class='th_interN'><a><span>NAME</span></a></th>
+                 <td>VALUE</td>
+                 <td><img alt='up|down|same'/>CHANGE</td>
+               </tr>
     """
-    import requests
-    from bs4 import BeautifulSoup
-    
     rates = []
     try:
-        url = "https://finance.naver.com/marketindex/interestList.naver?key=market"
+        url = "https://finance.naver.com/marketindex/"
         res = requests.get(url, headers=HEADER, timeout=5)
         soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        
-        rows = soup.select("table.tbl_exchange tbody tr")
-        
-        # Mapping for symbols used in get_all_market_assets
-        # TICKER_MAP: Title -> Symbol
-        ticker_map = {
-            "한국은행 기준금리": "KORATE",
-            "CD금리(91일)": "CD91",
-            "국고채(3년)": "KO3Y",
-            "국고채(10년)": "KO10Y",
-            "콜금리": "CALL"
+
+        # th CSS 클래스 -> 심볼 매핑
+        # th_inter1=콜금리, th_inter2=국채(3년), th_inter3=회사채(3년)
+        # th_inter4=CD금리(91일), th_inter5=COFIX잔단위, th_inter6=COFIX신규형
+        class_to_sym = {
+            "th_inter1": "CALL",
+            "th_inter2": "KO3Y",
+            # th_inter3 = 회사채 -> 생략
+            "th_inter4": "CD91",
+            # th_inter5, th_inter6 = COFIX -> 생략
         }
 
+        rows = soup.select("table.tbl_exchange tbody tr")
         for row in rows:
-            title_td = row.select_one("td.tit")
-            num_td = row.select_one("td.num")
-            if not title_td or not num_td: continue
-            
-            title = title_td.text.strip().replace(" ", "")
-            # Find matching symbol
+            th = row.select_one("th")
+            tds = row.select("td")
+            if not th or len(tds) < 1:
+                continue
+
+            # 심볼 매핑 (th CSS 클래스 기준)
+            th_classes = th.get("class", [])
             match_sym = None
-            for k, v in ticker_map.items():
-                if k.replace(" ", "") in title:
-                    match_sym = v
+            for cls in th_classes:
+                if cls in class_to_sym:
+                    match_sym = class_to_sym[cls]
                     break
-            
-            if not match_sym: continue
-            
+            if match_sym is None:
+                continue
+
+            # 표시명 (텍스트)
+            name_span = th.select_one("span")
+            name_raw = name_span.text.strip() if name_span else th.text.strip()
+
+            # 금리 값
             try:
-                price_val = float(num_td.text.strip().replace(',', ''))
-                # Change parsing (Naver often uses 'up', 'down' classes or arrows)
-                change_val = 0.0
-                change_td = row.select_one("td.num:nth-of-type(3)") # usually the 3rd td is change
-                if change_td:
-                    txt = change_td.text.strip().replace(',', '')
-                    direction = 1
-                    if "하락" in str(row) or "▼" in txt: direction = -1
-                    change_val = float(re.sub(r'[^0-9.]', '', txt)) * direction
-                
-                rates.append({
-                    "name": title_td.text.strip(),
-                    "price": price_val,
-                    "change": change_val,
-                    "symbol": match_sym
-                })
-            except: continue
-            
+                price_val = float(tds[0].text.strip().replace(",", ""))
+            except:
+                continue
+
+            # 변동폭 및 방향
+            change_val = 0.0
+            if len(tds) >= 2:
+                try:
+                    chg_raw = re.sub(r"[^0-9.]", "", tds[1].text.strip())
+                    chg_num = float(chg_raw) if chg_raw else 0.0
+                    # tr class 또는 img alt로 하락 판단
+                    row_cls = " ".join(row.get("class", []))
+                    img = tds[1].select_one("img")
+                    img_alt = img.get("alt", "") if img else ""
+                    if "down" in row_cls or "하락" in img_alt:
+                        chg_num = -chg_num
+                    change_val = chg_num
+                except:
+                    pass
+
+            rates.append({
+                "name": name_raw,
+                "price": price_val,
+                "change": change_val,
+                "symbol": match_sym,
+            })
+
+        # 기준금리는 이 테이블에 없으므로 fallback으로 보장
+        if not any(r["symbol"] == "KORATE" for r in rates):
+            rates.insert(0, {
+                "name": "한국 기준금리",
+                "price": 3.25,
+                "change": 0.0,
+                "symbol": "KORATE",
+            })
+
     except Exception as e:
         print(f"Interest Rates Scrape Error: {e}")
-        # Fallback if scrape fails completely
         return [
             {"name": "한국 기준금리", "price": 3.25, "change": 0.0, "symbol": "KORATE"},
-            {"name": "CD금리 (91일)", "price": 3.40, "change": 0.0, "symbol": "CD91"},
-            {"name": "국고채 3년", "price": 2.90, "change": 0.0, "symbol": "KO3Y"},
-            {"name": "국고채 10년", "price": 3.00, "change": 0.0, "symbol": "KO10Y"},
-            {"name": "콜금리 (1일)", "price": 3.25, "change": 0.0, "symbol": "CALL"},
+            {"name": "CD금리 (91일)",  "price": 2.81, "change": 0.0, "symbol": "CD91"},
+            {"name": "국고채 3년",     "price": 3.18, "change": 0.0, "symbol": "KO3Y"},
+            {"name": "국고채 10년",    "price": 3.50, "change": 0.0, "symbol": "KO10Y"},
+            {"name": "콜금리 (1일)",   "price": 2.60, "change": 0.0, "symbol": "CALL"},
         ]
-        
+
     return rates
