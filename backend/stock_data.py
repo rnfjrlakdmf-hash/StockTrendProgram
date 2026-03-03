@@ -1615,19 +1615,6 @@ def get_dart_risk_alerts():
         return []
 
 
-            for item in items:
-                f = executor.submit(fetch_item, cat, item)
-                future_map[f] = cat
-        
-        for f in concurrent.futures.as_completed(future_map):
-            cat = future_map[f]
-            try:
-                res = f.result()
-                final_results[cat].append(res)
-            except:
-                pass
-                
-    return final_results
 
 
 def get_market_status():
