@@ -28,7 +28,7 @@ from db_manager import (
     save_fcm_token, delete_fcm_token, clear_watchlist,
     create_signals_table, create_votes_table,
     save_signal, get_recent_signals, get_signals_by_symbol,
-    save_vote, get_vote_results, get_user_vote
+    save_vote, get_vote_results, get_user_vote, get_yesterday_vote_results
 )
 from user_session import session_manager
 from ai_analysis import (
@@ -2113,3 +2113,51 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
+
+@app.get("/api/votes/{symbol}/yesterday")
+def get_yesterday_vote_comparison(symbol: str):
+    """어제 커뮤니티 투표 예측 vs 실제 주가 비교"""
+    try:
+        import yfinance as yf
+
+        sym = symbol.upper()
+        yesterday_votes = get_yesterday_vote_results(sym)
+
+        if yesterday_votes["total"] == 0:
+            return {"status": "success", "data": None, "message": "어제 투표 데이터 없음"}
+
+        yf_sym = sym
+        if sym.isdigit() and len(sym) == 6:
+            yf_sym = sym + ".KS"
+
+        ticker = yf.Ticker(yf_sym)
+        hist = ticker.history(period="5d")
+
+        actual_change_pct = None
+        prediction = "up" if yesterday_votes["up_pct"] >= 50 else "down"
+        is_correct = None
+        actual_direction = None
+
+        if len(hist) >= 2:
+            closes = hist["Close"].tolist()
+            prev_close = closes[-2]
+            last_close = closes[-1]
+            if prev_close and prev_close > 0:
+                actual_change_pct = round(((last_close - prev_close) / prev_close) * 100, 2)
+                actual_direction = "up" if actual_change_pct > 0 else "down"
+                is_correct = (prediction == actual_direction)
+
+        return {
+            "status": "success",
+            "data": {
+                "symbol": sym,
+                "yesterday_votes": yesterday_votes,
+                "prediction": prediction,
+                "actual_change_pct": actual_change_pct,
+                "actual_direction": actual_direction,
+                "is_correct": is_correct,
+            }
+        }
+    except Exception as e:
+        print(f"[Vote Yesterday] Error: {e}")
+        return {"status": "error", "message": str(e)}

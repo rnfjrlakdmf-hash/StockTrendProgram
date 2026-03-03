@@ -806,3 +806,33 @@ def get_user_vote(symbol: str, user_id: str) -> str:
     finally:
         conn.close()
 
+
+def get_yesterday_vote_results(symbol: str) -> dict:
+    """어제 날짜 투표 결과 조회 (예측 vs 실제 비교용)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT direction, COUNT(*) as cnt
+            FROM votes
+            WHERE symbol = ? AND DATE(created_at) = DATE('now', '-1 day')
+            GROUP BY direction
+        """, (symbol,))
+        rows = cursor.fetchall()
+        results = {"up": 0, "down": 0}
+        for row in rows:
+            if row[0] == "up":
+                results["up"] = row[1]
+            elif row[0] == "down":
+                results["down"] = row[1]
+
+        total = results["up"] + results["down"]
+        results["total"] = total
+        results["up_pct"] = round(results["up"] / total * 100) if total > 0 else 0
+        results["down_pct"] = round(results["down"] / total * 100) if total > 0 else 0
+        return results
+    except Exception as e:
+        print(f"[DB] Get yesterday votes error: {e}")
+        return {"up": 0, "down": 0, "total": 0, "up_pct": 0, "down_pct": 0}
+    finally:
+        conn.close()

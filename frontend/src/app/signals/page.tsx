@@ -736,16 +736,46 @@ function CalendarTab({ router }: { router: any }) {
 
 // ============ TAB 5: VOTE ============
 function VoteTab() {
-    const { user } = useAuth();  // 로그인 상태 확인
+    const { user } = useAuth();
     const [voteSymbol, setVoteSymbol] = useState("");
     const [voteResults, setVoteResults] = useState<VoteResult | null>(null);
     const [userVote, setUserVote] = useState<string | null>(null);
     const [voting, setVoting] = useState(false);
+    const [yesterdayData, setYesterdayData] = useState<any | null>(null);
+    const [yesterdayLoading, setYesterdayLoading] = useState(false);
     const pops = ["005930", "000660", "373220", "035420", "068270", "AAPL", "TSLA", "NVDA"];
 
-    const fetchVotes = async (sym: string) => { try { const uid = user?.id || "guest"; const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { headers: { "X-User-Id": uid } }); const j = await r.json(); if (j.status === "success") { setVoteResults(j.data); setUserVote(j.user_vote); } } catch { } };
+    // 오늘 투표 결과 조회
+    const fetchVotes = async (sym: string) => {
+        try {
+            const uid = user?.id || "guest";
+            const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { headers: { "X-User-Id": uid } });
+            const j = await r.json();
+            if (j.status === "success") { setVoteResults(j.data); setUserVote(j.user_vote); }
+        } catch { }
+    };
+
+    // 어제 예측 vs 실제 결과 조회
+    const fetchYesterday = async (sym: string) => {
+        setYesterdayLoading(true);
+        setYesterdayData(null);
+        try {
+            const r = await fetch(`${API_BASE_URL}/api/votes/${sym}/yesterday`);
+            const j = await r.json();
+            if (j.status === "success" && j.data) setYesterdayData(j.data);
+        } catch { }
+        finally { setYesterdayLoading(false); }
+    };
+
+    // 종목 선택 시 오늘 + 어제 동시 조회
+    const selectSymbol = (sym: string) => {
+        setVoteSymbol(sym);
+        fetchVotes(sym);
+        fetchYesterday(sym);
+    };
+
     const submitVote = async (sym: string, dir: string) => {
-        if (!user) return; // 로그인 필수
+        if (!user) return;
         setVoting(true);
         try {
             const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-Id": user.id }, body: JSON.stringify({ direction: dir }) });
@@ -760,17 +790,66 @@ function VoteTab() {
                 <h3 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">🗳️ 종목 투표</h3>
                 <p className="text-gray-400 text-sm">내일 이 종목, 오를까 내릴까?</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                    {pops.map(s => <button key={s} onClick={() => { setVoteSymbol(s); fetchVotes(s); }} className={`px-4 py-2 rounded-full text-sm font-bold ${voteSymbol === s ? "bg-purple-600 text-white scale-105" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}>{s}</button>)}
+                    {pops.map(s => <button key={s} onClick={() => selectSymbol(s)} className={`px-4 py-2 rounded-full text-sm font-bold ${voteSymbol === s ? "bg-purple-600 text-white scale-105" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}>{s}</button>)}
                 </div>
                 <div className="flex gap-2 max-w-sm mx-auto">
-                    <input type="text" placeholder="종목코드 입력" className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500 uppercase font-mono" value={voteSymbol} onChange={e => setVoteSymbol(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && voteSymbol) fetchVotes(voteSymbol); }} />
-                    <button onClick={() => voteSymbol && fetchVotes(voteSymbol)} className="px-4 py-2.5 bg-purple-600 rounded-xl font-bold text-sm">조회</button>
+                    <input type="text" placeholder="종목코드 입력" className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500 uppercase font-mono" value={voteSymbol} onChange={e => setVoteSymbol(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && voteSymbol) selectSymbol(voteSymbol); }} />
+                    <button onClick={() => voteSymbol && selectSymbol(voteSymbol)} className="px-4 py-2.5 bg-purple-600 rounded-xl font-bold text-sm">조회</button>
                 </div>
             </div>
 
+            {/* ── 어제 예측 vs 실제 결과 카드 ── */}
+            {voteSymbol && (
+                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4">
+                    <p className="text-xs text-gray-500 mb-3 font-bold">📅 어제 커뮤니티 예측 결과</p>
+                    {yesterdayLoading ? (
+                        <div className="flex justify-center py-3"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
+                    ) : !yesterdayData ? (
+                        <p className="text-center text-xs text-gray-600 py-2">어제 투표 데이터가 없습니다.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* 투표 분포 바 */}
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-bold">
+                                    <span className="text-red-400">📈 오를것 {yesterdayData.yesterday_votes.up_pct}%</span>
+                                    <span className="text-xs text-gray-500">{yesterdayData.yesterday_votes.total}명 참여</span>
+                                    <span className="text-blue-400">📉 내릴것 {yesterdayData.yesterday_votes.down_pct}%</span>
+                                </div>
+                                <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
+                                    <div className="bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-700 rounded-l-full" style={{ width: `${yesterdayData.yesterday_votes.up_pct}%` }} />
+                                    <div className="bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-700 rounded-r-full" style={{ width: `${yesterdayData.yesterday_votes.down_pct}%` }} />
+                                </div>
+                            </div>
+
+                            {/* 실제 주가 결과 */}
+                            <div className={`rounded-xl p-3 border ${yesterdayData.is_correct === true ? "bg-green-900/20 border-green-500/30" : yesterdayData.is_correct === false ? "bg-red-900/20 border-red-500/30" : "bg-white/5 border-white/10"}`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs text-gray-400">실제 주가 변동</p>
+                                        {yesterdayData.actual_change_pct !== null ? (
+                                            <p className={`text-lg font-black ${yesterdayData.actual_change_pct > 0 ? "text-red-400" : yesterdayData.actual_change_pct < 0 ? "text-blue-400" : "text-gray-400"}`}>
+                                                {yesterdayData.actual_change_pct > 0 ? "+" : ""}{yesterdayData.actual_change_pct}%
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">데이터 없음</p>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                        {yesterdayData.is_correct === true && <div><p className="text-2xl">✅</p><p className="text-xs text-green-400 font-bold">예측 적중!</p></div>}
+                                        {yesterdayData.is_correct === false && <div><p className="text-2xl">❌</p><p className="text-xs text-red-400 font-bold">예측 빗나감</p></div>}
+                                        {yesterdayData.is_correct === null && <div><p className="text-2xl">❓</p><p className="text-xs text-gray-500 font-bold">확인불가</p></div>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── 오늘 투표 카드 ── */}
             {voteSymbol && voteResults && (
                 <div className="bg-purple-900/10 border border-purple-500/30 rounded-2xl p-6 space-y-5">
-                    <div className="text-center"><h4 className="text-xl font-black">{voteSymbol}</h4><p className="text-gray-400 text-sm">총 {voteResults.total}명 투표</p></div>
+                    <div className="text-center"><h4 className="text-xl font-black">{voteSymbol}</h4><p className="text-gray-400 text-sm">오늘 커뮤니티 예측 · 총 {voteResults.total}명</p></div>
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm font-bold"><span className="text-red-400">📈 오를것 {voteResults.up_pct}%</span><span className="text-blue-400">📉 내릴것 {voteResults.down_pct}%</span></div>
                         <div className="h-4 bg-gray-800 rounded-full overflow-hidden flex">
@@ -778,7 +857,7 @@ function VoteTab() {
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-700 rounded-r-full" style={{ width: `${voteResults.down_pct}%` }} />
                         </div>
                     </div>
-                    {/* 로그인 상태에 따라 투표 UI 다르게 표시 */}
+                    {/* 로그인 상태에 따라 투표 UI */}
                     {user ? (
                         <>
                             <div className="grid grid-cols-2 gap-3">
