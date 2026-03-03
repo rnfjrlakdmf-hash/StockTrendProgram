@@ -1110,72 +1110,78 @@ def get_insider_trading(symbol):
 
 def get_macro_calendar():
     """
-    Fetch major economic calendar events from Yahoo Finance (Real Data).
-    Features today and tomorrow's events.
+    Fetch major economic calendar events.
+    - 오늘 이벤트: Yahoo Finance 실시간 크롤링
+    - 이후 날짜: 현재 실시간 지원 없음 (TODO: Investing.com 또는 유료 API 적용 필요)
     """
     import datetime
     import requests
     from bs4 import BeautifulSoup
-    import concurrent.futures
 
     events = []
-    
-    def fetch_date(date_obj):
-        date_str = date_obj.strftime("%Y-%m-%d")
-        url = f"https://finance.yahoo.com/calendar/economic?day={date_str}"
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    # Yahoo Finance 1회만 요청 (오늘 이벤트 전용)
+    try:
+        url = "https://finance.yahoo.com/calendar/economic"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        day_events = []
-        try:
-            res = requests.get(url, headers=headers, timeout=5)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            
-            rows = soup.select('table tbody tr')
-            for row in rows:
-                cols = row.select('td')
-                if len(cols) >= 6:
-                    event_name = cols[0].text.strip()
-                    country = cols[1].text.strip()
-                    event_time = cols[2].text.strip()
-                    actual = cols[4].text.strip()
-                    estimate = cols[5].text.strip()
-                    prior = cols[6].text.strip() if len(cols) > 6 else "-"
-                    
-                    # Filter major countries
-                    if country not in ['US', 'KR', 'CN', 'JP', 'EU', 'GB', 'DE']:
-                        continue
-                        
-                    impact = "high" if country in ['US', 'CN'] else "medium"
-                    
-                    day_events.append({
-                        "date": date_str,
-                        "time": event_time,
-                        "event": f"[{country}] {event_name}",
-                        "impact": impact,
-                        "actual": actual if actual else "-",
-                        "forecast": estimate if estimate else "-",
-                        "previous": prior if prior else "-"
-                    })
-        except Exception as e:
-            print(f"Yahoo Calendar Fetch Error for {date_str}: {e}")
-            
-        return day_events
+        res = requests.get(url, headers=headers, timeout=7)
+        soup = BeautifulSoup(res.text, 'html.parser')
 
-    try:
-        now = datetime.datetime.now()
-        dates_to_fetch = [now, now + datetime.timedelta(days=1), now + datetime.timedelta(days=2)]
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            future_to_date = {executor.submit(fetch_date, d): d for d in dates_to_fetch}
-            for future in concurrent.futures.as_completed(future_to_date):
-                events.extend(future.result())
-                
-        # 시간순/날짜순 정렬
-        return events
+        # 헤더: Event(0) Country(1) Event Time(2) For(3) Actual(4) Market Expectation(5) Prior to This(6) Revised from(7)
+        rows = soup.select('table tbody tr')
+        seen_keys = set()
+
+        for row in rows:
+            cols = row.select('td')
+            if len(cols) < 3:
+                continue
+
+            event_name = cols[0].text.strip()
+            country = cols[1].text.strip()
+            event_time = cols[2].text.strip()
+            period = cols[3].text.strip() if len(cols) > 3 else ""
+            actual = cols[4].text.strip() if len(cols) > 4 else "-"
+            forecast = cols[5].text.strip() if len(cols) > 5 else "-"
+            prior = cols[6].text.strip() if len(cols) > 6 else "-"
+
+            if not event_name or not country or not event_time:
+                continue
+
+            # 주요 국가 필터
+            if country not in ['US', 'KR', 'CN', 'JP', 'EU', 'GB', 'DE', 'FR', 'IT']:
+                continue
+
+            # 중복 제거
+            key = f"{event_time}_{event_name}_{country}"
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+
+            impact = "high" if country in ['US', 'CN'] else "medium"
+
+            events.append({
+                "date": today_str,  # Yahoo는 오늘 데이터만 반환
+                "time": event_time,
+                "event": f"[{country}] {event_name}",
+                "period": period,
+                "impact": impact,
+                "actual": actual if actual else "-",
+                "forecast": forecast if forecast else "-",
+                "previous": prior if prior else "-"
+            })
+
     except Exception as e:
-        print(f"Calendar Master Scrape Error: {e}")
-        return []
+        print(f"Yahoo Calendar Fetch Error: {e}")
+
+    # 시간 순 정렬
+    events.sort(key=lambda e: e.get("time", ""))
+    return events
+
+
+
 
 _events_cache = {"data": None, "time": 0}
 
