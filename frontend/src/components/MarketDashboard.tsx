@@ -241,14 +241,8 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
     };
 
     return (
-        <div className="bg-black/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <BarChart3 className="text-blue-400" /> 국내 증시 & 시장 지표
-                </div>
-            </h3>
-
-            {/* 0. Market Summary Widget Removed (User requested to hide empty/incomplete data) */}
+        <>
+            {/* 0. Market Summary Widget Removed (User requested to hide everything in this section including title and chart) */}
 
 
 
@@ -310,7 +304,7 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
