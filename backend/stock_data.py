@@ -1543,34 +1543,47 @@ def get_dart_risk_alerts():
     try:
         import datetime
         today = datetime.datetime.now()
-        # 최근 7일간의 공시 확인 (주말 포함 넉넉하게)
+        # 최근 7일간의 공시 확인
         bgn_de = (today - datetime.timedelta(days=7)).strftime("%Y%m%d")
         end_de = today.strftime("%Y%m%d")
 
         # 투자자 주의가 필요한 주요 리스크 키워드
         risk_keywords = ["유상증자", "전환사채", "배임", "횡령", "신주인수권부사채", "관리종목", "영업정지", "불성실공시", "회생절차", "파산"]
 
-        url = f"https://opendart.fss.or.kr/api/list.json?crtfc_key={api_key}&bgn_de={bgn_de}&end_de={end_de}&page_count=100"
-        res = requests.get(url, timeout=10)
-        data = res.json()
-
         alerts = []
-        if data.get("status") == "000" and "list" in data:
-            for item in data["list"]:
-                title = item.get("report_nm", "")
-                # 키워드 매칭 (객관적 사실 기반)
-                if any(kw in title for kw in risk_keywords):
-                    alerts.append({
-                        "symbol": item.get("stock_code"),
-                        "name": item.get("corp_name"),
-                        "title": title,
-                        "date": item.get("rcept_dt")[:4] + "-" + item.get("rcept_dt")[4:6] + "-" + item.get("rcept_dt")[6:],
-                        "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no')}"
-                    })
+        # 최신 500건까지 스캔 (100건씩 5페이지)
+        for page_no in range(1, 6):
+            url = f"https://opendart.fss.or.kr/api/list.json?crtfc_key={api_key}&bgn_de={bgn_de}&end_de={end_de}&page_count=100&page_no={page_no}"
+            res = requests.get(url, timeout=10)
+            data = res.json()
+
+            if data.get("status") == "000" and "list" in data:
+                for item in data["list"]:
+                    title = item.get("report_nm", "")
+                    if any(kw in title for kw in risk_keywords):
+                        alerts.append({
+                            "symbol": item.get("stock_code"),
+                            "name": item.get("corp_name"),
+                            "title": title,
+                            "date": item.get("rcept_dt")[:4] + "-" + item.get("rcept_dt")[4:6] + "-" + item.get("rcept_dt")[6:],
+                            "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no')}"
+                        })
+            else:
+                # 더 이상 데이터가 없으면 중단
+                break
         
+        # 중복 제거 (드문 경우지만 안전을 위해)
+        seen_rcp = set()
+        unique_alerts = []
+        for a in alerts:
+            rcp_no = a['link'].split('=')[-1]
+            if rcp_no not in seen_rcp:
+                unique_alerts.append(a)
+                seen_rcp.add(rcp_no)
+
         # 최신순 정렬
-        alerts.sort(key=lambda x: x["date"], reverse=True)
-        return alerts[:15] # 상위 15개만 반환
+        unique_alerts.sort(key=lambda x: x["date"], reverse=True)
+        return unique_alerts[:20] # 상위 20개 반환 (기존 15개에서 확대)
     except Exception as e:
         print(f"[DART Risk Alert] Error: {e}")
         return []
