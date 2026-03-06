@@ -141,6 +141,14 @@ function SignalsFeedTab({ router }: { router: any }) {
         } catch { } finally { setRiskLoading(false); }
     };
 
+    // 리스크 공시에 대한 동적 배지 생성 
+    const getRiskBadge = (category: string) => {
+        if (category === "risk") return { label: "고위험", color: "bg-red-500/20 text-red-300", border: "border-red-500/40" };
+        if (category === "insider") return { label: "수급변동", color: "bg-purple-500/20 text-purple-300", border: "border-purple-500/40" };
+        if (category === "contract") return { label: "대형호재", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
+        return { label: "주요사항", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
+    };
+
     useEffect(() => {
         fetchSignals();
         fetchRiskAlerts();
@@ -167,36 +175,43 @@ function SignalsFeedTab({ router }: { router: any }) {
         <div className="space-y-4 text-left">
             {/* [NEW] 오늘의 주요 공시 리스크 알림 위젯 (시그널 탭 최상단 배치) */}
             {riskAlerts.length > 0 && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-2 backdrop-blur-md">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-2 backdrop-blur-md overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-purple-500 to-blue-500 opacity-50"></div>
                     <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                        <h4 className="text-sm font-black text-red-400 uppercase tracking-tighter">오늘의 주요 공시 (주의 요망)</h4>
-                        <span className="ml-auto text-[10px] font-bold text-red-500/60 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">실시간 탐지</span>
+                        <Zap className="w-5 h-5 text-yellow-400" />
+                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">실시간 주요 공시 인사이트</h4>
+                        <span className="ml-auto text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">LIVE 스캔 중</span>
                     </div>
-                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                        {riskAlerts.map((alert, idx) => (
-                            <a
-                                key={idx}
-                                href={alert.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between p-2.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/5 transition-all group"
-                            >
-                                <div className="flex flex-col gap-0.5 min-w-0 text-left">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-black text-white bg-red-500/20 px-1.5 rounded truncate max-w-[80px]">{alert.name}</span>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                        {riskAlerts.map((alert, idx) => {
+                            const badge = getRiskBadge(alert.category);
+                            return (
+                                <a
+                                    key={idx}
+                                    href={alert.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between p-2.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/5 transition-all group"
+                                >
+                                    <div className="flex flex-col gap-1 min-w-0 text-left">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${badge.border} ${badge.color}`}>
+                                                {badge.label}
+                                            </span>
+                                            <span className="text-[10px] font-black text-white bg-white/10 px-1.5 py-0.5 rounded truncate max-w-[80px]">{alert.name}</span>
+                                        </div>
                                         <span className="text-xs text-gray-300 font-bold truncate group-hover:text-white transition-colors">
                                             {alert.title}
                                         </span>
+                                        <span className="text-[9px] text-gray-500 font-mono">{alert.date} • DART 원문</span>
                                     </div>
-                                    <span className="text-[9px] text-gray-500 font-mono">{alert.date} • DART 공식 공시 원문</span>
-                                </div>
-                                <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-white transition-colors flex-shrink-0" />
-                            </a>
-                        ))}
+                                    <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-white transition-colors flex-shrink-0" />
+                                </a>
+                            );
+                        })}
                     </div>
-                    <p className="mt-3 text-[9px] text-gray-500 font-bold leading-relaxed text-center border-t border-white/5 pt-2 italic">
-                        💡 본 서비스는 공시 원문에 포함된 검색 키워드를 기반으로 한 단순 정보 제공이며, 투자의 최종 결정은 본인에게 있습니다.
+                    <p className="mt-3 text-[9px] text-gray-600 font-bold leading-relaxed text-center border-t border-white/5 pt-2 italic">
+                        💡 본 정보는 DART 공시 원문의 키워드를 기반으로 한 객관적 사실 보도이며, 투자 권유가 아닙니다.
                     </p>
                 </div>
             )}

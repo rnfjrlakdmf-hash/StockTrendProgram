@@ -90,7 +90,7 @@ def health_check():
 
 
 # [NEW] Assets & Risk Alerts Endpoints
-from stock_data import get_all_market_assets, get_dart_risk_alerts
+from stock_data import get_all_market_assets, get_dart_risk_alerts, get_company_financials
 
 @app.get("/api/assets")
 def read_assets():
@@ -102,6 +102,12 @@ def read_assets():
 def read_risk_alerts():
     """최근 공시 리스크 탐지 결과 반환 (유상증자 등)"""
     data = get_dart_risk_alerts()
+    return {"status": "success", "data": data}
+
+@app.get("/api/stock/{symbol}/financials")
+def read_stock_financials(symbol: str):
+    """특정 종목의 최근 3개년 재무 하이라이트 반환"""
+    data = get_company_financials(symbol)
     return {"status": "success", "data": data}
 
 @app.on_event("startup")

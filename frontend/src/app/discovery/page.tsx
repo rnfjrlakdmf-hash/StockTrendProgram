@@ -187,6 +187,8 @@ function DiscoveryContent() {
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
+    const [financialHighlights, setFinancialHighlights] = useState<any[]>([]);
+    const [financialsLoading, setFinancialsLoading] = useState(false);
 
     // [WebSocket Integration] Real-time Price Updates
     // Replaces the old 5-second polling interval
@@ -304,6 +306,18 @@ function DiscoveryContent() {
                         // [Fix] Silently ignore
                         setIsAnalyzing(false);
                     });
+
+                // 3. Fetch Financial Highlights
+                setFinancialsLoading(true);
+                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials`)
+                    .then(res => res.json())
+                    .then(resJson => {
+                        if (resJson.status === "success") {
+                            setFinancialHighlights(resJson.data || []);
+                        }
+                    })
+                    .catch(() => { })
+                    .finally(() => setFinancialsLoading(false));
 
             } else {
                 // [Fallback] Search via Backend API (Global/Dynamic Map)
@@ -563,7 +577,7 @@ function DiscoveryContent() {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2 space-y-6">
                                 {/* Main Score Card */}
-                                <div className="rounded-3xl bg-black/40 border border-white/20 p-6 backdrop-blur-md shadow-lg">
+                                <div className="rounded-3xl bg-black/40 border border-white/20 p-6 backdrop-blur-md shadow-lg mb-6">
                                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-0">
                                         <div>
                                             <h3 className="text-2xl md:text-3xl font-bold flex flex-wrap items-center gap-2 md:gap-3 text-white">
@@ -819,6 +833,7 @@ function DiscoveryContent() {
                                     {activeTab === 'analysis' ? (
                                         <>
                                             {/* Chart Section */}
+                                            <FinancialHighlights data={financialHighlights} loading={financialsLoading} />
 
                                             {/* AI Opinion */}
                                             {/* AI Opinion */}
@@ -1340,6 +1355,61 @@ interface PredictionReport {
     success_count: number;
     success_rate: number;
     details: PredictionDetail[];
+}
+
+// [New] Financial Highlights Component
+function FinancialHighlights({ data, loading }: { data: any[], loading: boolean }) {
+    if (loading) return <div className="h-32 flex items-center justify-center bg-white/5 rounded-2xl border border-white/10 animate-pulse text-gray-500 text-xs">재무 데이터를 불러오는 중...</div>;
+    if (!data || data.length === 0) return null;
+
+    return (
+        <div className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl p-5 mb-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+                <BarChart2 className="w-24 h-24 text-blue-400" />
+            </div>
+            <h4 className="text-sm font-bold text-blue-300 flex items-center gap-2 mb-4">
+                📈 최근 3개년 실적 하이라이트 (연간)
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                <div className="md:col-span-3 h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                            <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                            <YAxis hide />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '11px' }}
+                                formatter={(value: number) => [`${(value / 100000000).toLocaleString()} 억원`, '']}
+                                labelStyle={{ fontWeight: 'bold', color: '#60a5fa' }}
+                            />
+                            <Line type="monotone" dataKey="revenue" name="매출액" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+                            <Line type="monotone" dataKey="op_income" name="영업이익" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="space-y-4">
+                    {data.slice(-1).map((latest, i) => (
+                        <div key={i} className="space-y-3">
+                            <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
+                                <p className="text-[10px] text-gray-500 mb-0.5">최근 연매출</p>
+                                <p className="text-sm font-bold text-blue-300">{(latest.revenue / 100000000).toLocaleString()} 억원</p>
+                            </div>
+                            <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
+                                <p className="text-[10px] text-gray-500 mb-0.5">영업이익</p>
+                                <p className="text-sm font-bold text-emerald-400">{(latest.op_income / 100000000).toLocaleString()} 억원</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <p className="mt-3 text-[10px] text-gray-500 leading-relaxed italic border-t border-white/5 pt-2">
+                * 위 수치는 DART/yfinance 공정 공시 데이터를 기반으로 가공된 객관적 수치이며, 향후 실적을 보장하지 않습니다.
+            </p>
+        </div>
+    );
 }
 
 function MarketSignalWidget() {

@@ -1547,8 +1547,10 @@ def get_dart_risk_alerts():
         bgn_de = (today - datetime.timedelta(days=7)).strftime("%Y%m%d")
         end_de = today.strftime("%Y%m%d")
 
-        # 투자자 주의가 필요한 주요 리스크 키워드
+        # 감시 키워드 확장 (리스크 + 수급 + 호재)
         risk_keywords = ["유상증자", "전환사채", "배임", "횡령", "신주인수권부사채", "관리종목", "영업정지", "불성실공시", "회생절차", "파산"]
+        insider_keywords = ["임원ㆍ주요주주특정증권등소유상황보고서", "주식등의대량보유상황보고서"]
+        contract_keywords = ["단일판매ㆍ공급계약체결"]
 
         alerts = []
         # 최신 500건까지 스캔 (100건씩 5페이지)
@@ -1560,16 +1562,25 @@ def get_dart_risk_alerts():
             if data.get("status") == "000" and "list" in data:
                 for item in data["list"]:
                     title = item.get("report_nm", "")
+                    category = "일반"
+                    
                     if any(kw in title for kw in risk_keywords):
+                        category = "risk"
+                    elif any(kw in title for kw in insider_keywords):
+                        category = "insider"
+                    elif any(kw in title for kw in contract_keywords):
+                        category = "contract"
+                    
+                    if category != "일반":
                         alerts.append({
                             "symbol": item.get("stock_code"),
                             "name": item.get("corp_name"),
                             "title": title,
+                            "category": category,
                             "date": item.get("rcept_dt")[:4] + "-" + item.get("rcept_dt")[4:6] + "-" + item.get("rcept_dt")[6:],
                             "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no')}"
                         })
             else:
-                # 더 이상 데이터가 없으면 중단
                 break
         
         # 중복 제거 (드문 경우지만 안전을 위해)
@@ -1590,6 +1601,66 @@ def get_dart_risk_alerts():
 
 
 
+
+def get_company_financials(symbol: str):
+    """
+    yfinance를 사용하여 기업의 최근 3개년 주요 재무 데이터(매출, 영업이익)를 가져옵니다.
+    """
+    import yfinance as yf
+    
+    # 한국 종목 코드 변환 (예: 005930 -> 005930.KS)
+    clean_symbol = symbol.strip()
+    if clean_symbol.isdigit() and len(clean_symbol) == 6:
+        # 우선 KOSPI(.KS) 시도 후 데이터 없으면 KOSDAQ(.KQ) 고려 (단순화를 위해 .KS/.KQ 접미사 처리)
+        if clean_symbol.startswith('0') or clean_symbol.startswith('1') or clean_symbol.startswith('2'):
+             # 대략적인 구분이지만 실제로는 검색 결과나 DB 연동이 정확함. 여기서는 .KS를 기본으로 함.
+             search_symbol = f"{clean_symbol}.KS"
+        else:
+             search_symbol = f"{clean_symbol}.KQ"
+    else:
+        search_symbol = clean_symbol
+
+    try:
+        ticker = yf.Ticker(search_symbol)
+        # 손익계산서 (Income Statement) - 연간 데이터
+        financials = ticker.financials
+        
+        if financials is None or financials.empty:
+            # 보조 수단으로 .KQ 시도
+            if ".KS" in search_symbol:
+                search_symbol = search_symbol.replace(".KS", ".KQ")
+                ticker = yf.Ticker(search_symbol)
+                financials = ticker.financials
+            
+            if financials is None or financials.empty:
+                return []
+
+        # 최근 3~4년 데이터 추출
+        data = []
+        cols = financials.columns[:4] # 최근 연도순
+        
+        for col in cols:
+            year = str(col.year)
+            row_data = financials[col]
+            
+            # 매출 (Total Revenue), 영업이익 (Operating Income)
+            revenue = row_data.get('Total Revenue', 0)
+            op_income = row_data.get('Operating Income', 0)
+            net_income = row_data.get('Net Income', 0)
+            
+            # 만약 NaN이면 0 처리
+            import math
+            data.append({
+                "year": year,
+                "revenue": revenue if not math.isnan(revenue) else 0,
+                "op_income": op_income if not math.isnan(op_income) else 0,
+                "net_income": net_income if not math.isnan(net_income) else 0
+            })
+            
+        return sorted(data, key=lambda x: x['year']) # 연도순 정렬
+    except Exception as e:
+        print(f"[Financials] Error for {symbol}: {e}")
+        return []
 
 def get_market_status():
     """
