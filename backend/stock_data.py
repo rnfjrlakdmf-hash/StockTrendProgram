@@ -1739,27 +1739,62 @@ def get_dividend_history(symbol: str) -> dict:
 
 def get_financial_health(symbol: str) -> dict:
     """
-    yfinance를 활용해 재무 건전성 지표(부채비율, 유동비율, ROE) 추이를 반환합니다.
+    1차: DART Open API를 통해 재무 건전성 지표 추출 (정확도 확보)
+    2차(Fallback): yfinance를 활용해 재무 건전성 지표 추출
     반환: { years: [...], debt_ratio: [...], current_ratio: [...], roe: [...] }
     """
-    import yfinance as yf
+    import traceback
     import math
+    import yfinance as yf
+    
+    dart_error = None
+    try:
+        # DART 데이터 우선 시도
+        from dart_financials import get_dart_financials
+        corp_code = symbol.replace('.KS', '').replace('.KQ', '')
+        dart_res = get_dart_financials(corp_code)
+        
+        if dart_res.get("success"):
+            year_str = dart_res.get("year", "N/A")
+            ca = dart_res.get("current_assets")
+            cl = dart_res.get("current_liabilities")
+            tl = dart_res.get("total_liabilities")
+            te = dart_res.get("total_equity")
+            ni = dart_res.get("net_income")
+            
+            # 지표 계산
+            dart_dr = round((tl / te) * 100, 1) if tl and te else None
+            dart_cr = round((ca / cl) * 100, 1) if ca and cl else None
+            dart_roe = round((ni / te) * 100, 1) if ni and te else None
+            
+            if dart_dr is not None and dart_cr is not None:
+                return {
+                    "years": [year_str],
+                    "debt_ratio": [dart_dr],
+                    "current_ratio": [dart_cr],
+                    "roe": [dart_roe],
+                    "source": "DART"
+                }
+        else:
+            dart_error = dart_res.get("error", "DART returned unsuccessful")
+    except Exception as e:
+        dart_error = f"{str(e)}"
+        print(f"[DART Financials] fallback error for {symbol}: {e}")
 
+    # [2차 데이터 소스: yfinance Fallback]
     ticker, yfSymbol = _try_yf_ticker(symbol)
 
     def safe_val(series, key, default=None):
         try:
             val = series.get(key, default)
-            if val is None:
-                return None
+            if val is None: return None
             fval = float(val)
             return None if math.isnan(fval) else fval
-        except:
-            return None
+        except: return None
 
     try:
-        balance = ticker.balance_sheet   # 대차대조표
-        financials = ticker.financials   # 손익계산서
+        balance = ticker.balance_sheet
+        financials = ticker.financials
 
         if (balance is None or balance.empty):
             if ".KS" in yfSymbol:
@@ -1769,22 +1804,24 @@ def get_financial_health(symbol: str) -> dict:
                 financials = ticker.financials
 
         if balance is None or balance.empty:
-            return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
+            return {
+                "years": [], "debt_ratio": [], "current_ratio": [], "roe": [], 
+                "source": "None", "dart_error": dart_error
+            }
 
-        years = []
+        years_data = []
         debt_ratios = []
         current_ratios = []
         roes = []
 
-        cols = balance.columns[:4]  # 최근 4년
+        cols = balance.columns[:4]
         for col in cols:
             year = str(col.year)
             bs = balance[col]
             fin_col = None
             if financials is not None and not financials.empty:
                 matching = [c for c in financials.columns if c.year == col.year]
-                if matching:
-                    fin_col = financials[matching[0]]
+                if matching: fin_col = financials[matching[0]]
 
             total_assets = safe_val(bs, "Total Assets")
             total_liab = safe_val(bs, "Total Liabilities Net Minority Interest") or safe_val(bs, "Total Liabilities")
@@ -1793,37 +1830,36 @@ def get_financial_health(symbol: str) -> dict:
             equity = safe_val(bs, "Stockholders Equity") or safe_val(bs, "Common Stock Equity")
             net_income = safe_val(fin_col, "Net Income") if fin_col is not None else None
 
-            # 부채비율 = 총부채 / 총자산 * 100
             dr = round((total_liab / total_assets) * 100, 1) if total_liab and total_assets else None
-            # 유동비율 = 유동자산 / 유동부채 * 100
             cr = round((current_assets / current_liab) * 100, 1) if current_assets and current_liab else None
-            # ROE = 순이익 / 자기자본 * 100
             roe = round((net_income / equity) * 100, 1) if net_income and equity else None
 
-            years.append(year)
+            years_data.append(year)
             debt_ratios.append(dr)
             current_ratios.append(cr)
             roes.append(roe)
 
         # 연도 오름차순 정렬
-        combined = sorted(zip(years, debt_ratios, current_ratios, roes), key=lambda x: x[0])
+        combined = sorted(zip(years_data, debt_ratios, current_ratios, roes), key=lambda x: x[0])
         if combined:
-            years, debt_ratios, current_ratios, roes = zip(*combined)
-            years = list(years)
-            debt_ratios = list(debt_ratios)
-            current_ratios = list(current_ratios)
-            roes = list(roes)
+            years_data, debt_ratios, current_ratios, roes = zip(*combined)
 
         return {
-            "years": years,
-            "debt_ratio": debt_ratios,
-            "current_ratio": current_ratios,
-            "roe": roes,
+            "years": list(years_data),
+            "debt_ratio": list(debt_ratios),
+            "current_ratio": list(current_ratios),
+            "roe": list(roes),
+            "source": "yfinance",
+            "dart_error": dart_error
         }
 
     except Exception as e:
-        print(f"[FinancialHealth] Error for {symbol}: {e}")
-        return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
+        error_log = f"[FinancialHealth] Global Error for {symbol}: {str(e)}\n{traceback.format_exc()}"
+        print(error_log)
+        return {
+            "years": [], "debt_ratio": [], "current_ratio": [], "roe": [], 
+            "error_log": error_log, "dart_error": dart_error
+        }
 
 
 def get_market_status():
