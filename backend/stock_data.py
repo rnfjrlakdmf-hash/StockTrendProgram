@@ -1745,11 +1745,12 @@ def get_financial_health(symbol: str) -> dict:
     """
     import yfinance as yf
     import math
-    from backend.dart_financials import get_dart_financials
-
-    # [1차 데이터 소스: DART API 우선 확인]
+    # DART 데이터 우선 시도
+    dart_data = None
     try:
-        dart_res = get_dart_financials(symbol)
+        from dart_financials import get_dart_financials
+        corp_code = symbol.replace('.KS', '').replace('.KQ', '')
+        dart_res = get_dart_financials(corp_code)
         if dart_res.get("success"):
             year_str = dart_res.get("year", "N/A")
             ca = dart_res.get("current_assets")
