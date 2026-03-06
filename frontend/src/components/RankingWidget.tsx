@@ -112,7 +112,7 @@ export default function RankingWidget() {
             {/* Losers */}
             <div className="bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 rounded-3xl p-5 shadow-lg">
                 <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5" /> {market === 'US' ? '미국 대형주 하락' : '실시간 급락 (Bottom 5)'}
+                    <TrendingDown className="w-5 h-5" /> {market === 'US' ? '미국 대형주 하락' : '실시간 하락 (Bottom 5)'}
                 </h3>
                 <div className="space-y-3">
                     {data.losers.length > 0 ? data.losers.map((item, idx) => (
