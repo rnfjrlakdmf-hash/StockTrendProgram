@@ -91,50 +91,63 @@ def _parse_amt(s: str):
 def _fetch_year_financials(corp_code: str, bsns_year: str) -> dict:
     """
     특정 사업연도의 연결재무(CFS) 핵심 지표를 DART API로 조회.
+    사업보고서(연간) → 반기보고서(H1) → 3분기보고서(Q3) 순으로 폴백.
     반환: { current_assets, current_liabilities, total_liabilities, total_equity, net_income } 또는 {}
     """
     url = "https://opendart.fss.or.kr/api/fnlttSinglAcnt.json"
-    params = {
-        "crtfc_key": DART_API_KEY,
-        "corp_code": corp_code,
-        "bsns_year": bsns_year,
-        "reprt_code": "11011"  # 사업보고서
-    }
     
-    try:
-        res = requests.get(url, params=params, timeout=7)
-        if res.status_code != 200:
-            return {}
-        data = res.json()
-        if data.get("status") != "000" or "list" not in data:
-            return {}
+    # 보고서 코드 우선순위:
+    # 11011: 사업보고서(연간/가장 정확), 11012: 반기보고서(H1), 11013: 3분기보고서
+    reprt_codes = ["11011", "11012", "11013"]
+    
+    for reprt_code in reprt_codes:
+        params = {
+            "crtfc_key": DART_API_KEY,
+            "corp_code": corp_code,
+            "bsns_year": bsns_year,
+            "reprt_code": reprt_code
+        }
         
-        # 연결재무(CFS) 항목 우선, 없으면 전체 사용
-        cfs_items = [item for item in data["list"] if item.get("fs_div") == "CFS"]
-        items = cfs_items if cfs_items else data["list"]
-        
-        result = {}
-        for item in items:
-            acc = item.get("account_nm", "").strip()
-            val = _parse_amt(item.get("thstrm_amount"))
-            if val is None:
+        try:
+            res = requests.get(url, params=params, timeout=7)
+            if res.status_code != 200:
+                continue
+            data = res.json()
+            if data.get("status") != "000" or "list" not in data:
+                # 해당 보고서 없음 → 다음 보고서 코드 시도
                 continue
             
-            if "유동자산" in acc and "비유동자산" not in acc and "current_assets" not in result:
-                result["current_assets"] = val
-            elif "유동부채" in acc and "비유동부채" not in acc and "current_liabilities" not in result:
-                result["current_liabilities"] = val
-            elif acc == "부채총계" or acc.endswith("부채총계"):
-                result["total_liabilities"] = val
-            elif acc == "자본총계" or acc.endswith("자본총계"):
-                result["total_equity"] = val
-            elif "당기순이익" in acc and "net_income" not in result:
-                result["net_income"] = val
-        
-        return result
-    except Exception as e:
-        print(f"[DART] API fetch error for {corp_code} {bsns_year}: {e}")
-        return {}
+            # 연결재무(CFS) 항목 우선, 없으면 전체 사용
+            cfs_items = [item for item in data["list"] if item.get("fs_div") == "CFS"]
+            items = cfs_items if cfs_items else data["list"]
+            
+            result = {}
+            for item in items:
+                acc = item.get("account_nm", "").strip()
+                val = _parse_amt(item.get("thstrm_amount"))
+                if val is None:
+                    continue
+                
+                if "유동자산" in acc and "비유동자산" not in acc and "current_assets" not in result:
+                    result["current_assets"] = val
+                elif "유동부채" in acc and "비유동부채" not in acc and "current_liabilities" not in result:
+                    result["current_liabilities"] = val
+                elif acc == "부채총계" or acc.endswith("부채총계"):
+                    result["total_liabilities"] = val
+                elif acc == "자본총계" or acc.endswith("자본총계"):
+                    result["total_equity"] = val
+                elif "당기순이익" in acc and "net_income" not in result:
+                    result["net_income"] = val
+            
+            # 핵심 데이터가 충분히 있으면 반환
+            if "total_liabilities" in result and "total_equity" in result:
+                return result
+            
+        except Exception as e:
+            print(f"[DART] API fetch error for {corp_code} {bsns_year} ({reprt_code}): {e}")
+            continue
+    
+    return {}
 
 
 def get_dart_financials(symbol: str) -> dict:
