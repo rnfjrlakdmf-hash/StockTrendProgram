@@ -90,7 +90,10 @@ def health_check():
 
 
 # [NEW] Assets & Risk Alerts Endpoints
-from stock_data import get_all_market_assets, get_dart_risk_alerts, get_company_financials
+from stock_data import (
+    get_all_market_assets, get_dart_risk_alerts, get_company_financials,
+    get_dividend_history, get_financial_health
+)
 
 @app.get("/api/assets")
 def read_assets():
@@ -108,6 +111,18 @@ def read_risk_alerts():
 def read_stock_financials(symbol: str):
     """특정 종목의 최근 3개년 재무 하이라이트 반환"""
     data = get_company_financials(symbol)
+    return {"status": "success", "data": data}
+
+@app.get("/api/stock/{symbol}/dividends")
+def read_stock_dividends(symbol: str):
+    """특정 종목의 최근 5개년 연간 배당 히스토리 반환"""
+    data = get_dividend_history(symbol)
+    return {"status": "success", "data": data}
+
+@app.get("/api/stock/{symbol}/health")
+def read_stock_health(symbol: str):
+    """특정 종목의 재무 건전성 지표 추이 반환 (부채비율, 유동비율, ROE)"""
+    data = get_financial_health(symbol)
     return {"status": "success", "data": data}
 
 @app.on_event("startup")

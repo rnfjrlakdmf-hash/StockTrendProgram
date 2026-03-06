@@ -1662,7 +1662,172 @@ def get_company_financials(symbol: str):
         print(f"[Financials] Error for {symbol}: {e}")
         return []
 
+
+def _resolve_yf_symbol(symbol: str) -> str:
+    """종목 코드를 yfinance 형식으로 변환 (6자리 숫자 → .KS 또는 .KQ)"""
+    clean = symbol.strip()
+    if clean.isdigit() and len(clean) == 6:
+        return f"{clean}.KS"
+    return clean
+
+
+def _try_yf_ticker(symbol: str):
+    """KS 실패 시 KQ 로 fallback하는 ticker 반환"""
+    import yfinance as yf
+    s = _resolve_yf_symbol(symbol)
+    ticker = yf.Ticker(s)
+    return ticker, s
+
+
+def get_dividend_history(symbol: str) -> dict:
+    """
+    yfinance를 활용해 연간 배당 히스토리를 반환합니다.
+    반환: { years: [...], amounts: [...], summary: {...} }
+    """
+    import yfinance as yf
+    import math
+
+    ticker, yfSymbol = _try_yf_ticker(symbol)
+    try:
+        dividends = ticker.dividends  # pandas Series (날짜 인덱스, 배당금 값)
+
+        if dividends is None or dividends.empty:
+            # KQ fallback
+            if ".KS" in yfSymbol:
+                yfSymbol = yfSymbol.replace(".KS", ".KQ")
+                ticker = yf.Ticker(yfSymbol)
+                dividends = ticker.dividends
+
+        if dividends is None or dividends.empty:
+            return {"years": [], "amounts": [], "summary": {}}
+
+        # 연도별 합산 (분기 배당 기업 대비)
+        div_by_year = {}
+        for date, amount in dividends.items():
+            year = str(date.year)
+            if math.isnan(amount):
+                continue
+            div_by_year[year] = div_by_year.get(year, 0) + float(amount)
+
+        # 최근 5년만
+        sorted_years = sorted(div_by_year.keys())[-5:]
+        years_data = sorted_years
+        amounts_data = [round(div_by_year[y], 4) for y in sorted_years]
+
+        # 요약 지표
+        summary = {}
+        if amounts_data:
+            summary["latest_div"] = amounts_data[-1]
+            summary["latest_year"] = years_data[-1]
+            consecutive = 0
+            for a in reversed(amounts_data):
+                if a > 0:
+                    consecutive += 1
+                else:
+                    break
+            summary["consecutive_years"] = consecutive
+            if len(amounts_data) >= 2 and amounts_data[-2] > 0:
+                growth = ((amounts_data[-1] - amounts_data[-2]) / amounts_data[-2]) * 100
+                summary["yoy_growth_pct"] = round(growth, 1)
+
+        return {"years": years_data, "amounts": amounts_data, "summary": summary}
+
+    except Exception as e:
+        print(f"[DividendHistory] Error for {symbol}: {e}")
+        return {"years": [], "amounts": [], "summary": {}}
+
+
+def get_financial_health(symbol: str) -> dict:
+    """
+    yfinance를 활용해 재무 건전성 지표(부채비율, 유동비율, ROE) 추이를 반환합니다.
+    반환: { years: [...], debt_ratio: [...], current_ratio: [...], roe: [...] }
+    """
+    import yfinance as yf
+    import math
+
+    ticker, yfSymbol = _try_yf_ticker(symbol)
+
+    def safe_val(series, key, default=None):
+        try:
+            val = series.get(key, default)
+            if val is None:
+                return None
+            fval = float(val)
+            return None if math.isnan(fval) else fval
+        except:
+            return None
+
+    try:
+        balance = ticker.balance_sheet   # 대차대조표
+        financials = ticker.financials   # 손익계산서
+
+        if (balance is None or balance.empty):
+            if ".KS" in yfSymbol:
+                yfSymbol = yfSymbol.replace(".KS", ".KQ")
+                ticker = yf.Ticker(yfSymbol)
+                balance = ticker.balance_sheet
+                financials = ticker.financials
+
+        if balance is None or balance.empty:
+            return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
+
+        years = []
+        debt_ratios = []
+        current_ratios = []
+        roes = []
+
+        cols = balance.columns[:4]  # 최근 4년
+        for col in cols:
+            year = str(col.year)
+            bs = balance[col]
+            fin_col = None
+            if financials is not None and not financials.empty:
+                matching = [c for c in financials.columns if c.year == col.year]
+                if matching:
+                    fin_col = financials[matching[0]]
+
+            total_assets = safe_val(bs, "Total Assets")
+            total_liab = safe_val(bs, "Total Liabilities Net Minority Interest") or safe_val(bs, "Total Liabilities")
+            current_assets = safe_val(bs, "Current Assets")
+            current_liab = safe_val(bs, "Current Liabilities")
+            equity = safe_val(bs, "Stockholders Equity") or safe_val(bs, "Common Stock Equity")
+            net_income = safe_val(fin_col, "Net Income") if fin_col is not None else None
+
+            # 부채비율 = 총부채 / 총자산 * 100
+            dr = round((total_liab / total_assets) * 100, 1) if total_liab and total_assets else None
+            # 유동비율 = 유동자산 / 유동부채 * 100
+            cr = round((current_assets / current_liab) * 100, 1) if current_assets and current_liab else None
+            # ROE = 순이익 / 자기자본 * 100
+            roe = round((net_income / equity) * 100, 1) if net_income and equity else None
+
+            years.append(year)
+            debt_ratios.append(dr)
+            current_ratios.append(cr)
+            roes.append(roe)
+
+        # 연도 오름차순 정렬
+        combined = sorted(zip(years, debt_ratios, current_ratios, roes), key=lambda x: x[0])
+        if combined:
+            years, debt_ratios, current_ratios, roes = zip(*combined)
+            years = list(years)
+            debt_ratios = list(debt_ratios)
+            current_ratios = list(current_ratios)
+            roes = list(roes)
+
+        return {
+            "years": years,
+            "debt_ratio": debt_ratios,
+            "current_ratio": current_ratios,
+            "roe": roes,
+        }
+
+    except Exception as e:
+        print(f"[FinancialHealth] Error for {symbol}: {e}")
+        return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
+
+
 def get_market_status():
+
     """
     Returns current market status (Open/Closed) and time.
     Mock implementation for stability.

@@ -183,12 +183,15 @@ function DiscoveryContent() {
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
     const [showPortfolioAnalysis, setShowPortfolioAnalysis] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
     const [financialHighlights, setFinancialHighlights] = useState<any[]>([]);
     const [financialsLoading, setFinancialsLoading] = useState(false);
+    const [dividendData, setDividendData] = useState<any>(null);
+    const [healthData, setHealthData] = useState<any>(null);
+    const [dividendLoading, setDividendLoading] = useState(false);
 
     // [WebSocket Integration] Real-time Price Updates
     // Replaces the old 5-second polling interval
@@ -808,6 +811,25 @@ function DiscoveryContent() {
                                                     재무제표
                                                 </button>
                                                 <button
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'dividend_health' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => {
+                                                        setActiveTab('dividend_health');
+                                                        if (stock && !dividendData) {
+                                                            setDividendLoading(true);
+                                                            const sym = encodeURIComponent(stock.symbol);
+                                                            Promise.all([
+                                                                fetch(`${API_BASE_URL}/api/stock/${sym}/dividends`).then(r => r.json()),
+                                                                fetch(`${API_BASE_URL}/api/stock/${sym}/health`).then(r => r.json())
+                                                            ]).then(([divRes, healthRes]) => {
+                                                                if (divRes.status === 'success') setDividendData(divRes.data);
+                                                                if (healthRes.status === 'success') setHealthData(healthRes.data);
+                                                            }).catch(() => { }).finally(() => setDividendLoading(false));
+                                                        }
+                                                    }}
+                                                >
+                                                    💰 배당/건전성 <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
+                                                </button>
+                                                <button
                                                     className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('backtest')}
                                                 >
@@ -829,6 +851,14 @@ function DiscoveryContent() {
                                             </>
                                         )}
                                     </div>
+
+                                    {activeTab === 'dividend_health' && (
+                                        <DividendHealthTab
+                                            dividendData={dividendData}
+                                            healthData={healthData}
+                                            loading={dividendLoading}
+                                        />
+                                    )}
 
                                     {activeTab === 'analysis' ? (
                                         <>
@@ -1987,5 +2017,135 @@ function StockLiveChart({ symbol }: { symbol: string }) {
                 />
             </AreaChart>
         </ResponsiveContainer>
+    );
+}
+
+
+// [NEW] 배당 히스토리 & 재무 건전성 탭 컴포넌트
+function DividendHealthTab({
+    dividendData,
+    healthData,
+    loading,
+}: {
+    dividendData: any;
+    healthData: any;
+    loading: boolean;
+}) {
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                <p className="text-gray-400 text-sm">배당 &amp; 재무 건전성 데이터 불러오는 중...</p>
+            </div>
+        );
+    }
+
+    const hasDividend = dividendData?.years?.length > 0;
+    const hasHealth   = healthData?.years?.length > 0;
+
+    if (!hasDividend && !hasHealth) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
+                <BarChart2 className="w-10 h-10 opacity-30" />
+                <p className="text-sm">이 종목의 배당/재무 데이터를 수집할 수 없습니다.</p>
+                <p className="text-xs text-gray-600">국내 종목은 종목코드(6자리)로 검색하면 더 정확합니다.</p>
+            </div>
+        );
+    }
+
+    const divChartData = hasDividend
+        ? dividendData.years.map((y: string, i: number) => ({ year: y, div: dividendData.amounts[i] ?? 0 }))
+        : [];
+
+    const healthChartData = hasHealth
+        ? healthData.years.map((y: string, i: number) => ({
+              year: y,
+              debt: healthData.debt_ratio[i],
+              current: healthData.current_ratio[i],
+              roe: healthData.roe[i],
+          }))
+        : [];
+
+    const summary = dividendData?.summary ?? {};
+
+    return (
+        <div className="space-y-6">
+            {hasDividend && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4 text-center">
+                        <p className="text-[10px] text-gray-500 mb-1">최근 연도 배당금</p>
+                        <p className="text-lg font-black text-emerald-400">
+                            {(summary.latest_div ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} 원
+                        </p>
+                        <p className="text-[10px] text-gray-600">{summary.latest_year}년 기준</p>
+                    </div>
+                    <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl p-4 text-center">
+                        <p className="text-[10px] text-gray-500 mb-1">연속 배당 연수</p>
+                        <p className="text-lg font-black text-blue-400">{summary.consecutive_years ?? "-"} 년</p>
+                    </div>
+                    {summary.yoy_growth_pct !== undefined && (
+                        <div className={`border rounded-xl p-4 text-center ${summary.yoy_growth_pct >= 0 ? "bg-green-500/5 border-green-500/15" : "bg-red-500/5 border-red-500/15"}`}>
+                            <p className="text-[10px] text-gray-500 mb-1">전년대비 배당 변화</p>
+                            <p className={`text-lg font-black ${summary.yoy_growth_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                {summary.yoy_growth_pct >= 0 ? "+" : ""}{summary.yoy_growth_pct}%
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {hasDividend && (
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
+                    <h4 className="text-sm font-bold text-emerald-300 mb-4">💰 연간 배당금 히스토리 (최근 5개년)</h4>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <AreaChart data={divChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                            <defs>
+                                <linearGradient id="divGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
+                            <XAxis dataKey="year" stroke="#64748b" fontSize={11} axisLine={false} tickLine={false} />
+                            <YAxis stroke="#64748b" fontSize={10} tickFormatter={(v: number) => v.toLocaleString()} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #10b98130", borderRadius: "12px", fontSize: "11px" }}
+                                formatter={(v: any) => [`${Number(v).toLocaleString()} 원`, "배당금"]}
+                            />
+                            <Area type="monotone" dataKey="div" name="배당금" stroke="#10b981" strokeWidth={3} fill="url(#divGrad)" dot={{ r: 4, fill: "#10b981" }} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+
+            {hasHealth && (
+                <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
+                    <h4 className="text-sm font-bold text-blue-300 mb-4">🏦 재무 건전성 지표 추이 (부채비율 · 유동비율 · ROE)</h4>
+                    <ResponsiveContainer width="100%" height={220}>
+                        <LineChart data={healthChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
+                            <XAxis dataKey="year" stroke="#64748b" fontSize={11} axisLine={false} tickLine={false} />
+                            <YAxis stroke="#64748b" fontSize={10} unit="%" />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #3b82f630", borderRadius: "12px", fontSize: "11px" }}
+                                formatter={(value: any) => [value !== null && value !== undefined ? `${value}%` : "N/A", ""]}
+                            />
+                            <Line type="monotone" dataKey="debt"    name="부채비율" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                            <Line type="monotone" dataKey="current" name="유동비율" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                            <Line type="monotone" dataKey="roe"     name="ROE"     stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        </LineChart>
+                    </ResponsiveContainer>
+                    <div className="flex flex-wrap gap-4 mt-2">
+                        <span className="text-[10px] text-red-400">● 부채비율 — 낮을수록 안전</span>
+                        <span className="text-[10px] text-blue-400">● 유동비율 — 높을수록 단기 안전</span>
+                        <span className="text-[10px] text-yellow-400">● ROE — 높을수록 자본 효율 우수</span>
+                    </div>
+                </div>
+            )}
+
+            <p className="text-[10px] text-gray-600 italic border-t border-white/5 pt-3">
+                * 위 수치는 yfinance 공개 데이터 기반의 객관적 사실이며, 투자 권유가 아닙니다. 모든 투자 결정의 책임은 투자자 본인에게 있습니다.
+            </p>
+        </div>
     );
 }
