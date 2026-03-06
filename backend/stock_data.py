@@ -1743,11 +1743,9 @@ def get_financial_health(symbol: str) -> dict:
     2차(Fallback): yfinance를 활용해 재무 건전성 지표 추출
     반환: { years: [...], debt_ratio: [...], current_ratio: [...], roe: [...] }
     """
-    import traceback
     import math
     import yfinance as yf
     
-    dart_error = None
     try:
         # DART 데이터 우선 시도
         from dart_financials import get_dart_financials
@@ -1775,11 +1773,8 @@ def get_financial_health(symbol: str) -> dict:
                     "roe": [dart_roe],
                     "source": "DART"
                 }
-        else:
-            dart_error = dart_res.get("error", "DART returned unsuccessful")
     except Exception as e:
-        dart_error = f"{str(e)}"
-        print(f"[DART Financials] fallback error for {symbol}: {e}")
+        print(f"[DART Financials] error for {symbol}: {e}")
 
     # [2차 데이터 소스: yfinance Fallback]
     ticker, yfSymbol = _try_yf_ticker(symbol)
@@ -1804,10 +1799,7 @@ def get_financial_health(symbol: str) -> dict:
                 financials = ticker.financials
 
         if balance is None or balance.empty:
-            return {
-                "years": [], "debt_ratio": [], "current_ratio": [], "roe": [], 
-                "source": "None", "dart_error": dart_error
-            }
+            return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": [], "source": "None"}
 
         years_data = []
         debt_ratios = []
@@ -1849,17 +1841,12 @@ def get_financial_health(symbol: str) -> dict:
             "debt_ratio": list(debt_ratios),
             "current_ratio": list(current_ratios),
             "roe": list(roes),
-            "source": "yfinance",
-            "dart_error": dart_error
+            "source": "yfinance"
         }
 
     except Exception as e:
-        error_log = f"[FinancialHealth] Global Error for {symbol}: {str(e)}\n{traceback.format_exc()}"
-        print(error_log)
-        return {
-            "years": [], "debt_ratio": [], "current_ratio": [], "roe": [], 
-            "error_log": error_log, "dart_error": dart_error
-        }
+        print(f"[FinancialHealth] Error for {symbol}: {e}")
+        return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
 
 
 def get_market_status():
