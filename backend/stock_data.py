@@ -1785,10 +1785,7 @@ def get_financial_health(symbol: str) -> dict:
                     "source": "DART"
                 }
     except Exception as e:
-        dart_exception = str(e)
         print(f"[DART Financials] error for {symbol}: {e}")
-    else:
-        dart_exception = None
 
     # [2차 데이터 소스: yfinance Fallback]
     ticker, yfSymbol = _try_yf_ticker(symbol)
@@ -1855,8 +1852,7 @@ def get_financial_health(symbol: str) -> dict:
             "debt_ratio": list(debt_ratios),
             "current_ratio": list(current_ratios),
             "roe": list(roes),
-            "source": "yfinance",
-            "dart_exception": dart_exception if 'dart_exception' in dir() else "no_error_captured"
+            "source": "yfinance"
         }
 
     except Exception as e:
