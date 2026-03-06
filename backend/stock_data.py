@@ -1739,44 +1739,12 @@ def get_dividend_history(symbol: str) -> dict:
 
 def get_financial_health(symbol: str) -> dict:
     """
-    1차: DART Open API를 통해 재무 건전성 지표 추출 (정확도 확보)
-    2차(Fallback): yfinance를 활용해 재무 건전성 지표 추출
+    yfinance를 활용해 재무 건전성 지표(부채비율, 유동비율, ROE) 추이를 반환합니다.
     반환: { years: [...], debt_ratio: [...], current_ratio: [...], roe: [...] }
     """
     import yfinance as yf
     import math
-    # DART 데이터 우선 시도
-    dart_data = None
-    try:
-        from dart_financials import get_dart_financials
-        corp_code = symbol.replace('.KS', '').replace('.KQ', '')
-        dart_res = get_dart_financials(corp_code)
-        if dart_res.get("success"):
-            year_str = dart_res.get("year", "N/A")
-            ca = dart_res.get("current_assets")
-            cl = dart_res.get("current_liabilities")
-            tl = dart_res.get("total_liabilities")
-            te = dart_res.get("total_equity")
-            ni = dart_res.get("net_income")
-            
-            # 지표 계산
-            dart_dr = round((tl / te) * 100, 1) if tl and te else None     # 부채총계 / 자본총계 (실제 일반적 부채비율)
-            dart_cr = round((ca / cl) * 100, 1) if ca and cl else None     # 유동자산 / 유동부채 (유동비율)
-            dart_roe = round((ni / te) * 100, 1) if ni and te else None    # 당기순이익 / 자본총계 (ROE)
-            
-            # 단일 연도라도 DART 데이터가 있으면 배열로 감싸서 즉시 리턴 (정확성 최우선)
-            if dart_dr is not None and dart_cr is not None:
-                return {
-                    "years": [year_str],
-                    "debt_ratio": [dart_dr],
-                    "current_ratio": [dart_cr],
-                    "roe": [dart_roe],
-                    "source": "DART" # UI에서 배지 등으로 표시용 헤더 추가
-                }
-    except Exception as e:
-        print(f"[DART Financials] fallback error for {symbol}: {e}")
 
-    # [2차 데이터 소스: yfinance Fallback]
     ticker, yfSymbol = _try_yf_ticker(symbol)
 
     def safe_val(series, key, default=None):
@@ -1801,7 +1769,7 @@ def get_financial_health(symbol: str) -> dict:
                 financials = ticker.financials
 
         if balance is None or balance.empty:
-            return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": [], "source": "None"}
+            return {"years": [], "debt_ratio": [], "current_ratio": [], "roe": []}
 
         years = []
         debt_ratios = []
