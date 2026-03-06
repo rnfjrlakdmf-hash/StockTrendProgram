@@ -1410,7 +1410,7 @@ function FinancialHighlights({ data, loading }: { data: any[], loading: boolean 
                             <YAxis hide />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '11px' }}
-                                formatter={(value: number) => [`${(value / 100000000).toLocaleString()} 억원`, '']}
+                                formatter={(value: any) => [`${(Number(value) / 100000000).toLocaleString()} 억원`, '']}
                                 labelStyle={{ fontWeight: 'bold', color: '#60a5fa' }}
                             />
                             <Line type="monotone" dataKey="revenue" name="매출액" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
@@ -2041,7 +2041,7 @@ function DividendHealthTab({
     }
 
     const hasDividend = dividendData?.years?.length > 0;
-    const hasHealth   = healthData?.years?.length > 0;
+    const hasHealth = healthData?.years?.length > 0;
 
     if (!hasDividend && !hasHealth) {
         return (
@@ -2059,11 +2059,11 @@ function DividendHealthTab({
 
     const healthChartData = hasHealth
         ? healthData.years.map((y: string, i: number) => ({
-              year: y,
-              debt: healthData.debt_ratio[i],
-              current: healthData.current_ratio[i],
-              roe: healthData.roe[i],
-          }))
+            year: y,
+            debt: healthData.debt_ratio[i],
+            current: healthData.current_ratio[i],
+            roe: healthData.roe[i],
+        }))
         : [];
 
     const summary = dividendData?.summary ?? {};
@@ -2130,9 +2130,9 @@ function DividendHealthTab({
                                 contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #3b82f630", borderRadius: "12px", fontSize: "11px" }}
                                 formatter={(value: any) => [value !== null && value !== undefined ? `${value}%` : "N/A", ""]}
                             />
-                            <Line type="monotone" dataKey="debt"    name="부채비율" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                            <Line type="monotone" dataKey="debt" name="부채비율" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                             <Line type="monotone" dataKey="current" name="유동비율" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                            <Line type="monotone" dataKey="roe"     name="ROE"     stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                            <Line type="monotone" dataKey="roe" name="ROE" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                         </LineChart>
                     </ResponsiveContainer>
                     <div className="flex flex-wrap gap-4 mt-2">
