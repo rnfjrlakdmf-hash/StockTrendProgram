@@ -1,5 +1,5 @@
 ﻿from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
-# [Deployment Trigger] debug health fix v2 - 2026-03-06
+# [Deployment Trigger] dart multi-year fix v3 - 2026-03-06
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -83,7 +83,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260306-debug-v2",
+        "version": "20260306-dart-v3",
         "service": "AI Stock Analyst Backend"
     }
 
