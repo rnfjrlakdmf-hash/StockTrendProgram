@@ -1752,29 +1752,43 @@ def get_financial_health(symbol: str) -> dict:
         corp_code = symbol.replace('.KS', '').replace('.KQ', '')
         dart_res = get_dart_financials(corp_code)
         
-        if dart_res.get("success"):
-            year_str = dart_res.get("year", "N/A")
-            ca = dart_res.get("current_assets")
-            cl = dart_res.get("current_liabilities")
-            tl = dart_res.get("total_liabilities")
-            te = dart_res.get("total_equity")
-            ni = dart_res.get("net_income")
+        if dart_res.get("success") and "data" in dart_res:
+            years_data = []
+            debt_ratios = []
+            current_ratios = []
+            roes = []
             
-            # 지표 계산
-            dart_dr = round((tl / te) * 100, 1) if tl and te else None
-            dart_cr = round((ca / cl) * 100, 1) if ca and cl else None
-            dart_roe = round((ni / te) * 100, 1) if ni and te else None
+            # 다년도 리스트 처리
+            for fin in dart_res["data"]:
+                ca = fin.get("current_assets")
+                cl = fin.get("current_liabilities")
+                tl = fin.get("total_liabilities")
+                te = fin.get("total_equity")
+                ni = fin.get("net_income")
+                
+                # 지표 계산
+                dr = round((tl / te) * 100, 1) if tl and te else None
+                cr = round((ca / cl) * 100, 1) if ca and cl else None
+                roe = round((ni / te) * 100, 1) if ni and te else None
+                
+                years_data.append(fin["year"])
+                debt_ratios.append(dr)
+                current_ratios.append(cr)
+                roes.append(roe)
             
-            if dart_dr is not None and dart_cr is not None:
+            if years_data:
                 return {
-                    "years": [year_str],
-                    "debt_ratio": [dart_dr],
-                    "current_ratio": [dart_cr],
-                    "roe": [dart_roe],
+                    "years": years_data,
+                    "debt_ratio": debt_ratios,
+                    "current_ratio": current_ratios,
+                    "roe": roes,
                     "source": "DART"
                 }
     except Exception as e:
+        dart_exception = str(e)
         print(f"[DART Financials] error for {symbol}: {e}")
+    else:
+        dart_exception = None
 
     # [2차 데이터 소스: yfinance Fallback]
     ticker, yfSymbol = _try_yf_ticker(symbol)
@@ -1841,7 +1855,8 @@ def get_financial_health(symbol: str) -> dict:
             "debt_ratio": list(debt_ratios),
             "current_ratio": list(current_ratios),
             "roe": list(roes),
-            "source": "yfinance"
+            "source": "yfinance",
+            "dart_exception": dart_exception if 'dart_exception' in dir() else "no_error_captured"
         }
 
     except Exception as e:
