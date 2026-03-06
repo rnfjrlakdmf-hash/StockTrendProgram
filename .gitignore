@@ -88,3 +88,4 @@ backend/disclosure_endpoint.txt
 backend/korean_rates_fixed.py
 backend/list_models.py
 backend/get_telegram_id.py
+.vercel

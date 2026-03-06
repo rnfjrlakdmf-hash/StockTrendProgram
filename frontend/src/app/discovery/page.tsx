@@ -2134,7 +2134,15 @@ function DividendHealthTab({
 
             {hasHealth && (
                 <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
-                    <h4 className="text-sm font-bold text-blue-300 mb-4">🏦 재무 건전성 지표 추이 (부채비율 · 유동비율 · ROE)</h4>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-bold text-blue-300">🏦 재무 건전성 지표 추이 (부채비율 · 유동비율 · ROE)</h4>
+                        {healthData?.source === 'DART' && (
+                            <span className="bg-blue-900/40 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 flex items-center gap-1 shadow-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                DART 공식 데이터
+                            </span>
+                        )}
+                    </div>
                     <ResponsiveContainer width="100%" height={220}>
                         <LineChart data={healthChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
@@ -2157,8 +2165,8 @@ function DividendHealthTab({
                 </div>
             )}
 
-            <p className="text-[10px] text-gray-600 italic border-t border-white/5 pt-3">
-                * 위 수치는 yfinance 공개 데이터 기반의 객관적 사실이며, 투자 권유가 아닙니다. 모든 투자 결정의 책임은 투자자 본인에게 있습니다.
+            <p className="text-[10px] text-gray-500 italic border-t border-white/5 pt-3">
+                * 위 수치는 {healthData?.source === 'DART' ? 'DART(전자공시시스템) 사업보고서 원본 데이터' : 'yfinance 공개 데이터'} 기반의 객관적 사실입니다. 향후 실적이나 주가 수익률을 보장하지 않습니다.
             </p>
         </div>
     );
