@@ -50,7 +50,7 @@ from korea_data import (
     get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
     get_live_investor_estimates, get_indexing_status, search_stock_code,
     get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
-    get_market_investors, get_index_chart_data
+    get_market_investors, get_index_chart_data, get_investor_history
 )
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -439,6 +439,18 @@ def read_live_investors(symbol: str):
     else:
         return {"status": "error", "message": "Failed to fetch live investor data"}
 
+
+@app.get("/api/stock/{symbol}/investors/history")
+def read_history_investors(symbol: str):
+    """최근 투자자별 순매수 동향 (일별, 20일치)"""
+    symbol = urllib.parse.unquote(symbol)
+    # Default 40일치에서 20일치만 프론트엔드에 전달 (차트용 가독성)
+    history = get_investor_history(symbol, days=20)
+    
+    if history and len(history) > 0:
+        return {"status": "success", "data": history}
+    else:
+        return {"status": "error", "message": "Failed to fetch investor history data"}
 
 
 

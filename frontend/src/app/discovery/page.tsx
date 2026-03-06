@@ -20,6 +20,7 @@ import FCMTokenManager from "@/components/FCMTokenManager";
 import SimplePushTest from "@/components/SimplePushTest";
 import FinancialsTable from "@/components/FinancialsTable";
 import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
+import InvestorTrendTab from "@/components/InvestorTrendTab";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -183,7 +184,7 @@ function DiscoveryContent() {
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
     const [showPortfolioAnalysis, setShowPortfolioAnalysis] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
@@ -830,6 +831,12 @@ function DiscoveryContent() {
                                                     💰 배당/건전성 <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
                                                 </button>
                                                 <button
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('investor')}
+                                                >
+                                                    📈 투자자 동향 <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
+                                                </button>
+                                                <button
                                                     className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('backtest')}
                                                 >
@@ -857,6 +864,13 @@ function DiscoveryContent() {
                                             dividendData={dividendData}
                                             healthData={healthData}
                                             loading={dividendLoading}
+                                        />
+                                    )}
+
+                                    {activeTab === 'investor' && (
+                                        <InvestorTrendTab
+                                            symbol={stock.symbol}
+                                            stockName={stock.name}
                                         />
                                     )}
 
