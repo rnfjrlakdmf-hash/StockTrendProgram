@@ -11,7 +11,6 @@ import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
 import { API_BASE_URL } from "@/lib/config";
 
-import RankingWidget from "@/components/RankingWidget";
 import StoryChart from "@/components/StoryChart";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
 import PriceAlertList from "@/components/PriceAlertList";
@@ -434,8 +433,6 @@ function DiscoveryContent() {
                             </div>
                         </div>
 
-                        {/* [New] Real-time Rankings Widget */}
-                        <RankingWidget />
 
                         {/* Market Indicators Grid Removed (Redundant with Market Intelligence) */}
                     </div>
