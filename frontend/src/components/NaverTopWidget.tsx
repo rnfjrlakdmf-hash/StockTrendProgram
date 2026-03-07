@@ -119,38 +119,41 @@ export default function NaverTopWidget() {
                 ) : (
                     <div className="space-y-2">
                         {/* Header Row */}
-                        <div className="flex items-center justify-between px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            <div className="w-8 text-center">순위</div>
-                            <div className="flex-1 ml-4">종목명</div>
-                            <div className="w-24 text-right">현재가</div>
-                            <div className="w-24 text-right">등락률</div>
+                        <div className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                            <div className="w-10 text-center">순위</div>
+                            <div className="flex-1 ml-5">종목명</div>
+                            <div className="w-28 text-right">현재가</div>
+                            <div className="w-28 text-right">등락률</div>
                         </div>
 
                         {/* Body Rows */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-3">
                             {data.map((item, idx) => (
-                                <div key={`${item.symbol}-${idx}`} className="flex items-center justify-between p-3 px-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] transition-colors group cursor-pointer border border-transparent hover:border-white/10">
+                                <div key={`${item.symbol}-${idx}`} className="flex items-center justify-between p-4 px-5 rounded-2xl bg-[#2a2a2c] hover:bg-[#323235] transition-all group cursor-pointer border border-transparent hover:border-white/20 shadow-sm">
                                     {/* Rank */}
-                                    <div className={`w-8 text-center font-bold text-lg font-mono ${idx < 3 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                                        {item.rank}
+                                    <div className="w-10 flex justify-center">
+                                        <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-lg font-mono ${idx < 3 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'text-gray-400'
+                                            }`}>
+                                            {item.rank}
+                                        </span>
                                     </div>
 
                                     {/* Name & Symbol */}
-                                    <div className="flex-1 ml-4">
-                                        <div className="font-bold text-white text-[15px] group-hover:text-blue-300 transition-colors">{item.name}</div>
-                                        <div className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</div>
+                                    <div className="flex-1 ml-5">
+                                        <div className="font-bold text-white text-lg group-hover:text-blue-300 transition-colors">{item.name}</div>
+                                        <div className="text-sm text-gray-500 font-mono mt-0.5">{item.symbol}</div>
                                     </div>
 
                                     {/* Price */}
-                                    <div className="text-right w-24">
-                                        <div className={`font-bold font-mono text-[15px] ${getChangeColor(item.change_percent)}`}>
+                                    <div className="text-right w-28">
+                                        <div className={`font-bold font-mono text-lg tracking-tight ${getChangeColor(item.change_percent)}`}>
                                             {formatPrice(item.price)}
                                         </div>
                                     </div>
 
                                     {/* Change */}
-                                    <div className="text-right w-24 flex justify-end">
-                                        <div className={`px-2.5 py-1 rounded border font-bold font-mono text-xs w-20 text-center ${getPriceBgColor(item.change_percent)} ${getChangeColor(item.change_percent)}`}>
+                                    <div className="text-right w-28 flex justify-end">
+                                        <div className={`px-3 py-1.5 rounded-lg border font-bold font-mono text-sm w-24 text-center ${getPriceBgColor(item.change_percent)} ${getChangeColor(item.change_percent)}`}>
                                             {item.change_percent > 0 ? '+' : ''}{item.change}
                                         </div>
                                     </div>
