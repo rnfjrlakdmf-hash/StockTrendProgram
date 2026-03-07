@@ -987,6 +987,26 @@ def read_rank_top10(market: str):
     data = get_realtime_top10(market)
     return {"status": "success", "data": data}
 
+from rank_data import get_naver_ranking
+
+@app.get("/api/rank/naver/{market}/{rank_type}")
+def read_naver_ranking(market: str, rank_type: str):
+    """네이버 금융 실시간 TOP종목 반환 (NXT/KRX)"""
+    market = market.lower()
+    rank_type = rank_type.lower()
+    
+    if market not in ["krx", "nxt"]:
+        return {"status": "error", "message": "Invalid market"}
+    if rank_type not in ["quant", "rise", "fall", "market_sum"]:
+        return {"status": "error", "message": "Invalid rank_type"}
+        
+    try:
+        data = get_naver_ranking(market, rank_type)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        print(f"Naver Ranking API Error: {e}")
+        return {"status": "error", "message": str(e), "data": []}
+
 
 
 

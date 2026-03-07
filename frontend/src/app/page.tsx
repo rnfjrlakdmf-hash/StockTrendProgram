@@ -13,6 +13,7 @@ import { getTickerFromKorean } from "@/lib/stockMapping";
 
 import MarketDashboard from "@/components/MarketDashboard";
 import RankingWidget from "@/components/RankingWidget";
+import NaverTopWidget from "@/components/NaverTopWidget";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -68,6 +69,9 @@ export default function Home() {
           <TopRankingWidget market="KR" title="국내 증시 Top 10" />
           <TopRankingWidget market="US" title="해외 증시 Top 10" />
         </div>
+
+        {/* Naver-style TOP Stocks Widget */}
+        <NaverTopWidget />
 
         {/* Real-time Top 5 Gainers & Losers */}
         <RankingWidget />

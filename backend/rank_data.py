@@ -340,9 +340,89 @@ def fetch_yahoo_movers():
         
     return {"gainers": gainers, "losers": losers}
 
+def get_naver_ranking(market="krx", rank_type="quant"):
+    """
+    네이버 금융 TOP종목 영역을 파싱합니다.
+    market: krx 또는 nxt
+    rank_type: quant(거래상위), rise(상승), fall(하락), market_sum(시가총액상위)
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    import re
+
+    base_url = "https://finance.naver.com/sise/"
+    prefix = "nxt_" if market == "nxt" else ""
+    url = f"{base_url}{prefix}sise_{rank_type}.naver"
+    
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        try:
+            html = res.content.decode('euc-kr') 
+        except:
+            html = res.text
+            
+        soup = BeautifulSoup(html, 'html.parser')
+        rows = soup.select("table.type_2 tr")
+        
+        data = []
+        rank = 1
+        for row in rows:
+            cols = row.select("td")
+            if len(cols) < 5: continue
+            
+            try:
+                name_tag = row.select_one("a.tltle")
+                if not name_tag: continue
+                name = name_tag.text.strip()
+                
+                href = name_tag.get('href', '')
+                match = re.search(r'code=(\d+)', href)
+                symbol = match.group(1) if match else ""
+                
+                num_cols = row.select("td.number")
+                if not num_cols: continue
+                
+                price_str = num_cols[0].text.strip().replace(",", "")
+                price = int(price_str) if price_str.isdigit() else 0
+                
+                change_rate = 0.0
+                change_rate_str = "0.00%"
+                for col in num_cols:
+                    txt = col.text.strip()
+                    if "%" in txt:
+                        change_rate_str = txt
+                        val_str = txt.replace("%", "").replace("+", "").strip()
+                        if val_str.replace(".", "", 1).replace("-", "", 1).isdigit():
+                            change_rate = float(val_str)
+                            if "-" in txt:
+                                change_rate = -abs(change_rate)
+                        break
+                
+                data.append({
+                    "rank": rank,
+                    "symbol": symbol,
+                    "name": name,
+                    "price": price,
+                    "change": change_rate_str,
+                    "change_percent": change_rate
+                })
+                
+                rank += 1
+                if rank > 10: # Top 10 까지만
+                    break
+                    
+            except Exception as e:
+                pass
+                
+        return data
+        
+    except Exception as e:
+        print(f"Error parsing Naver {market} {rank_type}: {e}")
+        return []
+
 if __name__ == "__main__":
     # Test
     print("KR:", get_realtime_top10("KR"))
     print("US:", get_realtime_top10("US"))
     print("Movers KR:", get_market_movers("KR"))
-
