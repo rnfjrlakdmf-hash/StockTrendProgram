@@ -85,7 +85,7 @@ export default function MarketScannerDashboard() {
             {/* 증시 스캐너 (상승/하락 비율) */}
             <div className="bg-black/40 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-emerald-400" /> Today's 증시 스캐너
+                    <Activity className="w-5 h-5 text-emerald-400" /> Today&apos;s 증시 스캐너
                 </h3>
                 <p className="text-xs text-gray-400 mb-6 drop-shadow-md">
                     현재 증시의 상승/하락 비율입니다. 빨간색(상승) 면적이 넓을수록 투심이 좋은 장이며, 파란색(하락) 면적이 압도적일 때는 <strong>현금 비중 확대</strong>를 고려해야 합니다.
