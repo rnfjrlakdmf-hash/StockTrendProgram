@@ -388,9 +388,17 @@ def read_korea_indices():
 
 @app.get("/api/korea/sectors")
 def read_korea_sectors():
-    """국내 업종 상위"""
+    """국내 업종 상위 (간단 데이터)"""
     data = get_top_sectors()
     return {"status": "success", "data": data}
+
+@app.get("/api/korea/sector_heatmap")
+def read_korea_sector_heatmap():
+    """업종 히트맵 실시간 상세 데이터"""
+    from korea_data import get_sector_heatmap_data
+    data = get_sector_heatmap_data()
+    return {"status": "success", "data": data}
+
 
 @app.get("/api/korea/heatmap")
 def read_korea_heatmap():

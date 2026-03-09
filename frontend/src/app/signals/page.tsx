@@ -411,45 +411,22 @@ function HeatmapTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
-                const [s, h] = await Promise.all([fetch(`${API_BASE_URL}/api/korea/sectors`), fetch(`${API_BASE_URL}/api/korea/heatmap`)]);
+                // [MODIFY] /api/korea/sector_heatmap 사용
+                const [s, h] = await Promise.all([fetch(`${API_BASE_URL}/api/korea/sector_heatmap`), fetch(`${API_BASE_URL}/api/korea/heatmap`)]);
                 const sj = await s.json(), hj = await h.json();
-                if (sj.status === "success") {
-                    const raw = sj.data || [];
-                    const normalized = Array.isArray(raw) ? raw.map((s: any) => {
-                        // 백엔드가 change(숫자)를 직접 보내주면 우선 사용
-                        if (typeof s.change === "number") {
-                            return { name: s.name || s.theme || "", change: s.change };
-                        }
-                        // fallback: percent 문자열 파싱 (+/- 부호 포함)
-                        const pStr = String(s.percent || "0");
-                        const isNeg = pStr.includes("-") || pStr.includes("▼");
-                        const val = parseFloat(pStr.replace(/[^0-9.]/g, "")) || 0;
-                        return { name: s.name || s.theme || "", change: isNeg ? -val : val };
-                    }) : (raw.top_sectors || []);
-                    setSectors(normalized);
+
+                // 업종별, 테마별 모두 동일한 반환 구조(name, change, stocks)를 가짐
+                if (sj.status === "success" && sj.data) {
+                    setSectors(sj.data);
                 }
-                if (hj.status === "success") {
-                    const raw2 = hj.data || [];
-                    const normalized2 = Array.isArray(raw2) ? raw2.map((h: any) => {
-                        // 백엔드의 change(숫자) 우선 사용
-                        if (typeof h.change === "number") {
-                            return { name: h.theme || h.name || "", change: h.change, stocks: h.stocks || [] };
-                        }
-                        // fallback: percent 문자열 파싱
-                        const pStr = String(h.percent || "0");
-                        const isNeg = pStr.includes("-") || pStr.includes("▼");
-                        const val = parseFloat(pStr.replace(/[^0-9.]/g, "")) || 0;
-                        return { name: h.theme || h.name || "", change: isNeg ? -val : val, stocks: h.stocks || [] };
-                    }) : [];
-                    setHeatmap(normalized2);
+                if (hj.status === "success" && hj.data) {
+                    setHeatmap(hj.data);
                 }
             } catch { } finally { setLoading(false); }
         })();
     }, []);
 
-    const getColor = (c: number) => c >= 3 ? "bg-red-500" : c >= 1.5 ? "bg-red-600/80" : c >= 0.5 ? "bg-red-700/60" : c > 0 ? "bg-red-900/40" : c === 0 ? "bg-gray-700" : c > -0.5 ? "bg-blue-900/40" : c > -1.5 ? "bg-blue-700/60" : c > -3 ? "bg-blue-600/80" : "bg-blue-500";
-
-    const data = view === "sectors" ? sectors : (Array.isArray(heatmap) ? heatmap : []);
+    const data = view === "sectors" ? sectors : heatmap;
 
     return (
         <div className="space-y-4">
@@ -465,84 +442,49 @@ function HeatmapTab({ router }: { router: any }) {
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
                 <>
-                    {view === "sectors" ? (
-                        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                            {sectors.map((item: any, i: number) => {
-                                const c = typeof item.change === "number" ? item.change : parseFloat(String(item.change || "0").replace(/[^0-9.-]/g, ""));
-                                return (
-                                    <div key={i} className={`${getColor(c)} rounded-xl p-3 flex flex-col items-center justify-center min-h-[70px] hover:scale-105 transition-transform cursor-pointer border border-white/5`}>
-                                        <span className="font-bold text-[11px] text-center leading-tight text-white/90">{item.name}</span>
-                                        <span className={`text-sm font-black mt-0.5 ${c >= 0 ? "text-red-200" : "text-blue-200"}`}>{c >= 0 ? "+" : ""}{c.toFixed(2)}%</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                        {data.map((item: any, i: number) => (
+                            <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
+                                <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
+                                    <div
+                                        className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
+                                        onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(item.name)}`)}
+                                    >
+                                        <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
+                                        {item.name}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                            {heatmap.map((theme, i) => (
-                                <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
-                                    <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
-                                        <div
-                                            className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
-                                            onClick={() => router.push(`/theme?q=${encodeURIComponent(theme.name)}`)}
-                                        >
-                                            <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
-                                            {theme.name}
-                                        </div>
-                                        <span className={`${theme.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
-                                            {theme.change > 0 ? '+' : ''}{theme.change.toFixed(2)}%
-                                        </span>
-                                    </div>
-
-                                    {/* Stocks in this theme */}
-                                    <div className="space-y-2">
-                                        {theme.stocks && theme.stocks.map((stock: any, j: number) => (
-                                            <div
-                                                key={j}
-                                                className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
-                                                onClick={() => router.push(`/discovery?q=${encodeURIComponent(stock.name)}`)}
-                                            >
-                                                <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
-                                                <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
-                                                    <div
-                                                        className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
-                                                        style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
-                                                    />
-                                                </div>
-                                                <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                                    {stock.change > 0 ? '+' : ''}{stock.change}%
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <span className={`${item.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
+                                        {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                    {view === "sectors" && sectors.length > 0 && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-3">
-                                <h4 className="font-bold text-red-400 text-sm mb-2 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" />상승 TOP</h4>
-                                {(() => {
-                                    const ups = sectors.filter(s => (s.change || 0) > 0).sort((a, b) => (b.change || 0) - (a.change || 0)).slice(0, 5);
-                                    if (ups.length === 0) return <div className="text-xs text-gray-500 py-2 text-center">상승 업종 없음</div>;
-                                    return ups.map((s, i) => (
-                                        <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-red-400 font-bold">+{(s.change || 0).toFixed(2)}%</span></div>
-                                    ));
-                                })()}
+
+                                {/* Stocks in this theme/sector */}
+                                <div className="space-y-2">
+                                    {item.stocks && item.stocks.map((stock: any, j: number) => (
+                                        <div
+                                            key={j}
+                                            className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
+                                            onClick={() => router.push(`/discovery?q=${encodeURIComponent(stock.name)}`)}
+                                        >
+                                            <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
+                                            <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
+                                                <div
+                                                    className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
+                                                    style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                {stock.change > 0 ? '+' : ''}{stock.change}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {(!item.stocks || item.stocks.length === 0) && (
+                                        <div className="text-xs text-gray-500 text-center py-2">편입 종목 정보 없음</div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-3">
-                                <h4 className="font-bold text-blue-400 text-sm mb-2 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" />하락 TOP</h4>
-                                {(() => {
-                                    const downs = sectors.filter(s => (s.change || 0) < 0).sort((a, b) => (a.change || 0) - (b.change || 0)).slice(0, 5);
-                                    if (downs.length === 0) return <div className="text-xs text-gray-500 py-2 text-center">하락 업종 없음</div>;
-                                    return downs.map((s, i) => (
-                                        <div key={i} className="flex justify-between py-1 text-xs"><span className="text-gray-300">{i + 1}. {s.name}</span><span className="text-blue-400 font-bold">{(s.change || 0).toFixed(2)}%</span></div>
-                                    ));
-                                })()}
-                            </div>
-                        </div>
-                    )}
+                        ))}
+                    </div>
                 </>
             )}
         </div>

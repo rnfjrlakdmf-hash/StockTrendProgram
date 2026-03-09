@@ -890,6 +890,103 @@ def get_top_sectors():
         print(f"Sector Scrape Error: {e}")
         return []
 
+def get_sector_heatmap_data():
+    """
+    Fetch Sector Heatmap data (업종명, 등락률, 세부 편입종목 3개 포함)
+    """
+    sectors = []
+    try:
+        url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+
+        rows = soup.select("table.type_1 tr")
+
+        sector_candidates = []
+        for row in rows:
+            if len(sector_candidates) >= 30: break # 상승/하락 포함 30개 제한
+
+            cols = row.select("td")
+            if len(cols) < 2: continue
+
+            link = cols[0].select_one("a")
+            if not link: continue
+
+            sector_name = link.text.strip()
+            sector_url = "https://finance.naver.com" + link['href']
+            percent_text = cols[1].text.strip()
+
+            if not sector_name or not percent_text: continue
+
+            raw = percent_text.replace(",", "").replace("%", "").strip()
+            if "▼" in raw or raw.startswith("-"):
+                val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
+            elif "▲" in raw or raw.startswith("+"):
+                val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
+            else:
+                try: val = float(raw.replace("▲", "").replace("▼", "").strip())
+                except: continue
+
+            sector_candidates.append({
+                "name": sector_name,
+                "url": sector_url,
+                "percent": percent_text,
+                "change": val
+            })
+
+        # 각 업종 대표 종목 fetch
+        for s in sector_candidates:
+            stocks = []
+            try:
+                res_sub = requests.get(s['url'], headers=HEADER, timeout=3)
+                soup_sub = BeautifulSoup(decode_safe(res_sub), 'html.parser')
+
+                sub_rows = soup_sub.select("table.type_5 tr")
+
+                for s_row in sub_rows:
+                    if len(stocks) >= 3: break
+
+                    s_cols = s_row.select("td")
+                    if len(s_cols) < 5: continue
+
+                    s_name_tag = s_cols[0].select_one("a")
+                    if not s_name_tag: continue
+
+                    s_name = s_name_tag.text.strip()
+                    s_change_txt = s_cols[4].text.strip()
+                    s_change_val = 0.0
+
+                    c_r = s_change_txt.replace(",", "").replace("%", "").strip()
+                    if "▼" in c_r or c_r.startswith("-"):
+                        s_change_val = -abs(float(c_r.replace("▼", "").replace("-", "").strip() or "0"))
+                    elif "▲" in c_r or c_r.startswith("+"):
+                        s_change_val = abs(float(c_r.replace("▲", "").replace("+", "").strip() or "0"))
+                    else:
+                        try: s_change_val = float(c_r.replace("▲", "").replace("▼", "").strip())
+                        except: pass
+
+                    stocks.append({
+                        "name": s_name,
+                        "change": s_change_val
+                    })
+            except:
+                pass
+
+            sectors.append({
+                "name": s['name'],
+                "percent": s['percent'],
+                "change": s['change'],
+                "stocks": stocks
+            })
+
+        # 내림차순 정렬
+        sectors.sort(key=lambda x: x['change'], reverse=True)
+        return sectors
+    except Exception as e:
+        print(f"Sector Heatmap Data Error: {e}")
+        return []
+
+
 
 def get_top_themes():
     """
