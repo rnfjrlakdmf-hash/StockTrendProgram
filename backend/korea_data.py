@@ -1548,8 +1548,8 @@ def get_korean_interest_rates():
 
 def get_market_summary_stats():
     """
-    네이버 국내증시 메인(sise)에서 코스피/코스닥 전체의 
-    상승/하락/보합 종목 수를 실시간으로 크롤링
+    네이버 국내증시 통합시세 폐지에 대응하여, 네이버 금융 메인(finance.naver.com)의 
+    우측 지수 박스(kospi_area, kosdaq_area)에서 실시간 상승/하락/보합 종목 수를 크롤링합니다.
     """
     stats = {
         "kospi": {"up": 0, "same": 0, "down": 0},
@@ -1557,31 +1557,41 @@ def get_market_summary_stats():
     }
     
     try:
-        url = "https://finance.naver.com/sise/"
+        url = "https://finance.naver.com/"
         res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        
-        # KOSPI
-        kospi_box = soup.select_one(".box_top_sub + .box_type_m")
-        if kospi_box:
-            kospi_up = kospi_box.select_one("dl.lst_kospi dt.up em")
-            kospi_same = kospi_box.select_one("dl.lst_kospi dt.same em")
-            kospi_down = kospi_box.select_one("dl.lst_kospi dt.down em")
+        # 중요: euc-kr 디코드 후 BS4로 파싱해야 정규식이 한글을 제대로 인식합니다.
+        html = res.content.decode('euc-kr', 'replace')
+        soup = BeautifulSoup(html, 'html.parser')
+        import re
+
+        def extract_stats(area_class, market_key):
+            area = soup.select_one(area_class)
+            if not area: return
             
-            if kospi_up: stats["kospi"]["up"] = int(kospi_up.text.strip().replace(",", ""))
-            if kospi_same: stats["kospi"]["same"] = int(kospi_same.text.strip().replace(",", ""))
-            if kospi_down: stats["kospi"]["down"] = int(kospi_down.text.strip().replace(",", ""))
+        def extract_stats(area_class, market_key):
+            area = soup.select_one(area_class)
+            if not area: return
             
-        # KOSDAQ
-        kosdaq_box = soup.select_one(".box_top_sub + .box_type_m + .box_type_m")
-        if kosdaq_box:
-            kosdaq_up = kosdaq_box.select_one("dl.lst_kosdaq dt.up em")
-            kosdaq_same = kosdaq_box.select_one("dl.lst_kosdaq dt.same em")
-            kosdaq_down = kosdaq_box.select_one("dl.lst_kosdaq dt.down em")
+            # HTML 특수문자 및 한글 깨짐에 완벽히 대응하는 후위 숫자 추출법
+            # 지수 % 변동률 뒤에 항상 투자자 동향 -> 상하락 종목수가 렌더링됨
+            tail_text = area.text.replace(',', '').split('%')[-1]
+            nums = re.findall(r'\d+', tail_text)
             
-            if kosdaq_up: stats["kosdaq"]["up"] = int(kosdaq_up.text.strip().replace(",", ""))
-            if kosdaq_same: stats["kosdaq"]["same"] = int(kosdaq_same.text.strip().replace(",", ""))
-            if kosdaq_down: stats["kosdaq"]["down"] = int(kosdaq_down.text.strip().replace(",", ""))
+            # 최소 5개의 숫자가 있어야 함 (상한, 상승, 보합, 하락, 하한)
+            if len(nums) >= 5:
+                # 무조건 맨 뒤 5개의 숫자가 종목 개수임 (네이버 증권 공통 구조)
+                v_up_limit = int(nums[-5])
+                v_up = int(nums[-4])
+                v_same = int(nums[-3])
+                v_down = int(nums[-2])
+                v_down_limit = int(nums[-1])
+
+                stats[market_key]['up'] = v_up + v_up_limit
+                stats[market_key]['same'] = v_same
+                stats[market_key]['down'] = v_down + v_down_limit
+
+        extract_stats('.kospi_area', 'kospi')
+        extract_stats('.kosdaq_area', 'kosdaq')
             
     except Exception as e:
         print(f"Market stats fetch error: {e}")
@@ -1597,7 +1607,8 @@ def get_live_disclosures():
     results = []
     
     # 필터링할 관심(특이) 키워드
-    target_keywords = ["유상증자", "무상증자", "단일판매", "공급계약", "타법인", "영업실적", "잠정", "자사주", "주식소각", "전환사채", "신주인수권", "합병", "분할", "공개매수", "감자"]
+    target_keywords = ["유상증자", "무상증자", "단일판매", "공급계약", "타법인", "영업실적", "잠정", "자사주", "주식소각", "전환사채", "신주인수권", "합병", "분할", "공개매수", "감자", "결정", "수주", "취득", "처분", "배당", "주주", "특허", "임상", " MOU", "투자"]
+    fallback_results = []
     
     try:
         res = requests.get(url, headers=HEADER, timeout=5)
@@ -1615,21 +1626,26 @@ def get_live_disclosures():
             title = title_tag.text.strip()
             link = "https://finance.naver.com" + title_tag["href"]
             
-            # 관심 키워드 포함 여부 판별
-            is_target = any(kw in title for kw in target_keywords)
-            if not is_target:
-                continue
-                
             summary_dd = dl.select_one("dd.articleSummary")
             press = summary_dd.select_one("span.press").text.strip() if summary_dd and summary_dd.select_one("span.press") else ""
             date = summary_dd.select_one("span.wdate").text.strip() if summary_dd and summary_dd.select_one("span.wdate") else ""
             
-            results.append({
+            item = {
                 "title": title,
                 "link": link,
                 "press": press,
                 "date": date
-            })
+            }
+            fallback_results.append(item)
+            
+            # 관심 키워드 포함 여부 판별
+            is_target = any(kw in title for kw in target_keywords)
+            if is_target:
+                results.append(item)
+                
+        # 만약 필터링된 결과가 단 하나도 없다면, 빈 화면(오해 소지) 방지를 위해 가장 최근 공시 4개를 띄워줌
+        if len(results) == 0 and len(fallback_results) > 0:
+            results = fallback_results[:4]
             
     except Exception as e:
         print(f"Live Disclosures fetch error: {e}")
