@@ -1,8 +1,8 @@
 ﻿"use client";
 // [Deployment Trigger] symbol-based deduplication v2 - 2026-03-04
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
@@ -17,7 +17,19 @@ interface Signal { id: number; symbol: string; signal_type: string; title: strin
 interface VoteResult { up: number; down: number; total: number; up_pct: number; down_pct: number; }
 
 export default function SignalsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+            <SignalsPageContent />
+        </Suspense>
+    );
+}
+
+function SignalsPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    // Vercel 강제 Dynamic 렌더링 (캐시 방지) 트리거
+    const forceDynamic = searchParams.get('refresh');
+
     const [activeTab, setActiveTab] = useState<"signals" | "heatmap" | "supply" | "calendar" | "vote">("signals");
 
     const tabs = [
