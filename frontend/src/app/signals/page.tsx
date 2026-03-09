@@ -691,7 +691,7 @@ function CalendarTab({ router }: { router: any }) {
             {/* 메인 서브탭 */}
             <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
                 <button onClick={() => setMainTab("economic")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "economic" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    📈 경제 지표
+                    📈 주요 경제 지표
                 </button>
                 <button onClick={() => setMainTab("earndiv")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "earndiv" ? "bg-orange-600 text-white" : "text-gray-400 hover:text-white"}`}>
                     📊 실적·배당
@@ -701,69 +701,55 @@ function CalendarTab({ router }: { router: any }) {
                 </button>
             </div>
 
-            {/* ── 경제 지표 탭 ── */}
+            {/* ── 주요 경제 지표 탭 ── */}
             {mainTab === "economic" && (
-                <div className="space-y-3">
-                    {/* 국가 필터 통합 2버튼 */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setCountryFilter("market")}
-                            className={`flex-1 flex items-center justify-center gap-1 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${countryFilter === "market" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
-                        >
-                            <Activity className="w-4 h-4" /> 💹 통합 시장 모니터
-                        </button>
-                        <button
-                            onClick={() => setCountryFilter("calendar")}
-                            className={`flex-1 flex items-center justify-center gap-1 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${countryFilter === "calendar" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "bg-white/5 text-gray-400 hover:bg-white/10"}`}
-                        >
-                            <Calendar className="w-4 h-4" /> 📅 글로벌 일정
-                        </button>
+                <div className="space-y-4">
+                    {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-blue-400" /> 오늘 글로벌 일정
+                            </h4>
+                            <div className="text-[10px] text-gray-500">Yahoo Finance</div>
+                        </div>
+
+                        {macroLoading ? (
+                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
+                        ) : macroEvents.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500 text-xs">
+                                <p>오늘 예정된 주요 일정이 없습니다.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5 max-h-[180px] overflow-y-auto hide-scrollbar">
+                                {macroEvents.map((evt, i) => (
+                                    <div key={i} className="flex items-start gap-3 p-2 bg-black/20 hover:bg-black/40 rounded-lg transition-colors border border-white/5">
+                                        <div className="flex flex-col items-center min-w-[50px]">
+                                            <span className={`text-[10px] font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>{evt.time}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className={`font-bold text-xs break-words ${evt.impact === "high" ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
+                                            {(evt.forecast !== "-" || evt.actual !== "-") && (
+                                                <div className="flex gap-2 mt-0.5 text-[10px] text-gray-400">
+                                                    {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
+                                                    {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {evt.impact === "high" && <span className="text-[8px] bg-red-900/40 text-red-400 border border-red-500/30 px-1 py-0.5 rounded font-bold flex-shrink-0">HIGH</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {/* 글로벌 일정 (기존 global 필터) */}
-                    {countryFilter === "calendar" && (
-                        <>
-                            <p className="text-xs text-gray-500">오늘 주요 경제 지표 발표 일정 (Yahoo Finance)</p>
-                            {macroLoading ? (
-                                <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
-                            ) : macroEvents.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                    <p>오늘 주요 경제 일정이 없습니다.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {macroEvents.map((evt, i) => (
-                                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                                            <div className="flex items-start gap-3">
-                                                <div className="flex flex-col items-center min-w-[70px]">
-                                                    <span className={`text-xs font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>{evt.time}</span>
-                                                    {evt.impact === "high" && <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className={`font-bold text-sm break-words ${evt.impact === "high" ? "text-white" : "text-gray-200"}`}>{evt.event_kr || evt.event}</div>
-                                                    {evt.event_kr && evt.event_kr !== evt.event && <div className="text-[10px] text-gray-500 mt-0.5">{evt.event}</div>}
-                                                    {(evt.forecast !== "-" || evt.previous !== "-") && (
-                                                        <div className="flex gap-3 mt-1 text-[11px] text-gray-400">
-                                                            {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
-                                                            {evt.previous !== "-" && <span>이전 <span className="text-gray-300 font-mono">{evt.previous}</span></span>}
-                                                            {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {evt.impact === "high" && <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold flex-shrink-0">HIGH</span>}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <div className="flex items-center justify-end gap-2 text-[10px] text-gray-500 pt-1">
-                                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> High Impact
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-
-                    {/* 통합 시장 모니터 (한국 + 글로벌) */}
-                    {countryFilter === "market" && (
+                    {/* 하단 통합 시장 모니터 센션 */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <h4 className="font-black text-sm px-1 text-white flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-blue-500" /> 통합 시장 모니터
+                            </h4>
+                            <span className="text-[10px] text-gray-500">실시간 연동 (60s)</span>
+                        </div>
                         <>
                             <p className="text-xs text-gray-500">💹 통합 시장 실시간 모니터 (KR & Global)</p>
                             {(krLoading || globalAssetsLoading) && !krEvents.length && !globalAssets ? (
@@ -932,7 +918,7 @@ function CalendarTab({ router }: { router: any }) {
                                 </div>
                             )}
                         </>
-                    )}
+                    </div>
                 </div>
             )}
 
