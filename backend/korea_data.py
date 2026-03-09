@@ -965,8 +965,8 @@ def get_sector_heatmap_data():
                         try: s_change_val = float(c_r.replace("▲", "").replace("▼", "").strip())
                         except: pass
                         
-                    # 백분율 변환 (프론트에서 표시할 때 100이 곱해지므로 여기서 나눠줌)
-                    s_change_val = s_change_val / 100.0
+                    # 백분율 변환 롤백: 프론트(Vercel) 캐시 문제 우회를 위해 백엔드에서 온전한 퍼센트 숫자(x100 된 상태)로 버림 처리 후 제공
+                    s_change_val = round(s_change_val, 2)
 
                     stocks.append({
                         "name": s_name,
@@ -1367,7 +1367,8 @@ def get_theme_heatmap_data():
                     try:
                         clean_change = s_change_txt.replace('%', '').replace(',', '').strip()
                         # 부호 파싱 (네이버 금융은 보통 +3.54% 형태로 줌)
-                        s_change_val = float(clean_change) / 100.0
+                        # 백분율 변환 롤백: 프론트(Vercel) 캐싱 우회 및 무한 소수점 방지를 위해 통으로 반올림
+                        s_change_val = round(float(clean_change), 2)
                         stocks.append({"name": s_name, "change": s_change_val})
                     except:
                         continue

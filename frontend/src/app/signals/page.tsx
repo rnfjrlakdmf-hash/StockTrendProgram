@@ -484,12 +484,12 @@ function HeatmapTab({ router }: { router: any }) {
                                             <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
                                             <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
                                                 <div
-                                                    className={`h-full ${(stock.change * 100) > 20 ? 'bg-purple-500' : (stock.change * 100) > 10 ? 'bg-red-500' : (stock.change * 100) > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
-                                                    style={{ width: `${Math.min(Math.abs(stock.change * 100) * 3, 100)}%` }}
+                                                    className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
+                                                    style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
                                                 />
                                             </div>
                                             <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                                {stock.change > 0 ? '+' : ''}{(stock.change * 100).toFixed(2)}%
+                                                {stock.change > 0 ? '+' : ''}{stock.change}%
                                             </span>
                                         </div>
                                     ))}
