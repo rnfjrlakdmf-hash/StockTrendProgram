@@ -1036,6 +1036,11 @@ def get_all_market_assets():
             prev = ticker.fast_info.previous_close
             if prev and prev != 0:
                 change = ((price - prev) / prev) * 100
+                
+            # 일본 엔화(JPY)는 대한민국 기준 관행상 100엔 단위로 표기
+            if symbol == "JPYKRW=X":
+                price = price * 100
+                
             return category, {"name": name, "symbol": symbol, "price": price, "change": change}
         except:
             return category, {"name": name, "symbol": symbol, "price": 0.0, "change": 0.0}
