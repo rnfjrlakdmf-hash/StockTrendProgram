@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
 import MarketDashboard from "@/components/MarketDashboard";
-import RankingWidget from "@/components/RankingWidget";
 import NaverTopWidget from "@/components/NaverTopWidget";
 
 export default function Home() {
@@ -73,8 +72,6 @@ export default function Home() {
         {/* Naver-style TOP Stocks Widget */}
         <NaverTopWidget />
 
-        {/* Real-time Top 5 Gainers & Losers */}
-        <RankingWidget />
 
         {/* Korea Market Dashboard */}
         <MarketDashboard onSearch={handleSearch} />        {/* Search Loading/Error State */}
