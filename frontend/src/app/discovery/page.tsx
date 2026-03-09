@@ -20,6 +20,8 @@ import SimplePushTest from "@/components/SimplePushTest";
 import FinancialsTable from "@/components/FinancialsTable";
 import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
 import InvestorTrendTab from "@/components/InvestorTrendTab";
+import OverhangTab from "@/components/OverhangTab";
+import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -182,7 +184,7 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor' | 'overhang'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
@@ -412,6 +414,11 @@ function DiscoveryContent() {
                         {/* Market Traffic Light & Health Check Entry */}
                         <div className="w-full">
                             <MarketSignalWidget />
+                        </div>
+
+                        {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}
+                        <div className="w-full">
+                            <MarketScannerDashboard />
                         </div>
 
 
@@ -800,6 +807,12 @@ function DiscoveryContent() {
                                                     📈 투자자 동향 <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
                                                 </button>
                                                 <button
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('overhang')}
+                                                >
+                                                    ⚠️ 오버행/타법인 <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
+                                                </button>
+                                                <button
                                                     className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('backtest')}
                                                 >
@@ -832,6 +845,13 @@ function DiscoveryContent() {
 
                                     {activeTab === 'investor' && (
                                         <InvestorTrendTab
+                                            symbol={stock.symbol}
+                                            stockName={stock.name}
+                                        />
+                                    )}
+
+                                    {activeTab === 'overhang' && (
+                                        <OverhangTab
                                             symbol={stock.symbol}
                                             stockName={stock.name}
                                         />

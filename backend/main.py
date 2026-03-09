@@ -50,7 +50,8 @@ from korea_data import (
     get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
     get_live_investor_estimates, get_indexing_status, search_stock_code,
     get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
-    get_market_investors, get_index_chart_data, get_investor_history
+    get_market_investors, get_index_chart_data, get_investor_history,
+    get_market_summary_stats, get_live_disclosures
 )
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -530,6 +531,18 @@ def read_stock_history(symbol: str):
     history = get_score_history(symbol)
     return {"status": "success", "data": history}
 
+@app.get("/api/stock/{symbol}/dart_overhang")
+def read_stock_dart_overhang_investments(symbol: str):
+    """종목별 오버행(CB/BW/유상증자 등) 및 타법인출자 관련 트래커 API"""
+    from dart_disclosure import get_dart_overhang_and_investments
+    
+    try:
+        data = get_dart_overhang_and_investments(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        print(f"Overhang API Error: {e}")
+        return {"status": "error", "message": "핵심 공시 정보를 분석 중 오류가 발생했습니다"}
+
 @app.get("/api/stock/{symbol}/backtest")
 def read_backtest(symbol: str, period: str = "1y", initial_capital: int = 10000):
     """특정 종목의 백테스팅(SMA Crossover) 실행"""
@@ -587,6 +600,15 @@ def read_alerts():
     """저장된 모든 알림 반환"""
     return {"status": "success", "data": get_alerts()}
 
+@app.get("/api/market/scanner")
+def read_market_scanner():
+    """현재 증시 생존 지표 및 실시간 주요 특이 공시 조회"""
+    try:
+        stats = get_market_summary_stats()
+        disclosures = get_live_disclosures()
+        return {"status": "success", "data": {"stats": stats, "disclosures": disclosures}}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/api/theme/{keyword}")

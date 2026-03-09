@@ -953,7 +953,7 @@ def get_sector_heatmap_data():
                     if not s_name_tag: continue
 
                     s_name = s_name_tag.text.strip()
-                    s_change_txt = s_cols[4].text.strip()
+                    s_change_txt = s_cols[3].text.strip()
                     s_change_val = 0.0
 
                     c_r = s_change_txt.replace(",", "").replace("%", "").strip()
@@ -964,6 +964,9 @@ def get_sector_heatmap_data():
                     else:
                         try: s_change_val = float(c_r.replace("▲", "").replace("▼", "").strip())
                         except: pass
+                        
+                    # 백분율 변환 (프론트에서 표시할 때 100이 곱해지므로 여기서 나눠줌)
+                    s_change_val = s_change_val / 100.0
 
                     stocks.append({
                         "name": s_name,
@@ -1362,8 +1365,9 @@ def get_theme_heatmap_data():
                     s_change_txt = s_cols[4].text.strip()
 
                     try:
-                        clean_change = s_change_txt.replace('%', '').strip()
-                        s_change_val = float(clean_change)
+                        clean_change = s_change_txt.replace('%', '').replace(',', '').strip()
+                        # 부호 파싱 (네이버 금융은 보통 +3.54% 형태로 줌)
+                        s_change_val = float(clean_change) / 100.0
                         stocks.append({"name": s_name, "change": s_change_val})
                     except:
                         continue
@@ -1540,3 +1544,93 @@ def get_korean_interest_rates():
         ]
 
     return rates
+
+def get_market_summary_stats():
+    """
+    네이버 국내증시 메인(sise)에서 코스피/코스닥 전체의 
+    상승/하락/보합 종목 수를 실시간으로 크롤링
+    """
+    stats = {
+        "kospi": {"up": 0, "same": 0, "down": 0},
+        "kosdaq": {"up": 0, "same": 0, "down": 0}
+    }
+    
+    try:
+        url = "https://finance.naver.com/sise/"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        # KOSPI
+        kospi_box = soup.select_one(".box_top_sub + .box_type_m")
+        if kospi_box:
+            kospi_up = kospi_box.select_one("dl.lst_kospi dt.up em")
+            kospi_same = kospi_box.select_one("dl.lst_kospi dt.same em")
+            kospi_down = kospi_box.select_one("dl.lst_kospi dt.down em")
+            
+            if kospi_up: stats["kospi"]["up"] = int(kospi_up.text.strip().replace(",", ""))
+            if kospi_same: stats["kospi"]["same"] = int(kospi_same.text.strip().replace(",", ""))
+            if kospi_down: stats["kospi"]["down"] = int(kospi_down.text.strip().replace(",", ""))
+            
+        # KOSDAQ
+        kosdaq_box = soup.select_one(".box_top_sub + .box_type_m + .box_type_m")
+        if kosdaq_box:
+            kosdaq_up = kosdaq_box.select_one("dl.lst_kosdaq dt.up em")
+            kosdaq_same = kosdaq_box.select_one("dl.lst_kosdaq dt.same em")
+            kosdaq_down = kosdaq_box.select_one("dl.lst_kosdaq dt.down em")
+            
+            if kosdaq_up: stats["kosdaq"]["up"] = int(kosdaq_up.text.strip().replace(",", ""))
+            if kosdaq_same: stats["kosdaq"]["same"] = int(kosdaq_same.text.strip().replace(",", ""))
+            if kosdaq_down: stats["kosdaq"]["down"] = int(kosdaq_down.text.strip().replace(",", ""))
+            
+    except Exception as e:
+        print(f"Market stats fetch error: {e}")
+        
+    return stats
+
+def get_live_disclosures():
+    """
+    네이버 증권 '공시' 탭 최신 뉴스 1페이지를 스크랩하여,
+    투자자들이 주목할 만한 특이 공시(계약, 증자, 타법인 등)만 필터링해 반환합니다.
+    """
+    url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
+    results = []
+    
+    # 필터링할 관심(특이) 키워드
+    target_keywords = ["유상증자", "무상증자", "단일판매", "공급계약", "타법인", "영업실적", "잠정", "자사주", "주식소각", "전환사채", "신주인수권", "합병", "분할", "공개매수", "감자"]
+    
+    try:
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), "html.parser")
+        
+        articles = soup.select("ul.realtimeNewsList > li")
+        
+        for li in articles:
+            dl = li.select_one("dl")
+            if not dl: continue
+            
+            title_tag = dl.select_one("dt.articleSubject a") or dl.select_one("dd.articleSubject a")
+            if not title_tag: continue
+            
+            title = title_tag.text.strip()
+            link = "https://finance.naver.com" + title_tag["href"]
+            
+            # 관심 키워드 포함 여부 판별
+            is_target = any(kw in title for kw in target_keywords)
+            if not is_target:
+                continue
+                
+            summary_dd = dl.select_one("dd.articleSummary")
+            press = summary_dd.select_one("span.press").text.strip() if summary_dd and summary_dd.select_one("span.press") else ""
+            date = summary_dd.select_one("span.wdate").text.strip() if summary_dd and summary_dd.select_one("span.wdate") else ""
+            
+            results.append({
+                "title": title,
+                "link": link,
+                "press": press,
+                "date": date
+            })
+            
+    except Exception as e:
+        print(f"Live Disclosures fetch error: {e}")
+        
+    return results
