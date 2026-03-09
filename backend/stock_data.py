@@ -1148,9 +1148,9 @@ def get_macro_calendar():
         "CPI": "소비자물가지수",
         "HICP": "조화소비자물가지수",
         "PPI": "생산자물가지수",
-        "PCE": "개인소비지출물가",
+        "PCE": "개인소비지출(PCE) 물가",
         "Core CPI": "근원 소비자물가지수",
-        "Core PCE": "근원 개인소비지출물가",
+        "Core PCE": "근원 개인소비지출(PCE) 물가",
         "Inflation": "인플레이션",
         "Consumer Price": "소비자물가",
         "Producer Price": "생산자물가",
@@ -1159,17 +1159,20 @@ def get_macro_calendar():
         "Wholesale Price": "도매물가",
 
         # 고용
-        "Nonfarm Payrolls": "비농업고용",
-        "NFP": "비농업고용",
+        "Nonfarm Payrolls": "비농업고용지수",
+        "NFP": "비농업고용지수",
+        "Unemployment Rate": "실업률",
         "Unemployment": "실업률",
-        "Jobless Claims": "신규실업수당청구",
-        "Initial Claims": "신규실업수당청구",
-        "Continuing Claims": "연속실업수당청구",
-        "ADP": "ADP 고용보고서",
+        "Jobless Claims": "신규실업수당청구건수",
+        "Initial Claims": "신규실업수당청구건수",
+        "Continuing Claims": "연속실업수당청구건수",
+        "ADP": "ADP 민간고용보고서",
         "Employment": "고용",
         "Labor Market": "노동시장",
         "Wages": "임금",
         "Average Hourly Earnings": "평균시간당임금",
+        "JOLTs": "JOLTs 구인이직보고서",
+        "Job Openings": "구인건수",
 
         # 성장/GDP
         "GDP": "국내총생산(GDP)",
@@ -1177,8 +1180,8 @@ def get_macro_calendar():
         "Retail Sales": "소매판매",
         "Industrial Production": "산업생산",
         "Manufacturing": "제조업",
-        "Factory Orders": "공장주문",
-        "Durable Goods": "내구재주문",
+        "Factory Orders": "공장수주",
+        "Durable Goods": "내구재수주",
         "Trade Balance": "무역수지",
         "Current Account": "경상수지",
         "Budget Balance": "재정수지",
@@ -1187,35 +1190,44 @@ def get_macro_calendar():
         # 소비/심리
         "Consumer Confidence": "소비자신뢰지수",
         "Consumer Sentiment": "소비자심리지수",
-        "Michigan": "미시간대 소비자심리",
-        "ISM": "ISM 지수",
+        "Michigan": "미시간대 소비자심리지수",
+        "ISM": "ISM 이파이 구매관리자지수",
         "PMI": "구매관리자지수(PMI)",
         "Services PMI": "서비스업 PMI",
         "Manufacturing PMI": "제조업 PMI",
         "Composite PMI": "종합 PMI",
         "Non-Manufacturing": "비제조업",
+        "Chicago PMI": "시카고 PMI",
 
         # 부동산
         "Housing": "주택",
         "Home Sales": "주택판매",
         "Building Permits": "건축허가",
-        "Housing Starts": "주택착공",
-        "Existing Home": "기존주택",
+        "Housing Starts": "주택착공건수",
+        "Existing Home Sales": "기존주택판매",
+        "New Home Sales": "신규주택판매",
         "New Home": "신규주택",
         "Case-Shiller": "케이스쉴러 주택가격지수",
 
         # 금리/통화
-        "Fed": "연준",
+        "Fed": "연방준비제도(Fed)",
         "FOMC": "FOMC 회의",
+        "Interest Rate Decision": "기준금리 결정",
         "Interest Rate": "기준금리",
         "Rate Decision": "금리결정",
         "Money Supply": "통화량",
         "Treasury": "미국국채",
+        "ECB": "유럽중앙은행(ECB)",
+        "BOJ": "일본은행(BOJ)",
+        "BOK": "한국은행(BOK)",
 
         # 에너지/원자재
+        "Crude Oil Inventories": "주간 원유재고",
         "Crude Oil": "원유재고",
         "Oil Inventories": "원유재고",
         "Natural Gas": "천연가스재고",
+        "EIA Weekly": "EIA 주간",
+        "API Weekly": "API 주간",
 
         # 지표 시점 접미사
         "YY": "(전년비)",
@@ -1227,7 +1239,7 @@ def get_macro_calendar():
         "Revised": "[수정치]",
 
         # 레드북
-        "Redbook": "레드북 소매판매",
+        "Redbook": "레드북 소매판매지수",
     }
 
     COUNTRY_KR = {
