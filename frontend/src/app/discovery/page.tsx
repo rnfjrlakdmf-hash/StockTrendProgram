@@ -182,7 +182,6 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
-    const [showPortfolioAnalysis, setShowPortfolioAnalysis] = useState(false);
     const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
@@ -411,26 +410,8 @@ function DiscoveryContent() {
                         </div>
 
                         {/* Market Traffic Light & Health Check Entry */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="w-full">
                             <MarketSignalWidget />
-                            <div
-                                onClick={() => setShowPortfolioAnalysis(true)}
-                                className="cursor-pointer group relative rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-white/10 p-6 overflow-hidden hover:border-blue-500/50 transition-all shadow-lg"
-                            >
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <ShieldCheck className="w-32 h-32 text-blue-400" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                                    📊 내 계좌 데이터 분석 (AI)
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-4 group-hover:text-gray-300 transition-colors">
-                                    내 포트폴리오의 자산 배분 비중은 적절할까?<br />
-                                    AI 분석 리포트를 통해 최적화 비중을 확인하세요.
-                                </p>
-                                <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
-                                    지금 분석하기 →
-                                </div>
-                            </div>
                         </div>
 
 
@@ -438,21 +419,6 @@ function DiscoveryContent() {
                     </div>
                 )}
 
-                {showPortfolioAnalysis && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#111] border border-white/20 rounded-3xl w-full max-w-lg p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4">포트폴리오 분석 페이지로 이동</h3>
-                        <p className="text-gray-400 mb-8">상세한 포트폴리오 최적화 분석은 [Portfolio] 메뉴에서 확인하실 수 있습니다.</p>
-                        <button
-                            onClick={() => {
-                                setShowPortfolioAnalysis(false);
-                                window.location.href = '/portfolio';
-                            }}
-                            className="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-xl font-bold transition-all"
-                        >
-                            Portfolio 메뉴로 바로가기
-                        </button>
-                    </div>
-                </div>}
                 {showAlertModal && stock && (
                     <PriceAlertModal
                         symbol={stock.symbol}
