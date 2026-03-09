@@ -24,7 +24,7 @@ export default function SignalsPage() {
         { id: "signals" as const, label: "시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
         { id: "heatmap" as const, label: "히트맵", icon: <BarChart3 className="w-4 h-4" />, gradient: "from-red-600 to-pink-600" },
         { id: "supply" as const, label: "시장 주도주", icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
-        { id: "calendar" as const, label: "캘린더", icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
+        { id: "calendar" as const, label: "캘린더/주요 경제지표", icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
         { id: "vote" as const, label: "투표", icon: <ThumbsUp className="w-4 h-4" />, gradient: "from-purple-600 to-indigo-600" },
     ];
 
