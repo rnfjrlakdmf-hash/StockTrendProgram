@@ -350,6 +350,70 @@ def get_naver_ranking(market="krx", rank_type="quant"):
     from bs4 import BeautifulSoup
     import re
 
+    # [New] 인기 검색어 처리
+    if rank_type == "popular":
+        url = "https://finance.naver.com/sise/lastsearch2.naver"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        try:
+            res = requests.get(url, headers=headers, timeout=5)
+            try:
+                html = res.content.decode('euc-kr') 
+            except:
+                html = res.text
+            
+            soup = BeautifulSoup(html, 'html.parser')
+            rows = soup.select("table.type_5 tr")
+            
+            data = []
+            rank = 1
+            for row in rows:
+                cols = row.select("td")
+                
+                # 순위(0), 종목명(1), 검색비율(2), 현재가(3), 전일비(4), 등락률(5)
+                if len(cols) < 6: continue
+                
+                no_td = cols[0].text.strip()
+                if not no_td.isdigit(): continue
+                
+                name_tag = cols[1].select_one("a.tltle")
+                if not name_tag: continue
+                name = name_tag.text.strip()
+                
+                href = name_tag.get('href', '')
+                match = re.search(r'code=(\d+)', href)
+                symbol = match.group(1) if match else ""
+                
+                price_str = cols[3].text.strip().replace(",", "")
+                price = int(price_str) if price_str.isdigit() else 0
+                
+                change_rate_str = cols[5].text.strip()
+                change_rate = 0.0
+                try:
+                    val_str = change_rate_str.replace("%", "").replace("+", "").strip()
+                    if val_str.replace(".", "", 1).replace("-", "", 1).isdigit():
+                        change_rate = float(val_str)
+                        if "-" in change_rate_str:
+                            change_rate = -abs(change_rate)
+                except:
+                    pass
+                
+                data.append({
+                    "rank": rank,
+                    "symbol": symbol,
+                    "name": name,
+                    "price": price,
+                    "change": change_rate_str,
+                    "change_percent": change_rate
+                })
+                
+                rank += 1
+                if rank > 10: break
+                
+            return data
+        except Exception as e:
+            print(f"Error parsing Naver popular searches: {e}")
+            return []
+
     base_url = "https://finance.naver.com/sise/"
     prefix = "nxt_" if market == "nxt" else ""
     url = f"{base_url}{prefix}sise_{rank_type}.naver"

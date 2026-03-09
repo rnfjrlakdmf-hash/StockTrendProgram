@@ -997,7 +997,7 @@ def read_naver_ranking(market: str, rank_type: str):
     
     if market not in ["krx", "nxt"]:
         return {"status": "error", "message": "Invalid market"}
-    if rank_type not in ["quant", "rise", "fall", "market_sum"]:
+    if rank_type not in ["quant", "rise", "fall", "market_sum", "popular"]:
         return {"status": "error", "message": "Invalid rank_type"}
         
     try:

@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { RefreshCw } from 'lucide-react';
 
 type MarketType = 'krx' | 'nxt';
-type RankType = 'quant' | 'rise' | 'fall' | 'market_sum';
+type RankType = 'quant' | 'rise' | 'fall' | 'market_sum' | 'popular';
 
 export default function NaverTopWidget() {
     const [market, setMarket] = useState<MarketType>('krx');
@@ -87,6 +87,7 @@ export default function NaverTopWidget() {
                         { key: 'quant', label: '거래상위' },
                         { key: 'rise', label: '상승' },
                         { key: 'fall', label: '하락' },
+                        { key: 'popular', label: '인기검색' },
                         { key: 'market_sum', label: '시총상위' }
                     ].map((tab) => (
                         <button
