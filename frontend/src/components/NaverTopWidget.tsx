@@ -2,20 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/config';
 import { RefreshCw } from 'lucide-react';
 
-type MarketType = 'krx' | 'nxt' | 'global';
+type MarketType = 'krx' | 'nxt';
 type RankType = 'quant' | 'rise' | 'fall' | 'market_sum';
-type GlobalRankType = 'indices' | 'crypto' | 'forex' | 'commodity';
 
 export default function NaverTopWidget() {
-    // Domestic States
     const [market, setMarket] = useState<MarketType>('krx');
     const [rankType, setRankType] = useState<RankType>('quant');
     const [data, setData] = useState<any[]>([]);
-
-    // Global States
-    const [globalTab, setGlobalTab] = useState<GlobalRankType>('indices');
-    const [globalData, setGlobalData] = useState<any[]>([]);
-
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -24,72 +17,10 @@ export default function NaverTopWidget() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                if (market === 'krx' || market === 'nxt') {
-                    const res = await fetch(`${API_BASE_URL}/api/rank/naver/${market}/${rankType}`);
-                    const json = await res.json();
-                    if (!ignore && json.status === "success") {
-                        setData(json.data);
-                    }
-                } else if (market === 'global') {
-                    const res = await fetch(`${API_BASE_URL}/api/assets`);
-                    const json = await res.json();
-                    if (!ignore && json.status === "success" && json.data) {
-                        let parsedItems: any[] = [];
-
-                        // Pick corresponding global category
-                        if (globalTab === 'indices') parsedItems = json.data.Indices;
-                        else if (globalTab === 'crypto') parsedItems = json.data.Crypto;
-                        else if (globalTab === 'forex') parsedItems = json.data.Forex;
-                        else if (globalTab === 'commodity') parsedItems = json.data.Commodity;
-
-                        if (parsedItems) {
-                            // process formatting inline
-                            const formatted = parsedItems.map((item, idx) => {
-                                let name = item.name;
-                                // Korean Translation Mapping
-                                if (globalTab === 'indices') {
-                                    if (name === 'S&P 500') name = 'S&P 500';
-                                    else if (name === 'Nasdaq') name = '나스닥 종합';
-                                    else if (name === 'Dow Jones') name = '다우 산업';
-                                    else if (name === 'Russell 2000') name = '러셀 2000';
-                                    else if (name === 'VIX') name = 'VIX (공포지수)';
-                                    else if (name === 'KOSPI') name = '코스피';
-                                    else if (name === 'KOSDAQ') name = '코스닥';
-                                    else if (name === 'Nikkei 225') name = '니케이 225';
-                                    else if (name === 'Euro Stoxx 50') name = '유로스톡스 50';
-                                    else if (name === 'Shanghai Composite') name = '상해종합';
-                                } else if (globalTab === 'crypto') {
-                                    if (name === 'Bitcoin') name = '비트코인';
-                                    else if (name === 'Ethereum') name = '이더리움';
-                                    else if (name === 'Ripple') name = '리플';
-                                    else if (name === 'Solana') name = '솔라나';
-                                    else if (name === 'Dogecoin') name = '도지코인';
-                                } else if (globalTab === 'forex') {
-                                    if (name.includes('USD/KRW')) name = '달러/원 (USD)';
-                                    else if (name.includes('JPY/KRW')) name = '엔/원 (JPY)';
-                                    else if (name.includes('EUR/KRW')) name = '유로/원 (EUR)';
-                                    else if (name.includes('CNY/KRW')) name = '위안/원 (CNY)';
-                                } else if (globalTab === 'commodity') {
-                                    if (name === 'Gold') name = '국제 금';
-                                    else if (name === 'Silver') name = '국제 은';
-                                    else if (name === 'Crude Oil') name = 'WTI 원유';
-                                    else if (name === 'Natural Gas') name = '천연가스';
-                                    else if (name === 'Copper') name = '구리';
-                                }
-
-                                const changeVal = item.change || 0;
-                                return {
-                                    rank: idx + 1,
-                                    name: name,
-                                    symbol: item.name, // Original name as sub-text
-                                    price: typeof item.price === 'number' ? item.price : Number(item.price.replace(/,/g, '')),
-                                    change: `${Math.abs(changeVal).toFixed(2)}%`,
-                                    change_percent: changeVal
-                                };
-                            });
-                            setGlobalData(formatted);
-                        }
-                    }
+                const res = await fetch(`${API_BASE_URL}/api/rank/naver/${market}/${rankType}`);
+                const json = await res.json();
+                if (!ignore && json.status === "success") {
+                    setData(json.data);
                 }
             } catch (e) {
                 console.error("NaverTopWidget Fetch Error:", e);
@@ -105,7 +36,7 @@ export default function NaverTopWidget() {
             ignore = true;
             clearInterval(interval);
         };
-    }, [market, rankType, globalTab]);
+    }, [market, rankType]);
 
     // Helpers
     const formatPrice = (price: number) => {
@@ -146,49 +77,26 @@ export default function NaverTopWidget() {
                     >
                         NXT <span className="text-[10px] bg-white/10 px-1 py-0.5 rounded text-gray-300 whitespace-nowrap hidden sm:inline-block">야간</span>
                     </button>
-                    <button
-                        onClick={() => setMarket('global')}
-                        className={`flex-1 sm:flex-none px-4 md:px-6 py-1.5 rounded-lg text-sm font-bold transition-all ${market === 'global' ? 'bg-emerald-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        글로벌
-                    </button>
                 </div>
             </div>
 
-            {/* Sub Tabs */}
+            {/* Sub Tabs (거래상위 / 상승 / 하락 / 시가총액상위) */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
-                    {market === 'global' ? (
-                        [
-                            { key: 'indices', label: '주요 지수' },
-                            { key: 'forex', label: '환율 (원화)' },
-                            { key: 'commodity', label: '원자재' },
-                            { key: 'crypto', label: '암호화폐' }
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setGlobalTab(tab.key as GlobalRankType)}
-                                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${globalTab === tab.key ? 'text-white border-white' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))
-                    ) : (
-                        [
-                            { key: 'quant', label: '거래상위' },
-                            { key: 'rise', label: '상승' },
-                            { key: 'fall', label: '하락' },
-                            { key: 'market_sum', label: '시총상위' }
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setRankType(tab.key as RankType)}
-                                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${rankType === tab.key ? 'text-white border-white' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))
-                    )}
+                    {[
+                        { key: 'quant', label: '거래상위' },
+                        { key: 'rise', label: '상승' },
+                        { key: 'fall', label: '하락' },
+                        { key: 'market_sum', label: '시총상위' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setRankType(tab.key as RankType)}
+                            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${rankType === tab.key ? 'text-white border-white' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Refresh indicator */}
@@ -200,11 +108,11 @@ export default function NaverTopWidget() {
 
             {/* List */}
             <div className="min-h-[400px]">
-                {loading && (market === 'global' ? globalData.length === 0 : data.length === 0) ? (
+                {loading && data.length === 0 ? (
                     <div className="flex justify-center items-center h-[300px]">
                         <RefreshCw className="w-8 h-8 animate-spin text-gray-600" />
                     </div>
-                ) : (market === 'global' ? globalData.length === 0 : data.length === 0) ? (
+                ) : data.length === 0 ? (
                     <div className="flex justify-center items-center h-[300px] text-gray-500 text-sm">
                         데이터를 불러올 수 없습니다. 시장이 닫혀있거나 통신 오류일 수 있습니다.
                     </div>
@@ -214,14 +122,14 @@ export default function NaverTopWidget() {
                             {/* Header Row */}
                             <div className="flex items-center justify-between px-3 md:px-5 py-2 md:py-3 text-[10px] md:text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1 md:mb-2">
                                 <div className="w-8 md:w-10 text-center">순위</div>
-                                <div className="flex-1 ml-3 md:ml-5">종목/지수명</div>
+                                <div className="flex-1 ml-3 md:ml-5">종목명</div>
                                 <div className="w-20 md:w-28 text-right">현재가</div>
                                 <div className="w-20 md:w-28 text-right">등락률</div>
                             </div>
 
                             {/* Body Rows */}
                             <div className="space-y-2 md:space-y-3">
-                                {(market === 'global' ? globalData : data).map((item, idx) => (
+                                {data.map((item, idx) => (
                                     <div key={`${item.symbol}-${idx}`} className="flex items-center justify-between p-3 md:p-4 px-3 md:px-5 rounded-xl md:rounded-2xl bg-[#2a2a2c] hover:bg-[#323235] transition-all group cursor-pointer border border-transparent hover:border-white/20 shadow-sm">
                                         {/* Rank */}
                                         <div className="w-8 md:w-10 flex justify-center">
@@ -240,7 +148,7 @@ export default function NaverTopWidget() {
                                         {/* Price */}
                                         <div className="text-right w-20 md:w-28">
                                             <div className={`font-bold font-mono text-sm md:text-lg tracking-tight ${getChangeColor(item.change_percent)}`}>
-                                                {market === 'global' && globalTab === 'crypto' ? '$' : ''}{formatPrice(item.price)}
+                                                {formatPrice(item.price)}
                                             </div>
                                         </div>
 
