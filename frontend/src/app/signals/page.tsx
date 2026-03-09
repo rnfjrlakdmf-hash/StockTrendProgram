@@ -465,19 +465,60 @@ function HeatmapTab({ router }: { router: any }) {
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
                 <>
-                    <div className={`grid ${view === "sectors" ? "grid-cols-3 md:grid-cols-5" : "grid-cols-3 md:grid-cols-4"} gap-2`}>
-                        {data.map((item: any, i: number) => {
-                            const c = typeof item.change === "number" ? item.change : parseFloat(String(item.change || "0").replace(/[^0-9.-]/g, ""));
-                            return (
-                                <div key={i} className={`${getColor(c)} rounded-xl p-3 flex flex-col items-center justify-center min-h-[70px] hover:scale-105 transition-transform cursor-pointer border border-white/5`}
-                                    onClick={() => view === "themes" ? router.push(`/theme?q=${encodeURIComponent(item.name)}`) : null}>
-                                    <span className="font-bold text-[11px] text-center leading-tight text-white/90">{item.name}</span>
-                                    <span className={`text-sm font-black mt-0.5 ${c >= 0 ? "text-red-200" : "text-blue-200"}`}>{c >= 0 ? "+" : ""}{c.toFixed(2)}%</span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    {view === "sectors" ? (
+                        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                            {sectors.map((item: any, i: number) => {
+                                const c = typeof item.change === "number" ? item.change : parseFloat(String(item.change || "0").replace(/[^0-9.-]/g, ""));
+                                return (
+                                    <div key={i} className={`${getColor(c)} rounded-xl p-3 flex flex-col items-center justify-center min-h-[70px] hover:scale-105 transition-transform cursor-pointer border border-white/5`}>
+                                        <span className="font-bold text-[11px] text-center leading-tight text-white/90">{item.name}</span>
+                                        <span className={`text-sm font-black mt-0.5 ${c >= 0 ? "text-red-200" : "text-blue-200"}`}>{c >= 0 ? "+" : ""}{c.toFixed(2)}%</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                            {heatmap.map((theme, i) => (
+                                <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
+                                    <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
+                                        <div
+                                            className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
+                                            onClick={() => router.push(`/theme?q=${encodeURIComponent(theme.name)}`)}
+                                        >
+                                            <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
+                                            {theme.name}
+                                        </div>
+                                        <span className={`${theme.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
+                                            {theme.change > 0 ? '+' : ''}{theme.change.toFixed(2)}%
+                                        </span>
+                                    </div>
 
+                                    {/* Stocks in this theme */}
+                                    <div className="space-y-2">
+                                        {theme.stocks && theme.stocks.map((stock: any, j: number) => (
+                                            <div
+                                                key={j}
+                                                className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
+                                                onClick={() => router.push(`/discovery?q=${encodeURIComponent(stock.name)}`)}
+                                            >
+                                                <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
+                                                <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
+                                                    <div
+                                                        className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
+                                                        style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
+                                                    />
+                                                </div>
+                                                <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                    {stock.change > 0 ? '+' : ''}{stock.change}%
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {view === "sectors" && sectors.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-3">

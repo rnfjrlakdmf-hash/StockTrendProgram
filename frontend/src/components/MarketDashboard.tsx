@@ -259,9 +259,6 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
 
 
 
-            {/* 1. Theme Heatmap (Restored) */}
-            <ThemeHeatmapWidget onSearch={onSearch} onPrefetch={onPrefetch} />
-
             <div className="mb-8">
                 {/* 2. Top Sectors & Themes (Redesigned with CleanStockList) */}
                 <div className="space-y-6">
@@ -385,95 +382,6 @@ function InvestorItem({ label, value, icon }: { label: string, value: string, ic
     );
 }
 
-
-// [New] Theme Heatmap Widget
-function ThemeHeatmapWidget({ onSearch, onPrefetch }: { onSearch?: (term: string) => void, onPrefetch?: (term: string) => void }) {
-    const [themes, setThemes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchHeatmap = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/korea/heatmap`);
-
-                // [Fix] Check response status
-                if (!res.ok) {
-                    setLoading(false);
-                    return;
-                }
-
-                const json = await res.json();
-                if (json.status === "success" && json.data) {
-                    setThemes(json.data);
-                }
-            } catch (e) {
-                // [Fix] Silently ignore
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchHeatmap();
-    }, []);
-
-    if (loading) return (
-        <div className="mb-8 bg-white/5 rounded-2xl border border-white/5 p-6 text-center text-gray-400">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-            테마 주도주 지도(Heatmap) 그리는 중...
-        </div>
-    );
-
-    if (!themes || themes.length === 0) return null;
-
-    return (
-        <div className="mb-8 bg-white/5 rounded-2xl border border-white/5 p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                🔥 테마별 주도주 Heatmap
-                <span className="text-xs font-normal text-gray-500 bg-black/30 px-2 py-0.5 rounded">실시간 거래량 상위</span>
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {themes.map((theme, i) => (
-                    <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
-                        <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
-                            <div
-                                className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
-                                onClick={() => onSearch?.(theme.theme)}
-                                onMouseEnter={() => onPrefetch?.(theme.theme)}
-                            >
-                                <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
-                                {theme.theme}
-                            </div>
-                            <span className="text-red-400 font-bold text-sm bg-red-900/10 px-1.5 rounded">{theme.percent}</span>
-                        </div>
-
-                        {/* Stocks in this theme */}
-                        <div className="space-y-2">
-                            {theme.stocks.map((stock: any, j: number) => (
-                                <div
-                                    key={j}
-                                    className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
-                                    onClick={() => onSearch?.(stock.name)}
-                                    onMouseEnter={() => onPrefetch?.(stock.name)}
-                                >
-                                    <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
-                                    <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
-                                        <div
-                                            className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
-                                            style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
-                                        />
-                                    </div>
-                                    <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                        {stock.change > 0 ? '+' : ''}{stock.change}%
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
 
 function MarketList({ title, icon, items, fallbackText, loading, noDecimals = false }: { title: string, icon: any, items: MarketItem[], fallbackText?: string, loading?: boolean, noDecimals?: boolean }) {
     return (
