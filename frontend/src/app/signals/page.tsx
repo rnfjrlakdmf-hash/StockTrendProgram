@@ -411,8 +411,11 @@ function HeatmapTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
-                // [MODIFY] /api/korea/sector_heatmap 사용
-                const [s, h] = await Promise.all([fetch(`${API_BASE_URL}/api/korea/sector_heatmap`), fetch(`${API_BASE_URL}/api/korea/heatmap`)]);
+                // [MODIFY] /api/korea/sector_heatmap 사용, no-store 추가하여 실시간 보장
+                const [s, h] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/korea/sector_heatmap`, { cache: 'no-store' }),
+                    fetch(`${API_BASE_URL}/api/korea/heatmap`, { cache: 'no-store' })
+                ]);
                 const sj = await s.json(), hj = await h.json();
 
                 // 업종별, 테마별 모두 동일한 반환 구조(name, change, stocks)를 가짐
