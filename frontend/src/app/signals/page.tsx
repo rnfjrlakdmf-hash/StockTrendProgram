@@ -448,10 +448,10 @@ function HeatmapTab({ router }: { router: any }) {
                                 <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
                                     <div
                                         className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
-                                        onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(item.name)}`)}
+                                        onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(item.name || item.theme)}`)}
                                     >
                                         <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
-                                        {item.name}
+                                        {item.name || item.theme}
                                     </div>
                                     <span className={`${item.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
                                         {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
