@@ -746,40 +746,30 @@ function DiscoveryContent() {
                                         >
                                             데이터 종합 분석
                                         </button>
-                                        <button
-                                            className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'news' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                            onClick={() => setActiveTab('news')}
-                                        >
-                                            관련 뉴스
-                                        </button>
+
+                                        {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                            <button
+                                                className={`pb-3 whitespace-nowrap ${activeTab === 'financials' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                onClick={() => setActiveTab('financials')}
+                                            >
+                                                재무제표
+                                            </button>
+                                        )}
+
                                         <button
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'daily' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('daily')}
                                         >
                                             일일 시세
                                         </button>
-                                        {/* Story Chart tab removed per user request - news fetching issues
-                                        <button
-                                            className={`pb-2 md:pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'story' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
-                                            onClick={() => setActiveTab('story')}
-                                        >
-                                            📖 주식 위인전 <span className="text-xs bg-purple-500/20 px-2 py-0.5 rounded-full ml-1 text-purple-300">New</span>
-                                        </button>
-                                        */}
 
                                         {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                             <>
                                                 <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('disclosure')}
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('investor')}
                                                 >
-                                                    공시(DART) <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
-                                                </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'financials' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('financials')}
-                                                >
-                                                    재무제표
+                                                    📈 투자자 동향 <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'dividend_health' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
@@ -801,35 +791,40 @@ function DiscoveryContent() {
                                                     💰 배당/건전성 <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
                                                 </button>
                                                 <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('investor')}
-                                                >
-                                                    📈 투자자 동향 <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
-                                                </button>
-                                                <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('overhang')}
                                                 >
                                                     ⚠️ 오버행/타법인 <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
                                                 </button>
                                                 <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('backtest')}
+                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('disclosure')}
                                                 >
-                                                    전략 백테스팅
+                                                    공시(DART) <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
                                                 </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('history')}
-                                                >
-                                                    AI 점수 추이
-                                                </button>
+                                            </>
+                                        )}
 
+                                        <button
+                                            className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'news' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                            onClick={() => setActiveTab('news')}
+                                        >
+                                            관련 뉴스
+                                        </button>
+
+                                        {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                            <>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'alerts' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('alerts')}
                                                 >
                                                     🛡️ 회의 중 방어막 <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full ml-1 text-blue-300">New</span>
+                                                </button>
+                                                <button
+                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('backtest')}
+                                                >
+                                                    전략 백테스팅
                                                 </button>
                                             </>
                                         )}
@@ -1001,10 +996,6 @@ function DiscoveryContent() {
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'backtest' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <BacktestSimulator symbol={stock.symbol} currency={stock.currency} />
-                                        </div>
-                                    ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'history' ? (
-                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <ScoreHistoryChart symbol={stock.symbol} />
                                         </div>
                                     ) : activeTab === 'alerts' && stock.symbol ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
