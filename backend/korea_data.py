@@ -1624,7 +1624,19 @@ def get_live_disclosures():
             if not title_tag: continue
             
             title = title_tag.text.strip()
-            link = "https://finance.naver.com" + title_tag["href"]
+            href = title_tag.get("href", "")
+            
+            # 모바일/PC 하이브리드 지원을 위한 통합 네이버 뉴스 주소 추출
+            import urllib.parse
+            parsed = urllib.parse.urlparse(href)
+            qs = urllib.parse.parse_qs(parsed.query)
+            aid = qs.get("article_id", [""])[0]
+            oid = qs.get("office_id", [""])[0]
+            
+            if aid and oid:
+                link = f"https://n.news.naver.com/mnews/article/{oid}/{aid}"
+            else:
+                link = "https://finance.naver.com" + href
             
             summary_dd = dl.select_one("dd.articleSummary")
             press = summary_dd.select_one("span.press").text.strip() if summary_dd and summary_dd.select_one("span.press") else ""
