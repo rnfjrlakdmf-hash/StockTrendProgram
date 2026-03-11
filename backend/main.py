@@ -394,17 +394,18 @@ def read_korea_sectors():
     return {"status": "success", "data": data}
 
 @app.get("/api/korea/sector_heatmap")
-def read_korea_sector_heatmap():
+async def read_korea_sector_heatmap():
     """업종 히트맵 실시간 상세 데이터"""
     from korea_data import get_sector_heatmap_data
-    data = get_sector_heatmap_data()
+    data = await get_sector_heatmap_data()
     return {"status": "success", "data": data}
 
 
 @app.get("/api/korea/heatmap")
-def read_korea_heatmap():
+async def read_korea_heatmap():
     """테마 히트맵 데이터"""
-    data = get_theme_heatmap_data()
+    from korea_data import get_theme_heatmap_data
+    data = await get_theme_heatmap_data()
     return {"status": "success", "data": data}
 
 @app.get("/api/korea/investors")

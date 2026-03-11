@@ -1,3 +1,5 @@
+import aiohttp
+import asyncio
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -890,104 +892,7 @@ def get_top_sectors():
         print(f"Sector Scrape Error: {e}")
         return []
 
-def get_sector_heatmap_data():
-    """
-    Fetch Sector Heatmap data (업종명, 등락률, 세부 편입종목 3개 포함)
-    """
-    sectors = []
-    try:
-        url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
 
-        rows = soup.select("table.type_1 tr")
-
-        sector_candidates = []
-        for row in rows:
-            if len(sector_candidates) >= 30: break # 상승/하락 포함 30개 제한
-
-            cols = row.select("td")
-            if len(cols) < 2: continue
-
-            link = cols[0].select_one("a")
-            if not link: continue
-
-            sector_name = link.text.strip()
-            sector_url = "https://finance.naver.com" + link['href']
-            percent_text = cols[1].text.strip()
-
-            if not sector_name or not percent_text: continue
-
-            raw = percent_text.replace(",", "").replace("%", "").strip()
-            if "▼" in raw or raw.startswith("-"):
-                val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
-            elif "▲" in raw or raw.startswith("+"):
-                val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
-            else:
-                try: val = float(raw.replace("▲", "").replace("▼", "").strip())
-                except: continue
-
-            sector_candidates.append({
-                "name": sector_name,
-                "url": sector_url,
-                "percent": percent_text,
-                "change": val
-            })
-
-        # 각 업종 대표 종목 fetch
-        for s in sector_candidates:
-            stocks = []
-            try:
-                res_sub = requests.get(s['url'], headers=HEADER, timeout=3)
-                soup_sub = BeautifulSoup(decode_safe(res_sub), 'html.parser')
-
-                sub_rows = soup_sub.select("table.type_5 tr")
-
-                for s_row in sub_rows:
-                    if len(stocks) >= 3: break
-
-                    s_cols = s_row.select("td")
-                    if len(s_cols) < 5: continue
-
-                    s_name_tag = s_cols[0].select_one("a")
-                    if not s_name_tag: continue
-
-                    s_name = s_name_tag.text.strip()
-                    s_change_txt = s_cols[3].text.strip()
-                    s_change_val = 0.0
-
-                    c_r = s_change_txt.replace(",", "").replace("%", "").strip()
-                    if "▼" in c_r or c_r.startswith("-"):
-                        s_change_val = -abs(float(c_r.replace("▼", "").replace("-", "").strip() or "0"))
-                    elif "▲" in c_r or c_r.startswith("+"):
-                        s_change_val = abs(float(c_r.replace("▲", "").replace("+", "").strip() or "0"))
-                    else:
-                        try: s_change_val = float(c_r.replace("▲", "").replace("▼", "").strip())
-                        except: pass
-                        
-                    # 백분율 변환 롤백: 프론트(Vercel) 캐시 문제 우회를 위해 백엔드에서 온전한 퍼센트 숫자(x100 된 상태)로 버림 처리 후 제공
-                    s_change_val = round(s_change_val, 2)
-
-                    stocks.append({
-                        "name": s_name,
-                        "change": s_change_val
-                    })
-            except:
-                pass
-
-            sectors.append({
-                "name": s['name'],
-                "percent": s['percent'],
-                "change": s['change'],
-                "stocks": stocks
-            })
-
-        # 내림차순 정렬
-        sectors.sort(key=lambda x: x['change'], reverse=True)
-        return sectors
-    except Exception as e:
-        print(f"Sector Heatmap Data Error: {e}")
-        return []
 
 
 
@@ -1296,97 +1201,7 @@ def get_market_investors():
         "kosdaq": {"foreigner": 0, "institution": 0, "retail": 0}
     }
 
-def get_theme_heatmap_data():
-    """
-    Fetch Theme Heatmap data - 상승/하락 테마 모두 포함
-    """
-    themes = []
-    try:
-        url = "https://finance.naver.com/sise/theme.naver"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
 
-        rows = soup.select("table.type_1 tr")
-
-        theme_candidates = []
-        for row in rows:
-            if len(theme_candidates) >= 30: break  # 최대 30개 (상승+하락 모두)
-
-            cols = row.select("td")
-            if len(cols) < 2: continue
-
-            link = cols[0].select_one("a")
-            if not link: continue
-
-            theme_name = link.text.strip()
-            theme_url = "https://finance.naver.com" + link['href']
-            percent_text = cols[1].text.strip()
-
-            if not theme_name or not percent_text: continue
-
-            # 부호 파싱 (▲/▼ 또는 +/-)
-            raw = percent_text.replace(",", "").replace("%", "").strip()
-            if "▼" in raw or raw.startswith("-"):
-                val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
-            elif "▲" in raw or raw.startswith("+"):
-                val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
-            else:
-                try:
-                    val = float(raw.replace("▲", "").replace("▼", "").strip())
-                except:
-                    continue
-
-            theme_candidates.append({
-                "theme": theme_name,
-                "url": theme_url,
-                "percent": percent_text,
-                "change": val
-            })
-
-        # 각 테마의 대표 종목 fetch
-        for t in theme_candidates:
-            stocks = []
-            try:
-                res_sub = requests.get(t['url'], headers=HEADER, timeout=3)
-                soup_sub = BeautifulSoup(decode_safe(res_sub), 'html.parser')
-
-                sub_rows = soup_sub.select("table.type_5 tr")
-
-                for s_row in sub_rows:
-                    if len(stocks) >= 3: break
-
-                    s_cols = s_row.select("td")
-                    if len(s_cols) < 5: continue
-
-                    s_name_tag = s_cols[0].select_one("a")
-                    if not s_name_tag: continue
-
-                    s_name = s_name_tag.text.strip()
-                    s_change_txt = s_cols[4].text.strip()
-
-                    try:
-                        clean_change = s_change_txt.replace('%', '').replace(',', '').strip()
-                        # 부호 파싱 (네이버 금융은 보통 +3.54% 형태로 줌)
-                        # 백분율 변환 롤백: 프론트(Vercel) 캐싱 우회 및 무한 소수점 방지를 위해 통으로 반올림
-                        s_change_val = round(float(clean_change), 2)
-                        stocks.append({"name": s_name, "change": s_change_val})
-                    except:
-                        continue
-
-            except Exception as e:
-                print(f"Theme Detail Error ({t['theme']}): {e}")
-
-            themes.append({
-                "theme": t['theme'],
-                "percent": t['percent'],
-                "change": t['change'],  # 숫자 change 필드 추가
-                "stocks": stocks
-            })
-
-    except Exception as e:
-        print(f"Theme Scrape Error: {e}")
-
-    return themes
 
 def get_fear_greed_index():
     """
@@ -1663,3 +1478,159 @@ def get_live_disclosures():
         print(f"Live Disclosures fetch error: {e}")
         
     return results
+
+
+
+async def fetch_stocks_for_heatmap(session, item, item_type='sector'):
+    stocks = []
+    try:
+        async with session.get(item['url'], headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
+            text = await res.text('euc-kr', 'replace')
+            from bs4 import BeautifulSoup
+            soup_sub = BeautifulSoup(text, 'html.parser')
+
+            sub_rows = soup_sub.select("table.type_5 tr")
+            for s_row in sub_rows:
+                if len(stocks) >= 3: break
+                s_cols = s_row.select("td")
+                
+                if item_type == "sector":
+                    if len(s_cols) < 5: continue
+                    change_idx = 3
+                else: 
+                    if len(s_cols) < 5: continue
+                    change_idx = 4
+                    
+                s_name_tag = s_cols[0].select_one("a")
+                if not s_name_tag: continue
+                s_name = s_name_tag.text.strip()
+                s_change_txt = s_cols[change_idx].text.strip()
+                
+                s_change_val = 0.0
+                if item_type == "sector":
+                    c_r = s_change_txt.replace(",", "").replace("%", "").strip()
+                    if "▼" in c_r or c_r.startswith("-"):
+                        s_change_val = -abs(float(c_r.replace("▼", "").replace("-", "").strip() or "0"))
+                    elif "▲" in c_r or c_r.startswith("+"):
+                        s_change_val = abs(float(c_r.replace("▲", "").replace("+", "").strip() or "0"))
+                    else:
+                        try: s_change_val = float(c_r.replace("▲", "").replace("▼", "").strip())
+                        except: pass
+                    s_change_val = round(s_change_val, 2)
+                    stocks.append({"name": s_name, "change": s_change_val})
+                else:
+                    try:
+                        clean_change = s_change_txt.replace('%', '').replace(',', '').strip()
+                        s_change_val = round(float(clean_change), 2)
+                        stocks.append({"name": s_name, "change": s_change_val})
+                    except:
+                        continue
+    except Exception as e:
+        pass
+        
+    return {
+        "name" if item_type == 'sector' else "theme": item['name'],
+        "percent": item['percent'],
+        "change": item['change'],
+        "stocks": stocks
+    }
+
+async def get_sector_heatmap_data():
+    try:
+        url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
+        async with aiohttp.ClientSession() as session:
+            from bs4 import BeautifulSoup
+            async with session.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
+                text = await res.text('euc-kr', 'replace')
+            soup = BeautifulSoup(text, 'html.parser')
+            rows = soup.select("table.type_1 tr")
+            
+            candidates = []
+            for row in rows:
+                if len(candidates) >= 30: break
+                cols = row.select("td")
+                if len(cols) < 2: continue
+                link = cols[0].select_one("a")
+                if not link: continue
+                
+                sector_name = link.text.strip()
+                sector_url = "https://finance.naver.com" + link['href']
+                percent_text = cols[1].text.strip()
+                
+                if not sector_name or not percent_text: continue
+                
+                raw = percent_text.replace(",", "").replace("%", "").strip()
+                if "▼" in raw or raw.startswith("-"):
+                    val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
+                elif "▲" in raw or raw.startswith("+"):
+                    val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
+                else:
+                    try: val = float(raw.replace("▲", "").replace("▼", "").strip())
+                    except: continue
+                
+                candidates.append({
+                    "name": sector_name,
+                    "url": sector_url,
+                    "percent": percent_text,
+                    "change": val
+                })
+                
+            tasks = [fetch_stocks_for_heatmap(session, c, "sector") for c in candidates]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            sectors = [r for r in results if isinstance(r, dict) and "stocks" in r]
+            sectors.sort(key=lambda x: x['change'], reverse=True)
+            return sectors
+    except Exception as e:
+        print(f"Sector Heatmap Async Error: {e}")
+        return []
+
+async def get_theme_heatmap_data():
+    try:
+        url = "https://finance.naver.com/sise/theme.naver"
+        async with aiohttp.ClientSession() as session:
+            from bs4 import BeautifulSoup
+            async with session.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
+                text = await res.text('euc-kr', 'replace')
+            soup = BeautifulSoup(text, 'html.parser')
+            rows = soup.select("table.type_1 tr")
+            
+            candidates = []
+            for row in rows:
+                if len(candidates) >= 30: break
+                cols = row.select("td")
+                if len(cols) < 2: continue
+                link = cols[0].select_one("a")
+                if not link: continue
+                
+                theme_name = link.text.strip()
+                theme_url = "https://finance.naver.com" + link['href']
+                percent_text = cols[1].text.strip()
+                
+                if not theme_name or not percent_text: continue
+                
+                raw = percent_text.replace(",", "").replace("%", "").strip()
+                if "▼" in raw or raw.startswith("-"):
+                    val = -abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
+                elif "▲" in raw or raw.startswith("+"):
+                    val = abs(float(raw.replace("▲", "").replace("+", "").strip() or "0"))
+                else:
+                    try: val = float(raw.replace("▲", "").replace("▼", "").strip())
+                    except: continue
+                
+                candidates.append({
+                    "name": theme_name,
+                    "url": theme_url,
+                    "percent": percent_text,
+                    "change": val
+                })
+                
+            tasks = [fetch_stocks_for_heatmap(session, c, "theme") for c in candidates]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            themes = [r for r in results if isinstance(r, dict) and "stocks" in r]
+            themes.sort(key=lambda x: x['change'], reverse=True)
+            return themes
+    except Exception as e:
+        print(f"Theme Heatmap Async Error: {e}")
+        return []
