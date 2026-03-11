@@ -24,22 +24,36 @@ interface MarketScannerData {
 export default function MarketScannerDashboard() {
     const [data, setData] = useState<MarketScannerData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<string>("");
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const fetchData = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        setIsRefreshing(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/scanner`);
+            const resData = await res.json();
+            if (resData.status === 'success') {
+                setData(resData.data);
+                setLastUpdated(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
+        } catch (err) {
+            console.error("Market scanner fetch error", err);
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        let isMounted = true;
-        fetch(`${API_BASE_URL}/api/market/scanner`)
-            .then(res => res.json())
-            .then(resData => {
-                if (isMounted && resData.status === 'success') {
-                    setData(resData.data);
-                }
-            })
-            .catch(err => console.error("Market scanner fetch error", err))
-            .finally(() => {
-                if (isMounted) setLoading(false);
-            });
+        fetchData();
+        
+        // 60초마다 자동 갱신 (Polling)
+        const interval = setInterval(() => {
+            fetchData(true);
+        }, 60000);
 
-        return () => { isMounted = false; };
+        return () => clearInterval(interval);
     }, []);
 
     if (loading) {
@@ -98,9 +112,17 @@ export default function MarketScannerDashboard() {
 
             {/* LIVE 공시 속보 전광판 */}
             <div className="bg-black/40 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md flex flex-col h-[300px]">
-                <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2 shrink-0">
-                    <Radio className="w-5 h-5 text-red-500 animate-pulse" /> LIVE 특이 공시 속보
-                </h3>
+                <div className="flex justify-between items-center mb-1 shrink-0">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Radio className={`w-5 h-5 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} /> LIVE 특이 공시 속보
+                    </h3>
+                    {lastUpdated && (
+                        <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                            <span className={`w-1 h-1 rounded-full ${isRefreshing ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                            {lastUpdated}
+                        </span>
+                    )}
+                </div>
                 <p className="text-xs text-gray-400 mb-4 drop-shadow-md shrink-0 border-b border-white/10 pb-3">
                     호재/악재성 키워드(유상증자, 단일판매 등)가 포함된 최근 1시간 이내 실시간 공시입니다. 관심 종목을 위에서 검색해 보세요.
                 </p>
