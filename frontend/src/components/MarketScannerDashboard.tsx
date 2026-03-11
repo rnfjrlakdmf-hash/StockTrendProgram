@@ -101,8 +101,8 @@ export default function MarketScannerDashboard() {
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-emerald-400" /> Today&apos;s 증시 스캐너
                 </h3>
-                <p className="text-xs text-gray-400 mb-6 drop-shadow-md">
-                    현재 증시의 상승/하락 비율입니다. 빨간색(상승) 면적이 넓을수록 투심이 좋은 장이며, 파란색(하락) 면적이 압도적일 때는 <strong>현금 비중 확대</strong>를 고려해야 합니다.
+                <p className="text-xs text-gray-400 mb-6 leading-relaxed drop-shadow-md">
+                    지수 숫자보다 중요한 <strong>&apos;시장 체감 온도&apos;</strong>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 <strong>보수적인 현금 비중 확대</strong>를 고려해야 합니다. (1분마다 자동 갱신)
                 </p>
                 <div className="space-y-6">
                     {renderStatsBar(data.stats.kospi, "KOSPI (코스피)")}
