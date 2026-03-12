@@ -259,48 +259,6 @@ export default function MarketDashboard({ onSearch, onPrefetch }: MarketDashboar
 
 
 
-            <div className="mb-8">
-                {/* 2. Top Sectors & Themes (Redesigned with CleanStockList) */}
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Top Sectors */}
-                        <div className="bg-white/5 rounded-2xl p-0 md:p-5 border border-white/5 overflow-hidden">
-                            <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
-                                <PieChart className="text-purple-400 w-5 h-5" />
-                                <h4 className="text-white font-bold">업종 상위</h4>
-                            </div>
-
-                            <CleanStockList
-                                items={data.top_sectors ? data.top_sectors.slice(0, 5).map(s => ({
-                                    symbol: s.name, // Using name as symbol for display key
-                                    name: s.name,
-                                    price: "", // No price data for sectors usually
-                                    change: s.percent
-                                })) : []}
-                                onItemClick={(sym) => onSearch?.(sym)}
-                            />
-                        </div>
-
-                        {/* Top Themes */}
-                        <div className="bg-white/5 rounded-2xl p-0 md:p-5 border border-white/5 overflow-hidden">
-                            <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
-                                <Activity className="text-orange-400 w-5 h-5" />
-                                <h4 className="text-white font-bold">테마 상위</h4>
-                            </div>
-
-                            <CleanStockList
-                                items={data.top_themes ? data.top_themes.slice(0, 5).map(t => ({
-                                    symbol: t.name,
-                                    name: t.name,
-                                    price: "",
-                                    change: t.percent
-                                })) : []}
-                                onItemClick={(sym) => onSearch?.(sym)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
         </>
     );
 }

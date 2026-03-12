@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 // [Deployment Trigger] symbol-based deduplication v2 - 2026-03-04
 
 import { useState, useEffect, Suspense } from "react";
@@ -9,8 +9,9 @@ import { API_BASE_URL } from "@/lib/config";
 import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
-    Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink
+    Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
 } from "lucide-react";
+import CleanStockList from "@/components/CleanStockList";
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
@@ -454,6 +455,45 @@ function HeatmapTab({ router }: { router: any }) {
                     <span className="w-4 h-2 bg-blue-500 rounded" />하락 <span className="w-4 h-2 bg-gray-700 rounded ml-1" />보합 <span className="w-4 h-2 bg-red-500 rounded ml-1" />상승
                 </div>
             </div>
+
+            {/* [NEW] 업종 및 테마 상위 랭킹 (대시보드에서 이동) */}
+            {!loading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {/* 업종 상위 */}
+                    <div className="bg-white/5 rounded-2xl p-0 md:p-4 border border-white/5 overflow-hidden backdrop-blur-sm">
+                        <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
+                            <PieChart className="text-purple-400 w-5 h-5" />
+                            <h4 className="text-white font-bold text-sm">업종 상위 TOP 5</h4>
+                        </div>
+                        <CleanStockList
+                            items={sectors ? sectors.slice(0, 5).map(s => ({
+                                symbol: s.name,
+                                name: s.name,
+                                price: "",
+                                change: `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%`
+                            })) : []}
+                            onItemClick={(name) => router.push(`/discovery?q=${encodeURIComponent(name)}`)}
+                        />
+                    </div>
+
+                    {/* 테마 상위 */}
+                    <div className="bg-white/5 rounded-2xl p-0 md:p-4 border border-white/5 overflow-hidden backdrop-blur-sm">
+                        <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
+                            <Activity className="text-orange-400 w-5 h-5" />
+                            <h4 className="text-white font-bold text-sm">테마 상위 TOP 5</h4>
+                        </div>
+                        <CleanStockList
+                            items={heatmap ? heatmap.slice(0, 5).map(t => ({
+                                symbol: t.name || t.theme,
+                                name: t.name || t.theme,
+                                price: "",
+                                change: `${t.change > 0 ? '+' : ''}${t.change.toFixed(2)}%`
+                            })) : []}
+                            onItemClick={(name) => router.push(`/theme?q=${encodeURIComponent(name)}`)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
                 <>
