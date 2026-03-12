@@ -157,15 +157,6 @@ export default function Home() {
         ) : !loading && !error && (
           // Default Dashboard Content
           <div className="space-y-8">
-            {/* Real-time Global Asset Ticker */}
-            <AssetTicker />
-
-            {/* Market Scanner (Stats & Disclosures) */}
-            <MarketScannerDashboard />
-
-            {/* Global Market Indicators (Indices, Forex, etc.) */}
-            <MarketIndicators limit={5} />
-
             {/* Real-time Top 10 Ranking */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TopRankingWidget market="KR" title="국내 증시 Top 10" />
@@ -184,86 +175,6 @@ export default function Home() {
 
 
 
-function AssetTicker() {
-  const [assets, setAssets] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/assets`);
-
-        // [Fix] Check response status before parsing
-        if (!res.ok) {
-          // Silently ignore - loading skeleton will remain
-          return;
-        }
-
-        const json = await res.json();
-        if (json.status === "success") {
-          setAssets(json.data);
-        }
-      } catch (e) {
-        // [Fix] Silently ignore fetch errors
-      }
-    };
-    fetchAssets();
-
-    // 10초마다 자산 시세 업데이트
-    const interval = setInterval(fetchAssets, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (!assets) return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-      {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-white/5 rounded-2xl" />)}
-    </div>
-  );
-
-  const categories = [
-    { key: 'Indices', icon: <BarChart3 className="text-blue-400" />, label: '지수' },
-    { key: 'Crypto', icon: <Coins className="text-yellow-400" />, label: '코인' },
-    { key: 'Forex', icon: <Globe className="text-green-400" />, label: '환율' },
-    { key: 'Commodity', icon: <Droplets className="text-orange-400" />, label: '원자재' }
-  ];
-
-  // 데이터가 비어있을 경우에 대한 방어 로직 (로딩이 끝났는데도 카테고리가 없으면 에러가 날 수 있음)
-  const availableCategories = categories.filter((cat: any) => assets[cat.key] && Array.isArray(assets[cat.key]));
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
-      {availableCategories.map((cat) => (
-        <div key={cat.key} className="bg-black/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-3 opacity-60">
-            {cat.icon}
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-300">{cat.label}</span>
-          </div>
-          <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
-            {assets[cat.key]?.slice(0, 5).map((item: any, idx: number) => (
-              <div key={`${cat.key}-${item.symbol}-${idx}`} className="flex justify-between items-center text-sm">
-                <span className="font-medium text-gray-200 whitespace-nowrap truncate">{item.name.replace(' Market', '').replace('USD/KRW', 'USD').replace('JPY/KRW', 'JPY')}</span>
-                <div className="text-right">
-                  <div className="font-bold text-white">
-                    {(() => {
-                      // 화폐 단위 결정 로직
-                      if (cat.key === 'Crypto') return '₩';
-                      if (cat.key === 'Forex') return '₩';
-                      if (cat.key === 'Commodity') return item.name.includes('국내') ? '₩' : '$';
-                      return ''; // Indices 등은 단위 없음
-                    })()}
-                    {Number(String(item.price).replace(/,/g, '')).toLocaleString(undefined, { maximumFractionDigits: cat.key === 'Indices' ? 2 : 2 })}
-                  </div>
-                  <div className={`text-[10px] ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {item.change >= 0 ? '+' : ''}{Number(item.change || 0).toFixed(2)}%
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 
 function TopRankingWidget({ market, title }: { market: string, title: string }) {
