@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
 import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData } from "@/lib/api";
+import MarketScannerDashboard from "@/components/MarketScannerDashboard";
+import MarketIndicators from "@/components/MarketIndicators";
+import NaverTopWidget from "@/components/NaverTopWidget";
 
 import { TrendingUp, Zap, Activity, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
 
@@ -11,8 +14,8 @@ import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
-import MarketDashboard from "@/components/MarketDashboard";
-import NaverTopWidget from "@/components/NaverTopWidget";
+
+
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -63,18 +66,9 @@ export default function Home() {
 
       <div className="p-6 space-y-8">
 
-        {/* Real-time Top 10 Ranking */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <TopRankingWidget market="KR" title="국내 증시 Top 10" />
-          <TopRankingWidget market="US" title="해외 증시 Top 10" />
-        </div>
-
-        {/* Naver-style TOP Stocks Widget */}
-        <NaverTopWidget />
 
 
-        {/* Korea Market Dashboard */}
-        <MarketDashboard onSearch={handleSearch} />        {/* Search Loading/Error State */}
+        {/* Search Loading/Error State */}
         {loading && (
           <div className="flex flex-col items-center justify-center p-12 text-blue-400">
             <Loader2 className="h-10 w-10 animate-spin mb-4" />
@@ -162,14 +156,24 @@ export default function Home() {
           </div>
         ) : !loading && !error && (
           // Default Dashboard Content
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-8">
+            {/* Real-time Global Asset Ticker */}
+            <AssetTicker />
 
+            {/* Market Scanner (Stats & Disclosures) */}
+            <MarketScannerDashboard />
 
+            {/* Global Market Indicators (Indices, Forex, etc.) */}
+            <MarketIndicators limit={5} />
 
-            <div className="space-y-6">
-
-
+            {/* Real-time Top 10 Ranking */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TopRankingWidget market="KR" title="국내 증시 Top 10" />
+              <TopRankingWidget market="US" title="해외 증시 Top 10" />
             </div>
+
+            {/* Naver-style TOP Stocks Widget */}
+            <NaverTopWidget />
           </div>
         )}
       </div>

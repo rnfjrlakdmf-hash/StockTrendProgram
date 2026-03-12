@@ -12,6 +12,7 @@ import {
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
 } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
+import RankingWidget from "@/components/RankingWidget";
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
@@ -456,42 +457,15 @@ function HeatmapTab({ router }: { router: any }) {
                 </div>
             </div>
 
-            {/* [NEW] 업종 및 테마 상위 랭킹 (대시보드에서 이동) */}
+            {/* [NEW] 실시간 상승/하락 랭킹 (MarketDashboard에서 완전히 이동) */}
             {!loading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {/* 업종 상위 */}
-                    <div className="bg-white/5 rounded-2xl p-0 md:p-4 border border-white/5 overflow-hidden backdrop-blur-sm">
-                        <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
-                            <PieChart className="text-purple-400 w-5 h-5" />
-                            <h4 className="text-white font-bold text-sm">업종 상위 TOP 5</h4>
-                        </div>
-                        <CleanStockList
-                            items={sectors ? sectors.slice(0, 5).map(s => ({
-                                symbol: s.name,
-                                name: s.name,
-                                price: "",
-                                change: `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%`
-                            })) : []}
-                            onItemClick={(name) => router.push(`/discovery?q=${encodeURIComponent(name)}`)}
-                        />
+                <div className="mb-6">
+                    <div className="mb-4">
+                        <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                            <TrendingUp className="text-blue-400 w-5 h-5" /> 실시간 시장 등락 현황
+                        </h4>
                     </div>
-
-                    {/* 테마 상위 */}
-                    <div className="bg-white/5 rounded-2xl p-0 md:p-4 border border-white/5 overflow-hidden backdrop-blur-sm">
-                        <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-4">
-                            <Activity className="text-orange-400 w-5 h-5" />
-                            <h4 className="text-white font-bold text-sm">테마 상위 TOP 5</h4>
-                        </div>
-                        <CleanStockList
-                            items={heatmap ? heatmap.slice(0, 5).map(t => ({
-                                symbol: t.name || t.theme,
-                                name: t.name || t.theme,
-                                price: "",
-                                change: `${t.change > 0 ? '+' : ''}${t.change.toFixed(2)}%`
-                            })) : []}
-                            onItemClick={(name) => router.push(`/theme?q=${encodeURIComponent(name)}`)}
-                        />
-                    </div>
+                    <RankingWidget />
                 </div>
             )}
 
