@@ -117,8 +117,8 @@ def get_dart_overhang_and_investments(symbol: str):
     investments = []
     
     try:
-        # 최근 5페이지 정보 스캔 (더 많은 과거 정보 추적)
-        for page in range(1, 6):
+        # 최근 10페이지 정보 스캔 (더 많은 과거 정보 추적)
+        for page in range(1, 11):
             url = f"https://finance.naver.com/item/news_notice.naver?code={code}&page={page}"
             res = requests.get(url, headers=HEADER, timeout=5)
             html = decode_safe(res)
@@ -155,10 +155,17 @@ def get_dart_overhang_and_investments(symbol: str):
                     continue
 
                 # 오버행 분류 (CB, BW, 증자, 주식전환 등)
-                overhang_keywords = ['전환사채', '신주인수권부사채', '유상증자', '무상증자', '전환청구권행사', 'BW', 'CB', '교환사채', '주식매수선택권', '신주발행']
+                overhang_keywords = [
+                    '전환사채', '신주인수권부사채', '유상증자', '무상증자', '전환청구권행사', 
+                    'BW', 'CB', '교환사채', '주식매수선택권', '신주발행', '이익배당', 
+                    '감자', '합병', '분할', '소각', '신주인수권'
+                ]
                 
                 # 출자정보 분류
-                invest_keywords = ['타법인주식', '출자', '유형자산양수', '유형자산취득', '영업양수']
+                invest_keywords = [
+                    '타법인주식', '출자', '유형자산양수', '유형자산취득', '영업양수', 
+                    '영업양도', '자산총액', '타법인', '지분취득'
+                ]
                 
                 matched = False
                 for kw in overhang_keywords:
@@ -177,8 +184,9 @@ def get_dart_overhang_and_investments(symbol: str):
                             })
                             break
                             
-            if len(overhang) > 15 and len(investments) > 10:
-                break # 충분히 모였으면 중단
+            # 결과가 충분히 모였으면서 페이지가 꽤 진행되었으면 종료 고려 (성능 조절)
+            if len(overhang) > 20 and len(investments) > 15 and page > 5:
+                break 
                 
     except Exception as e:
         print(f"Overhang/Investments fetch error: {e}")
