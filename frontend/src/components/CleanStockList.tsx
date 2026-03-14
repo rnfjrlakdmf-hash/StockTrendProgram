@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, ChevronRight, Trash2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, ChevronRight, Trash2, Shield } from 'lucide-react';
 import BlinkingPrice from './BlinkingPrice';
 
 export interface CleanStockItem {
@@ -21,10 +21,11 @@ interface CleanStockListProps {
     items: CleanStockItem[];
     onItemClick?: (symbol: string) => void;
     onDelete?: (symbol: string) => void;
+    onAlertClick?: (symbol: string, currentPrice: number) => void;
     isLoading?: boolean;
 }
 
-export default function CleanStockList({ items, onItemClick, onDelete, isLoading = false }: CleanStockListProps) {
+export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, isLoading = false }: CleanStockListProps) {
     if (isLoading && items.length === 0) {
         return <div className="p-4 text-center text-gray-500 text-sm">로딩중...</div>;
     }
@@ -91,19 +92,35 @@ export default function CleanStockList({ items, onItemClick, onDelete, isLoading
                             </div>
                         </div>
 
-                        {/* Delete Button */}
-                        {onDelete && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete(item.symbol);
-                                }}
-                                className="absolute right-2 p-2 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors z-10"
-                                title="삭제"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        )}
+                        {/* Actions */}
+                        <div className="absolute right-2 flex items-center gap-1 z-10">
+                            {onAlertClick && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const numericPrice = parseFloat(item.price.replace(/,/g, ''));
+                                        onAlertClick(item.symbol, numericPrice);
+                                    }}
+                                    className="p-2 text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-colors"
+                                    title="방어막(알림) 설정"
+                                >
+                                    <Shield className="w-5 h-5" />
+                                </button>
+                            )}
+                            
+                            {onDelete && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(item.symbol);
+                                    }}
+                                    className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+                                    title="삭제"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 );
             })}

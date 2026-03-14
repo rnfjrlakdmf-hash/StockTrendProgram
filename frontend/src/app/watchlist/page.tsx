@@ -5,7 +5,9 @@ import { Star, Trash2, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, AlertCi
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
+import PriceAlertSetup from "@/components/PriceAlertSetup";
 import { useAuth } from "@/context/AuthContext";
+import { X } from "lucide-react";
 
 export default function WatchlistPage() {
     const [watchlist, setWatchlist] = useState<any[]>([]);
@@ -13,6 +15,9 @@ export default function WatchlistPage() {
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const { user, isLoading: isAuthLoading } = useAuth();
+    
+    // [New] Alert Modal State
+    const [alertStock, setAlertStock] = useState<{ symbol: string; price: number } | null>(null);
 
     const fetchWatchlist = async () => {
         if (!user) return;
@@ -167,7 +172,28 @@ export default function WatchlistPage() {
                             window.location.href = `/?q=${sym}`;
                         }}
                         onDelete={handleRemoveItem}
+                        onAlertClick={(symbol, price) => {
+                            setAlertStock({ symbol, price });
+                        }}
                     />
+                </div>
+            )}
+
+            {/* [New] Price Alert Modal */}
+            {alertStock && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="relative w-full max-w-lg animate-in fade-in zoom-in duration-200">
+                        <button 
+                            onClick={() => setAlertStock(null)}
+                            className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <PriceAlertSetup 
+                            symbol={alertStock.symbol}
+                            currentPrice={alertStock.price}
+                        />
+                    </div>
                 </div>
             )}
         </div>
