@@ -10,6 +10,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
 import { API_BASE_URL } from "@/lib/config";
+import { useAuth } from "@/context/AuthContext";
 
 import StoryChart from "@/components/StoryChart";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
@@ -1159,13 +1160,21 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
 }
 
 function WatchlistButton({ symbol }: { symbol: string }) {
+    const { user } = useAuth();
     const [isWatchlisted, setIsWatchlisted] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const checkWatchlist = async () => {
+            if (!user) {
+                setLoading(false);
+                setIsWatchlisted(false);
+                return;
+            }
             try {
-                const res = await fetch(`${API_BASE_URL}/api/watchlist`);
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                    headers: { "X-User-ID": user.id }
+                });
 
                 // [Fix] Check response status
                 if (!res.ok) {
@@ -1174,7 +1183,8 @@ function WatchlistButton({ symbol }: { symbol: string }) {
                 }
 
                 const json = await res.json();
-                if (json.status === "success" && json.data.includes(symbol)) {
+                // json.data is now array of objects {symbol, name}
+                if (json.status === "success" && json.data.some((item: any) => item.symbol === symbol)) {
                     setIsWatchlisted(true);
                 } else {
                     setIsWatchlisted(false);
@@ -1186,18 +1196,28 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             }
         };
         checkWatchlist();
-    }, [symbol]);
+    }, [symbol, user]);
 
     const toggleWatchlist = async () => {
+        if (!user) {
+            alert("관심종목 기능은 로그인이 필요합니다.");
+            return;
+        }
         if (loading) return;
         setLoading(true);
         try {
             const method = isWatchlisted ? 'DELETE' : 'POST';
             const url = isWatchlisted ? `${API_BASE_URL}/api/watchlist/${symbol}` : `${API_BASE_URL}/api/watchlist`;
 
-            const options: RequestInit = { method };
+            const options: RequestInit = { 
+                method,
+                headers: { "X-User-ID": user.id }
+            };
             if (!isWatchlisted) {
-                options.headers = { 'Content-Type': 'application/json' };
+                options.headers = { 
+                    ...options.headers,
+                    'Content-Type': 'application/json' 
+                };
                 options.body = JSON.stringify({ symbol });
             }
 
@@ -1206,6 +1226,8 @@ function WatchlistButton({ symbol }: { symbol: string }) {
 
             if (json.status === "success") {
                 setIsWatchlisted(!isWatchlisted);
+                // Dispatch event to notify Sidebar
+                window.dispatchEvent(new CustomEvent('watchlistChanged'));
             }
         } catch (err) {
             console.error(err);

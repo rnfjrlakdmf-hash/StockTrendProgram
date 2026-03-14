@@ -39,6 +39,9 @@ export default function Sidebar() {
     // [New] Timer State
     const [timeLeftStr, setTimeLeftStr] = useState<string | null>(null);
     const [isPro, setIsPro] = useState(false);
+    
+    // [New] Watchlist Preview State
+    const [watchlistPreview, setWatchlistPreview] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchExchangeRate = async () => {
@@ -137,6 +140,34 @@ export default function Sidebar() {
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [user, showAdRewardModal]); // Update on modal close too
+    
+    // [New] Watchlist Synchronizer
+    useEffect(() => {
+        const fetchWatchlist = async () => {
+            if (!user) {
+                setWatchlistPreview([]);
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                    headers: { "X-User-ID": user.id }
+                });
+                const json = await res.json();
+                if (json.status === "success") {
+                    // Limit to top 5 recent items
+                    setWatchlistPreview(json.data.slice(0, 5));
+                }
+            } catch (err) {
+                console.error("Failed to fetch sidebar watchlist:", err);
+            }
+        };
+
+        fetchWatchlist();
+        
+        // Listen for internal changes (Discovery page toggle)
+        window.addEventListener('watchlistChanged', fetchWatchlist);
+        return () => window.removeEventListener('watchlistChanged', fetchWatchlist);
+    }, [user]);
 
     const [freeTrialCount, setFreeTrialCount] = useState(0);
     const [isLoadingTrial, setIsLoadingTrial] = useState(false);
@@ -253,6 +284,37 @@ export default function Sidebar() {
                             </Link>
                         ))}
                     </nav>
+
+                    {/* [New] Watchlist Preview Section */}
+                    {user && watchlistPreview.length > 0 && (
+                        <div className="mt-8 px-2">
+                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-3 flex items-center justify-between">
+                                최근 관심종목
+                                <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">{watchlistPreview.length}</span>
+                            </h4>
+                            <div className="space-y-1">
+                                {watchlistPreview.map((stock) => (
+                                    <Link
+                                        key={stock.symbol}
+                                        href={`/?q=${stock.symbol}`}
+                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group"
+                                    >
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <div className="w-1 h-1 rounded-full bg-yellow-400 opacity-50 group-hover:opacity-100" />
+                                            <span className="truncate">{stock.name}</span>
+                                        </div>
+                                        <span className="text-[10px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.symbol}</span>
+                                    </Link>
+                                ))}
+                                <Link 
+                                    href="/watchlist"
+                                    className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-2 py-1 transition-colors font-bold"
+                                >
+                                    전체보기 →
+                                </Link>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className="mt-auto space-y-2">
                     {user ? (
