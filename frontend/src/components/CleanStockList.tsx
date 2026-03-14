@@ -53,9 +53,9 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             onClick={() => onItemClick && onItemClick(item.symbol)}
                         >
                             {/* Left: Name & Symbol & Badge */}
-                            <div className="flex flex-col gap-1 min-w-0 flex-1 mr-4">
+                            <div className="flex flex-col gap-1.5 min-w-0 flex-1 mr-4">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[17px] md:text-[19px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors whitespace-nowrap">
+                                    <span className="text-[20px] md:text-[24px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors whitespace-nowrap leading-none">
                                         {item.name}
                                     </span>
                                     {/* Badge Rendering */}
@@ -66,8 +66,8 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[13px] text-gray-400 font-semibold min-w-0 opacity-80">
-                                    <span className="shrink-0 font-mono tracking-wider bg-white/5 px-1.5 py-0.5 rounded text-[11px]">{item.symbol}</span>
+                                <div className="flex items-center gap-2 text-[14px] text-gray-400 font-bold min-w-0">
+                                    <span className="shrink-0 font-mono tracking-wider bg-white/10 px-2 py-0.5 rounded text-[12px] text-gray-300">{item.symbol}</span>
                                     {/* Badge Reason */}
                                     {item.badge?.reason && (
                                         <span className="text-[11px] text-gray-600 truncate min-w-0">
@@ -78,22 +78,22 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
 
                             {/* Right: Price & Change */}
-                            <div className="flex flex-col items-end gap-1 shrink-0 ml-auto mr-4">
+                            <div className="flex flex-col items-end gap-1.5 shrink-0 ml-auto mr-6">
                                 {/* Blinking Price Component */}
                                 <BlinkingPrice
                                     price={item.price}
-                                    className={`text-[18px] md:text-[21px] font-black font-mono tracking-tighter ${textColorClass}`}
+                                    className={`text-[22px] md:text-[28px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
                                 />
 
-                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-bold ${textColorClass} bg-white/5 px-2 py-0.5 rounded-full`}>
-                                    <Icon className="w-3.5 h-3.5" strokeWidth={3} />
+                                <div className={`flex items-center gap-1.5 text-[14px] md:text-[16px] font-black ${textColorClass} bg-white/10 px-3 py-1 rounded-full shadow-lg shadow-black/20`}>
+                                    <Icon className="w-4 h-4" strokeWidth={4} />
                                     <span>{item.change}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0 bg-white/5 rounded-2xl p-1 border border-white/5">
+                        <div className="flex items-center gap-2 shrink-0 bg-white/10 rounded-2xl p-1.5 border border-white/10 shadow-xl">
                             {onAlertClick && (
                                 <button
                                     onClick={(e) => {
