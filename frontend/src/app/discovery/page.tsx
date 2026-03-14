@@ -814,12 +814,6 @@ function DiscoveryContent() {
                                                 >
                                                     🛡️ 회의 중 방어막 <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full ml-1 text-blue-300">New</span>
                                                 </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'backtest' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('backtest')}
-                                                >
-                                                    전략 백테스팅
-                                                </button>
                                             </>
                                         )}
                                     </div>
@@ -987,10 +981,6 @@ function DiscoveryContent() {
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <FinancialsTable data={stock.health_data?.raw_data} />
                                         </div>
-                                    ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'backtest' ? (
-                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <BacktestSimulator symbol={stock.symbol} currency={stock.currency} />
-                                        </div>
                                     ) : activeTab === 'alerts' && stock.symbol ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
                                             <SimplePushTest />
@@ -1063,114 +1053,6 @@ function DiscoveryContent() {
     );
 }
 
-interface BacktestResult {
-    total_return: number;
-    buy_hold_return: number;
-    max_drawdown: number;
-    final_equity: number;
-    chart_data: { date: string; strategy: number; buy_hold: number }[];
-}
-
-function BacktestSimulator({ symbol, currency }: { symbol: string, currency: string }) {
-    const [result, setResult] = useState<BacktestResult | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-
-    const runBacktest = async () => {
-        setLoading(true);
-        setError("");
-        setResult(null);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/backtest`);
-            const json = await res.json();
-            if (json.status === "success") {
-                setResult(json.data);
-            } else {
-                setError(json.message || "백테스팅 실행 중 오류가 발생했습니다.");
-            }
-        } catch (err) {
-            console.error(err);
-            setError("서버 연결에 실패했습니다.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h4 className="text-xl font-bold text-white mb-1">이동평균 교차 전략 (Golden Cross)</h4>
-                    <p className="text-gray-400 text-sm">단기 이평선(5일)이 장기 이평선(20일)을 돌파할 때 매수하는 전략</p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={runBacktest}
-                        disabled={loading}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition-colors"
-                    >
-                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
-                        시뮬레이션 실행
-                    </button>
-                </div>
-            </div>
-
-            {result && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6">
-                    {/* metrics and chart... */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div className="text-gray-400 text-xs mb-1">최종 수익률</div>
-                            <div className={`text-2xl font-bold ${result.total_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {result.total_return}%
-                            </div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div className="text-gray-400 text-xs mb-1">단순 보유 시</div>
-                            <div className={`text-xl font-bold ${result.buy_hold_return >= 0 ? 'text-gray-200' : 'text-gray-400'}`}>
-                                {result.buy_hold_return}%
-                            </div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div className="text-gray-400 text-xs mb-1">최대 낙폭 (MDD)</div>
-                            <div className="text-xl font-bold text-red-300">
-                                {result.max_drawdown}%
-                            </div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div className="text-gray-400 text-xs mb-1">최종 자산 ({currency === 'KRW' ? '₩10k' : '$10k'} 투자 시)</div>
-                            <div className="text-xl font-bold text-blue-200">
-                                {currency === 'KRW' ? '₩' : '$'}{result.final_equity.toLocaleString(undefined, { maximumFractionDigits: currency === 'KRW' ? 0 : 2 })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Chart */}
-                    <div className="h-64 w-full bg-white/5 rounded-xl border border-white/10 p-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={result.chart_data}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                                <XAxis
-                                    dataKey="date"
-                                    tick={{ fontSize: 10, fill: '#aaaaaa' }}
-                                    tickFormatter={(val) => val.slice(5)} // MM-DD
-                                    interval={Math.floor(result.chart_data.length / 5)}
-                                />
-                                <YAxis hide domain={['auto', 'auto']} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px' }}
-                                    itemStyle={{ fontSize: '12px' }}
-                                />
-                                <Line type="monotone" dataKey="strategy" stroke="#3b82f6" strokeWidth={2} dot={false} name="전략 수익금" />
-                                <Line type="monotone" dataKey="buy_hold" stroke="#6b7280" strokeWidth={2} dot={false} name="단순 보유" strokeDasharray="4 4" />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
 
 
 
