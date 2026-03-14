@@ -296,7 +296,7 @@ export default function Sidebar() {
                                 {watchlistPreview.map((stock) => (
                                     <Link
                                         key={stock.symbol}
-                                        href={`/?q=${stock.symbol}`}
+                                        href="/watchlist"
                                         className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
