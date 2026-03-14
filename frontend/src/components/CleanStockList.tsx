@@ -46,16 +46,16 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                 return (
                     <div
                         key={item.symbol}
-                        className="active:bg-white/10 transition-colors cursor-pointer py-3.5 px-4 flex items-center justify-between group relative"
+                        className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-5 px-6 flex items-center justify-between group relative border-b border-white/5 last:border-0"
                     >
                         <div
-                            className="flex-1 flex items-center justify-between min-w-0 pr-2"
+                            className="flex-1 flex items-center justify-between min-w-0 pr-4"
                             onClick={() => onItemClick && onItemClick(item.symbol)}
                         >
                             {/* Left: Name & Symbol & Badge */}
-                            <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-3">
+                            <div className="flex flex-col gap-1 min-w-0 flex-1 mr-4">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[15px] font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors whitespace-nowrap">
+                                    <span className="text-[17px] md:text-[19px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors whitespace-nowrap">
                                         {item.name}
                                     </span>
                                     {/* Badge Rendering */}
@@ -66,8 +66,8 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[12px] text-gray-500 font-medium min-w-0">
-                                    <span className="shrink-0 font-mono">{item.symbol}</span>
+                                <div className="flex items-center gap-1.5 text-[13px] text-gray-400 font-semibold min-w-0 opacity-80">
+                                    <span className="shrink-0 font-mono tracking-wider bg-white/5 px-1.5 py-0.5 rounded text-[11px]">{item.symbol}</span>
                                     {/* Badge Reason */}
                                     {item.badge?.reason && (
                                         <span className="text-[11px] text-gray-600 truncate min-w-0">
@@ -78,22 +78,22 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
 
                             {/* Right: Price & Change */}
-                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                            <div className="flex flex-col items-end gap-1 shrink-0 ml-auto mr-4">
                                 {/* Blinking Price Component */}
                                 <BlinkingPrice
                                     price={item.price}
-                                    className={`text-[15px] font-bold font-mono tracking-tight ${textColorClass}`}
+                                    className={`text-[18px] md:text-[21px] font-black font-mono tracking-tighter ${textColorClass}`}
                                 />
 
-                                <div className={`flex items-center gap-1 text-[12px] font-medium ${textColorClass}`}>
-                                    <Icon className="w-3 h-3" strokeWidth={3} />
+                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-bold ${textColorClass} bg-white/5 px-2 py-0.5 rounded-full`}>
+                                    <Icon className="w-3.5 h-3.5" strokeWidth={3} />
                                     <span>{item.change}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="absolute right-2 flex items-center gap-1 z-10">
+                        <div className="flex items-center gap-1 shrink-0 bg-white/5 rounded-2xl p-1 border border-white/5">
                             {onAlertClick && (
                                 <button
                                     onClick={(e) => {
@@ -101,7 +101,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         const numericPrice = parseFloat(item.price.replace(/,/g, ''));
                                         onAlertClick(item.symbol, numericPrice);
                                     }}
-                                    className="p-2 text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-colors"
+                                    className="p-2.5 text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all active:scale-95"
                                     title="방어막(알림) 설정"
                                 >
                                     <Shield className="w-5 h-5" />
@@ -114,7 +114,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         e.stopPropagation();
                                         onDelete(item.symbol);
                                     }}
-                                    className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+                                    className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all active:scale-90"
                                     title="삭제"
                                 >
                                     <Trash2 className="w-5 h-5" />
