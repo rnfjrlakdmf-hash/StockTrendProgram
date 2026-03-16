@@ -423,12 +423,36 @@ export default function AnalysisPage() {
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                                     <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        {(financialData.f_score?.details || []).map((d: string, i: number) => (
-                                            <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
-                                                <span className="text-emerald-500">✅</span>
-                                                {d}
-                                            </div>
-                                        ))}
+                                        {(financialData.f_score?.details || []).map((d: string, i: number) => {
+                                            const getFScoreMetaphor = (detail: string) => {
+                                                const lower = detail.toLowerCase();
+                                                if (lower.includes("순이익") && lower.includes("흑자")) return "올해 밥값 했나? (돈 벌었나)";
+                                                if (lower.includes("영업현금흐름") && lower.includes("양수")) return "피가 잘 도나? (실제 현금 유입)";
+                                                if (lower.includes("roa") && lower.includes("양수")) return "에너지 효율 체크 (투자 대비 성과)";
+                                                if (lower.includes("현금흐름") && lower.includes("순이익")) return "장부보다 실속 있나? (현금이 더 많나)";
+                                                if (lower.includes("부채비율")) return "군살(빚)이 빠졌나? (부채 감소)";
+                                                if (lower.includes("유동비율")) return "비상금(현금여유) 늘었나?";
+                                                if (lower.includes("신주발행")) return "새 사람한테 손 안벌렸나? (지분 방어)";
+                                                if (lower.includes("매출총이익률")) return "장사 실력이 늘었나? (마진 개선)";
+                                                if (lower.includes("자산회전율")) return "기계가 부지런히 돌아가나? (효율 상승)";
+                                                return null;
+                                            };
+                                            const fMetaphor = getFScoreMetaphor(d);
+
+                                            return (
+                                                <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-emerald-500">✅</span>
+                                                        <span className="text-gray-200">{d}</span>
+                                                    </div>
+                                                    {showEasy && fMetaphor && (
+                                                        <span className="text-[10px] text-emerald-400 font-bold ml-6 leading-none italic bg-emerald-500/10 px-1.5 py-0.5 rounded w-fit">
+                                                            "{fMetaphor}"
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
