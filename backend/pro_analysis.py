@@ -5,11 +5,12 @@ from typing import Dict, Any, List
 
 # [NEW] Import internal data crawlers for better accuracy
 try:
-    from korea_data import gather_naver_stock_data
+    from korea_data import gather_naver_stock_data, search_stock_code
     from dart_financials import get_dart_financials
 except ImportError:
     # If called from specific context or standalone
     gather_naver_stock_data = None
+    search_stock_code = None
     get_dart_financials = None
 
 def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
@@ -21,7 +22,19 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
         import yfinance as yf
 
         symbol = urllib.parse.unquote(symbol)
-        is_korean = re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ'))
+        
+        # [New] Resolve Korean Name to Code if needed
+        is_only_digits = re.match(r'^\d{6}$', symbol)
+        is_kr_suffix = symbol.endswith(('.KS', '.KQ'))
+        
+        if not is_only_digits and not is_kr_suffix and any('\uac00' <= c <= '\ud7a3' for c in symbol):
+            if search_stock_code:
+                resolved = search_stock_code(symbol)
+                if resolved:
+                    symbol = resolved
+                    is_only_digits = True
+
+        is_korean = is_only_digits or is_kr_suffix
         
         # 1. Fetch Basic Data
         ticker_sym = symbol
@@ -31,8 +44,8 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
             # First try to get high-accuracy data from Naver
             naver_data = gather_naver_stock_data(symbol)
             if naver_data:
-                # Correct the symbol suffix if Naver returns it (KS vs KQ)
-                ticker_sym = naver_data.get('symbol', ticker_sym)
+                # Naver crawler returns 'KS' or 'KQ' in market_type
+                ticker_sym = f"{naver_data['code']}.{naver_data['market_type']}"
         else:
             if symbol.isdigit() and len(symbol) == 6:
                 ticker_sym = f"{symbol}.KS"
@@ -167,14 +180,26 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         import yfinance as yf
 
         symbol = urllib.parse.unquote(symbol)
-        is_korean = re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ'))
+        
+        # [New] Resolve Korean Name to Code if needed
+        is_only_digits = re.match(r'^\d{6}$', symbol)
+        is_kr_suffix = symbol.endswith(('.KS', '.KQ'))
+        
+        if not is_only_digits and not is_kr_suffix and any('\uac00' <= c <= '\ud7a3' for c in symbol):
+            if search_stock_code:
+                resolved = search_stock_code(symbol)
+                if resolved:
+                    symbol = resolved
+                    is_only_digits = True
+
+        is_korean = is_only_digits or is_kr_suffix
         
         ticker_sym = symbol
         naver_data = None
         if is_korean and gather_naver_stock_data:
             naver_data = gather_naver_stock_data(symbol)
             if naver_data:
-                ticker_sym = naver_data.get('symbol', ticker_sym)
+                ticker_sym = f"{naver_data['code']}.{naver_data['market_type']}"
         else:
             if symbol.isdigit() and len(symbol) == 6:
                 ticker_sym = f"{symbol}.KS"
