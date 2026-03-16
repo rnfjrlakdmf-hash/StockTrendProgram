@@ -595,6 +595,69 @@ export default function AnalysisPage() {
                                         );
                                     })}
                                 </div>
+
+                                {/* 종합 검진 리뷰 (요약 리포트) */}
+                                <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 rounded-2xl p-6 mt-6">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="p-2 bg-orange-500/20 rounded-lg">
+                                            <BarChart3 className="w-5 h-5 text-orange-400" />
+                                        </div>
+                                        <h3 className="font-bold text-lg">그룹 종합 검진 리뷰</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* 지표별 리더 */}
+                                        <div className="space-y-3">
+                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">주요 지표 우수 종목</p>
+                                            {[
+                                                { label: "💰 가성비 대장 (최저 PER)", key: "per", isLowBetter: true },
+                                                { label: "🚀 성장판 우등생 (최상 ROE)", key: "roe", isLowBetter: false },
+                                                { label: "🛡️ 강철 체력 (최저 부채비율)", key: "debt_to_equity", isLowBetter: true },
+                                            ].map(item => {
+                                                const validData = peerData.data.filter((s: any) => (parseFloat(s[item.key]) || 0) > 0);
+                                                if (validData.length === 0) return null;
+                                                const leader = item.isLowBetter 
+                                                    ? validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) < parseFloat(curr[item.key]) ? prev : curr))
+                                                    : validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) > parseFloat(curr[item.key]) ? prev : curr));
+                                                
+                                                return (
+                                                    <div key={item.key} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                                                        <span className="text-xs text-gray-300">{item.label}</span>
+                                                        <span className="text-sm font-black text-orange-400">{leader.name}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* 데이터 요약 분석 */}
+                                        <div className="space-y-3">
+                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">데이터 요약 분석</p>
+                                            <div className="bg-black/40 p-4 rounded-xl border border-white/5 space-y-2">
+                                                {(() => {
+                                                    const avgPer = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.per) || 0), 0) / peerData.data.length;
+                                                    const avgRoe = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.roe) || 0), 0) / peerData.data.length;
+                                                    return (
+                                                        <div className="text-xs leading-relaxed text-gray-400">
+                                                            검색된 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>, 
+                                                            평균 ROE는 <span className="text-white font-bold">{avgRoe.toFixed(1)}%</span>입니다.
+                                                            <br /><br />
+                                                            {avgPer < 15 ? "이 그룹은 전반적으로 가치가 저평가된 '알짜' 종목들이 포함되어 있습니다. " : "이 그룹은 전반적으로 시장의 높은 기대를 받고 있는 '성장주' 위주의 구성입니다. "}
+                                                            {avgRoe > 15 ? "수익성 또한 우수하여 효율적으로 돈을 벌고 있는 상태로 분석됩니다." : "수익성은 보통 수준이며, 업계 평균 수동과 비교해 볼 필요가 있습니다."}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-6 pt-4 border-t border-white/5 flex items-start gap-2">
+                                        <AlertTriangle className="w-3 h-3 text-gray-600 mt-0.5" />
+                                        <p className="text-[10px] text-gray-600 leading-tight">
+                                            위 정보는 입력된 종목들 간의 상대적인 수치 비교이며, 절대적인 투자 판단의 근거가 될 수 없습니다. 
+                                            특정 종목의 매수 또는 매도를 권유하는 것이 아닌 단순 데이터 요약임을 밝힙니다.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         ) : !peerLoading && (
                             <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
