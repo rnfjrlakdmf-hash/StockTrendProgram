@@ -398,9 +398,11 @@ def gather_naver_stock_data(symbol: str):
                         "매출액": "revenue", "영업이익률": "operating_margin", "영업이익": "operating_income",
                         "순이익률": "net_income_margin", "당기순이익": "net_income", "ROE": "roe", "ROA": "roa",
                         "부채비율": "debt_ratio", "당좌비율": "quick_ratio", "유보율": "reserve_ratio",
+                        "유동비율": "current_ratio", "자산회전율": "asset_turnover", "매출총이익률": "gross_margin",
                         "EPS": "eps", "BPS": "bps", "PER": "per", "PBR": "pbr",
                         "주당배당금": "dps", "시가배당률": "dividend_yield", "배당성향": "payout_ratio"
                     }
+
                     key = None
                     for k in sorted(mapping.keys(), key=len, reverse=True):
                         if k in r_title_clean:
