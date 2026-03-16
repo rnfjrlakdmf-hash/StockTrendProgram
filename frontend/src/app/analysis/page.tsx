@@ -296,9 +296,10 @@ export default function AnalysisPage() {
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    "이 회사가 망할 가능성이 있는가?"를 측정해요. 3.0 이상이면 아주 안전해요.
+                                                    "이 회사가 당장 쓰러질 위험이 있나요?"를 체크해요. <span className="text-emerald-400">3.0 이상이면 '강철 심장'</span>을 가진 아주 튼튼한 상태예요!
                                                 </p>
                                             )}
+
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.z_score?.value}</span>
                                                 <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
@@ -325,9 +326,10 @@ export default function AnalysisPage() {
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    성장성, 건전성 등을 9가지로 깐깐하게 체크한 점수예요. 높을수록 알부자 회사!
+                                                    회사의 '기초 체력 테스트'예요. <span className="text-emerald-400">근육은 늘고 체지방(빚)은 줄었는지</span> 9가지를 깐깐하게 검사한 점수예요.
                                                 </p>
                                             )}
+
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.f_score?.value}</span>
                                                 <span className="text-sm text-gray-500 pb-1">/ {financialData.f_score?.max}</span>
@@ -361,16 +363,17 @@ export default function AnalysisPage() {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
                                             const getExplanation = (key: string) => {
-                                                if (key === "PER") return "이익 대비 주가 수준";
-                                                if (key === "PBR") return "재산 대비 주가 수준";
-                                                if (key === "ROE") return "자기자산 효율성";
-                                                if (key === "부채비율") return "빌린 돈의 비중";
-                                                if (key === "유동비율") return "당장 쓰는 돈의 여유";
-                                                if (key === "영업이익률") return "장사해서 남는 비율";
-                                                if (key === "매출총이익률") return "판매 후 남는 비율";
-                                                if (key === "자산회전율") return "자산 활용 효율성";
+                                                if (key === "PER") return "돈 버는 능력 대비 가격표";
+                                                if (key === "PBR") return "가진 재산 대비 가격표";
+                                                if (key === "ROE") return "회사의 '가성비' (진짜 중요!)";
+                                                if (key === "부채비율") return "내 몸에 붙은 '빚' 비중";
+                                                if (key === "유동비율") return "장사 밑천과 비상금 여유";
+                                                if (key === "영업이익률") return "물건 팔아 남는 진짜 마진";
+                                                if (key === "매출총이익률") return "판매 후 첫 번째 남는 돈";
+                                                if (key === "자산회전율") return "재산을 얼마나 빨리 굴리나";
                                                 return "";
                                             };
+
 
                                             return (
                                                 <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
