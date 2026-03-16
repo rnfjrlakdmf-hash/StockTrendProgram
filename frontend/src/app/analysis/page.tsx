@@ -552,7 +552,30 @@ export default function AnalysisPage() {
 
                                                 return (
                                                     <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5">
-                                                        <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">{metric.label}</td>
+                                                        <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">
+                                                            <div className="flex flex-col">
+                                                                <span>{metric.label}</span>
+                                                                {showEasy && (() => {
+                                                                    const metaphors: any = {
+                                                                        "market_cap_display": "덩치 (회사 규모)",
+                                                                        "per": "가성비 (이익 대비 주가)",
+                                                                        "pbr": "장부 가격 (자산 대비 주가)",
+                                                                        "roe": "성장판 (내실 있는 성장)",
+                                                                        "operating_margin": "장사 실력 (마진)",
+                                                                        "revenue_growth": "성장 속도",
+                                                                        "dividend_yield": "보너스 (배당금)",
+                                                                        "debt_to_equity": "군살 (낮을수록 안전)",
+                                                                        "beta": "민감도 (변동성)",
+                                                                        "change_3m": "최근 흐름 (3개월)"
+                                                                    };
+                                                                    return metaphors[metric.key] ? (
+                                                                        <span className="text-[9px] text-orange-400 font-normal mt-0.5">
+                                                                            {metaphors[metric.key]}
+                                                                        </span>
+                                                                    ) : null;
+                                                                })()}
+                                                            </div>
+                                                        </td>
                                                         {peerData.data.map((s: any, i: number) => {
                                                             const val = s[metric.key];
                                                             const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
