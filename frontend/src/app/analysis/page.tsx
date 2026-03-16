@@ -264,11 +264,34 @@ export default function AnalysisPage() {
                                                     </p>
                                                 )}
                                                 <div className="mt-2 space-y-1">
-                                                    {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                        <div key={mk} className="text-[10px] text-gray-500">
-                                                            {mk}: <span className="text-gray-300 font-bold">{mv}</span>
-                                                        </div>
-                                                    ))}
+                                                    {Object.entries(f.metrics || {}).map(([mk, mv]: any) => {
+                                                        const getMetricMetaphor = (mKey: string) => {
+                                                            if (mKey === "PER") return "버는 돈 대비 가격표";
+                                                            if (mKey === "PBR") return "재산 대비 가격표";
+                                                            if (mKey === "매출성장률") return "덩치 커지는 속도";
+                                                            if (mKey === "이익성장률") return "남는 돈 느는 속도";
+                                                            if (mKey === "3개월수익률") return "최근 3달 달리기 성적";
+                                                            if (mKey === "ROE") return "내 돈으로 알차게 벌었나";
+                                                            if (mKey === "영업이익률") return "장사 순수 마진";
+                                                            if (mKey === "부채비율") return "남의 살(빚) 무게";
+                                                            if (mKey === "Beta") return "파도에 출렁이는 정도";
+                                                            return null;
+                                                        };
+                                                        const mMetaphor = getMetricMetaphor(mk);
+
+                                                        return (
+                                                            <div key={mk} className="text-[10px] text-gray-500 flex flex-col items-center">
+                                                                <div className="flex items-center gap-1">
+                                                                    {mk}: <span className="text-gray-300 font-bold">{mv}</span>
+                                                                </div>
+                                                                {showEasy && mMetaphor && (
+                                                                    <span className="text-[8px] text-indigo-400/80 leading-none mt-0.5">
+                                                                        ({mMetaphor})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         );
