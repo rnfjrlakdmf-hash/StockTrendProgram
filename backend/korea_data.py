@@ -206,6 +206,7 @@ def gather_naver_stock_data(symbol: str):
         year_low = None
         
         # ID-based scraping (Backup)
+        open_val = high_val = low_val = volume_val = None
         try:
             p = soup.select_one("#_per")
             if p and p.text.strip().replace(',', '').replace('배', '') not in ["N/A", "-"]: 
