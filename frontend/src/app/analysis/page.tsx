@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 
 
+// [v1.2.0] Added intuitive metaphors for beginners
 export default function AnalysisPage() {
+
     const [symbol, setSymbol] = useState("");
     const [activeTab, setActiveTab] = useState<"quant" | "financial" | "peer">("quant");
 
