@@ -16,5 +16,15 @@ force_*.bat
 *.db
 *.sqlite
 .env
+deploy.tar.gz
+Release_Package_v1.1.0/
+build/
+dist/
 venv/
 env/
+.dockerignore
+Dockerfile
+StockAI-Server.pem
+StockTrendAI.spec
+*.bat
+*.ps1

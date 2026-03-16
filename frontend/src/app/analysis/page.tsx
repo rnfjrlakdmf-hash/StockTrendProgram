@@ -184,10 +184,34 @@ export default function AnalysisPage() {
                 {/* ===== QUANT TAB ===== */}
                 {activeTab === "quant" && (
                     <div className="space-y-6">
+                        {/* Toggle Easy Mode */}
+                        <div className="flex justify-end">
+                            <button 
+                                onClick={() => setShowEasy(!showEasy)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
+                            >
+                                {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
+                            </button>
+                        </div>
+
                         {quantLoading ? (
                             <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">퀀트 분석 중...</p></div>
                         ) : quantData ? (
                             <div className="space-y-6 animate-in fade-in duration-300">
+                                {showEasy && (
+                                    <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                        <div className="bg-indigo-500/20 p-2 rounded-lg h-fit">
+                                            <HelpCircle className="w-5 h-5 text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-indigo-400 mb-1">퀀트 스코어 가이드 활성화됨</h4>
+                                            <p className="text-xs text-gray-300 leading-relaxed">
+                                                어렵게 느껴지는 5가지 분석 요소를 일상적인 건강 지표로 비유해 드릴게요. 종목의 종합적인 체질을 확인해 보세요!
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 {/* Grade Card */}
                                 <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl p-6">
                                     <div className="flex items-center justify-between mb-6">
@@ -212,19 +236,43 @@ export default function AnalysisPage() {
 
                                 {/* Factor Detail Cards */}
                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                    {Object.entries(quantData.factors || {}).map(([key, f]: any) => (
-                                        <div key={key} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
-                                            <h4 className="text-xs text-gray-400 mb-1">{f.label}</h4>
-                                            <span className={`text-2xl font-black ${getScoreColor(f.score)}`}>{f.score}</span>
-                                            <div className="mt-2 space-y-1">
-                                                {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                    <div key={mk} className="text-[10px] text-gray-500">
-                                                        {mk}: <span className="text-gray-300 font-bold">{mv}</span>
-                                                    </div>
-                                                ))}
+                                    {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
+                                        const getFactorMetaphor = (label: string) => {
+                                            if (label === "가치") return { title: "현재 몸값(가성비)", desc: "능력 대비 가격이 착한지 체크" };
+                                            if (label === "성장") return { title: "성장판 지수", desc: "매출과 이익이 얼마나 쑥쑥 자라는지 연구" };
+                                            if (label === "모멘텀") return { title: "최근 달리기 속도", desc: "요즘 주가 흐름이 얼마나 힘찬지 기세 확인" };
+                                            if (label === "수익성") return { title: "에너지 효율", desc: "투자 대비 얼마나 알차게 수익을 내나 확인" };
+                                            if (label === "안정성") return { title: "뼈대 건강도", desc: "위기에도 쉽게 넘어지지 않는 튼튼한 체격인가" };
+                                            return null;
+                                        };
+                                        const metaphor = getFactorMetaphor(f.label);
+
+                                        return (
+                                            <div key={key} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center transition-all hover:border-indigo-500/30">
+                                                <h4 className="text-xs text-gray-400 mb-1 flex flex-col items-center gap-1">
+                                                    {f.label}
+                                                    {showEasy && metaphor && (
+                                                        <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.5 rounded leading-none">
+                                                            {metaphor.title}
+                                                        </span>
+                                                    )}
+                                                </h4>
+                                                <span className={`text-2xl font-black ${getScoreColor(f.score)}`}>{f.score}</span>
+                                                {showEasy && metaphor && (
+                                                    <p className="text-[9px] text-gray-500 mt-1 leading-tight font-medium">
+                                                        {metaphor.desc}
+                                                    </p>
+                                                )}
+                                                <div className="mt-2 space-y-1">
+                                                    {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
+                                                        <div key={mk} className="text-[10px] text-gray-500">
+                                                            {mk}: <span className="text-gray-300 font-bold">{mv}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ) : (
