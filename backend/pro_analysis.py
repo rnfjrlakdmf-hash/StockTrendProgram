@@ -439,7 +439,8 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
             if is_korean and gather_naver_stock_data:
                 naver_data = gather_naver_stock_data(ticker_sym)
                 if naver_data:
-                    ticker_sym = naver_data.get('symbol', ticker_sym)
+                    # Resolve symbol for YF if needed
+                    ticker_sym = f"{naver_data['code']}.{naver_data['market_type']}"
             else:
                 if ticker_sym.isdigit() and len(ticker_sym) == 6:
                     ticker_sym = f"{ticker_sym}.KS"
@@ -453,13 +454,43 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                 change_3m = 0
                 if not hist.empty:
                     price = round(float(hist['Close'].iloc[-1]), 2)
-                    if len(hist) > 60:
+                    if len(hist) > 20: # Slightly lower threshold to be safe
                         p_3m = float(hist['Close'].iloc[max(0, len(hist)-64)])
                         change_3m = round(((price - p_3m) / p_3m) * 100, 1) if p_3m > 0 else 0
 
-                mc = naver_data.get("market_cap") if naver_data else info.get('marketCap', 0)
-                # Naver market_cap might be in KRW, normalize to unit for mc_display
-                mc_display = naver_data.get("market_cap_str") if naver_data else (f"{mc/1e12:.1f}조" if (mc or 0) > 1e12 else f"{mc/1e8:.0f}억" if (mc or 0) > 0 else "N/A")
+                # --- Handle Market Cap ---
+                mc = 0
+                mc_display = "N/A"
+                if naver_data:
+                    # 1. Parse Market Cap from String (e.g. "447조 7,337 억원")
+                    mc_str = naver_data.get("market_cap_str", "")
+                    if mc_str:
+                        mc_display = mc_str
+                        # Robust Parsing: "447조 7,337 억원" -> 447,000,000,000,000 + 733,700,000,000
+                        try:
+                            parts = re.findall(r'(\d[\d,]*)\s*([조억])', mc_str)
+                            total_krw = 0
+                            for val_s, unit in parts:
+                                val = int(val_s.replace(',', ''))
+                                if unit == '조': total_krw += val * 1e12
+                                elif unit == '억': total_krw += val * 1e8
+                            mc = total_krw
+                        except: pass
+                    else:
+                        mc = info.get('marketCap', 0)
+                else:
+                    mc = info.get('marketCap', 0)
+                    mc_display = f"{mc/1e12:.1f}조" if mc > 1e12 else (f"{mc/1e8:.0f}억" if mc > 1e8 else "N/A")
+
+                # --- Handle Financial Ratios (Naver Summary Prioritized) ---
+                nav_sum = naver_data.get("detailed_financials", {}).get("summary", {}) if naver_data else {}
+                
+                def get_val(key, yf_key, scale=1):
+                    val = nav_sum.get(key)
+                    if val is None:
+                        val = info.get(yf_key)
+                        if val is not None: val = val * scale
+                    return float(val) if val is not None else 0
 
                 results.append({
                     "symbol": sym.strip(),
@@ -468,14 +499,14 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                     "change_3m": change_3m,
                     "market_cap": mc,
                     "market_cap_display": mc_display,
-                    "per": round(naver_data.get("per") if naver_data else info.get("trailingPE") or 0, 1),
-                    "pbr": round(naver_data.get("pbr") if naver_data else info.get("priceToBook") or 0, 2),
-                    "roe": round((naver_data.get("returnOnEquity") if naver_data else (info.get("returnOnEquity") or 0) * 100), 1),
-                    "operating_margin": round(naver_data.get("operating_margin") if naver_data else (info.get("operatingMargins") or 0) * 100, 1),
-                    "revenue_growth": round((info.get("revenueGrowth") or 0) * 100, 1),
-                    "dividend_yield": round(naver_data.get("dividend_yield") if naver_data else (info.get("dividendYield") or 0) * 100, 2),
-                    "debt_to_equity": round(info.get("debtToEquity") or 0, 0),
-                    "beta": round(info.get("beta") or 0, 2),
+                    "per": round(get_val("per", "trailingPE"), 1),
+                    "pbr": round(get_val("pbr", "priceToBook"), 2),
+                    "roe": round(get_val("roe", "returnOnEquity", 100), 1),
+                    "operating_margin": round(get_val("operating_margin", "operatingMargins", 100), 1),
+                    "revenue_growth": round(get_val("revenue_growth", "revenueGrowth", 100), 1),
+                    "dividend_yield": round(get_val("dividend_yield", "dividendYield", 100), 2),
+                    "debt_to_equity": round(get_val("debt_ratio", "debtToEquity"), 1), # Naver uses debt_ratio
+                    "beta": round(info.get("beta") or 1, 2),
                     "sector": naver_data.get("sector") if naver_data else info.get("sector", "N/A"),
                 })
             except Exception as e:
