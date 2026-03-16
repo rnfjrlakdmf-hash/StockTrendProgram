@@ -296,9 +296,10 @@ export default function AnalysisPage() {
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    "이 회사가 당장 쓰러질 위험이 있나요?"를 체크해요. <span className="text-emerald-400">3.0 이상이면 '강철 심장'</span>을 가진 아주 튼튼한 상태예요!
+                                                    회사의 <span className="text-emerald-400 font-bold">'심폐지수'</span>예요. 당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 심장'</span>을 가진 아주 튼튼한 상태예요!
                                                 </p>
                                             )}
+
 
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.z_score?.value}</span>
@@ -326,9 +327,10 @@ export default function AnalysisPage() {
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    회사의 '기초 체력 테스트'예요. <span className="text-emerald-400">근육은 늘고 체지방(빚)은 줄었는지</span> 9가지를 깐깐하게 검사한 점수예요.
+                                                    회사의 <span className="text-emerald-400 font-bold">'근육량과 신진대사'</span>예요. 근육(수익)은 늘고 체지방(빚)은 줄었는지 9가지를 깐깐하게 검진한 종합 기초체력 점수예요.
                                                 </p>
                                             )}
+
 
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.f_score?.value}</span>
@@ -363,16 +365,17 @@ export default function AnalysisPage() {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
                                             const getExplanation = (key: string) => {
-                                                if (key === "PER") return "돈 버는 능력 대비 가격표";
-                                                if (key === "PBR") return "가진 재산 대비 가격표";
-                                                if (key === "ROE") return "회사의 '가성비' (진짜 중요!)";
-                                                if (key === "부채비율") return "내 몸에 붙은 '빚' 비중";
-                                                if (key === "유동비율") return "장사 밑천과 비상금 여유";
-                                                if (key === "영업이익률") return "물건 팔아 남는 진짜 마진";
-                                                if (key === "매출총이익률") return "판매 후 첫 번째 남는 돈";
-                                                if (key === "자산회전율") return "재산을 얼마나 빨리 굴리나";
+                                                if (key === "PER") return "돈 버는 능력 대비 '현재 가격표'";
+                                                if (key === "PBR") return "가진 재산 대비 '현재 가격표'";
+                                                if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
+                                                if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
+                                                if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
+                                                if (key === "영업이익률") return "숨만 쉬어도 나가는 돈 빼고 남는 비중";
+                                                if (key === "매출총이익률") return "물건 팔아서 남긴 순수 마진";
+                                                if (key === "자산회전율") return "재산을 얼마나 부지런히 굴리나";
                                                 return "";
                                             };
+
 
 
                                             return (
