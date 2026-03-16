@@ -5,8 +5,10 @@ import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
     Search, RefreshCw, Shield, BarChart3, Users, TrendingUp, TrendingDown,
-    Activity, Zap, AlertTriangle, ChevronRight, X
+    Activity, Zap, AlertTriangle, ChevronRight, X, Info, HelpCircle,
+    Eye, EyeOff
 } from "lucide-react";
+
 
 export default function AnalysisPage() {
     const [symbol, setSymbol] = useState("");
@@ -24,6 +26,10 @@ export default function AnalysisPage() {
     const [peerSymbols, setPeerSymbols] = useState("005930,000660,035420");
     const [peerData, setPeerData] = useState<any>(null);
     const [peerLoading, setPeerLoading] = useState(false);
+    
+    // UI Helpers
+    const [showEasy, setShowEasy] = useState(false);
+
 
     const fetchQuant = async (sym: string) => {
         if (!sym) return;
@@ -232,10 +238,35 @@ export default function AnalysisPage() {
                 {/* ===== FINANCIAL TAB ===== */}
                 {activeTab === "financial" && (
                     <div className="space-y-6">
+                        {/* Toggle Easy Mode */}
+                        <div className="flex justify-end">
+                            <button 
+                                onClick={() => setShowEasy(!showEasy)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-emerald-600/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
+                            >
+                                {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
+                            </button>
+                        </div>
+
                         {financialLoading ? (
                             <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                         ) : financialData ? (
                             <div className="space-y-6 animate-in fade-in duration-300">
+                                {showEasy && (
+                                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                        <div className="bg-emerald-500/20 p-2 rounded-lg h-fit">
+                                            <HelpCircle className="w-5 h-5 text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
+                                            <p className="text-xs text-gray-300 leading-relaxed">
+                                                어려운 재무 용어들을 알기 쉽게 풀어 설명해 드릴게요. 각 수치가 의미하는 '건강 상태'를 확인해 보세요!
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Analysis Overview */}
                                 <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
                                     <div className="flex items-center justify-between mb-6">
@@ -249,15 +280,25 @@ export default function AnalysisPage() {
                                             </div>
                                             <div className="text-right">
                                                 <span className={`text-4xl font-black ${getScoreColor(financialData.health_score)}`}>{financialData.health_score}</span>
-                                                <p className="text-xs text-gray-500">분석 점수</p>
+                                                <p className="text-xs text-gray-500">분합 분석 점수</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Z-Score & F-Score */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10">
-                                            <h4 className="text-sm font-bold text-gray-400 mb-2">📐 Altman Z-Score</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
+                                                    📐 Altman Z-Score
+                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험도</span>}
+                                                </h4>
+                                            </div>
+                                            {showEasy && (
+                                                <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                    "이 회사가 망할 가능성이 있는가?"를 측정해요. 3.0 이상이면 아주 안전해요.
+                                                </p>
+                                            )}
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.z_score?.value}</span>
                                                 <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
@@ -276,7 +317,17 @@ export default function AnalysisPage() {
                                         </div>
 
                                         <div className="bg-black/40 rounded-2xl p-4 border border-white/10">
-                                            <h4 className="text-sm font-bold text-gray-400 mb-2">🏋️ Piotroski F-Score</h4>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
+                                                    🏋️ Piotroski F-Score
+                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span>}
+                                                </h4>
+                                            </div>
+                                            {showEasy && (
+                                                <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                    성장성, 건전성 등을 9가지로 깐깐하게 체크한 점수예요. 높을수록 알부자 회사!
+                                                </p>
+                                            )}
                                             <div className="flex items-end gap-3">
                                                 <span className="text-3xl font-black">{financialData.f_score?.value}</span>
                                                 <span className="text-sm text-gray-500 pb-1">/ {financialData.f_score?.max}</span>
@@ -293,24 +344,46 @@ export default function AnalysisPage() {
 
                                 {/* F-Score Details */}
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                    <h4 className="font-bold text-sm text-gray-400 mb-3">F-Score 세부 항목</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+                                    <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                         {(financialData.f_score?.details || []).map((d: string, i: number) => (
-                                            <div key={i} className="text-xs py-1.5 px-2 bg-black/30 rounded-lg">{d}</div>
+                                            <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
+                                                <span className="text-emerald-500">✅</span>
+                                                {d}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Key Ratios */}
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                    <h4 className="font-bold text-sm text-gray-400 mb-3">핵심 재무 비율</h4>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {Object.entries(financialData.ratios || {}).map(([k, v]: any) => (
-                                            <div key={k} className="text-center bg-black/30 rounded-xl p-3">
-                                                <p className="text-[10px] text-gray-500">{k}</p>
-                                                <p className="text-sm font-black text-white mt-0.5">{v}</p>
-                                            </div>
-                                        ))}
+                                    <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
+                                            const getExplanation = (key: string) => {
+                                                if (key === "PER") return "이익 대비 주가 수준";
+                                                if (key === "PBR") return "재산 대비 주가 수준";
+                                                if (key === "ROE") return "자기자산 효율성";
+                                                if (key === "부채비율") return "빌린 돈의 비중";
+                                                if (key === "유동비율") return "당장 쓰는 돈의 여유";
+                                                if (key === "영업이익률") return "장사해서 남는 비율";
+                                                if (key === "매출총이익률") return "판매 후 남는 비율";
+                                                if (key === "자산회전율") return "자산 활용 효율성";
+                                                return "";
+                                            };
+
+                                            return (
+                                                <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
+                                                    <p className="text-[10px] text-gray-500 font-bold mb-0.5">{k}</p>
+                                                    <p className="text-lg font-black text-white">{v}</p>
+                                                    {showEasy && (
+                                                        <p className="text-[10px] text-emerald-400/70 mt-1 font-medium leading-tight">
+                                                            {getExplanation(k)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
