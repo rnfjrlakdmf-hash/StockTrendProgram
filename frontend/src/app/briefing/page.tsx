@@ -91,7 +91,7 @@ export default function BriefingPage() {
                         <div key={index} className="flex-shrink-0 bg-white/5 border border-white/10 rounded-xl px-6 py-3 min-w-[140px] flex flex-col items-center">
                             <span className="text-xs text-gray-400 font-bold mb-1">{idx.label}</span>
                             <span className="text-lg font-bold text-white mb-1">{idx.value}</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${idx.up ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${idx.up ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
                                 {idx.change}
                             </span>
                         </div>

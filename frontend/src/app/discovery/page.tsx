@@ -566,7 +566,7 @@ function DiscoveryContent() {
                                                         (약 ₩{getKrwPrice(stock.price)})
                                                     </span>
                                                 )}
-                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${stock.currency === 'KRW' ? (String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20') : (String(stock.change).startsWith('+') ? 'text-green-400 bg-green-400/20' : 'text-red-400 bg-red-400/20')}`}>
+                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'}`}>
                                                     {stock.change}
                                                 </span>
                                             </div>

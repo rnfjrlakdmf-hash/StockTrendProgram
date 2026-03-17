@@ -610,7 +610,7 @@ export default function AnalysisPage() {
                                                             <div className="flex-1 h-4 bg-gray-800 rounded-full overflow-hidden">
                                                                 <div className={`h-full rounded-full ${val >= 0 ? "bg-green-500" : "bg-red-500"}`} style={{ width: `${w}%` }} />
                                                             </div>
-                                                            <span className={`text-xs font-bold w-12 text-right ${val >= 0 ? "text-green-400" : "text-red-400"}`}>{val}</span>
+                                                            <span className={`text-xs font-bold w-12 text-right ${val >= 0 ? "text-red-400" : "text-blue-400"}`}>{val}</span>
                                                         </div>
                                                     );
                                                 })}

@@ -93,7 +93,7 @@ export default function Home() {
               </div>
               <div className="text-right">
                 <p className="text-5xl font-bold text-white mb-1">{stockData.price}</p>
-                <p className={`text-xl font-bold ${stockData.change.includes('+') ? 'text-green-400' : 'text-red-400'}`}>{stockData.change}</p>
+                <p className={`text-xl font-bold ${stockData.change.includes('+') ? 'text-red-400' : 'text-blue-400'}`}>{stockData.change}</p>
               </div>
             </div>
 
@@ -243,7 +243,7 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
                 <div className="font-bold text-gray-200 text-sm">
                   {market === 'US' ? '$' : '₩'}{Number(item.price || 0).toLocaleString(undefined, { maximumFractionDigits: market === 'US' ? 2 : 0 })}
                 </div>
-                <div className={`text-xs font-bold ${market === 'US' ? (item.change >= 0 ? 'text-green-400' : 'text-red-400') : (item.change >= 0 ? 'text-red-400' : 'text-blue-400')}`}>
+                <div className={`text-xs font-bold ${item.change >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                   {item.change >= 0 ? '+' : ''}{Number(item.change_percent || 0).toFixed(2)}%
                 </div>
               </div>
