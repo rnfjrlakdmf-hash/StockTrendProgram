@@ -162,19 +162,19 @@ export default function AnalysisPage() {
                         <Users className="w-4 h-4" /> 동종비교
                     </button>
                 </div>
-165: 
-166:                 {/* Global Toggle Easy Mode */}
-167:                 <div className="flex justify-end">
-168:                     <button 
-169:                         onClick={() => setShowEasy(!showEasy)}
-170:                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
-171:                     >
-172:                         {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-173:                         초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
-174:                     </button>
-175:                 </div>
-176: 
-177:                 {/* Search (Quant & Financial) */}
+
+                {/* Global Toggle Easy Mode */}
+                <div className="flex justify-end">
+                    <button 
+                        onClick={() => setShowEasy(!showEasy)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
+                    >
+                        {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
+                    </button>
+                </div>
+
+                {/* Search (Quant & Financial) */}
                 {(activeTab === "quant" || activeTab === "financial") && (
                     <div className="flex gap-2">
                         <div className="flex-1 relative">
@@ -194,9 +194,9 @@ export default function AnalysisPage() {
 
                 {/* ===== QUANT TAB ===== */}
                 {activeTab === "quant" && (
-186:                     <div className="space-y-6">
-187: 
-188:                         {quantLoading ? (
+                    <div className="space-y-6">
+
+                        {quantLoading ? (
                             <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">퀀트 분석 중...</p></div>
                         ) : quantData ? (
                             <div className="space-y-6 animate-in fade-in duration-300">
