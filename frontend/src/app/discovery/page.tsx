@@ -1029,9 +1029,7 @@ function DiscoveryContent() {
                                                             {item.change && (
                                                                 <div className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${String(item.change).startsWith('+')
                                                                     ? 'bg-red-500/20 text-red-400'
-                                                                    : String(item.change).startsWith('-')
-                                                                        ? 'bg-blue-500/20 text-blue-400'
-                                                                        : 'bg-gray-500/20 text-gray-400'
+                                                                    : 'bg-blue-500/20 text-blue-400'
                                                                     }`}>
                                                                     {item.change}
                                                                 </div>
