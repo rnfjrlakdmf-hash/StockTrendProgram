@@ -77,8 +77,8 @@ export default function RankingWidget() {
             </div>
 
             {/* Gainers */}
-            <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/20 rounded-3xl p-5 shadow-lg">
-                <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
+            <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/20 rounded-2xl md:rounded-3xl p-4 md:p-5 shadow-lg">
+                <h3 className="text-base md:text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" /> {market === 'US' ? '미국 대형주 상승' : '실시간 상승 (Top 5)'}
                 </h3>
                 <div className="space-y-3">
@@ -91,13 +91,15 @@ export default function RankingWidget() {
                             <div className="flex items-center gap-3">
                                 <span className={`font-mono font-bold w-6 text-center ${idx === 0 ? 'text-yellow-400 text-lg' : 'text-gray-500'}`}>{idx + 1}</span>
                                 <div>
-                                    <div className="font-bold text-gray-200 group-hover:text-white text-sm">{item.name}</div>
-                                    <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
+                                    <div className="font-bold text-gray-200 group-hover:text-white text-xs md:text-sm truncate max-w-[120px] md:max-w-none">{item.name}</div>
+                                    <div className="text-[10px] md:text-xs text-gray-500 font-mono">{item.symbol}</div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-red-400 font-bold font-mono text-sm">{item.change}</div>
-                                <div className="text-gray-500 text-xs font-mono">{formatPrice(item.price)}</div>
+                            <div className="text-right flex-shrink-0">
+                                <div className="text-red-400 font-bold font-mono text-xs md:text-sm">
+                                    {String(item.change).startsWith('++') ? item.change.substring(1) : item.change}
+                                </div>
+                                <div className="text-gray-500 text-[10px] md:text-xs font-mono">{formatPrice(item.price)}</div>
                             </div>
                         </div>
                     )) : (
@@ -110,8 +112,8 @@ export default function RankingWidget() {
             </div>
 
             {/* Losers */}
-            <div className="bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 rounded-3xl p-5 shadow-lg">
-                <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
+            <div className="bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 rounded-2xl md:rounded-3xl p-4 md:p-5 shadow-lg">
+                <h3 className="text-base md:text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
                     <TrendingDown className="w-5 h-5" /> {market === 'US' ? '미국 대형주 하락' : '실시간 하락 (Bottom 5)'}
                 </h3>
                 <div className="space-y-3">
@@ -124,13 +126,15 @@ export default function RankingWidget() {
                             <div className="flex items-center gap-3">
                                 <span className={`font-mono font-bold w-6 text-center ${idx === 0 ? 'text-blue-300 text-lg' : 'text-gray-500'}`}>{idx + 1}</span>
                                 <div>
-                                    <div className="font-bold text-gray-200 group-hover:text-white text-sm">{item.name}</div>
-                                    <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
+                                    <div className="font-bold text-gray-200 group-hover:text-white text-xs md:text-sm truncate max-w-[120px] md:max-w-none">{item.name}</div>
+                                    <div className="text-[10px] md:text-xs text-gray-500 font-mono">{item.symbol}</div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-blue-400 font-bold font-mono text-sm">{item.change}</div>
-                                <div className="text-gray-500 text-xs font-mono">{formatPrice(item.price)}</div>
+                            <div className="text-right flex-shrink-0">
+                                <div className="text-blue-400 font-bold font-mono text-xs md:text-sm">
+                                    {String(item.change).startsWith('++') ? item.change.substring(1) : item.change}
+                                </div>
+                                <div className="text-gray-500 text-[10px] md:text-xs font-mono">{formatPrice(item.price)}</div>
                             </div>
                         </div>
                     )) : (

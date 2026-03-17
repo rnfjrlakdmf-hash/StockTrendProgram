@@ -101,7 +101,7 @@ def get_realtime_top10(market="KR", refresh=False):
                         "symbol": item['ticker'],
                         "name": item['name'],
                         "price": price,
-                        "change": f"{change_pct:+.2f}%",  # Format as string for frontend compatibility
+                        "change": f"{change_pct:.2f}%",  # Format as string for frontend compatibility
                         "change_value": change_val,
                         "change_percent": change_pct
                     }
@@ -277,7 +277,7 @@ def crawl_naver_movers():
                         "symbol": symbol,
                         "name": name,
                         "price": price,
-                        "change": f"{change_rate:+.2f}%", 
+                        "change": f"{change_rate:.2f}%", 
                         "change_rate": change_rate
                     })
                     rank += 1
