@@ -685,7 +685,11 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     "symbol": symbol,
                     "price": price_str,
                     "change": change_str,
-                    "name": naver_info.get('name', symbol)
+                    "name": naver_info.get('name', symbol),
+                    "details": {
+                        "market_status": naver_info.get('market_status'),
+                        "nxt_data": naver_info.get('nxt_data')
+                    }
                 }
         except Exception as e:
             print(f"[StockData] Naver Simple Quote Error: {e}")

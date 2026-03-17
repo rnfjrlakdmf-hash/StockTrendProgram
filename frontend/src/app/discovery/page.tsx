@@ -215,7 +215,12 @@ function DiscoveryContent() {
                 return {
                     ...prev,
                     price: realtimeData.price,
-                    change: realtimeData.change
+                    change: realtimeData.change,
+                    details: {
+                        ...prev.details,
+                        market_status: realtimeData.details?.market_status || prev.details?.market_status,
+                        nxt_data: realtimeData.details?.nxt_data || prev.details?.nxt_data
+                    }
                 };
             });
         }
