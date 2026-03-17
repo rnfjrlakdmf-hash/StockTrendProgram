@@ -96,11 +96,20 @@ def get_realtime_top10(market="KR", refresh=False):
                     # Calculate estimated absolute change for compatibility
                     change_val = price * (change_pct / 100.0)
 
+                    # [Add] KRW Conversion
+                    price_krw = None
+                    try:
+                        from korea_data import get_exchange_rate
+                        rate = get_exchange_rate()
+                        price_krw = f"{price * rate:,.0f}"
+                    except: pass
+
                     return {
                         "rank": 0, 
                         "symbol": item['ticker'],
                         "name": item['name'],
                         "price": price,
+                        "price_krw": price_krw,
                         "change": f"{change_pct:.2f}%",  # Format as string for frontend compatibility
                         "change_value": change_val,
                         "change_percent": change_pct

@@ -228,10 +228,11 @@ function DiscoveryContent() {
             .catch(err => console.error("Exchange rate fetch failed", err));
     }, []);
 
-    const getKrwPrice = (price: string | number) => {
+    const getKrwPrice = (price: string | number, manualRate?: number) => {
         const p = parseFloat(String(price).replace(/,/g, ''));
         if (isNaN(p)) return null;
-        return (p * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+        const rate = manualRate || exchangeRate;
+        return (p * rate).toLocaleString(undefined, { maximumFractionDigits: 0 });
     };
 
     // [New] Handle URL Query Params
@@ -563,7 +564,7 @@ function DiscoveryContent() {
                                                 {/* [Updated] Show KRW for foreign stocks ONLY */}
                                                 {stock.currency !== 'KRW' && (stock.symbol && !stock.symbol.includes('.KS') && !stock.symbol.includes('.KQ')) && (
                                                     <span className="text-lg md:text-xl text-gray-400 font-mono">
-                                                        (약 ₩{getKrwPrice(stock.price)})
+                                                        (약 ₩{stock.price_krw || getKrwPrice(stock.price)})
                                                     </span>
                                                 )}
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'}`}>

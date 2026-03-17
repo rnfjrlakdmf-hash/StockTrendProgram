@@ -1,4 +1,4 @@
-﻿
+
 import urllib.parse
 import datetime
 import re
@@ -728,15 +728,23 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             change_str = "0.00%"
 
         # KRW formatting check
+        price_krw = None
         if symbol.endswith('.KS') or symbol.endswith(
                 '.KQ') or symbol == 'KRW=X':
             price_str = f"{current_price:,.0f}"
         else:
             price_str = f"{current_price:,.2f}"
+            # Fetch exchange rate for USD stocks
+            try:
+                rate = korea_data.get_exchange_rate()
+                if rate:
+                    price_krw = f"{current_price * rate:,.0f}"
+            except: pass
 
         return {
             "symbol": symbol,
             "price": price_str,
+            "price_krw": price_krw,
             "change": change_str,
             "name": symbol,
             "ticker": ticker,
