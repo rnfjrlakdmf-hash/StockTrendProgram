@@ -249,9 +249,9 @@ export default function AnalysisPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                                     {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
                                         const getFactorMetaphor = (label: string) => {
-                                            if (label === "가치") return { title: "현재 몸값(가성비)", desc: "능력 대비 가격이 착한지 체크" };
-                                            if (label === "성장") return { title: "성장판 지수", desc: "매출과 이익이 얼마나 쑥쑥 자라는지 연구" };
-                                            if (label === "모멘텀") return { title: "최근 달리기 속도", desc: "요즘 주가 흐름이 얼마나 힘찬지 기세 확인" };
+                                            if (label === "가치") return { title: "할인 마트 가격표", desc: "능력 대비 지금 가격이 '착한지' (가성비) 체크" };
+                                            if (label === "성장") return { title: "내일은 더 클 아이?", desc: "매출과 이익이 얼마나 쑥쑥 자라는지 (성장성) 연구" };
+                                            if (label === "모멘텀") return { title: "요즘 인기 폭발 중?", desc: "요즘 주가 흐름이 얼마나 힘찬지 (기세) 확인" };
                                             if (label === "수익성") return { title: "에너지 효율", desc: "투자 대비 얼마나 알차게 수익을 내나 확인" };
                                             if (label === "안정성") return { title: "뼈대 건강도", desc: "위기에도 쉽게 넘어지지 않는 튼튼한 체격인가" };
                                             return null;
@@ -375,12 +375,12 @@ export default function AnalysisPage() {
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
                                                     📐 Altman Z-Score
-                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험도</span>}
+                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">당장 망할 일 없나?</span>}
                                                 </h4>
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    회사의 <span className="text-emerald-400 font-bold">'심폐지수'</span>예요. 당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 심장'</span>을 가진 아주 튼튼한 상태예요!
+                                                    회사가 <span className="text-emerald-400 font-bold">당장 쓰러질 위험</span>(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 심장'</span>을 가진 아주 튼튼한 상태예요!
                                                 </p>
                                             )}
 
@@ -406,12 +406,12 @@ export default function AnalysisPage() {
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
                                                     🏋️ Piotroski F-Score
-                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span>}
+                                                    {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">전보다 건강해졌나?</span>}
                                                 </h4>
                                             </div>
                                             {showEasy && (
                                                 <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                    회사의 <span className="text-emerald-400 font-bold">'근육량과 신진대사'</span>예요. 근육(수익)은 늘고 체지방(빚)은 줄었는지 9가지를 깐깐하게 검진한 종합 기초체력 점수예요.
+                                                    회사의 <span className="text-emerald-400 font-bold">기초 체력이 좋아졌는지</span> 보는 점수예요. 작년보다 돈은 잘 벌고 빚은 줄었는지 9가지를 깐깐하게 검사한 결과예요.
                                                 </p>
                                             )}
 
@@ -473,14 +473,14 @@ export default function AnalysisPage() {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
                                             const getExplanation = (key: string) => {
-                                                if (key === "PER") return "돈 버는 능력 대비 '현재 가격표'";
-                                                if (key === "PBR") return "가진 재산 대비 '현재 가격표'";
-                                                if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
-                                                if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
-                                                if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
-                                                if (key === "영업이익률") return "숨만 쉬어도 나가는 돈 빼고 남는 비중";
-                                                if (key === "매출총이익률") return "물건 팔아서 남긴 순수 마진";
-                                                if (key === "자산회전율") return "재산을 얼마나 부지런히 굴리나";
+                                                if (key === "PER") return "버는 돈 대비 '지금 가격표' (비싼가요?)";
+                                                if (key === "PBR") return "가진 재산 대비 '지금 가격표' (비싼가요?)";
+                                                if (key === "ROE") return "내 돈으로 얼마나 잘 불렸나? (재태크 실력)";
+                                                if (key === "부채비율") return "남한테 빌린 돈이 너무 많진 않나?";
+                                                if (key === "유동비율") return "급할 때 당장 뺄 '비상금'이 있나?";
+                                                if (key === "영업이익률") return "물건 팔아서 남긴 진짜 내 몫";
+                                                if (key === "매출총이익률") return "원가 빼고 남긴 순수 마진";
+                                                if (key === "자산회전율") return "내 재산을 얼마나 열심히 굴리나";
                                                 return "";
                                             };
 
