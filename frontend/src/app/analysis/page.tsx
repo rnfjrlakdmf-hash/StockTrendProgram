@@ -146,38 +146,57 @@ export default function AnalysisPage() {
         <div className="min-h-screen pb-20 text-white bg-black">
             <Header title="프로 분석" subtitle="퀀트 · 재무 분석 · 동종비교" />
 
-
-                {/* Global Toggle Easy Mode - Moved to TOP for visibility */}
-                <div className="flex justify-end mb-2">
-                    <button 
-                        onClick={() => setShowEasy(!showEasy)}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg border-2 ${showEasy ? "bg-orange-500 border-orange-400 text-white shadow-orange-500/20" : "bg-white/5 border-white/10 text-gray-400 hover:border-gray-500 hover:text-white"}`}
-                    >
-                        {showEasy ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                        초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
-                    </button>
-                </div>
-
+            <div className="max-w-6xl mx-auto px-4 space-y-6">
                 {/* Tabs */}
                 <div className="flex gap-2 bg-white/5 p-1 rounded-2xl">
+                    <button
+                        onClick={() => setActiveTab("quant")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "quant" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                    >
+                        <Zap className="w-4 h-4" /> 퀀트 스코어
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("financial")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "financial" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                    >
+                        <Shield className="w-4 h-4" /> 재무 분석
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("peer")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "peer" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                    >
+                        <Users className="w-4 h-4" /> 동종비교
+                    </button>
+                </div>
 
                 {/* Search (Quant & Financial) */}
                 {(activeTab === "quant" || activeTab === "financial") && (
                     <div className="flex gap-2">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4" />
                             <input type="text" placeholder="종목코드 입력 (예: 005930, AAPL)"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono transition-all"
                                 value={symbol} onChange={e => setSymbol(e.target.value)}
                                 onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
                             />
                         </div>
                         <button onClick={handleSearch}
-                            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm">
+                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all">
                             분석
                         </button>
                     </div>
                 )}
+
+                {/* Easy Mode Toggle - Positioned BELOW Search/Tabs on right as in screenshot */}
+                <div className="flex justify-end">
+                    <button 
+                        onClick={() => setShowEasy(!showEasy)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-orange-500/20 border-orange-500 text-orange-400" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"}`}
+                    >
+                        {showEasy ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
+                    </button>
+                </div>
 
                 {/* ===== QUANT TAB ===== */}
                 {activeTab === "quant" && (
