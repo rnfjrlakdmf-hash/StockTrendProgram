@@ -146,33 +146,20 @@ export default function AnalysisPage() {
         <div className="min-h-screen pb-20 text-white bg-black">
             <Header title="프로 분석" subtitle="퀀트 · 재무 분석 · 동종비교" />
 
-            <div className="max-w-5xl mx-auto p-4 space-y-6">
-                {/* Tabs */}
-                <div className="flex gap-2 bg-white/5 p-1 rounded-2xl">
-                    <button onClick={() => setActiveTab("quant")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "quant" ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg" : "text-gray-400"}`}>
-                        <Activity className="w-4 h-4" /> 퀀트 스코어
-                    </button>
-                    <button onClick={() => setActiveTab("financial")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "financial" ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg" : "text-gray-400"}`}>
-                        <Shield className="w-4 h-4" /> 재무 분석
-                    </button>
-                    <button onClick={() => setActiveTab("peer")}
-                        className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${activeTab === "peer" ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg" : "text-gray-400"}`}>
-                        <Users className="w-4 h-4" /> 동종비교
-                    </button>
-                </div>
 
-                {/* Global Toggle Easy Mode */}
-                <div className="flex justify-end">
+                {/* Global Toggle Easy Mode - Moved to TOP for visibility */}
+                <div className="flex justify-end mb-2">
                     <button 
                         onClick={() => setShowEasy(!showEasy)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg border-2 ${showEasy ? "bg-orange-500 border-orange-400 text-white shadow-orange-500/20" : "bg-white/5 border-white/10 text-gray-400 hover:border-gray-500 hover:text-white"}`}
                     >
-                        {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        {showEasy ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
                     </button>
                 </div>
+
+                {/* Tabs */}
+                <div className="flex gap-2 bg-white/5 p-1 rounded-2xl">
 
                 {/* Search (Quant & Financial) */}
                 {(activeTab === "quant" || activeTab === "financial") && (
