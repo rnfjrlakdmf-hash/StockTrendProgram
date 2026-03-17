@@ -457,17 +457,6 @@ function HeatmapTab({ router }: { router: any }) {
                 </div>
             </div>
 
-            {/* [NEW] 실시간 상승/하락 랭킹 (MarketDashboard에서 완전히 이동) */}
-            {!loading && (
-                <div className="mb-6">
-                    <div className="mb-4">
-                        <h4 className="text-white font-bold text-sm flex items-center gap-2">
-                            <TrendingUp className="text-blue-400 w-5 h-5" /> 실시간 시장 등락 현황
-                        </h4>
-                    </div>
-                    <RankingWidget />
-                </div>
-            )}
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
                 <>
@@ -566,11 +555,23 @@ function MarketInsightsTab({ router }: { router: any }) {
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div>
                 : subTab === "volume" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
+                    <div className="space-y-6">
+                        {/* [MOVED] 실시간 상승/하락 랭킹 (히트맵 탭에서 이동) */}
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                            <div className="mb-4">
+                                <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                                    <TrendingUp className="text-blue-400 w-5 h-5" /> 실시간 시장 등락 현황
+                                </h4>
+                            </div>
+                            <RankingWidget />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
