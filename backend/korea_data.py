@@ -938,7 +938,7 @@ def get_top_sectors():
 
 
 
-def get_top_themes():
+def get_top_trending_themes(limit: int = 6):
     """
     Fetch top themes from Naver
     """
@@ -951,7 +951,7 @@ def get_top_themes():
         rows = soup.select("table.type_1 tr")
         
         for row in rows:
-            if len(themes) >= 5: break
+            if len(themes) >= limit: break
             cols = row.select("td")
             if len(cols) < 2: continue
             
@@ -970,6 +970,8 @@ def get_top_themes():
         return themes
     except:
         return []
+
+get_top_themes = get_top_trending_themes # Alias
 
 def get_investor_history(symbol: str, days: int = 40):
     """

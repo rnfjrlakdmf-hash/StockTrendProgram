@@ -89,11 +89,26 @@ export default function ThemePage() {
         fetchQuotes();
     }, [result]);
 
+    const [trendingThemes, setTrendingThemes] = useState<string[]>(["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]);
+
+    useEffect(() => {
+        const fetchTrending = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/trending-themes?limit=6`);
+                const json = await res.json();
+                if (json.status === "success" && Array.isArray(json.data)) {
+                    setTrendingThemes(json.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch trending themes:", err);
+            }
+        };
+        fetchTrending();
+    }, []);
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleAnalyze();
     };
-
-    const suggestedThemes = ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"];
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
@@ -133,7 +148,7 @@ export default function ThemePage() {
 
                     <div className="flex flex-wrap justify-center gap-2 text-sm">
                         <span className="text-gray-500 mr-2">인기 검색:</span>
-                        {suggestedThemes.map(t => (
+                        {trendingThemes.map(t => (
                             <button
                                 key={t}
                                 onClick={() => { setKeyword(t); requestAnimationFrame(() => handleAnalyze()); }}

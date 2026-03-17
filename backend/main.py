@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 # [Deployment Trigger] dart multi-year final - 2026-03-06
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
@@ -1292,6 +1292,16 @@ def get_market_calendar():
         print(f"Calendar Error: {e}")
         return {"status": "error", "message": "일정을 불러올 수 없습니다"}
 
+
+@app.get("/api/market/trending-themes")
+def get_trending_themes_api(limit: int = 6):
+    """실시간 인기 검색 테마 (네이버 금융 기반)"""
+    try:
+        from korea_data import get_top_trending_themes
+        themes = get_top_trending_themes(limit=limit)
+        return {"status": "success", "data": [t["name"] for t in themes]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/market/calendar/korea")
 def get_korea_calendar():
