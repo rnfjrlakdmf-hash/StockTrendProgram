@@ -336,7 +336,9 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                         "forward_eps": naver_info.get('est_eps'),
                         "bps": naver_info.get('bps'),
                         "dividend_rate": naver_info.get('dp_share'),
-                        "health_score": health_data.get("score")
+                        "health_score": health_data.get("score"),
+                        "market_status": naver_info.get('market_status'),
+                        "nxt_data": naver_info.get('nxt_data')
                     },
                     "daily_prices": daily_data,
                     "news": news_data,

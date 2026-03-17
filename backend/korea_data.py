@@ -164,6 +164,43 @@ def gather_naver_stock_data(symbol: str):
         prev_close = price - change_val
         if prev_close_tag:
             prev_close = int(prev_close_tag.text.replace(',', ''))
+
+        # [New] Market Status (In-session, Closed, After-Market)
+        market_status = "Unknown"
+        status_tag = soup.select_one("#market_status")
+        if status_tag:
+            market_status = status_tag.text.strip()
+            
+        # [New] NXT (Nextrade) After Market Data
+        nxt_data = None
+        nxt_area = soup.select_one("#rate_info_nxt")
+        if nxt_area:
+            try:
+                nxt_price_tag = nxt_area.select_one(".no_today .blind")
+                if nxt_price_tag:
+                    nxt_price = int(nxt_price_tag.text.strip().replace(',', ''))
+                    
+                    # Extract NXT change and percentage
+                    nxt_blind_tags = nxt_area.select(".no_exday .blind")
+                    nxt_change_val = 0
+                    nxt_change_pct = "0.00%"
+                    
+                    if len(nxt_blind_tags) >= 2:
+                        ico = nxt_area.select_one("span.ico")
+                        direction = 1
+                        if ico and "하락" in ico.text:
+                            direction = -1
+                        
+                        nxt_change_val = int(nxt_blind_tags[0].text.replace(',', '')) * direction
+                        nxt_change_pct = f"{float(nxt_blind_tags[1].text)*direction:.2f}%"
+                        
+                    nxt_data = {
+                        "price": nxt_price,
+                        "change_val": nxt_change_val,
+                        "change_pct": nxt_change_pct
+                    }
+            except Exception as e:
+                print(f"NXT Scraping Error for {symbol}: {e}")
             
         # [Extra] Sector (Upjong)
         sector_name = "Unknown"
@@ -445,6 +482,8 @@ def gather_naver_stock_data(symbol: str):
             "est_eps": est_eps,
             "year_high": year_high, 
             "year_low": year_low,
+            "market_status": market_status,
+            "nxt_data": nxt_data,
             "open": open_val,
             "day_high": high_val,
             "day_low": low_val,

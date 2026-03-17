@@ -94,6 +94,12 @@ interface StockData {
         pbr?: number;
         bps?: number;
         dividend_rate?: number;
+        market_status?: string;
+        nxt_data?: {
+            price: number;
+            change_val: number;
+            change_pct: string;
+        };
     };
     daily_prices?: {
         date: string;
@@ -570,7 +576,32 @@ function DiscoveryContent() {
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'}`}>
                                                     {stock.change}
                                                 </span>
+                                                {/* [New] Market Status Badge */}
+                                                {stock.details?.market_status && (
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold border ${stock.details.market_status.includes('장중') || stock.details.market_status.includes('Open') || stock.details.market_status.includes('session')
+                                                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                                        : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                                        }`}>
+                                                        {stock.details.market_status === 'After-Market' ? '야간거래(NXT)' : stock.details.market_status}
+                                                    </span>
+                                                )}
                                             </div>
+                                            {/* [New] NXT After Market Price */}
+                                            {stock.details?.nxt_data && (
+                                                <div className="mt-2 flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-3 py-2 w-fit">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">NXT After Market</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl font-black text-white">
+                                                                ₩{stock.details.nxt_data.price.toLocaleString()}
+                                                            </span>
+                                                            <span className={`text-xs font-bold ${stock.details.nxt_data.change_pct.startsWith('+') ? 'text-red-400' : 'text-blue-400'}`}>
+                                                                {stock.details.nxt_data.change_pct}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
                                             <div className="flex items-center gap-3 md:flex-col md:items-end">
