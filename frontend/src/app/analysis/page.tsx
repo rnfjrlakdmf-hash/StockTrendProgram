@@ -426,15 +426,15 @@ export default function AnalysisPage() {
                                         {(financialData.f_score?.details || []).map((d: string, i: number) => {
                                             const getFScoreMetaphor = (detail: string) => {
                                                 const lower = detail.toLowerCase();
-                                                if (lower.includes("순이익") && lower.includes("흑자")) return "올해 밥값 했나? (돈 벌었나)";
-                                                if (lower.includes("영업현금흐름") && lower.includes("양수")) return "피가 잘 도나? (실제 현금 유입)";
-                                                if (lower.includes("roa") && lower.includes("양수")) return "에너지 효율 체크 (투자 대비 성과)";
-                                                if (lower.includes("현금흐름") && lower.includes("순이익")) return "장부보다 실속 있나? (현금이 더 많나)";
-                                                if (lower.includes("부채비율")) return "군살(빚)이 빠졌나? (부채 감소)";
-                                                if (lower.includes("유동비율")) return "비상금(현금여유) 늘었나?";
-                                                if (lower.includes("신주발행")) return "새 사람한테 손 안벌렸나? (지분 방어)";
+                                                if (lower.includes("순이익") && lower.includes("흑자")) return "올해 밥값 했나? (순이익 > 0)";
+                                                if (lower.includes("영업현금흐름") && lower.includes("양수")) return "피가 잘 도나? (현금유입 > 0)";
+                                                if (lower.includes("roa") && lower.includes("양수")) return "에너지 효율 체크 (ROA > 0)";
+                                                if (lower.includes("현금흐름") && lower.includes("순이익")) return "장부보다 실속 있나? (현금 > 순이익)";
+                                                if (lower.includes("부채비율")) return "군살(빚)이 빠졌나? (부채비율 < 50%)";
+                                                if (lower.includes("유동비율")) return "비상금(현금여유) 늘었나? (유동비율 > 1.0)";
+                                                if (lower.includes("신주발행")) return "새 사람한테 손 안벌렸나? (증자 없음)";
                                                 if (lower.includes("매출총이익률")) return "장사 실력이 늘었나? (마진 개선)";
-                                                if (lower.includes("자산회전율")) return "기계가 부지런히 돌아가나? (효율 상승)";
+                                                if (lower.includes("자산회전율")) return "기계가 부지런히 돌아가나? (회전율 > 0.5)";
                                                 return null;
                                             };
                                             const fMetaphor = getFScoreMetaphor(d);
@@ -462,14 +462,14 @@ export default function AnalysisPage() {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
                                             const getExplanation = (key: string) => {
-                                                if (key === "PER") return "버는 돈 대비 '지금 가격표' (비싼가요?)";
-                                                if (key === "PBR") return "가진 재산 대비 '지금 가격표' (비싼가요?)";
-                                                if (key === "ROE") return "내 돈으로 얼마나 잘 불렸나? (재태크 실력)";
-                                                if (key === "부채비율") return "남한테 빌린 돈이 너무 많진 않나?";
-                                                if (key === "유동비율") return "급할 때 당장 뺄 '비상금'이 있나?";
-                                                if (key === "영업이익률") return "물건 팔아서 남긴 진짜 내 몫";
-                                                if (key === "매출총이익률") return "원가 빼고 남긴 순수 마진";
-                                                if (key === "자산회전율") return "내 재산을 얼마나 열심히 굴리나";
+                                                if (key === "PER") return "버는 돈 대비 '지금 가격표' (권장: < 15배)";
+                                                if (key === "PBR") return "가진 재산 대비 '지금 가격표' (권장: < 1.0)";
+                                                if (key === "ROE") return "내 돈으로 얼마나 잘 불렸나? (권장: > 10%)";
+                                                if (key === "부채비율") return "남한테 빌린 돈이 너무 많진 않나? (권장: < 100%)";
+                                                if (key === "유동비율") return "급할 때 당장 뺄 '비상금'이 있나? (권장: > 1.0)";
+                                                if (key === "영업이익률") return "물건 팔아서 남긴 진짜 내 몫 (권장: > 10%)";
+                                                if (key === "매출총이익률") return "원가 빼고 남긴 순수 마진 (권장: > 20%)";
+                                                if (key === "자산회전율") return "내 재산을 얼마나 열심히 굴리나 (권장: > 0.5)";
                                                 return "";
                                             };
 
