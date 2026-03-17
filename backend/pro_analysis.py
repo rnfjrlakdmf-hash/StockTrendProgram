@@ -433,7 +433,19 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
         results = []
         for sym in symbols[:5]:
             ticker_sym = sym.strip()
-            is_korean = re.match(r'^\d{6}$', ticker_sym) or ticker_sym.endswith(('.KS', '.KQ'))
+            
+            # [New] Resolve Korean Name to Code if needed
+            is_only_digits = re.match(r'^\d{6}$', ticker_sym)
+            is_kr_suffix = ticker_sym.endswith(('.KS', '.KQ'))
+            
+            if not is_only_digits and not is_kr_suffix and any('\uac00' <= c <= '\ud7a3' for c in ticker_sym):
+                if search_stock_code:
+                    resolved = search_stock_code(ticker_sym)
+                    if resolved:
+                        ticker_sym = resolved
+                        is_only_digits = True
+
+            is_korean = is_only_digits or is_kr_suffix
             
             naver_data = None
             if is_korean and gather_naver_stock_data:
