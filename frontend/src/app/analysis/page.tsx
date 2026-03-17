@@ -146,44 +146,48 @@ export default function AnalysisPage() {
         <div className="min-h-screen pb-20 text-white bg-black">
             <Header title="프로 분석" subtitle="퀀트 · 재무 분석 · 동종비교" />
 
-            <div className="max-w-6xl mx-auto px-4 space-y-6">
-                {/* Tabs */}
-                <div className="flex gap-2 bg-white/5 p-1 rounded-2xl">
-                    <button
-                        onClick={() => setActiveTab("quant")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "quant" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
-                    >
-                        <Zap className="w-4 h-4" /> 퀀트 스코어
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("financial")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "financial" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
-                    >
-                        <Shield className="w-4 h-4" /> 재무 분석
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("peer")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "peer" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
-                    >
-                        <Users className="w-4 h-4" /> 동종비교
-                    </button>
+            <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
+                {/* Tabs - Centered Horizontal */}
+                <div className="flex justify-center">
+                    <div className="flex gap-1 bg-white/5 p-1 rounded-2xl w-full max-w-2xl">
+                        <button
+                            onClick={() => setActiveTab("quant")}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "quant" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                        >
+                            <Zap className="w-4 h-4" /> 퀀트 스코어
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("financial")}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "financial" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                        >
+                            <Shield className="w-4 h-4" /> 재무 분석
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("peer")}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "peer" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
+                        >
+                            <Users className="w-4 h-4" /> 동종비교
+                        </button>
+                    </div>
                 </div>
 
-                {/* Search (Quant & Financial) */}
+                {/* Search Bar - Horizontal Centered */}
                 {(activeTab === "quant" || activeTab === "financial") && (
-                    <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4" />
-                            <input type="text" placeholder="종목코드 입력 (예: 005930, AAPL)"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono transition-all"
-                                value={symbol} onChange={e => setSymbol(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
-                            />
+                    <div className="max-w-3xl mx-auto w-full">
+                        <div className="flex flex-row items-center gap-2">
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4" />
+                                <input type="text" placeholder="종목코드 입력 (예: 005930, AAPL)"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono transition-all"
+                                    value={symbol} onChange={e => setSymbol(e.target.value)}
+                                    onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+                                />
+                            </div>
+                            <button onClick={handleSearch}
+                                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all whitespace-nowrap">
+                                분석
+                            </button>
                         </div>
-                        <button onClick={handleSearch}
-                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all">
-                            분석
-                        </button>
                     </div>
                 )}
 
