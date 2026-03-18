@@ -84,7 +84,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260306-dart-final",
+        "version": "20260319-market-status-fix",
         "service": "AI Stock Analyst Backend"
     }
 
