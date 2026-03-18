@@ -186,16 +186,33 @@ def gather_naver_stock_data(symbol: str):
                     elif "장마감" in text: market_status = "장마감"
                     break
         
-        # [Fix] Additional check for NXT status
-        # If NXT data is found but status was still '장마감' or 'Unknown', 
-        # and current time is NXT hours (15:40 ~ 20:00), force to NXT status
-        from datetime import datetime
-        now = datetime.now()
-        current_time = now.hour * 100 + now.minute
-        is_nxt_hours = (1540 <= current_time <= 2000)
+        # 3. Fallback: Search for keywords in common status containers if still Unknown
+        if market_status == "Unknown":
+            # Search in .description, .date, or around the price area
+            for tag in soup.select(".description, .date, .no_today, #time"):
+                text = tag.text.strip()
+                if "장중" in text: market_status = "장중"; break
+                if "장마감" in text: market_status = "장마감"; break
+                if "야간거래" in text: market_status = "야간거래(NXT)"; break
+                if "정규장종료" in text: market_status = "장마감"; break
+
+        # 4. Ultimate Fallback: Scrape the status from the meta/title or specific known text locations
+        if market_status == "Unknown":
+            if "장중" in html[:10000]: market_status = "장중"
+            elif "장마감" in html[:10000]: market_status = "장마감"
         
-        # If we have NXT data and it's NXT hours, prioritize it
-        if nxt_area and is_nxt_hours:
+        # [Fix] Additional check for NXT status (Force to KST UTC+9)
+        from datetime import datetime, timedelta, timezone
+        # Railway servers are often UTC, so we force to KST (UTC+9)
+        kst = timezone(timedelta(hours=9))
+        now_kst = datetime.now(kst)
+        current_time = now_kst.hour * 100 + now_kst.minute
+        
+        # Nextrade (NXT) After Market: 15:40 ~ 20:00 (KR Time)
+        is_nxt_active = (1540 <= current_time <= 2000)
+        
+        # If we have NXT data and it's NXT active hours, prioritize it
+        if nxt_area and is_nxt_active:
             market_status = "야간거래(NXT)"
             
         # [New] NXT (Nextrade) After Market Data
