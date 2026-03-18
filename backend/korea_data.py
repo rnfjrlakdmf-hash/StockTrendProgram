@@ -167,9 +167,36 @@ def gather_naver_stock_data(symbol: str):
 
         # [New] Market Status (In-session, Closed, After-Market)
         market_status = "Unknown"
-        status_tag = soup.select_one("#market_status")
-        if status_tag:
-            market_status = status_tag.text.strip()
+        # Try multiple common selectors for market status on Naver Finance
+        status_selectors = ["#market_status", "#time", ".description span.blind", ".description"]
+        for selector in status_selectors:
+            status_tag = soup.select_one(selector)
+            if status_tag:
+                text = status_tag.text.strip()
+                # Use regex to find the actual status part (e.g., 장중, 장마감)
+                # It's usually inside parentheses or after a date
+                match = re.search(r'(장중|장마감|야간거래\(NXT\)|장외|정규장종료|거래정지)', text)
+                if match:
+                    market_status = match.group(1)
+                    break
+                elif any(word in text for word in ["장중", "장마감", "야간거래(NXT)"]):
+                    # Fallback if regex didn't catch it but words exist
+                    if "장중" in text: market_status = "장중"
+                    elif "야간거래(NXT)" in text: market_status = "야간거래(NXT)"
+                    elif "장마감" in text: market_status = "장마감"
+                    break
+        
+        # [Fix] Additional check for NXT status
+        # If NXT data is found but status was still '장마감' or 'Unknown', 
+        # and current time is NXT hours (15:40 ~ 20:00), force to NXT status
+        from datetime import datetime
+        now = datetime.now()
+        current_time = now.hour * 100 + now.minute
+        is_nxt_hours = (1540 <= current_time <= 2000)
+        
+        # If we have NXT data and it's NXT hours, prioritize it
+        if nxt_area and is_nxt_hours:
+            market_status = "야간거래(NXT)"
             
         # [New] NXT (Nextrade) After Market Data
         nxt_data = None

@@ -581,12 +581,18 @@ function DiscoveryContent() {
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'}`}>
                                                     {stock.change}
                                                 </span>
-                                                {/* [New] Market Status Badge */}
+                                                {/* [New] Market Status Badge with Green Light */}
                                                 {stock.details?.market_status && (
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold border ${stock.details.market_status.includes('장중') || stock.details.market_status.includes('Open') || stock.details.market_status.includes('session')
-                                                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                                        : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold border shadow-sm transition-all ${stock.details.market_status.includes('장중') || stock.details.market_status.includes('Open') || stock.details.market_status.includes('야간거래') || stock.details.market_status.includes('NXT')
+                                                        ? 'bg-green-500/10 text-green-400 border-green-500/30 ring-1 ring-green-500/10'
+                                                        : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
                                                         }`}>
+                                                        {(stock.details.market_status.includes('장중') || stock.details.market_status.includes('Open') || stock.details.market_status.includes('야간거래') || stock.details.market_status.includes('NXT')) && (
+                                                            <span className="flex h-2 w-2 relative">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                            </span>
+                                                        )}
                                                         {stock.details.market_status === 'After-Market' ? '야간거래(NXT)' : stock.details.market_status}
                                                     </span>
                                                 )}
