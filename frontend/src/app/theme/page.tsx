@@ -94,10 +94,13 @@ export default function ThemePage() {
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/market/trending-themes?limit=6`);
+                // [Fix] 인기 검색어 통일: 메인 페이지와 동일한 네이버 인기 검색어(종목명)를 가져옵니다.
+                const res = await fetch(`${API_BASE_URL}/api/rank/naver/krx/popular`);
                 const json = await res.json();
                 if (json.status === "success" && Array.isArray(json.data)) {
-                    setTrendingThemes(json.data);
+                    // 상위 6개 종목명만 추출하여 태그로 사용
+                    const names = json.data.slice(0, 6).map((item: any) => item.name);
+                    setTrendingThemes(names);
                 }
             } catch (err) {
                 console.error("Failed to fetch trending themes:", err);
