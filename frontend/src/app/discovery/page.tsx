@@ -850,16 +850,7 @@ function DiscoveryContent() {
                                             관련 뉴스
                                         </button>
 
-                                        {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                            <>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'alerts' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('alerts')}
-                                                >
-                                                    🛡️ 회의 중 방어막 <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full ml-1 text-blue-300">New</span>
-                                                </button>
-                                            </>
-                                        )}
+
                                     </div>
 
                                     {activeTab === 'dividend_health' && (
