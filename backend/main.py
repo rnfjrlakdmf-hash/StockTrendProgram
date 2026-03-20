@@ -608,6 +608,12 @@ def read_alerts():
     """저장된 모든 알림 반환"""
     return {"status": "success", "data": get_alerts()}
 
+@app.delete("/api/alerts/{id}")
+def delete_alert_endpoint(id: int):
+    """알림 삭제"""
+    delete_alert(id)
+    return {"status": "success"}
+
 @app.get("/api/market/scanner")
 def read_market_scanner():
     """현재 증시 생존 지표 및 실시간 주요 특이 공시 조회"""
@@ -802,7 +808,9 @@ def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
 def delete_watchlist(symbol: str, x_user_id: str = Header(None)):
     """관심 종목 삭제"""
     user_id = x_user_id if x_user_id else "guest"
-    remove_watchlist(user_id, symbol)
+    # [Fix] Symbol might be URL encoded (e.g. .KS)
+    decoded_symbol = urllib.parse.unquote(symbol)
+    remove_watchlist(user_id, decoded_symbol)
     return {"status": "success"}
 
 
