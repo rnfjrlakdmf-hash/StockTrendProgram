@@ -52,8 +52,8 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                         {/* Left Side: Name, Symbol, Badge, Reason */}
                         <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[19px] md:text-[21px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight">
-                                    {item.name}
+                                <span className="text-[19px] md:text-[21px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight" suppressHydrationWarning>
+                                    <span>{item.name}</span>
                                 </span>
                                 {/* Badge Rendering */}
                                 {item.badge && (
@@ -65,14 +65,14 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
                             
                             <div className="flex flex-wrap items-center gap-2 text-[13px] md:text-[15px] text-gray-100 font-bold">
-                                <span className="shrink-0 font-mono tracking-wider bg-white/30 px-2 py-0.5 rounded text-[12px] text-white font-black shadow-sm ring-1 ring-white/20">
-                                    {item.symbol}
+                                <span className="shrink-0 font-mono tracking-wider bg-white/30 px-2 py-0.5 rounded text-[12px] text-white font-black shadow-sm ring-1 ring-white/20" translate="no">
+                                    <span>{item.symbol}</span>
                                 </span>
                                 {/* Badge Reason */}
                                 {item.badge?.reason && (
                                     <div className="mt-1 w-full">
-                                        <p className="text-[13px] md:text-[14px] text-white leading-snug break-words opacity-90">
-                                            - {item.badge.reason}
+                                        <p className="text-[13px] md:text-[14px] text-white leading-snug break-words opacity-90" suppressHydrationWarning>
+                                            <span>- </span><span>{item.badge.reason}</span>
                                         </p>
                                     </div>
                                 )}
@@ -89,7 +89,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 />
                                 <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg shadow-black/20`}>
                                     <Icon className="w-3.5 h-3.5" strokeWidth={4} />
-                                    <span>{item.change}</span>
+                                    <span translate="no">{item.change}</span>
                                 </div>
                             </div>
 

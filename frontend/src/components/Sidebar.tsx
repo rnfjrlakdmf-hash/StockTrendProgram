@@ -24,7 +24,6 @@ const navigation = [
     { name: "상담 챗봇", href: "/chat", icon: MessageSquare },
     { name: "포트폴리오", href: "/portfolio", icon: Shield },
     { name: "MY 관심종목", href: "/watchlist", icon: Star },
-    { name: "가격 알림", href: "/alerts", icon: Bell },
     { name: "설정 (API 연결)", href: "/settings", icon: Settings },
 ];
 

@@ -1,13 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, Trash2, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, AlertCircle } from "lucide-react";
+import { Star, StarOff, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
 import { useAuth } from "@/context/AuthContext";
-import { X } from "lucide-react";
+
+interface Alert {
+    id: number;
+    symbol: string;
+    type: string; // PRICE, RSI_OVERSOLD, GOLDEN_CROSS, PRICE_DROP
+    target_price: number;
+    condition: 'above' | 'below';
+    status: 'active' | 'triggered';
+    created_at: string;
+    triggered_at?: string;
+    triggered_price?: number;
+}
 
 export default function WatchlistPage() {
     const [watchlist, setWatchlist] = useState<any[]>([]);
@@ -16,8 +27,14 @@ export default function WatchlistPage() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const { user, isLoading: isAuthLoading } = useAuth();
     
-    // [New] Alert Modal State
+    // Alert Modal State
     const [alertStock, setAlertStock] = useState<{ symbol: string; price: number } | null>(null);
+
+    // Alerts List States
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [alertsLoading, setAlertsLoading] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
+    const [chatId, setChatId] = useState("");
 
     const fetchWatchlist = async () => {
         if (!user) return;
@@ -27,8 +44,6 @@ export default function WatchlistPage() {
             });
             const json = await res.json();
             if (json.status === "success" && json.data.length > 0) {
-                // Backend now returns {symbol, name} objects
-                // If it returns strings (legacy), map them. Validating structure.
                 const items = json.data.map((item: any) => {
                     if (typeof item === 'string') return { symbol: item, name: item };
                     return item;
@@ -44,15 +59,70 @@ export default function WatchlistPage() {
         }
     };
 
+    const fetchAlerts = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/alerts`);
+            const json = await res.json();
+            if (json.status === "success") {
+                const sorted = json.data.sort((a: Alert, b: Alert) => b.id - a.id);
+                setAlerts(sorted);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setAlertsLoading(false);
+        }
+    };
+
+    const handleDeleteAlert = async (id: number) => {
+        if (!confirm("알림을 삭제하시겠습니까?")) return;
+        try {
+            await fetch(`${API_BASE_URL}/api/alerts/${id}`, { method: 'DELETE' });
+            setAlerts(prev => prev.filter(a => a.id !== id));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const runAlertCheck = async () => {
+        setAlertsLoading(true);
+        try {
+            await fetch(`${API_BASE_URL}/api/alerts/check`);
+            await fetchAlerts();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setAlertsLoading(false);
+        }
+    };
+
+    const getSniperLabel = (type: string) => {
+        switch (type) {
+            case "RSI_OVERSOLD": return "💎 RSI 과매도 (침체)";
+            case "RSI_OVERBOUGHT": return "⚠️ RSI 과매수 (과열)";
+            case "GOLDEN_CROSS": return "🚀 골든크로스 (5일>20일)";
+            case "PRICE_DROP": return "📉 급락 발생 (-3%)";
+            default: return type;
+        }
+    };
+
     useEffect(() => {
         if (isAuthLoading) return;
         if (user) {
             fetchWatchlist();
-            const interval = setInterval(fetchWatchlist, 10000);
+            fetchAlerts();
+            const savedChatId = localStorage.getItem("telegram_chat_id");
+            if (savedChatId) setChatId(savedChatId);
+            
+            const interval = setInterval(() => {
+                fetchWatchlist();
+                fetchAlerts();
+            }, 15000);
             return () => clearInterval(interval);
         } else {
             setLoading(false);
             setWatchlist([]);
+            setAlerts([]);
         }
     }, [user, isAuthLoading]);
 
@@ -86,20 +156,6 @@ export default function WatchlistPage() {
                 headers: { "X-User-ID": user.id }
             });
             setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
-            const newQuotes = { ...quotes };
-            delete newQuotes[symbol];
-            setQuotes(newQuotes);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    const handleReset = async () => {
-        if (!confirm("관심 종목을 모두 초기화하시겠습니까?")) return;
-        try {
-            await fetch(`${API_BASE_URL}/api/watchlist`, { method: "DELETE" });
-            setWatchlist([]);
-            setQuotes({});
         } catch (e) {
             console.error(e);
         }
@@ -118,8 +174,6 @@ export default function WatchlistPage() {
                         <RefreshCw className="w-4 h-4" /> 실시간 시세 자동 업데이트 중 ({lastUpdated.toLocaleTimeString()})
                     </p>
                 </div>
-
-                {/* Reset Button Removed as requested */}
             </div>
 
             {/* Content */}
@@ -130,32 +184,18 @@ export default function WatchlistPage() {
                 </div>
             ) : !user ? (
                 <div className="flex flex-col items-center justify-center py-32 bg-white/5 border border-dashed border-white/10 rounded-3xl text-center">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                        <AlertCircle className="w-10 h-10 text-yellow-600" />
-                    </div>
+                    <AlertCircle className="w-10 h-10 text-yellow-600 mb-6" />
                     <h3 className="text-xl font-bold text-white mb-2">로그인이 필요합니다</h3>
-                    <p className="text-gray-400 mb-6 max-w-md">
-                        관심 종목을 관리하려면 구글 로그인을 진행해주세요.
-                    </p>
+                    <p className="text-gray-400">관심 종목 및 알림 관리를 위해 로그인해주세요.</p>
                 </div>
             ) : watchlist.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-32 bg-white/5 border border-dashed border-white/10 rounded-3xl text-center">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                        <Star className="w-10 h-10 text-gray-600" />
-                    </div>
+                    <Star className="w-10 h-10 text-gray-600 mb-6" />
                     <h3 className="text-xl font-bold text-white mb-2">관심 종목이 비어있습니다</h3>
-                    <p className="text-gray-400 mb-6 max-w-md">
-                        종목 발굴 페이지에서 유망한 종목을 찾아 별표(★)를 눌러 추가해보세요.
-                    </p>
-                    <Link
-                        href="/discovery"
-                        className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
-                    >
-                        종목 발굴하러 가기
-                    </Link>
+                    <Link href="/discovery" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl mt-4">종목 발굴하러 가기</Link>
                 </div>
             ) : (
-                <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+                <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
                     <CleanStockList
                         items={watchlist.map(item => {
                             const data = quotes[item.symbol];
@@ -164,39 +204,117 @@ export default function WatchlistPage() {
                                 name: item.name || (data ? data.name : item.symbol),
                                 price: data ? data.price : "-",
                                 change: data ? data.change : "0%",
+                                badge: item.badge
                             };
                         })}
-                        onItemClick={(sym) => {
-                            // Use window.location as router.push might not be imported or we want full reload? 
-                            // Using window.location for now as Link covered whole div before
-                            window.location.href = `/?q=${sym}`;
-                        }}
+                        onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
                         onDelete={handleRemoveItem}
-                        onAlertClick={(symbol, price) => {
-                            setAlertStock({ symbol, price });
-                        }}
+                        onAlertClick={(symbol, price) => { setAlertStock({ symbol, price }); }}
                     />
                 </div>
             )}
 
-            {/* [New] Price Alert Modal */}
+            {/* Alerts Section */}
+            {user && (
+                <div className="space-y-8 pt-8 border-t border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <BellRing className="w-6 h-6 text-blue-400" />
+                            <h2 className="text-2xl font-black text-white">나의 알림 목록 ({alerts.length})</h2>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={runAlertCheck} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition-all">
+                                <RefreshCw className={`w-5 h-5 ${alertsLoading ? 'animate-spin' : ''}`} />
+                            </button>
+                            <button onClick={() => setShowSettings(!showSettings)} className={`p-2.5 rounded-xl border transition-all ${showSettings ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-400'}`}>
+                                <Settings2 className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {showSettings && (
+                        <div className="grid md:grid-cols-2 gap-6 p-6 bg-blue-900/10 border border-blue-500/20 rounded-3xl animate-in zoom-in-95">
+                            <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
+                                <h3 className="font-bold flex items-center gap-2 text-blue-300"><Bell className="w-4 h-4" /> 웹 푸시 알림</h3>
+                                <p className="text-xs text-gray-500 leading-relaxed">브라우저 알림으로 가격 변동 소식을 즉시 받아볼 수 있습니다.</p>
+                                <button
+                                    onClick={async () => {
+                                        const { requestFCMToken } = await import("@/lib/firebase");
+                                        const token = await requestFCMToken();
+                                        if (token) {
+                                            await fetch(`${API_BASE_URL}/api/fcm/register`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id },
+                                                body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
+                                            });
+                                            alert("✅ 설정 완료!");
+                                        }
+                                    }}
+                                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all"
+                                >
+                                    🔔 푸시 알림 활성화
+                                </button>
+                            </div>
+                            <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
+                                <h3 className="font-bold flex items-center gap-2 text-yellow-500"><Zap className="w-4 h-4" /> 텔레그램 연동</h3>
+                                <div className="text-sm font-mono bg-white/5 p-3 rounded-lg text-gray-300">ID: {chatId || "미설정"}</div>
+                                <button
+                                    onClick={async () => {
+                                        const res = await fetch(`${API_BASE_URL}/api/telegram/recent-users`);
+                                        const json = await res.json();
+                                        if (json.data?.length > 0) {
+                                            localStorage.setItem("telegram_chat_id", json.data[0].id);
+                                            setChatId(json.data[0].id);
+                                            alert("✅ 연결 성공!");
+                                        } else { alert("@rnfjrlAlarm_bot 에게 먼저 메시지를 보내주세요."); }
+                                    }}
+                                    className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold rounded-xl transition-all"
+                                >
+                                    🔄 연결 상태 확인
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid gap-3">
+                        {alerts.length === 0 ? (
+                            <div className="py-16 text-center text-gray-600 bg-white/[0.02] rounded-3xl border border-dashed border-white/5">등록된 알림이 없습니다.</div>
+                        ) : (
+                            alerts.map(alert => (
+                                <div key={alert.id} className={`p-5 rounded-2xl border flex items-center justify-between transition-all ${alert.status === 'triggered' ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/[0.03] border-white/10 hover:bg-white/5'}`}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`p-3 rounded-full ${alert.status === 'triggered' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                            {alert.status === 'triggered' ? <BellRing className="w-5 h-5 animate-bounce" /> : <Bell className="w-5 h-5" />}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg font-black text-white">{alert.symbol}</span>
+                                                {alert.type && alert.type !== "PRICE" && <span className="text-[10px] bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded font-black tracking-tighter uppercase">SNIPER</span>}
+                                            </div>
+                                            <div className="text-gray-300 text-sm font-medium">
+                                                {(!alert.type || alert.type === "PRICE") 
+                                                    ? `목표가 ₩${alert.target_price.toLocaleString()} ${alert.condition === 'above' ? '이상' : '이하'}`
+                                                    : getSniperLabel(alert.type)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => handleDeleteAlert(alert.id)} className="p-2.5 text-gray-600 hover:text-red-400 transition-all"><Trash2 className="w-5 h-5" /></button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Price Alert Modal */}
             {alertStock && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="relative w-full max-w-lg animate-in fade-in zoom-in duration-200">
-                        <button 
-                            onClick={() => setAlertStock(null)}
-                            className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-white transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <PriceAlertSetup 
-                            symbol={alertStock.symbol}
-                            currentPrice={alertStock.price}
-                        />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+                    <div className="relative w-full max-w-lg">
+                        <button onClick={() => setAlertStock(null)} className="absolute -top-12 right-0 p-2 text-gray-400 hover:text-white transition-colors"><X className="w-8 h-8" /></button>
+                        <PriceAlertSetup symbol={alertStock.symbol} currentPrice={alertStock.price} />
                     </div>
                 </div>
             )}
         </div>
     );
 }
-
