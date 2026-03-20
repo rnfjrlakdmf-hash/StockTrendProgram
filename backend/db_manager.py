@@ -836,3 +836,28 @@ def get_yesterday_vote_results(symbol: str) -> dict:
         return {"up": 0, "down": 0, "total": 0, "up_pct": 0, "down_pct": 0}
     finally:
         conn.close()
+
+def get_user_tokens_by_watchlist_symbol(symbol: str) -> list:
+    """특정 종목을 관심종목으로 등록한 모든 사용자의 FCM 토큰 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # watchlist와 fcm_tokens 테이블 조인
+        # symbol은 '005930' 또는 '005930.KS' 등 다양할 수 있으므로 LIKE 검색 고려 (여기선 정확히 일치 우선)
+        # 팁: .KS가 붙어있는 경우를 대비해 처리
+        base_symbol = symbol.split('.')[0] if '.' in symbol else symbol
+        
+        cursor.execute("""
+            SELECT DISTINCT ft.token
+            FROM fcm_tokens ft
+            JOIN watchlist w ON ft.user_id = w.user_id
+            WHERE w.symbol = ? OR w.symbol LIKE ?
+        """, (symbol, f"{base_symbol}%"))
+        
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"[DB] Get tokens by symbol error: {e}")
+        return []
+    finally:
+        conn.close()

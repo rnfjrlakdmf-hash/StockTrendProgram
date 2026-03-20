@@ -77,34 +77,43 @@ async def check_and_notify_disclosures():
         if new_findings:
             logger.info(f"Found {len(new_findings)} new disclosures.")
             
-            tokens = get_all_fcm_tokens()
-            if not tokens:
-                logger.warning("No FCM tokens found. Skipping notification.")
-            else:
-                for item in new_findings:
-                    # Construct Message
-                    # Title: 🚨 [보호예수] 삼성전자
-                    # Body: 의무보호예수 해제 공시가 등록되었습니다.
-                    
+            from korea_data import search_korean_stock_symbol
+            from db_manager import get_user_tokens_by_watchlist_symbol
+            
+            for item in new_findings:
+                # 1. Identify Symbol from Corp Name
+                corp = item.get('corp_name', 'Unknown')
+                symbol = search_korean_stock_symbol(corp)
+                
+                # 2. Find Targeted Users (FCM Tokens)
+                if symbol:
+                    # Match by Ticker
+                    tokens = get_user_tokens_by_watchlist_symbol(symbol)
+                else:
+                    # Fallback or Skip? 
+                    # If we can't map to ticker, we can't match watchlist exactly.
+                    # For now, let's skip personal push if ticker unknown to avoid accidental spam.
+                    tokens = []
+                
+                if tokens:
                     category = item.get('keyword', '공시')
-                    corp = item.get('corp_name', 'Unknown')
                     title_text = item.get('title', '')
                     
-                    noti_title = f"🚨 [{category}] {corp}"
-                    noti_body = f"{title_text}\n\n악재성 공시가 감지되었습니다. 리스크를 확인하세요."
+                    # [Message] Personalize for Watchlist
+                    noti_title = f"🚨 [관심종목 {category}] {corp}"
+                    noti_body = f"{title_text}\n\n나의 관심종목에 새로운 공시가 올라왔습니다. 내용을 확인하세요."
                     
                     # Data payload for app navigation
                     data_payload = {
                         "type": "DISCLOSURE_ALERT",
-                        "symbol": corp, # We might not have code, just name
-                        "url": "/discovery" # Go to discovery or news
+                        "symbol": symbol or corp,
+                        "url": f"/discovery?q={symbol or corp}"
                     }
                     
-                    logger.info(f"Sending alert: {noti_title}")
+                    logger.info(f"Sending targeted alert for {corp} ({symbol}) to {len(tokens)} tokens")
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
                     
-                    # Prevent spamming? (Maybe group them?)
-                    # For now, send individual.
+                    # Small delay between notifications
                     await asyncio.sleep(1)
 
             # 3. Update State
