@@ -62,11 +62,11 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2 text-[12px] md:text-[14px] text-gray-300 font-medium overflow-hidden">
-                                <span className="shrink-0 font-mono tracking-wider bg-white/20 px-1.5 py-0.5 rounded text-[12px] text-white font-bold">{item.symbol}</span>
+                            <div className="flex flex-wrap items-center gap-2 text-[13px] md:text-[15px] text-gray-100 font-semibold mb-1">
+                                <span className="shrink-0 font-mono tracking-wider bg-white/30 px-2 py-0.5 rounded text-[12px] text-white font-black shadow-sm ring-1 ring-white/20">{item.symbol}</span>
                                 {/* Badge Reason */}
                                 {item.badge?.reason && (
-                                    <span className="text-[12px] md:text-[13px] text-gray-300 truncate">
+                                    <span className="text-[13px] md:text-[14px] text-white/90 leading-snug">
                                         - {item.badge.reason}
                                     </span>
                                 )}
