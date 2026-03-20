@@ -15,8 +15,8 @@ export default function ThemePage() {
     const [error, setError] = useState("");
     const [quotes, setQuotes] = useState<Record<string, any>>({});
 
-    const handleAnalyze = async (overrideKeyword?: string) => {
-        const searchKeyword = overrideKeyword || keyword;
+    const handleAnalyze = async (overrideKeyword?: any) => {
+        const searchKeyword = typeof overrideKeyword === 'string' ? overrideKeyword : keyword;
         if (!searchKeyword) return;
         
         setLoading(true);

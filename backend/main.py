@@ -619,9 +619,17 @@ def read_market_scanner():
         return {"status": "error", "message": str(e)}
 
 
+@app.get("/api/theme/{keyword:path}")
 @app.get("/api/theme")
-async def read_theme(keyword: str = Query(..., description="테마 검색 키워드")):
-    """테마 키워드 분석 (실시간 시세 포함) - 쿼리 파라미터 방식 (슬래시 대응)"""
+async def read_theme(keyword: str = None, keyword_q: str = Query(None, alias="keyword")):
+    """테마 키워드 분석 (실시간 시세 포함) - 경로 및 쿼리 파라미터 동시 지원"""
+    actual_keyword = keyword or keyword_q
+    if not actual_keyword:
+         return {"status": "error", "message": "키워드가 필요합니다."}
+    
+    # keyword 변수를 actual_keyword로 덮어쓰거나 이후 로직에서 actual_keyword 사용
+    keyword = actual_keyword
+    
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
     
