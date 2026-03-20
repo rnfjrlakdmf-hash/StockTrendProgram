@@ -302,7 +302,7 @@ export default function ThemePage() {
                                 <div className="bg-gradient-to-r from-orange-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
                                     <h4 className="text-xl font-black text-white flex items-center gap-2">
                                         <TrendingUp className="w-6 h-6 text-orange-400" />
-                                        실시간 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.1</span>
+                                        실시간 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
                                     </h4>
                                 </div>
                                 <CleanStockList
@@ -330,7 +330,7 @@ export default function ThemePage() {
                                         <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
                                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                                         </div>
-                                        실시간 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.1</span>
+                                        실시간 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
                                     </h4>
                                 </div>
                                 <CleanStockList

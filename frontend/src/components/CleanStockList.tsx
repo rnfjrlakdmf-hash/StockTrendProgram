@@ -46,7 +46,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                 return (
                     <div
                         key={item.symbol}
-                        className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-6 px-4 md:px-6 flex items-center justify-between gap-4 group border-b border-white/5 last:border-0 border-l-4 border-transparent hover:border-blue-500/50"
+                        className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-6 px-4 md:px-6 flex items-center justify-between gap-4 group border-b border-white/5 last:border-0 border-l-4 border-orange-500 shadow-[inset_4px_0_10px_-4px_rgba(249,115,22,0.3)]"
                         onClick={() => onItemClick && onItemClick(item.symbol)}
                     >
                         {/* Left Side: Name, Symbol, Badge, Reason */}
