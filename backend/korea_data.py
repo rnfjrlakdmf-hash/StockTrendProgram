@@ -622,6 +622,50 @@ def get_naver_daily_prices(symbol: str):
         print(f"Naver History Error: {e}")
         return []
 
+def get_naver_theme_rank() -> List[str]:
+    """
+    네이버 금융에서 실시간 테마 순위(상위 10개)를 가져옵니다.
+    URL: https://finance.naver.com/sise/theme.naver
+    """
+    try:
+        url = "https://finance.naver.com/sise/theme.naver"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        
+        # [Fix] Smart Decoding: Naver Finance Theme page is EUC-KR
+        content = res.content
+        try:
+            html = content.decode('euc-kr')
+        except UnicodeDecodeError:
+            try:
+                html = content.decode('utf-8')
+            except UnicodeDecodeError:
+                html = content.decode('cp949', 'ignore')
+
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        themes = []
+        # 테마명은 'col_type1' 클래스의 td 안에 <a> 태그로 존재합니다.
+        # 광고나 헤더를 제외한 실제 데이터 행들을 순회합니다.
+        name_tags = soup.select("table.type_1 td.col_type1 a")
+        
+        for tag in name_tags:
+            theme_name = tag.text.strip()
+            if theme_name:
+                themes.append(theme_name)
+                
+            # 상위 10~15개 정도만 활용해도 충분하므로 제한을 둡니다.
+            if len(themes) >= 20:
+                break
+                
+        # 만약 스크래핑에 전혀 실패했다면 기본 테마 목록을 반환합니다. (폴백)
+        if not themes:
+            return ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]
+            
+        return themes
+    except Exception as e:
+        print(f"Theme Rank Scraping Error: {e}")
+        return ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]
+
 def get_naver_flash_news():
     """
     Main market news

@@ -89,18 +89,19 @@ export default function ThemePage() {
         fetchQuotes();
     }, [result]);
 
-    const [trendingThemes, setTrendingThemes] = useState<string[]>(["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]);
+    const [trendingThemes, setTrendingThemes] = useState<string[]>([
+        "비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇",
+        "2차전지", "방산", "반도체", "친환경에너지"
+    ]);
 
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                // [Fix] 인기 검색어 통일: 메인 페이지와 동일한 네이버 인기 검색어(종목명)를 가져옵니다.
-                const res = await fetch(`${API_BASE_URL}/api/rank/naver/krx/popular`);
+                // [Fix] 실시간 테마 키워드: 네이버 금융의 실시간 테마 순위 API를 호출합니다.
+                const res = await fetch(`${API_BASE_URL}/api/rank/themes`);
                 const json = await res.json();
-                if (json.status === "success" && Array.isArray(json.data)) {
-                    // 상위 6개 종목명만 추출하여 태그로 사용
-                    const names = json.data.slice(0, 6).map((item: any) => item.name);
-                    setTrendingThemes(names);
+                if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
+                    setTrendingThemes(json.data.slice(0, 10)); // 상위 10개만 표시
                 }
             } catch (err) {
                 console.error("Failed to fetch trending themes:", err);
@@ -108,6 +109,7 @@ export default function ThemePage() {
         };
         fetchTrending();
     }, []);
+
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleAnalyze();
