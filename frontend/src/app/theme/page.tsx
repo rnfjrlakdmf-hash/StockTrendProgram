@@ -295,13 +295,15 @@ export default function ThemePage() {
                             </div>
                         </div>
 
-                        {/* Stocks Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Leaders & Followers */}
+                        <div className="grid lg:grid-cols-2 gap-8">
                             {/* Leaders */}
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-3 md:p-5">
-                                <div className="p-2 md:p-0 pb-0 flex items-center gap-2 mb-3 md:mb-5">
-                                    <TrendingUp className="text-red-400 w-5 h-5" />
-                                    <h4 className="text-xl font-bold text-white">대장주 (Leaders)</h4>
+                            <div className="bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="bg-gradient-to-r from-orange-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
+                                    <h4 className="text-xl font-black text-white flex items-center gap-2">
+                                        <TrendingUp className="w-6 h-6 text-orange-400" />
+                                        실시간 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.1</span>
+                                    </h4>
                                 </div>
                                 <CleanStockList
                                     items={result.leaders.map((stock: any) => {
@@ -322,10 +324,14 @@ export default function ThemePage() {
                             </div>
 
                             {/* Followers */}
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-3 md:p-5">
-                                <div className="p-2 md:p-0 pb-0 flex items-center gap-2 mb-3 md:mb-5">
-                                    <Layers className="text-blue-400 w-5 h-5" />
-                                    <h4 className="text-xl font-bold text-white">관련주 (Followers)</h4>
+                            <div className="bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
+                                    <h4 className="text-xl font-black text-white flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                                        </div>
+                                        실시간 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.1</span>
+                                    </h4>
                                 </div>
                                 <CleanStockList
                                     items={result.followers.map((stock: any) => {

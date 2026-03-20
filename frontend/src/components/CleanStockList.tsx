@@ -46,7 +46,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                 return (
                     <div
                         key={item.symbol}
-                        className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-6 px-4 md:px-6 flex items-center justify-between gap-4 group border-b border-white/5 last:border-0"
+                        className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-6 px-4 md:px-6 flex items-center justify-between gap-4 group border-b border-white/5 last:border-0 border-l-4 border-transparent hover:border-blue-500/50"
                         onClick={() => onItemClick && onItemClick(item.symbol)}
                     >
                         {/* Left Side: Name, Symbol, Badge, Reason */}
@@ -70,9 +70,11 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 </span>
                                 {/* Badge Reason */}
                                 {item.badge?.reason && (
-                                    <span className="text-[13px] md:text-[14px] text-white leading-snug break-words">
-                                        - {item.badge.reason}
-                                    </span>
+                                    <div className="mt-1 w-full">
+                                        <p className="text-[13px] md:text-[14px] text-white leading-snug break-words opacity-90">
+                                            - {item.badge.reason}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         </div>
