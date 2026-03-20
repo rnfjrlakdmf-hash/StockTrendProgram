@@ -15,8 +15,10 @@ export default function ThemePage() {
     const [error, setError] = useState("");
     const [quotes, setQuotes] = useState<Record<string, any>>({});
 
-    const handleAnalyze = async () => {
-        if (!keyword) return;
+    const handleAnalyze = async (overrideKeyword?: string) => {
+        const searchKeyword = overrideKeyword || keyword;
+        if (!searchKeyword) return;
+        
         setLoading(true);
         setError("");
 
@@ -25,7 +27,7 @@ export default function ThemePage() {
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/theme?keyword=${encodeURIComponent(keyword)}`, {
+            const res = await fetch(`${API_BASE_URL}/api/theme?keyword=${encodeURIComponent(searchKeyword)}`, {
                 signal: controller.signal
             });
 
@@ -156,7 +158,7 @@ export default function ThemePage() {
                         {trendingThemes.map(t => (
                             <button
                                 key={t}
-                                onClick={() => { setKeyword(t); requestAnimationFrame(() => handleAnalyze()); }}
+                                onClick={() => { setKeyword(t); handleAnalyze(t); }}
                                 className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-gray-300"
                             >
                                 #{t}
