@@ -296,8 +296,8 @@ export default function ThemePage() {
                         {/* Stocks Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Leaders */}
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-0 md:p-6">
-                                <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-6">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-3 md:p-5">
+                                <div className="p-2 md:p-0 pb-0 flex items-center gap-2 mb-3 md:mb-5">
                                     <TrendingUp className="text-red-400 w-5 h-5" />
                                     <h4 className="text-xl font-bold text-white">대장주 (Leaders)</h4>
                                 </div>
@@ -320,8 +320,8 @@ export default function ThemePage() {
                             </div>
 
                             {/* Followers */}
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-0 md:p-6">
-                                <div className="p-4 md:p-0 pb-0 flex items-center gap-2 mb-2 md:mb-6">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-3 md:p-5">
+                                <div className="p-2 md:p-0 pb-0 flex items-center gap-2 mb-3 md:mb-5">
                                     <Layers className="text-blue-400 w-5 h-5" />
                                     <h4 className="text-xl font-bold text-white">관련주 (Followers)</h4>
                                 </div>
