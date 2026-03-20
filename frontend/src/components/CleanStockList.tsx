@@ -42,7 +42,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
 
                 const textColorClass = isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : 'text-gray-300';
                 const Icon = isPositive ? ArrowUpRight : isNegative ? ArrowDownRight : Minus;
-
+                return (
                     <div
                         key={item.symbol}
                         className="hover:bg-white/[0.03] active:bg-white/10 transition-all cursor-pointer py-5 px-6 grid grid-cols-[1fr_auto] items-center gap-4 group border-b border-white/5 last:border-0"
@@ -62,11 +62,11 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2 text-[12px] md:text-[13px] text-gray-400 font-bold overflow-hidden">
-                                <span className="shrink-0 font-mono tracking-wider bg-white/10 px-1.5 py-0.5 rounded text-[11px] text-gray-300">{item.symbol}</span>
+                            <div className="flex items-center gap-2 text-[12px] md:text-[14px] text-gray-300 font-medium overflow-hidden">
+                                <span className="shrink-0 font-mono tracking-wider bg-white/20 px-1.5 py-0.5 rounded text-[12px] text-white font-bold">{item.symbol}</span>
                                 {/* Badge Reason */}
                                 {item.badge?.reason && (
-                                    <span className="text-[10px] md:text-[11px] text-gray-600 truncate">
+                                    <span className="text-[12px] md:text-[13px] text-gray-300 truncate">
                                         - {item.badge.reason}
                                     </span>
                                 )}
