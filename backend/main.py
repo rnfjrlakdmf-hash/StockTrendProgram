@@ -619,9 +619,9 @@ def read_market_scanner():
         return {"status": "error", "message": str(e)}
 
 
-@app.get("/api/theme/{keyword}")
-async def read_theme(keyword: str):
-    """테마 키워드 분석 (실시간 시세 포함)"""
+@app.get("/api/theme")
+async def read_theme(keyword: str = Query(..., description="테마 검색 키워드")):
+    """테마 키워드 분석 (실시간 시세 포함) - 쿼리 파라미터 방식 (슬래시 대응)"""
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
     
