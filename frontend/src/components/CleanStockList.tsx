@@ -55,7 +55,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             {/* Left: Name & Symbol & Badge */}
                             <div className="flex flex-col gap-1.5 min-w-0 flex-1 mr-4">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[20px] md:text-[24px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors whitespace-nowrap leading-none">
+                                    <span className="text-[20px] md:text-[24px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors truncate leading-none">
                                         {item.name}
                                     </span>
                                     {/* Badge Rendering */}
