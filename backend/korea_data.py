@@ -165,57 +165,8 @@ def gather_naver_stock_data(symbol: str):
         if prev_close_tag:
             prev_close = int(prev_close_tag.text.replace(',', ''))
 
-        # [New] Market Status (In-session, Closed, After-Market)
-        market_status = "Unknown"
-        # Try multiple common selectors for market status on Naver Finance
-        status_selectors = ["#market_status", "#time", ".description span.blind", ".description"]
-        for selector in status_selectors:
-            status_tag = soup.select_one(selector)
-            if status_tag:
-                text = status_tag.text.strip()
-                # Use regex to find the actual status part (e.g., 장중, 장마감)
-                # It's usually inside parentheses or after a date
-                match = re.search(r'(장중|장마감|야간거래\(NXT\)|장외|정규장종료|거래정지)', text)
-                if match:
-                    market_status = match.group(1)
-                    break
-                elif any(word in text for word in ["장중", "장마감", "야간거래(NXT)"]):
-                    # Fallback if regex didn't catch it but words exist
-                    if "장중" in text: market_status = "장중"
-                    elif "야간거래(NXT)" in text: market_status = "야간거래(NXT)"
-                    elif "장마감" in text: market_status = "장마감"
-                    break
-        
-        # 3. Fallback: Search for keywords in common status containers if still Unknown
-        if market_status == "Unknown":
-            # Search in .description, .date, or around the price area
-            for tag in soup.select(".description, .date, .no_today, #time"):
-                text = tag.text.strip()
-                if "장중" in text: market_status = "장중"; break
-                if "장마감" in text: market_status = "장마감"; break
-                if "야간거래" in text: market_status = "야간거래(NXT)"; break
-                if "정규장종료" in text: market_status = "장마감"; break
-
-        # 4. Ultimate Fallback: Scrape the status from the meta/title or specific known text locations
-        if market_status == "Unknown":
-            if "장중" in html[:10000]: market_status = "장중"
-            elif "장마감" in html[:10000]: market_status = "장마감"
-        
-        # [Fix] Additional check for NXT status (Force to KST UTC+9)
-        from datetime import datetime, timedelta, timezone
-        # Railway servers are often UTC, so we force to KST (UTC+9)
-        kst = timezone(timedelta(hours=9))
-        now_kst = datetime.now(kst)
-        current_time = now_kst.hour * 100 + now_kst.minute
-        
-        # Nextrade (NXT) After Market: 15:40 ~ 20:00 (KR Time)
-        is_nxt_active = (1540 <= current_time <= 2000)
-        
-        # If we have NXT data and it's NXT active hours, prioritize it
-        if nxt_area and is_nxt_active:
-            market_status = "야간거래(NXT)"
-            
-        # [New] NXT (Nextrade) After Market Data
+        # [Fix] NXT 데이터를 먼저 가져와야 market_status 체크에 사용할 수 있음
+        # [New] NXT (Nextrade) After Market Data - MUST come before market_status check
         nxt_data = None
         nxt_area = soup.select_one("#rate_info_nxt")
         if nxt_area:
@@ -245,6 +196,52 @@ def gather_naver_stock_data(symbol: str):
                     }
             except Exception as e:
                 print(f"NXT Scraping Error for {symbol}: {e}")
+
+        # [New] Market Status (In-session, Closed, After-Market)
+        market_status = "Unknown"
+        # Try multiple common selectors for market status on Naver Finance
+        status_selectors = ["#market_status", "#time", ".description span.blind", ".description"]
+        for selector in status_selectors:
+            status_tag = soup.select_one(selector)
+            if status_tag:
+                text = status_tag.text.strip()
+                # Use regex to find the actual status part (e.g., 장중, 장마감)
+                match = re.search(r'(장중|장마감|야간거래\(NXT\)|장외|정규장종료|거래정지)', text)
+                if match:
+                    market_status = match.group(1)
+                    break
+                elif any(word in text for word in ["장중", "장마감", "야간거래(NXT)"]):
+                    if "장중" in text: market_status = "장중"
+                    elif "야간거래(NXT)" in text: market_status = "야간거래(NXT)"
+                    elif "장마감" in text: market_status = "장마감"
+                    break
+        
+        # 3. Fallback: Search for keywords in common status containers
+        if market_status == "Unknown":
+            for tag in soup.select(".description, .date, .no_today, #time"):
+                text = tag.text.strip()
+                if "장중" in text: market_status = "장중"; break
+                if "장마감" in text: market_status = "장마감"; break
+                if "야간거래" in text: market_status = "야간거래(NXT)"; break
+                if "정규장종료" in text: market_status = "장마감"; break
+
+        # 4. Ultimate Fallback: keyword scan in HTML
+        if market_status == "Unknown":
+            if "장중" in html[:10000]: market_status = "장중"
+            elif "장마감" in html[:10000]: market_status = "장마감"
+        
+        # [Fix] Additional check for NXT status (Force to KST UTC+9)
+        from datetime import datetime, timedelta, timezone
+        kst = timezone(timedelta(hours=9))
+        now_kst = datetime.now(kst)
+        current_time = now_kst.hour * 100 + now_kst.minute
+        
+        # Nextrade (NXT) After Market: 15:40 ~ 20:00 (KR Time)
+        is_nxt_active = (1540 <= current_time <= 2000)
+        
+        # If we have NXT data and it's NXT active hours, prioritize it
+        if nxt_area and is_nxt_active:
+            market_status = "야간거래(NXT)"
             
         # [Extra] Sector (Upjong)
         sector_name = "Unknown"
