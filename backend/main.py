@@ -854,6 +854,55 @@ def read_watchlist_closing_summary(x_user_id: str = Header(None)):
              
     return {"status": "success", "data": summary_data}
 
+@app.get("/api/watchlist/cb-alerts")
+def read_watchlist_cb_alerts(x_user_id: str = Header(None)):
+    """관심 종목의 최신 전환사채(CB)/오버행 공시 알림 조회"""
+    from dart_disclosure import get_dart_disclosures
+    from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+
+    user_id = x_user_id if x_user_id else "guest"
+    symbols = get_watchlist(user_id)
+
+    # 전환사채 관련 키워드
+    CB_KEYWORDS = ['전환사채', '신주인수권부사채', 'CB', 'BW', '유상증자', '전환청구권', '교환사채', '감자', '신주발행']
+
+    results = []
+    for sym in symbols[:10]:  # 최대 10개 종목 (속도 제한)
+        try:
+            # 한국 종목 코드만 처리 (숫자 6자리)
+            code = sym.split('.')[0]
+            if not (code.isdigit() and len(code) == 6):
+                continue
+
+            disclosures = get_dart_disclosures(sym)
+            # CB 관련 공시만 필터링
+            cb_items = [d for d in disclosures if any(kw in d.get('title', '') for kw in CB_KEYWORDS)]
+
+            if cb_items:
+                name = sym
+                kor = get_korean_stock_name(sym)
+                if kor:
+                    name = kor
+                elif sym in GLOBAL_KOREAN_NAMES:
+                    name = GLOBAL_KOREAN_NAMES[sym]
+
+                for item in cb_items[:3]:  # 종목당 최대 3건
+                    results.append({
+                        "symbol": sym,
+                        "name": name,
+                        "title": item["title"],
+                        "date": item["date"],
+                        "link": item["link"],
+                        "type": "CB_DISCLOSURE"
+                    })
+        except Exception as e:
+            print(f"CB Alert fetch error for {sym}: {e}")
+
+    # 최신순 정렬
+    results.sort(key=lambda x: x.get("date", ""), reverse=True)
+    return {"status": "success", "data": results}
+
+
 class ChatRequest(BaseModel):
     message: str
 

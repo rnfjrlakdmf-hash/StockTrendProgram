@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, StarOff, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2 } from "lucide-react";
+import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
@@ -35,6 +35,10 @@ export default function WatchlistPage() {
     const [alertsLoading, setAlertsLoading] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
     const [chatId, setChatId] = useState("");
+
+    // CB Disclosure State
+    const [cbAlerts, setCbAlerts] = useState<any[]>([]);
+    const [cbLoading, setCbLoading] = useState(false);
 
     const fetchWatchlist = async () => {
         if (!user) return;
@@ -96,6 +100,24 @@ export default function WatchlistPage() {
         }
     };
 
+    const fetchCbAlerts = async () => {
+        if (!user) return;
+        setCbLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist/cb-alerts`, {
+                headers: { "X-User-ID": user.id }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                setCbAlerts(json.data);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setCbLoading(false);
+        }
+    };
+
     const getSniperLabel = (type: string) => {
         switch (type) {
             case "RSI_OVERSOLD": return "💎 RSI 과매도 (침체)";
@@ -111,6 +133,7 @@ export default function WatchlistPage() {
         if (user) {
             fetchWatchlist();
             fetchAlerts();
+            fetchCbAlerts();
             const savedChatId = localStorage.getItem("telegram_chat_id");
             if (savedChatId) setChatId(savedChatId);
             
@@ -118,7 +141,9 @@ export default function WatchlistPage() {
                 fetchWatchlist();
                 fetchAlerts();
             }, 15000);
-            return () => clearInterval(interval);
+            // CB 알림은 5분마다 (API 부하 제한)
+            const cbInterval = setInterval(fetchCbAlerts, 300000);
+            return () => { clearInterval(interval); clearInterval(cbInterval); };
         } else {
             setLoading(false);
             setWatchlist([]);
@@ -306,7 +331,64 @@ export default function WatchlistPage() {
                 </div>
             )}
 
-            {/* Price Alert Modal */}
+            {/* CB Disclosure Alerts */}
+            {user && (
+                <div className="space-y-4 pt-8 border-t border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FileWarning className="w-6 h-6 text-orange-400" />
+                            <h2 className="text-2xl font-black text-white">전환사채(CB) 공시 알림</h2>
+                            {cbAlerts.length > 0 && (
+                                <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-black rounded-full animate-pulse">
+                                    {cbAlerts.length}건
+                                </span>
+                            )}
+                        </div>
+                        <button onClick={fetchCbAlerts} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition-all" title="새로고침">
+                            <RefreshCw className={`w-5 h-5 ${cbLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
+
+                    {cbLoading ? (
+                        <div className="py-8 flex items-center justify-center text-gray-500 gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin" /><span>공시 확인 중...</span>
+                        </div>
+                    ) : cbAlerts.length === 0 ? (
+                        <div className="py-12 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/5">
+                            <FileWarning className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                            <p className="text-gray-600 text-sm">관심종목 중 최근 전환사채 공시가 없습니다.</p>
+                            <p className="text-gray-700 text-xs mt-1">한국 종목만 조회됩니다.</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-3">
+                            {cbAlerts.map((cb, idx) => (
+                                <a
+                                    key={idx}
+                                    href={cb.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-5 rounded-2xl bg-orange-500/5 border border-orange-500/20 hover:border-orange-500/50 hover:bg-orange-500/10 flex items-start gap-4 transition-all group"
+                                >
+                                    <div className="p-2.5 rounded-xl bg-orange-500/20 text-orange-400 shrink-0 mt-0.5">
+                                        <FileWarning className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-sm font-black text-orange-300" translate="no">{cb.symbol}</span>
+                                            <span className="text-sm font-bold text-white">{cb.name}</span>
+                                            <span className="text-[10px] bg-orange-500/30 text-orange-300 border border-orange-500/50 px-1.5 py-0.5 rounded font-black tracking-tighter uppercase">CB</span>
+                                        </div>
+                                        <p className="text-gray-200 text-sm leading-snug font-medium">{cb.title}</p>
+                                        <p className="text-gray-500 text-xs mt-1" translate="no">{cb.date}</p>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4 text-gray-600 group-hover:text-orange-400 transition-colors shrink-0 mt-1" />
+                                </a>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {alertStock && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
                     <div className="relative w-full max-w-lg">
