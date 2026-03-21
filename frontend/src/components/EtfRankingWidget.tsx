@@ -96,8 +96,8 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                                         {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
                                     </div>
                                 </div>
-                            </div>
-                    )
+                        );
+                    })
                 ) : (
                     <div className="col-span-full py-20 text-center">
                         <div className="inline-flex p-4 rounded-3xl bg-white/5 mb-4">
