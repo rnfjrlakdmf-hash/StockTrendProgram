@@ -174,13 +174,27 @@ export default function EtfAnalysisPage() {
                                     <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Filter className="w-4 h-4" /> Smart Filter
                                     </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['지수추종', '레버리지', '배당우선', '섹터/테마'].map((tag) => (
-                                            <span key={tag} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] text-gray-400 font-bold hover:bg-blue-500/20 hover:text-blue-400 transition-colors cursor-pointer">
-                                                #{tag}
-                                            </span>
-                                        ))}
-                                    </div>
+                                        {[
+                                            { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
+                                            { tag: '레버리지', keyword: market === 'KR' ? '레버리지' : 'Bull', cat: 'leverage' },
+                                            { tag: '배당우선', keyword: market === 'KR' ? '배당' : 'Dividend', cat: 'dividend' },
+                                            { tag: '섹터/테마', keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: 'sector' }
+                                        ].map((item) => {
+                                            const isActive = filterKeyword === item.keyword;
+                                            return (
+                                                <span 
+                                                    key={item.tag} 
+                                                    onClick={() => handleCategoryClick(item.keyword, item.cat)}
+                                                    className={`px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
+                                                        isActive
+                                                        ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20'
+                                                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-blue-500/20 hover:text-blue-400'
+                                                    }`}
+                                                >
+                                                    #{item.tag}
+                                                </span>
+                                            );
+                                        })}
                                 </div>
                             </div>
                         </div>
