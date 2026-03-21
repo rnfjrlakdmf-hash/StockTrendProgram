@@ -6,6 +6,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { Activity, Globe, RefreshCcw, TrendingUp, TrendingDown, ArrowRight, Sparkles, Filter } from 'lucide-react';
 import EtfRankingWidget from '@/components/EtfRankingWidget';
 
+// Final verification of ETF data filtering and UX improvements v2
 export default function EtfAnalysisPage() {
     const [market, setMarket] = useState<'KR' | 'US'>('KR');
     const [data, setData] = useState<any[]>([]);

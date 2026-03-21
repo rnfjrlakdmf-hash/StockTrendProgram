@@ -84,8 +84,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260321-etf-live-v2",
-        "service": "AI Stock Analyst Backend"
+        "version": "20260321-etf-live-v2-final",
+        "service": "AI Stock Analyst Backend" # Force Deployment Comment
     }
 @app.get("/api/rank/etf")
 def read_etf_rank(market: str = "KR", category: Optional[str] = None):

@@ -519,7 +519,11 @@ def get_etf_ranking(market="KR", category=None):
             elif category == "index":
                 keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ"]
             elif category == "sector":
-                keywords = ["반도체", "배당", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지"]
+                keywords = ["반도체", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지"]
+            elif category == "leverage":
+                keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL"]
+            elif category == "dividend":
+                keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income"]
 
             data = []
             
@@ -583,6 +587,10 @@ def get_etf_ranking(market="KR", category=None):
                 keywords = ["SPY", "QQQ", "IVV", "S&P", "Nasdaq"]
             elif category == "sector":
                 keywords = ["Semiconductor", "Innovation", "Bitcoin", "ARK"]
+            elif category == "leverage":
+                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "Leverage"]
+            elif category == "dividend":
+                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
             return filtered
