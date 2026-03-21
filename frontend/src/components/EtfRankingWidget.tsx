@@ -24,41 +24,37 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
     const formatPrice = (val: string | number) => {
         if (typeof val === 'number') return val.toLocaleString();
         return val;
+        if (!val) return '0';
+        return parseInt(val.replace(/,/g, '')).toLocaleString();
     };
 
-    const isPositive = (change: string) => change.includes('▲') || (!change.includes('▼') && parseFloat(change) > 0);
-    const isNegative = (change: string) => change.includes('▼') || change.includes('-');
-
     return (
-        <div className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
-            {/* Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700" />
+        <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-3xl rounded-full" />
             
-            <div className="flex items-center justify-between mb-6 relative">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-500/20 rounded-xl text-blue-400">
-                        {market === 'KR' ? <BarChart3 className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-black text-white tracking-tight">
-                            {market === 'KR' ? '국내 ETF 랭킹' : '미국 주요 ETF'}
-                        </h3>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                            Real-time Market Statistics
-                        </p>
-                    </div>
+            <div className="flex items-center justify-between mb-8 relative">
+                <div className="space-y-1">
+                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tighter flex items-center gap-2">
+                        Real-time Market <span className="text-blue-400">Statistics</span>
+                        {filterKeyword && (
+                            <span className="text-[10px] px-2 py-0.5 bg-blue-600 rounded-full text-white uppercase tracking-widest animate-pulse ml-2">
+                                FILTER: {filterKeyword}
+                            </span>
+                        )}
+                    </h2>
+                    <p className="text-gray-500 font-bold text-[10px] md:text-xs">
+                        거래량 상위 {market === 'KR' ? '국내' : '미국'} ETF 종목군을 실시간으로 집계한 데이터입니다.
+                    </p>
                 </div>
-                {loading && (
-                    <div className="flex items-center gap-2 text-xs text-blue-400 font-bold animate-pulse">
-                        <Activity className="w-3 h-3" />
-                        UPDATING
-                    </div>
-                )}
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Live Now</span>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-                {data.length > 0 ? (
-                    data.map((item, idx) => {
+                {displayData.length > 0 ? (
+                    displayData.map((item, idx) => {
                         const positive = isPositive(item.change);
                         const negative = isNegative(item.change);
                         const colorClass = positive ? 'text-red-400' : negative ? 'text-blue-400' : 'text-gray-400';

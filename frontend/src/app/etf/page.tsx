@@ -12,6 +12,7 @@ export default function EtfAnalysisPage() {
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
     const [showGuide, setShowGuide] = useState(false);
+    const [filterKeyword, setFilterKeyword] = useState<string | null>(null);
 
     const fetchEtfRankings = async (m: 'KR' | 'US') => {
         setLoading(true);
@@ -137,7 +138,7 @@ export default function EtfAnalysisPage() {
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                         {/* Left/Middle: Main Widget */}
                         <div className="xl:col-span-2 space-y-8">
-                            <EtfRankingWidget data={data} market={market} loading={loading} />
+                            <EtfRankingWidget data={data} market={market} loading={loading} filterKeyword={filterKeyword} />
                             
                             {/* Market Summary Banner */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -192,15 +193,31 @@ export default function EtfAnalysisPage() {
                                         <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">유형별 지표 (참고용)</h4>
                                         <div className="space-y-3">
                                             {[
-                                                { title: "인버스/헷지군", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
-                                                { title: "시장 지수 추종", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "섹터/테마군", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
+                                                { title: "인버스/헷지군", keyword: "인버스", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
+                                                { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
+                                                { title: "섹터/테마군", keyword: "반도체", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
                                             ].map((strat) => (
-                                                <div key={strat.title} className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-default border border-transparent">
-                                                    <span className="text-xs font-bold text-gray-300">{strat.title}</span>
+                                                <button 
+                                                    key={strat.title} 
+                                                    onClick={() => setFilterKeyword(filterKeyword === strat.keyword ? null : strat.keyword)}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
+                                                        filterKeyword === strat.keyword 
+                                                        ? 'bg-blue-600/20 border-blue-500/50' 
+                                                        : 'bg-white/5 hover:bg-white/10 border-transparent'
+                                                    }`}
+                                                >
+                                                    <span className={`text-xs font-bold ${filterKeyword === strat.keyword ? 'text-white' : 'text-gray-300'}`}>{strat.title}</span>
                                                     {strat.icon}
-                                                </div>
+                                                </button>
                                             ))}
+                                            {filterKeyword && (
+                                                <button 
+                                                    onClick={() => setFilterKeyword(null)}
+                                                    className="w-full py-2 text-[10px] text-gray-500 font-bold hover:text-white transition-colors"
+                                                >
+                                                    정렬 초기화
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 
