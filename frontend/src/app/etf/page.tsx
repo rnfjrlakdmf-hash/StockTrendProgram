@@ -11,6 +11,7 @@ export default function EtfAnalysisPage() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+    const [showGuide, setShowGuide] = useState(false);
 
     const fetchEtfRankings = async (m: 'KR' | 'US') => {
         setLoading(true);
@@ -46,9 +47,22 @@ export default function EtfAnalysisPage() {
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div className="space-y-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                <Activity className="w-3 h-3" />
-                                Real-time Analysis Active
+                            <div className="flex items-center gap-3">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                                    <Activity className="w-3 h-3" />
+                                    Real-time Analysis Active
+                                </div>
+                                <button 
+                                    onClick={() => setShowGuide(!showGuide)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all text-[10px] font-black uppercase tracking-widest ${
+                                        showGuide 
+                                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-400' 
+                                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-blue-500/30 hover:text-blue-400'
+                                    }`}
+                                >
+                                    <Sparkles className="w-3 h-3" />
+                                    {showGuide ? 'Close Guide' : 'Beginner Guide'}
+                                </button>
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight">
                                 ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics</span>
@@ -85,6 +99,40 @@ export default function EtfAnalysisPage() {
                             </button>
                         </div>
                     </div>
+                    
+                    {/* Beginner Guide Section */}
+                    {showGuide && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/30 backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="space-y-2">
+                                <div className="p-2 w-fit bg-blue-500/20 rounded-lg text-blue-400">
+                                    <Sparkles className="w-4 h-4" />
+                                </div>
+                                <h4 className="font-black text-white text-sm">ETF란 무엇인가요?</h4>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">준비된 바구니에 여러 주식을 담아, 주식처럼 편하게 거래할 수 있는 '펀드' 상품입니다.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="p-2 w-fit bg-purple-500/20 rounded-lg text-purple-400">
+                                    <Activity className="w-4 h-4" />
+                                </div>
+                                <h4 className="font-black text-white text-sm">랭킹 보는 법</h4>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">거래량(Vol)이 많을수록 시장의 관심이 집중된 종목입니다. 1~3위 종목을 유심히 보세요.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="p-2 w-fit bg-red-500/20 rounded-lg text-red-400">
+                                    <TrendingUp className="w-4 h-4" />
+                                </div>
+                                <h4 className="font-black text-white text-sm">상승과 하락</h4>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">빨간색(▲)은 가격 상승, 파란색(▼)은 가격 하락을 뜻합니다. 수치가 높을수록 변동이 큽니다.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="p-2 w-fit bg-yellow-500/20 rounded-lg text-yellow-400">
+                                    <Filter className="w-4 h-4" />
+                                </div>
+                                <h4 className="font-black text-white text-sm">주의할 점</h4>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">인버스(하락 시 수익)나 레버리지(2배 변동) 상품은 위험도가 높으니 초보자라면 주의하세요!</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                         {/* Left/Middle: Main Widget */}

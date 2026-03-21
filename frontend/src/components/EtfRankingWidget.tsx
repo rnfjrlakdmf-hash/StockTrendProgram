@@ -97,14 +97,22 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                                     </div>
                                 </div>
                             </div>
-                        );
-                    })
+                    )
                 ) : (
                     <div className="col-span-full py-20 text-center">
                         <div className="inline-flex p-4 rounded-3xl bg-white/5 mb-4">
                             <Activity className="w-8 h-8 text-gray-700 animate-pulse" />
                         </div>
-                        <p className="text-gray-500 font-bold">ETF 데이터를 불러오는 중입니다...</p>
+                        <p className="text-gray-500 font-bold text-sm">ETF 데이터를 불러오는 중입니다...</p>
+                    </div>
+                )}
+                
+                {data.length > 0 && (
+                    <div className="col-span-full mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/5 border border-white/10 group cursor-default">
+                        <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                        <p className="text-[10px] md:text-xs text-gray-400 font-bold">
+                            리스트의 각 종목을 <span className="text-blue-400">클릭</span>하면 차트와 실질적인 상세 리포트 데이터를 확인하실 수 있습니다.
+                        </p>
                     </div>
                 )}
             </div>
