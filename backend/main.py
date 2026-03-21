@@ -87,8 +87,19 @@ def health_check():
         "version": "20260319-market-status-fix",
         "service": "AI Stock Analyst Backend"
     }
+@app.get("/api/rank/etf")
+def read_etf_rank(market: str = "KR"):
+    """실시간 ETF 통계 데이터 반환 (참고용)"""
+    from rank_data import get_etf_ranking
+    data = get_etf_ranking(market)
+    return {"status": "success", "data": data}
 
-
+@app.get("/api/rank/themes")
+def read_theme_rank():
+    """실시간 인기 테마 키워드 목록 반환"""
+    from korea_data import get_naver_theme_rank
+    data = get_naver_theme_rank()
+    return {"status": "success", "data": data}
 
 # [NEW] Assets & Risk Alerts Endpoints
 from stock_data import (
