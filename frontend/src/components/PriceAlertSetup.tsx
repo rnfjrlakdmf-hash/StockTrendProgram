@@ -201,7 +201,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                     </button>
                     <button
                         onClick={() => setSniperType("PRICE_DROP")}
-                        className={`p-3 rounded-2xl border text-sm font-bold flex flex-col items-center gap-1 transition-all ${sniperType === "PRICE_DROP" ? "bg-red-500/20 border-red-500 text-red-300 shadow-lg shadow-red-900/20" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"}`}
+                        className={`p-3 rounded-2xl border text-sm font-bold flex flex-col items-center gap-1 transition-all ${sniperType === "PRICE_DROP" ? "bg-blue-500/20 border-blue-500 text-blue-300 shadow-lg shadow-blue-900/20" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"}`}
                     >
                         <span className="text-xl">📉</span>
                         급락 포착
@@ -223,16 +223,16 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                 disabled={mode === 'shield' && !buyPrice}
                             />
                             <div className="flex items-center gap-2">
-                                <TrendingDown className="w-5 h-5 text-red-400" />
+                                <TrendingDown className="w-5 h-5 text-blue-400" />
                                 <span className="text-white font-bold">손절 알림 ({mode === 'shield' ? 'Stop Loss' : 'Price Drop'})</span>
                             </div>
                         </label>
 
                         {stopLossEnabled && (
-                            <div className="ml-8 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                            <div className="ml-8 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
                                 {mode === 'shield' ? (
                                     <>
-                                        <p className="text-red-400 mb-3 text-sm">
+                                        <p className="text-blue-400 mb-3 text-sm">
                                             📉 {stopLossThreshold}% 하락 시 알림 (약 ₩{calculateStopLossPrice().toLocaleString(undefined, { maximumFractionDigits: 0 })})
                                         </p>
                                         <input
@@ -241,7 +241,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                             max="10"
                                             value={stopLossThreshold}
                                             onChange={(e) => setStopLossThreshold(Number(e.target.value))}
-                                            className="w-full accent-red-500"
+                                            className="w-full accent-blue-500"
                                         />
                                     </>
                                 ) : (
@@ -250,7 +250,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                         value={manualStopLoss}
                                         onChange={(e) => setManualStopLoss(Number(e.target.value))}
                                         placeholder="손절가 입력"
-                                        className="w-full bg-black/40 border border-red-500/30 rounded-lg px-3 py-2 text-white"
+                                        className="w-full bg-black/40 border border-blue-500/30 rounded-lg px-3 py-2 text-white"
                                     />
                                 )}
                             </div>
@@ -268,16 +268,16 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                 disabled={mode === 'shield' && !buyPrice}
                             />
                             <div className="flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-400" />
+                                <TrendingUp className="w-5 h-5 text-red-400" />
                                 <span className="text-white font-bold">익절 알림 ({mode === 'shield' ? 'Take Profit' : 'Price Rise'})</span>
                             </div>
                         </label>
 
                         {takeProfitEnabled && (
-                            <div className="ml-8 bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                            <div className="ml-8 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                                 {mode === 'shield' ? (
                                     <>
-                                        <p className="text-green-400 mb-3 text-sm">
+                                        <p className="text-red-400 mb-3 text-sm">
                                             📈 {takeProfitThreshold}% 상승 시 알림 (약 ₩{calculateTakeProfitPrice().toLocaleString(undefined, { maximumFractionDigits: 0 })})
                                         </p>
                                         <input
@@ -286,7 +286,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                             max="20"
                                             value={takeProfitThreshold}
                                             onChange={(e) => setTakeProfitThreshold(Number(e.target.value))}
-                                            className="w-full accent-green-500"
+                                            className="w-full accent-red-500"
                                         />
                                     </>
                                 ) : (
@@ -295,7 +295,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                         value={manualTakeProfit}
                                         onChange={(e) => setManualTakeProfit(Number(e.target.value))}
                                         placeholder="익절가 입력"
-                                        className="w-full bg-black/40 border border-green-500/30 rounded-lg px-3 py-2 text-white"
+                                        className="w-full bg-black/40 border border-red-500/30 rounded-lg px-3 py-2 text-white"
                                     />
                                 )}
                             </div>

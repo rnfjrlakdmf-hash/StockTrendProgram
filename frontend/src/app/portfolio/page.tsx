@@ -14,7 +14,7 @@ import CleanStockList from "@/components/CleanStockList";
 
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
+const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#dc2626', '#8b5cf6', '#ec4899', '#6366f1'];
 
 export default function PortfolioPage() {
     const [inputSymbol, setInputSymbol] = useState("");
@@ -289,11 +289,11 @@ export default function PortfolioPage() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-gray-800/50 border border-white/10 p-4 rounded-2xl text-center">
                                             <div className="text-xs text-gray-400 mb-1">기대 수익 (연)</div>
-                                            <div className="text-xl font-bold text-green-400">{result.metrics.expected_return}%</div>
+                                            <div className="text-xl font-bold text-red-400">{result.metrics.expected_return}%</div>
                                         </div>
                                         <div className="bg-gray-800/50 border border-white/10 p-4 rounded-2xl text-center">
                                             <div className="text-xs text-gray-400 mb-1">변동성 (Risk)</div>
-                                            <div className="text-xl font-bold text-red-400">{result.metrics.volatility}%</div>
+                                            <div className="text-xl font-bold text-blue-400">{result.metrics.volatility}%</div>
                                         </div>
                                         <div className="col-span-2 bg-gray-800/50 border border-white/10 p-3 rounded-2xl flex items-center justify-between px-6">
                                             <div className="text-xs text-gray-400">Sharpe Ratio</div>
@@ -311,7 +311,7 @@ export default function PortfolioPage() {
                                             analysisResult.calendar.map((event: any, i: number) => (
                                                 <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정' ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30' : 'text-green-400 bg-green-900/30'}`}>
+                                                        <span className={`font-bold text-xs px-1.5 py-0.5 rounded ${event.source === '확정' ? 'text-red-300 bg-red-900/40 border border-red-500/30' : 'text-red-400 bg-red-900/30'}`}>
                                                             {new Date(event.date).getMonth() + 1}/{new Date(event.date).getDate()}
                                                         </span>
                                                         <span className="font-bold text-xs">{event.symbol}</span>
@@ -327,7 +327,7 @@ export default function PortfolioPage() {
                                         <div className="mt-2 pt-2 border-t border-white/10 text-right text-xs text-gray-500">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[10px] text-gray-600">Data: SEIBRO, Naver, Yahoo</span>
-                                                <span className="text-green-400 font-bold">Total: ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}</span>
+                                                <span className="text-red-400 font-bold">Total: ₩{analysisResult.calendar.reduce((acc: number, cur: any) => acc + cur.amount, 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     )}

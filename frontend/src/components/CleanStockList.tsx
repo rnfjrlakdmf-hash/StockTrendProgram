@@ -37,8 +37,11 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
     return (
         <div className="flex flex-col divide-y divide-white/5">
             {items.map((item) => {
-                const isPositive = item.change && (item.change.startsWith('+') || (!item.change.startsWith('-') && item.change !== '0%') && parseFloat(item.change) > 0);
-                const isNegative = item.change && (item.change.startsWith('-') || parseFloat(item.change) < 0);
+                const changeStr = item.change ? String(item.change) : "";
+                const changeNum = parseFloat(changeStr.replace(/[+%▼▲]/g, ""));
+                
+                const isPositive = changeStr.startsWith('+') || (changeNum > 0 && !changeStr.startsWith('-'));
+                const isNegative = changeStr.startsWith('-') || changeNum < 0;
 
                 const textColorClass = isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : 'text-gray-300';
                 const Icon = isPositive ? ArrowUpRight : isNegative ? ArrowDownRight : Minus;

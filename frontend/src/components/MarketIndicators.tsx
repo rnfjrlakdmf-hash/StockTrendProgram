@@ -133,8 +133,8 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 priceStr = item.price;
             }
 
-            const changeVal = item.change || 0;
-            const changeStr = `${changeVal > 0 ? '+' : ''}${parseFloat(changeVal).toFixed(2)}%`;
+            const changeVal = parseFloat(String(item.change || 0));
+            const changeStr = `${changeVal > 0 ? '+' : ''}${changeVal.toFixed(2)}%`;
 
             // Use item.symbol if available, otherwise use name as ID
             const symbol = item.symbol || item.name;
