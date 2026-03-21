@@ -15,18 +15,36 @@ interface EtfItem {
 }
 
 interface EtfRankingWidgetProps {
-    data: EtfItem[];
+    data: any[];
+    loading: boolean;
     market: 'KR' | 'US';
-    loading?: boolean;
+    filterKeyword?: string | null;
 }
 
-export default function EtfRankingWidget({ data, market, loading }: EtfRankingWidgetProps) {
-    const formatPrice = (val: string | number) => {
-        if (typeof val === 'number') return val.toLocaleString();
-        return val;
+export default function EtfRankingWidget({ data, loading, market, filterKeyword }: EtfRankingWidgetProps) {
+    const isPositive = (val: string | undefined) => {
+        if (!val) return false;
+        return val.includes('▲') || (!val.includes('▼') && !val.includes('-') && val !== '0' && val !== '0%');
+    };
+    
+    const isNegative = (val: string | undefined) => {
+        if (!val) return false;
+        return val.includes('▼') || val.includes('-');
+    };
+
+    const formatPrice = (val: string | number | undefined) => {
         if (!val) return '0';
+        if (typeof val === 'number') return val.toLocaleString();
         return parseInt(val.replace(/,/g, '')).toLocaleString();
     };
+
+    // Filter data if keyword exists
+    const displayData = filterKeyword 
+        ? data.filter(item => 
+            (item.name && item.name.includes(filterKeyword)) || 
+            (item.symbol && item.symbol.includes(filterKeyword))
+          )
+        : data;
 
     return (
         <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden">
@@ -104,7 +122,7 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                     </div>
                 )}
                 
-                {data.length > 0 && (
+                {displayData.length > 0 && (
                     <div className="col-span-full mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/5 border border-white/10 group cursor-default">
                         <Zap className="w-3.5 h-3.5 text-yellow-500" />
                         <p className="text-[10px] md:text-xs text-gray-400 font-bold">
