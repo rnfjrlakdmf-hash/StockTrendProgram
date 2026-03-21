@@ -561,14 +561,33 @@ def get_etf_ranking(market="KR", category=None):
             return []
             
     elif market == "US":
-        # Temporary Mock Data for US ETFs to ensure deployment stability
+        # [NEW] US ETF List with more items for better filtering test
         us_etfs = [
-            {"rank": 1, "symbol": "SPY", "name": "S&P 500 (SPY)", "price": "515.20", "change": "+0.45%", "change_percent": 0.45},
-            {"rank": 2, "symbol": "QQQ", "name": "Nasdaq 100 (QQQ)", "price": "443.10", "change": "+0.32%", "change_percent": 0.32},
-            {"rank": 3, "symbol": "ARKK", "name": "ARK Innovation", "price": "50.15", "change": "-1.20%", "change_percent": -1.20},
-            {"rank": 4, "symbol": "IBIT", "name": "Bitcoin Trust (IBIT)", "price": "42.50", "change": "+3.15%", "change_percent": 3.15}
+            {"rank": 1, "symbol": "SPY", "name": "S&P 500 ETF (SPY)", "price": "515.20", "change": "+0.45%", "change_percent": 0.45, "volume": "50000000"},
+            {"rank": 2, "symbol": "QQQ", "name": "Nasdaq 100 ETF (QQQ)", "price": "443.10", "change": "+0.32%", "change_percent": 0.32, "volume": "40000000"},
+            {"rank": 3, "symbol": "IVV", "name": "iShares S&P 500", "price": "516.40", "change": "+0.44%", "change_percent": 0.44, "volume": "5000000"},
+            {"rank": 4, "symbol": "SQQQ", "name": "ProShares UltraPro Short QQQ (Inverse)", "price": "10.50", "change": "-1.10%", "change_percent": -1.10, "volume": "100000000"},
+            {"rank": 5, "symbol": "TQQQ", "name": "ProShares UltraPro QQQ", "price": "60.20", "change": "+0.95%", "change_percent": 0.95, "volume": "80000000"},
+            {"rank": 6, "symbol": "ARKK", "name": "ARK Innovation ETF", "price": "50.15", "change": "-1.20%", "change_percent": -1.20, "volume": "15000000"},
+            {"rank": 7, "symbol": "IBIT", "name": "iShares Bitcoin Trust", "price": "42.50", "change": "+3.15%", "change_percent": 3.15, "volume": "30000000"},
+            {"rank": 8, "symbol": "PSQ", "name": "Short QQQ (Inverse)", "price": "45.30", "change": "-0.35%", "change_percent": -0.35, "volume": "2000000"},
+            {"rank": 9, "symbol": "SOXL", "name": "Semiconductor Bull 3X", "price": "45.00", "change": "+4.20%", "change_percent": 4.20, "volume": "60000000"},
+            {"rank": 10, "symbol": "SOXS", "name": "Semiconductor Bear 3X (Inverse)", "price": "3.50", "change": "-4.15%", "change_percent": -4.15, "volume": "70000000"}
         ]
-        return us_etfs
+        
+        if category:
+            keywords = []
+            if category == "inverse":
+                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS"]
+            elif category == "index":
+                keywords = ["SPY", "QQQ", "IVV", "S&P", "Nasdaq"]
+            elif category == "sector":
+                keywords = ["Semiconductor", "Innovation", "Bitcoin", "ARK"]
+                
+            filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
+            return filtered
+            
+        return us_etfs[:20]
     
     return []
 
