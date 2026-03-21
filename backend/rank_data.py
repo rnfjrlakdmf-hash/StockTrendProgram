@@ -529,12 +529,16 @@ def get_etf_ranking(market="KR", category=None):
             if not category:
                 target_items = items[:20]
 
+            print(f"[ETF API] Total items from Naver: {len(items)}, Category: {category}")
+
             for i, item in enumerate(target_items):
                 name = item.get('itemname', '')
                 
-                # 카테고리 필터링 수행
-                if category and not any(k in name for k in keywords):
-                    continue
+                # 카테고리 필터링 수행 (대소문자 무시)
+                if category:
+                    matched = any(k.lower() in name.lower() for k in keywords)
+                    if not matched:
+                        continue
 
                 change_rate = float(item.get('changeRate', 0))
                 data.append({
@@ -551,6 +555,7 @@ def get_etf_ranking(market="KR", category=None):
                 if category and len(data) >= 30:
                     break
 
+            print(f"[ETF API] Filtered result count: {len(data)}")
             return data
         except Exception as e:
             print(f"Error calling Naver ETF API: {e}")
