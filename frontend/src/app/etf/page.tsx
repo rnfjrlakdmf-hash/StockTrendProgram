@@ -118,36 +118,74 @@ export default function EtfAnalysisPage() {
                         </div>
                     </div>
                     
-                    {/* Beginner Metrics Guide Section */}
                     {showGuide && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/30 backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-500">
-                            <div className="space-y-2">
-                                <div className="p-2 w-fit bg-blue-500/20 rounded-lg text-blue-400">
-                                    <Sparkles className="w-4 h-4" />
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                            {/* Guide 1: Core Metrics */}
+                            <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/30 backdrop-blur-md">
+                                <h3 className="text-white font-black text-sm mb-4 flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-blue-400" />
+                                    ETF 투자 시 꼭 확인해야 할 필수 지표 4선
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <div className="p-1.5 w-fit bg-blue-500/20 rounded-md text-blue-400">
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                        </div>
+                                        <h4 className="font-bold text-white text-xs">운용보수 (TER)</h4>
+                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">펀드 운용 시 발생하는 연간 비용. 장기 투자일수록 보수가 낮은 상품이 유리합니다.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="p-1.5 w-fit bg-purple-500/20 rounded-md text-purple-400">
+                                            <Activity className="w-3.5 h-3.5" />
+                                        </div>
+                                        <h4 className="font-bold text-white text-xs">순자산총액 (AUM)</h4>
+                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">해당 ETF의 총 몸집. 규모가 클수록 거래가 안전하고 상장폐지 위험이 적습니다.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="p-1.5 w-fit bg-red-500/20 rounded-md text-red-400">
+                                            <TrendingUp className="w-3.5 h-3.5" />
+                                        </div>
+                                        <h4 className="font-bold text-white text-xs">추적오차 / 괴리율</h4>
+                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">자산의 실제 가치와 주식시장 거래 가격의 차이. 0%에 가까울수록 제값을 주고받는 것입니다.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="p-1.5 w-fit bg-yellow-500/20 rounded-md text-yellow-400">
+                                            <Filter className="w-3.5 h-3.5" />
+                                        </div>
+                                        <h4 className="font-bold text-white text-xs">유동성 (거래량)</h4>
+                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">초보자는 무조건 거래량이 풍부한 종목을 고르세요. 원할 때 바로 팔 수 있어야 합니다.</p>
+                                    </div>
                                 </div>
-                                <h4 className="font-black text-white text-sm">운용보수 (TER)</h4>
-                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">펀드 운용 과정에서 발생하는 연간 비용 비율로, 일할 계산되어 순자산가치에 반영됩니다.</p>
                             </div>
-                            <div className="space-y-2">
-                                <div className="p-2 w-fit bg-purple-500/20 rounded-lg text-purple-400">
-                                    <Activity className="w-4 h-4" />
+
+                            {/* Guide 2: ETF Types Terminology */}
+                            <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-600/10 to-teal-600/10 border border-emerald-500/30 backdrop-blur-md">
+                                <h3 className="text-white font-black text-sm mb-4 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-emerald-400" />
+                                    초보자를 위한 ETF 유형별 필수 용어 사전
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-black/30 p-3 rounded-2xl border border-white/5 space-y-1.5 hover:border-emerald-500/20 transition-colors">
+                                        <h4 className="text-emerald-400 font-black text-xs">#지수추종 (Index)</h4>
+                                        <p className="text-gray-300 font-medium text-[10px]">코스피나 S&P500 등 '시장 전체 실력'에 투자하는 가장 기본적이고 안전한 정석 투자법입니다.</p>
+                                        <p className="text-gray-500 text-[9px] italic">예) KODEX 200, SPY, QQQ</p>
+                                    </div>
+                                    <div className="bg-black/30 p-3 rounded-2xl border border-white/5 space-y-1.5 hover:border-emerald-500/20 transition-colors">
+                                        <h4 className="text-emerald-400 font-black text-xs">#레버리지 (Leverage)</h4>
+                                        <p className="text-gray-300 font-medium text-[10px]">시장이 1% 오를 때 수익을 2배, 3배 이상 추종하는 <span className="text-white font-bold">고위험 고수익</span> 상품입니다. 손실도 배가 됩니다.</p>
+                                        <p className="text-gray-500 text-[9px] italic">예) TQQQ, KODEX 레버리지</p>
+                                    </div>
+                                    <div className="bg-black/30 p-3 rounded-2xl border border-white/5 space-y-1.5 hover:border-emerald-500/20 transition-colors">
+                                        <h4 className="text-emerald-400 font-black text-xs">#인버스 (Inverse)</h4>
+                                        <p className="text-gray-300 font-medium text-[10px]">주식 시장이 <span className="text-red-400 font-bold">하락할 때 반대로 수익이 나는 '청개구리' 상품</span>으로, 하락장 방어용으로 쓰입니다.</p>
+                                        <p className="text-gray-500 text-[9px] italic">예) KODEX 인버스, SQQQ</p>
+                                    </div>
+                                    <div className="bg-black/30 p-3 rounded-2xl border border-white/5 space-y-1.5 hover:border-emerald-500/20 transition-colors">
+                                        <h4 className="text-emerald-400 font-black text-xs">#배당/인컴 (Dividend)</h4>
+                                        <p className="text-gray-300 font-medium text-[10px]">주가 상승폭은 적어도, 꼬박꼬박 이자(배당금)를 챙겨주는 '건물주' 스타일의 현금창출형 상품입니다.</p>
+                                        <p className="text-gray-500 text-[9px] italic">예) SCHD, 커버드콜, 배당성장</p>
+                                    </div>
                                 </div>
-                                <h4 className="font-black text-white text-sm">순자산총액 (AUM)</h4>
-                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">해당 ETF가 보유한 자산의 총 가치입니다. 펀드의 전체 운용 규모를 나타내는 지표입니다.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="p-2 w-fit bg-red-500/20 rounded-lg text-red-400">
-                                    <TrendingUp className="w-4 h-4" />
-                                </div>
-                                <h4 className="font-black text-white text-sm">추적오차 / 괴리율</h4>
-                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">기초지수수익률과 ETF 수익률 간의 차이, 또는 실제 가치와 시장가 간의 차이를 나타냅니다.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="p-2 w-fit bg-yellow-500/20 rounded-lg text-yellow-400">
-                                    <Filter className="w-4 h-4" />
-                                </div>
-                                <h4 className="font-black text-white text-sm">유동성 (거래량)</h4>
-                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">시장 내에서 체결된 거래의 총 수량입니다. 매수/매도 호가의 촘촘한 정도를 결정하는 통계치입니다.</p>
                             </div>
                         </div>
                     )}
