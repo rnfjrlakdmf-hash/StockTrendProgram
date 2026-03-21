@@ -75,24 +75,24 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-black text-sm ${idx < 3 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-500'}`}>
                                         {item.rank || idx + 1}
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="font-bold text-gray-100 group-hover/item:text-white transition-colors truncate max-w-[140px]">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-gray-100 group-hover/item:text-white transition-colors truncate text-xs md:text-sm">
                                             {item.name}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-mono text-gray-500 uppercase">{item.symbol}</span>
+                                            <span className="text-[9px] md:text-[10px] font-mono text-gray-500 uppercase">{item.symbol}</span>
                                             {item.volume && (
-                                                <span className="text-[10px] text-gray-600 font-bold">Vol: {parseInt(item.volume).toLocaleString()}</span>
+                                                <span className="text-[9px] md:text-[10px] text-gray-600 font-bold hidden sm:inline">Vol: {parseInt(item.volume).toLocaleString()}</span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div className="text-right shrink-0">
-                                    <div className={`text-sm md:text-base font-black font-mono tracking-tighter ${colorClass}`}>
+                                <div className="text-right shrink-0 ml-2">
+                                    <div className={`text-xs md:text-sm lg:text-base font-black font-mono tracking-tighter ${colorClass}`}>
                                         {positive && '▲'}{negative && '▼'}{String(item.change || '0%').replace(/[▲▼+%-]/g, '')}%
                                     </div>
-                                    <div className="text-[11px] font-bold text-gray-400">
+                                    <div className="text-[10px] md:text-[11px] font-bold text-gray-400">
                                         {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
                                     </div>
                                 </div>

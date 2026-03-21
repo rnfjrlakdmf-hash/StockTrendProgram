@@ -50,13 +50,13 @@ export default function EtfAnalysisPage() {
                                 <Activity className="w-3 h-3" />
                                 Real-time Analysis Active
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
+                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight">
                                 ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics</span>
                             </h1>
-                            <p className="text-gray-400 font-bold max-w-xl leading-relaxed text-sm md:text-base">
+                            <p className="text-gray-400 font-bold max-w-xl leading-snug text-xs md:text-sm">
                                 {market === 'KR' 
-                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 실시간으로 모니터링합니다."
-                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 실시간 시장 데이터를 집계하여 노출합니다."
+                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 실시간 모니터링합니다."
+                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 실시간 데이터를 집계하여 노출합니다."
                                 }
                             </p>
                         </div>
