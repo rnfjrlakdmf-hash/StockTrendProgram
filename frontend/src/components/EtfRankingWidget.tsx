@@ -96,6 +96,7 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                                         {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
                                     </div>
                                 </div>
+                            </div>
                         );
                     })
                 ) : (
