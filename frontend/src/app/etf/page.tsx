@@ -174,6 +174,7 @@ export default function EtfAnalysisPage() {
                                     <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Filter className="w-4 h-4" /> Smart Filter
                                     </h4>
+                                    <div className="flex flex-wrap gap-2">
                                         {[
                                             { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
                                             { tag: '레버리지', keyword: market === 'KR' ? '레버리지' : 'Bull', cat: 'leverage' },
@@ -195,6 +196,7 @@ export default function EtfAnalysisPage() {
                                                 </span>
                                             );
                                         })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
