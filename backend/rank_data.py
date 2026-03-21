@@ -515,7 +515,7 @@ def get_etf_ranking(market="KR", category=None):
             # 카테고리별 키워드 설정
             keywords = []
             if category == "inverse":
-                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "H", "Short"]
+                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "(H)", "Short"]
             elif category == "index":
                 keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ"]
             elif category == "sector":

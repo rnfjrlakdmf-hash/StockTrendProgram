@@ -84,7 +84,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260321-etf-live-v1",
+        "version": "20260321-etf-live-v2",
         "service": "AI Stock Analyst Backend"
     }
 @app.get("/api/rank/etf")
