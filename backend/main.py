@@ -417,7 +417,7 @@ def read_theme_rank():
 
 @app.get("/api/rank/etf")
 def read_etf_rank(market: str = "KR"):
-    """실시간 ETF 랭킹 반환 (market: KR, US)"""
+    """실시간 ETF 통계 데이터 반환 (참고용)"""
     from rank_data import get_etf_ranking
     data = get_etf_ranking(market)
     return {"status": "success", "data": data}

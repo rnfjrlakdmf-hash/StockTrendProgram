@@ -40,11 +40,8 @@ export default function EtfAnalysisPage() {
     }, [market]);
 
     return (
-        <div className="flex h-screen bg-black overflow-hidden font-sans">
-            <Sidebar />
-            
-            <main className="flex-1 overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-black to-black">
-                <div className="max-w-[1400px] mx-auto p-4 md:p-8 space-y-8">
+        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-black to-black">
+            <div className="max-w-[1400px] mx-auto p-4 md:p-8 space-y-8">
                     
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -181,8 +178,7 @@ export default function EtfAnalysisPage() {
                             본 서비스는 금융위원회의 유사투자자문업 신고 대상에 해당하지 않는 비자문형 시장 데이터 제공 도구입니다.
                         </p>
                     </div>
-                </div>
-            </main>
+            </div>
         </div>
     );
 }
