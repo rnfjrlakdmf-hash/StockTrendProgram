@@ -515,12 +515,11 @@ def get_etf_ranking(market="KR", category=None):
             # 카테고리별 키워드 설정
             keywords = []
             if category == "inverse":
-                keywords = ["인버스", "inverse", "선물", "VIX", "헷지"]
+                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "H", "Short"]
             elif category == "index":
-                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN"]
+                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ"]
             elif category == "sector":
-                # 섹터는 인버스/지수가 아닌 것들 중 일부 인기 키워드
-                keywords = ["반도체", "배당", "헬스케어", "IT", "TECH", "바이오", "전지"]
+                keywords = ["반도체", "배당", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지"]
 
             data = []
             
