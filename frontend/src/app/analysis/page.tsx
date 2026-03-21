@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
@@ -32,6 +32,18 @@ export default function AnalysisPage() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
+    // Auto-search if symbol is provided in URL
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const sym = params.get("symbol");
+            if (sym) {
+                setSymbol(sym);
+                // Immediately fetch quant data (default tab)
+                fetchQuant(sym);
+            }
+        }
+    }, []);
 
     const fetchQuant = async (sym: string) => {
         if (!sym) return;
