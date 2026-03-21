@@ -13,29 +13,45 @@ export default function EtfAnalysisPage() {
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
     const [showGuide, setShowGuide] = useState(false);
     const [filterKeyword, setFilterKeyword] = useState<string | null>(null);
+    const [apiCategoryKey, setApiCategoryKey] = useState<string | null>(null);
 
-    const fetchEtfRankings = async (m: 'KR' | 'US') => {
+    const fetchEtfRankings = async (m: 'KR' | 'US', cat: string | null = null) => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/rank/etf?market=${m}`);
-            const json = await res.json();
-            if (json.status === "success") {
-                setData(json.data);
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const url = cat 
+                ? `${baseUrl}/api/rank/etf?market=${m}&category=${cat}` 
+                : `${baseUrl}/api/rank/etf?market=${m}`;
+                
+            const response = await fetch(url);
+            const res = await response.json();
+            if (res.status === 'success') {
+                setData(res.data);
                 setLastUpdate(new Date());
             }
-        } catch (err) {
-            console.error("Failed to fetch ETF rankings:", err);
+        } catch (error) {
+            console.error('Failed to fetch ETF rankings:', error);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleCategoryClick = (keyword: string, catKey: string) => {
+        const isSame = filterKeyword === keyword;
+        const newKeyword = isSame ? null : keyword;
+        const newCat = isSame ? null : catKey;
+        
+        setFilterKeyword(newKeyword);
+        setApiCategoryKey(newCat); // Update the API category key state
+        fetchEtfRankings(market, newCat);
+    };
+
     useEffect(() => {
-        fetchEtfRankings(market);
+        fetchEtfRankings(market, apiCategoryKey); // Use apiCategoryKey for initial fetch
         
         // Auto-refresh every 30 seconds
         const interval = setInterval(() => {
-            fetchEtfRankings(market);
+            fetchEtfRankings(market, apiCategoryKey); // Use apiCategoryKey for auto-refresh
         }, 30000);
         
         return () => clearInterval(interval);
@@ -193,13 +209,13 @@ export default function EtfAnalysisPage() {
                                         <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">유형별 지표 (참고용)</h4>
                                         <div className="space-y-3">
                                             {[
-                                                { title: "인버스/헷지군", keyword: "인버스", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
-                                                { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "섹터/테마군", keyword: "반도체", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
+                                                { title: "인버스/헷지군", keyword: "인버스", cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
+                                                { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
+                                                { title: "섹터/테마군", keyword: "반도체", cat: "sector", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
                                             ].map((strat) => (
                                                 <button 
                                                     key={strat.title} 
-                                                    onClick={() => setFilterKeyword(filterKeyword === strat.keyword ? null : strat.keyword)}
+                                                    onClick={() => handleCategoryClick(strat.keyword, strat.cat)}
                                                     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
                                                         filterKeyword === strat.keyword 
                                                         ? 'bg-blue-600/20 border-blue-500/50' 
@@ -212,7 +228,10 @@ export default function EtfAnalysisPage() {
                                             ))}
                                             {filterKeyword && (
                                                 <button 
-                                                    onClick={() => setFilterKeyword(null)}
+                                                    onClick={() => {
+                                                        setFilterKeyword(null);
+                                                        fetchEtfRankings(market, null);
+                                                    }}
                                                     className="w-full py-2 text-[10px] text-gray-500 font-bold hover:text-white transition-colors"
                                                 >
                                                     정렬 초기화

@@ -494,10 +494,11 @@ def get_naver_ranking(market="krx", rank_type="quant"):
         print(f"Error parsing Naver {market} {rank_type}: {e}")
         return []
 
-def get_etf_ranking(market="KR"):
+def get_etf_ranking(market="KR", category=None):
     """
     ETF 랭킹 정보를 가져옵니다.
     market: 'KR' (네이버 크롤링), 'US' (주요 리스트 기반 시세조회)
+    category: 'inverse', 'index', 'sector' 등 필터링 키워드
     """
     import requests
     from bs4 import BeautifulSoup
@@ -511,23 +512,45 @@ def get_etf_ranking(market="KR"):
             json_data = res.json()
             items = json_data.get('result', {}).get('etfItemList', [])
             
+            # 카테고리별 키워드 설정
+            keywords = []
+            if category == "inverse":
+                keywords = ["인버스", "inverse", "선물", "VIX", "헷지"]
+            elif category == "index":
+                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN"]
+            elif category == "sector":
+                # 섹터는 인버스/지수가 아닌 것들 중 일부 인기 키워드
+                keywords = ["반도체", "배당", "헬스케어", "IT", "TECH", "바이오", "전지"]
+
             data = []
-            # 거래량 순으로 정렬되어 오므로 상위 20개 추출
-            for i, item in enumerate(items[:20]):
-                change_rate = float(item.get('changeRate', 0))
-                # 네이버 API는 하락 시 마이너스 값을 직접 주거나 별도 플래그 사용. 
-                # changeRate가 양수인데 risefall이 '5'(하락)인 경우 등을 체크해야 하나, 
-                # API 데이터 확인 결과 changeRate에 부호가 포함되어 있음.
+            
+            # 카테고리가 있으면 전체 리스트에서 필터링, 없으면 상위 20개만
+            target_items = items
+            if not category:
+                target_items = items[:20]
+
+            for i, item in enumerate(target_items):
+                name = item.get('itemname', '')
                 
+                # 카테고리 필터링 수행
+                if category and not any(k in name for k in keywords):
+                    continue
+
+                change_rate = float(item.get('changeRate', 0))
                 data.append({
                     "rank": i + 1,
                     "symbol": item.get('itemcode'),
-                    "name": item.get('itemname'),
+                    "name": name,
                     "price": item.get('nowVal'),
                     "change": f"{change_rate:+.2f}%", 
                     "change_percent": change_rate,
                     "volume": str(item.get('quant', 0))
                 })
+                
+                # 필터링 시 너무 많아지면 끊기 (상위 30개 정도)
+                if category and len(data) >= 30:
+                    break
+
             return data
         except Exception as e:
             print(f"Error calling Naver ETF API: {e}")

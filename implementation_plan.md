@@ -62,10 +62,11 @@
 - ✅ **[완료]** 어닝 서프라이즈 알리미 (Earnings Whisper) 기능
 - ✅ **[완료]** 글로벌 가치사슬 지도 (Supply Chain Map) 기능
 - ✅ **[완료]** AI 차트 패턴 탐지기 (Chart Pattern Hunter) 기능
-### [NEW] [ETF 유형별 필터 및 상세 버튼 활성화]
-- **유형별 필터**: '인버스/헷지', '시장 지수', '섹터/테마' 버튼 클릭 시 랭킹 리스트에서 해당 종목군을 필터링하여 보여주는 기능 구현.
-- **상세 버튼 연결**: '종목 상세 데이터 확인' 버튼 클릭 시 현재 1위 종목 또는 선택된 종목의 `/analysis` 페이지로 이동.
-- **사용자 피드백**: 버튼 클릭 시 `scale` 애니메이션 및 활성화 상태(Active) 스타일 추가.
+### [NEW] [ETF 서버 사이드 카테고리 필터링 도입]
+- **백엔드 (`rank_data.py`)**: `get_etf_ranking`에 `category` 파라미터 추가. `items[:20]` 제한을 해제하고 전체 목록에서 키워드 필터링 수행.
+- **API (`main.py`)**: `/api/rank/etf` 엔드포인트에 `category: str = None` 쿼리 파라미터 추가.
+- **프론트엔드 (`page.tsx`)**: 유형별 버튼 클릭 시 `fetchEtfRankings(market, category)`를 호출하여 데이터 즉시 갱신.
+- **기능**: 상위 20위 내에 없더라도 인버스, 지수추종 종목을 검색하여 노출.
 - ✅ **[완료]** 개미 vs AI (Sentiment Battle) 기능
 - ✅ **[완료]** All-Asset View (주식 + 코인 + 환율 통합) 기능
 - ✅ **[완료]** AI 뉴스 숏폼 (Financial TikTok) 기능

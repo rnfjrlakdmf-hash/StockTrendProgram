@@ -88,10 +88,10 @@ def health_check():
         "service": "AI Stock Analyst Backend"
     }
 @app.get("/api/rank/etf")
-def read_etf_rank(market: str = "KR"):
+def read_etf_rank(market: str = "KR", category: Optional[str] = None):
     """실시간 ETF 통계 데이터 반환 (참고용)"""
     from rank_data import get_etf_ranking
-    data = get_etf_ranking(market)
+    data = get_etf_ranking(market, category)
     return {"status": "success", "data": data}
 
 @app.get("/api/rank/themes")
