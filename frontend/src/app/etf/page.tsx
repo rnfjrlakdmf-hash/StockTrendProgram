@@ -54,12 +54,12 @@ export default function EtfAnalysisPage() {
                                 Real-time Analysis Active
                             </div>
                             <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
-                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Intelligence</span>
+                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics</span>
                             </h1>
                             <p className="text-gray-400 font-bold max-w-xl leading-relaxed text-sm md:text-base">
                                 {market === 'KR' 
-                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 수익률을 실시간으로 분석합니다."
-                                    : "미국 시장을 주도하는 지수 추종 ETF와 테마별 글로벌 상품군을 분석하여 최적의 통찰력을 제공합니다."
+                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 실시간으로 모니터링합니다."
+                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 실시간 시장 데이터를 집계하여 노출합니다."
                                 }
                             </p>
                         </div>
@@ -126,7 +126,7 @@ export default function EtfAnalysisPage() {
                         <div className="space-y-6">
                             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden h-full">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
-                                <h3 className="text-xl font-black text-white mb-6 tracking-tight">시장 통합 분석 봇</h3>
+                                <h3 className="text-xl font-black text-white mb-6 tracking-tight">시장 데이터 모니터</h3>
                                 
                                 <div className="space-y-6 relative">
                                     <div className="flex gap-4">
@@ -135,23 +135,23 @@ export default function EtfAnalysisPage() {
                                         </div>
                                         <div className="space-y-3">
                                             <p className="text-xs font-bold text-gray-300 leading-relaxed bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5">
-                                                현재 {market === 'KR' ? '국내' : '미국'} ETF 시장의 핵심 키워드는 
-                                                <span className="text-blue-400"> #{market === 'KR' ? '변동성' : '인플레이션'}</span> 입니다. 
-                                                상위 랭킹 종목들은 모두 일일 변동성이 평소보다 2배 이상 높게 나타나고 있습니다.
+                                                현재 {market === 'KR' ? '국내' : '미국'} ETF 시장에서 거래량이 가장 활발한 종목은 
+                                                <span className="text-blue-400"> {data[0]?.name || '...'}</span> 입니다. 
+                                                이 종목의 실시간 거래량은 {data[0]?.volume ? parseInt(data[0].volume).toLocaleString() : '0'}건을 기록 중입니다.
                                             </p>
                                             <p className="text-[10px] text-gray-500 font-bold">Updated: {lastUpdate.toLocaleTimeString()}</p>
                                         </div>
                                     </div>
 
                                     <div className="pt-6 border-t border-white/10">
-                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">전략 추천</h4>
+                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">유형별 지표 (참고용)</h4>
                                         <div className="space-y-3">
                                             {[
-                                                { title: "헷지 전략", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
-                                                { title: "모멘텀 추종", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "장기 보유", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
+                                                { title: "인버스/헷지군", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
+                                                { title: "시장 지수 추종", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
+                                                { title: "섹터/테마군", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
                                             ].map((strat) => (
-                                                <div key={strat.title} className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer border border-transparent hover:border-white/10">
+                                                <div key={strat.title} className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-default border border-transparent">
                                                     <span className="text-xs font-bold text-gray-300">{strat.title}</span>
                                                     {strat.icon}
                                                 </div>
@@ -160,14 +160,26 @@ export default function EtfAnalysisPage() {
                                     </div>
 
                                     <button 
-                                        className="w-full mt-8 py-4 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                                        onClick={() => window.location.href = `/analysis?symbol=${data[0]?.symbol}`}
+                                        className="w-full mt-8 py-4 rounded-2xl border border-blue-600/50 text-blue-400 font-black text-sm hover:bg-blue-600/10 transition-all flex items-center justify-center gap-2"
                                     >
-                                        상세 AI 리포트 보기
+                                        종목 상세 데이터 확인
                                         <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Disclaimer */}
+                    <div className="mt-12 p-8 rounded-3xl bg-white/5 border border-white/10 text-center">
+                        <p className="text-[11px] text-gray-500 font-bold leading-relaxed max-w-2xl mx-auto uppercase tracking-tighter">
+                            [ 투자 유의사항 및 면책 조항 ]<br />
+                            본 서비스에서 제공하는 모든 데이터와 통계 정보는 투자 참고용으로만 활용되어야 하며, 어떠한 경우에도 투자 성과를 보장하거나 특정 종목의 매수/매도를 권유하지 않습니다. 
+                            데이터는 거래소 및 정보 제공처의 사정에 따라 지연되거나 오차가 발생할 수 있습니다. 
+                            모든 투자의 최종 결정과 그에 따른 책임은 투자자 본인에게 있음을 알려드립니다. 
+                            본 서비스는 금융위원회의 유사투자자문업 신고 대상에 해당하지 않는 비자문형 시장 데이터 제공 도구입니다.
+                        </p>
                     </div>
                 </div>
             </main>

@@ -44,7 +44,7 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                             {market === 'KR' ? '국내 ETF 랭킹' : '미국 주요 ETF'}
                         </h3>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                            Real-time Market Insights
+                            Real-time Market Statistics
                         </p>
                     </div>
                 </div>
@@ -113,7 +113,7 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                 <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-center gap-3">
                     <Zap className="w-5 h-5 text-yellow-500 shrink-0" />
                     <p className="text-xs text-blue-200/80 leading-relaxed font-medium">
-                        국내 ETF는 거래소 실시간 데이터를 기반으로 하며, <span className="text-blue-400 font-bold underline">레버리지/인버스/배당주</span> 등 주요 종목군을 우선 분석합니다.
+                        국내 ETF 수치는 거래소 실시간 데이터를 기반으로 하며, <span className="text-blue-400 font-bold underline">레버리지/인버스/배당주</span> 등 유형별 통계를 객관적으로 집계합니다.
                     </p>
                 </div>
             )}
