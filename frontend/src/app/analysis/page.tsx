@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
@@ -11,7 +12,9 @@ import {
 
 
 // [v1.2.0] Added intuitive metaphors for beginners
-export default function AnalysisPage() {
+function AnalysisContent() {
+    const searchParams = useSearchParams();
+    const urlSymbol = searchParams.get("symbol");
 
     const [symbol, setSymbol] = useState("");
     const [activeTab, setActiveTab] = useState<"quant" | "financial" | "peer">("quant");
@@ -32,18 +35,13 @@ export default function AnalysisPage() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
-    // Auto-search if symbol is provided in URL
+    // Auto-search if symbol is provided in URL via Next.js router hook
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search);
-            const sym = params.get("symbol");
-            if (sym) {
-                setSymbol(sym);
-                // Immediately fetch quant data (default tab)
-                fetchQuant(sym);
-            }
+        if (urlSymbol) {
+            setSymbol(urlSymbol);
+            fetchQuant(urlSymbol);
         }
-    }, []);
+    }, [urlSymbol]);
 
     const fetchQuant = async (sym: string) => {
         if (!sym) return;
@@ -710,5 +708,18 @@ export default function AnalysisPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function AnalysisPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+                <RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" />
+                <p className="text-gray-400 font-bold">데이터를 렌더링하고 있습니다...</p>
+            </div>
+        }>
+            <AnalysisContent />
+        </Suspense>
     );
 }
