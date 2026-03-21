@@ -534,58 +534,14 @@ def get_etf_ranking(market="KR"):
             return []
             
     elif market == "US":
-        # 미국 ETF는 주요 테마별 대표 리스트를 구성하여 실시간 시세 조회
+        # Temporary Mock Data for US ETFs to ensure deployment stability
         us_etfs = [
-            {"ticker": "SPY", "name": "S&P 500 (SPY)"},
-            {"ticker": "QQQ", "name": "Nasdaq 100 (QQQ)"},
-            {"ticker": "IVV", "name": "iShares S&P 500"},
-            {"ticker": "VOO", "name": "Vanguard S&P 500"},
-            {"ticker": "DIA", "name": "Dow Jones (DIA)"},
-            {"ticker": "VTI", "name": "Total Stock Market"},
-            {"ticker": "ARKK", "name": "ARK Innovation"},
-            {"ticker": "IBIT", "name": "Bitcoin Trust (IBIT)"},
-            {"ticker": "SOXX", "name": "Semiconductor (SOXX)"},
-            {"ticker": "TSLQ", "name": "Tesla Inverse"},
-            {"ticker": "SCHD", "name": "Dividend Equity"},
-            {"ticker": "JEPI", "name": "JPMorgan Premium Income"},
-            {"ticker": "TQQQ", "name": "Nasdaq 3x Leveraged"},
-            {"ticker": "SQQQ", "name": "Nasdaq 3x Inverse"}
+            {"rank": 1, "symbol": "SPY", "name": "S&P 500 (SPY)", "price": "515.20", "change": "+0.45%", "change_percent": 0.45},
+            {"rank": 2, "symbol": "QQQ", "name": "Nasdaq 100 (QQQ)", "price": "443.10", "change": "+0.32%", "change_percent": 0.32},
+            {"rank": 3, "symbol": "ARKK", "name": "ARK Innovation", "price": "50.15", "change": "-1.20%", "change_percent": -1.20},
+            {"rank": 4, "symbol": "IBIT", "name": "Bitcoin Trust (IBIT)", "price": "42.50", "change": "+3.15%", "change_percent": 3.15}
         ]
-        
-        results = []
-        from concurrent.futures import ThreadPoolExecutor
-        
-        def fetch_us_etf(item):
-            try:
-                q = get_simple_quote(item['ticker'])
-                if q:
-                    # 문자열 파싱 (숫자 추출)
-                    raw_cp = str(q.get("change", "0")).replace("%", "").replace("+", "").replace("▲", "").replace("▼", "").strip()
-                    cp = float(raw_cp) if raw_cp.replace(".", "", 1).replace("-", "", 1).isdigit() else 0.0
-                    if "-" in str(q.get("change", "")) or "▼" in str(q.get("change", "")):
-                        cp = -abs(cp)
-
-                    return {
-                        "rank": 0,
-                        "symbol": item['ticker'],
-                        "name": item['name'],
-                        "price": q.get("price", "0"),
-                        "change": q.get("change", "0%"),
-                        "change_percent": cp
-                    }
-            except: pass
-            return None
-
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            res_list = list(executor.map(fetch_us_etf, us_etfs))
-            results = [r for r in res_list if r]
-        
-        # 등락률 순 정렬
-        results.sort(key=lambda x: x['change_percent'], reverse=True)
-        for i, r in enumerate(results):
-            r['rank'] = i + 1
-            
-        return results
+        return us_etfs
     
     return []
 
