@@ -97,7 +97,7 @@ export default function EtfRankingWidget({ data, market, loading }: EtfRankingWi
                                     </div>
                                 </div>
                             </div>
-                        );
+                        )
                     })
                 ) : (
                     <div className="col-span-full py-20 text-center">
