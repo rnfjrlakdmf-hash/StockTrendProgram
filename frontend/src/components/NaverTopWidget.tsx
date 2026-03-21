@@ -156,7 +156,7 @@ export default function NaverTopWidget() {
                                         {/* Change */}
                                         <div className="text-right w-20 md:w-28 flex justify-end">
                                             <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg border font-bold font-mono text-[10px] md:text-sm min-w-[3.5rem] w-full max-w-[5rem] md:max-w-24 text-center ${getPriceBgColor(item.change_percent)} ${getChangeColor(item.change_percent)}`}>
-                                                {item.change_percent > 0 ? '+' : ''}{item.change}
+                                                {item.change_percent > 0 ? '▲' : item.change_percent < 0 ? '▼' : ''}{String(item.change || '').replace(/[+%\-▲▼]/g, '')}%
                                             </div>
                                         </div>
                                     </div>

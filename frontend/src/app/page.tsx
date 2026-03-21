@@ -244,7 +244,7 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
                   {market === 'US' ? '$' : '₩'}{Number(item.price || 0).toLocaleString(undefined, { maximumFractionDigits: market === 'US' ? 2 : 0 })}
                 </div>
                 <div className={`text-xs font-bold ${item.change_percent >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                  {item.change_percent >= 0 ? '+' : ''}{Number(item.change_percent || 0).toFixed(2)}%
+                  {item.change_percent >= 0 ? '▲' : '▼'}{Math.abs(Number(item.change_percent || 0)).toFixed(2)}%
                 </div>
               </div>
             </div>

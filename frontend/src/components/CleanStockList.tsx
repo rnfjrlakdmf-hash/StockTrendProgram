@@ -91,8 +91,9 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     className={`text-[21px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
                                 />
                                 <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg shadow-black/20`}>
-                                    <Icon className="w-3.5 h-3.5" strokeWidth={4} />
-                                    <span translate="no">{item.change}</span>
+                                    <span translate="no">
+                                        {isPositive ? '▲' : isNegative ? '▼' : ''}{String(item.change || '').replace(/[+%\-▲▼]/g, '')}%
+                                    </span>
                                 </div>
                             </div>
 

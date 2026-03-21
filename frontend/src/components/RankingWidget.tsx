@@ -97,7 +97,7 @@ export default function RankingWidget() {
                             </div>
                             <div className="text-right flex-shrink-0">
                                 <div className="text-red-400 font-bold font-mono text-xs md:text-sm">
-                                    {String(item.change).startsWith('++') ? item.change.substring(1) : item.change}
+                                    ▲{String(item.change || '').replace(/[+%\-▲▼]/g, '')}%
                                 </div>
                                 <div className="text-gray-500 text-[10px] md:text-xs font-mono">
                                     {formatPrice(item.price)}{item.price_krw && <span className="text-blue-300 ml-1 text-[9px] md:text-[10px]">({item.price_krw}원)</span>}
@@ -134,7 +134,7 @@ export default function RankingWidget() {
                             </div>
                             <div className="text-right flex-shrink-0">
                                 <div className="text-blue-400 font-bold font-mono text-xs md:text-sm">
-                                    {String(item.change).startsWith('++') ? item.change.substring(1) : item.change}
+                                    ▼{String(item.change || '').replace(/[+%\-▲▼]/g, '')}%
                                 </div>
                                 <div className="text-gray-500 text-[10px] md:text-xs font-mono">
                                     {formatPrice(item.price)}{item.price_krw && <span className="text-blue-300 ml-1 text-[9px] md:text-[10px]">({item.price_krw}원)</span>}
