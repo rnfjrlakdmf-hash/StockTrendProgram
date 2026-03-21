@@ -19,7 +19,7 @@ const navigation = [
     { name: "종목 심층분석", href: "/analysis", icon: BarChart3 },
     { name: "이슈 테마", href: "/theme", icon: Sparkles },
     { name: "차트 분석", href: "/pattern", icon: LineChart },
-    { name: "AI 코치", href: "/coach", icon: UserCheck },
+    { name: "ETF 분석", href: "/etf", icon: Activity },
     { name: "공급망 지도", href: "/supply-chain", icon: Network },
     { name: "상담 챗봇", href: "/chat", icon: MessageSquare },
     { name: "포트폴리오", href: "/portfolio", icon: Shield },

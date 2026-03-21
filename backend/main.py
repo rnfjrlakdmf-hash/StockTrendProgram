@@ -415,6 +415,13 @@ def read_theme_rank():
     data = get_naver_theme_rank()
     return {"status": "success", "data": data}
 
+@app.get("/api/rank/etf")
+def read_etf_rank(market: str = "KR"):
+    """실시간 ETF 랭킹 반환 (market: KR, US)"""
+    from rank_data import get_etf_ranking
+    data = get_etf_ranking(market)
+    return {"status": "success", "data": data}
+
 @app.get("/api/korea/investors")
 def read_korea_investors():
     """국내 증시 투자자 동향 (지수 + 수급)"""

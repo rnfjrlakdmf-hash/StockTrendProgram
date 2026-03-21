@@ -494,6 +494,101 @@ def get_naver_ranking(market="krx", rank_type="quant"):
         print(f"Error parsing Naver {market} {rank_type}: {e}")
         return []
 
+def get_etf_ranking(market="KR"):
+    """
+    ETF 랭킹 정보를 가져옵니다.
+    market: 'KR' (네이버 크롤링), 'US' (주요 리스트 기반 시세조회)
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    import re
+    from stock_data import get_simple_quote
+
+    if market == "KR":
+        url = "https://finance.naver.com/api/sise/etfItemList.nhn"
+        try:
+            res = requests.get(url, timeout=5)
+            json_data = res.json()
+            items = json_data.get('result', {}).get('etfItemList', [])
+            
+            data = []
+            # 거래량 순으로 정렬되어 오므로 상위 20개 추출
+            for i, item in enumerate(items[:20]):
+                change_rate = float(item.get('changeRate', 0))
+                # 네이버 API는 하락 시 마이너스 값을 직접 주거나 별도 플래그 사용. 
+                # changeRate가 양수인데 risefall이 '5'(하락)인 경우 등을 체크해야 하나, 
+                # API 데이터 확인 결과 changeRate에 부호가 포함되어 있음.
+                
+                data.append({
+                    "rank": i + 1,
+                    "symbol": item.get('itemcode'),
+                    "name": item.get('itemname'),
+                    "price": item.get('nowVal'),
+                    "change": f"{change_rate:+.2f}%", 
+                    "change_percent": change_rate,
+                    "volume": str(item.get('quant', 0))
+                })
+            return data
+        except Exception as e:
+            print(f"Error calling Naver ETF API: {e}")
+            return []
+            
+    elif market == "US":
+        # 미국 ETF는 주요 테마별 대표 리스트를 구성하여 실시간 시세 조회
+        us_etfs = [
+            {"ticker": "SPY", "name": "S&P 500 (SPY)"},
+            {"ticker": "QQQ", "name": "Nasdaq 100 (QQQ)"},
+            {"ticker": "IVV", "name": "iShares S&P 500"},
+            {"ticker": "VOO", "name": "Vanguard S&P 500"},
+            {"ticker": "DIA", "name": "Dow Jones (DIA)"},
+            {"ticker": "VTI", "name": "Total Stock Market"},
+            {"ticker": "ARKK", "name": "ARK Innovation"},
+            {"ticker": "IBIT", "name": "Bitcoin Trust (IBIT)"},
+            {"ticker": "SOXX", "name": "Semiconductor (SOXX)"},
+            {"ticker": "TSLQ", "name": "Tesla Inverse"},
+            {"ticker": "SCHD", "name": "Dividend Equity"},
+            {"ticker": "JEPI", "name": "JPMorgan Premium Income"},
+            {"ticker": "TQQQ", "name": "Nasdaq 3x Leveraged"},
+            {"ticker": "SQQQ", "name": "Nasdaq 3x Inverse"}
+        ]
+        
+        results = []
+        from concurrent.futures import ThreadPoolExecutor
+        
+        def fetch_us_etf(item):
+            try:
+                q = get_simple_quote(item['ticker'])
+                if q:
+                    # 문자열 파싱 (숫자 추출)
+                    raw_cp = str(q.get("change", "0")).replace("%", "").replace("+", "").replace("▲", "").replace("▼", "").strip()
+                    cp = float(raw_cp) if raw_cp.replace(".", "", 1).replace("-", "", 1).isdigit() else 0.0
+                    if "-" in str(q.get("change", "")) or "▼" in str(q.get("change", "")):
+                        cp = -abs(cp)
+
+                    return {
+                        "rank": 0,
+                        "symbol": item['ticker'],
+                        "name": item['name'],
+                        "price": q.get("price", "0"),
+                        "change": q.get("change", "0%"),
+                        "change_percent": cp
+                    }
+            except: pass
+            return None
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            res_list = list(executor.map(fetch_us_etf, us_etfs))
+            results = [r for r in res_list if r]
+        
+        # 등락률 순 정렬
+        results.sort(key=lambda x: x['change_percent'], reverse=True)
+        for i, r in enumerate(results):
+            r['rank'] = i + 1
+            
+        return results
+    
+    return []
+
 if __name__ == "__main__":
     # Test
     print("KR:", get_realtime_top10("KR"))
