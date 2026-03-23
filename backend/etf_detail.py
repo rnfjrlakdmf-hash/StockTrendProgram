@@ -76,7 +76,9 @@ def get_etf_detail(symbol: str):
             else:
                 data["basic_info"]["amc"] = "알 수 없음"
                 
-            data["basic_info"]["ter"] = f"{info.get('ytdReturn', 0) * 100:.2f}%" if info.get('ytdReturn') else "N/A"
+            data["basic_info"]["ter"] = "N/A" # yfinance ytdReturn is not TER
+            data["basic_info"]["aum"] = f"${info.get('totalAssets', 0):,}" if info.get('totalAssets') else "N/A"
+            data["basic_info"]["dividend_yield"] = f"{info.get('yield', 0) * 100:.2f}%" if info.get('yield') else "0.00%"
             
             # Populate Market Data
             current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)

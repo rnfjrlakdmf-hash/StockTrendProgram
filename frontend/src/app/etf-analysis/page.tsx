@@ -6,10 +6,22 @@ import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
     Activity, TrendingUp, TrendingDown, Layers, PieChart,
-    Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert, AlertTriangle
+    Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert, AlertTriangle, Info
 } from "lucide-react";
 import dynamic from "next/dynamic";
+
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false }) as any;
+
+const TermTooltip = ({ title, content }: { title: string, content: string }) => (
+    <div className="relative group inline-flex items-center gap-1 cursor-help">
+        <span className="text-gray-500 text-[11px] font-bold">{title}</span>
+        <Info className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-gray-800 text-gray-200 text-xs rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 border border-gray-700 font-medium leading-relaxed text-left">
+            {content}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+        </div>
+    </div>
+);
 
 function EtfAnalysisContent() {
     const searchParams = useSearchParams();
@@ -19,6 +31,16 @@ function EtfAnalysisContent() {
     const [chartRange, setChartRange] = useState("1Y");
     const [loading, setLoading] = useState(false);
     const [etfData, setEtfData] = useState<any>(null);
+
+    const isUs = etfData?.symbol && /^[A-Za-z]+$/.test(etfData.symbol);
+
+    const renderCurrency = (val: string | number | undefined) => {
+        if (!val || val === 'N/A' || val === '0') return val || '0';
+        const strVal = String(val).replace(/[+-]/g, '');
+        // Remove trailing '원' if backend accidentally sent it
+        const cleanVal = strVal.replace('원', '');
+        return isUs ? `$${cleanVal}` : `${cleanVal}원`;
+    };
 
     const getFilteredChartData = () => {
         if (!etfData?.chart_data) return [];
@@ -123,19 +145,21 @@ function EtfAnalysisContent() {
                                     <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">{etfData.name}</h2>
                                     {etfData.market_data && (
                                         <div className="flex items-center gap-3 mt-4">
-                                            <span className="text-4xl font-black text-white">{etfData.market_data.price}원</span>
+                                            <span className="text-4xl font-black text-white">{renderCurrency(etfData.market_data.price)}</span>
                                             <span className={`text-lg font-bold flex items-center ${
                                                 parseFloat(etfData.market_data.change_percent) > 0 ? 'text-rose-500' : 
                                                 parseFloat(etfData.market_data.change_percent) < 0 ? 'text-blue-500' : 'text-gray-400'
                                             }`}>
-                                                {parseFloat(etfData.market_data.change_percent) > 0 ? '▲' : parseFloat(etfData.market_data.change_percent) < 0 ? '▼' : ''} 
-                                                {etfData.market_data.change.replace(/[+-]/g, '')}원 ({etfData.market_data.change_percent}%)
+                                                {parseFloat(etfData.market_data.change_percent) > 0 ? '▲ ' : parseFloat(etfData.market_data.change_percent) < 0 ? '▼ ' : ''} 
+                                                {renderCurrency(etfData.market_data.change)} ({etfData.market_data.change_percent}%)
                                             </span>
                                         </div>
                                     )}
                                 </div>
                                 <div className="bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-500/20 text-right">
-                                    <p className="text-blue-400 text-xs font-bold mb-1">순자산총액 (AUM)</p>
+                                    <div className="mb-1 flex justify-end">
+                                        <TermTooltip title="순자산총액 (AUM)" content="이 ETF가 굴리고 있는 전체 자산 규모입니다. 클수록 상장폐지 위험이 적고 거래가 활발합니다." />
+                                    </div>
                                     <p className="text-2xl font-black text-white">{etfData.basic_info?.aum || "N/A"}</p>
                                 </div>
                             </div>
@@ -144,38 +168,38 @@ function EtfAnalysisContent() {
                             {etfData.market_data && (
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                     <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
-                                        <p className="text-gray-500 text-[11px] font-bold mb-1">순자산가치 (NAV)</p>
-                                        <p className="text-lg font-black text-white">{etfData.market_data.nav}원</p>
+                                        <TermTooltip title="순자산가치 (NAV)" content="ETF가 보유한 자산의 1주당 진짜 가치입니다. 시장가와 비슷해야 정상입니다." />
+                                        <p className="text-lg font-black text-white mt-1">{renderCurrency(etfData.market_data.nav)}</p>
                                     </div>
                                     <div className="p-5 rounded-3xl bg-indigo-900/10 border border-indigo-500/20">
-                                        <p className="text-indigo-400/80 text-[11px] font-bold mb-1">괴리율 (Disparity)</p>
-                                        <p className={`text-lg font-black ${etfData.market_data.disparity.includes('+') ? 'text-rose-400' : etfData.market_data.disparity.includes('-') ? 'text-blue-400' : 'text-white'}`}>
+                                        <TermTooltip title="괴리율 (Disparity)" content="시장가와 진짜 가치(NAV)의 오차입니다. 0에 가까울수록 좋습니다." />
+                                        <p className={`text-lg font-black mt-1 ${etfData.market_data.disparity.includes('+') ? 'text-rose-400' : etfData.market_data.disparity.includes('-') ? 'text-blue-400' : 'text-white'}`}>
                                             {etfData.market_data.disparity}
                                         </p>
                                     </div>
                                     <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
-                                        <p className="text-gray-500 text-[11px] font-bold mb-1">일일 거래량</p>
-                                        <p className="text-lg font-black text-white">{etfData.market_data.volume}주</p>
+                                        <TermTooltip title="일일 거래량" content="오늘 주식이 거래된 횟수입니다. 거래량이 많을수록 사고 팔기 쉽습니다." />
+                                        <p className="text-lg font-black text-white mt-1">{etfData.market_data.volume}주</p>
                                     </div>
                                     <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
                                         <p className="text-gray-500 text-[11px] font-bold mb-1">52주 최고가</p>
-                                        <p className="text-lg font-black text-rose-400/80">{etfData.market_data.high52w}원</p>
+                                        <p className="text-lg font-black text-rose-400/80 mt-1">{renderCurrency(etfData.market_data.high52w)}</p>
                                     </div>
                                     <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
                                         <p className="text-gray-500 text-[11px] font-bold mb-1">52주 최저가</p>
-                                        <p className="text-lg font-black text-blue-400/80">{etfData.market_data.low52w}원</p>
+                                        <p className="text-lg font-black text-blue-400/80 mt-1">{renderCurrency(etfData.market_data.low52w)}</p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Basic Dashboard Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2">총보수 (TER)</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center flex flex-col items-center">
+                                    <div className="mb-2"><TermTooltip title="총보수 (TER)" content="이 ETF를 관리해주는 대가로 자산운용사에 매년 떼이는 수수료 비율입니다. 낮을수록 투자자에게 유리합니다." /></div>
                                     <p className="text-xl font-black text-white">{etfData.basic_info?.ter || "N/A"}</p>
                                 </div>
-                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2">분배율/배당률</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center flex flex-col items-center">
+                                    <div className="mb-2"><TermTooltip title="분배율/배당률" content="주식의 배당금처럼 투자자에게 1년간 지급되는 현금의 비율입니다." /></div>
                                     <p className="text-xl font-black text-emerald-400">{etfData.basic_info?.dividend_yield || "0.00%"}</p>
                                 </div>
                                 <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
