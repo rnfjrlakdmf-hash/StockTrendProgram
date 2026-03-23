@@ -169,24 +169,79 @@ const CACHE_DURATION = 60 * 1000; // 1 minute cache for fast re-navigation
 const formatChangeDisplay = (val: any) => {
     if (!val || val === 'N/A' || val === '-') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: val };
     const str = String(val).trim();
-    if (str === '0' || str === '0.00%') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+    if (str === '0' || str === '0.00%' || str === '0.0') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
     
-    // Check if it explicitly contains negative markers
-    const isNeg = str.includes('-') || str.includes('▼') || str.includes('하락');
+    // Improved Parsing: Check markers OR numerical value
+    const isNegExplicit = str.includes('-') || str.includes('▼') || str.includes('하락');
+    const isPosExplicit = str.includes('+') || str.includes('▲') || str.includes('상승');
+    
     const num = parseFloat(str.replace(/[^\d.-]/g, ''));
     if (isNaN(num)) return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
-    
-    const isPos = !isNeg && num > 0;
-    const finalNeg = isNeg || num < 0;
+    if (num === 0) return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+
+    const isPos = isPosExplicit || (!isNegExplicit && num > 0);
+    const isNeg = isNegExplicit || (!isPosExplicit && num < 0);
     
     // Remove existing signs for clean formatting
     let cleanText = str.replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
-    if (cleanText === '0.00%' || cleanText === '0' || cleanText === '0.00') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: cleanText };
     
     if (isPos) return { colorText: 'text-red-400', colorBg: 'bg-red-400/20', text: `▲ ${cleanText}` };
-    if (finalNeg) return { colorText: 'text-blue-400', colorBg: 'bg-blue-400/20', text: `▼ ${cleanText}` };
+    if (isNeg) return { colorText: 'text-blue-400', colorBg: 'bg-blue-400/20', text: `▼ ${cleanText}` };
     
     return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: cleanText };
+};
+
+// Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
+const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, prevClose: any, explicitChangeVal?: any, currency: string = 'KRW') => {
+    const baseFormat = formatChangeDisplay(changePctStr);
+    
+    let amtStr = "";
+    const pVal = parseFloat(String(currentPrice || "0").replace(/,/g, ''));
+    const isKRW = currency === 'KRW' || !currency || currency === 'null';
+    
+    if (explicitChangeVal !== undefined && explicitChangeVal !== null) {
+        const diff = parseFloat(String(explicitChangeVal).replace(/,/g, ''));
+        if (!isNaN(diff) && diff !== 0) {
+            const prefix = !isKRW ? '$' : '';
+            const decimals = isKRW ? 0 : 2;
+            amtStr = `${prefix}${Math.abs(diff).toLocaleString(undefined, {maximumFractionDigits: decimals})} `;
+        }
+    } else if (!isNaN(pVal) && pVal !== 0) {
+        let diff = 0;
+        if (prevClose !== undefined && prevClose !== null) {
+            const prev = parseFloat(String(prevClose).replace(/,/g, ''));
+            if (!isNaN(prev)) diff = pVal - prev;
+        } else if (changePctStr && String(changePctStr).includes('%')) {
+            // Reverse calculate from percentage
+            const pct = parseFloat(String(changePctStr).replace(/[^\d.-]/g, ''));
+            if (!isNaN(pct) && pct !== 0) {
+                // Rate = (P - Prev) / Prev * 100 -> Prev = P / (1 + Rate/100)
+                const prev = pVal / (1 + (pct / 100));
+                diff = pVal - prev;
+            }
+        }
+        
+        if (diff !== 0) {
+           const prefix = !isKRW ? '$' : '';
+           const decimals = isKRW ? 0 : 2;
+           // If it's a very small difference in USD, use more decimals
+           const optDecimals = !isKRW && Math.abs(diff) < 0.1 ? 4 : decimals;
+           amtStr = `${prefix}${Math.abs(diff).toLocaleString(undefined, {maximumFractionDigits: optDecimals})} `;
+        }
+    }
+    
+    if (amtStr && baseFormat.text.includes('%')) {
+       const iconMatch = baseFormat.text.match(/^[▲▼]/);
+       const icon = iconMatch ? iconMatch[0] + ' ' : '';
+       const pct = baseFormat.text.replace(/^[▲▼]\s*/, '');
+       return { ...baseFormat, text: `${icon}${amtStr}(${pct})` };
+    }
+    if (amtStr && !baseFormat.text.includes('%')) {
+       const iconMatch = baseFormat.text.match(/^[▲▼]/);
+       const icon = iconMatch ? iconMatch[0] + ' ' : '';
+       return { ...baseFormat, text: `${icon}${amtStr}` };
+    }
+    return baseFormat;
 };
 
 export default function DiscoveryPage() {
@@ -510,11 +565,11 @@ function DiscoveryContent() {
                                                     <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className={`font-mono font-bold ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
+                                                    <div className={`font-mono font-bold ${formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
                                                         {item.price}
                                                     </div>
-                                                    <div className={`text-xs ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
-                                                        {formatChangeDisplay(item.change_percent || item.change).text}
+                                                    <div className={`text-[10px] md:text-xs font-bold leading-tight ${formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                        {formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').text}
                                                     </div>
                                                 </div>
                                             </div>
@@ -540,11 +595,11 @@ function DiscoveryContent() {
                                                     <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className={`font-mono font-bold ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
+                                                    <div className={`font-mono font-bold ${formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
                                                         {item.price}
                                                     </div>
-                                                    <div className={`text-xs ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
-                                                        {formatChangeDisplay(item.change_percent || item.change).text}
+                                                    <div className={`text-[10px] md:text-xs font-bold leading-tight ${formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                        {formatChangeWithAmountDisplay(item.change_percent || item.change, item.price, undefined, undefined, 'KRW').text}
                                                     </div>
                                                 </div>
                                             </div>
@@ -599,8 +654,8 @@ function DiscoveryContent() {
                                                         (약 ₩{stock.price_krw || getKrwPrice(stock.price)})
                                                     </span>
                                                 )}
-                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeDisplay(stock.change).colorText} ${formatChangeDisplay(stock.change).colorBg}`}>
-                                                    {formatChangeDisplay(stock.change).text}
+                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorText} ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorBg}`}>
+                                                    {formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}
                                                 </span>
                                                 {/* [New] Market Status Badge with Green Light */}
                                                 {stock.details?.market_status && (
@@ -627,8 +682,8 @@ function DiscoveryContent() {
                                                             <span className="text-xl font-black text-white">
                                                                 ₩{stock.details.nxt_data.price.toLocaleString()}
                                                             </span>
-                                                            <span className={`text-xs font-bold ${formatChangeDisplay(stock.details.nxt_data.change_pct).colorText}`}>
-                                                                {formatChangeDisplay(stock.details.nxt_data.change_pct).text}
+                                                            <span className={`text-xs font-bold ${formatChangeWithAmountDisplay(stock.details.nxt_data.change_pct, stock.details.nxt_data.price, undefined, stock.details.nxt_data.change_val, 'KRW').colorText}`}>
+                                                                {formatChangeWithAmountDisplay(stock.details.nxt_data.change_pct, stock.details.nxt_data.price, undefined, stock.details.nxt_data.change_val, 'KRW').text}
                                                             </span>
                                                         </div>
                                                     </div>
