@@ -165,8 +165,29 @@ function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, is
 const STOCK_CACHE: Record<string, { data: any, timestamp: number }> = {};
 const CACHE_DURATION = 60 * 1000; // 1 minute cache for fast re-navigation
 
-
-
+// Helper for parsing change rate and applying standard KOR formatting (Red = Up, Blue = Down, with ▲/▼)
+const formatChangeDisplay = (val: any) => {
+    if (!val || val === 'N/A' || val === '-') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: val };
+    const str = String(val).trim();
+    if (str === '0' || str === '0.00%') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+    
+    // Check if it explicitly contains negative markers
+    const isNeg = str.includes('-') || str.includes('▼') || str.includes('하락');
+    const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+    if (isNaN(num)) return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+    
+    const isPos = !isNeg && num > 0;
+    const finalNeg = isNeg || num < 0;
+    
+    // Remove existing signs for clean formatting
+    let cleanText = str.replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
+    if (cleanText === '0.00%' || cleanText === '0' || cleanText === '0.00') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: cleanText };
+    
+    if (isPos) return { colorText: 'text-red-400', colorBg: 'bg-red-400/20', text: `▲ ${cleanText}` };
+    if (finalNeg) return { colorText: 'text-blue-400', colorBg: 'bg-blue-400/20', text: `▼ ${cleanText}` };
+    
+    return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: cleanText };
+};
 
 export default function DiscoveryPage() {
     return (
@@ -489,11 +510,11 @@ function DiscoveryContent() {
                                                     <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className={`font-mono font-bold ${item.change?.toString().startsWith('+') || item.change > 0 ? 'text-red-400' : item.change?.toString().startsWith('-') || item.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                    <div className={`font-mono font-bold ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
                                                         {item.price}
                                                     </div>
-                                                    <div className={`text-xs ${item.change?.toString().startsWith('+') || item.change > 0 ? 'text-red-400' : item.change?.toString().startsWith('-') || item.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                        {item.change_percent || item.change}
+                                                    <div className={`text-xs ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
+                                                        {formatChangeDisplay(item.change_percent || item.change).text}
                                                     </div>
                                                 </div>
                                             </div>
@@ -519,11 +540,11 @@ function DiscoveryContent() {
                                                     <div className="text-xs text-gray-500 font-mono">{item.symbol}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className={`font-mono font-bold ${item.change?.toString().startsWith('+') || item.change > 0 ? 'text-red-400' : item.change?.toString().startsWith('-') || item.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                    <div className={`font-mono font-bold ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
                                                         {item.price}
                                                     </div>
-                                                    <div className={`text-xs ${item.change?.toString().startsWith('+') || item.change > 0 ? 'text-red-400' : item.change?.toString().startsWith('-') || item.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                        {item.change_percent || item.change}
+                                                    <div className={`text-xs ${formatChangeDisplay(item.change_percent || item.change).colorText}`}>
+                                                        {formatChangeDisplay(item.change_percent || item.change).text}
                                                     </div>
                                                 </div>
                                             </div>
@@ -578,8 +599,8 @@ function DiscoveryContent() {
                                                         (약 ₩{stock.price_krw || getKrwPrice(stock.price)})
                                                     </span>
                                                 )}
-                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${String(stock.change).startsWith('+') ? 'text-red-400 bg-red-400/20' : 'text-blue-400 bg-blue-400/20'}`}>
-                                                    {stock.change}
+                                                <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeDisplay(stock.change).colorText} ${formatChangeDisplay(stock.change).colorBg}`}>
+                                                    {formatChangeDisplay(stock.change).text}
                                                 </span>
                                                 {/* [New] Market Status Badge with Green Light */}
                                                 {stock.details?.market_status && (
@@ -606,8 +627,8 @@ function DiscoveryContent() {
                                                             <span className="text-xl font-black text-white">
                                                                 ₩{stock.details.nxt_data.price.toLocaleString()}
                                                             </span>
-                                                            <span className={`text-xs font-bold ${stock.details.nxt_data.change_pct.startsWith('+') ? 'text-red-400' : 'text-blue-400'}`}>
-                                                                {stock.details.nxt_data.change_pct}
+                                                            <span className={`text-xs font-bold ${formatChangeDisplay(stock.details.nxt_data.change_pct).colorText}`}>
+                                                                {formatChangeDisplay(stock.details.nxt_data.change_pct).text}
                                                             </span>
                                                         </div>
                                                     </div>
