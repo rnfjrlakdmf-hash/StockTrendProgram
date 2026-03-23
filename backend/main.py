@@ -84,7 +84,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260323-investor-unified-v1",
+        "version": "20260323-investor-unified-v2",
         "service": "AI Stock Analyst Backend - Investor Trend Unified"
     }
 from fastapi import Request
@@ -173,8 +173,11 @@ def read_stock_investor(symbol: str, period: int = 1):
             "data": {"brokerage": {"sell":[], "buy":[], "foreign_estimate":None}, "trend": []}
         }
         
-    data = get_naver_investor_data(symbol, trader_day=period)
-    return {"status": "success", "market": "KR", "data": data}
+    data_result = get_naver_investor_data(symbol, trader_day=period)
+    if data_result.get("status") == "success":
+        return {"status": "success", "market": "KR", "data": data_result.get("data", {})}
+    else:
+        return {"status": "error", "message": data_result.get("message", "Data fetch failed")}
 
 @app.on_event("startup")
 async def startup_event():
