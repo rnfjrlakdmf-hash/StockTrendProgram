@@ -11,6 +11,7 @@ import os
 import yfinance as yf
 import pandas as pd
 from GoogleNews import GoogleNews
+from deep_translator import GoogleTranslator
 
 from korea_data import (
     get_korean_name, get_naver_flash_news, get_naver_stock_info, 
@@ -603,6 +604,15 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         # If it's a known global stock, use the Korean friendly name
         if target_symbol in GLOBAL_KOREAN_NAMES:
              display_name = GLOBAL_KOREAN_NAMES[target_symbol]
+        else:
+             # Translate explicitly if it's a foreign stock
+             if not (target_symbol.endswith('.KS') or target_symbol.endswith('.KQ')):
+                 try:
+                     translated = GoogleTranslator(source='en', target='ko').translate(display_name)
+                     if translated:
+                         display_name = translated.replace("결과", "").replace("Inc.", "주식회사").replace("Corp.", "").strip()
+                 except Exception as e:
+                     print(f"Deep-Translator error: {e}")
         
         if target_symbol.endswith(('.KS', '.KQ')):
             if stock_name and stock_name != target_symbol:

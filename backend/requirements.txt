@@ -16,3 +16,4 @@ aiohttp
 websockets
 selenium
 webdriver_manager
+deep-translator

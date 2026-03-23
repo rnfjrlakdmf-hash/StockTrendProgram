@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import io
 import re
 import yfinance as yf
+from deep_translator import GoogleTranslator
 
 AMC_MAP = {
     "KODEX": "삼성자산운용", "TIGER": "미래에셋자산운용", "KBSTAR": "KB자산운용",
@@ -47,11 +48,35 @@ def get_etf_detail(symbol: str):
         try:
             ticker = yf.Ticker(symbol)
             info = ticker.info
-            data["name"] = info.get("shortName", symbol)
+            
+            eng_name = info.get("shortName", symbol)
+            # Try stock_data dictionary first
+            try:
+                from stock_data import GLOBAL_KOREAN_NAMES
+                kor_name = GLOBAL_KOREAN_NAMES.get(symbol.upper())
+            except ImportError:
+                kor_name = None
+                
+            if kor_name:
+                data["name"] = kor_name
+            else:
+                try:
+                    translated = GoogleTranslator(source='en', target='ko').translate(eng_name)
+                    data["name"] = translated.replace("결과", "").strip() if translated else eng_name
+                except:
+                    data["name"] = eng_name
+            
+            eng_amc = info.get("fundFamily", "알 수 없음")
+            if eng_amc != "알 수 없음":
+                try:
+                    kor_amc = GoogleTranslator(source='en', target='ko').translate(eng_amc)
+                    data["basic_info"]["amc"] = kor_amc.replace("Inc.", "").replace("LLC", "").strip()
+                except:
+                    data["basic_info"]["amc"] = eng_amc
+            else:
+                data["basic_info"]["amc"] = "알 수 없음"
+                
             data["basic_info"]["ter"] = f"{info.get('ytdReturn', 0) * 100:.2f}%" if info.get('ytdReturn') else "N/A"
-            data["basic_info"]["aum"] = f"${info.get('totalAssets', 0):,}" if info.get('totalAssets') else "N/A"
-            data["basic_info"]["dividend_yield"] = f"{info.get('yield', 0) * 100:.2f}%" if info.get('yield') else "0.00%"
-            data["basic_info"]["amc"] = info.get("fundFamily", "알 수 없음")
             
             # Populate Market Data
             current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
