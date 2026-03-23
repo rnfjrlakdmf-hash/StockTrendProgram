@@ -296,7 +296,7 @@ export default function EtfAnalysisPage() {
                                     </div>
 
                                     <button 
-                                        onClick={() => window.location.href = `/analysis?symbol=${data[0]?.symbol}`}
+                                        onClick={() => window.location.href = `/etf-analysis?symbol=${data[0]?.symbol}`}
                                         className="w-full mt-8 py-4 rounded-2xl border border-blue-600/50 text-blue-400 font-black text-sm hover:bg-blue-600/10 transition-all flex items-center justify-center gap-2"
                                     >
                                         종목 상세 데이터 확인

@@ -87,12 +87,25 @@ def health_check():
         "version": "20260321-etf-live-v2-final",
         "service": "AI Stock Analyst Backend" # Force Deployment Comment
     }
+from fastapi import Request
+from rank_data import get_etf_ranking
+from etf_detail import get_etf_detail
+from peer_comparison import get_peer_comparison
+
 @app.get("/api/rank/etf")
 def read_etf_rank(market: str = "KR", category: Optional[str] = None):
     """실시간 ETF 통계 데이터 반환 (참고용)"""
-    from rank_data import get_etf_ranking
     data = get_etf_ranking(market, category)
     return {"status": "success", "data": data}
+
+@app.get("/api/peer/{symbol}")
+def peer_data(symbol: str):
+    return get_peer_comparison(symbol)
+
+@app.get("/api/etf-detail/{symbol}")
+def etf_detail(symbol: str):
+    """엔드포인트: 주어진 심볼을 기반으로 ETF의 순자산총액, 총보수, 편입종목 Top 10 등을 조회합니다."""
+    return get_etf_detail(symbol)
 
 @app.get("/api/rank/themes")
 def read_theme_rank():
