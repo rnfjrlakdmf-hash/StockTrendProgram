@@ -90,7 +90,7 @@ def health_check():
 from fastapi import Request
 from rank_data import get_etf_ranking
 from etf_detail import get_etf_detail
-from peer_comparison import get_peer_comparison
+from pro_analysis import get_peer_comparison
 
 @app.get("/api/rank/etf")
 def read_etf_rank(market: str = "KR", category: Optional[str] = None):
