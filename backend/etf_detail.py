@@ -23,7 +23,18 @@ def get_etf_detail(symbol: str):
             "amc": "알 수 없음",
             "aum": "0원",
             "launch_date": "알 수 없음",
-            "index": "알 수 없음"
+            "index": "알 수 없음",
+            "dividend_yield": "0.00%"
+        },
+        "market_data": {
+            "price": "0",
+            "change": "0",
+            "change_percent": "0.00",
+            "nav": "0",
+            "disparity": "0.00%",
+            "volume": "0",
+            "high52w": "0",
+            "low52w": "0"
         },
         "holdings": [],
         "performance": {},
@@ -39,10 +50,37 @@ def get_etf_detail(symbol: str):
             data["name"] = info.get("shortName", symbol)
             data["basic_info"]["ter"] = f"{info.get('ytdReturn', 0) * 100:.2f}%" if info.get('ytdReturn') else "N/A"
             data["basic_info"]["aum"] = f"${info.get('totalAssets', 0):,}" if info.get('totalAssets') else "N/A"
+            data["basic_info"]["dividend_yield"] = f"{info.get('yield', 0) * 100:.2f}%" if info.get('yield') else "0.00%"
             data["basic_info"]["amc"] = info.get("fundFamily", "알 수 없음")
             
+            # Populate Market Data
+            current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
+            nav_price = info.get("navPrice", 0)
+            
+            data["market_data"]["price"] = f"{current_price:,.2f}"
+            data["market_data"]["nav"] = f"{nav_price:,.2f}" if nav_price else "N/A"
+            
+            if nav_price and current_price and nav_price > 0:
+                disparity = ((current_price - nav_price) / nav_price) * 100
+                data["market_data"]["disparity"] = f"{disparity:+.2f}%"
+            else:
+                data["market_data"]["disparity"] = "N/A"
+                
+            data["market_data"]["volume"] = f"{info.get('volume', 0):,}"
+            data["market_data"]["high52w"] = f"{info.get('fiftyTwoWeekHigh', 0):,.2f}"
+            data["market_data"]["low52w"] = f"{info.get('fiftyTwoWeekLow', 0):,.2f}"
+            
             hist = ticker.history(period="1y")
-            data["chart_data"] = [{"date": str(idx).split(' ')[0], "price": float(row['Close'])} for idx, row in hist.iterrows()]
+            data["chart_data"] = [
+                {
+                    "date": str(idx).split(' ')[0], 
+                    "open": float(row['Open']),
+                    "high": float(row['High']),
+                    "low": float(row['Low']),
+                    "close": float(row['Close']),
+                    "volume": int(row['Volume'])
+                } for idx, row in hist.iterrows()
+            ]
             return {"status": "success", "data": data}
         except Exception as e:
             return {"status": "error", "message": str(e)}
@@ -50,10 +88,19 @@ def get_etf_detail(symbol: str):
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
         
-        # 1. Fetch yfinance chart data for KR ETF
+        # 1. Fetch yfinance chart data for KR ETF (OHLCV)
         try:
             hist = yf.Ticker(f"{symbol}.KS").history(period="1y")
-            data["chart_data"] = [{"date": str(idx).split(' ')[0], "price": float(row['Close'])} for idx, row in hist.iterrows()]
+            data["chart_data"] = [
+                {
+                    "date": str(idx).split(' ')[0], 
+                    "open": float(row['Open']),
+                    "high": float(row['High']),
+                    "low": float(row['Low']),
+                    "close": float(row['Close']),
+                    "volume": int(row['Volume'])
+                } for idx, row in hist.iterrows()
+            ]
         except:
             pass
 
@@ -64,6 +111,11 @@ def get_etf_detail(symbol: str):
             api_data = api_resp.json()
             data["name"] = api_data.get("stockName", "알 수 없음")
             
+            # Set top-level market data
+            data["market_data"]["price"] = api_data.get("closePrice", "0")
+            data["market_data"]["change"] = api_data.get("compareToPreviousClosePrice", "0")
+            data["market_data"]["change_percent"] = api_data.get("fluctuationsRatio", "0.00")
+            
             # Map AMC from name
             first_word = data["name"].split(' ')[0].upper()
             for key, val in AMC_MAP.items():
@@ -71,12 +123,15 @@ def get_etf_detail(symbol: str):
                     data["basic_info"]["amc"] = val
                     break
             
+            nav_val_str = ""
             for info in api_data.get("totalInfos", []):
                 key = info.get("key", "")
                 val = info.get("value", "")
+                code = info.get("code", "")
+                
                 if "수익률" in key:
                     data["performance"][key] = val
-                elif "보수" in key or info.get("code") == "fundPay":
+                elif "보수" in key or code == "fundPay":
                     data["basic_info"]["ter"] = val
                 elif "순자산총액" in key:
                     data["basic_info"]["aum"] = val
@@ -84,9 +139,30 @@ def get_etf_detail(symbol: str):
                     data["basic_info"]["launch_date"] = val.replace(".", "-")
                 elif "분배율" in key:
                     data["basic_info"]["dividend_yield"] = val
+                
+                # Market Data mappings
+                if code == "nav":
+                    nav_val_str = val
+                    data["market_data"]["nav"] = val
+                elif code == "accumulatedTradingVolume":
+                    data["market_data"]["volume"] = val
+                elif code == "highPriceOf52Weeks":
+                    data["market_data"]["high52w"] = val
+                elif code == "lowPriceOf52Weeks":
+                    data["market_data"]["low52w"] = val
+            
+            # Calculate disparity for KR ETF
+            try:
+                curr_p = float(data["market_data"]["price"].replace(",", ""))
+                nav_p = float(nav_val_str.replace(",", ""))
+                if nav_p > 0:
+                    disparity = ((curr_p - nav_p) / nav_p) * 100
+                    data["market_data"]["disparity"] = f"{disparity:+.2f}%"
+            except:
+                data["market_data"]["disparity"] = "N/A"
                     
         # 3. AUM fallback using etfItemList
-        if data["basic_info"]["aum"] in ["0원", "알 수 없음"]:
+        if data["basic_info"]["aum"] in ["0원", "알 수 없음", "N/A"]:
             try:
                 list_data = requests.get("https://finance.naver.com/api/sise/etfItemList.nhn").json()
                 for etf in list_data.get('result', {}).get('etfItemList', []):

@@ -8,7 +8,8 @@ import {
     Activity, TrendingUp, TrendingDown, Layers, PieChart,
     Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert
 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import dynamic from "next/dynamic";
+const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false }) as any;
 
 function EtfAnalysisContent() {
     const searchParams = useSearchParams();
@@ -98,38 +99,75 @@ function EtfAnalysisContent() {
                     ) : etfData && !etfData.error ? (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 fade-in-0">
                             
-                            {/* Title Card */}
-                            <div className="p-8 rounded-3xl bg-gradient-to-tr from-gray-900 to-gray-800 border border-gray-700/50">
-                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                    <div>
-                                        <p className="text-gray-400 font-black tracking-widest mb-1 text-sm">{etfData.symbol}</p>
-                                        <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-2">{etfData.name}</h2>
-                                        <p className="text-blue-400 font-bold tracking-tight">자산운용사: {etfData.basic_info?.amc || "N/A"}</p>
-                                    </div>
-                                    <div className="bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-500/20 text-right">
-                                        <p className="text-gray-400 text-xs font-bold mb-1">순자산총액 (AUM)</p>
-                                        <p className="text-2xl font-black text-blue-400">{etfData.basic_info?.aum || "N/A"}</p>
-                                    </div>
+                            {/* Title Card & Price */}
+                            <div className="p-8 rounded-3xl bg-gradient-to-tr from-gray-900 to-gray-800 border border-gray-700/50 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                <div>
+                                    <p className="text-gray-400 font-black tracking-widest mb-1 text-sm">{etfData.symbol} <span className="text-gray-600 bg-gray-800 px-2 py-0.5 rounded text-[10px] ml-2">{etfData.basic_info?.amc || "N/A"}</span></p>
+                                    <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">{etfData.name}</h2>
+                                    {etfData.market_data && (
+                                        <div className="flex items-center gap-3 mt-4">
+                                            <span className="text-4xl font-black text-white">{etfData.market_data.price}원</span>
+                                            <span className={`text-lg font-bold flex items-center ${
+                                                parseFloat(etfData.market_data.change_percent) > 0 ? 'text-rose-500' : 
+                                                parseFloat(etfData.market_data.change_percent) < 0 ? 'text-blue-500' : 'text-gray-400'
+                                            }`}>
+                                                {parseFloat(etfData.market_data.change_percent) > 0 ? '▲' : parseFloat(etfData.market_data.change_percent) < 0 ? '▼' : ''} 
+                                                {etfData.market_data.change.replace(/[+-]/g, '')}원 ({etfData.market_data.change_percent}%)
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-500/20 text-right">
+                                    <p className="text-blue-400 text-xs font-bold mb-1">순자산총액 (AUM)</p>
+                                    <p className="text-2xl font-black text-white">{etfData.basic_info?.aum || "N/A"}</p>
                                 </div>
                             </div>
 
+                            {/* Market Snapshot Grid (Newly Added) */}
+                            {etfData.market_data && (
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <p className="text-gray-500 text-[11px] font-bold mb-1">순자산가치 (NAV)</p>
+                                        <p className="text-lg font-black text-white">{etfData.market_data.nav}원</p>
+                                    </div>
+                                    <div className="p-5 rounded-3xl bg-indigo-900/10 border border-indigo-500/20">
+                                        <p className="text-indigo-400/80 text-[11px] font-bold mb-1">괴리율 (Disparity)</p>
+                                        <p className={`text-lg font-black ${etfData.market_data.disparity.includes('+') ? 'text-rose-400' : etfData.market_data.disparity.includes('-') ? 'text-blue-400' : 'text-white'}`}>
+                                            {etfData.market_data.disparity}
+                                        </p>
+                                    </div>
+                                    <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <p className="text-gray-500 text-[11px] font-bold mb-1">일일 거래량</p>
+                                        <p className="text-lg font-black text-white">{etfData.market_data.volume}주</p>
+                                    </div>
+                                    <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <p className="text-gray-500 text-[11px] font-bold mb-1">52주 최고가</p>
+                                        <p className="text-lg font-black text-rose-400/80">{etfData.market_data.high52w}원</p>
+                                    </div>
+                                    <div className="p-5 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <p className="text-gray-500 text-[11px] font-bold mb-1">52주 최저가</p>
+                                        <p className="text-lg font-black text-blue-400/80">{etfData.market_data.low52w}원</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Basic Dashboard Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="p-6 rounded-3xl bg-gray-900 border border-gray-800 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2 tracking-tighter">총보수 (TER)</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
+                                    <p className="text-gray-500 text-xs font-bold mb-2">총보수 (TER)</p>
                                     <p className="text-xl font-black text-white">{etfData.basic_info?.ter || "N/A"}</p>
                                 </div>
-                                <div className="p-6 rounded-3xl bg-gray-900 border border-gray-800 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2 tracking-tighter">분배율/배당률</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
+                                    <p className="text-gray-500 text-xs font-bold mb-2">분배율/배당률</p>
                                     <p className="text-xl font-black text-emerald-400">{etfData.basic_info?.dividend_yield || "0.00%"}</p>
                                 </div>
-                                <div className="p-6 rounded-3xl bg-gray-900 border border-gray-800 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2 tracking-tighter">상장일</p>
-                                    <p className="text-lg font-bold text-white">{etfData.basic_info?.launch_date || "N/A"}</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
+                                    <p className="text-gray-500 text-xs font-bold mb-2">상장일</p>
+                                    <p className="text-lg font-bold text-gray-300">{etfData.basic_info?.launch_date || "N/A"}</p>
                                 </div>
-                                <div className="p-6 rounded-3xl bg-gray-900 border border-gray-800 text-center flex flex-col justify-center">
-                                    <p className="text-gray-500 text-[10px] font-bold mb-1 tracking-tighter">기초지수</p>
-                                    <p className="text-sm font-bold text-gray-300 leading-tight line-clamp-2">{etfData.basic_info?.index || "N/A"}</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center flex flex-col justify-center">
+                                    <p className="text-gray-500 text-[10px] font-bold mb-1">기초지수</p>
+                                    <p className="text-sm font-bold text-gray-400 leading-tight line-clamp-2">{etfData.basic_info?.index || "N/A"}</p>
                                 </div>
                             </div>
 
@@ -226,41 +264,28 @@ function EtfAnalysisContent() {
                                     <div className="col-span-full p-8 rounded-3xl bg-gray-900 border border-gray-800">
                                         <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
                                             <Activity className="w-5 h-5 text-blue-400" />
-                                            최근 1년 가격 추이 (YFinance)
+                                            최근 1년 가격 추이 (Candlestick)
                                         </h3>
-                                        <div className="h-[300px] w-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={etfData.chart_data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-                                                    <defs>
-                                                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                                                    <XAxis 
-                                                        dataKey="date" 
-                                                        stroke="#4b5563" 
-                                                        fontSize={10} 
-                                                        tickMargin={10} 
-                                                        minTickGap={30} 
-                                                    />
-                                                    <YAxis 
-                                                        domain={['auto', 'auto']} 
-                                                        stroke="#4b5563" 
-                                                        fontSize={10} 
-                                                        tickFormatter={(val) => val.toLocaleString()} 
-                                                        width={60} 
-                                                    />
-                                                    <Tooltip 
-                                                        contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '12px' }}
-                                                        itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
-                                                        formatter={(value: any) => [value ? value.toLocaleString() + '원' : '0원', '종가']}
-                                                        labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
-                                                    />
-                                                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
+                                        <div className="h-[400px] w-full">
+                                            <ReactApexChart 
+                                                options={{
+                                                    chart: { type: 'candlestick', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+                                                    plotOptions: { candlestick: { colors: { upward: '#ef4444', downward: '#3b82f6' } } },
+                                                    xaxis: { type: 'datetime', labels: { style: { colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                                                    yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#9ca3af' }, formatter: (val: number) => val.toLocaleString() + '원' } },
+                                                    grid: { borderColor: '#1f2937', strokeDashArray: 4 },
+                                                    theme: { mode: 'dark' }
+                                                }}
+                                                series={[{
+                                                    name: '시세',
+                                                    data: etfData.chart_data.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: [d.open, d.high, d.low, d.close]
+                                                    }))
+                                                }]}
+                                                type="candlestick"
+                                                height="100%"
+                                            />
                                         </div>
                                     </div>
                                 )}
