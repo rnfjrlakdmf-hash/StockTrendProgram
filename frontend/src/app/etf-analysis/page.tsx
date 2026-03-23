@@ -31,6 +31,7 @@ function EtfAnalysisContent() {
     const [chartRange, setChartRange] = useState("1Y");
     const [loading, setLoading] = useState(false);
     const [etfData, setEtfData] = useState<any>(null);
+    const [autoRefresh, setAutoRefresh] = useState(false);
 
     const isUs = etfData?.symbol && /^[A-Za-z]+$/.test(etfData.symbol);
 
@@ -61,23 +62,36 @@ function EtfAnalysisContent() {
         }
     }, [urlSymbol]);
 
-    const fetchEtfDetail = async (sym: string) => {
+    // Auto-refresh polling
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (autoRefresh && urlSymbol && !loading && !etfData?.error) {
+            interval = setInterval(() => {
+                fetchEtfDetail(urlSymbol, true); // background sync
+            }, 10000); // 10 seconds
+        }
+        return () => clearInterval(interval);
+    }, [autoRefresh, urlSymbol, loading, etfData]);
+
+    const fetchEtfDetail = async (sym: string, isBackground = false) => {
         if (!sym) return;
-        setLoading(true);
-        setEtfData(null);
+        if (!isBackground) {
+            setLoading(true);
+            setEtfData(null);
+        }
         try {
             const res = await fetch(`${API_BASE_URL}/api/etf-detail/${sym}`);
             const json = await res.json();
             if (json.status === "success") {
                 setEtfData(json.data);
-            } else {
+            } else if (!isBackground) {
                 setEtfData({ error: json.message || "Failed to load ETF details" });
             }
         } catch (e) {
             console.error(e);
-            setEtfData({ error: "Network error fetching ETF data." });
+            if (!isBackground) setEtfData({ error: "Network error fetching ETF data." });
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
@@ -121,10 +135,25 @@ function EtfAnalysisContent() {
                             분석
                         </button>
                     </div>
-                    {/* Legal Disclaimer for Overseas ETFs */}
-                    <div className="flex items-center gap-2 text-gray-500 bg-blue-900/10 py-3 px-5 rounded-2xl border border-blue-500/20 w-fit">
-                        <AlertTriangle className="w-5 h-5 text-blue-400" />
-                        <p className="text-xs font-bold tracking-tight">해외(미국) 상장 ETF 시세 및 데이터는 현지 거래소 규정에 따라 <span className="text-blue-400">최소 15분 지연 분배(Delayed Data)</span> 원칙이 적용됩니다.</p>
+                    <div className="flex flex-col md:flex-row items-center gap-4 justify-between">
+                        {/* Legal Disclaimer for Overseas ETFs */}
+                        <div className="flex items-center gap-2 text-gray-500 bg-blue-900/10 py-3 px-5 rounded-2xl border border-blue-500/20 w-full md:w-auto">
+                            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-blue-400" />
+                            <p className="text-xs font-bold tracking-tight">해외(미국) 상장 시세는 현지 거래소 규정에 따라 <span className="text-blue-400">최소 15분 지연 분배(Delayed Data)</span> 원칙이 적용됩니다.</p>
+                        </div>
+                        
+                        {/* Auto-refresh toggle */}
+                        <button
+                            onClick={() => setAutoRefresh(!autoRefresh)}
+                            className={`flex items-center gap-2 px-4 py-3 md:py-2.5 rounded-2xl md:rounded-full text-xs font-black tracking-widest transition-all w-full md:w-auto justify-center ${
+                                autoRefresh 
+                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                    : 'bg-gray-800/80 text-gray-400 border border-gray-700 hover:bg-gray-700'
+                            }`}
+                        >
+                            <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-gray-500'}`}></span>
+                            {autoRefresh ? '실시간 연동 중 (10초 자동갱신)' : '실시간 연동 켜기 (수동)'}
+                        </button>
                     </div>
                 </div>
 
