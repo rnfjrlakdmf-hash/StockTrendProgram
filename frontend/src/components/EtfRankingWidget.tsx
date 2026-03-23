@@ -83,7 +83,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                             <div 
                                 key={item.symbol + idx}
                                 className={`flex items-center justify-between p-4 rounded-2xl border ${borderColorClass} ${bgColorClass} hover:bg-white/5 transition-all group/item cursor-pointer`}
-                                onClick={() => window.location.href = `/analysis?symbol=${item.symbol}`}
+                                onClick={() => window.location.href = `/etf-analysis?symbol=${item.symbol}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-black text-sm ${idx < 3 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-500'}`}>
