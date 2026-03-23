@@ -70,7 +70,13 @@ def get_etf_detail(symbol: str):
             data["market_data"]["high52w"] = f"{info.get('fiftyTwoWeekHigh', 0):,.2f}"
             data["market_data"]["low52w"] = f"{info.get('fiftyTwoWeekLow', 0):,.2f}"
             
-            hist = ticker.history(period="1y")
+            hist = ticker.history(period="2y")
+            hist['ma5'] = hist['Close'].rolling(window=5).mean()
+            hist['ma20'] = hist['Close'].rolling(window=20).mean()
+            hist['ma60'] = hist['Close'].rolling(window=60).mean()
+            hist['ma120'] = hist['Close'].rolling(window=120).mean()
+            hist = hist.tail(252)
+            
             data["chart_data"] = [
                 {
                     "date": str(idx).split(' ')[0], 
@@ -78,7 +84,11 @@ def get_etf_detail(symbol: str):
                     "high": float(row['High']),
                     "low": float(row['Low']),
                     "close": float(row['Close']),
-                    "volume": int(row['Volume'])
+                    "volume": int(row['Volume']),
+                    "ma5": float(row['ma5']) if pd.notna(row['ma5']) else None,
+                    "ma20": float(row['ma20']) if pd.notna(row['ma20']) else None,
+                    "ma60": float(row['ma60']) if pd.notna(row['ma60']) else None,
+                    "ma120": float(row['ma120']) if pd.notna(row['ma120']) else None
                 } for idx, row in hist.iterrows()
             ]
             return {"status": "success", "data": data}
@@ -90,7 +100,13 @@ def get_etf_detail(symbol: str):
         
         # 1. Fetch yfinance chart data for KR ETF (OHLCV)
         try:
-            hist = yf.Ticker(f"{symbol}.KS").history(period="1y")
+            hist = yf.Ticker(f"{symbol}.KS").history(period="2y")
+            hist['ma5'] = hist['Close'].rolling(window=5).mean()
+            hist['ma20'] = hist['Close'].rolling(window=20).mean()
+            hist['ma60'] = hist['Close'].rolling(window=60).mean()
+            hist['ma120'] = hist['Close'].rolling(window=120).mean()
+            hist = hist.tail(252)
+            
             data["chart_data"] = [
                 {
                     "date": str(idx).split(' ')[0], 
@@ -98,7 +114,11 @@ def get_etf_detail(symbol: str):
                     "high": float(row['High']),
                     "low": float(row['Low']),
                     "close": float(row['Close']),
-                    "volume": int(row['Volume'])
+                    "volume": int(row['Volume']),
+                    "ma5": float(row['ma5']) if pd.notna(row['ma5']) else None,
+                    "ma20": float(row['ma20']) if pd.notna(row['ma20']) else None,
+                    "ma60": float(row['ma60']) if pd.notna(row['ma60']) else None,
+                    "ma120": float(row['ma120']) if pd.notna(row['ma120']) else None
                 } for idx, row in hist.iterrows()
             ]
         except:

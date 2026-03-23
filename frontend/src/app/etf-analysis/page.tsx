@@ -16,8 +16,20 @@ function EtfAnalysisContent() {
     const urlSymbol = searchParams.get("symbol");
 
     const [symbol, setSymbol] = useState("");
+    const [chartRange, setChartRange] = useState("1Y");
     const [loading, setLoading] = useState(false);
     const [etfData, setEtfData] = useState<any>(null);
+
+    const getFilteredChartData = () => {
+        if (!etfData?.chart_data) return [];
+        const data = etfData.chart_data;
+        if (chartRange === '1M') return data.slice(-20);
+        if (chartRange === '3M') return data.slice(-60);
+        if (chartRange === '6M') return data.slice(-120);
+        return data; // 1Y
+    };
+
+    const filteredChartData = getFilteredChartData();
 
     // Auto-search if symbol is provided
     useEffect(() => {
@@ -267,28 +279,40 @@ function EtfAnalysisContent() {
                                 {/* Chart Section */}
                                 {etfData.chart_data && etfData.chart_data.length > 0 && (
                                     <div className="col-span-full p-8 rounded-3xl bg-gray-900 border border-gray-800">
-                                        <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                                            <Activity className="w-5 h-5 text-blue-400" />
-                                            최근 1년 가격 추이 (Candlestick)
-                                        </h3>
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                                            <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                                <Activity className="w-5 h-5 text-blue-400" />
+                                                종합 기술적 지표 (이동평균선)
+                                            </h3>
+                                            <div className="flex gap-2 bg-gray-800 p-1 rounded-xl">
+                                                {['1M', '3M', '6M', '1Y'].map(range => (
+                                                    <button key={range} onClick={() => setChartRange(range)} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${chartRange === range ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                                                        {range}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <div className="h-[400px] w-full">
                                             <ReactApexChart 
                                                 options={{
-                                                    chart: { type: 'candlestick', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+                                                    chart: { type: 'line', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+                                                    stroke: { width: [1, 2, 2, 2, 2], curve: 'smooth' as const },
+                                                    colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
                                                     plotOptions: { candlestick: { colors: { upward: '#ef4444', downward: '#3b82f6' } } },
                                                     xaxis: { type: 'datetime', labels: { style: { colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
                                                     yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#9ca3af' }, formatter: (val: number) => val.toLocaleString() + '원' } },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
-                                                    theme: { mode: 'dark' }
+                                                    theme: { mode: 'dark' },
+                                                    legend: { show: true, position: 'top', horizontalAlign: 'left' }
                                                 }}
-                                                series={[{
-                                                    name: '시세',
-                                                    data: etfData.chart_data.map((d: any) => ({
-                                                        x: new Date(d.date).getTime(),
-                                                        y: [d.open, d.high, d.low, d.close]
-                                                    }))
-                                                }]}
-                                                type="candlestick"
+                                                series={[
+                                                    { name: '시세', type: 'candlestick', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: [d.open, d.high, d.low, d.close] })) },
+                                                    { name: 'MA5', type: 'line', data: filteredChartData.filter((d: any) => d.ma5).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma5 })) },
+                                                    { name: 'MA20', type: 'line', data: filteredChartData.filter((d: any) => d.ma20).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma20 })) },
+                                                    { name: 'MA60', type: 'line', data: filteredChartData.filter((d: any) => d.ma60).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma60 })) },
+                                                    { name: 'MA120', type: 'line', data: filteredChartData.filter((d: any) => d.ma120).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma120 })) },
+                                                ]}
+                                                type="line"
                                                 height="100%"
                                             />
                                         </div>
