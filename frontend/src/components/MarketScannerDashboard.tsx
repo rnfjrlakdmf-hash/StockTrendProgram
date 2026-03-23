@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Radio, AlertCircle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Activity, Radio, AlertCircle, Minus } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 
 interface MarketStats {
@@ -86,9 +86,9 @@ export default function MarketScannerDashboard() {
                     <div style={{ width: `${downPct}%` }} className="bg-blue-500/80 transition-all duration-500" />
                 </div>
                 <div className="flex justify-between text-xs font-mono">
-                    <span className="text-red-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3" /> {stats.up}</span>
+                    <span className="text-red-400 flex items-center gap-1">▲ {stats.up}</span>
                     <span className="text-gray-500 flex items-center gap-1"><Minus className="w-3 h-3" /> {stats.same}</span>
-                    <span className="text-blue-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3" /> {stats.down}</span>
+                    <span className="text-blue-400 flex items-center gap-1">▼ {stats.down}</span>
                 </div>
             </div>
         );

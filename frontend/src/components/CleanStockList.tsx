@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, ChevronRight, Trash2, Shield } from 'lucide-react';
+import { Minus, ChevronRight, Trash2, Shield } from 'lucide-react';
 import BlinkingPrice from './BlinkingPrice';
 
 export interface CleanStockItem {
@@ -44,7 +44,6 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                 const isNegative = changeStr.startsWith('-') || changeNum < 0;
 
                 const textColorClass = isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : 'text-gray-300';
-                const Icon = isPositive ? ArrowUpRight : isNegative ? ArrowDownRight : Minus;
                 
                 return (
                     <div
