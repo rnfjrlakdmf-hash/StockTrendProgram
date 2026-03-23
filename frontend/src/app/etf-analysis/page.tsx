@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import {
     Activity, TrendingUp, TrendingDown, Layers, PieChart,
-    Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert
+    Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert, AlertTriangle
 } from "lucide-react";
 import dynamic from "next/dynamic";
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false }) as any;
@@ -86,6 +86,11 @@ function EtfAnalysisContent() {
                         >
                             분석
                         </button>
+                    </div>
+                    {/* Legal Disclaimer for Overseas ETFs */}
+                    <div className="flex items-center gap-2 text-gray-500 bg-blue-900/10 py-3 px-5 rounded-2xl border border-blue-500/20 w-fit">
+                        <AlertTriangle className="w-5 h-5 text-blue-400" />
+                        <p className="text-xs font-bold tracking-tight">해외(미국) 상장 ETF 시세 및 데이터는 현지 거래소 규정에 따라 <span className="text-blue-400">최소 15분 지연 분배(Delayed Data)</span> 원칙이 적용됩니다.</p>
                     </div>
                 </div>
 
@@ -251,10 +256,10 @@ function EtfAnalysisContent() {
                                     
                                     {/* Notice */}
                                     <div className="p-6 rounded-3xl bg-white/5 border border-white/10 flex items-start gap-4">
-                                        <ShieldAlert className="w-6 h-6 text-gray-500 flex-shrink-0 mt-1" />
-                                        <p className="text-xs text-gray-500 font-bold leading-relaxed">
-                                            미국(US) ETF의 경우 국내 거래소와 데이터 제공 방식이 달라 실시간 구성 종목 추출이 제한될 수 있으며, 수익률 등 일부 핵심 정보만 제공됩니다.
-                                            모든 정보는 과거 데이터를 기반으로 하며 미래 수익을 보장하지 않으므로 투자 시 참고용으로만 활용하십시오.
+                                        <AlertTriangle className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
+                                        <p className="text-xs text-gray-400 font-bold leading-relaxed">
+                                            미국 증시 상장(US) ETF 및 해외 지수 추종 상품의 경우, 무료 데이터 파이프라인의 명백한 한계로 인해 <span className="text-orange-400">실시간 구성 종목 추출이 제한되며, 가격 등락 역시 15분 지연된 시세</span>로 제공됩니다.
+                                            모든 분석 정보는 과거 데이터를 기반으로 하며 미래 수익을 보장하지 않으므로 투자 판단의 참고용으로만 활용하십시오.
                                         </p>
                                     </div>
                                 </div>

@@ -198,6 +198,11 @@ function AnalysisContent() {
                                 분석
                             </button>
                         </div>
+                        {/* Legal Disclaimer for Overseas Stocks */}
+                        <div className="mt-4 flex items-center justify-center gap-2 text-gray-500 bg-white/5 py-2 px-4 rounded-xl border border-white/5">
+                            <AlertTriangle className="w-4 h-4 text-orange-400" />
+                            <p className="text-xs font-bold tracking-tight">해외(미국) 주식 및 ETF 데이터는 현지 거래소 규정에 따라 <span className="text-orange-400">15분 지연된 시세(Delayed Data)</span>가 제공됩니다.</p>
+                        </div>
                     </div>
                 )}
 
