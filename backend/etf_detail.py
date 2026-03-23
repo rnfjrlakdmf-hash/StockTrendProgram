@@ -151,17 +151,23 @@ def get_etf_detail(symbol: str):
         except:
             pass
 
-        # 2. Get Integration Info
+        # 2. Get Integration Info and Basic Info (Price)
         api_url = f"https://m.stock.naver.com/api/stock/{symbol}/integration"
+        basic_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+        
         api_resp = requests.get(api_url, headers=headers)
-        if api_resp.status_code == 200:
+        basic_resp = requests.get(basic_url, headers=headers)
+        
+        if api_resp.status_code == 200 and basic_resp.status_code == 200:
             api_data = api_resp.json()
+            basic_data = basic_resp.json()
+            
             data["name"] = api_data.get("stockName", "알 수 없음")
             
-            # Set top-level market data
-            data["market_data"]["price"] = api_data.get("closePrice", "0")
-            data["market_data"]["change"] = api_data.get("compareToPreviousClosePrice", "0")
-            data["market_data"]["change_percent"] = api_data.get("fluctuationsRatio", "0.00")
+            # Set top-level market data from basic API
+            data["market_data"]["price"] = basic_data.get("closePrice", "0")
+            data["market_data"]["change"] = basic_data.get("compareToPreviousClosePrice", "0")
+            data["market_data"]["change_percent"] = basic_data.get("fluctuationsRatio", "0.00")
             
             # Map AMC from name
             first_word = data["name"].split(' ')[0].upper()
