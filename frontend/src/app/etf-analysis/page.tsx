@@ -8,6 +8,7 @@ import {
     Activity, TrendingUp, TrendingDown, Layers, PieChart,
     Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert
 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 function EtfAnalysisContent() {
     const searchParams = useSearchParams();
@@ -172,10 +173,10 @@ function EtfAnalysisContent() {
                                                 </tbody>
                                             </table>
                                         ) : (
-                                            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                                            <div className="h-full flex flex-col items-center justify-center text-gray-500 py-12">
                                                 <Layers className="w-12 h-12 mb-4 opacity-20" />
-                                                <p className="font-bold text-sm">구성 종목 데이터가 없습니다.</p>
-                                                <p className="text-xs mt-1">(해외 ETF 또는 실시간 데이터 누락)</p>
+                                                <p className="font-bold text-sm text-center">해외 지수 추종 ETF 등 일부 상품은<br/>네이버 금융에서 구성 종목(CU) 비율을 실시간으로 제공하지 않습니다.</p>
+                                                <p className="text-xs mt-2 text-indigo-400/70 font-bold bg-indigo-500/10 px-3 py-1.5 rounded-lg">(대신, 하단의 1년치 역사적 시세 차트를 참조해 주세요!)</p>
                                             </div>
                                         )}
                                     </div>
@@ -219,6 +220,50 @@ function EtfAnalysisContent() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* Chart Section */}
+                                {etfData.chart_data && etfData.chart_data.length > 0 && (
+                                    <div className="col-span-full p-8 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                                            <Activity className="w-5 h-5 text-blue-400" />
+                                            최근 1년 가격 추이 (YFinance)
+                                        </h3>
+                                        <div className="h-[300px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart data={etfData.chart_data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                                                    <defs>
+                                                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                                    <XAxis 
+                                                        dataKey="date" 
+                                                        stroke="#4b5563" 
+                                                        fontSize={10} 
+                                                        tickMargin={10} 
+                                                        minTickGap={30} 
+                                                    />
+                                                    <YAxis 
+                                                        domain={['auto', 'auto']} 
+                                                        stroke="#4b5563" 
+                                                        fontSize={10} 
+                                                        tickFormatter={(val) => val.toLocaleString()} 
+                                                        width={60} 
+                                                    />
+                                                    <Tooltip 
+                                                        contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '12px' }}
+                                                        itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
+                                                        formatter={(value: number) => [value.toLocaleString() + '원', '종가']}
+                                                        labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
+                                                    />
+                                                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : etfData?.error ? (
