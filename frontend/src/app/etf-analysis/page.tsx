@@ -255,7 +255,7 @@ function EtfAnalysisContent() {
                                                     <Tooltip 
                                                         contentStyle={{ backgroundColor: '#111827', borderColor: '#1f2937', borderRadius: '12px' }}
                                                         itemStyle={{ color: '#60a5fa', fontWeight: 'bold' }}
-                                                        formatter={(value: number) => [value.toLocaleString() + '원', '종가']}
+                                                        formatter={(value: any) => [value ? value.toLocaleString() + '원' : '0원', '종가']}
                                                         labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
                                                     />
                                                     <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
