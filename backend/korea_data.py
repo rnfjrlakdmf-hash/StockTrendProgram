@@ -1079,20 +1079,22 @@ def get_investor_history(symbol: str, days: int = 40):
         def fetch_page(page_num):
             try:
                 url = f"https://finance.naver.com/item/frgn.naver?code={code}&page={page_num}"
-                res = requests.get(url, headers=HEADER, timeout=3)
+                res = requests.get(url, headers=HEADER, timeout=5)
                 if res.status_code != 200: return []
                 
                 soup = BeautifulSoup(decode_safe(res), 'html.parser')
-                tables = soup.select("table.type2")
+                # Fixed: Look for table with summary containing "순매매"
                 target_table = None
+                tables = soup.select("table")
                 for tbl in tables:
-                    if "기관" in tbl.text and "외국인" in tbl.text:
+                    summary = tbl.get("summary", "")
+                    if "순매매" in summary and "외국인" in summary:
                         target_table = tbl
                         break
                 
                 if not target_table: return []
                 
-                rows = target_table.select("tr")
+                rows = target_table.select("tbody tr")
                 page_data = []
                 
                 for row in rows:
@@ -1109,19 +1111,20 @@ def get_investor_history(symbol: str, days: int = 40):
                         
                         def safe_int(txt):
                             try:
-                                if not txt: return 0
-                                return int(txt)
+                                if not txt or not txt.strip(): return 0
+                                # Handle numbers with signs
+                                clean = re.sub(r'[^0-9-]', '', txt)
+                                return int(clean) if clean else 0
                             except:
                                 return 0
                                 
                         inst_val = safe_int(inst_txt)
                         frgn_val = safe_int(frgn_txt)
-                        # 개인 순매수는 (기관 + 외국인)의 반대 매매로 추정 (기타법인 제외 고려 시 약 95% 정확도)
                         retail_val = -(inst_val + frgn_val)
 
                         page_data.append({
                             "date": date_txt.replace('.', '-'),
-                            "price": int(price_txt),
+                            "price": int(price_txt.replace(',', '')),
                             "institution": inst_val,
                             "foreigner": frgn_val,
                             "retail": retail_val 
@@ -1134,8 +1137,6 @@ def get_investor_history(symbol: str, days: int = 40):
                 return []
 
         # Parallel Fetch
-        # Each page has ~20 items. 40 days ~ 2 pages. fetch 3 just in case.
-        # If days > 40, fetch more.
         pages_to_fetch = (days // 20) + 2 
         if pages_to_fetch > 5: pages_to_fetch = 5
         
@@ -1161,8 +1162,123 @@ def get_investor_history(symbol: str, days: int = 40):
         
     except Exception as e:
         print(f"Investor History Error: {e}")
-        traceback.print_exc()
         return []
+
+def get_naver_investor_data(symbol: str, trader_day: int = 1):
+    """
+    [Integration] Fetch both Brokerage Info and Detailed Trend for a specific period (1, 5, 20, 60 days).
+    Url: https://finance.naver.com/item/frgn.naver?code={code}&trader_day={trader_day}
+    """
+    try:
+        code = symbol.split('.')[0]
+        code = re.sub(r'[^0-9]', '', code)
+        
+        url = f"https://finance.naver.com/item/frgn.naver?code={code}&trader_day={trader_day}"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        
+        # 1. & 2. Identify tables by structural analysis (column counts)
+        brokerage = {"sell": [], "buy": [], "foreign_estimate": None}
+        trend = []
+        broker_table = None
+        trend_table = None
+        
+        for tbl in soup.select("table.type2"):
+            rows = tbl.select("tr")
+            if len(rows) < 3: continue
+            
+            # Check rows 3 and 4 for definitive column counts
+            for i in range(min(len(rows), 6)):
+                c_data = rows[i].select("td")
+                if len(c_data) == 4 and not broker_table:
+                    broker_table = tbl
+                elif len(c_data) == 9 and not trend_table:
+                    trend_table = tbl
+            
+            if broker_table and trend_table:
+                break
+        
+        # 3. Parse Brokerage Table
+        if broker_table:
+            rows = broker_table.select("tr")
+            for row in rows:
+                if "total" in row.get("class", []):
+                    cols = row.select("td")
+                    if len(cols) >= 4:
+                        def parse_v(txt): return int(re.sub(r'[^0-9-]', '', txt.strip()) or 0)
+                        brokerage["foreign_estimate"] = {
+                            "sell": parse_v(cols[1].text),
+                            "net": parse_v(cols[2].text),
+                            "buy": parse_v(cols[3].text)
+                        }
+                    continue
+                    
+                cols = row.select("td")
+                if len(cols) >= 4:
+                    s_name = cols[0].text.strip()
+                    s_vol = cols[1].text.strip().replace(',', '')
+                    if s_name and not any(kw in s_name for kw in ["매도상위", "거래량", "거래원"]):
+                        brokerage["sell"].append({"name": s_name, "volume": int(s_vol) if s_vol.isdigit() else 0})
+                    
+                    b_name = cols[2].text.strip()
+                    b_vol = cols[3].text.strip().replace(',', '')
+                    if b_name and not any(kw in b_name for kw in ["매수상위", "거래량", "거래원"]):
+                        brokerage["buy"].append({"name": b_name, "volume": int(b_vol) if b_vol.isdigit() else 0})
+
+        # 4. Parse Daily Trend Table
+        if trend_table:
+            rows = trend_table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 9: 
+                    # Try th + td mix if any (Naver sometimes uses th for date)
+                    cols = row.select("th, td")
+                    if len(cols) < 9: continue
+                
+                date_txt = cols[0].text.strip().replace('.', '-')
+                if not re.match(r'\d{4}-\d{2}-\d{2}', date_txt) and not re.match(r'\d{2}-\d{2}-\d{2}', date_txt):
+                    continue
+                
+                try:
+                    def parse_i(txt): 
+                        clean = re.sub(r'[^0-9-]', '', txt.strip())
+                        return int(clean) if clean else 0
+                    
+                    # Direction check
+                    direction = 1
+                    ico = cols[2].select_one("span.ico")
+                    if ico and "하락" in ico.text: direction = -1
+                    elif not ico:
+                         img = cols[2].select_one("img")
+                         if img and "하락" in img.get("alt", ""): direction = -1
+                    
+                    trend.append({
+                        "date": date_txt,
+                        "close": parse_i(cols[1].text),
+                        "change": parse_i(cols[2].text) * direction,
+                        "percent": float(cols[3].text.strip().replace('%', '') or 0),
+                        "volume": parse_i(cols[4].text),
+                        "institution": parse_i(cols[5].text),
+                        "foreigner": parse_i(cols[6].text),
+                        "foreign_holdings": parse_i(cols[7].text),
+                        "foreign_ratio": float(cols[8].text.strip().replace('%', '') or 0)
+                    })
+                except: continue
+                
+        return {
+            "status": "success",
+            "data": {
+                "brokerage": brokerage,
+                "trend": trend
+            }
+        }
+    except Exception as e:
+        print(f"Investor Data Scrape Error: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "data": {"brokerage": {"sell":[], "buy":[], "foreign_estimate":None}, "trend": []}
+        }
 
 
 def get_exchange_rate():

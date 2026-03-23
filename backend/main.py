@@ -150,6 +150,32 @@ def read_stock_health(symbol: str):
     data = get_financial_health(symbol)
     return {"status": "success", "data": data}
 
+@app.get("/api/stock/{symbol}/investor")
+def read_stock_investor(symbol: str, period: int = 1):
+    """
+    [NEW] 특정 종목의 투자자별 매매동향 및 상위 거래원 정보 반환.
+    - 한국 주식: 네이버 금융 실시간 스크래핑 (당일/5/20/60일)
+    - 해외 주식: 현재 데이터 부재로 빈 객체 반환
+    """
+    from korea_data import get_naver_investor_data
+    
+    # Check if Korean Stock (6 digits)
+    is_kr = False
+    clean_code = symbol.split('.')[0]
+    if len(clean_code) == 6 and clean_code.isdigit():
+        is_kr = True
+        
+    if not is_kr:
+        return {
+            "status": "success",
+            "market": "US",
+            "message": "해외 주식은 거래원 정보를 제공하지 않습니다.",
+            "data": {"brokerage": {"sell":[], "buy":[], "foreign_estimate":None}, "trend": []}
+        }
+        
+    data = get_naver_investor_data(symbol, trader_day=period)
+    return {"status": "success", "market": "KR", "data": data}
+
 @app.on_event("startup")
 async def startup_event():
     # Start Ranking Background Task

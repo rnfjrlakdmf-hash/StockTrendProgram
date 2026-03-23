@@ -1,27 +1,42 @@
 # 주식동향 프로그램 (AI Stock Analyst) - 개발 로드맵
 
 ## 1. 개요
-이 프로젝트는 개인 투자자를 위한 올인원 AI 주식 분석 플랫폼입니다. 복잡한 데이터를 직관적인 시각화와 친절한 AI 브리핑으로 변환하고, 감성 분석 및 자동 매매 기능을 통해 성공적인 투자를 지원합니다.
+이 프로젝트는# [국내 종목] 투자자별 동향 및 거래원 정보 상시 노출 기능 구현
 
-## 2. 기술 스택 (제안)
-- **Frontend**: Next.js (React) - 직관적이고 아름다운 대시보드 UI 구현
-- **Backend**: Python (FastAPI) - 강력한 데이터 분석, AI 모델 연동, 증권사 API 제어
-- **Database**: SQLite or PostgreSQL - 사용자 데이터 및 분석 기록 저장
-- **AI Engine**: OpenAI GPT-4o or similar (분석/요약용)
+종목 발굴창 검색 시 국내 종목에 한해 상위 5대 매수/매도 거래원(증권사) 정보와 외국인/기관/개인의 기간별(1, 5, 20, 60일) 수급 추이를 시각화합니다.
 
-## 3. 기능 구현 단계
+## 제약 사항
+- **국외 종목 제외**: 네이버 금융 등 공개 API의 한계로 인해 해외 주식의 실시간/상세 거래원 데이터는 제공하지 않으며, 국내 종목에 집중합니다.
 
-### Phase 1: 기본 인프라 및 UI 프레임워크 (현재 단계)
-- 프로젝트 폴더 구조 생성 (Frontend/Backend 분리)
-- 메인 대시보드 레이아웃 구현 (Glassmorphism 디자인 적용)
-- 기본적인 네비게이션 (브리핑, 차트, 위험관리, 설정) 구현
+## Proposed Changes
 
-### Phase 2: 핵심 분석 및 시각화 (Expert & Assistant)
-- **종목 건강검진표**: ✅ UI 구현 및 주식 데이터/AI 점수 백엔드 연동 완료
-- **AI 투자 브리핑**: ✅ 시장 지수/뉴스 실시간 연동 및 AI 요약 생성 완료
-- **용어 콕콕 가이드**: ✅ 브리핑 페이지 내 AI 용어 설명 통합 완료
-- **위험 관리**: Risk Page UI 구현 (현재 Mock Data, 실시간 모니터링 로직 구현 예정)
-- **설정**: API Key 입력 UI 구현 
+### [Backend] 수급 데이터 엔진 고도화
+#### [MODIFY] [korea_data.py](file:///C:/Users/rnfjr/StockTrendProgram/backend/korea_data.py)
+- `get_naver_investor_data(code, trader_day)`: 거래원 테이블과 수급 추이 테이블을 병렬로 스크래핑하는 통합 함수 구현.
+- 인코딩 문제에 강한 '컬럼 개수 기반 테이블 식별 로직' 적용.
+- 상위 5대 매도/매수 거래원 및 외국계 합계, 일별 순매매량 데이터 추출.
+
+#### [MODIFY] [main.py](file:///C:/Users/rnfjr/StockTrendProgram/backend/main.py)
+- `/api/stock/{symbol}/investor`: `period` 파라미터를 지원하는 신규 엔드포인트 개설.
+
+### [Frontend] 실시간 수급 대시보드 구현
+#### [MODIFY] [InvestorTrendTab.tsx](file:///C:/Users/rnfjr/StockTrendProgram/frontend/src/components/InvestorTrendTab.tsx)
+- 기간 선택 필터 추가 (1, 5, 20, 60일).
+- 상위 5대 매수/매도 거래원 리스트 UI 추가.
+- 기간별 순매매 동향 Bar 차트 및 상세 테이블 연동.
+- 외국계 추정합(실시간) 정보를 상단에 강조 노출.
+
+#### [MODIFY] [page.tsx](file:///C:/Users/rnfjr/StockTrendProgram/frontend/src/app/discovery/page.tsx)
+- '관련 종목' 섹션 등락률 표시 아이콘(▲/▼) 및 색상(Red/Blue) 통일.
+
+## Verification Plan
+### Automated Tests
+- `test_api_logic.py`: 삼성전자(005930) 등 주요 종목에 대해 거래원 및 수급 데이터가 정상 응답되는지 검증 완료.
+
+### Manual Verification
+- 브라우저를 통해 '삼성전자' 검색 후 '투자자 동향' 탭 클릭.
+- 1일/5일/20일/60일 버튼 클릭 시 데이터 및 차트가 즉각 갱신되는지 확인.
+- 해외 종목(예: AAPL) 검색 시 투자자 데이터 미지원 메시지가 정상 노출되는지 확인.
 
 ### Phase 3: 데이터 파이프라인 및 감성 분석
 - [완료] 뉴스 크롤링 심화 (Google News 연동)
