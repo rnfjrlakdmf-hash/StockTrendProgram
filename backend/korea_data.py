@@ -1225,46 +1225,49 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                     if b_name and not any(kw in b_name for kw in ["매수상위", "거래량", "거래원"]):
                         brokerage["buy"].append({"name": b_name, "volume": int(b_vol) if b_vol.isdigit() else 0})
 
-        # 4. Parse Daily Trend Table
-        if trend_table:
-            rows = trend_table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) < 9: 
-                    # Try th + td mix if any (Naver sometimes uses th for date)
-                    cols = row.select("th, td")
-                    if len(cols) < 9: continue
+        # 4. Parse Daily Trend using Mobile API (for Individual data and multi-page support)
+        # 1-year is approx 250 trading days. pageSize=50 is stable.
+        trend = []
+        target_count = trader_day if trader_day > 1 else 20 # default 20 for chart
+        if trader_day == 1: target_count = 1 # Just today
+        
+        # If user asked for 1/3/6/12 months, usually it's around 20/60/120/250
+        # For trend chart, we want historical data.
+        pages_needed = (target_count // 50) + 1
+        if target_count <= 20: pages_needed = 1
+        
+        for p in range(1, pages_needed + 1):
+            try:
+                # pageSize limit might be around 100, let's use 50 for safety
+                page_size = 50 if target_count > 50 else target_count
+                m_url = f"https://m.stock.naver.com/api/stock/{code}/trend?pageSize={page_size}&page={p}"
+                m_res = requests.get(m_url, headers=HEADER, timeout=5)
+                m_data = m_res.json()
                 
-                date_txt = cols[0].text.strip().replace('.', '-')
-                if not re.match(r'\d{4}-\d{2}-\d{2}', date_txt) and not re.match(r'\d{2}-\d{2}-\d{2}', date_txt):
-                    continue
-                
-                try:
-                    def parse_i(txt): 
-                        clean = re.sub(r'[^0-9-]', '', txt.strip())
-                        return int(clean) if clean else 0
-                    
-                    # Direction check
-                    direction = 1
-                    ico = cols[2].select_one("span.ico")
-                    if ico and "하락" in ico.text: direction = -1
-                    elif not ico:
-                         img = cols[2].select_one("img")
-                         if img and "하락" in img.get("alt", ""): direction = -1
-                    
-                    trend.append({
-                        "date": date_txt,
-                        "close": parse_i(cols[1].text),
-                        "change": parse_i(cols[2].text) * direction,
-                        "percent": float(cols[3].text.strip().replace('%', '') or 0),
-                        "volume": parse_i(cols[4].text),
-                        "institution": parse_i(cols[5].text),
-                        "foreigner": parse_i(cols[6].text),
-                        "foreign_holdings": parse_i(cols[7].text),
-                        "foreign_ratio": float(cols[8].text.strip().replace('%', '') or 0)
-                    })
-                except: continue
-                
+                if isinstance(m_data, list):
+                    for item in m_data:
+                        # item keys: bizdate, closePrice, individualPureBuyQuant, foreignerPureBuyQuant, organPureBuyQuant, etc.
+                        dt = item.get('bizdate', '')
+                        if len(dt) == 8:
+                            dt = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}"
+                        
+                        def clean_i(v): return int(re.sub(r'[^0-9-]', '', str(v or 0)))
+                        
+                        trend.append({
+                            "date": dt,
+                            "close": clean_i(item.get('closePrice', 0)),
+                            "institution": clean_i(item.get('organPureBuyQuant', 0)),
+                            "foreigner": clean_i(item.get('foreignerPureBuyQuant', 0)),
+                            "retail": clean_i(item.get('individualPureBuyQuant', 0)),
+                            "foreign_holdings": clean_i(item.get('foreignerHoldQuant', 0)),
+                            "foreign_ratio": float(str(item.get('foreignerHoldRatio', 0)).replace(',', '').replace('%', ''))
+                        })
+                        if len(trend) >= target_count: break
+                if len(trend) >= target_count: break
+            except Exception as e:
+                print(f"Mobile API Page {p} Error: {e}")
+                break
+
         return {
             "status": "success",
             "data": {
