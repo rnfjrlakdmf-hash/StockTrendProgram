@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    ReferenceLine
+    ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    ReferenceLine, Line, Area
 } from 'recharts';
 import { RefreshCw, Users, AlertCircle, TrendingUp, Briefcase, Globe, Calendar, Loader2, TrendingDown } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
@@ -240,14 +240,28 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <span className="text-[10px] text-gray-500 ml-auto font-mono">UNIT: SHARES</span>
                     </div>
 
-                    <div className="h-[350px] w-full">
+                    <div className="h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
+                            <ComposedChart
                                 data={trendData}
-                                margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                                margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                                 barGap={0}
                                 barCategoryGap="20%"
                             >
+                                <defs>
+                                    <linearGradient id="colorInst" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorFrgn" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorRetail" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.05} vertical={false} />
                                 <XAxis
                                     dataKey="date"
@@ -257,8 +271,11 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                     axisLine={false}
                                     tickLine={false}
                                     dy={10}
+                                    minTickGap={period >= 120 ? 50 : 20}
                                 />
+                                {/* Left YAxis: Shares */}
                                 <YAxis
+                                    yAxisId="shares"
                                     stroke="#64748b"
                                     tick={{ fill: '#64748b', fontSize: 10 }}
                                     axisLine={false}
@@ -269,17 +286,34 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                         return value.toString();
                                     }}
                                     dx={-10}
-                                    domain={[-maxValue * 1.1, maxValue * 1.1]}
+                                    domain={['auto', 'auto']}
+                                />
+                                {/* Right YAxis: Price */}
+                                <YAxis
+                                    yAxisId="price"
+                                    orientation="right"
+                                    stroke="#e2e8f0"
+                                    tick={{ fill: '#94a3b8', fontSize: 9 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tickFormatter={(value) => value.toLocaleString()}
+                                    domain={['auto', 'auto']}
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', backdropFilter: 'blur(8px)' }}
-                                    itemStyle={{ padding: '4px 0', fontWeight: 'bold' }}
+                                    itemStyle={{ padding: '2px 0', fontWeight: 'bold' }}
                                     labelStyle={{ color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold' }}
                                     formatter={(value: any, name: any) => {
-                                        const label = name === 'institution' ? '기관' : name === 'foreigner' ? '외국인' : '개인';
-                                        return [`${formatNumber(Number(value))} 주`, label];
+                                        const labels: any = { 
+                                            institution: '기관', 
+                                            foreigner: '외국인', 
+                                            retail: '개인',
+                                            close: '주가'
+                                        };
+                                        const unit = name === 'close' ? '원' : '주';
+                                        return [`${formatNumber(Number(value))} ${unit}`, labels[name] || name];
                                     }}
-                                    labelFormatter={(label) => `${label} 순매수 현황`}
+                                    labelFormatter={(label) => `${label} 수급 및 주가`}
                                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                 />
                                 <Legend
@@ -288,14 +322,39 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                     height={36}
                                     iconType="circle"
                                     formatter={(value) => {
-                                        return <span className="text-xs text-slate-400 mr-4 font-bold">{value === 'institution' ? '기관' : value === 'foreigner' ? '외국인' : '개인'}</span>
+                                        const labels: any = { institution: '기관', foreigner: '외국인', retail: '개인', close: '주가' };
+                                        return <span className="text-xs text-slate-400 mr-2 font-bold">{labels[value] || value}</span>
                                     }}
                                 />
-                                <ReferenceLine y={0} stroke="#ffffff" opacity={0.1} strokeWidth={1} />
-                                <Bar dataKey="institution" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={20} />
-                                <Bar dataKey="foreigner" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={20} />
-                                <Bar dataKey="retail" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={20} />
-                            </BarChart>
+                                <ReferenceLine yAxisId="shares" y={0} stroke="#ffffff" opacity={0.1} strokeWidth={1} />
+                                
+                                {/* 주가 흐름 (Line) - 모든 기간 공통 */}
+                                <Line 
+                                    yAxisId="price" 
+                                    type="monotone" 
+                                    dataKey="close" 
+                                    stroke="#ef4444" 
+                                    strokeWidth={1} 
+                                    dot={false}
+                                    activeDot={{ r: 4 }}
+                                />
+
+                                {period <= 60 ? (
+                                    // 1개월~3개월: Bar 차트로 상세 수량 확인
+                                    <>
+                                        <Bar yAxisId="shares" dataKey="institution" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={15} />
+                                        <Bar yAxisId="shares" dataKey="foreigner" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={15} />
+                                        <Bar yAxisId="shares" dataKey="retail" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={15} />
+                                    </>
+                                ) : (
+                                    // 6개월~1년: Area/Line 차트로 추세 확인
+                                    <>
+                                        <Area yAxisId="shares" type="monotone" dataKey="institution" stroke="#3b82f6" fill="url(#colorInst)" strokeWidth={2} />
+                                        <Area yAxisId="shares" type="monotone" dataKey="foreigner" stroke="#a855f7" fill="url(#colorFrgn)" strokeWidth={2} />
+                                        <Area yAxisId="shares" type="monotone" dataKey="retail" stroke="#14b8a6" fill="url(#colorRetail)" strokeWidth={2} />
+                                    </>
+                                )}
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
