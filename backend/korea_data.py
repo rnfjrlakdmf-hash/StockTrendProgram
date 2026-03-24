@@ -1231,41 +1231,63 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         target_count = trader_day if trader_day > 1 else 20 # default 20 for chart
         if trader_day == 1: target_count = 1 # Just today
         
-        # If user asked for 1/3/6/12 months, usually it's around 20/60/120/250
-        # For trend chart, we want historical data.
-        pages_needed = (target_count // 50) + 1
-        if target_count <= 20: pages_needed = 1
+        last_bizdate = ''
+        fetched_count = 0
+        max_loop = 10 # Safety limit
         
-        for p in range(1, pages_needed + 1):
+        while fetched_count < target_count and max_loop > 0:
+            max_loop -= 1
             try:
-                # pageSize limit might be around 100, let's use 50 for safety
-                page_size = 50 if target_count > 50 else target_count
-                m_url = f"https://m.stock.naver.com/api/stock/{code}/trend?pageSize={page_size}&page={p}"
+                # Use bizdate cursor for pagination
+                page_size = 50
+                m_url = f"https://m.stock.naver.com/api/stock/{code}/trend?pageSize={page_size}"
+                if last_bizdate:
+                    m_url += f"&bizdate={last_bizdate}"
+                
                 m_res = requests.get(m_url, headers=HEADER, timeout=5)
                 m_data = m_res.json()
                 
-                if isinstance(m_data, list):
-                    for item in m_data:
-                        # item keys: bizdate, closePrice, individualPureBuyQuant, foreignerPureBuyQuant, organPureBuyQuant, etc.
-                        dt = item.get('bizdate', '')
-                        if len(dt) == 8:
-                            dt = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}"
+                if not isinstance(m_data, list) or not m_data:
+                    break
+                
+                new_items = []
+                for item in m_data:
+                    dt_raw = item.get('bizdate', '')
+                    if not dt_raw: continue
+                    
+                    # Convert 20240324 -> 2024-03-24
+                    dt = f"{dt_raw[:4]}-{dt_raw[4:6]}-{dt_raw[6:8]}"
+                    
+                    # Skip if already exists (should not happen with bizdate cursor, but for safety)
+                    if any(d['date'] == dt for d in trend):
+                        continue
                         
-                        def clean_i(v): return int(re.sub(r'[^0-9-]', '', str(v or 0)))
-                        
-                        trend.append({
-                            "date": dt,
-                            "close": clean_i(item.get('closePrice', 0)),
-                            "institution": clean_i(item.get('organPureBuyQuant', 0)),
-                            "foreigner": clean_i(item.get('foreignerPureBuyQuant', 0)),
-                            "retail": clean_i(item.get('individualPureBuyQuant', 0)),
-                            "foreign_holdings": clean_i(item.get('foreignerHoldQuant', 0)),
-                            "foreign_ratio": float(str(item.get('foreignerHoldRatio', 0)).replace(',', '').replace('%', ''))
-                        })
-                        if len(trend) >= target_count: break
-                if len(trend) >= target_count: break
+                    def clean_i(v): return int(re.sub(r'[^0-9-]', '', str(v or 0)))
+                    
+                    new_items.append({
+                        "date": dt,
+                        "close": clean_i(item.get('closePrice', 0)),
+                        "institution": clean_i(item.get('organPureBuyQuant', 0)),
+                        "foreigner": clean_i(item.get('foreignerPureBuyQuant', 0)),
+                        "retail": clean_i(item.get('individualPureBuyQuant', 0)),
+                        "foreign_holdings": clean_i(item.get('foreignerHoldQuant', 0)),
+                        "foreign_ratio": float(str(item.get('foreignerHoldRatio', 0)).replace(',', '').replace('%', ''))
+                    })
+                
+                if not new_items:
+                    break
+                    
+                trend.extend(new_items)
+                fetched_count = len(trend)
+                
+                # Update last_bizdate for next cursor
+                last_bizdate = m_data[-1].get('bizdate', '')
+                
+                if fetched_count >= target_count:
+                    trend = trend[:target_count]
+                    break
             except Exception as e:
-                print(f"Mobile API Page {p} Error: {e}")
+                print(f"Mobile API Fetch Error (last_bizdate={last_bizdate}): {e}")
                 break
 
         return {

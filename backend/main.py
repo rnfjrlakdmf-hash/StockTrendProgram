@@ -84,8 +84,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260323-investor-v3-mobile-api",
-        "service": "AI Stock Analyst Backend - Investor Trend Mobile API"
+        "version": "20260324-investor-v4-cursor-api",
+        "service": "AI Stock Analyst Backend - Investor Trend Cursor API"
     }
 from fastapi import Request
 from rank_data import get_etf_ranking
