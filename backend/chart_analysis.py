@@ -257,5 +257,6 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         "whale": chart_analyzer.analyze_whale_tracker(code),
         "history": history,
         "stories": stories,
-        "beginner_insight": beginner_insight
+        "beginner_insight": beginner_insight,
+        "debug_v": "v2.1"
     }
