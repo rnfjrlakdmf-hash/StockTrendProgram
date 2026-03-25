@@ -224,7 +224,28 @@ export default function PatternPage() {
             id: 'candles',
             toolbar: { show: false },
             background: 'transparent',
-            foreColor: '#9ca3af'
+            foreColor: '#9ca3af',
+            locales: [{
+                name: 'ko',
+                options: {
+                    months: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                    shortMonths: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                    days: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+                    shortDays: ['일', '월', '화', '수', '목', '금', '토'],
+                    toolbar: {
+                        exportToSVG: 'SVG 다운로드',
+                        exportToPNG: 'PNG 다운로드',
+                        exportToCSV: 'CSV 다운로드',
+                        selection: '선택',
+                        selectionZoom: '선택 확대',
+                        zoomIn: '확대',
+                        zoomOut: '축소',
+                        pan: '이동',
+                        reset: '초기화'
+                    }
+                }
+            }],
+            defaultLocale: 'ko'
         },
         dataLabels: { enabled: false },
         theme: { mode: 'dark' },
@@ -239,7 +260,19 @@ export default function PatternPage() {
                 wick: { useFillColor: true }
             }
         },
-        xaxis: { type: 'datetime', axisBorder: { show: false }, axisTicks: { show: false } },
+        xaxis: { 
+            type: 'datetime', 
+            axisBorder: { show: false }, 
+            axisTicks: { show: false },
+            labels: {
+                datetimeFormatter: {
+                    year: 'yyyy년',
+                    month: 'MMM',
+                    day: 'dd일',
+                    hour: 'HH:mm'
+                }
+            }
+        },
         yaxis: { opposite: true, labels: { formatter: (val: number) => val?.toLocaleString() } },
         grid: { borderColor: '#374151', strokeDashArray: 4 },
         tooltip: {
