@@ -29,9 +29,12 @@ export default function PatternPage() {
     const [candleInterval, setCandleInterval] = useState<"1d" | "1wk" | "1mo">("1d");
     const [selectedStory, setSelectedStory] = useState<any>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [showDocent, setShowDocent] = useState(true);
 
     useEffect(() => {
         setIsMounted(true);
+        const stored = localStorage.getItem("showDocent");
+        if (stored !== null) setShowDocent(stored === "true");
     }, []);
 
     // [Pro & Ad] - Keep existing logic
@@ -338,6 +341,24 @@ export default function PatternPage() {
                         AI 차트 분석 <span className="text-emerald-500">PRO</span>
                     </h1>
                     <p className="text-gray-400 text-lg">패턴 분석 리포트와 주식 위인전을 한번에.</p>
+                    
+                    {/* Docent Toggle Switch */}
+                    <div className="flex justify-center mt-6">
+                        <button 
+                            onClick={() => {
+                                const next = !showDocent;
+                                setShowDocent(next);
+                                localStorage.setItem("showDocent", String(next));
+                            }}
+                            className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl border transition-all duration-300 ${showDocent ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                        >
+                            <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${showDocent ? 'bg-emerald-500' : 'bg-gray-700'}`}>
+                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${showDocent ? 'left-4.5' : 'left-0.5'}`} />
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-wider">AI 도슨트 가이드 {showDocent ? 'ON' : 'OFF'}</span>
+                        </button>
+                    </div>
+
                     <div className="relative max-w-xl mx-auto z-20 mt-8">
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl opacity-30 group-hover:opacity-100 transition duration-500 blur"></div>
@@ -378,7 +399,7 @@ export default function PatternPage() {
                         </div>
 
                         {/* AI Docent (Beginner Guide) */}
-                        {result.beginner_insight && (
+                        {showDocent && result.beginner_insight && (
                             <div className="relative overflow-hidden rounded-3xl p-8 mb-8 group transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                                 {/* Premium Background with Gradient and Glow */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/40 via-black to-black z-0" />
@@ -396,15 +417,17 @@ export default function PatternPage() {
                                     </div>
                                     
                                     <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-inner">
-                                        <p 
+                                        <div 
                                             className="text-lg md:text-xl text-emerald-50 leading-relaxed font-medium" 
                                             dangerouslySetInnerHTML={{ 
-                                                __html: result.beginner_insight.text.replace(/\*\*(.*?)\*\*/g, '<span class="text-emerald-400 font-extrabold underline underline-offset-4 decoration-emerald-500/30">$1</span>') 
+                                                __html: result.beginner_insight.text
+                                                    .replace(/\*\*(.*?)\*\*/g, '<span class="text-emerald-400 font-extrabold underline underline-offset-4 decoration-emerald-500/30">$1</span>')
+                                                    .replace(/<small>(.*?)<\/small>/g, '<span class="block mt-4 text-[10px] text-gray-500 font-normal opacity-80 italic">$1</span>')
                                             }} 
                                         />
                                     </div>
                                     
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         {result.beginner_insight.tips?.map((tip: any, idx: number) => (
                                             <div key={idx} className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300">
                                                 <div className="flex items-center gap-2 mb-2">
