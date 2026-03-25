@@ -335,39 +335,82 @@ def get_yf_ticker(symbol: str) -> str:
             yf_ticker = f"{code}.KQ"
     return yf_ticker
 
+def generate_beginner_insight(df):
+    """
+    Generate very easy metaphors for beginners based on technical indicators.
+    """
+    if df.empty or len(df) < 120:
+        return "데이터가 충분하지 않아 상세 가이드를 제공할 수 없어요. 조금만 더 지켜봐 주세요!"
+
+    last_row = df.iloc[-1]
+    
+    # Calculate MAs
+    ma5 = df['Close'].rolling(5).mean().iloc[-1]
+    ma20 = df['Close'].rolling(20).mean().iloc[-1]
+    ma60 = df['Close'].rolling(60).mean().iloc[-1]
+    ma120 = df['Close'].rolling(120).mean().iloc[-1]
+    
+    current_price = last_row['Close']
+    
+    insight = ""
+    status = "normal" # positive, negative, normal
+    
+    # 1. Trend Analysis (Metaphor: Path/Road)
+    if ma5 > ma20 > ma60 > ma120:
+        insight = "지금 이 주식은 **'탄탄한 고속도로'** 위에 있어요! 단기부터 장기까지 모두 상승 중인 아주 건강한 상태(정배열)입니다. "
+        status = "positive"
+    elif ma5 < ma20 < ma60 < ma120:
+        insight = "현재 **'가파른 내리막길'**을 걷고 있어요. 서두르기보다는 비가 그치기를 기다리는 여유가 필요한 시점(역배열)입니다. "
+        status = "negative"
+    else:
+        insight = "지금은 **'안개 낀 교차로'**에 서 있는 것 같아요. 방향을 정하기 위해 힘을 모으고 있는 박스권 구간입니다. "
+        
+    # 2. Moving Average Meanings (Metaphors)
+    if current_price > ma20:
+        insight += "심리적 지지선인 20일선(한 달 평균) 위에 있어 투자자들의 기분이 좋은 상태예요. "
+    else:
+        insight += "현재 주가가 20일선 아래에 있어 시장이 조금 긴장하고 있는 모습이에요. "
+        
+    # 3. Volume (Metaphor: Energy)
+    avg_vol = df['Volume'].tail(20).mean()
+    last_vol = last_row['Volume']
+    if last_vol > avg_vol * 1.5:
+        insight += "오늘 에너지가 평소보다 **1.5배 이상 강력**해요! 누군가 큰 관심을 보이고 있다는 신호일 수 있습니다. 🔥"
+    
+    return {
+        "text": insight,
+        "status": status,
+        "tips": [
+            {"label": "5일선", "desc": "주식의 '오늘 컨디션'이에요. 활발하게 움직이는지 알 수 있습니다."},
+            {"label": "20일선", "desc": "투자자들의 '심리 마지노선'이에요. 이 위면 보통 안심해요."},
+            {"label": "120일선", "desc": "주식의 '기초 체력'이에요. 이 선이 위를 향하면 장기적으로 튼튼하다는 뜻입니다."}
+        ]
+    }
+
 def get_chart_analysis_full(symbol, interval="1d", period=None):
     """
-    Combined analysis: Weather + Whale Tracker + Full History (Candle) + Stories
+    Combined analysis: Weather + Whale Tracker + Full History (Chart) + Stories + Beginner Insight
     """
     code = symbol
     yf_ticker = get_yf_ticker(code)
     
-    # If yf_ticker is still not a valid format, it means the symbol resolution failed.
-    # Return an error immediately.
     if not (yf_ticker.split('.')[0].isdigit() and len(yf_ticker.split('.')[0]) == 6):
         return {"error": "Invalid Symbol", "weather": {"weather": "Unknown"}, "whale": None, "history": [], "stories": []}
 
-    # [Improvement] Fetch History Once and Reuse
     import yfinance as yf
     from stock_events import detect_inflection_points
     
     history = []
     stories = []
     weather = {"weather": "Unknown", "probability": 0, "pattern": "데이터 실패", "count": 0}
+    beginner_insight = {"text": "분석 중...", "status": "normal", "tips": []}
 
     try:
-        # Map frontend intervals/periods to yfinance
-        # Standardize period if not provided
         if not period:
-            if interval == "1wk":
-                period = "2y"
-            elif interval == "1mo":
-                period = "5y"
-            else:
-                period = "1y"
+            if interval == "1wk": period = "2y"
+            elif interval == "1mo": period = "5y"
+            else: period = "1y"
         
-        # User defined periods mapping (if needed, but yf mostly matches)
-        # 1d, 5d, 3mo, 1y, 3y, 5y, 10y, max
         yf_period = period
         if period == "1주일": yf_period = "5d"
         elif period == "3개월": yf_period = "3mo"
@@ -375,42 +418,28 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         elif period == "3년": yf_period = "3y"
         elif period == "5년": yf_period = "5y"
         elif period == "10년": yf_period = "10y"
-        elif period == "1일": 
-            yf_period = "1d"
-            # For 1d, we might want 1m or 5m interval for line chart
-            # But let's stick to what's requested. 
-            # If interval is still 1d, history will be sparse.
-            # We'll handle refined interval in main.py if needed.
+        elif period == "1일": yf_period = "1d"
 
-        # Fetch data with interval and period
         df = yf.Ticker(yf_ticker).history(period=yf_period, interval=interval)
         
-        # Format history for Frontend
         if not df.empty:
             df_reset = df.reset_index()
-            # Handle Date/Datetime
             date_col = 'Date' if 'Date' in df_reset.columns else 'Datetime'
             
             for _, row in df_reset.iterrows():
-                # For intraday (1d period), include time
-                if yf_period == "1d":
-                    date_str = row[date_col].strftime('%Y-%m-%d %H:%M')
-                else:
-                    date_str = row[date_col].strftime('%Y-%m-%d')
-                    
+                date_str = row[date_col].strftime('%Y-%m-%d %H:%M') if yf_period == "1d" else row[date_col].strftime('%Y-%m-%d')
                 history.append({
-                    "date": date_str,
-                    "open": row['Open'],
-                    "high": row['High'],
-                    "low": row['Low'],
-                    "close": row['Close'],
-                    "volume": row['Volume']
+                    "date": date_str, "open": row['Open'], "high": row['High'], "low": row['Low'], "close": row['Close'], "volume": row['Volume']
                 })
             
-            # 3. Detect Stories (Inflection Points)
             stories = detect_inflection_points(yf_ticker, interval, df)
+            
+            # [New] Generate Beginner Insight using daily data (if not available, fetch 1y daily)
+            insight_df = df
+            if interval != "1d":
+                insight_df = yf.Ticker(yf_ticker).history(period="1y", interval="1d")
+            beginner_insight = generate_beginner_insight(insight_df)
         
-        # Weather analysis (usually best on daily data, but let's pass current DF)
         weather = chart_analyzer.analyze_weather_forecast(yf_ticker, df=df)
         
     except Exception as e:
@@ -419,6 +448,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     return {
         "weather": weather,
         "whale": chart_analyzer.analyze_whale_tracker(code),
-        "history": history, # For Chart
-        "stories": stories  # Added for unified chart analysis
+        "history": history,
+        "stories": stories,
+        "beginner_insight": beginner_insight
     }
