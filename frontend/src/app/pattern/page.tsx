@@ -226,6 +226,7 @@ export default function PatternPage() {
             background: 'transparent',
             foreColor: '#9ca3af'
         },
+        dataLabels: { enabled: false },
         theme: { mode: 'dark' },
         stroke: { width: chartType === 'line' ? [2] : [1, 2, 2, 2, 2], curve: 'smooth' },
         fill: {
