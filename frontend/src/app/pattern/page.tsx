@@ -208,7 +208,7 @@ export default function PatternPage() {
     const volumeSeries = useMemo(() => {
         if (!result?.history) return [];
         return [{
-            name: 'Volume',
+            name: '거래량',
             type: 'bar',
             data: result.history.map((d: any) => ({
                 x: new Date(d.date).getTime(),
@@ -356,7 +356,7 @@ export default function PatternPage() {
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-bold text-white leading-none">주린이를 위한 AI 차트 도슨트 🎓</h3>
-                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">AI Intelligent Insight</p>
+                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">AI 지능형 분석 Insight</p>
                                         </div>
                                     </div>
                                     
