@@ -205,6 +205,12 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     yf_ticker = get_yf_ticker(code)
     
     from stock_events import detect_inflection_points
+    
+    # Initialize variables to avoid UnboundLocalError
+    history = []
+    stories = []
+    beginner_insight = {"text": "분석 데이터가 부족합니다.", "status": "normal", "tips": []}
+    weather = {"pattern": "분석 중", "comment": "데이터를 불러오는 중입니다."}
 
     try:
         if not period:
