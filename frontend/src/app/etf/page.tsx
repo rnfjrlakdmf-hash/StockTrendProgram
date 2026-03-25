@@ -216,8 +216,12 @@ export default function EtfAnalysisPage() {
                                         {[
                                             { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
                                             { tag: '레버리지', keyword: market === 'KR' ? '레버리지' : 'Bull', cat: 'leverage' },
-                                            { tag: '배당우선', keyword: market === 'KR' ? '배당' : 'Dividend', cat: 'dividend' },
-                                            { tag: '섹터/테마', keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: 'sector' }
+                                            { tag: '배당/리츠', keyword: market === 'KR' ? '배당' : 'Dividend', cat: 'dividend' },
+                                            { tag: '반도체', keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: 'sector' },
+                                            { tag: '2차전지', keyword: market === 'KR' ? '전지' : 'Battery', cat: 'sector' },
+                                            { tag: 'IT/AI', keyword: market === 'KR' ? 'IT' : 'Tech', cat: 'sector' },
+                                            { tag: '헬스케어', keyword: market === 'KR' ? '바이오' : 'Healthcare', cat: 'sector' },
+                                            { tag: '채권/금리', keyword: market === 'KR' ? '채권' : 'Bond', cat: 'sector' }
                                         ].map((item) => {
                                             const isActive = filterKeyword === item.keyword;
                                             return (
@@ -266,7 +270,7 @@ export default function EtfAnalysisPage() {
                                             {[
                                                 { title: "인버스/헷지군", keyword: "인버스", cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
                                                 { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "섹터/테마군", keyword: "반도체", cat: "sector", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
+                                                { title: "최신 인기 테마", keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: "sector", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
                                             ].map((strat) => (
                                                 <button 
                                                     key={strat.title} 
