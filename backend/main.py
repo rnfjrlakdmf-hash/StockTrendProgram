@@ -1045,11 +1045,11 @@ def read_supply_chain_scenario(keyword: str, symbol: str = None):
     return {"status": "success", "data": data}
 
 @app.get("/api/chart/patterns/{symbol}")
-def read_chart_patterns(symbol: str):
+def read_chart_patterns(symbol: str, interval: str = "1d", period: str = None):
     """AI 차트 패턴 및 지지/저항선 분석"""
     try:
         from chart_analysis import get_chart_analysis_full
-        data = get_chart_analysis_full(symbol)
+        data = get_chart_analysis_full(symbol, interval=interval, period=period)
         if not data:
             return {"status": "error", "message": "Failed to analyze chart patterns"}
         return {"status": "success", "data": data}

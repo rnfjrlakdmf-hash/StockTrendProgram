@@ -394,9 +394,6 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     code = symbol
     yf_ticker = get_yf_ticker(code)
     
-    if not (yf_ticker.split('.')[0].isdigit() and len(yf_ticker.split('.')[0]) == 6):
-        return {"error": "Invalid Symbol", "weather": {"weather": "Unknown"}, "whale": None, "history": [], "stories": []}
-
     import yfinance as yf
     from stock_events import detect_inflection_points
     
