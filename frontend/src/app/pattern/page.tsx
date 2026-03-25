@@ -343,27 +343,39 @@ export default function PatternPage() {
 
                         {/* AI Docent (Beginner Guide) */}
                         {result.beginner_insight && (
-                            <div className="rounded-3xl bg-emerald-500/5 border border-emerald-500/20 p-8 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                                    <TrendingUp className="w-32 h-32 text-emerald-500" />
-                                </div>
-                                <div className="relative z-10 space-y-6">
+                            <div className="relative overflow-hidden rounded-3xl p-8 mb-8 group transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                                {/* Premium Background with Gradient and Glow */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/40 via-black to-black z-0" />
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
+                                
+                                <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-emerald-500/20 rounded-lg">
+                                        <div className="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
                                             <TrendingUp className="w-6 h-6 text-emerald-400" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-white">주린이를 위한 AI 차트 도슨트 🎓</h3>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white leading-none">주린이를 위한 AI 차트 도슨트 🎓</h3>
+                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">AI Intelligent Insight</p>
+                                        </div>
                                     </div>
                                     
-                                    <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/5">
-                                        <p className="text-lg text-emerald-50 text-leading-relaxed" dangerouslySetInnerHTML={{ __html: result.beginner_insight.text.replace(/\*\*(.*?)\*\*/g, '<span class="text-emerald-400 font-bold">$1</span>') }} />
+                                    <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-inner">
+                                        <p 
+                                            className="text-lg md:text-xl text-emerald-50 leading-relaxed font-medium" 
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: result.beginner_insight.text.replace(/\*\*(.*?)\*\*/g, '<span class="text-emerald-400 font-extrabold underline underline-offset-4 decoration-emerald-500/30">$1</span>') 
+                                            }} 
+                                        />
                                     </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {result.beginner_insight.tips?.map((tip: any, idx: number) => (
-                                            <div key={idx} className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                                                <div className="text-xs font-bold text-emerald-400 mb-1">{tip.label}</div>
-                                                <p className="text-xs text-gray-400 leading-relaxed">{tip.desc}</p>
+                                            <div key={idx} className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                                    <div className="text-xs font-bold text-emerald-400">{tip.label}</div>
+                                                </div>
+                                                <p className="text-xs text-gray-400 leading-relaxed font-light">{tip.desc}</p>
                                             </div>
                                         ))}
                                     </div>
