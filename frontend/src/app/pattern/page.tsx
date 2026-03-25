@@ -7,7 +7,8 @@ import { API_BASE_URL } from "@/lib/config";
 import { 
     Search, LineChart, Target, Shield, AlertTriangle, Loader2, Lock, 
     PlayCircle, Crown, Sun, CloudSun, CloudRain, 
-    PieChart, BarChart3, BookOpen, Calendar, TrendingUp, TrendingDown, Clock
+    PieChart, BarChart3, BookOpen, Calendar, TrendingUp, TrendingDown, Clock,
+    TowerControl, Activity
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -345,7 +346,7 @@ export default function PatternPage() {
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "국내 종목명 또는 코드 6자리 입력 (예: 삼성전자, 005930)"}
+                                placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "종목명 또는 티커 입력 (예: 삼성전자, AAPL)"}
                                 className={`relative w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-32 text-white text-xl font-bold focus:outline-none transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={loading || isLocked}
                             />
@@ -353,10 +354,6 @@ export default function PatternPage() {
                             <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-lg font-bold transition-all disabled:opacity-50 z-10">
                                 {isLocked ? <Lock className="w-5 h-5" /> : "분석하기"}
                             </button>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 mt-6 text-xs font-bold text-emerald-400/80 uppercase tracking-widest bg-emerald-400/10 py-2.5 px-5 rounded-full w-fit mx-auto border border-emerald-400/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-in fade-in zoom-in duration-1000">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            현재 차트 분석은 국내 종목(KOSPI/KOSDAQ)만 지원합니다
                         </div>
                     </div>
                 </div>
@@ -480,6 +477,58 @@ export default function PatternPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Investor Trend (Whale Tracker) - Only show for KR stocks with whale data */}
+                        {result.whale && (
+                            <div className="rounded-3xl bg-white/5 border border-white/10 p-8 space-y-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-100">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3"><TowerControl className="w-6 h-6 text-blue-400" /> 📡 세력 평단가 추적기</h3>
+                                    <div className="px-3 py-1 bg-blue-500/10 rounded-full text-[10px] font-bold text-blue-400 border border-blue-500/20 uppercase tracking-tighter">최근 40일 추정</div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Whale Average Prices */}
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-gradient-to-br from-blue-500/10 to-transparent p-5 rounded-2xl border border-blue-500/20 flex flex-col justify-between h-32">
+                                                <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500" /> 외국인 평단</p>
+                                                <div>
+                                                    <p className="text-2xl font-black text-white font-mono">₩{result.whale?.foreigner?.avg_price?.toLocaleString()}</p>
+                                                    <div className={`text-xs mt-1 font-bold ${result.whale?.foreigner?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
+                                                        수익률 {result.whale?.foreigner?.return_rate}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gradient-to-br from-purple-500/10 to-transparent p-5 rounded-2xl border border-purple-500/20 flex flex-col justify-between h-32">
+                                                <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-500" /> 기관 평단</p>
+                                                <div>
+                                                    <p className="text-2xl font-black text-white font-mono">₩{result.whale?.institution?.avg_price?.toLocaleString()}</p>
+                                                    <div className={`text-xs mt-1 font-bold ${result.whale?.institution?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
+                                                        수익률 {result.whale?.institution?.return_rate}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Flow Chart Placeholder/Text */}
+                                    <div className="bg-black/40 rounded-2xl p-6 border border-white/10">
+                                        <div className="flex items-center gap-2 mb-4 text-xs font-bold text-gray-400">
+                                            <Activity className="w-4 h-4 text-emerald-500" /> 5개 투자 데이터 실시간 체크
+                                        </div>
+                                        <div className="space-y-4">
+                                            {result.whale?.ingredients?.map((ing: any, idx: number) => (
+                                                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0">
+                                                    <span className="text-gray-500 font-mono">{ing.date.split('-').slice(1).join('/')}</span>
+                                                    <span className={`font-bold ${ing.winner === '개인' ? 'text-yellow-400' : ing.winner === '외국인' ? 'text-red-400' : 'text-blue-400'}`}>{ing.winner} 입성</span>
+                                                    <span className="text-gray-300 font-mono">₩{ing.price.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Stock Biography (Stories) */}
                         <div className="rounded-3xl bg-white/5 border border-white/10 p-8">
