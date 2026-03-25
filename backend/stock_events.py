@@ -126,13 +126,14 @@ COMPANY_EVENTS = {
 # 변곡점 탐지 알고리즘
 # ============================================================
 
-def detect_inflection_points(symbol: str, period: str = "1y") -> List[Dict]:
+def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1d") -> List[Dict]:
     """
     차트에서 주요 변곡점 탐지
     
     Args:
         symbol: 종목 코드
         period: 기간 (1mo, 3mo, 6mo, 1y, 2y, 5y)
+        interval: 데이터 간격 (1d, 1wk, 1mo)
     
     Returns:
         변곡점 리스트
@@ -140,7 +141,7 @@ def detect_inflection_points(symbol: str, period: str = "1y") -> List[Dict]:
     try:
         # 가격 데이터 가져오기
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period=period)
+        hist = ticker.history(period=period, interval=interval)
         
         if hist.empty:
             return []
@@ -527,20 +528,21 @@ def enrich_event_with_news(symbol: str, event_date: str, event: Dict) -> Dict:
 # 메인 함수
 # ============================================================
 
-def get_chart_story(symbol: str, period: str = "1y") -> Dict:
+def get_chart_story(symbol: str, period: str = "1y", interval: str = "1d") -> Dict:
     """
     차트 스토리텔링 데이터 생성
     
     Args:
         symbol: 종목 코드
         period: 기간
+        interval: 데이터 간격 (1d, 1wk, 1mo)
     
     Returns:
         스토리 데이터
     """
     try:
-        # 1. 변곡점 탐지
-        events = detect_inflection_points(symbol, period)
+        # 1. 변곡점 탐지 (현재 interval에 맞춰 탐지)
+        events = detect_inflection_points(symbol, period, interval)
         
         # 2. 스토리 매칭
         stories = match_events_with_stories(symbol, events)
@@ -554,15 +556,18 @@ def get_chart_story(symbol: str, period: str = "1y") -> Dict:
             else:
                 enriched_stories.append(story)
         
-        # 4. 가격 데이터 가져오기
+        # 4. 가격 데이터 가져오기 (OHLV 포함)
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period=period)
+        hist = ticker.history(period=period, interval=interval)
         
         price_data = []
         for date, row in hist.iterrows():
             price_data.append({
                 "date": date.strftime("%Y-%m-%d"),
-                "price": float(row['Close']),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
                 "volume": float(row['Volume'])
             })
         

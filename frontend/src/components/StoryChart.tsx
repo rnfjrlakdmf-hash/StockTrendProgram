@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Calendar, TrendingUp, TrendingDown, Activity } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot, Label } from "recharts";
+import { BookOpen, Calendar, TrendingUp, TrendingDown, Clock, BarChart3, Settings2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { API_BASE_URL } from "@/lib/config";
+
+// ApexCharts is heavy and needs window, so load it dynamically
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface StoryPoint {
     date: string;
@@ -27,22 +30,26 @@ interface StoryPoint {
     };
 }
 
-interface ChartData {
+interface ChartDataPoint {
     date: string;
-    price: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
     volume: number;
 }
 
 interface StoryChartProps {
     symbol: string;
-    period?: string;
+    period?: string; // 1mo, 3mo, 6mo, 1y
 }
 
-export default function StoryChart({ symbol, period = "1y" }: StoryChartProps) {
-    const [chartData, setChartData] = useState<ChartData[]>([]);
+export default function StoryChart({ symbol, period: initialPeriod = "1y" }: StoryChartProps) {
+    const [period, setPeriod] = useState(initialPeriod);
+    const [interval, setInterval] = useState<"1d" | "1wk" | "1mo">("1d");
+    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [stories, setStories] = useState<StoryPoint[]>([]);
     const [selectedStory, setSelectedStory] = useState<StoryPoint | null>(null);
-    const [hoveredStory, setHoveredStory] = useState<StoryPoint | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
@@ -53,21 +60,21 @@ export default function StoryChart({ symbol, period = "1y" }: StoryChartProps) {
 
     useEffect(() => {
         loadStoryData();
-    }, [symbol, period]);
+    }, [symbol, period, interval]);
 
     const loadStoryData = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/chart/story/${symbol}?period=${period}`);
+            const res = await fetch(`${API_BASE_URL}/api/chart/story/${symbol}?period=${period}&interval=${interval}`);
             const data = await res.json();
 
             if (data.status === "success") {
                 setChartData(data.data.price_data);
                 setStories(data.data.stories);
             } else {
-                setError(data.message || "스토리 로드 실패");
+                setError(data.message || "차트 데이터 로드 실패");
             }
         } catch (e) {
             setError("서버 연결 실패");
@@ -76,10 +83,245 @@ export default function StoryChart({ symbol, period = "1y" }: StoryChartProps) {
         }
     };
 
-    const getImpactColor = (impact: string) => {
-        if (impact === "positive") return "#10b981";
-        if (impact === "negative") return "#ef4444";
-        return "#6b7280";
+    // Calculate Moving Averages
+    const movingAverages = useMemo(() => {
+        if (chartData.length === 0) return { ma5: [], ma20: [], ma60: [], ma120: [] };
+
+        const calculateMA = (data: number[], window: number) => {
+            const results = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < window - 1) {
+                    results.push(null);
+                    continue;
+                }
+                const sum = data.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0);
+                results.push(Number((sum / window).toFixed(2)));
+            }
+            return results;
+        };
+
+        const closes = chartData.map(d => d.close);
+        return {
+            ma5: calculateMA(closes, 5),
+            ma20: calculateMA(closes, 20),
+            ma60: calculateMA(closes, 60),
+            ma120: calculateMA(closes, 120)
+        };
+    }, [chartData]);
+
+    // Format data for ApexCharts
+    const candleSeries = useMemo(() => [{
+        name: 'Candle',
+        type: 'candlestick',
+        data: chartData.map(d => ({
+            x: new Date(d.date).getTime(),
+            y: [d.open, d.high, d.low, d.close]
+        }))
+    }, {
+        name: 'MA5',
+        type: 'line',
+        data: chartData.map((d, i) => ({
+            x: new Date(d.date).getTime(),
+            y: movingAverages.ma5[i]
+        }))
+    }, {
+        name: 'MA20',
+        type: 'line',
+        data: chartData.map((d, i) => ({
+            x: new Date(d.date).getTime(),
+            y: movingAverages.ma20[i]
+        }))
+    }, {
+        name: 'MA60',
+        type: 'line',
+        data: chartData.map((d, i) => ({
+            x: new Date(d.date).getTime(),
+            y: movingAverages.ma60[i]
+        }))
+    }, {
+        name: 'MA120',
+        type: 'line',
+        data: chartData.map((d, i) => ({
+            x: new Date(d.date).getTime(),
+            y: movingAverages.ma120[i]
+        }))
+    }], [chartData, movingAverages]);
+
+    const volumeSeries = useMemo(() => [{
+        name: 'Volume',
+        type: 'bar',
+        data: chartData.map(d => ({
+            x: new Date(d.date).getTime(),
+            y: d.volume
+        }))
+    }], [chartData]);
+
+    const chartOptions: any = {
+        chart: {
+            type: 'candlestick',
+            height: 400,
+            id: 'candles',
+            toolbar: {
+                show: false
+            },
+            offsetY: -10,
+            background: 'transparent',
+            foreColor: '#9ca3af'
+        },
+        theme: {
+            mode: 'dark'
+        },
+        stroke: {
+            width: [1, 2, 2, 2, 2],
+            curve: 'smooth'
+        },
+        plotOptions: {
+            candlestick: {
+                colors: {
+                    upward: '#ef4444',
+                    downward: '#3b82f6'
+                },
+                wick: {
+                    useFillColor: true
+                }
+            }
+        },
+        xaxis: {
+            type: 'datetime',
+            labels: {
+                datetimeFormatter: {
+                    year: 'yyyy',
+                    month: 'MM',
+                    day: 'dd'
+                }
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            opposite: true,
+            tooltip: {
+                enabled: true
+            },
+            labels: {
+                formatter: (val: number) => val?.toLocaleString()
+            }
+        },
+        grid: {
+            borderColor: '#374151',
+            strokeDashArray: 4
+        },
+        tooltip: {
+            shared: true,
+            custom: function({ seriesIndex, dataPointIndex, w }: any) {
+                const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex]
+                const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex]
+                const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex]
+                const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex]
+                const d = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]).toLocaleDateString()
+                
+                return `
+                    <div className="bg-gray-900 border border-gray-700 p-2 text-xs rounded shadow-lg">
+                        <div className="font-bold border-b border-gray-700 pb-1 mb-1">${d}</div>
+                        <div className="flex gap-2 justify-between"><span>시:</span> <span className="font-mono">${o?.toLocaleString()}</span></div>
+                        <div className="flex gap-2 justify-between"><span>고:</span> <span className="font-mono text-red-400">${h?.toLocaleString()}</span></div>
+                        <div className="flex gap-2 justify-between"><span>저:</span> <span className="font-mono text-blue-400">${l?.toLocaleString()}</span></div>
+                        <div className="flex gap-2 justify-between"><span>종:</span> <span className="font-mono font-bold">${c?.toLocaleString()}</span></div>
+                    </div>
+                `
+            }
+        },
+        annotations: {
+            points: stories.map(s => ({
+                x: new Date(s.date).getTime(),
+                y: s.price,
+                marker: {
+                    size: 6,
+                    fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280',
+                    strokeColor: '#fff',
+                    radius: 2
+                },
+                label: {
+                    borderColor: '#ffffff20',
+                    offsetY: -30,
+                    style: {
+                        color: '#fff',
+                        background: '#1f2937',
+                        fontSize: '10px',
+                        padding: {
+                            left: 5,
+                            right: 5,
+                            top: 2,
+                            bottom: 2
+                        }
+                    },
+                    text: s.icon
+                }
+            }))
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'left',
+            markers: {
+                radius: 12
+            }
+        }
+    };
+
+    const volumeOptions: any = {
+        chart: {
+            height: 150,
+            type: 'bar',
+            brush: {
+                enabled: false,
+                target: 'candles'
+            },
+            selection: {
+                enabled: true
+            },
+            toolbar: {
+                show: false
+            },
+            background: 'transparent',
+            foreColor: '#9ca3af'
+        },
+        theme: {
+            mode: 'dark'
+        },
+        plotOptions: {
+            bar: {
+                columnWidth: '80%',
+                colors: {
+                    ranges: [{
+                        from: 0,
+                        to: 1000000000000,
+                        color: '#60a5fa30'
+                    }]
+                }
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        xaxis: {
+            type: 'datetime',
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { show: false }
+        },
+        yaxis: {
+            labels: {
+                show: true,
+                formatter: (val: number) => {
+                    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+                    if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+                    return val.toString();
+                }
+            }
+        },
+        grid: {
+            show: false
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -87,105 +329,118 @@ export default function StoryChart({ symbol, period = "1y" }: StoryChartProps) {
         return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
-    if (loading) {
+    if (loading && chartData.length === 0) {
         return (
             <div className="bg-black/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md">
                 <div className="flex items-center justify-center h-96">
                     <div className="text-center">
                         <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-gray-400">역사를 불러오는 중...</p>
+                        <p className="text-gray-400">데이터를 분석하는 중...</p>
                     </div>
                 </div>
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <div className="bg-red-500/20 border border-red-500/50 rounded-3xl p-8 text-center">
-                <p className="text-red-400">{error}</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-black/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-black/40 border border-white/5 rounded-3xl p-4 md:p-8 backdrop-blur-md">
+            {/* Header / Toolbar */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <BookOpen className="w-6 h-6 text-purple-400" />
-                    <h2 className="text-2xl font-bold text-white">📖 주식 위인전</h2>
+                    <BarChart3 className="w-6 h-6 text-blue-400" />
+                    <h2 className="text-xl md:text-2xl font-bold text-white">차정 정밀 분석</h2>
+                    {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 </div>
-                <div className="text-sm text-gray-400">
-                    총 {stories.length}개의 역사적 순간
-                </div>
-            </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Interval Selector */}
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        <button 
+                            onClick={() => setInterval("1d")}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1d' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            일봉
+                        </button>
+                        <button 
+                            onClick={() => setInterval("1wk")}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1wk' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            주봉
+                        </button>
+                        <button 
+                            onClick={() => setInterval("1mo")}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1mo' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            월봉
+                        </button>
+                    </div>
 
-            {/* Chart */}
-            <div className="bg-white/5 rounded-2xl p-6 mb-6">
-                <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                        <XAxis
-                            dataKey="date"
-                            stroke="#9ca3af"
-                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                            tickFormatter={(value) => {
-                                const date = new Date(value);
-                                return `${date.getMonth() + 1}/${date.getDate()}`;
-                            }}
-                        />
-                        <YAxis
-                            stroke="#9ca3af"
-                            tick={{ fill: '#9ca3af', fontSize: 12 }}
-                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: '#1f2937',
-                                border: '1px solid #374151',
-                                borderRadius: '8px',
-                                color: '#fff'
-                            }}
-                            formatter={(value: any) => [`₩${value.toLocaleString()}`, '가격']}
-                            labelFormatter={(label) => formatDate(label)}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="price"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={false}
-                        />
-
-                        {/* Story Points */}
-                        {stories.map((story, idx) => (
-                            <ReferenceDot
-                                key={idx}
-                                x={story.date}
-                                y={story.price}
-                                r={8}
-                                fill={getImpactColor(story.impact)}
-                                stroke="#fff"
-                                strokeWidth={2}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => setSelectedStory(story)}
-                                onMouseEnter={() => setHoveredStory(story)}
-                                onMouseLeave={() => setHoveredStory(null)}
-                            />
+                    {/* Period Selector */}
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        {['1mo', '3mo', '6mo', '1y'].map((p) => (
+                            <button 
+                                key={p}
+                                onClick={() => setPeriod(p)}
+                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                {p === '1mo' ? '1M' : p === '3mo' ? '3M' : p === '6mo' ? '6M' : '1Y'}
+                            </button>
                         ))}
-                    </LineChart>
-                </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
 
-            {/* Story Timeline */}
-            <div className="space-y-3">
-                <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-400" />
-                    타임라인
-                </h3>
+            {/* Legend & MA Info */}
+            <div className="flex flex-wrap gap-4 mb-4 text-[10px] md:text-xs">
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#FEB019]" /><span>MA5</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#00E396]" /><span>MA20</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#008FFB]" /><span>MA60</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#775DD0]" /><span>MA120</span></div>
+            </div>
 
-                <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+            {/* Main Chart Case */}
+            <div className="bg-black/20 rounded-2xl p-2 md:p-4 mb-2 border border-white/5">
+                <div id="chart-candle">
+                    {isMounted && (
+                        <Chart 
+                            options={chartOptions} 
+                            series={candleSeries} 
+                            type="candlestick" 
+                            height={400} 
+                        />
+                    )}
+                </div>
+            </div>
+
+            {/* Volume Chart */}
+            <div className="bg-black/20 rounded-2xl p-2 md:p-4 mb-6 border border-white/5">
+                <div id="chart-volume">
+                    {isMounted && (
+                        <Chart 
+                            options={volumeOptions} 
+                            series={volumeSeries} 
+                            type="bar" 
+                            height={150} 
+                        />
+                    )}
+                </div>
+            </div>
+
+            {/* Historical Stories (Stock Biography) */}
+            <div className="mt-8">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="w-6 h-6 text-purple-400" />
+                        <h2 className="text-xl font-bold text-white">📖 주식 위인전</h2>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                        총 {stories.length}개의 역사적 순간 확인됨
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                     {stories.map((story, idx) => (
                         <div
                             key={idx}
@@ -193,143 +448,136 @@ export default function StoryChart({ symbol, period = "1y" }: StoryChartProps) {
                             className={`
                                 bg-white/5 hover:bg-white/10 rounded-xl p-4 cursor-pointer transition-all
                                 border-l-4 ${story.impact === 'positive'
-                                    ? 'border-green-500'
+                                    ? 'border-red-500'
                                     : story.impact === 'negative'
-                                        ? 'border-red-500'
+                                        ? 'border-blue-500'
                                         : 'border-gray-500'
                                 }
-                                ${selectedStory?.date === story.date ? 'ring-2 ring-blue-500' : ''}
+                                ${selectedStory?.date === story.date ? 'ring-2 ring-blue-500 bg-blue-500/5' : ''}
                             `}
                         >
-                            <div className="flex items-start gap-3">
-                                {/* Icon */}
-                                <div className="text-3xl">{story.icon}</div>
-
-                                {/* Content */}
+                            <div className="flex items-start gap-4">
+                                <div className="text-3xl bg-white/5 w-12 h-12 flex items-center justify-center rounded-xl">{story.icon}</div>
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between mb-1">
                                         <h4 className="text-white font-bold">{story.title}</h4>
                                         {story.change !== 0 && (
-                                            <span className={`text-sm font-mono ${story.change > 0 ? 'text-green-400' : 'text-red-400'
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${story.change > 0 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
                                                 }`}>
-                                                {story.change > 0 ? '+' : ''}{story.change.toFixed(1)}%
+                                                {story.change > 0 ? '▲' : '▼'}{Math.abs(story.change).toFixed(1)}%
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-gray-400 mb-2">{story.description}</p>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <p className="text-xs text-gray-400 line-clamp-2 mb-2">{story.description}</p>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
                                         <Calendar className="w-3 h-3" />
                                         {formatDate(story.date)}
+                                        <span className="mx-1">•</span>
+                                        <span className="uppercase">{story.type} event</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     ))}
+                    {stories.length === 0 && (
+                        <div className="col-span-2 py-12 text-center text-gray-500 border border-dashed border-white/10 rounded-2xl">
+                            이 기간 동안 탐지된 특별한 역사적 변동이 없습니다.
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Selected Story Modal */}
+            {/* Story Detail Portal (Modal) */}
             {selectedStory && isMounted && typeof window !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
                     onClick={() => setSelectedStory(null)}
                 >
                     <div
-                        className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-3xl max-w-2xl w-full p-8"
+                        className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-[32px] max-w-xl w-full p-8 shadow-2xl relative overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Icon */}
-                        <div className="text-8xl text-center mb-6 animate-bounce">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-red-500" />
+                        
+                        <div className="text-7xl text-center mb-6 drop-shadow-lg">
                             {selectedStory.icon}
                         </div>
 
-                        {/* Title */}
-                        <h2 className="text-3xl font-bold text-white text-center mb-4">
+                        <h2 className="text-2xl font-bold text-white text-center mb-4">
                             {selectedStory.title}
                         </h2>
 
-                        {/* Date & Change */}
-                        <div className="flex items-center justify-center gap-4 mb-6">
-                            <div className="flex items-center gap-2 text-gray-400">
-                                <Calendar className="w-4 h-4" />
+                        <div className="flex items-center justify-center gap-4 mb-8">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full text-xs text-gray-300">
+                                <Calendar className="w-3 h-3" />
                                 {formatDate(selectedStory.date)}
                             </div>
                             {selectedStory.change !== 0 && (
-                                <div className={`flex items-center gap-2 font-bold ${selectedStory.change > 0 ? 'text-green-400' : 'text-red-400'
-                                    }`}>
-                                    {selectedStory.change > 0 ? (
-                                        <TrendingUp className="w-4 h-4" />
-                                    ) : (
-                                        <TrendingDown className="w-4 h-4" />
-                                    )}
+                                <div className={`flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-full text-xs ${selectedStory.change > 0 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'}`}>
+                                    {selectedStory.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                     {selectedStory.change > 0 ? '+' : ''}{selectedStory.change.toFixed(1)}%
                                 </div>
                             )}
                         </div>
 
-                        {/* Description */}
-                        <p className="text-gray-300 text-lg text-center leading-relaxed mb-6">
-                            {selectedStory.description}
-                        </p>
-
-                        {/* News Link (if exists) */}
-                        {selectedStory.news && selectedStory.news.title && (
-                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="text-2xl">📰</div>
-                                    <div className="flex-1">
-                                        <p className="text-sm text-blue-400 font-bold mb-1">관련 뉴스</p>
-                                        <a
-                                            href={selectedStory.news.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-white hover:text-blue-300 transition-colors line-clamp-2"
-                                        >
-                                            {selectedStory.news.title}
-                                        </a>
-                                        {selectedStory.news.publisher && (
-                                            <p className="text-xs text-gray-500 mt-1">{selectedStory.news.publisher}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Disclosure Link (if exists) */}
-                        {selectedStory.disclosure && selectedStory.disclosure.title && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="text-2xl">📝</div>
-                                    <div className="flex-1">
-                                        <p className="text-sm text-yellow-400 font-bold mb-1">관련 공시</p>
-                                        <a
-                                            href={selectedStory.disclosure.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-white hover:text-yellow-300 transition-colors line-clamp-2"
-                                        >
-                                            {selectedStory.disclosure.title}
-                                        </a>
-                                        {selectedStory.disclosure.submitter && (
-                                            <p className="text-xs text-gray-500 mt-1">{selectedStory.disclosure.submitter}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Price */}
-                        <div className="bg-white/5 rounded-xl p-4 text-center">
-                            <p className="text-sm text-gray-400 mb-1">당시 주가</p>
-                            <p className="text-2xl font-bold text-white font-mono">
-                                ₩{selectedStory.price.toLocaleString()}
+                        <div className="bg-white/5 rounded-2xl p-6 mb-6">
+                            <p className="text-gray-200 text-base text-center leading-relaxed">
+                                {selectedStory.description}
                             </p>
                         </div>
 
-                        {/* Close Button */}
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                                <p className="text-[10px] text-gray-500 mb-1">당시 주가</p>
+                                <p className="text-lg font-bold text-white font-mono">
+                                    ₩{selectedStory.price.toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                                <p className="text-[10px] text-gray-500 mb-1">분류</p>
+                                <p className="text-sm font-bold text-blue-300 uppercase">
+                                    {selectedStory.type === 'global' ? '🌐 거시 경제' : selectedStory.type === 'company' ? '🏢 기업 소식' : '📊 기술적 변동'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {selectedStory.news && selectedStory.news.title && (
+                            <button 
+                                onClick={() => window.open(selectedStory.news?.link, '_blank')}
+                                className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-2xl p-4 mb-3 transition-all text-left group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="text-xl">📰</div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-blue-400 font-bold mb-0.5">관련 뉴스 읽기</p>
+                                        <p className="text-sm text-white font-medium line-clamp-1 group-hover:text-blue-300 transition-colors">
+                                            {selectedStory.news.title}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        )}
+
+                        {selectedStory.disclosure && selectedStory.disclosure.title && (
+                            <button 
+                                onClick={() => window.open(selectedStory.disclosure?.link, '_blank')}
+                                className="w-full bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4 mb-3 transition-all text-left group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="text-xl">📝</div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-yellow-400 font-bold mb-0.5">공시 정보 확인</p>
+                                        <p className="text-sm text-white font-medium line-clamp-1 group-hover:text-yellow-300 transition-colors">
+                                            {selectedStory.disclosure.title}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        )}
+
                         <button
                             onClick={() => setSelectedStory(null)}
-                            className="mt-6 w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 rounded-xl transition-all"
+                            className="mt-4 w-full bg-white text-black hover:bg-gray-200 font-bold py-4 rounded-2xl transition-all shadow-xl active:scale-95"
                         >
                             닫기
                         </button>

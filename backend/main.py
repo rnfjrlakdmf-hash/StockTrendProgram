@@ -1375,7 +1375,7 @@ def get_company_analysis_score(symbol: str):
 from stock_events import get_chart_story
 
 @app.get("/api/chart/story/{symbol}")
-def get_stock_story(symbol: str, period: str = "1y"):
+def get_stock_story(symbol: str, period: str = "1y", interval: str = "1d"):
     """
     차트 스토리텔링 데이터 조회
     주요 변곡점에 역사적 이벤트 매칭
@@ -1383,8 +1383,9 @@ def get_stock_story(symbol: str, period: str = "1y"):
     Args:
         symbol: 종목 코드
         period: 기간 (1mo, 3mo, 6mo, 1y, 2y, 5y)
+        interval: 데이터 간격 (1d, 1wk, 1mo)
     """
-    result = get_chart_story(symbol, period)
+    result = get_chart_story(symbol, period, interval)
     
     if not result.get("success"):
         return {"status": "error", "message": result.get("error", "스토리 생성 실패")}

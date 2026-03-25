@@ -870,6 +870,8 @@ function DiscoveryContent() {
                                             </button>
                                         )}
 
+
+
                                         <button
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'daily' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('daily')}
@@ -1080,10 +1082,7 @@ function DiscoveryContent() {
                                                 </table>
                                             </div>
                                         </div>
-                                    ) : activeTab === 'story' && stock.symbol ? (
-                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <StoryChart symbol={stock.symbol} period="1y" />
-                                        </div>
+
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'disclosure' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <DisclosureTable symbol={stock.symbol} />
