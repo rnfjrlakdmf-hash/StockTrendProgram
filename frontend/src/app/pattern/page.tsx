@@ -345,7 +345,7 @@ export default function PatternPage() {
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "종목명 입력 (예: 삼성전자, 현대차)..."}
+                                placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "국내 종목명 또는 코드 6자리 입력 (예: 삼성전자, 005930)"}
                                 className={`relative w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-32 text-white text-xl font-bold focus:outline-none transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={loading || isLocked}
                             />

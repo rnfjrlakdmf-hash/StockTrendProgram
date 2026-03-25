@@ -124,6 +124,7 @@ chart_analyzer = ChartAnalyzer()
 def get_yf_ticker(symbol: str) -> str:
     """
     Resolves a stock symbol (name or code) to a yfinance-compatible ticker string.
+    ONLY for domestic (KR) stocks.
     """
     code = symbol
     if not (symbol.isdigit() and len(symbol) == 6):
@@ -135,8 +136,9 @@ def get_yf_ticker(symbol: str) -> str:
             if clean.isdigit() and len(clean) == 6:
                 code = clean
     
+    # Strictly allow only 6-digit numeric codes
     if not (code.isdigit() and len(code) == 6):
-        return symbol # US Stocks return as is
+        return None 
         
     yf_ticker = f"{code}.KS"
     info = get_naver_stock_info(code)
@@ -196,12 +198,16 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     code = symbol
     yf_ticker = get_yf_ticker(code)
     
-    from stock_events import detect_inflection_points
+    if not yf_ticker:
+        return {
+            "weather": {"weather": "Unknown", "probability": 0, "pattern": "국내 종목만 지원", "comment": "국내 종목(6자리 숫자)만 분석 가능합니다."},
+            "whale": None,
+            "history": [],
+            "stories": [],
+            "beginner_insight": {"text": "현재 차트 분석은 국내 종목(KOSPI/KOSDAQ) 전용 서비스입니다. 6자리 종목 코드를 입력해 주세요.", "status": "normal", "tips": []}
+        }
     
-    history = []
-    stories = []
-    weather = {"weather": "Unknown", "probability": 0, "pattern": "데이터 실패", "count": 0}
-    beginner_insight = {"text": "분석 중...", "status": "normal", "tips": []}
+    from stock_events import detect_inflection_points
 
     try:
         if not period:
