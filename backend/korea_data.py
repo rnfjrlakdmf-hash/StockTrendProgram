@@ -1231,6 +1231,22 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         target_count = trader_day if trader_day > 1 else 20 # default 20 for chart
         if trader_day == 1: target_count = 1 # Just today
         
+        # Fallback to get listed shares for calculation (Mobile API trend doesn't provide holdings quantity)
+        def get_listed_shares():
+            try:
+                pc_url = f"https://finance.naver.com/item/main.naver?code={code}"
+                res = requests.get(pc_url, headers=HEADER, timeout=5)
+                # Parse <th>상장주식수</th><td><em>5,969,782,550</em></td>
+                m = re.search(r'상장주식수</th>\s*<td>\s*<em>([^<]+)</em>', res.text)
+                if m: return int(m.group(1).replace(',', ''))
+                # Backup regex
+                m = re.search(r'상장주식수\s*</strong>\s*<span>([^<]+)</span>', res.text)
+                if m: return int(m.group(1).replace(',', ''))
+            except: pass
+            return 0
+            
+        total_shares = get_listed_shares()
+        
         last_bizdate = ''
         fetched_count = 0
         max_loop = 10 # Safety limit
@@ -1255,14 +1271,16 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                     dt_raw = item.get('bizdate', '')
                     if not dt_raw: continue
                     
-                    # Convert 20240324 -> 2024-03-24
                     dt = f"{dt_raw[:4]}-{dt_raw[4:6]}-{dt_raw[6:8]}"
-                    
-                    # Skip if already exists (should not happen with bizdate cursor, but for safety)
-                    if any(d['date'] == dt for d in trend):
-                        continue
+                    if any(d['date'] == dt for d in trend): continue
                         
                     def clean_i(v): return int(re.sub(r'[^0-9-]', '', str(v or 0)))
+                    
+                    f_ratio = float(str(item.get('foreignerHoldRatio', 0)).replace(',', '').replace('%', ''))
+                    # Calculate holdings quantity if not available
+                    f_holdings = clean_i(item.get('foreignerHoldQuant', 0))
+                    if f_holdings == 0 and total_shares > 0:
+                        f_holdings = int(total_shares * (f_ratio / 100.0))
                     
                     new_items.append({
                         "date": dt,
@@ -1270,17 +1288,13 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                         "institution": clean_i(item.get('organPureBuyQuant', 0)),
                         "foreigner": clean_i(item.get('foreignerPureBuyQuant', 0)),
                         "retail": clean_i(item.get('individualPureBuyQuant', 0)),
-                        "foreign_holdings": clean_i(item.get('foreignerHoldQuant', 0)),
-                        "foreign_ratio": float(str(item.get('foreignerHoldRatio', 0)).replace(',', '').replace('%', ''))
+                        "foreign_holdings": f_holdings,
+                        "foreign_ratio": f_ratio
                     })
                 
-                if not new_items:
-                    break
-                    
+                if not new_items: break
                 trend.extend(new_items)
                 fetched_count = len(trend)
-                
-                # Update last_bizdate for next cursor
                 last_bizdate = m_data[-1].get('bizdate', '')
                 
                 if fetched_count >= target_count:
