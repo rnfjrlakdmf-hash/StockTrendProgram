@@ -1046,9 +1046,25 @@ def read_supply_chain_scenario(keyword: str, symbol: str = None):
 
 @app.get("/api/chart/patterns/{symbol}")
 def read_chart_patterns(symbol: str, interval: str = "1d", period: str = None):
-    """AI 차트 패턴 및 지지/저항선 분석"""
+    """AI 차트 패턴 및 지지/저항선 분석 (국내 전용)"""
+    import urllib.parse
+    symbol = urllib.parse.unquote(symbol).strip()
+    
+    from chart_analysis import get_yf_ticker, get_chart_analysis_full
+    
+    # Double-check ticker (KR Only)
+    yf_ticker = get_yf_ticker(symbol)
+    if not yf_ticker:
+        return {
+            "status": "success", 
+            "data": {
+                "weather": {"weather": "Unknown", "probability": 0, "pattern": "국내 전용", "comment": "국내 종목(6자리 숫자)만 분석 가능합니다."},
+                "beginner_insight": {"text": "현재 차트 분석은 국내 주식(KOSPI/KOSDAQ) 전용 서비스입니다. 6자리 종목 코드를 입력해 주세요.", "status": "normal", "tips": []},
+                "history": [], "stories": [], "whale": None
+            }
+        }
+        
     try:
-        from chart_analysis import get_chart_analysis_full
         data = get_chart_analysis_full(symbol, interval=interval, period=period)
         if not data:
             return {"status": "error", "message": "Failed to analyze chart patterns"}
