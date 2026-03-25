@@ -267,8 +267,8 @@ export default function PatternPage() {
             labels: {
                 datetimeFormatter: {
                     year: 'yyyy년',
-                    month: 'MMM',
-                    day: 'dd일',
+                    month: 'yyyy년 MM월',
+                    day: 'MM월 dd일',
                     hour: 'HH:mm'
                 }
             }
@@ -277,6 +277,7 @@ export default function PatternPage() {
         grid: { borderColor: '#374151', strokeDashArray: 4 },
         tooltip: {
             shared: true,
+            x: { format: 'yyyy년 MM월 dd일' },
             y: { formatter: (val: number) => val?.toLocaleString() },
             custom: chartType === 'candle' ? function({ seriesIndex, dataPointIndex, w }: any) {
                 const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
