@@ -354,6 +354,10 @@ export default function PatternPage() {
                                 {isLocked ? <Lock className="w-5 h-5" /> : "분석하기"}
                             </button>
                         </div>
+                        <div className="flex items-center justify-center gap-2 mt-6 text-xs font-bold text-emerald-400/80 uppercase tracking-widest bg-emerald-400/10 py-2.5 px-5 rounded-full w-fit mx-auto border border-emerald-400/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-in fade-in zoom-in duration-1000">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            현재 차트 분석은 국내 종목(KOSPI/KOSDAQ)만 지원합니다
+                        </div>
                     </div>
                 </div>
 
