@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { 
     Search, LineChart, Target, Shield, AlertTriangle, Loader2, Lock, 
     PlayCircle, Crown, Sun, CloudSun, CloudRain, 
-    PieChart, BarChart3, BookOpen, Calendar, TrendingUp, TrendingDown, Clock,
+    PieChart, BarChart3, TrendingUp, TrendingDown, Clock,
     TowerControl, Activity
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -27,7 +26,6 @@ export default function PatternPage() {
     const [chartType, setChartType] = useState<"line" | "candle">("line");
     const [linePeriod, setLinePeriod] = useState<string>("1y");
     const [candleInterval, setCandleInterval] = useState<"1d" | "1wk" | "1mo">("1d");
-    const [selectedStory, setSelectedStory] = useState<any>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [showDocent, setShowDocent] = useState(true);
 
@@ -340,7 +338,7 @@ export default function PatternPage() {
                         <LineChart className="w-12 h-12 text-emerald-500" />
                         AI 차트 분석 <span className="text-emerald-500">PRO</span>
                     </h1>
-                    <p className="text-gray-400 text-lg">패턴 분석 리포트와 주식 위인전을 한번에.</p>
+                    <p className="text-gray-400 text-lg">AI가 분석하는 스마트한 차트 리포트.</p>
                     
                     {/* Docent Toggle Switch */}
                     <div className="flex justify-center mt-6">
@@ -553,65 +551,11 @@ export default function PatternPage() {
                             </div>
                         )}
 
-                        {/* Stock Biography (Stories) */}
-                        <div className="rounded-3xl bg-white/5 border border-white/10 p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-2xl font-bold text-white flex items-center gap-3"><BookOpen className="w-6 h-6 text-purple-400" /> 📖 주식 위인전</h3>
-                                <span className="text-sm text-gray-400">총 {result.stories?.length || 0}개의 주요 사건</span>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                                {result.stories?.map((story: any, idx: number) => (
-                                    <div key={idx} onClick={() => setSelectedStory(story)} className="bg-white/5 hover:bg-white/10 border-l-4 border-emerald-500 rounded-xl p-4 cursor-pointer transition-all">
-                                        <div className="flex gap-4">
-                                            <div className="text-3xl">{story.icon}</div>
-                                            <div>
-                                                <h4 className="text-white font-bold">{story.title}</h4>
-                                                <p className="text-xs text-gray-500 mt-1">{formatDate(story.date)}</p>
-                                                <p className="text-xs text-gray-400 mt-2 line-clamp-2">{story.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {(!result.stories || result.stories.length === 0) && <div className="col-span-2 text-center py-20 text-gray-500">탐지된 주요 사건이 없습니다.</div>}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Modal Portal */}
-            {selectedStory && isMounted && createPortal(
-                <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4" onClick={() => setSelectedStory(null)}>
-                    <div className="bg-gray-900 border border-white/10 rounded-[32px] max-w-xl w-full p-8 relative overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
-                        <div className="text-7xl text-center mb-6">{selectedStory.icon}</div>
-                        <h2 className="text-2xl font-bold text-white text-center mb-4">{selectedStory.title}</h2>
-                        <div className="flex justify-center gap-4 mb-8">
-                            <div className="px-3 py-1 bg-white/5 rounded-full text-xs text-gray-400 flex items-center gap-2"><Calendar className="w-3 h-3" /> {formatDate(selectedStory.date)}</div>
-                            {selectedStory.change !== 0 && <div className={`px-3 py-1 rounded-full text-xs font-bold ${selectedStory.change > 0 ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>{selectedStory.change > 0 ? '+' : ''}{selectedStory.change}%</div>}
-                        </div>
-                        <div className="bg-white/5 rounded-2xl p-6 mb-6 text-gray-200 text-center leading-relaxed">{selectedStory.description}</div>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                             <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                                <p className="text-[10px] text-gray-500 mb-1">당시 주가</p>
-                                <p className="text-lg font-bold text-white font-mono">₩{selectedStory.price.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                                <p className="text-[10px] text-gray-500 mb-1">분류</p>
-                                <p className="text-sm font-bold text-emerald-300 uppercase">{selectedStory.type}</p>
-                            </div>
-                        </div>
-                        {selectedStory.news?.link && (
-                            <button onClick={() => window.open(selectedStory.news.link, '_blank')} className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-2xl p-4 mb-4 text-left transition-all">
-                                <p className="text-[10px] text-blue-400 font-bold">관련 뉴스</p>
-                                <p className="text-sm text-white line-clamp-1">{selectedStory.news.title}</p>
-                            </button>
-                        )}
-                        <button onClick={() => setSelectedStory(null)} className="w-full bg-white text-black font-bold py-4 rounded-2xl">닫기</button>
-                    </div>
-                </div>,
-                document.body
-            )}
         </div>
     );
 }
