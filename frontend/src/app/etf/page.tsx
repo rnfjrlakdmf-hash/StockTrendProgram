@@ -224,7 +224,7 @@ export default function EtfAnalysisPage() {
                                             { tag: '헬스케어', keyword: null, cat: 'healthcare' },
                                             { tag: '채권/금리', keyword: null, cat: 'bond' }
                                         ].map((item) => {
-                                            const isActive = filterKeyword === item.keyword;
+                                            const isActive = filterKeyword === item.keyword && apiCategoryKey === item.cat;
                                             return (
                                                 <span 
                                                     key={item.tag} 
@@ -274,20 +274,23 @@ export default function EtfAnalysisPage() {
                                                 { title: "2차전지 테마", keyword: null, cat: "battery", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
                                                 { title: "IT/AI 테마", keyword: null, cat: "ai", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
                                                 { title: "채권/금리군", keyword: null, cat: "bond", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
-                                            ].map((strat) => (
-                                                <button 
-                                                    key={strat.title} 
-                                                    onClick={() => handleCategoryClick(strat.keyword, strat.cat)}
-                                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
-                                                        filterKeyword === strat.keyword 
-                                                        ? 'bg-blue-600/20 border-blue-500/50' 
-                                                        : 'bg-white/5 hover:bg-white/10 border-transparent'
-                                                    }`}
-                                                >
-                                                    <span className={`text-xs font-bold ${filterKeyword === strat.keyword ? 'text-white' : 'text-gray-300'}`}>{strat.title}</span>
-                                                    {strat.icon}
-                                                </button>
-                                            ))}
+                                            ].map((strat) => {
+                                                const isActive = filterKeyword === strat.keyword && apiCategoryKey === strat.cat;
+                                                return (
+                                                    <button 
+                                                        key={strat.title} 
+                                                        onClick={() => handleCategoryClick(strat.keyword, strat.cat)}
+                                                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
+                                                            isActive 
+                                                            ? 'bg-blue-600/20 border-blue-500/50' 
+                                                            : 'bg-white/5 hover:bg-white/10 border-transparent'
+                                                        }`}
+                                                    >
+                                                        <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-300'}`}>{strat.title}</span>
+                                                        {strat.icon}
+                                                    </button>
+                                                );
+                                            })}
                                             {filterKeyword && (
                                                 <button 
                                                     onClick={() => {
