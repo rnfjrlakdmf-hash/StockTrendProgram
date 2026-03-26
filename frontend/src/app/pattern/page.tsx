@@ -550,8 +550,6 @@ export default function PatternPage() {
                                 </div>
                             </div>
                         )}
-
-                        )}
                     </div>
                 )}
             </div>
