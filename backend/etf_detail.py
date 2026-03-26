@@ -76,7 +76,31 @@ def get_etf_detail(symbol: str):
             else:
                 data["basic_info"]["amc"] = "알 수 없음"
                 
-            data["basic_info"]["ter"] = "N/A" # yfinance ytdReturn is not TER
+            # Enhanced Basic Info for US ETFs
+            # Expense Ratio (TER)
+            er = info.get('expenseRatio')
+            if er:
+                data["basic_info"]["ter"] = f"{er * 100:.2f}%"
+            else:
+                data["basic_info"]["ter"] = "N/A"
+                
+            # Launch Date (fundInceptionDate is Unix timestamp)
+            fid = info.get('fundInceptionDate')
+            if fid:
+                 try:
+                     data["basic_info"]["launch_date"] = str(pd.to_datetime(fid, unit='s')).split(' ')[0]
+                 except:
+                     data["basic_info"]["launch_date"] = "N/A"
+            else:
+                data["basic_info"]["launch_date"] = "N/A"
+            
+            # Underlying Index
+            idx_name = info.get('underlyingIndexName') or info.get('indexName')
+            if idx_name:
+                data["basic_info"]["index"] = idx_name
+            else:
+                data["basic_info"]["index"] = "N/A"
+
             data["basic_info"]["aum"] = f"${info.get('totalAssets', 0):,}" if info.get('totalAssets') else "N/A"
             data["basic_info"]["dividend_yield"] = f"{info.get('yield', 0) * 100:.2f}%" if info.get('yield') else "0.00%"
             
