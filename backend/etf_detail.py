@@ -77,10 +77,17 @@ def get_etf_detail(symbol: str):
                 data["basic_info"]["amc"] = "알 수 없음"
                 
             # Enhanced Basic Info for US ETFs
-            # Expense Ratio (TER)
-            er = info.get('expenseRatio')
+            # Expense Ratio (TER) - Try multiple fields
+            er = info.get('expenseRatio') or info.get('netExpenseRatio')
             if er:
-                data["basic_info"]["ter"] = f"{er * 100:.2f}%"
+                data["basic_info"]["ter"] = f"{er if er < 1 else er/100:.2f}%" if er < 0.1 else f"{er:.2f}%"
+                # Handle cases where er might be 0.0912 vs 0.09. yfinance can be inconsistent.
+                # Actually, 0.09 usually means 0.09%. Let's be careful.
+                # If er is 0.09, it likely means 0.09%. If it's 0.0009, it means 0.09%.
+                if er < 0.01: # 0.0009 type
+                    data["basic_info"]["ter"] = f"{er * 100:.2f}%"
+                else: # 0.09 type
+                    data["basic_info"]["ter"] = f"{er:.2f}%"
             else:
                 data["basic_info"]["ter"] = "N/A"
                 
@@ -94,8 +101,15 @@ def get_etf_detail(symbol: str):
             else:
                 data["basic_info"]["launch_date"] = "N/A"
             
-            # Underlying Index
+            # Underlying Index - Fallback to summary parsing
             idx_name = info.get('underlyingIndexName') or info.get('indexName')
+            if not idx_name:
+                summary = info.get('longBusinessSummary', '')
+                # Try to find "S&P 500 Index", "Nasdaq-100 Index", etc.
+                match = re.search(r'([A-Z][\w\s&-]+ Index)', summary)
+                if match:
+                    idx_name = match.group(1)
+            
             if idx_name:
                 data["basic_info"]["index"] = idx_name
             else:
