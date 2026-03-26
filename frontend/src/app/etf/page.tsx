@@ -38,8 +38,8 @@ export default function EtfAnalysisPage() {
         }
     };
 
-    const handleCategoryClick = (keyword: string, catKey: string) => {
-        const isSame = filterKeyword === keyword;
+    const handleCategoryClick = (keyword: string | null, catKey: string | null) => {
+        const isSame = filterKeyword === keyword && apiCategoryKey === catKey;
         const newKeyword = isSame ? null : keyword;
         const newCat = isSame ? null : catKey;
         
@@ -216,13 +216,13 @@ export default function EtfAnalysisPage() {
                                     <div className="flex flex-wrap gap-2">
                                         {[
                                             { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
-                                            { tag: '레버리지', keyword: market === 'KR' ? '레버리지' : 'Bull', cat: 'leverage' },
-                                            { tag: '배당/리츠', keyword: market === 'KR' ? '배당' : 'Dividend', cat: 'dividend' },
-                                            { tag: '반도체', keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: 'semiconductor' },
-                                            { tag: '2차전지', keyword: market === 'KR' ? '전지' : 'battery', cat: 'battery' },
-                                            { tag: 'IT/AI', keyword: market === 'KR' ? 'IT' : 'Tech', cat: 'ai' },
-                                            { tag: '헬스케어', keyword: market === 'KR' ? '바이오' : 'Healthcare', cat: 'healthcare' },
-                                            { tag: '채권/금리', keyword: market === 'KR' ? '채권' : 'Bond', cat: 'bond' }
+                                            { tag: '레버리지', keyword: null, cat: 'leverage' },
+                                            { tag: '배당/리츠', keyword: null, cat: 'dividend' },
+                                            { tag: '반도체', keyword: null, cat: 'semiconductor' },
+                                            { tag: '2차전지', keyword: null, cat: 'battery' },
+                                            { tag: 'IT/AI', keyword: null, cat: 'ai' },
+                                            { tag: '헬스케어', keyword: null, cat: 'healthcare' },
+                                            { tag: '채권/금리', keyword: null, cat: 'bond' }
                                         ].map((item) => {
                                             const isActive = filterKeyword === item.keyword;
                                             return (
@@ -269,11 +269,11 @@ export default function EtfAnalysisPage() {
                                         <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">유형별 지표 (참고용)</h4>
                                         <div className="space-y-3">
                                             {[
-                                                { title: "인버스/헷지군", keyword: "인버스", cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
+                                                { title: "인버스/헷지군", keyword: null, cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
                                                 { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "2차전지 테마", keyword: market === 'KR' ? '전지' : 'Battery', cat: "battery", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
-                                                { title: "IT/AI 테마", keyword: market === 'KR' ? 'IT' : 'Tech', cat: "ai", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
-                                                { title: "채권/금리군", keyword: market === 'KR' ? '채권' : 'Bond', cat: "bond", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
+                                                { title: "2차전지 테마", keyword: null, cat: "battery", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
+                                                { title: "IT/AI 테마", keyword: null, cat: "ai", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
+                                                { title: "채권/금리군", keyword: null, cat: "bond", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
                                             ].map((strat) => (
                                                 <button 
                                                     key={strat.title} 

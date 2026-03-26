@@ -41,8 +41,8 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
     // Filter data if keyword exists
     const displayData = filterKeyword 
         ? data.filter(item => 
-            (item.name && item.name.includes(filterKeyword)) || 
-            (item.symbol && item.symbol.includes(filterKeyword))
+            (item.name && item.name.toLowerCase().includes(filterKeyword.toLowerCase())) || 
+            (item.symbol && item.symbol.toLowerCase().includes(filterKeyword.toLowerCase()))
           )
         : data;
 
