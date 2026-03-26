@@ -578,46 +578,85 @@ def get_etf_ranking(market="KR", category=None):
             return []
             
     elif market == "US":
-        # [NEW] US ETF List with more items for better filtering test
-        us_etfs = [
-            {"rank": 1, "symbol": "SPY", "name": "S&P 500 ETF (SPY)", "price": "515.20", "change": "+0.45%", "change_percent": 0.45, "volume": "50000000"},
-            {"rank": 2, "symbol": "QQQ", "name": "Nasdaq 100 ETF (QQQ)", "price": "443.10", "change": "+0.32%", "change_percent": 0.32, "volume": "40000000"},
-            {"rank": 3, "symbol": "IVV", "name": "iShares S&P 500", "price": "516.40", "change": "+0.44%", "change_percent": 0.44, "volume": "5000000"},
-            {"rank": 4, "symbol": "SQQQ", "name": "ProShares UltraPro Short QQQ (Inverse)", "price": "10.50", "change": "-1.10%", "change_percent": -1.10, "volume": "100000000"},
-            {"rank": 5, "symbol": "TQQQ", "name": "ProShares UltraPro QQQ", "price": "60.20", "change": "+0.95%", "change_percent": 0.95, "volume": "80000000"},
-            {"rank": 6, "symbol": "ARKK", "name": "ARK Innovation ETF", "price": "50.15", "change": "-1.20%", "change_percent": -1.20, "volume": "15000000"},
-            {"rank": 7, "symbol": "IBIT", "name": "iShares Bitcoin Trust", "price": "42.50", "change": "+3.15%", "change_percent": 3.15, "volume": "30000000"},
-            {"rank": 8, "symbol": "TLT", "name": "iShares 20+ Year Treasury Bond ETF", "price": "94.30", "change": "-0.55%", "change_percent": -0.55, "volume": "40000000"},
-            {"rank": 9, "symbol": "SOXL", "name": "Semiconductor Bull 3X", "price": "45.00", "change": "+4.20%", "change_percent": 4.20, "volume": "60000000"},
-            {"rank": 10, "symbol": "SOXS", "name": "Semiconductor Bear 3X (Inverse)", "price": "3.50", "change": "-4.15%", "change_percent": -4.15, "volume": "70000000"},
-            {"rank": 11, "symbol": "GLD", "name": "SPDR Gold Shares", "price": "215.40", "change": "+0.15%", "change_percent": 0.15, "volume": "10000000"},
-            {"rank": 12, "symbol": "IEF", "name": "iShares 7-10 Year Treasury Bond", "price": "92.15", "change": "-0.12%", "change_percent": -0.12, "volume": "12000000"},
-            {"rank": 13, "symbol": "SMH", "name": "VanEck Semiconductor ETF", "price": "225.10", "change": "+1.35%", "change_percent": 1.35, "volume": "8000000"},
-            {"rank": 14, "symbol": "SCHD", "name": "Schwab US Dividend Equity ETF", "price": "78.40", "change": "+0.25%", "change_percent": 0.25, "volume": "5000000"}
+        # 1. Define comprehensive list of major US ETFs by sector
+        # These will be fetched in real-time if cache is cold
+        us_symbols = [
+            # Index
+            "SPY", "QQQ", "IVV", "VOO", "DIA", "IWM", "VTI", "QQQM", "SCHX", "VV",
+            # Inverse
+            "SQQQ", "PSQ", "SH", "DOG", "SDS", "SOXS", "SPDN", "RWM", "QID", "DXD",
+            # Leverage
+            "TQQQ", "SOXL", "UPRO", "SPXL", "TECL", "ROM", "FAS", "TNA", "QLD", "SSO",
+            # Dividend
+            "SCHD", "JEPI", "VIG", "VYM", "NOBL", "DGRO", "HDV", "SDY", "DVY", "JEPQ",
+            # Bond
+            "TLT", "IEF", "SHY", "BND", "AGG", "TMF", "SHV", "LQD", "VCIT", "HYG", "JNK", "MBB",
+            # Battery/Energy
+            "LIT", "BATT", "REMX", "XLE", "VDE", "ICLN", "PBW", "TAN", "XOP", "AMLP",
+            # AI/IT
+            "XLK", "VGT", "BOTZ", "ROBO", "IRBO", "SNSR", "GXG", "AIQ", "SKYY", "CLOU", "IGV",
+            # Semiconductor
+            "SMH", "SOXX", "SOXL", "SOXS", "PSI", "XSD", "FTXL",
+            # Healthcare
+            "XLV", "VHT", "IBB", "ARKG", "XBI", "FHLC", "PPH", "IHI",
+            # Innovation/Others
+            "ARKK", "ARKF", "ARKW", "IBIT", "GLD", "SLV", "DBC", "USO"
         ]
         
+        # Parallel fetch quotes
+        from stock_data import get_simple_quote
+        
+        def fetch_quote_safe(sym):
+            try:
+                q = get_simple_quote(sym)
+                if q:
+                    # Map to the format expected by ETF Ranking Widget
+                    return {
+                        "symbol": q.get("symbol", sym),
+                        "name": q.get("name", sym),
+                        "price": q.get("price", "0.00"),
+                        "change": q.get("change", "0.00%"),
+                        "change_percent": float(str(q.get("change", "0")).replace('%', '').replace('+', '') or 0),
+                        "volume": str(q.get("volume", "0"))
+                    }
+            except:
+                pass
+            return None
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Note: us_symbols is unique to avoid redundant calls
+            results = list(executor.map(fetch_quote_safe, list(set(us_symbols))))
+            
+        us_etfs = [r for r in results if r is not None]
+        
+        # Sort by change_percent or rank as fallback
+        us_etfs.sort(key=lambda x: abs(x['change_percent']), reverse=True)
+        for i, item in enumerate(us_etfs):
+            item['rank'] = i + 1
+
         if category:
             keywords = []
             if category == "inverse":
-                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS"]
+                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS", "QID", "DXD", "RWM"]
             elif category == "index":
-                keywords = ["SPY", "QQQ", "IVV", "S&P", "Nasdaq"]
+                keywords = ["SPY", "QQQ", "IVV", "VOO", "S&P", "Nasdaq", "Core", "Total"]
             elif category == "sector":
-                keywords = ["Semiconductor", "Innovation", "Bitcoin", "ARK", "Cloud", "Software", "Energy", "Bond", "Treasury"]
+                # Sector includes everything broad
+                keywords = ["Semiconductor", "IT", "Tech", "Energy", "Materials", "Financial", "Bond", "Treasury", "Health"]
             elif category == "leverage":
-                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "Leverage"]
+                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "UPRO", "Leverage", "Double", "Triple"]
             elif category == "dividend":
-                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI"]
+                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI", "DGRO", "VIG"]
             elif category == "bond":
-                keywords = ["Bond", "Treasury", "TLT", "IEF", "TMF", "Fixed Income"]
+                keywords = ["Bond", "Treasury", "TLT", "IEF", "Fixed Income", "BND", "AGG", "TMF", "Corporate"]
             elif category == "battery":
-                keywords = ["Battery", "Lithium", "LIT", "Energy", "Materials"]
+                keywords = ["Battery", "Lithium", "LIT", "REMX", "Metals", "Clean Energy"]
             elif category == "ai":
-                keywords = ["AI", "Tech", "Robo", "Intelligence", "Software"]
+                keywords = ["AI", "Artificial Intelligence", "ROBO", "BOTZ", "GXG", "Tech", "Software", "Cloud"]
             elif category == "semiconductor":
-                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "NVDA"]
+                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "SOXX", "NVDA", "Broadcom"]
             elif category == "healthcare":
-                keywords = ["Healthcare", "Bio", "XLV", "Health"]
+                keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
             return filtered
