@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { API_BASE_URL } from '@/lib/config';
