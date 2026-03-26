@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { API_BASE_URL } from '@/lib/config';
-import { Activity, Globe, RefreshCcw, TrendingUp, TrendingDown, ArrowRight, Sparkles, Filter } from 'lucide-react';
+import { Activity, Globe, RefreshCcw, TrendingUp, TrendingDown, ArrowRight, Sparkles, Filter, Zap } from 'lucide-react';
 import EtfRankingWidget from '@/components/EtfRankingWidget';
 
-// Final verification of ETF data filtering and UX improvements v4 - Forced Sync 08:35
 export default function EtfAnalysisPage() {
     const [market, setMarket] = useState<'KR' | 'US'>('KR');
     const [data, setData] = useState<any[]>([]);
@@ -270,7 +269,9 @@ export default function EtfAnalysisPage() {
                                             {[
                                                 { title: "인버스/헷지군", keyword: "인버스", cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
                                                 { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "최신 인기 테마", keyword: market === 'KR' ? '반도체' : 'Semiconductor', cat: "sector", icon: <ArrowRight className="w-3.5 h-3.5 text-purple-400" /> }
+                                                { title: "2차전지 테마", keyword: market === 'KR' ? '전지' : 'Battery', cat: "sector", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
+                                                { title: "IT/AI 테마", keyword: market === 'KR' ? 'IT' : 'Tech', cat: "sector", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
+                                                { title: "채권/금리군", keyword: market === 'KR' ? '채권' : 'Bond', cat: "sector", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
                                             ].map((strat) => (
                                                 <button 
                                                     key={strat.title} 
