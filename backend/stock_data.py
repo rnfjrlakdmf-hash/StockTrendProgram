@@ -24,7 +24,7 @@ from risk_analyzer import calculate_analysis_score
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
 STOCK_DATA_CACHE = {}  # {symbol: (data, timestamp)}
-CACHE_TTL = 60  # 60 seconds
+CACHE_TTL = 300  # 300 seconds (5 minutes)
 ASSETS_CACHE = {
     "data": None,
     "timestamp": 0

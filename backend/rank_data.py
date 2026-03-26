@@ -8,6 +8,8 @@ CACHE_TOP10 = {
     "US": {"data": [], "timestamp": 0}
 }
 CACHE_DURATION = 15  # 15초
+CACHE_US_ETFS = {"data": [], "timestamp": 0}
+CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 
 def get_realtime_top10(market="KR", refresh=False):
     """
@@ -578,61 +580,72 @@ def get_etf_ranking(market="KR", category=None):
             return []
             
     elif market == "US":
-        # 1. Define comprehensive list of major US ETFs by sector
-        # These will be fetched in real-time if cache is cold
-        us_symbols = [
-            # Index
-            "SPY", "QQQ", "IVV", "VOO", "DIA", "IWM", "VTI", "QQQM", "SCHX", "VV",
-            # Inverse
-            "SQQQ", "PSQ", "SH", "DOG", "SDS", "SOXS", "SPDN", "RWM", "QID", "DXD",
-            # Leverage
-            "TQQQ", "SOXL", "UPRO", "SPXL", "TECL", "ROM", "FAS", "TNA", "QLD", "SSO",
-            # Dividend
-            "SCHD", "JEPI", "VIG", "VYM", "NOBL", "DGRO", "HDV", "SDY", "DVY", "JEPQ",
-            # Bond
-            "TLT", "IEF", "SHY", "BND", "AGG", "TMF", "SHV", "LQD", "VCIT", "HYG", "JNK", "MBB",
-            # Battery/Energy
-            "LIT", "BATT", "REMX", "XLE", "VDE", "ICLN", "PBW", "TAN", "XOP", "AMLP",
-            # AI/IT
-            "XLK", "VGT", "BOTZ", "ROBO", "IRBO", "SNSR", "GXG", "AIQ", "SKYY", "CLOU", "IGV",
-            # Semiconductor
-            "SMH", "SOXX", "SOXL", "SOXS", "PSI", "XSD", "FTXL",
-            # Healthcare
-            "XLV", "VHT", "IBB", "ARKG", "XBI", "FHLC", "PPH", "IHI",
-            # Innovation/Others
-            "ARKK", "ARKF", "ARKW", "IBIT", "GLD", "SLV", "DBC", "USO"
-        ]
-        
-        # Parallel fetch quotes
-        from stock_data import get_simple_quote
-        
-        def fetch_quote_safe(sym):
-            try:
-                q = get_simple_quote(sym)
-                if q:
-                    # Map to the format expected by ETF Ranking Widget
-                    return {
-                        "symbol": q.get("symbol", sym),
-                        "name": q.get("name", sym),
-                        "price": q.get("price", "0.00"),
-                        "change": q.get("change", "0.00%"),
-                        "change_percent": float(str(q.get("change", "0")).replace('%', '').replace('+', '') or 0),
-                        "volume": str(q.get("volume", "0"))
-                    }
-            except:
-                pass
-            return None
-
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            # Note: us_symbols is unique to avoid redundant calls
-            results = list(executor.map(fetch_quote_safe, list(set(us_symbols))))
+        # 1. Use Cache if available and not expired
+        import time
+        current_time = time.time()
+        if CACHE_US_ETFS["data"] and (current_time - CACHE_US_ETFS["timestamp"] < CACHE_US_ETFS_DURATION):
+            us_etfs = CACHE_US_ETFS["data"]
+        else:
+            # 1. Define comprehensive list of major US ETFs by sector
+            us_symbols = [
+                # Index
+                "SPY", "QQQ", "IVV", "VOO", "DIA", "IWM", "VTI", "QQQM", "SCHX", "VV",
+                # Inverse
+                "SQQQ", "PSQ", "SH", "DOG", "SDS", "SOXS", "SPDN", "RWM", "QID", "DXD",
+                # Leverage
+                "TQQQ", "SOXL", "UPRO", "SPXL", "TECL", "ROM", "FAS", "TNA", "QLD", "SSO",
+                # Dividend
+                "SCHD", "JEPI", "VIG", "VYM", "NOBL", "DGRO", "HDV", "SDY", "DVY", "JEPQ",
+                # Bond
+                "TLT", "IEF", "SHY", "BND", "AGG", "TMF", "SHV", "LQD", "VCIT", "HYG", "JNK", "MBB",
+                # Battery/Energy
+                "LIT", "BATT", "REMX", "XLE", "VDE", "ICLN", "PBW", "TAN", "XOP", "AMLP",
+                # AI/IT
+                "XLK", "VGT", "BOTZ", "ROBO", "IRBO", "SNSR", "GXG", "AIQ", "SKYY", "CLOU", "IGV",
+                # Semiconductor
+                "SMH", "SOXX", "SOXL", "SOXS", "PSI", "XSD", "FTXL",
+                # Healthcare
+                "XLV", "VHT", "IBB", "ARKG", "XBI", "FHLC", "PPH", "IHI",
+                # Innovation/Others
+                "ARKK", "ARKF", "ARKW", "IBIT", "GLD", "SLV", "DBC", "USO"
+            ]
             
-        us_etfs = [r for r in results if r is not None]
-        
-        # Sort by change_percent or rank as fallback
-        us_etfs.sort(key=lambda x: abs(x['change_percent']), reverse=True)
-        for i, item in enumerate(us_etfs):
-            item['rank'] = i + 1
+            # Parallel fetch quotes
+            from stock_data import get_simple_quote
+            
+            def fetch_quote_safe(sym):
+                try:
+                    q = get_simple_quote(sym, strict=True) # Use strict to fail fast if rate limited
+                    if q:
+                        return {
+                            "symbol": q.get("symbol", sym),
+                            "name": q.get("name", sym),
+                            "price": q.get("price", "0.00"),
+                            "change": q.get("change", "0.00%"),
+                            "change_percent": float(str(q.get("change", "0")).replace('%', '').replace('+', '') or 0),
+                            "volume": str(q.get("volume", "0"))
+                        }
+                except:
+                    pass
+                return None
+
+            # Reduced max_workers to avoid aggressive burst
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                unique_symbols = list(set(us_symbols))
+                results = list(executor.map(fetch_quote_safe, unique_symbols))
+                
+            us_etfs = [r for r in results if r is not None]
+            
+            # Update Cache
+            if us_etfs:
+                us_etfs.sort(key=lambda x: abs(x['change_percent']), reverse=True)
+                for i, item in enumerate(us_etfs):
+                    item['rank'] = i + 1
+                CACHE_US_ETFS["data"] = us_etfs
+                CACHE_US_ETFS["timestamp"] = current_time
+            else:
+                # If fetching failed (likely rate limited), use empty or old data
+                us_etfs = CACHE_US_ETFS["data"] if CACHE_US_ETFS["data"] else []
 
         if category:
             keywords = []
