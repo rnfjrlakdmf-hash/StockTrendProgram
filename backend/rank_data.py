@@ -638,7 +638,8 @@ def get_etf_ranking(market="KR", category=None):
             
             # Update Cache
             if us_etfs:
-                us_etfs.sort(key=lambda x: abs(x['change_percent']), reverse=True)
+                # Sort by Volume (Descending) to match "거래량 상위" title
+                us_etfs.sort(key=lambda x: int(x.get('volume', 0)), reverse=True)
                 for i, item in enumerate(us_etfs):
                     item['rank'] = i + 1
                 CACHE_US_ETFS["data"] = us_etfs
