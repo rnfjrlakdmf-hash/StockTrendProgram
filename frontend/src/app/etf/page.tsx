@@ -6,7 +6,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { Activity, Globe, RefreshCcw, TrendingUp, TrendingDown, ArrowRight, Sparkles, Filter } from 'lucide-react';
 import EtfRankingWidget from '@/components/EtfRankingWidget';
 
-// Final verification of ETF data filtering and UX improvements v3 - Deployment Sync 2026-03-26
+// Final verification of ETF data filtering and UX improvements v4 - Forced Sync 08:35
 export default function EtfAnalysisPage() {
     const [market, setMarket] = useState<'KR' | 'US'>('KR');
     const [data, setData] = useState<any[]>([]);
@@ -83,7 +83,7 @@ export default function EtfAnalysisPage() {
                                 </button>
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight">
-                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics</span>
+                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics v2.5</span>
                             </h1>
                             <p className="text-gray-400 font-bold max-w-xl leading-snug text-xs md:text-sm">
                                 {market === 'KR' 
