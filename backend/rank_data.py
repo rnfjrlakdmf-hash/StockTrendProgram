@@ -584,9 +584,13 @@ def get_etf_ranking(market="KR", category=None):
             {"rank": 5, "symbol": "TQQQ", "name": "ProShares UltraPro QQQ", "price": "60.20", "change": "+0.95%", "change_percent": 0.95, "volume": "80000000"},
             {"rank": 6, "symbol": "ARKK", "name": "ARK Innovation ETF", "price": "50.15", "change": "-1.20%", "change_percent": -1.20, "volume": "15000000"},
             {"rank": 7, "symbol": "IBIT", "name": "iShares Bitcoin Trust", "price": "42.50", "change": "+3.15%", "change_percent": 3.15, "volume": "30000000"},
-            {"rank": 8, "symbol": "PSQ", "name": "Short QQQ (Inverse)", "price": "45.30", "change": "-0.35%", "change_percent": -0.35, "volume": "2000000"},
+            {"rank": 8, "symbol": "TLT", "name": "iShares 20+ Year Treasury Bond ETF", "price": "94.30", "change": "-0.55%", "change_percent": -0.55, "volume": "40000000"},
             {"rank": 9, "symbol": "SOXL", "name": "Semiconductor Bull 3X", "price": "45.00", "change": "+4.20%", "change_percent": 4.20, "volume": "60000000"},
-            {"rank": 10, "symbol": "SOXS", "name": "Semiconductor Bear 3X (Inverse)", "price": "3.50", "change": "-4.15%", "change_percent": -4.15, "volume": "70000000"}
+            {"rank": 10, "symbol": "SOXS", "name": "Semiconductor Bear 3X (Inverse)", "price": "3.50", "change": "-4.15%", "change_percent": -4.15, "volume": "70000000"},
+            {"rank": 11, "symbol": "GLD", "name": "SPDR Gold Shares", "price": "215.40", "change": "+0.15%", "change_percent": 0.15, "volume": "10000000"},
+            {"rank": 12, "symbol": "IEF", "name": "iShares 7-10 Year Treasury Bond", "price": "92.15", "change": "-0.12%", "change_percent": -0.12, "volume": "12000000"},
+            {"rank": 13, "symbol": "SMH", "name": "VanEck Semiconductor ETF", "price": "225.10", "change": "+1.35%", "change_percent": 1.35, "volume": "8000000"},
+            {"rank": 14, "symbol": "SCHD", "name": "Schwab US Dividend Equity ETF", "price": "78.40", "change": "+0.25%", "change_percent": 0.25, "volume": "5000000"}
         ]
         
         if category:
@@ -601,6 +605,16 @@ def get_etf_ranking(market="KR", category=None):
                 keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "Leverage"]
             elif category == "dividend":
                 keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI"]
+            elif category == "bond":
+                keywords = ["Bond", "Treasury", "TLT", "IEF", "TMF", "Fixed Income"]
+            elif category == "battery":
+                keywords = ["Battery", "Lithium", "LIT", "Energy", "Materials"]
+            elif category == "ai":
+                keywords = ["AI", "Tech", "Robo", "Intelligence", "Software"]
+            elif category == "semiconductor":
+                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "NVDA"]
+            elif category == "healthcare":
+                keywords = ["Healthcare", "Bio", "XLV", "Health"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
             return filtered
