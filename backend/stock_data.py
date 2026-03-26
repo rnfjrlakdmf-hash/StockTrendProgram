@@ -757,6 +757,12 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     price_krw = f"{current_price * rate:,.0f}"
             except: pass
 
+        # Get volume
+        try:
+            volume = ticker.fast_info.last_volume
+        except:
+            volume = info.get('volume', 0) if 'info' in locals() else 0
+
         return {
             "symbol": symbol,
             "price": price_str,
@@ -765,7 +771,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             "name": symbol,
             "ticker": ticker,
             "raw_price": current_price,
-            "prev_close": previous_close
+            "prev_close": previous_close,
+            "volume": int(volume) if volume else 0
         }
     except Exception as e:
         if strict: return None  # Fast fail for validation
