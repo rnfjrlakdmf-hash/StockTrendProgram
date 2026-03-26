@@ -529,7 +529,7 @@ def get_etf_ranking(market="KR", category=None):
             elif category == "ai":
                 keywords = ["AI", "인공지능", "Tech", "IT", "Robo"]
             elif category == "bond":
-                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT"]
+                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT", "CD", "KOFR", "머니마켓", "단기채", "초단기"]
             elif category == "semiconductor":
                 keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA"]
             elif category == "healthcare":
@@ -542,7 +542,10 @@ def get_etf_ranking(market="KR", category=None):
             if not category:
                 target_items = items[:20]
 
-            print(f"[ETF API] Total items from Naver: {len(items)}, Category: {category}")
+            print(f"[ETF API] Total items from Naver: {len(items)}, Category: '{category}'")
+            print(f"[ETF API] Keywords for match: {keywords}")
+            if items:
+                print(f"[ETF API] First item name: {items[0].get('itemname')}")
 
             for i, item in enumerate(target_items):
                 name = item.get('itemname', '')

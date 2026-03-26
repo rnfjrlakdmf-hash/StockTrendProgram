@@ -84,7 +84,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260324-investor-v4-cursor-api",
+        "version": "20260326-etf-bond-fix",
         "service": "AI Stock Analyst Backend - Investor Trend Cursor API"
     }
 from fastapi import Request
