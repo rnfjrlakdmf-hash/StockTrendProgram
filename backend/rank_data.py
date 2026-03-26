@@ -524,6 +524,16 @@ def get_etf_ranking(market="KR", category=None):
                 keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL"]
             elif category == "dividend":
                 keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income"]
+            elif category == "battery":
+                keywords = ["2차전지", "전지", "배터리", "Battery", "Secondary Cell"]
+            elif category == "ai":
+                keywords = ["AI", "인공지능", "Tech", "IT", "Robo"]
+            elif category == "bond":
+                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT"]
+            elif category == "semiconductor":
+                keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA"]
+            elif category == "healthcare":
+                keywords = ["헬스케어", "바이오", "Bio", "Health"]
 
             data = []
             
