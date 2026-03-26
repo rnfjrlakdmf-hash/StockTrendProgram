@@ -273,6 +273,8 @@ export default function EtfAnalysisPage() {
                                                 { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
                                                 { title: "2차전지 테마", keyword: null, cat: "battery", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
                                                 { title: "IT/AI 테마", keyword: null, cat: "ai", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
+                                                { title: "반도체 테마", keyword: null, cat: "semiconductor", icon: <BarChart3 className="w-3.5 h-3.5 text-orange-400" /> },
+                                                { title: "배당주 테마", keyword: null, cat: "dividend", icon: <TrendingUp className="w-3.5 h-3.5 text-pink-400" /> },
                                                 { title: "채권/금리군", keyword: null, cat: "bond", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
                                             ].map((strat) => {
                                                 const isActive = filterKeyword === strat.keyword && apiCategoryKey === strat.cat;
