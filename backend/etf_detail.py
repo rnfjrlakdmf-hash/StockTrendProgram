@@ -12,6 +12,16 @@ AMC_MAP = {
     "HANARO": "NH-Amundi자산운용", "SOL": "한국투자신탁운용", "TIMEFOLIO": "타임폴리오자산운용"
 }
 
+def safe_to_float(val):
+    if val is None: return 0.0
+    try:
+        if isinstance(val, (int, float)): return float(val)
+        # Remove commas, spaces, and percent signs
+        clean = str(val).replace(',', '').replace('%', '').strip()
+        return float(clean)
+    except:
+        return 0.0
+
 def get_etf_detail(symbol: str):
     if not symbol:
         return {"status": "error", "message": "Symbol is required"}
@@ -229,16 +239,17 @@ def get_etf_detail(symbol: str):
             # Use etfKeyIndicator for better KR ETF data
             indicator = api_data.get("etfKeyIndicator", {})
             if indicator:
-                data["basic_info"]["ter"] = f"{indicator.get('totalFee', 0):.2f}%"
+                data["basic_info"]["ter"] = f"{safe_to_float(indicator.get('totalFee', 0)):.2f}%"
                 data["basic_info"]["aum"] = indicator.get("marketValue", "N/A")
-                data["basic_info"]["dividend_yield"] = f"{indicator.get('dividendYieldTtm', 0):.2f}%"
+                data["basic_info"]["dividend_yield"] = f"{safe_to_float(indicator.get('dividendYieldTtm', 0)):.2f}%"
                 
                 # Market data from indicator
                 if indicator.get("nav"):
-                    data["market_data"]["nav"] = f"{float(indicator['nav']):,}"
+                    nav_val = safe_to_float(indicator['nav'])
+                    data["market_data"]["nav"] = f"{nav_val:,.2f}" if nav_val else indicator['nav']
                 
                 sign = indicator.get("deviationSign", "")
-                rate = indicator.get("deviationRate", 0)
+                rate = safe_to_float(indicator.get("deviationRate", 0))
                 data["market_data"]["disparity"] = f"{sign}{rate:.2f}%"
                 
                 # Performance from indicator
@@ -249,8 +260,9 @@ def get_etf_detail(symbol: str):
                 for k, v in perf_map.items():
                     val = indicator.get(k)
                     if val is not None:
-                        sign = "+" if val > 0 else ""
-                        data["performance"][v] = f"{sign}{val:.2f}%"
+                        f_val = safe_to_float(val)
+                        sign = "+" if f_val > 0 else ""
+                        data["performance"][v] = f"{sign}{f_val:.2f}%"
 
             # Parse totalInfos for remaining fields (Index, etc.)
             for info in api_data.get("totalInfos", []):
