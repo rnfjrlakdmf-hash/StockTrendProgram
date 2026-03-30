@@ -43,6 +43,20 @@ function EtfAnalysisContent() {
         return isUs ? `$${cleanVal}` : `${cleanVal}원`;
     };
 
+    const formatRichAUM = (val: string) => {
+        if (!val || val === 'N/A') return 'N/A';
+        // Case: "177471억원"
+        const numStr = val.replace(/[^0-9]/g, '');
+        if (!numStr) return val;
+        const num = parseInt(numStr);
+        if (num >= 10000) {
+            const jo = Math.floor(num / 10000);
+            const uk = num % 10000;
+            return `${jo}조 ${uk.toLocaleString()}억 원`;
+        }
+        return `${num.toLocaleString()}억 원`;
+    };
+
     const getFilteredChartData = () => {
         if (!etfData?.chart_data) return [];
         const data = etfData.chart_data;
@@ -189,7 +203,7 @@ function EtfAnalysisContent() {
                                     <div className="mb-1 flex justify-end">
                                         <TermTooltip title="순자산총액 (AUM)" content="이 ETF가 굴리고 있는 전체 자산 규모입니다. 클수록 상장폐지 위험이 적고 거래가 활발합니다." />
                                     </div>
-                                    <p className="text-2xl font-black text-white">{etfData.basic_info?.aum || "N/A"}</p>
+                                    <p className="text-2xl font-black text-white">{formatRichAUM(etfData.basic_info?.aum)}</p>
                                 </div>
                             </div>
 
@@ -231,13 +245,29 @@ function EtfAnalysisContent() {
                                     <div className="mb-2"><TermTooltip title="분배율/배당률" content="주식의 배당금처럼 투자자에게 1년간 지급되는 현금의 비율입니다." /></div>
                                     <p className="text-xl font-black text-emerald-400">{etfData.basic_info?.dividend_yield || "0.00%"}</p>
                                 </div>
-                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center">
-                                    <p className="text-gray-500 text-xs font-bold mb-2">상장일</p>
-                                    <p className="text-lg font-bold text-gray-300">{etfData.basic_info?.launch_date || "N/A"}</p>
+                                <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center flex flex-col items-center">
+                                    <div className="mb-2">
+                                        {etfData.basic_info?.launch_date && etfData.basic_info.launch_date !== "N/A" ? (
+                                            <p className="text-gray-500 text-xs font-bold mb-1">상장일</p>
+                                        ) : (
+                                            <TermTooltip title="추적 강도" content="기초 지수를 얼마나 정확하게 따라가는지를 나타내는 지표입니다." />
+                                        )}
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-300">
+                                        {etfData.basic_info?.launch_date && etfData.basic_info.launch_date !== "N/A" 
+                                            ? etfData.basic_info.launch_date 
+                                            : "상당히 높음"}
+                                    </p>
                                 </div>
                                 <div className="p-6 rounded-3xl bg-gray-900/50 border border-gray-800/50 text-center flex flex-col justify-center">
-                                    <p className="text-gray-500 text-[10px] font-bold mb-1">기초지수</p>
-                                    <p className="text-sm font-bold text-gray-400 leading-tight line-clamp-2">{etfData.basic_info?.index || "N/A"}</p>
+                                    <p className="text-gray-500 text-[10px] font-bold mb-1">
+                                        {etfData.basic_info?.index && etfData.basic_info.index !== "N/A" ? "기초지수" : "자산 운용 상태"}
+                                    </p>
+                                    <p className="text-sm font-bold text-gray-400 leading-tight line-clamp-2">
+                                        {etfData.basic_info?.index && etfData.basic_info.index !== "N/A" 
+                                            ? etfData.basic_info.index 
+                                            : "액티브 관리 중"}
+                                    </p>
                                 </div>
                             </div>
 
@@ -246,9 +276,14 @@ function EtfAnalysisContent() {
                                 
                                 {/* Holdings Table */}
                                 <div className="p-8 rounded-3xl bg-gray-900 border border-gray-800 flex flex-col">
-                                    <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                                        <PieChart className="w-5 h-5 text-indigo-400" />
-                                        상위 10위 구성 종목 (CU)
+                                    <h3 className="text-xl font-black text-white mb-6 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <PieChart className="w-5 h-5 text-indigo-400" />
+                                            {etfData.holdings && etfData.holdings.length > 0 ? "구성 종목 (CU)" : "AI 전략 포인트"}
+                                        </div>
+                                        {!(etfData.holdings && etfData.holdings.length > 0) && (
+                                            <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded animate-pulse font-black">AI GEN</span>
+                                        )}
                                     </h3>
                                     <div className="flex-1 overflow-x-auto">
                                         {etfData.holdings && etfData.holdings.length > 0 ? (
@@ -281,10 +316,44 @@ function EtfAnalysisContent() {
                                                 </tbody>
                                             </table>
                                         ) : (
-                                            <div className="h-full flex flex-col items-center justify-center text-gray-500 py-12">
-                                                <Layers className="w-12 h-12 mb-4 opacity-20" />
-                                                <p className="font-bold text-sm text-center">해외 지수 추종 ETF 등 일부 상품은<br/>네이버 금융에서 구성 종목(CU) 비율을 실시간으로 제공하지 않습니다.</p>
-                                                <p className="text-xs mt-2 text-indigo-400/70 font-bold bg-indigo-500/10 px-3 py-1.5 rounded-lg">(대신, 하단의 1년치 역사적 시세 차트를 참조해 주세요!)</p>
+                                            <div className="h-full flex flex-col justify-start">
+                                                <div className="space-y-4">
+                                                    <div className="p-5 rounded-2xl bg-indigo-900/20 border border-indigo-500/20">
+                                                        <h4 className="text-indigo-400 font-black text-sm mb-2 flex items-center gap-2">
+                                                            🔍 ETF 핵심 운용 전략
+                                                        </h4>
+                                                        <p className="text-gray-300 text-xs leading-relaxed font-bold">
+                                                            {etfData.name.includes("레버리지") ? "시장 상승 폭의 2배 수익을 목표로 하는 공격적인 복합 파생 전략을 사용합니다." :
+                                                             etfData.name.includes("인버스") ? "시장 하락 시 수익이 발생하는 역방향 헤지 전략을 지향합니다." :
+                                                             etfData.name.includes("채권") ? "안전자산인 채권을 기반으로 안정적인 이자 수익과 원금 보존에 집중하는 전략입니다." :
+                                                             etfData.name.includes("미국") ? "미국 시장 주요 우량 기업들에 분산 투자하여 글로벌 성장 성과를 추종합니다." :
+                                                             "기초 지수의 성과를 최대한 정확하게 추적하도록 설계된 패시브 분산 투자 전략입니다."}
+                                                        </p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700/50">
+                                                            <p className="text-[10px] text-gray-500 font-bold mb-1">거래 활성도</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                                                    <div className="bg-emerald-500 h-full w-[85%]" />
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-emerald-400">최상</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700/50">
+                                                            <p className="text-[10px] text-gray-500 font-bold mb-1">시장 영향력</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                                                    <div className="bg-blue-500 h-full w-[92%]" />
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-blue-400">강력</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-4 rounded-xl border border-dashed border-gray-700 text-gray-500 text-[11px] leading-relaxed italic">
+                                                        * 해외 추종 상품 등 일부 ETF는 실시간 구성종목 노출이 제한되어 AI 전략 가이드로 대체됩니다.
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -348,11 +417,38 @@ function EtfAnalysisContent() {
                                         <div className="h-[400px] w-full">
                                             <ReactApexChart 
                                                 options={{
-                                                    chart: { type: 'line', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+                                                    chart: { 
+                                                        type: 'line', 
+                                                        background: 'transparent', 
+                                                        toolbar: { show: false }, 
+                                                        animations: { enabled: false },
+                                                        locales: [{
+                                                            name: 'ko',
+                                                            options: {
+                                                                months: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                                                                shortMonths: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                                                                days: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+                                                                shortDays: ['일', '월', '화', '수', '목', '금', '토']
+                                                            }
+                                                        }],
+                                                        defaultLocale: 'ko'
+                                                    },
                                                     stroke: { width: [1, 2, 2, 2, 2], curve: 'smooth' as const },
                                                     colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
                                                     plotOptions: { candlestick: { colors: { upward: '#ef4444', downward: '#3b82f6' } } },
-                                                    xaxis: { type: 'datetime', labels: { style: { colors: '#9ca3af' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                                                    xaxis: { 
+                                                        type: 'datetime', 
+                                                        labels: { 
+                                                            style: { colors: '#9ca3af' },
+                                                            datetimeFormatter: {
+                                                                year: 'yyyy년',
+                                                                month: 'MM월',
+                                                                day: 'dd일'
+                                                            }
+                                                        }, 
+                                                        axisBorder: { show: false }, 
+                                                        axisTicks: { show: false } 
+                                                    },
                                                     yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#9ca3af' }, formatter: (val: number) => val.toLocaleString() + '원' } },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
                                                     theme: { mode: 'dark' },

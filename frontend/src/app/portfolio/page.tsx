@@ -6,7 +6,7 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { Plus, Trash2, Zap, Loader2, PieChart as PieChartIcon, Calendar, Activity, Info, ChevronRight, X, Link, Key } from "lucide-react";
+import { Star, Plus, Trash2, Zap, Loader2, PieChart as PieChartIcon, Calendar, Activity, Info, ChevronRight, X, Link, Key } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import AdRewardModal from "@/components/AdRewardModal";
 import { checkReward } from "@/lib/reward";
@@ -149,6 +149,34 @@ export default function PortfolioPage() {
         }
     };
 
+    const syncFromWatchlist = async () => {
+        const userId = localStorage.getItem("stock_user_id");
+        if (!userId) {
+            alert("로그인 후 이용할 수 있는 기능입니다.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                headers: { "X-User-ID": userId }
+            });
+            const json = await res.json();
+            if (json.status === "success" && json.data.length > 0) {
+                const favSymbols = json.data.map((s: any) => s.symbol);
+                setSymbols(favSymbols);
+                alert(`${favSymbols.length}개의 관심종목을 포트폴리오 분석기로 가져왔습니다.`);
+                runOptimization(favSymbols);
+            } else {
+                alert("가져올 관심종목이 없습니다. 먼저 관심종목을 등록해 주세요.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("관심종목을 가져오는 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleAdReward = () => {
         setHasPaid(true);
         setShowAdModal(false);
@@ -219,13 +247,22 @@ export default function PortfolioPage() {
 
                     {/* 1. Top Control Bar */}
                     <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 shrink-0 backdrop-blur-md">
-                        <button
-                            onClick={() => setShowKisModal(true)}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border transition-all ${isKisConnected ? 'bg-green-900/20 text-green-400 border-green-500/50' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}
-                        >
-                            <Link className="w-4 h-4" />
-                            {isKisConnected ? "KIS 연동됨" : "증권사 연결"}
-                        </button>
+                        <div className="flex gap-2">
+                             <button
+                                onClick={syncFromWatchlist}
+                                className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-blue-600/10 text-blue-400 border border-blue-500/30 hover:bg-blue-600/20 transition-all"
+                            >
+                                <Star className="w-4 h-4" />
+                                관심종목 불러오기
+                            </button>
+                            <button
+                                onClick={() => setShowKisModal(true)}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border transition-all ${isKisConnected ? 'bg-green-900/20 text-green-400 border-green-500/50' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}
+                            >
+                                <Link className="w-4 h-4" />
+                                {isKisConnected ? "API 연동됨" : "개인 계좌 연동 (외부)"}
+                            </button>
+                        </div>
 
                         <div className="flex-1 w-full flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
                             {symbols.map(sym => (
@@ -435,15 +472,25 @@ export default function PortfolioPage() {
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-gray-500 border border-white/10 rounded-3xl bg-black/20 m-4">
-                            <Zap className="w-20 h-20 mb-6 opacity-20 text-blue-500 animate-pulse" />
-                            <h3 className="text-2xl font-bold text-gray-300 mb-2">포트폴리오 데이터 분석</h3>
-                            <button
-                                onClick={() => setShowKisModal(true)}
-                                className="mt-4 bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-full font-bold shadow-lg"
-                            >
-                                증권사 계좌 연결하기 🚀
-                            </button>
-                            <p className="mt-4 text-sm opacity-60">또는 종목 코드를 직접 입력하세요.</p>
+                            <Star className="w-20 h-20 mb-6 opacity-20 text-yellow-500 animate-pulse" />
+                            <h3 className="text-2xl font-bold text-gray-300 mb-2">포트폴리오 통합 분석</h3>
+                            <div className="flex flex-col gap-3 mt-4">
+                                <button
+                                    onClick={syncFromWatchlist}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2"
+                                >
+                                    내 관심종목 분석하기 ⭐
+                                </button>
+                                <button
+                                    onClick={() => setShowKisModal(true)}
+                                    className="bg-white/10 hover:bg-white/20 text-gray-400 px-8 py-2 rounded-full font-bold text-sm"
+                                >
+                                    외부 계좌 API 연결 (선택)
+                                </button>
+                            </div>
+                            <p className="mt-6 text-xs opacity-40 max-w-xs text-center">
+                                * 포트폴리오 분석 시스템은 사용자의 자산 현황을 기술적으로 분석하는 도구이며, 어떠한 투자 권유나 종목 추천을 수행하지 않습니다.
+                            </p>
                         </div>
                     )}
                 </div>

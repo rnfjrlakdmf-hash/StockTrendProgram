@@ -307,6 +307,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 # Transform to Frontend Format
                 final_data = {
                     "name": naver_info.get('name', symbol),
+                    "description": naver_info.get('description', ''),
                     "symbol": t_symbol,
                     "price": f"{naver_info['price']:,}",
                     "price_krw": f"{naver_info['price']:,}",
@@ -620,6 +621,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
 
         result_data = {
             "name": display_name,
+            "description": info.get('longBusinessSummary', ''),
             "symbol": target_symbol,
             "price": price_str,
             "price_krw": price_krw,  # Added field
@@ -652,6 +654,15 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             "news": stock_news[:5],
             "score": 0, "metrics": {"supplyDemand": 0, "financials": 0, "news": 0}
         }
+
+        # [New] Translate Description for Foreign Stocks (if not KR)
+        if not (target_symbol.endswith('.KS') or target_symbol.endswith('.KQ')):
+            if result_data.get("description"):
+                try:
+                    translated_desc = GoogleTranslator(source='en', target='ko').translate(result_data["description"][:4500])
+                    if translated_desc:
+                         result_data["description"] = translated_desc
+                except: pass
 
         # Update Cache (for yfinance results too)
         STOCK_DATA_CACHE[symbol] = (result_data, time.time())

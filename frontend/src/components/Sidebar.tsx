@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Star, Menu, PlayCircle, Timer, History, BarChart3, Activity } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -21,7 +21,7 @@ const navigation = [
     { name: "차트 분석", href: "/pattern", icon: LineChart },
     { name: "ETF 분석", href: "/etf", icon: Activity },
     { name: "공급망 지도", href: "/supply-chain", icon: Network },
-    { name: "상담 챗봇", href: "/chat", icon: MessageSquare },
+    { name: "커뮤니티", href: "/community", icon: Users },
     { name: "포트폴리오", href: "/portfolio", icon: Shield },
     { name: "MY 관심종목", href: "/watchlist", icon: Star },
     { name: "설정 (API 연결)", href: "/settings", icon: Settings },
@@ -296,13 +296,16 @@ export default function Sidebar() {
                                     <Link
                                         key={stock.symbol}
                                         href="/watchlist"
-                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group"
+                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
-                                            <div className="w-1 h-1 rounded-full bg-yellow-400 opacity-50 group-hover:opacity-100" />
+                                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400/20 group-hover:fill-yellow-400 transition-all" />
                                             <span className="truncate">{stock.name}</span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.symbol}</span>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-[9px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.symbol}</span>
+                                            <TrendingUp className="w-3 h-3 text-rose-500/50 group-hover:text-rose-500" />
+                                        </div>
                                     </Link>
                                 ))}
                                 <Link 

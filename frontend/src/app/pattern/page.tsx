@@ -21,8 +21,9 @@ import AdRewardModal from "@/components/AdRewardModal";
 
 export default function PatternPage() {
     const [searchInput, setSearchInput] = useState("");
-    const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [updating, setUpdating] = useState(false);
     const [chartType, setChartType] = useState<"line" | "candle">("line");
     const [linePeriod, setLinePeriod] = useState<string>("1y");
     const [candleInterval, setCandleInterval] = useState<"1d" | "1wk" | "1mo">("1d");
@@ -97,9 +98,12 @@ export default function PatternPage() {
             return;
         }
 
-        setLoading(true);
-        if (typeof targetSymbol === 'string' || !targetParams) {
-             setResult(null);
+        const isNewSearch = typeof targetSymbol === 'string' || !targetParams;
+        if (isNewSearch) {
+            setLoading(true);
+            setResult(null);
+        } else {
+            setUpdating(true);
         }
 
         if (!isPro && (typeof targetSymbol === 'string' || !targetParams)) {
@@ -125,6 +129,7 @@ export default function PatternPage() {
             alert("서버 연결 오류");
         } finally {
             setLoading(false);
+            setUpdating(false);
         }
     };
 
@@ -315,9 +320,32 @@ export default function PatternPage() {
         theme: { mode: 'dark' },
         plotOptions: { bar: { columnWidth: '80%', colors: { ranges: [{ from: 0, to: 9999999999999, color: '#60a5fa30' }] } } },
         dataLabels: { enabled: false },
-        xaxis: { type: 'datetime', axisBorder: { show: false }, axisTicks: { show: false }, labels: { show: false } },
-        yaxis: { labels: { formatter: (val: number) => val >= 1000000 ? (val / 1000000).toFixed(1) + 'M' : val >= 1000 ? (val / 1000).toFixed(1) + 'K' : val.toString() } },
-        grid: { show: false }
+        xaxis: { 
+            type: 'datetime', 
+            axisBorder: { show: false }, 
+            axisTicks: { show: false }, 
+            labels: { 
+                show: true,
+                style: { colors: '#6b7280', fontSize: '10px' },
+                datetimeFormatter: {
+                    year: 'yyyy년',
+                    month: 'M월',
+                    day: 'd일',
+                    hour: 'HH:mm'
+                }
+            }
+        },
+        yaxis: { 
+            labels: { 
+                style: { colors: '#6b7280', fontSize: '10px' },
+                formatter: (val: number) => {
+                    if (val >= 100000000) return (val / 100000000).toFixed(1) + '억';
+                    if (val >= 10000) return (val / 10000).toLocaleString() + '만';
+                    return val.toLocaleString();
+                }
+            } 
+        },
+        grid: { show: true, borderColor: '#ffffff05', strokeDashArray: 2 }
     };
 
     const formatDate = (dateStr: string) => {
@@ -380,7 +408,7 @@ export default function PatternPage() {
                 {loading && (
                     <div className="flex flex-col items-center justify-center py-32 text-emerald-500 space-y-6">
                         <Loader2 className="w-16 h-16 animate-spin text-emerald-400" />
-                        <h3 className="text-2xl font-bold text-white animate-pulse">AI 분석 중...</h3>
+                        <h3 className="text-2xl font-bold text-white animate-pulse">AI 분석 엔진 가동 중...</h3>
                     </div>
                 )}
 
@@ -449,7 +477,7 @@ export default function PatternPage() {
                                     <button onClick={() => setChartType('candle')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'candle' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>봉차트</button>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2">
+                                 <div className="flex flex-wrap items-center gap-2">
                                     {chartType === 'line' ? (
                                         [
                                             { label: '1일', value: '1d' },
@@ -464,6 +492,9 @@ export default function PatternPage() {
                                         ))
                                     ) : (
                                         [
+                                            { label: '5분봉', value: '5m' },
+                                            { label: '30분봉', value: '30m' },
+                                            { label: '1시간봉', value: '60m' },
                                             { label: '일봉', value: '1d' },
                                             { label: '주봉', value: '1wk' },
                                             { label: '월봉', value: '1mo' }
@@ -489,7 +520,15 @@ export default function PatternPage() {
                                 )}
                             </div>
 
-                            <div className="space-y-4">
+                             <div className="space-y-4 relative">
+                                {updating && (
+                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-50 rounded-2xl flex items-center justify-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+                                            <span className="text-xs font-bold text-white">동기화 중...</span>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="bg-white/5 rounded-2xl p-2 border border-white/5 min-h-[400px]">
                                     {isMounted && <Chart options={chartOptions} series={chartSeries} type={chartType === 'line' ? 'area' : 'candlestick'} height={400} />}
                                 </div>

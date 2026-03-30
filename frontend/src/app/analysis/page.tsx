@@ -22,6 +22,7 @@ function AnalysisContent() {
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
     const [quantLoading, setQuantLoading] = useState(false);
+    const [isTurbo, setIsTurbo] = useState(false);
 
     // Financial Analysis State
     const [financialData, setFinancialData] = useState<any>(null);
@@ -46,10 +47,14 @@ function AnalysisContent() {
     const fetchQuant = async (sym: string) => {
         if (!sym) return;
         setQuantLoading(true);
+        setIsTurbo(false);
         try {
             const res = await fetch(`${API_BASE_URL}/api/quant/${sym}`);
             const json = await res.json();
-            if (json.status === "success") setQuantData(json.data);
+            if (json.status === "success") {
+                setQuantData(json.data);
+                if (json.turbo) setIsTurbo(true);
+            }
         } catch (err) { console.error(err); }
         finally { setQuantLoading(false); }
     };
@@ -164,7 +169,7 @@ function AnalysisContent() {
                             onClick={() => setActiveTab("quant")}
                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "quant" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-gray-400 hover:text-white"}`}
                         >
-                            <Zap className="w-4 h-4" /> 퀀트 스코어
+                            <Zap className={`w-4 h-4 ${activeTab === "quant" ? "animate-pulse" : ""}`} /> TurboQuant
                         </button>
                         <button
                             onClick={() => setActiveTab("financial")}
@@ -231,18 +236,28 @@ function AnalysisContent() {
                                             <HelpCircle className="w-5 h-5 text-indigo-400" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-indigo-400 mb-1">퀀트 스코어 가이드 활성화됨</h4>
+                                            <h4 className="text-sm font-bold text-indigo-400 mb-1">TurboQuant 가이드 활성화됨</h4>
                                             <p className="text-xs text-gray-300 leading-relaxed">
-                                                어렵게 느껴지는 5가지 분석 요소를 일상적인 건강 지표로 비유해 드릴게요. 종목의 종합적인 체질을 확인해 보세요!
+                                                TurboEngine의 고성능 퀀트 분석 비유를 확인해 보세요. 종목의 종합적인 체질을 확인해 보세요!
                                             </p>
                                         </div>
                                     </div>
                                 )}
                                 {/* Grade Card */}
-                                <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl p-6">
+                                <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl p-6 relative overflow-hidden">
+                                    {isTurbo && (
+                                        <div className="absolute top-0 right-0 p-2">
+                                            <div className="bg-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-bl-xl flex items-center gap-1 animate-pulse">
+                                                <Zap className="w-3 h-3 fill-current" /> TURBO ACTIVE
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-center justify-between mb-6">
                                         <div>
-                                            <h2 className="text-2xl font-black">{quantData.name}</h2>
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-2xl font-black">{quantData.name}</h2>
+                                                {isTurbo && <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">Turbo</span>}
+                                            </div>
                                             <p className="text-gray-400 text-sm">{quantData.symbol}</p>
                                         </div>
                                         <div className="flex items-center gap-4">

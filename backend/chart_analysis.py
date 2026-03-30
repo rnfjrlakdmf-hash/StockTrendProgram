@@ -33,9 +33,9 @@ class ChartAnalyzer:
             avg_return_str = f"{result['avg_return']}%"
             
             if "추세" in main_pattern:
-                comment = f"현재 '{main_pattern}'입니다. 과거 5년간 유사한 패턴에서 {result['rise_prob']}% 확률로 다음날 평균 {avg_return_str} 변동했습니다."
+                comment = f"회사의 과거 5년 통계를 분석한 결과, '{main_pattern}' 상황일 때 다음날 평균적으로 {avg_return_str} 수준의 오르내림을 보였습니다. (상향 확률 {result['rise_prob']}%)"
             else:
-                comment = f"지난 5년간 '{main_pattern}' 발생 {result['count']}회 중 {result['rise_prob']}% 확률로 상승 (평균 {avg_return_str}) 했습니다."
+                comment = f"과거 5년간 '{main_pattern}'이 발생했던 {result['count']}번의 사례를 분석한 결과, 다음날 평균 {avg_return_str}의 변동이 있었으며 상향했던 비중은 {result['rise_prob']}%였습니다."
 
             return {
                 "weather": result['weather'],
@@ -167,24 +167,24 @@ def generate_beginner_insight(df):
     status = "normal"
     
     if ma5 > ma20 > ma60 > ma120:
-        insight = "현재 주가가 **'중장기 상승 추세(정배열)'**를 유지하고 있습니다. 단기부터 장기 이동평균선이 안정적으로 정렬된 기술적 정배열 국면입니다. "
+        insight = "현재 주가가 **'에너지가 가득 찬 고속도로(정배열)'**를 달리고 있습니다. 자동차들이 순서대로 잘 달리고 있는 것처럼, 주가도 안정적으로 힘을 내고 있는 데이터가 보입니다. "
         status = "positive"
     elif ma5 < ma20 < ma60 < ma120:
-        insight = "현재 주가가 **'강한 하락 추세(역배열)'** 구간에 머물러 있습니다. 주요 이평선들이 저항선으로 작용하고 있어 기술적인 반등 확인이 필요한 단계입니다. "
+        insight = "현재 주가가 **'내리막길(역배열)'** 구간에 들어서 있습니다. 중력이 아래로 작용하는 것처럼, 주가가 위로 올라가려 할 때마다 누르는 힘이 통계적으로 강한 구간입니다. "
         status = "negative"
     else:
-        insight = "현재 주가가 **'박스권 횡보 구간'**에 위치해 있습니다. 이동평균선들이 밀집하며 에너지를 응축하고 있는 기술적 수렴 상태입니다. "
+        insight = "현재 주가가 **'안개 낀 평지(횡보)'**에 위치해 있습니다. 어디로 갈지 고민하며 힘을 모으고 있는 상태로, 이 안개가 어디로 걷히는지 지켜봐야 할 데이터 구간입니다. "
     
     if current_price > ma20:
-        insight += "주가가 20일선(단기 지지선) 위에 있어 기술적 매수세가 우위에 있는 모습입니다. "
+        insight += "오늘 주가가 최근 한 달 평균 가격보다 높게 유지되고 있어, 사고 싶어 하는 사람들의 기운이 더 강한 모습입니다. "
     else:
-        insight += "주가가 20일선(단기 저항선) 아래에 있어 관망세가 짙은 상태입니다. "
+        insight += "오늘 주가가 최근 한 달 평균 가격보다 조금 아래에 머물러 있어, 팔고 싶어 하는 심리가 더 많이 반영된 것으로 보입니다. "
         
     avg_vol = df['Volume'].tail(20).mean()
     if last_row['Volume'] > avg_vol * 1.5:
-        insight += "금일 거래량이 최근 20일 평균 대비 **1.5배 이상 급증**하며 변동성이 확대되고 있습니다. "
+        insight += "오늘 주식 거래가 평상시보다 **1.5배 넘게 활발**했습니다. 시장의 관심이 집중되면서 가격 출렁임이 커질 수 있는 신호입니다. "
     
-    insight += "\n\n<small>* 본 분석은 기술적 지표에 기반한 AI의 데이터 요약 정보이며, 투자 권유나 수익을 보장하지 않습니다.</small>"
+    insight += "\n\n<small>* 본 분석은 과거의 수치적 데이터를 기계적으로 분석한 정보이며, 미래의 수익을 약속하거나 특정 종목의 매매를 권유하지 않습니다. 투자 결정은 본인의 판단하에 신중히 해주시기 바랍니다.</small>"
 
     return {
         "text": insight,
@@ -218,14 +218,18 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             elif interval == "1mo": period = "5y"
             else: period = "1y"
         
-        yf_period = period
-        if period == "1주일": yf_period = "5d"
-        elif period == "3개월": yf_period = "3mo"
-        elif period == "1년": yf_period = "1y"
-        elif period == "3년": yf_period = "3y"
-        elif period == "5년": yf_period = "5y"
-        elif period == "10년": yf_period = "10y"
-        elif period == "1일": yf_period = "1d"
+        # Adjust period for intraday intervals (yfinance limits)
+        if interval in ["5m", "30m", "60m"] and (not period or period == "1y"):
+            yf_period = "60d" # Max for most intraday intervals on yf
+        else:
+            yf_period = period
+            if period == "1주일": yf_period = "5d"
+            elif period == "3개월": yf_period = "3mo"
+            elif period == "1년": yf_period = "1y"
+            elif period == "3년": yf_period = "3y"
+            elif period == "5년": yf_period = "5y"
+            elif period == "10년": yf_period = "10y"
+            elif period == "1일": yf_period = "1d"
 
         df = yf.Ticker(yf_ticker).history(period=yf_period, interval=interval)
         

@@ -7,11 +7,13 @@ from typing import Dict, Any, List
 try:
     from korea_data import gather_naver_stock_data, search_stock_code
     from dart_financials import get_dart_financials
+    from turbo_engine import turbo_engine
 except ImportError:
     # If called from specific context or standalone
     gather_naver_stock_data = None
     search_stock_code = None
     get_dart_financials = None
+    turbo_engine = None
 
 def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
     """
@@ -119,14 +121,23 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
         ret_3m = 0
         if not hist.empty and len(hist) > 20:
             try:
+                # [Turbo Engine] Use high-performance momentum scoring (NumPy based)
+                if turbo_engine:
+                    momentum_score = turbo_engine.calculate_momentum_score(hist['Close'])
+                else:
+                    price_now = float(hist['Close'].iloc[-1])
+                    price_3m = float(hist['Close'].iloc[max(0, len(hist) - 63)])
+                    ret_3m = ((price_now - price_3m) / price_3m) * 100 if price_3m > 0 else 0
+                    if ret_3m > 20: momentum_score = 90
+                    elif ret_3m > 10: momentum_score = 75
+                    elif ret_3m > 0: momentum_score = 55
+                    elif ret_3m > -10: momentum_score = 35
+                    else: momentum_score = 15
+                
+                # Still calculate ret_3m for display metrics
                 price_now = float(hist['Close'].iloc[-1])
                 price_3m = float(hist['Close'].iloc[max(0, len(hist) - 63)])
                 ret_3m = ((price_now - price_3m) / price_3m) * 100 if price_3m > 0 else 0
-                if ret_3m > 20: momentum_score = 90
-                elif ret_3m > 10: momentum_score = 75
-                elif ret_3m > 0: momentum_score = 55
-                elif ret_3m > -10: momentum_score = 35
-                else: momentum_score = 15
             except: pass
 
         # 4. Quality (수익성)

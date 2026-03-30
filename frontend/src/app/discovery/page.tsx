@@ -53,12 +53,14 @@ import { getTickerFromKorean } from "@/lib/stockMapping";
 
 interface StockData {
     name: string;
+    description?: string;
     symbol: string;
     price: string;
     price_krw?: string;
     change: string;
     currency: string;
     sector: string;
+    market_type?: string;
     summary: string;
     score: number;
     metrics: {
@@ -276,6 +278,31 @@ function DiscoveryContent() {
     const [dividendData, setDividendData] = useState<any>(null);
     const [healthData, setHealthData] = useState<any>(null);
     const [dividendLoading, setDividendLoading] = useState(false);
+
+    // [New] News Period State
+    const [newsPeriod, setNewsPeriod] = useState('1d');
+    const [periodNews, setPeriodNews] = useState<any[]>([]);
+    const [newsLoading, setNewsLoading] = useState(false);
+
+    // [New] Effect to fetch period-based news
+    useEffect(() => {
+        const fetchPeriodNews = async () => {
+            if (!stock?.symbol) return;
+            setNewsLoading(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/stock/` + encodeURIComponent(stock.symbol) + `/news?period=` + newsPeriod);
+                const json = await res.json();
+                if (json.status === "success") {
+                    setPeriodNews(json.data);
+                }
+            } catch (err) {
+                console.error("News fetch error:", err);
+            } finally {
+                setNewsLoading(false);
+            }
+        };
+        if (activeTab === 'news') fetchPeriodNews();
+    }, [newsPeriod, stock?.symbol, activeTab]);
 
     // [WebSocket Integration] Real-time Price Updates
     // Replaces the old 5-second polling interval
@@ -638,7 +665,17 @@ function DiscoveryContent() {
                                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-0">
                                         <div>
                                             <h3 className="text-2xl md:text-3xl font-bold flex flex-wrap items-center gap-2 md:gap-3 text-white">
-                                                {stock.name} <span className="text-base md:text-lg text-gray-400 font-medium whitespace-nowrap">{stock.symbol}</span>
+                                                {stock.name} 
+                                                {stock.market_type && (
+                                                    <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-md border font-black uppercase tracking-wider ${
+                                                        stock.market_type.includes('KOSPI') ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 
+                                                        stock.market_type.includes('KOSDAQ') ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 
+                                                        'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                                                    }`}>
+                                                        {stock.market_type}
+                                                    </span>
+                                                )}
+                                                <span className="text-base md:text-lg text-gray-400 font-medium whitespace-nowrap">{stock.symbol}</span>
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
                                                 <span className="text-3xl md:text-4xl font-bold text-white">
@@ -669,7 +706,9 @@ function DiscoveryContent() {
                                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                                                             </span>
                                                         )}
-                                                        {stock.details.market_status === 'After-Market' ? '야간거래(NXT)' : stock.details.market_status}
+                                                        {stock.details.market_status === 'After-Market' ? '야간거래(NXT)' : 
+                                                         stock.details.market_status === 'Unknown' ? '데이터 준비중' : 
+                                                         stock.details.market_status}
                                                     </span>
                                                 )}
                                             </div>
@@ -960,6 +999,18 @@ function DiscoveryContent() {
 
                                             {/* AI Opinion */}
                                             {/* AI Opinion */}
+                                            {/* [New] Corporate Overview Section */}
+                                            {stock.description && (
+                                                <div className="mb-8 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 p-5 md:p-6 shadow-lg">
+                                                    <h4 className="text-sm font-black text-indigo-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
+                                                        🏢 기업 개요 (Company Profile)
+                                                    </h4>
+                                                    <div className="text-gray-300 text-sm md:text-base leading-relaxed font-medium">
+                                                        {stock.description}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <h4 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-white">
                                                 <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-blue-400" /> 종합 분석 리포트
                                             </h4>
@@ -1019,18 +1070,48 @@ function DiscoveryContent() {
                                         </>
                                     ) : activeTab === 'news' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <h4 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
-                                                <TrendingUp className="h-6 w-6 text-yellow-400" /> 관련 뉴스/공시
-                                            </h4>
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                                <h4 className="text-xl font-bold flex items-center gap-2 text-white">
+                                                    <TrendingUp className="h-6 w-6 text-yellow-400" /> 관련 뉴스/공시
+                                                </h4>
+                                                
+                                                {/* [New] Period Filter Bar */}
+                                                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-end">
+                                                    {[
+                                                        { id: '1d', label: '당일' },
+                                                        { id: '3m', label: '3개월' },
+                                                        { id: '6m', label: '6개월' },
+                                                        { id: '1y', label: '1년' }
+                                                    ].map((p) => (
+                                                        <button
+                                                            key={p.id}
+                                                            onClick={() => setNewsPeriod(p.id)}
+                                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                                newsPeriod === p.id 
+                                                                ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20' 
+                                                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                                            }`}
+                                                        >
+                                                            {p.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-3">
-                                                {stock.news && stock.news.length > 0 ? (
-                                                    stock.news.map((n, idx) => (
+                                                {newsLoading ? (
+                                                    <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                                        <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
+                                                        <p className="text-gray-400 text-sm">실시간 뉴스를 집계하고 있습니다...</p>
+                                                    </div>
+                                                ) : (periodNews.length > 0 || (stock.news && stock.news.length > 0)) ? (
+                                                    (periodNews.length > 0 ? periodNews : stock.news).map((n, idx) => (
                                                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer" onClick={() => window.open(n.link, '_blank')}>
-                                                            <div>
-                                                                <h5 className="font-bold text-white mb-1 group-hover:text-blue-400 text-lg leading-snug">{n.title}</h5>
-                                                                <div className="flex items-center gap-2 text-sm text-gray-400">
-                                                                    <span className="bg-white/10 px-2 py-0.5 rounded text-xs text-gray-300">{n.publisher}</span>
-                                                                    <span>{n.published}</span>
+                                                            <div className="w-full">
+                                                                <h5 className="font-bold text-white mb-2 group-hover:text-yellow-400 text-lg leading-snug break-all">{n.title}</h5>
+                                                                <div className="flex items-center gap-3 text-sm text-gray-400">
+                                                                    <span className="bg-yellow-400/10 px-2 py-0.5 rounded text-xs text-yellow-400 font-bold border border-yellow-400/20">{n.publisher}</span>
+                                                                    <span className="font-mono text-xs">{toKoreanDate(n.published)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1061,7 +1142,7 @@ function DiscoveryContent() {
                                                         {stock.daily_prices && stock.daily_prices.length > 0 ? (
                                                             stock.daily_prices.map((day, idx) => (
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                                    <td className="py-3 px-2 text-gray-300 font-mono text-sm">{day.date}</td>
+                                                                    <td className="py-3 px-2 text-gray-300 font-mono text-sm">{toKoreanDate(day.date)}</td>
                                                                     <td className="py-3 px-2 font-mono font-bold">
                                                                         {stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}
                                                                     </td>
@@ -1172,13 +1253,28 @@ interface ScoreHistory {
     news: number;
 }
 
+/** [Helper] 날짜를 한국 표기법으로 변환 (YYYY년 MM월 DD일) */
+const toKoreanDate = (val: any) => {
+    if (!val) return "-";
+    const d = new Date(val);
+    if (isNaN(d.getTime())) {
+        // 이미 YYYY.MM.DD 형식인 경우 처리
+        if (typeof val === 'string' && val.includes('.')) {
+            const parts = val.split('.');
+            if (parts.length >= 3) return `${parts[0]}년 ${parseInt(parts[1])}월 ${parseInt(parts[2])}일`;
+        }
+        return val;
+    }
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+};
+
 function ScoreHistoryChart({ symbol }: { symbol: string }) {
     const [history, setHistory] = useState<ScoreHistory[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchHistory = async () => {
-            setLoading(true);
+            setHistory(true as any); // Loading state
             try {
                 const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/history`);
                 const json = await res.json();
@@ -1215,7 +1311,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                             <XAxis
                                 dataKey="date"
                                 tick={{ fontSize: 10, fill: '#aaaaaa' }}
-                                tickFormatter={(val) => new Date(val).toLocaleDateString()}
+                                tickFormatter={(val) => toKoreanDate(val)}
                             />
                             <YAxis domain={[0, 100]} />
                             <Tooltip
@@ -1224,7 +1320,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                                     const data = props.payload[0].payload;
                                     return (
                                         <div className="bg-gray-800 border border-gray-600 rounded-xl p-3 shadow-lg">
-                                            <p className="text-xs text-gray-400 mb-2">{new Date(data.date).toLocaleDateString('ko-KR')}</p>
+                                            <p className="text-xs text-gray-400 mb-2">{toKoreanDate(data.date)}</p>
                                             <div className="space-y-1">
                                                 <div className="flex justify-between gap-4">
                                                     <span className="text-purple-400 font-bold">종합 점수:</span>
@@ -1239,12 +1335,6 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                                                     <span className="text-white text-xs font-mono">{(data.news || 0).toFixed(1)}</span>
                                                 </div>
                                             </div>
-                                            {data.reason && (
-                                                <div className="mt-3 pt-2 border-t border-gray-600">
-                                                    <p className="text-xs text-blue-300 font-semibold mb-1">📊 변동 이유:</p>
-                                                    <p className="text-xs text-gray-300">{data.reason}</p>
-                                                </div>
-                                            )}
                                         </div>
                                     );
                                 }}

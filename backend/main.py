@@ -90,6 +90,7 @@ def health_check():
 from fastapi import Request
 from rank_data import get_etf_ranking
 from etf_detail import get_etf_detail
+from turbo_engine import turbo_engine
 from pro_analysis import get_peer_comparison
 
 @app.get("/api/rank/etf")
@@ -104,8 +105,24 @@ def peer_data(symbol: str):
 
 @app.get("/api/etf-detail/{symbol}")
 def etf_detail(symbol: str):
-    """엔드포인트: 주어진 심볼을 기반으로 ETF의 순자산총액, 총보수, 편입종목 Top 10 등을 조회합니다."""
-    return get_etf_detail(symbol)
+    """엔드포인트: 주어진 심볼을 기반으로 ETF의 순자산총액, 총보수, 편입종목 Top 10 등을 조회합니다. (Turbo Cache 적용)"""
+    cache_key = f"etf_detail_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return cached
+        
+    result = get_etf_detail(symbol)
+    if result.get("status") == "success":
+        turbo_engine.set_cache(cache_key, result)
+        
+    return result
+
+@app.get("/api/turbo/scan")
+def turbo_market_scan(symbols: str = "069500,114800,122630,229200,SPY,QQQ"):
+    """[Turbo Engine] 다수 ETF를 동시에 스캔하여 최적의 종목을 추천 (Beta)"""
+    # For now, this is a placeholder for the parallel scanner logic
+    sym_list = symbols.split(",")
+    return {"status": "success", "scanning": sym_list, "mode": "turbo_active"}
 
 @app.get("/api/rank/themes")
 def read_theme_rank():
@@ -122,9 +139,16 @@ from stock_data import (
 
 @app.get("/api/assets")
 def read_assets():
-    """모든 글로벌 자산 데이터 반환"""
+    """모든 글로벌 자산 데이터 반환 (Turbo Cache 적용)"""
+    cache_key = "global_assets_all"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+        
     data = get_all_market_assets()
-    return {"status": "success", "data": data}
+    if data:
+        turbo_engine.set_cache(cache_key, data)
+    return {"status": "success", "data": data, "turbo": false}
 
 @app.get("/api/market/risk-alerts")
 def read_risk_alerts():
@@ -434,11 +458,229 @@ def read_system_status():
         }
     }
 
+import html
+import re
+from datetime import datetime, timedelta
+
+# ============================================================
+# [🛡️ Compliance & Safety] 유사투자자문업 방지 AI 필터링 엔진
+# ============================================================
+class CommunityGuardian:
+    """유사투자자문업 위반 뉘앙스를 감지하여 자동 차단하는 엔진"""
+    
+    # 1. 즉시 차단 키워드 (단어만 들어가도 차단)
+    FORBIDDEN_KEYWORDS = [
+        "매수하세요", "필승", "수익보장", "무조건상승", "원금회복", 
+        "리딩방", "카톡방문의", "1:1상담", "고급정보", "세력주확정",
+        "급등예정", "확신합니다", "책임집니다", "꼭사야할", "비밀공개"
+    ]
+    
+    # 2. 문맥/뉘앙스 차단 패턴 (Regex)
+    FORBIDDEN_PATTERNS = [
+        r"\d+%?\s*이익\s*보장", # 00% 이익 보장
+        r"무조건\s*\d+배",       # 무조건 0배
+        r"손실\s*보전",          # 손실 보전
+        r"텔레그램\s*아이디",    # 외부 채널 유도
+        r"전화번호\s*\d{3}",     # 연락처 노출
+        r"(내일|모레)\s*(상한가|폭등)" # 내일 상한가 확신 등
+    ]
+
+    @classmethod
+    def is_safe(cls, text: str) -> (bool, str):
+        """텍스트의 안전 여부 판단 (True = 안전, False = 위험)"""
+        # 검사 전 전처리
+        clean_text = html.unescape(text).replace(" ", "")
+        
+        # 1. 블랙리스트 키워드 검사
+        for keyword in cls.FORBIDDEN_KEYWORDS:
+            if keyword in clean_text:
+                return False, f"부적절한 키워드 감지: {keyword}"
+        
+        # 2. 패턴 검사 (뉘앙스)
+        for pattern in cls.FORBIDDEN_PATTERNS:
+            if re.search(pattern, text):
+                return False, "유사투자자문 위험 뉘앙스 감지 (수익보장/리딩유도 등)"
+        
+        return True, "Safe"
+
+# ============================================================
+# [Community Data Store] 
+# 실무에서는 DB를 사용하지만, 빠른 구현을 위해 메모리 & 파일 기반 시스템 구축
+# ============================================================
+COMMUNITY_CHATS = [
+    {
+        "id": 1, "user_name": "AI 수사관", "symbol": "global",
+        "text": "환영합니다! 이곳은 투명하고 안전한 투자 정보 공유를 위한 라운지입니다.",
+        "timestamp": (datetime.now() - timedelta(hours=1)).isoformat()
+    },
+    {
+        "id": 2, "user_name": "StockBot", "symbol": "global",
+        "text": "오늘 코스피 변동성이 크네요. 다들 지표 확인 잘 하시고 성투하세요!",
+        "timestamp": (datetime.now() - timedelta(minutes=45)).isoformat()
+    }
+] 
+
+STRATEGY_MARKET = [
+    {
+        "id": 1, "user_name": "퀀트마스터", "title": "F-Score 8점 이상 저평가주",
+        "description": "재무 건전성이 매우 우수하면서 PER이 업종 평균보다 낮은 종목들을 추출하는 퀀트 전략입니다.",
+        "filters": {"f_score": 8, "per": {"max": 15}},
+        "likes": 12, "usage_count": 85, "timestamp": datetime.now().isoformat()
+    },
+    {
+        "id": 2, "user_name": "배당고수", "title": "고배당 + 안전 마진 필터",
+        "description": "배당 수익률 4% 이상이면서 부채비율이 100% 미만인 안정적인 배당주를 찾습니다.",
+        "filters": {"dividend_yield": {"min": 4.0}, "debt_ratio": {"max": 100}},
+        "likes": 24, "usage_count": 142, "timestamp": datetime.now().isoformat()
+    }
+]
+
+@app.get("/api/community/lounge")
+def get_lounge_chats(symbol: str = "global"):
+    """라운지 채팅 목록 조회 (필터링된 안전한 글만)"""
+    # 최근 50개만 반환
+    relevant = [c for c in COMMUNITY_CHATS if c.get('symbol') == symbol or c.get('symbol') == "global"]
+    return {"status": "success", "data": relevant[-50:]}
+
+@app.post("/api/community/lounge")
+def post_lounge_chat(data: dict):
+    """채팅 게시 (AI 세이프티 필터 적용)"""
+    user_name = data.get("user_name", "익명")
+    text = data.get("text", "").strip()
+    symbol = data.get("symbol", "global")
+    
+    if not text:
+        return {"status": "error", "message": "내용을 입력해주세요."}
+    
+    # 🛡️ 델리게이트 필터링
+    is_safe, reason = CommunityGuardian.is_safe(text)
+    if not is_safe:
+        print(f"[Guardian] Blocked: {text} | Reason: {reason}")
+        return {"status": "blocked", "message": "🚨 규정 위반 감지: 투자 권유, 수익 보장, 리딩 유도 등의 표현은 금지되어 자동 삭제되었습니다."}
+    
+    new_chat = {
+        "id": len(COMMUNITY_CHATS) + 1,
+        "user_name": user_name,
+        "text": text,
+        "symbol": symbol,
+        "timestamp": datetime.now().isoformat()
+    }
+    COMMUNITY_CHATS.append(new_chat)
+    return {"status": "success", "data": new_chat}
+
+@app.get("/api/community/strategies")
+def get_strategies():
+    """발굴 필터 공유 시장 조회"""
+    return {"status": "success", "data": STRATEGY_MARKET}
+
+@app.post("/api/community/strategies")
+def post_strategy(data: dict):
+    """발굴 필터 등록 (필터링 적용)"""
+    title = data.get("title", "")
+    desc = data.get("description", "")
+    
+    # 제목과 설명 모두 필터링
+    for content in [title, desc]:
+        is_safe, reason = CommunityGuardian.is_safe(content)
+        if not is_safe:
+            return {"status": "blocked", "message": "🚨 부적절한 설명 포함: '무조건', '수익확정' 등 과장된 수식어는 사용할 수 없습니다."}
+            
+    new_strat = {
+        "id": len(STRATEGY_MARKET) + 1,
+        "user_name": data.get("user_name", "익명"),
+        "title": title,
+        "description": desc,
+        "filters": data.get("filters", {}),
+        "likes": 0,
+        "usage_count": 0,
+        "timestamp": datetime.now().isoformat()
+    }
+    STRATEGY_MARKET.append(new_strat)
+    return {"status": "success", "data": new_strat}
+
+# ------------------------------------------------------------
+# [AI Sentiment] 라운지 여론 요약 분석
+# ------------------------------------------------------------
+@app.get("/api/community/sentiment/{symbol}")
+def get_lounge_sentiment(symbol: str):
+    """AI가 해당 종목 토론방의 분위기를 객관적인 수치로 요약"""
+    chats = [c['text'] for c in COMMUNITY_CHATS if c.get('symbol') == symbol]
+    if not chats:
+        return {"status": "success", "data": {"score": 50, "summary": "아직 토론 데이터가 부족합니다."}}
+    
+    # 키워드 기반 단순 분석 (추후 LLM 연동 가능)
+    positive_words = ["상승", "좋네요", "호재", "수급", "기대", "추가매수", "실적"]
+    negative_words = ["하락", "어렵네", "심각", "불안", "탈출", "악재", "매도"]
+    
+    pos_count = sum(1 for c in chats for w in positive_words if w in c)
+    neg_count = sum(1 for c in chats for w in negative_words if w in c)
+    
+    total = pos_count + neg_count
+    if total == 0:
+        score = 50
+    else:
+        score = (pos_count / total) * 100
+        
+    summary = f"현재 {len(chats)}개의 의견 중 긍정 응답이 {score:.1f}%를 차지하고 있습니다. (순수 의견 통계)"
+    
+    return {"status": "success", "data": {"score": score, "summary": summary}}
+
+@app.get("/api/market/indices")
+def read_global_market_indices():
+    """
+    [FLIP TICKER] 국내 및 글로벌 주요 지수(KOSPI, KOSDAQ, S&P500, NASDAQ, 환율) 통합 반환
+    """
+    results = []
+    
+    # 1. 국내 지수 (Scraped from Naver)
+    kr_indices = get_korean_market_indices()
+    if kr_indices:
+        results.append({"name": "KOSPI", "value": kr_indices["kospi"]["value"], "change": kr_indices["kospi"]["change"], "percent": kr_indices["kospi"]["percent"], "direction": kr_indices["kospi"]["direction"]})
+        results.append({"name": "KOSDAQ", "value": kr_indices["kosdaq"]["value"], "change": kr_indices["kosdaq"]["change"], "percent": kr_indices["kosdaq"]["percent"], "direction": kr_indices["kosdaq"]["direction"]})
+        
+    # 2. 글로벌 지수 (YFinance - optimized background check)
+    global_symbols = {
+        "S&P 500": "^GSPC",
+        "NASDAQ": "^IXIC",
+        "USD/KRW": "KRW=X"
+    }
+    
+    import yfinance as yf
+    for name, sym in global_symbols.items():
+        try:
+            ticker = yf.Ticker(sym)
+            info = ticker.fast_info
+            curr = info.last_price
+            prev = info.previous_close
+            diff = curr - prev
+            pct = (diff / prev * 100) if prev else 0
+            
+            direction = "Up" if diff > 0 else "Down" if diff < 0 else "Equal"
+            
+            results.append({
+                "name": name,
+                "value": f"{curr:,.2f}" if "KRW" not in name else f"{curr:,.1f}",
+                "change": f"{diff:+,.2f}" if "KRW" not in name else f"{diff:+,.1f}",
+                "percent": f"{pct:+.2f}%",
+                "direction": direction
+            })
+        except:
+            continue
+            
+    return {"status": "success", "data": results}
+
 @app.get("/api/korea/indices")
 def read_korea_indices():
-    """국내 지수 (KOSPI, KOSDAQ, KOSPI200)"""
+    """국내 지수 (KOSPI, KOSDAQ, KOSPI200) (Turbo Cache 적용)"""
+    cache_key = "korea_market_indices"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+        
     data = get_korean_market_indices()
-    return {"status": "success", "data": data}
+    if data:
+        turbo_engine.set_cache(cache_key, data)
+    return {"status": "success", "data": data, "turbo": False}
 
 @app.get("/api/korea/sectors")
 def read_korea_sectors():
@@ -524,6 +766,13 @@ def read_stock(symbol: str, skip_ai: bool = False):
     import urllib.parse
     # URL 인코딩 해제 (한글 종목명 처리)
     symbol = urllib.parse.unquote(symbol).strip()
+    
+    # [Turbo Cache] Only cache if AI analysis is included
+    cache_key = f"stock_full_{symbol}_{skip_ai}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+
     data = get_stock_info(symbol)
 
     if data:
@@ -546,15 +795,33 @@ def read_stock(symbol: str, skip_ai: bool = False):
                 # AI 분석 실패해도 기본 데이터는 반환
 
         # 분석 결과 DB 저장 (히스토리용)
-        # AI 분석을 안 했으면(skip_ai=True) 저장을 할지 말지 결정해야 하는데, 
-        # 일단은 읽기 전용이므로 저장 안 하거나, 점수 없이 저장될 수 있음. 
-        # 여기서는 skip_ai=False일 때만 저장하는 게 맞아 보이나, 기존 로직 유지.
         if not skip_ai:
             save_analysis_result(data)
         
-        return {"status": "success", "data": data}
+        turbo_engine.set_cache(cache_key, data)
+        return {"status": "success", "data": data, "turbo": False}
     else:
         return {"status": "error", "message": f"Stock not found or error fetching data for '{symbol}'"}
+
+@app.get("/api/stock/{symbol}/news")
+def read_stock_news(symbol: str, period: str = "1d"):
+    """기간별 종목 뉴스/공시 수집"""
+    symbol = urllib.parse.unquote(symbol)
+    
+    # period -> days 변환
+    days_map = {
+        "1d": 1,
+        "1w": 7,
+        "1m": 30,
+        "3m": 90,
+        "6m": 180,
+        "1y": 365,
+        "all": 3650
+    }
+    days = days_map.get(period, 1)
+    
+    news = get_integrated_stock_news(symbol=symbol, days=days)
+    return {"status": "success", "data": news or []}
 
 @app.get("/api/stock/search")
 def search_stock_api(q: str):
@@ -570,11 +837,18 @@ def search_stock_api(q: str):
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):
-    """AI 분석 없이 시세만 빠르게 조회"""
+    """AI 분석 없이 시세만 빠르게 조회 (Turbo Cache 적용)"""
     symbol = urllib.parse.unquote(symbol)
+    
+    cache_key = f"quote_simple_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+        
     data = get_simple_quote(symbol)
     if data:
-        return {"status": "success", "data": data}
+        turbo_engine.set_cache(cache_key, data)
+        return {"status": "success", "data": data, "turbo": False}
     else:
         # 실패 시 에러보다는 빈 데이터 반환하여 UI가 죽지 않게
         return {"status": "error", "message": "Failed to fetch quote"}
@@ -2312,21 +2586,35 @@ def get_calendar_events():
 
 @app.get("/api/quant/{symbol}")
 def read_quant_scorecard(symbol: str):
-    """퀀트 스코어카드 (5축 팩터 분석)"""
+    """[TurboQuant] 퀀트 스코어카드 (5축 팩터 분석 + Turbo Cache)"""
+    cache_key = f"quant_score_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+
     try:
         from pro_analysis import get_quant_scorecard
         data = get_quant_scorecard(symbol)
-        return {"status": "success", "data": data}
+        if data.get("total_score", 0) > 0:
+            turbo_engine.set_cache(cache_key, data)
+        return {"status": "success", "data": data, "turbo": False}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/financial-health/{symbol}")
 def read_financial_health(symbol: str):
-    """재무 건전성 스캐너 (Z-Score + F-Score)"""
+    """[TurboQuant] 재무 건전성 스캐너 (Z-Score + F-Score + Turbo Cache)"""
+    cache_key = f"financial_health_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+
     try:
         from pro_analysis import get_financial_health
         data = get_financial_health(symbol)
-        return {"status": "success", "data": data}
+        if data.get("health_score", 0) > 0:
+            turbo_engine.set_cache(cache_key, data)
+        return {"status": "success", "data": data, "turbo": False}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

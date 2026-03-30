@@ -26,7 +26,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<boolean>(false);
     const [tabView, setTabView] = useState<'chart' | 'table'>('chart');
-    const [period, setPeriod] = useState<number>(1);
+    const [period, setPeriod] = useState<number>(20);
 
     const fetchData = async () => {
         if (!symbol) return;
@@ -108,6 +108,8 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     <Calendar className="w-4 h-4 text-indigo-400" />
                     <span className="text-sm font-bold text-gray-300 mr-2">누적 기간</span>
                     <div className="flex items-center gap-1.5">
+                        <PeriodButton val={1} label="당일 (실시간)" />
+                        <PeriodButton val={5} label="5일" />
                         <PeriodButton val={20} label="1개월" />
                         <PeriodButton val={60} label="3개월" />
                         <PeriodButton val={120} label="6개월" />

@@ -131,10 +131,20 @@ def gather_naver_stock_data(symbol: str):
         if market_img:
             alt = market_img.get('alt', '')
             if '코스닥' in alt:
-                market_type = 'KQ'
+                market_type = 'KOSDAQ'
             elif '코스피' in alt:
-                market_type = 'KS'
+                market_type = 'KOSPI'
                 
+        # [New] Company Description (Summary) - Mobile API integration
+        description = ""
+        try:
+            m_sum_url = f"https://m.stock.naver.com/api/stock/{code}/overview"
+            m_sum_res = requests.get(m_sum_url, headers=HEADER, timeout=3)
+            m_sum_json = m_sum_res.json()
+            description = m_sum_json.get('description', '')
+        except:
+            pass
+
         # Price
         no_today = soup.select_one("p.no_today span.blind")
         if not no_today:
@@ -505,6 +515,7 @@ def gather_naver_stock_data(symbol: str):
         # [Result Builder]
         res = {
             "name": name,
+            "description": description,
             "market_type": market_type,
             "code": code,
             "sector": sector_name, # Added Sector
@@ -706,17 +717,12 @@ def get_naver_disclosures(symbol: str):
         
         for row in rows:
             cols = row.select("td")
-            if len(cols) < 3:
-                continue
-                
-            title_tag = row.select_one("td.title a")
-            if not title_tag:
-                 continue
+            if len(cols) < 3: continue
             
-            title = title_tag.text.strip()
-            link = "https://finance.naver.com" + title_tag['href']
-            info = row.select_one("td.info").text.strip()
-            date = row.select_one("td.date").text.strip()
+            title = cols[0].text.strip()
+            link = "https://finance.naver.com" + cols[0].select_one("a")['href']
+            info = cols[1].text.strip()
+            date = cols[2].text.strip()
             
             disclosures.append({
                 "title": title,
@@ -733,9 +739,10 @@ def get_naver_disclosures(symbol: str):
         print(f"Disclosure Error: {e}")
         return []
 
-def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = ""):
+def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "", days: int = 1):
     """
-    통합 뉴스 수집 엔진 (Tier 1: Naver API -> Tier 2: Google RSS)
+    통합 뉴스 수집 엔진 (Tier 0: Naver Finance (Scraping) -> Tier 1: Naver API -> Tier 2: Google RSS)
+    days: 0 (전체/1년), 90 (3개월), 180 (6개월), 365 (1년)
     """
     import os
     import re
@@ -743,11 +750,12 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "")
     import urllib.request
     import urllib.parse
     import xml.etree.ElementTree as ET
-    from datetime import datetime
+    from datetime import datetime, timedelta
     import requests
     import html
 
     news_list = []
+    limit_date = datetime.now() - timedelta(days=days if days > 0 else 365)
     
     code = ""
     if symbol:
@@ -757,110 +765,104 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "")
     search_name = name
     if not search_name and len(code) == 6:
         search_name = code
-        
-    search_query = f'"{search_name}"' if search_name and not search_name.isdigit() else (query or search_name or code)
-    fallback_query = search_name if (search_name and not search_name.isdigit()) else (query or code)
+
+    # [Tier 0] Naver Finance (Best for Specific Stocks over time)
+    if code:
+        try:
+            print(f"[NEWS DEBUG] Scraping Naver Finance News for {code} (Period: {days} days)")
+            for page in range(1, 10): # Fetch up to 10 pages for historical periods
+                url = f"https://finance.naver.com/item/news_list.naver?code={code}&page={page}"
+                res = requests.get(url, headers=HEADER, timeout=5)
+                soup = BeautifulSoup(decode_safe(res), 'html.parser')
+                
+                rows = soup.select("table.type5 tbody tr")
+                if not rows: break
+                
+                page_all_older = True
+                for row in rows:
+                    cols = row.select("td")
+                    if len(cols) < 3: continue
+                    
+                    title_tag = row.select_one("td.title a")
+                    if not title_tag: continue
+                    
+                    title = title_tag.text.strip()
+                    link = "https://finance.naver.com" + title_tag['href']
+                    info = row.select_one("td.info").text.strip()
+                    date_str = row.select_one("td.date").text.strip()
+                    
+                    try:
+                        news_date = datetime.strptime(date_str, "%Y.%m.%d %H:%M")
+                        if news_date < limit_date: continue
+                        page_all_older = False
+                    except:
+                        pass
+                        
+                    news_list.append({
+                        "title": title,
+                        "link": link,
+                        "publisher": info,
+                        "published": date_str.split()[0].replace('.', '-') # YYYY-MM-DD
+                    })
+                    
+                    if len(news_list) >= 30:
+                        break
+                        
+                if page_all_older or len(news_list) >= 30:
+                    break
+                    
+            if news_list:
+                return news_list
+        except Exception as e:
+            print(f"[NEWS] Tier 0 Scraping Error: {e}")
 
     # [Tier 1] Naver News API
+    search_query = f'"{search_name}"' if search_name and not search_name.isdigit() else (query or search_name or code)
+    fallback_query = search_name if (search_name and not search_name.isdigit()) else (query or code)
+    
     load_dotenv()
     client_id = os.getenv('NAVER_CLIENT_ID')
     client_secret = os.getenv('NAVER_CLIENT_SECRET')
 
     if client_id and client_secret:
         try:
-            print(f"[NEWS DEBUG] Searching Naver News API for: {search_query}")
             url = "https://openapi.naver.com/v1/search/news.json"
-            headers = {
-                "X-Naver-Client-Id": client_id,
-                "X-Naver-Client-Secret": client_secret
-            }
-            params = {
-                "query": search_query,
-                "display": 20,
-                "sort": "date"
-            }
-            
+            headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
+            params = {"query": search_query, "display": 50, "sort": "date"}
             response = requests.get(url, headers=headers, params=params, timeout=5)
-            
             if response.status_code == 200:
-                data = response.json()
-                items = data.get('items', [])
-                
+                items = response.json().get('items', [])
                 for item in items:
-                    if len(news_list) >= 8:
-                        break
-                        
-                    title = html.unescape(re.sub('<.*?>', '', item.get('title', '')))
-                    description = html.unescape(re.sub('<.*?>', '', item.get('description', '')))
-                    
-                    if search_name and not search_name.isdigit() and (search_name not in title and search_name not in description):
-                        continue
-                        
-                    spam_keywords = ["분양", "아파트", "오피스텔", "상가", "청약", "주택", "부동산", "지식산업센터", "역세권"]
-                    is_spam = any(spam in title or spam in description for spam in spam_keywords)
-                    if is_spam: continue
-
+                    if len(news_list) >= 20: break
                     news_list.append({
-                        "title": title,
-                        "description": description,
+                        "title": html.unescape(re.sub('<.*?>', '', item.get('title', ''))),
+                        "description": html.unescape(re.sub('<.*?>', '', item.get('description', ''))),
                         "link": item.get('originallink', item.get('link', '')),
                         "publisher": "네이버 뉴스",
-                        "published": item.get('pubDate', '')[:10]
+                        "published": item.get('pubDate', '')[:16]
                     })
-                
-                if news_list:
-                    print(f"[NEWS DEBUG] Found {len(news_list)} news items from API")
-                    return news_list
-            else:
-                print(f"[NEWS] API Error: {response.status_code}")
-        except Exception as e:
-            print(f"[NEWS] API Exception: {e}")
+                if news_list: return news_list
+        except: pass
 
-    # [Tier 2] Google News RSS Fallback
+    # [Tier 2] Google RSS
     try:
-        if not fallback_query:
-            return []
-            
-        print(f"[NEWS DEBUG] Using Google RSS Fallback for: {fallback_query}")
-        
+        if not fallback_query: return []
         encoded_query = urllib.parse.quote(fallback_query)
         url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
-        
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        response = urllib.request.urlopen(req, timeout=5)
-        xml_data = response.read()
-        root = ET.fromstring(xml_data)
-        
-        channel = root.find('channel')
-        items = channel.findall('item')
-        
-        for item in items[:8]:
-            title = item.find('title').text if item.find('title') is not None else ""
-            link = item.find('link').text if item.find('link') is not None else ""
-            pub_date_node = item.find('pubDate')
-            pub_date = pub_date_node.text if pub_date_node is not None else ""
-            source_node = item.find('source')
-            publisher = source_node.text if source_node is not None else "Google News"
-            
-            date_str = pub_date
-            try:
-                dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
-                date_str = dt.strftime("%Y-%m-%d")
-            except:
-                pass
-                
-            news_list.append({
-                "title": title,
-                "link": link,
-                "publisher": publisher,
-                "published": date_str
-            })
-            
-        print(f"[FALLBACK DEBUG] Gathered {len(news_list)} news from Google RSS for {fallback_query}")
+        with urllib.request.urlopen(req, timeout=5) as response:
+            root = ET.fromstring(response.read())
+            items = root.find('channel').findall('item')
+            for item in items[:20]:
+                news_list.append({
+                    "title": item.find('title').text if item.find('title') is not None else "",
+                    "link": item.find('link').text if item.find('link') is not None else "",
+                    "publisher": "Google News",
+                    "published": item.find('pubDate').text[:16] if item.find('pubDate') is not None else ""
+                })
         return news_list
-    except Exception as e:
-        print(f"Fallback News RSS Error: {e}")
-        return []
+    except:
+        return news_list
 
 def get_naver_stock_info(symbol: str):
     """ Legacy Wrapper for basic stock info """
