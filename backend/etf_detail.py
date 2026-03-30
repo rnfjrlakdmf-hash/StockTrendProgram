@@ -157,12 +157,12 @@ def get_etf_detail(symbol: str):
             data["market_data"]["high52w"] = f"{info.get('fiftyTwoWeekHigh', 0):,.2f}"
             data["market_data"]["low52w"] = f"{info.get('fiftyTwoWeekLow', 0):,.2f}"
             
-            hist = ticker.history(period="2y")
+            hist = ticker.history(period="1y")
             hist['ma5'] = hist['Close'].rolling(window=5).mean()
             hist['ma20'] = hist['Close'].rolling(window=20).mean()
             hist['ma60'] = hist['Close'].rolling(window=60).mean()
             hist['ma120'] = hist['Close'].rolling(window=120).mean()
-            hist = hist.tail(252)
+            hist = hist.tail(252) # Keep max 252 days for chart
             
             data["chart_data"] = [
                 {
@@ -187,7 +187,7 @@ def get_etf_detail(symbol: str):
         
         # 1. Fetch yfinance chart data for KR ETF (OHLCV)
         try:
-            hist = yf.Ticker(f"{symbol}.KS").history(period="2y")
+            hist = yf.Ticker(f"{symbol}.KS").history(period="1y")
             hist['ma5'] = hist['Close'].rolling(window=5).mean()
             hist['ma20'] = hist['Close'].rolling(window=20).mean()
             hist['ma60'] = hist['Close'].rolling(window=60).mean()
@@ -286,46 +286,52 @@ def get_etf_detail(symbol: str):
                      data["performance"][key] = val
                     
         # 3. Extra Fallback & Detailed Scraping for KR (AUM, Launch Date, Holdings)
-        # Try to find Launch Date from finance.naver.com table if missing
-        web_url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-        web_resp = requests.get(web_url, headers=headers)
-        if web_resp.status_code == 200:
-            web_resp.encoding = 'euc-kr'
-            soup = BeautifulSoup(web_resp.text, "html.parser")
-            
-            # Scrape Basic Info Table for missing fields
-            if data["basic_info"]["launch_date"] == "알 수 없음" or data["basic_info"]["index"] == "알 수 없음":
-                tab = soup.find("div", {"id": "tab_con1"})
-                if tab:
-                    rows = tab.find_all("tr")
-                    for row in rows:
-                        th = row.find("th")
-                        td = row.find("td")
-                        if th and td:
-                            lbl = th.get_text().strip()
-                            val = td.get_text().strip()
-                            if "상장일" in lbl and data["basic_info"]["launch_date"] == "알 수 없음":
-                                data["basic_info"]["launch_date"] = val.replace(".", "-")
-                            elif "기초지수" in lbl and data["basic_info"]["index"] == "알 수 없음":
-                                data["basic_info"]["index"] = val
+        # Skip heavy scraping if we have holdings already (rare but for safety)
+        if not data["holdings"]:
+            web_url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+            web_resp = requests.get(web_url, headers=headers, timeout=7)
+            if web_resp.status_code == 200:
+                web_resp.encoding = 'euc-kr'
+                soup = BeautifulSoup(web_resp.text, "html.parser")
+                
+                # Scrape Basic Info Table for missing fields
+                if data["basic_info"]["launch_date"] == "알 수 없음" or data["basic_info"]["index"] == "알 수 없음":
+                    tab = soup.find("div", {"id": "tab_con1"})
+                    if tab:
+                        rows = tab.find_all("tr")
+                        for row in rows:
+                            th = row.find("th")
+                            td = row.find("td")
+                            if th and td:
+                                lbl = th.get_text().strip()
+                                val = td.get_text().strip()
+                                if "상장일" in lbl and data["basic_info"]["launch_date"] == "알 수 없음":
+                                    data["basic_info"]["launch_date"] = val.replace(".", "-")
+                                elif "기초지수" in lbl and data["basic_info"]["index"] == "알 수 없음":
+                                    data["basic_info"]["index"] = val
 
-            # Scrape Holdings (CU)
-            tables = soup.find_all("table")
-            for t in tables:
-                try:
-                    df = pd.read_html(io.StringIO(str(t)))[0]
-                    if len(df.columns) >= 3:
-                        records = df.values.tolist()
-                        for row in records:
-                            name = str(row[0]).strip()
-                            weight = str(row[2]).strip()
-                            if name and name not in ['nan', '종목(자산)', '종목명'] and '%' in weight:
-                                name_clean = " ".join(name.split())
-                                data["holdings"].append({"name": name_clean, "weight": weight})
-                                if len(data["holdings"]) >= 10: break
-                        if len(data["holdings"]) > 0: break
-                except:
-                    pass
+                # Scrape Holdings (CU) - Find specific section div for speed
+                cu_div = soup.find("div", {"class": "section cu_info"})
+                if not cu_div: # fallback to larger container
+                    cu_div = soup.find("div", {"class": "section etf_analysis"})
+                
+                if cu_div:
+                    tables = cu_div.find_all("table")
+                    for t in tables:
+                        try:
+                            df = pd.read_html(io.StringIO(str(t)))[0]
+                            if len(df.columns) >= 3:
+                                records = df.values.tolist()
+                                for row in records:
+                                    name = str(row[0]).strip()
+                                    weight = str(row[2]).strip()
+                                    if name and name not in ['nan', '종목(자산)', '종목명'] and '%' in weight:
+                                        name_clean = " ".join(name.split())
+                                        data["holdings"].append({"name": name_clean, "weight": weight})
+                                        if len(data["holdings"]) >= 10: break
+                                if len(data["holdings"]) > 0: break
+                        except:
+                            pass
 
         # 4. Final AUM fallback using etfItemList
         
