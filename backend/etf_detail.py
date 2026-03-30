@@ -269,7 +269,14 @@ def get_etf_detail(symbol: str):
                     elif c == "accumulatedTradingVolume": data["market_data"]["volume"] = v
         except: pass
 
-        # 3. AMC Mapping
+        # 3. AMC Mapping and Hardcoded Fallbacks (Listing Dates)
+        hardcoded_dates = {
+            "069500": "2002-10-14", "114800": "2009-09-16", "122630": "2010-07-21",
+            "229200": "2015-10-07", "233740": "2015-12-17", "252670": "2016-09-22"
+        }
+        if clean_sym in hardcoded_dates and data["basic_info"]["launch_date"] == "알 수 없음":
+            data["basic_info"]["launch_date"] = hardcoded_dates[clean_sym]
+
         for key, val in AMC_MAP.items():
             if key in data["name"].upper():
                 data["basic_info"]["amc"] = val
@@ -277,25 +284,30 @@ def get_etf_detail(symbol: str):
 
         # 4. Ultimate Fallback Scraping (Listing Date, Index, Holdings)
         try:
-            # Only scrape if critical info is missing
             if data["basic_info"]["launch_date"] == "알 수 없음" or not data["holdings"]:
                 web_url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
                 web_resp = requests.get(web_url, headers=headers, timeout=5)
                 if web_resp.status_code == 200:
                     web_resp.encoding = 'euc-kr'
-                    soup = BeautifulSoup(web_resp.text, "html.parser")
+                    soup_text = web_resp.text
+                    soup = BeautifulSoup(soup_text, "html.parser")
                     
-                    # 4.1 Search for Listing Date and Index in the whole soup
+                    # 4.1 Search for Launch Date via Regex in soup
+                    if data["basic_info"]["launch_date"] == "알 수 없음":
+                        import re
+                        dates = re.findall(r"20\d{2}[.-]\d{2}[.-]\d{2}", soup_text)
+                        if dates:
+                            # Usually the 1st or 2nd date in the info section is the listing date
+                            data["basic_info"]["launch_date"] = dates[0].replace(".", "-")
+
+                    # 4.2 Search for Index
                     for th in soup.find_all("th"):
                         txt = th.get_text().strip()
-                        td = th.find_next_sibling("td")
-                        if td:
-                            if "상장일" in txt and data["basic_info"]["launch_date"] == "알 수 없음":
-                                data["basic_info"]["launch_date"] = td.get_text().strip().replace(".", "-")
-                            elif "기초지수" in txt and data["basic_info"]["index"] == "알 수 없음":
-                                data["basic_info"]["index"] = td.get_text().strip()
+                        if "기초지수" in txt and data["basic_info"]["index"] == "알 수 없음":
+                            td = th.find_next_sibling("td")
+                            if td: data["basic_info"]["index"] = td.get_text().strip()
 
-                    # 4.2 Holdings
+                    # 4.3 Holdings
                     if not data["holdings"]:
                         cu_div = soup.find("div", {"class": "section cu_info"}) or soup.find("div", {"class": "section etf_analysis"})
                         if cu_div:
