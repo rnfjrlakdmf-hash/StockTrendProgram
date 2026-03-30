@@ -1,9 +1,10 @@
 import time
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable
 import pandas as pd
 import numpy as np
 import logging
+from functools import wraps
 
 # 터보 엔진 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +27,8 @@ class TurboEngine:
         if key in self._cache:
             entry = self._cache[key]
             # 시간 만료 여부 확인
-            if time.time() - entry['timestamp'] < self.cache_ttl:
+            ttl = entry.get('ttl', self.cache_ttl)
+            if time.time() - entry['timestamp'] < ttl:
                 logger.info(f"⚡ [Cache Hit] {key} - Turbo mode activated (0ms)")
                 return entry['data']
             else:
@@ -34,11 +36,12 @@ class TurboEngine:
                 del self._cache[key] # 만료된 캐시 삭제
         return None
 
-    def set_cache(self, key: str, data: Any):
+    def set_cache(self, key: str, data: Any, ttl: int = None):
         """데이터를 메모리에 저장하여 다음 요청 시 즉시 반환"""
         self._cache[key] = {
             'data': data,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'ttl': ttl if ttl is not None else self.cache_ttl
         }
         logger.info(f"💾 [Cache Set] {key} - Optimized for speed")
 
@@ -54,7 +57,13 @@ class TurboEngine:
         """
         tasks = [fetch_func(symbol) for symbol in symbols]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        return [res for res in results if not isinstance(res, Exception)]
+        valid_results = []
+        for res, symbol in zip(results, symbols):
+            if isinstance(res, Exception):
+                logger.error(f"❌ [Turbo Scan Error] Failed for {symbol}: {res}")
+            elif res:
+                valid_results.append(res)
+        return valid_results
 
     def calculate_momentum_score(self, price_series: pd.Series):
         """
@@ -76,3 +85,48 @@ class TurboEngine:
 
 # 전역 엔진 인스턴스 (앱 전체에서 공유)
 turbo_engine = TurboEngine()
+
+def turbo_cache(ttl_seconds: int = 300):
+    """
+    터보 엔진 기반 캐싱 데코레이터.
+    함수의 인자를 기반으로 키를 생성하여, 중복 호출 시 0ms 응답을 달성합니다.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            key_parts = [func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
+            cache_key = ":".join(key_parts)
+            
+            cached_data = turbo_engine.get_cache(cache_key)
+            if cached_data is not None:
+                return cached_data
+                
+            result = await func(*args, **kwargs)
+            if result is not None:
+                turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+            return result
+
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            key_parts = [func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
+            cache_key = ":".join(key_parts)
+            
+            cached_data = turbo_engine.get_cache(cache_key)
+            if cached_data is not None:
+                return cached_data
+                
+            result = func(*args, **kwargs)
+            # 상태 코드가 있는 dict 구조일 경우, 성공(success)이 아니면 캐시하지 않음
+            if isinstance(result, dict) and result.get("status") == "error":
+                return result
+
+            if result is not None:
+                turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+            return result
+
+        if asyncio.iscoroutinefunction(func):
+            return async_wrapper
+        else:
+            return sync_wrapper
+
+    return decorator

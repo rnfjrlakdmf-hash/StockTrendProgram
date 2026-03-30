@@ -90,16 +90,18 @@ def health_check():
 from fastapi import Request
 from rank_data import get_etf_ranking
 from etf_detail import get_etf_detail
-from turbo_engine import turbo_engine
+from turbo_engine import turbo_engine, turbo_cache
 from pro_analysis import get_peer_comparison
 
 @app.get("/api/rank/etf")
+@turbo_cache(ttl_seconds=300)
 def read_etf_rank(market: str = "KR", category: Optional[str] = None):
     """실시간 ETF 통계 데이터 반환 (참고용)"""
     data = get_etf_ranking(market, category)
     return {"status": "success", "data": data}
 
 @app.get("/api/peer/{symbol}")
+@turbo_cache(ttl_seconds=3600)
 def peer_data(symbol: str):
     return get_peer_comparison(symbol)
 
@@ -118,6 +120,7 @@ def etf_detail(symbol: str):
     return result
 
 @app.get("/api/turbo/scan")
+@turbo_cache(ttl_seconds=60)
 def turbo_market_scan(symbols: str = "069500,114800,122630,229200,SPY,QQQ"):
     """[Turbo Engine] 다수 ETF를 동시에 스캔하여 최적의 종목을 추천 (Beta)"""
     # For now, this is a placeholder for the parallel scanner logic
@@ -125,6 +128,7 @@ def turbo_market_scan(symbols: str = "069500,114800,122630,229200,SPY,QQQ"):
     return {"status": "success", "scanning": sym_list, "mode": "turbo_active"}
 
 @app.get("/api/rank/themes")
+@turbo_cache(ttl_seconds=300)
 def read_theme_rank():
     """실시간 인기 테마 키워드 목록 반환"""
     from korea_data import get_naver_theme_rank
@@ -151,30 +155,35 @@ def read_assets():
     return {"status": "success", "data": data, "turbo": false}
 
 @app.get("/api/market/risk-alerts")
+@turbo_cache(ttl_seconds=300)
 def read_risk_alerts():
     """최근 공시 리스크 탐지 결과 반환 (유상증자 등)"""
     data = get_dart_risk_alerts()
     return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/financials")
+@turbo_cache(ttl_seconds=3600)
 def read_stock_financials(symbol: str):
     """특정 종목의 최근 3개년 재무 하이라이트 반환"""
     data = get_company_financials(symbol)
     return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/dividends")
+@turbo_cache(ttl_seconds=3600)
 def read_stock_dividends(symbol: str):
     """특정 종목의 최근 5개년 연간 배당 히스토리 반환"""
     data = get_dividend_history(symbol)
     return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/health")
+@turbo_cache(ttl_seconds=3600)
 def read_stock_health(symbol: str):
     """특정 종목의 재무 건전성 지표 추이 반환 (부채비율, 유동비율, ROE)"""
     data = get_financial_health(symbol)
     return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/investor")
+@turbo_cache(ttl_seconds=60)
 def read_stock_investor(symbol: str, period: int = 1):
     """
     [NEW] 특정 종목의 투자자별 매매동향 및 상위 거래원 정보 반환.
@@ -602,6 +611,7 @@ def post_strategy(data: dict):
 # [AI Sentiment] 라운지 여론 요약 분석
 # ------------------------------------------------------------
 @app.get("/api/community/sentiment/{symbol}")
+@turbo_cache(ttl_seconds=60)
 def get_lounge_sentiment(symbol: str):
     """AI가 해당 종목 토론방의 분위기를 객관적인 수치로 요약"""
     chats = [c['text'] for c in COMMUNITY_CHATS if c.get('symbol') == symbol]
@@ -626,6 +636,7 @@ def get_lounge_sentiment(symbol: str):
     return {"status": "success", "data": {"score": score, "summary": summary}}
 
 @app.get("/api/market/indices")
+@turbo_cache(ttl_seconds=60)
 def read_global_market_indices():
     """
     [FLIP TICKER] 국내 및 글로벌 주요 지수(KOSPI, KOSDAQ, S&P500, NASDAQ, 환율) 통합 반환
@@ -683,12 +694,14 @@ def read_korea_indices():
     return {"status": "success", "data": data, "turbo": False}
 
 @app.get("/api/korea/sectors")
+@turbo_cache(ttl_seconds=300)
 def read_korea_sectors():
     """국내 업종 상위 (간단 데이터)"""
     data = get_top_sectors()
     return {"status": "success", "data": data}
 
 @app.get("/api/korea/sector_heatmap")
+@turbo_cache(ttl_seconds=300)
 async def read_korea_sector_heatmap():
     """업종 히트맵 실시간 상세 데이터"""
     from korea_data import get_sector_heatmap_data
@@ -697,6 +710,7 @@ async def read_korea_sector_heatmap():
 
 
 @app.get("/api/korea/heatmap")
+@turbo_cache(ttl_seconds=300)
 async def read_korea_heatmap():
     """테마 히트맵 데이터"""
     from korea_data import get_theme_heatmap_data
@@ -704,6 +718,7 @@ async def read_korea_heatmap():
     return {"status": "success", "data": data}
 
 @app.get("/api/korea/investors")
+@turbo_cache(ttl_seconds=60)
 def read_korea_investors():
     """국내 증시 투자자 동향 (지수 + 수급)"""
     # 1. Get Base Indices
@@ -728,6 +743,7 @@ def read_korea_investors():
     }
 
 @app.get("/api/korea/chart/{symbol}")
+@turbo_cache(ttl_seconds=60)
 def read_korea_chart(symbol: str):
     """지수 차트 데이터"""
     data = get_index_chart_data(symbol)
@@ -735,6 +751,7 @@ def read_korea_chart(symbol: str):
 
 
 @app.get("/api/stock/{symbol}/investors/live")
+@turbo_cache(ttl_seconds=60)
 def read_live_investors(symbol: str):
     """장중 잠정 투자자 동향 (라이브)"""
     symbol = urllib.parse.unquote(symbol)
@@ -746,6 +763,7 @@ def read_live_investors(symbol: str):
 
 
 @app.get("/api/stock/{symbol}/investors/history")
+@turbo_cache(ttl_seconds=3600)
 def read_history_investors(symbol: str):
     """최근 투자자별 순매수 동향 (일별, 20일치)"""
     symbol = urllib.parse.unquote(symbol)
@@ -1407,6 +1425,7 @@ from korea_data import (
 from rank_data import get_realtime_top10
 
 @app.get("/api/rank/top10/{market}")
+@turbo_cache(ttl_seconds=60)
 def read_rank_top10(market: str):
     """실시간 시총 상위 10 (KR/US)"""
     market = market.upper()
@@ -1416,6 +1435,7 @@ def read_rank_top10(market: str):
 from rank_data import get_naver_ranking
 
 @app.get("/api/rank/naver/{market}/{rank_type}")
+@turbo_cache(ttl_seconds=60)
 def read_naver_ranking(market: str, rank_type: str):
     """네이버 금융 실시간 TOP종목 반환 (NXT/KRX)"""
     market = market.lower()

@@ -8,6 +8,7 @@ import urllib.parse
 import json
 from functools import lru_cache
 from typing import Dict, List, Optional
+from turbo_engine import turbo_cache
 
 # [Config]
 HEADER = {
@@ -56,6 +57,7 @@ def get_korean_name(symbol: str):
 
 get_korean_stock_name = get_korean_name  # Alias
 
+@turbo_cache(ttl_seconds=3600)
 def search_stock_code(keyword: str):
     """
     Search stock by name/code and return code (6 digits)
@@ -90,6 +92,7 @@ def search_stock_code(keyword: str):
         
 search_korean_stock_symbol = search_stock_code # Alias
 
+@turbo_cache(ttl_seconds=30)
 def gather_naver_stock_data(symbol: str):
     """
     Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials) in ONE request.
@@ -554,6 +557,7 @@ def gather_naver_stock_data(symbol: str):
         print(f"Naver Info Error: {e}")
         return None
 
+@turbo_cache(ttl_seconds=3600)
 def get_naver_daily_prices(symbol: str):
     """
     Get daily price history (10 days)
@@ -633,6 +637,7 @@ def get_naver_daily_prices(symbol: str):
         print(f"Naver History Error: {e}")
         return []
 
+@turbo_cache(ttl_seconds=300)
 def get_naver_theme_rank() -> List[str]:
     """
     네이버 금융에서 실시간 테마 순위(상위 10개)를 가져옵니다.
@@ -677,6 +682,7 @@ def get_naver_theme_rank() -> List[str]:
         print(f"Theme Rank Scraping Error: {e}")
         return ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]
 
+@turbo_cache(ttl_seconds=300)
 def get_naver_flash_news():
     """
     Main market news
@@ -703,6 +709,7 @@ def get_naver_flash_news():
 def get_naver_market_index_data():
     return []
 
+@turbo_cache(ttl_seconds=300)
 def get_naver_disclosures(symbol: str):
     try:
         code = symbol.split('.')[0]
@@ -739,6 +746,7 @@ def get_naver_disclosures(symbol: str):
         print(f"Disclosure Error: {e}")
         return []
 
+@turbo_cache(ttl_seconds=120)
 def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "", days: int = 1):
     """
     통합 뉴스 수집 엔진 (Tier 0: Naver Finance (Scraping) -> Tier 1: Naver API -> Tier 2: Google RSS)

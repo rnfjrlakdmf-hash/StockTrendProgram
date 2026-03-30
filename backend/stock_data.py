@@ -20,6 +20,7 @@ from korea_data import (
 )
 import korea_data
 from risk_analyzer import calculate_analysis_score
+from turbo_engine import turbo_cache
 
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
@@ -81,6 +82,7 @@ GLOBAL_KOREAN_NAMES = {
     "MA": "마스터카드",
 }
 
+@turbo_cache(ttl_seconds=3600)
 def search_yahoo_finance(keyword: str) -> str | None:
     """
     Search for a global stock ticker using Yahoo Finance API.
@@ -672,7 +674,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         print(f"Error fetching data for {symbol}: {e}")
         return None
 
-
+@turbo_cache(ttl_seconds=60)
 def get_simple_quote(symbol: str, broker_client=None, strict=False):
     """
     관심 종목 표시를 위해 가격과 등락률만 빠르게 조회합니다.
