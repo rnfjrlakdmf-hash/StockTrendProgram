@@ -186,15 +186,19 @@ def get_etf_detail(symbol: str):
             
     # KR ETF Logic
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
+        # Modern User-Agent
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://finance.naver.com/"
+        }
         clean_sym = symbol.split('.')[0]
         
-        # 1. Fetch yfinance chart data (Optional, non-blocking)
+        # 1. Chart Data (Optional/Non-blocking)
         try:
+            # Try KS then KQ
             hist = yf.Ticker(f"{clean_sym}.KS").history(period="1y")
-            if hist.empty: # Try KQ if KS is empty
-                 hist = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
-                 
+            if hist.empty: hist = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
+            
             if not hist.empty:
                 hist['ma5'] = hist['Close'].rolling(window=5).mean()
                 hist['ma20'] = hist['Close'].rolling(window=20).mean()
@@ -216,72 +220,64 @@ def get_etf_detail(symbol: str):
                         "ma120": safe_to_float(row['ma120']) if pd.notna(row['ma120']) else None
                     } for idx, row in hist.iterrows()
                 ]
-        except Exception as e:
-            print(f"Chart fetch error for {clean_sym}: {e}")
+        except: pass
 
-        # 2. Get Integration Info and Basic Info from Naver Mobile API
+        # 2. Naver Mobile API (Primary Data Source)
         try:
             api_url = f"https://m.stock.naver.com/api/stock/{clean_sym}/integration"
             basic_url = f"https://m.stock.naver.com/api/stock/{clean_sym}/basic"
             
             api_resp = requests.get(api_url, headers=headers, timeout=5)
-            basic_resp = requests.get(basic_url, headers=headers, timeout=5)
-            
             if api_resp.status_code == 200:
-                api_data = api_resp.json()
-                data["name"] = api_data.get("stockName", data["name"])
+                api_json = api_resp.json()
+                data["name"] = api_json.get("stockName", data["name"])
                 
-                # Use etfKeyIndicator
-                indicator = api_data.get("etfKeyIndicator", {})
-                if indicator:
-                    data["basic_info"]["ter"] = f"{safe_to_float(indicator.get('totalFee', 0)):.2f}%"
-                    data["basic_info"]["aum"] = indicator.get("marketValue", data["basic_info"]["aum"])
-                    data["basic_info"]["dividend_yield"] = f"{safe_to_float(indicator.get('dividendYieldTtm', 0)):.2f}%"
+                # Market Data (Price, Change) from basic API if possible
+                basic_resp = requests.get(basic_url, headers=headers, timeout=5)
+                if basic_resp.status_code == 200:
+                    bj = basic_resp.json()
+                    data["market_data"]["price"] = bj.get("closePrice", "0")
+                    data["market_data"]["change"] = bj.get("compareToPreviousClosePrice", "0")
+                    data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
+                
+                # Indicator Data (TER, AUM, NAV, Dividend, Performance)
+                ind = api_json.get("etfKeyIndicator", {})
+                if ind:
+                    data["basic_info"]["ter"] = f"{safe_to_float(ind.get('totalFee', 0)):.2f}%"
+                    data["basic_info"]["aum"] = ind.get("marketValue", data["basic_info"]["aum"])
+                    data["basic_info"]["dividend_yield"] = f"{safe_to_float(ind.get('dividendYieldTtm', 0)):.2f}%"
                     
-                    if indicator.get("nav"):
-                        nav_val = safe_to_float(indicator['nav'])
-                        data["market_data"]["nav"] = f"{nav_val:,.2f}" if nav_val else indicator['nav']
+                    if ind.get("nav"):
+                        nav_v = safe_to_float(ind['nav'])
+                        data["market_data"]["nav"] = f"{nav_v:,.2f}" if nav_v > 0 else ind['nav']
                     
-                    sign = indicator.get("deviationSign", "")
-                    rate = safe_to_float(indicator.get("deviationRate", 0))
+                    sign, rate = ind.get("deviationSign", ""), safe_to_float(ind.get("deviationRate", 0))
                     data["market_data"]["disparity"] = f"{sign}{rate:.2f}%"
                     
-                    perf_map = {"returnRate1m": "1개월", "returnRate3m": "3개월", "returnRate6m": "6개월", "returnRate1y": "1년"}
-                    for k, v in perf_map.items():
-                        val = indicator.get(k)
-                        if val is not None:
-                            f_val = safe_to_float(val)
-                            sign = "+" if f_val > 0 else ""
-                            data["performance"][v] = f"{sign}{f_val:.2f}%"
+                    for k, v in {"returnRate1m": "1개월", "returnRate3m": "3개월", "returnRate6m": "6개월", "returnRate1y": "1년"}.items():
+                        if k in ind:
+                            f_val = safe_to_float(ind[k])
+                            data["performance"][v] = f"{'+' if f_val > 0 else ''}{f_val:.2f}%"
 
-                # Parse totalInfos
-                for info in api_data.get("totalInfos", []):
-                    key, val, code = info.get("key", ""), info.get("value", ""), info.get("code", "")
-                    if code == "etfBaseIdx" or "기초지수" in key:
-                        data["basic_info"]["index"] = val
-                    elif code == "listingDate" or "상장일" in key:
-                        data["basic_info"]["launch_date"] = val.replace(".", "-")
-                    elif code == "highPriceOf52Weeks": data["market_data"]["high52w"] = val
-                    elif code == "lowPriceOf52Weeks": data["market_data"]["low52w"] = val
-                    elif code == "accumulatedTradingVolume": data["market_data"]["volume"] = val
-            
-            if basic_resp.status_code == 200:
-                basic_data = basic_resp.json()
-                data["market_data"]["price"] = basic_data.get("closePrice", data["market_data"]["price"])
-                data["market_data"]["change"] = basic_data.get("compareToPreviousClosePrice", data["market_data"]["change"])
-                data["market_data"]["change_percent"] = basic_data.get("fluctuationsRatio", data["market_data"]["change_percent"])
-        except Exception as e:
-            print(f"Naver API error for {clean_sym}: {e}")
+                # Additional Info (Index, Listing Date)
+                for info in api_json.get("totalInfos", []):
+                    k, v, c = info.get("key", ""), info.get("value", ""), info.get("code", "")
+                    if c == "etfBaseIdx" or "기초지수" in k: data["basic_info"]["index"] = v
+                    elif c == "listingDate" or "상장일" in k: data["basic_info"]["launch_date"] = v.replace(".", "-")
+                    elif c == "highPriceOf52Weeks": data["market_data"]["high52w"] = v
+                    elif c == "lowPriceOf52Weeks": data["market_data"]["low52w"] = v
+                    elif c == "accumulatedTradingVolume": data["market_data"]["volume"] = v
+        except: pass
 
-        # 3. Map AMC from name
-        first_word = data["name"].split(' ')[0].upper()
+        # 3. AMC Mapping
         for key, val in AMC_MAP.items():
-            if key in first_word:
+            if key in data["name"].upper():
                 data["basic_info"]["amc"] = val
                 break
-                
-        # 4. Extra Fallback & Detailed Scraping (AUM, Launch Date, Holdings)
+
+        # 4. Ultimate Fallback Scraping (Listing Date, Index, Holdings)
         try:
+            # Only scrape if critical info is missing
             if data["basic_info"]["launch_date"] == "알 수 없음" or not data["holdings"]:
                 web_url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
                 web_resp = requests.get(web_url, headers=headers, timeout=5)
@@ -289,16 +285,17 @@ def get_etf_detail(symbol: str):
                     web_resp.encoding = 'euc-kr'
                     soup = BeautifulSoup(web_resp.text, "html.parser")
                     
-                    if data["basic_info"]["launch_date"] == "알 수 없음":
-                        tab = soup.find("div", {"id": "tab_con1"})
-                        if tab:
-                            for tr in tab.find_all("tr"):
-                                th, td = tr.find("th"), tr.find("td")
-                                if th and td:
-                                    lbl, val = th.get_text().strip(), td.get_text().strip()
-                                    if "상장일" in lbl: data["basic_info"]["launch_date"] = val.replace(".", "-")
-                                    elif "기초지수" in lbl and data["basic_info"]["index"] == "알 수 없음": data["basic_info"]["index"] = val
+                    # 4.1 Search for Listing Date and Index in the whole soup
+                    for th in soup.find_all("th"):
+                        txt = th.get_text().strip()
+                        td = th.find_next_sibling("td")
+                        if td:
+                            if "상장일" in txt and data["basic_info"]["launch_date"] == "알 수 없음":
+                                data["basic_info"]["launch_date"] = td.get_text().strip().replace(".", "-")
+                            elif "기초지수" in txt and data["basic_info"]["index"] == "알 수 없음":
+                                data["basic_info"]["index"] = td.get_text().strip()
 
+                    # 4.2 Holdings
                     if not data["holdings"]:
                         cu_div = soup.find("div", {"class": "section cu_info"}) or soup.find("div", {"class": "section etf_analysis"})
                         if cu_div:
@@ -307,18 +304,17 @@ def get_etf_detail(symbol: str):
                                     df = pd.read_html(io.StringIO(str(t)))[0]
                                     if len(df.columns) >= 3:
                                         for row in df.values.tolist():
-                                            name, weight = str(row[0]).strip(), str(row[2]).strip()
-                                            if name and name not in ['nan', '종목(자산)', '종목명'] and '%' in weight:
-                                                data["holdings"].append({"name": " ".join(name.split()), "weight": weight})
+                                            n, w = str(row[0]).strip(), str(row[2]).strip()
+                                            if n and n not in ['nan', '종목명', '종목(자산)'] and '%' in w:
+                                                data["holdings"].append({"name": " ".join(n.split()), "weight": w})
                                                 if len(data["holdings"]) >= 10: break
                                         if data["holdings"]: break
                                 except: pass
-        except Exception as e:
-            print(f"Scraping error for {clean_sym}: {e}")
+        except: pass
 
         return {"status": "success", "data": data}
     except Exception as e:
-        return {"status": "error", "message": f"Global fetch error: {str(e)}"}
+        return {"status": "error", "message": f"Global error: {str(e)}"}
 
 if __name__ == "__main__":
     import json
