@@ -52,7 +52,9 @@ def get_etf_detail(symbol: str):
         "chart_data": []
     }
     
-    is_us = not symbol.isdigit()
+    # Normalize symbol for market detection (Internal use only)
+    clean_sym = symbol.split('.')[0]
+    is_us = not clean_sym.isdigit()
     
     if is_us:
         try:
@@ -182,161 +184,141 @@ def get_etf_detail(symbol: str):
         except Exception as e:
             return {"status": "error", "message": str(e)}
             
+    # KR ETF Logic
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
+        clean_sym = symbol.split('.')[0]
         
-        # 1. Fetch yfinance chart data for KR ETF (OHLCV)
+        # 1. Fetch yfinance chart data (Optional, non-blocking)
         try:
-            hist = yf.Ticker(f"{symbol}.KS").history(period="1y")
-            hist['ma5'] = hist['Close'].rolling(window=5).mean()
-            hist['ma20'] = hist['Close'].rolling(window=20).mean()
-            hist['ma60'] = hist['Close'].rolling(window=60).mean()
-            hist['ma120'] = hist['Close'].rolling(window=120).mean()
-            hist = hist.tail(252)
-            
-            data["chart_data"] = [
-                {
-                    "date": str(idx).split(' ')[0], 
-                    "open": float(row['Open']),
-                    "high": float(row['High']),
-                    "low": float(row['Low']),
-                    "close": float(row['Close']),
-                    "volume": int(row['Volume']),
-                    "ma5": float(row['ma5']) if pd.notna(row['ma5']) else None,
-                    "ma20": float(row['ma20']) if pd.notna(row['ma20']) else None,
-                    "ma60": float(row['ma60']) if pd.notna(row['ma60']) else None,
-                    "ma120": float(row['ma120']) if pd.notna(row['ma120']) else None
-                } for idx, row in hist.iterrows()
-            ]
-        except:
-            pass
+            hist = yf.Ticker(f"{clean_sym}.KS").history(period="1y")
+            if hist.empty: # Try KQ if KS is empty
+                 hist = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
+                 
+            if not hist.empty:
+                hist['ma5'] = hist['Close'].rolling(window=5).mean()
+                hist['ma20'] = hist['Close'].rolling(window=20).mean()
+                hist['ma60'] = hist['Close'].rolling(window=60).mean()
+                hist['ma120'] = hist['Close'].rolling(window=120).mean()
+                hist = hist.tail(252)
+                
+                data["chart_data"] = [
+                    {
+                        "date": str(idx).split(' ')[0], 
+                        "open": safe_to_float(row['Open']),
+                        "high": safe_to_float(row['High']),
+                        "low": safe_to_float(row['Low']),
+                        "close": safe_to_float(row['Close']),
+                        "volume": int(row['Volume']),
+                        "ma5": safe_to_float(row['ma5']) if pd.notna(row['ma5']) else None,
+                        "ma20": safe_to_float(row['ma20']) if pd.notna(row['ma20']) else None,
+                        "ma60": safe_to_float(row['ma60']) if pd.notna(row['ma60']) else None,
+                        "ma120": safe_to_float(row['ma120']) if pd.notna(row['ma120']) else None
+                    } for idx, row in hist.iterrows()
+                ]
+        except Exception as e:
+            print(f"Chart fetch error for {clean_sym}: {e}")
 
-        # 2. Get Integration Info and Basic Info (Price)
-        api_url = f"https://m.stock.naver.com/api/stock/{symbol}/integration"
-        basic_url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
-        
-        api_resp = requests.get(api_url, headers=headers)
-        basic_resp = requests.get(basic_url, headers=headers)
-        
-        if api_resp.status_code == 200 and basic_resp.status_code == 200:
-            api_data = api_resp.json()
-            basic_data = basic_resp.json()
+        # 2. Get Integration Info and Basic Info from Naver Mobile API
+        try:
+            api_url = f"https://m.stock.naver.com/api/stock/{clean_sym}/integration"
+            basic_url = f"https://m.stock.naver.com/api/stock/{clean_sym}/basic"
             
-            data["name"] = api_data.get("stockName", "알 수 없음")
+            api_resp = requests.get(api_url, headers=headers, timeout=5)
+            basic_resp = requests.get(basic_url, headers=headers, timeout=5)
             
-            # Set top-level market data from basic API
-            data["market_data"]["price"] = basic_data.get("closePrice", "0")
-            data["market_data"]["change"] = basic_data.get("compareToPreviousClosePrice", "0")
-            data["market_data"]["change_percent"] = basic_data.get("fluctuationsRatio", "0.00")
-            
-            # Map AMC from name
-            first_word = data["name"].split(' ')[0].upper()
-            for key, val in AMC_MAP.items():
-                if key in first_word:
-                    data["basic_info"]["amc"] = val
-                    break
-            
-            # Use etfKeyIndicator for better KR ETF data
-            indicator = api_data.get("etfKeyIndicator", {})
-            if indicator:
-                data["basic_info"]["ter"] = f"{safe_to_float(indicator.get('totalFee', 0)):.2f}%"
-                data["basic_info"]["aum"] = indicator.get("marketValue", "N/A")
-                data["basic_info"]["dividend_yield"] = f"{safe_to_float(indicator.get('dividendYieldTtm', 0)):.2f}%"
+            if api_resp.status_code == 200:
+                api_data = api_resp.json()
+                data["name"] = api_data.get("stockName", data["name"])
                 
-                # Market data from indicator
-                if indicator.get("nav"):
-                    nav_val = safe_to_float(indicator['nav'])
-                    data["market_data"]["nav"] = f"{nav_val:,.2f}" if nav_val else indicator['nav']
-                
-                sign = indicator.get("deviationSign", "")
-                rate = safe_to_float(indicator.get("deviationRate", 0))
-                data["market_data"]["disparity"] = f"{sign}{rate:.2f}%"
-                
-                # Performance from indicator
-                perf_map = {
-                    "returnRate1m": "1개월", "returnRate3m": "3개월",
-                    "returnRate6m": "6개월", "returnRate1y": "1년"
-                }
-                for k, v in perf_map.items():
-                    val = indicator.get(k)
-                    if val is not None:
-                        f_val = safe_to_float(val)
-                        sign = "+" if f_val > 0 else ""
-                        data["performance"][v] = f"{sign}{f_val:.2f}%"
-
-            # Parse totalInfos for remaining fields (Index, etc.)
-            for info in api_data.get("totalInfos", []):
-                key = info.get("key", "")
-                val = info.get("value", "")
-                code = info.get("code", "")
-                
-                if code == "etfBaseIdx" or "기초지수" in key:
-                    data["basic_info"]["index"] = val
-                elif code == "listingDate" or "상장일" in key:
-                    data["basic_info"]["launch_date"] = val.replace(".", "-")
-                elif code == "highPriceOf52Weeks":
-                    data["market_data"]["high52w"] = val
-                elif code == "lowPriceOf52Weeks":
-                    data["market_data"]["low52w"] = val
-                elif code == "accumulatedTradingVolume":
-                    data["market_data"]["volume"] = val
-                
-                # Performance fallback if not in indicator
-                if "수익률" in key and key not in data["performance"].values():
-                     data["performance"][key] = val
+                # Use etfKeyIndicator
+                indicator = api_data.get("etfKeyIndicator", {})
+                if indicator:
+                    data["basic_info"]["ter"] = f"{safe_to_float(indicator.get('totalFee', 0)):.2f}%"
+                    data["basic_info"]["aum"] = indicator.get("marketValue", data["basic_info"]["aum"])
+                    data["basic_info"]["dividend_yield"] = f"{safe_to_float(indicator.get('dividendYieldTtm', 0)):.2f}%"
                     
-        # 3. Extra Fallback & Detailed Scraping for KR (AUM, Launch Date, Holdings)
-        # Skip heavy scraping if we have holdings already (rare but for safety)
-        if not data["holdings"]:
-            web_url = f"https://finance.naver.com/item/main.naver?code={symbol}"
-            web_resp = requests.get(web_url, headers=headers, timeout=7)
-            if web_resp.status_code == 200:
-                web_resp.encoding = 'euc-kr'
-                soup = BeautifulSoup(web_resp.text, "html.parser")
-                
-                # Scrape Basic Info Table for missing fields
-                if data["basic_info"]["launch_date"] == "알 수 없음" or data["basic_info"]["index"] == "알 수 없음":
-                    tab = soup.find("div", {"id": "tab_con1"})
-                    if tab:
-                        rows = tab.find_all("tr")
-                        for row in rows:
-                            th = row.find("th")
-                            td = row.find("td")
-                            if th and td:
-                                lbl = th.get_text().strip()
-                                val = td.get_text().strip()
-                                if "상장일" in lbl and data["basic_info"]["launch_date"] == "알 수 없음":
-                                    data["basic_info"]["launch_date"] = val.replace(".", "-")
-                                elif "기초지수" in lbl and data["basic_info"]["index"] == "알 수 없음":
-                                    data["basic_info"]["index"] = val
+                    if indicator.get("nav"):
+                        nav_val = safe_to_float(indicator['nav'])
+                        data["market_data"]["nav"] = f"{nav_val:,.2f}" if nav_val else indicator['nav']
+                    
+                    sign = indicator.get("deviationSign", "")
+                    rate = safe_to_float(indicator.get("deviationRate", 0))
+                    data["market_data"]["disparity"] = f"{sign}{rate:.2f}%"
+                    
+                    perf_map = {"returnRate1m": "1개월", "returnRate3m": "3개월", "returnRate6m": "6개월", "returnRate1y": "1년"}
+                    for k, v in perf_map.items():
+                        val = indicator.get(k)
+                        if val is not None:
+                            f_val = safe_to_float(val)
+                            sign = "+" if f_val > 0 else ""
+                            data["performance"][v] = f"{sign}{f_val:.2f}%"
 
-                # Scrape Holdings (CU) - Find specific section div for speed
-                cu_div = soup.find("div", {"class": "section cu_info"})
-                if not cu_div: # fallback to larger container
-                    cu_div = soup.find("div", {"class": "section etf_analysis"})
-                
-                if cu_div:
-                    tables = cu_div.find_all("table")
-                    for t in tables:
-                        try:
-                            df = pd.read_html(io.StringIO(str(t)))[0]
-                            if len(df.columns) >= 3:
-                                records = df.values.tolist()
-                                for row in records:
-                                    name = str(row[0]).strip()
-                                    weight = str(row[2]).strip()
-                                    if name and name not in ['nan', '종목(자산)', '종목명'] and '%' in weight:
-                                        name_clean = " ".join(name.split())
-                                        data["holdings"].append({"name": name_clean, "weight": weight})
-                                        if len(data["holdings"]) >= 10: break
-                                if len(data["holdings"]) > 0: break
-                        except:
-                            pass
+                # Parse totalInfos
+                for info in api_data.get("totalInfos", []):
+                    key, val, code = info.get("key", ""), info.get("value", ""), info.get("code", "")
+                    if code == "etfBaseIdx" or "기초지수" in key:
+                        data["basic_info"]["index"] = val
+                    elif code == "listingDate" or "상장일" in key:
+                        data["basic_info"]["launch_date"] = val.replace(".", "-")
+                    elif code == "highPriceOf52Weeks": data["market_data"]["high52w"] = val
+                    elif code == "lowPriceOf52Weeks": data["market_data"]["low52w"] = val
+                    elif code == "accumulatedTradingVolume": data["market_data"]["volume"] = val
+            
+            if basic_resp.status_code == 200:
+                basic_data = basic_resp.json()
+                data["market_data"]["price"] = basic_data.get("closePrice", data["market_data"]["price"])
+                data["market_data"]["change"] = basic_data.get("compareToPreviousClosePrice", data["market_data"]["change"])
+                data["market_data"]["change_percent"] = basic_data.get("fluctuationsRatio", data["market_data"]["change_percent"])
+        except Exception as e:
+            print(f"Naver API error for {clean_sym}: {e}")
 
-        # 4. Final AUM fallback using etfItemList
-        
+        # 3. Map AMC from name
+        first_word = data["name"].split(' ')[0].upper()
+        for key, val in AMC_MAP.items():
+            if key in first_word:
+                data["basic_info"]["amc"] = val
+                break
+                
+        # 4. Extra Fallback & Detailed Scraping (AUM, Launch Date, Holdings)
+        try:
+            if data["basic_info"]["launch_date"] == "알 수 없음" or not data["holdings"]:
+                web_url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
+                web_resp = requests.get(web_url, headers=headers, timeout=5)
+                if web_resp.status_code == 200:
+                    web_resp.encoding = 'euc-kr'
+                    soup = BeautifulSoup(web_resp.text, "html.parser")
+                    
+                    if data["basic_info"]["launch_date"] == "알 수 없음":
+                        tab = soup.find("div", {"id": "tab_con1"})
+                        if tab:
+                            for tr in tab.find_all("tr"):
+                                th, td = tr.find("th"), tr.find("td")
+                                if th and td:
+                                    lbl, val = th.get_text().strip(), td.get_text().strip()
+                                    if "상장일" in lbl: data["basic_info"]["launch_date"] = val.replace(".", "-")
+                                    elif "기초지수" in lbl and data["basic_info"]["index"] == "알 수 없음": data["basic_info"]["index"] = val
+
+                    if not data["holdings"]:
+                        cu_div = soup.find("div", {"class": "section cu_info"}) or soup.find("div", {"class": "section etf_analysis"})
+                        if cu_div:
+                            for t in cu_div.find_all("table"):
+                                try:
+                                    df = pd.read_html(io.StringIO(str(t)))[0]
+                                    if len(df.columns) >= 3:
+                                        for row in df.values.tolist():
+                                            name, weight = str(row[0]).strip(), str(row[2]).strip()
+                                            if name and name not in ['nan', '종목(자산)', '종목명'] and '%' in weight:
+                                                data["holdings"].append({"name": " ".join(name.split()), "weight": weight})
+                                                if len(data["holdings"]) >= 10: break
+                                        if data["holdings"]: break
+                                except: pass
+        except Exception as e:
+            print(f"Scraping error for {clean_sym}: {e}")
+
+        return {"status": "success", "data": data}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"Global fetch error: {str(e)}"}
 
 if __name__ == "__main__":
     import json
