@@ -27,20 +27,20 @@ const IndexCard = ({ data }: { data: MarketIndex }) => {
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
             exit={{ opacity: 0, y: -10, rotateX: 90 }}
             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-            className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl border backdrop-blur-sm min-w-[110px] shadow-lg ${bgClass}`}
+            className={`flex flex-col items-center justify-center px-2 py-1 rounded-lg border backdrop-blur-sm min-w-[80px] shadow-sm ${bgClass}`}
         >
-            <div className="text-[10px] uppercase font-black tracking-tighter text-gray-400 mb-0.5 opacity-80">
+            <div className="text-[8px] uppercase font-black tracking-tighter text-gray-400 mb-0 opacity-80">
                 {data.name}
             </div>
             
-            <div className="flex items-center gap-1.5 overflow-hidden">
-                <span className="text-sm md:text-base font-black text-white whitespace-nowrap">
+            <div className="flex items-center gap-1 overflow-hidden">
+                <span className="text-xs md:text-sm font-black text-white whitespace-nowrap">
                     {data.value}
                 </span>
             </div>
             
-            <div className={`flex items-center gap-1 text-[10px] font-bold ${colorClass}`}>
-                {isUp ? <TrendingUp size={10} /> : isDown ? <TrendingDown size={10} /> : <Minus size={10} />}
+            <div className={`flex items-center gap-0.5 text-[8px] font-bold ${colorClass}`}>
+                {isUp ? <TrendingUp size={8} /> : isDown ? <TrendingDown size={8} /> : <Minus size={8} />}
                 <span>{data.percent}</span>
             </div>
         </motion.div>
