@@ -68,7 +68,9 @@ origins = [
     "https://stock-trend-program.vercel.app",
     "https://stock-trend-program.vercel.app/",
     "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stocktrendprogram-production.up.railway.app" # Allowed Railway Domain
+    "https://stocktrendprogram-production.up.railway.app",
+    "https://stock-server-rnfjr.up.railway.app",
+    "https://stock-server-rnfjr.up.railway.app/"
 ]
 
 app.add_middleware(
@@ -84,7 +86,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260330-etf-granular-fix",
+        "version": "20260331-chart-opt-v1",
         "service": "AI Stock Analyst Backend - Investor Trend Cursor API"
     }
 from fastapi import Request

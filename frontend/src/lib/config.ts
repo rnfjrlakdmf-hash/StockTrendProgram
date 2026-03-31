@@ -9,25 +9,22 @@ const isAndroid = typeof window !== 'undefined' && (
     /Android/i.test(navigator.userAgent)
 );
 
-let apiBase = "http://localhost:8000";
+let apiBase = "https://stock-server-rnfjr.up.railway.app";
 
 if (process.env.NEXT_PUBLIC_API_URL) {
     apiBase = process.env.NEXT_PUBLIC_API_URL;
-    if (apiBase.includes('replace-with-your-server')) {
-        console.error('[Config] CRITICAL: API URL is still set to placeholder! Please update .env.production');
-        // Fallback to local IP if possible, or keep as is (which will fail, but visible in logs)
-    }
 } else if (typeof window !== 'undefined') {
     if (isAndroid) {
         // Android Emulator or Device in Dev Mode
-        apiBase = "http://10.0.2.2:8000";
+        apiBase = "https://stock-server-rnfjr.up.railway.app";
     } else {
         // Web Browser / Desktop
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            apiBase = "http://localhost:8000";
+            // Even on localhost, we point to real server during this final fix to ensure it works
+            apiBase = "https://stock-server-rnfjr.up.railway.app";
         } else {
-            // [Fix] Production Backend URL (Railway)
-            apiBase = "https://stocktrendprogram-production.up.railway.app";
+            // [Fix] Production Backend URL (Railway - Specific App)
+            apiBase = "https://stock-server-rnfjr.up.railway.app";
         }
     }
     console.log(`[Config] Running on ${isAndroid ? 'Android' : 'Web'}, API URL: ${apiBase}`);
