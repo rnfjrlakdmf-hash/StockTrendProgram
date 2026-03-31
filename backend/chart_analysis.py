@@ -213,14 +213,16 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     weather = {"pattern": "분석 중", "comment": "데이터를 불러오는 중입니다."}
 
     try:
-        if not period:
+        # [NEW] Strictly limit intraday intervals to 1d to prevent performance lag
+        is_intraday = any(x in str(interval) for x in ["m", "h", "1m", "3m", "5m", "15m", "30m", "60m", "90m"])
+        
+        if is_intraday:
+            yf_period = "1d"
+        elif not period:
             if interval == "1wk": period = "2y"
             elif interval == "1mo": period = "5y"
             else: period = "1y"
-        
-        # Adjust period for intraday intervals (yfinance limits)
-        if interval in ["5m", "30m", "60m"] and (not period or period == "1y"):
-            yf_period = "60d" # Max for most intraday intervals on yf
+            yf_period = period
         else:
             yf_period = period
             if period == "1주일": yf_period = "5d"

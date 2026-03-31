@@ -285,7 +285,7 @@ export default function PatternPage() {
             }
         },
         yaxis: { opposite: true, labels: { formatter: (val: number) => val?.toLocaleString() } },
-        grid: { borderColor: '#374151', strokeDashArray: 4 },
+        grid: { borderColor: '#ffffff08', strokeDashArray: 4, padding: { left: 10, right: 10 } },
         tooltip: {
             shared: true,
             x: { format: 'yyyy년 MM월 dd일' },
@@ -513,7 +513,7 @@ export default function PatternPage() {
                                     <button onClick={() => setChartType('candle')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'candle' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>봉차트</button>
                                 </div>
 
-                                 <div className="flex flex-wrap items-center gap-2">
+                                 <div className="flex flex-wrap items-center gap-3">
                                     {chartType === 'line' ? (
                                         [
                                             { label: '1일', value: '1d' },
@@ -527,16 +527,27 @@ export default function PatternPage() {
                                             <button key={p.value} onClick={() => setLinePeriod(p.value)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{p.label}</button>
                                         ))
                                     ) : (
-                                        [
-                                            { label: '5분봉', value: '5m' },
-                                            { label: '30분봉', value: '30m' },
-                                            { label: '1시간봉', value: '60m' },
-                                            { label: '일봉', value: '1d' },
-                                            { label: '주봉', value: '1wk' },
-                                            { label: '월봉', value: '1mo' }
-                                        ].map((i) => (
-                                            <button key={i.value} onClick={() => setCandleInterval(i.value as any)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{i.label}</button>
-                                        ))
+                                        <>
+                                            {[
+                                                { label: '1분봉', value: '1m' },
+                                                { label: '5분봉', value: '5m' },
+                                                { label: '30분봉', value: '30m' },
+                                                { label: '1시간봉', value: '60m' },
+                                                { label: '일봉', value: '1d' },
+                                                { label: '주봉', value: '1wk' },
+                                                { label: '월봉', value: '1mo' }
+                                            ].map((i) => (
+                                                <button key={i.value} onClick={() => setCandleInterval(i.value as any)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{i.label}</button>
+                                            ))}
+                                            
+                                            {/* Optimization Badge for Intraday */}
+                                            {(candleInterval.includes('m') || candleInterval === '60m') && (
+                                                <div className="ml-2 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-3 py-1.5 rounded-full animate-pulse">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Intraday Optimized (1D)</span>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
