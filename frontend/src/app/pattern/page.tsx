@@ -98,7 +98,7 @@ export default function PatternPage() {
             return;
         }
 
-        const isNewSearch = typeof targetSymbol === 'string' || !targetParams;
+        const isNewSearch = typeof targetSymbol === 'string' && !targetParams;
         if (isNewSearch) {
             setLoading(true);
             setResult(null);
@@ -528,11 +528,28 @@ export default function PatternPage() {
                                         ))
                                     ) : (
                                         <>
+                                            <div className="relative">
+                                                <select
+                                                    value={['1m','5m','30m','60m'].includes(candleInterval) ? candleInterval : 'default'}
+                                                    onChange={(e) => setCandleInterval(e.target.value as any)}
+                                                    className={`appearance-none px-4 py-2 pr-8 rounded-xl text-xs font-bold transition-all outline-none cursor-pointer ${
+                                                        ['1m','5m','30m','60m'].includes(candleInterval) 
+                                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-500' 
+                                                        : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                                                    }`}
+                                                >
+                                                    <option value="default" disabled className="bg-gray-900 text-gray-500">분봉 ▾</option>
+                                                    <option value="1m" className="bg-gray-800 text-white">1분봉</option>
+                                                    <option value="5m" className="bg-gray-800 text-white">5분봉</option>
+                                                    <option value="30m" className="bg-gray-800 text-white">30분봉</option>
+                                                    <option value="60m" className="bg-gray-800 text-white">1시간봉</option>
+                                                </select>
+                                                <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                                                    <svg className={`w-3 h-3 ${['1m','5m','30m','60m'].includes(candleInterval) ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                            </div>
+
                                             {[
-                                                { label: '1분봉', value: '1m' },
-                                                { label: '5분봉', value: '5m' },
-                                                { label: '30분봉', value: '30m' },
-                                                { label: '1시간봉', value: '60m' },
                                                 { label: '일봉', value: '1d' },
                                                 { label: '주봉', value: '1wk' },
                                                 { label: '월봉', value: '1mo' }
