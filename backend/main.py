@@ -1,4 +1,6 @@
+from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
+from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 # [Deployment Trigger] dart multi-year final - 2026-03-06
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
@@ -54,7 +56,6 @@ from korea_data import (
     get_market_summary_stats, get_live_disclosures
 )
 from pydantic import BaseModel, Field
-from typing import Optional, List
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
 
@@ -1303,7 +1304,6 @@ CACHE_FILE_PATH = "dashboard_cache.json"
 
 
 def ranking_bg_looper():
-
     """Background task to keep top 10 ranking cache warm"""
     print("Starting ranking background updater...")
     while True:
