@@ -598,10 +598,10 @@ export default function PatternPage() {
                                     </div>
                                 )}
                                 <div className="bg-white/5 rounded-2xl p-2 border border-white/5 min-h-[400px]">
-                                    {isMounted && <Chart options={chartOptions} series={chartSeries} type={chartType === 'line' ? 'area' : 'candlestick'} height={400} />}
+                                    {isMounted && <Chart key={`chart-${chartType}-${candleInterval}`} options={chartOptions} series={chartSeries} type={chartType === 'line' ? 'area' : 'candlestick'} height={400} />}
                                 </div>
                                 <div className="bg-white/5 rounded-2xl p-2 border border-white/5">
-                                    {isMounted && <Chart options={volumeOptions} series={volumeSeries} type="bar" height={120} />}
+                                    {isMounted && <Chart key={`vol-${chartType}-${candleInterval}`} options={volumeOptions} series={volumeSeries} type="bar" height={120} />}
                                 </div>
                             </div>
                         </div>
