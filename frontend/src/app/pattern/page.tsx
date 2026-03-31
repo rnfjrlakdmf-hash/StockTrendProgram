@@ -288,14 +288,18 @@ export default function PatternPage() {
         grid: { borderColor: '#ffffff08', strokeDashArray: 4, padding: { left: 10, right: 10 } },
         tooltip: {
             shared: true,
-            x: { format: 'yyyy년 MM월 dd일' },
+            x: { format: ['1m','5m','30m','60m'].includes(candleInterval) ? 'yyyy년 MM월 dd일 HH:mm' : 'yyyy년 MM월 dd일' },
             y: { formatter: (val: number) => val?.toLocaleString() },
             custom: chartType === 'candle' ? function({ seriesIndex, dataPointIndex, w }: any) {
                 const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
                 const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
                 const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex];
                 const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex];
-                const d = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]).toLocaleDateString();
+                const rawDate = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+                const isIntraday = ['1m','5m','30m','60m'].includes(candleInterval);
+                const d = isIntraday 
+                    ? rawDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + rawDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    : rawDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 return `
                     <div class="bg-gray-900 border border-gray-700 p-2 text-xs rounded shadow-lg text-white">
                         <div class="font-bold border-b border-gray-700 pb-1 mb-1">${d}</div>
