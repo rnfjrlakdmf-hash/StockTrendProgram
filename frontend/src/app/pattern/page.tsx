@@ -26,7 +26,7 @@ export default function PatternPage() {
     const [updating, setUpdating] = useState(false);
     const [chartType, setChartType] = useState<"line" | "candle">("line");
     const [linePeriod, setLinePeriod] = useState<string>("1y");
-    const [candleInterval, setCandleInterval] = useState<"1d" | "1wk" | "1mo">("1d");
+    const [candleInterval, setCandleInterval] = useState<string>("1d");
     const [isMounted, setIsMounted] = useState(false);
     const [showDocent, setShowDocent] = useState(true);
 
@@ -137,8 +137,12 @@ export default function PatternPage() {
     useEffect(() => {
         const symbol = result?.stock_info?.symbol || searchInput;
         if (symbol && result) {
+            // [NEW] Optimized: Force 1d period for intraday to prevent lag
+            const isIntraday = candleInterval.includes("m") || candleInterval === "1h";
+            let periodToUse = chartType === 'line' ? linePeriod : (isIntraday ? '1d' : undefined);
+            
             handleSearch(symbol, { 
-                period: chartType === 'line' ? linePeriod : undefined,
+                period: periodToUse,
                 interval: chartType === 'candle' ? candleInterval : '1d'
             });
         }
@@ -304,14 +308,46 @@ export default function PatternPage() {
             } : undefined
         },
         annotations: {
-            points: (result?.stories || []).map((s: any) => ({
-                x: new Date(s.date).getTime(),
-                y: s.price,
-                marker: { size: 6, fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280', strokeColor: '#fff', radius: 2 },
-                label: { borderColor: '#ffffff20', offsetY: -30, style: { color: '#fff', background: '#1f2937', fontSize: '10px' }, text: s.icon }
-            }))
+            points: [
+                ...(result?.stories || []).map((s: any) => ({
+                    x: new Date(s.date).getTime(),
+                    y: s.price,
+                    marker: { size: 6, fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280', strokeColor: '#fff', radius: 2 },
+                    label: { borderColor: '#ffffff20', offsetY: -30, style: { color: '#fff', background: '#1f2937', fontSize: '10px' }, text: s.icon }
+                })),
+                // [NEW] Highest/Lowest Price Annotations
+                ...(result?.history && result.history.length > 0 ? [
+                    (() => {
+                        const highest = [...result.history].sort((a, b) => b.high - a.high)[0];
+                        return {
+                            x: new Date(highest.date).getTime(),
+                            y: highest.high,
+                            marker: { size: 0 },
+                            label: {
+                                text: `최고 ${highest.high.toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
+                                borderColor: '#ef4444',
+                                style: { color: '#fff', background: '#ef4444' }
+                            }
+                        };
+                    })(),
+                    (() => {
+                        const lowest = [...result.history].sort((a, b) => a.low - b.low)[0];
+                        return {
+                            x: new Date(lowest.date).getTime(),
+                            y: lowest.low,
+                            marker: { size: 0 },
+                            label: {
+                                text: `↑ 최저 ${lowest.low.toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
+                                borderColor: '#3b82f6',
+                                offsetY: 40,
+                                style: { color: '#fff', background: '#3b82f6' }
+                            }
+                        };
+                    })()
+                ] : [])
+            ]
         },
-        colors: chartType === 'line' ? ['#10b981'] : undefined,
+        colors: chartType === 'line' ? ['#10b981'] : ['#ef4444', '#22c55e', '#ef4444', '#f97316', '#a855f7'],
         legend: { position: 'top', horizontalAlign: 'left' }
     };
 
@@ -510,10 +546,10 @@ export default function PatternPage() {
                                     <>
                                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
                                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#FEB019]" /><span>MA5</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#00E396]" /><span>MA20</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#008FFB]" /><span>MA60</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#775DD0]" /><span>MA120</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#22c55e]" /><span>MA5</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#ef4444]" /><span>MA20</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#f97316]" /><span>MA60</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#a855f7]" /><span>MA120</span></div>
                                     </>
                                 ) : (
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-0.5 bg-emerald-500" /><span>종가 추세선</span></div>
