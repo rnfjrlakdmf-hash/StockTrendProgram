@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { 
     Users, MessageSquare, ShieldAlert, Send, 
     TrendingUp, TrendingDown, Info, AlertTriangle,
-    CheckCircle2, Loader2, Sparkles, Trophy, X,
+    CheckCircle2, Loader2, Sparkles, X,
     Search, Flame, ArrowLeft, MessageCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,7 +40,7 @@ function CommunityContent() {
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk' | 'poll'>('lounge');
+    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk'>('lounge');
     
     // Lounge States
     const [chats, setChats] = useState<ChatMessage[]>([]);
@@ -214,7 +214,6 @@ function CommunityContent() {
                 <div className="flex gap-2 bg-white/5 p-1 rounded-2xl w-fit border border-white/10 shadow-2xl overflow-x-auto no-scrollbar">
                     <TabButton active={activeTab === 'lounge'} onClick={() => setActiveTab('lounge')} icon={<MessageSquare className="w-4 h-4"/>} label="종합 라운지" />
                     <TabButton active={activeTab === 'stock_talk'} onClick={() => setActiveTab('stock_talk')} icon={<MessageCircle className="w-4 h-4"/>} label="종목 토론방" />
-                    <TabButton active={activeTab === 'poll'} onClick={() => setActiveTab('poll')} icon={<Trophy className="w-4 h-4"/>} label="테마 투표" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -431,29 +430,6 @@ function CommunityContent() {
                                     </div>
                                 )}
                             </motion.div>
-                        )}
-
-                        {/* ─── 테마 투표 ─── */}
-                        {activeTab === 'poll' && (
-                            <div className="bg-white/5 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-                                <div className="p-8 text-center space-y-6">
-                                    <div className="w-20 h-20 bg-yellow-400/10 rounded-full flex items-center justify-center mx-auto border border-yellow-400/20">
-                                        <Trophy className="w-10 h-10 text-yellow-500" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-3xl font-black tracking-tighter">인간 vs AI 수익률 챌린지</h3>
-                                        <p className="text-gray-400 text-sm max-w-sm mx-auto">
-                                            사용자가 투표한 테마와 AI가 분석한 테마 중,<br/>내일 실제로 더 많이 오르는 쪽은 어디일까요?
-                                        </p>
-                                    </div>
-                                    <div className="pt-4 flex flex-col gap-2">
-                                        <div className="bg-white/5 p-4 rounded-2xl flex items-center justify-center gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-yellow-500 animate-ping" />
-                                            <span className="text-sm font-bold text-yellow-200">베타 서비스 준비 중입니다.</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         )}
 
                     </div>
