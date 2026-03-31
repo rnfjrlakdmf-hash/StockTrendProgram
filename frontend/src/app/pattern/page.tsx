@@ -295,18 +295,28 @@ export default function PatternPage() {
                 const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
                 const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex];
                 const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex];
+                
                 const rawDate = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+                const yyyy = rawDate.getFullYear();
+                const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(rawDate.getDate()).padStart(2, '0');
+                const hh = String(rawDate.getHours()).padStart(2, '0');
+                const mins = String(rawDate.getMinutes()).padStart(2, '0');
+
                 const isIntraday = ['1m','5m','30m','60m'].includes(candleInterval);
                 const d = isIntraday 
-                    ? rawDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + rawDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-                    : rawDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                    ? `${yyyy}. ${mm}. ${dd}. ${hh}:${mins}`
+                    : `${yyyy}. ${mm}. ${dd}.`;
+
                 return `
-                    <div class="bg-gray-900 border border-gray-700 p-2 text-xs rounded shadow-lg text-white">
-                        <div class="font-bold border-b border-gray-700 pb-1 mb-1">${d}</div>
-                        <div class="flex gap-4 justify-between"><span>시:</span> <span class="font-mono">${o?.toLocaleString()}</span></div>
-                        <div class="flex gap-4 justify-between"><span>고:</span> <span class="font-mono text-red-400">${h?.toLocaleString()}</span></div>
-                        <div class="flex gap-4 justify-between"><span>저:</span> <span class="font-mono text-blue-400">${l?.toLocaleString()}</span></div>
-                        <div class="flex gap-4 justify-between"><span>종:</span> <span class="font-mono font-bold">${c?.toLocaleString()}</span></div>
+                    <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 p-3 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] text-white whitespace-nowrap z-50 pointer-events-none">
+                        <div class="text-sm font-black text-emerald-400 border-b border-gray-700/50 pb-2 mb-2">
+                            ${d}
+                        </div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${o?.toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${h?.toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${l?.toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mt-2 pt-2 border-t border-gray-700/50 text-sm"><span class="text-gray-400">종가</span> <span class="font-mono font-black text-white">${c?.toLocaleString()}</span></div>
                     </div>
                 `;
             } : undefined
