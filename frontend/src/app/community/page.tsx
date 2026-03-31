@@ -7,9 +7,11 @@ import {
     Users, MessageSquare, ShieldAlert, Send, 
     Share2, Download, Search, Filter, 
     TrendingUp, TrendingDown, Info, AlertTriangle,
-    CheckCircle2, Loader2, Sparkles, Trophy, X
+    CheckCircle2, Loader2, Sparkles, Trophy, X,
+    Target
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import StrategyResultModal from "@/components/StrategyResultModal";
 
 interface ChatMessage {
     id: number;
@@ -43,6 +45,10 @@ export default function CommunityPage() {
     // Market States
     const [strategies, setStrategies] = useState<Strategy[]>([]);
     const [marketLoading, setMarketLoading] = useState(false);
+    const [scanningId, setScanningId] = useState<number | null>(null);
+    const [showResultModal, setShowResultModal] = useState(false);
+    const [scanResults, setScanResults] = useState([]);
+    const [selectedStrategyTitle, setSelectedStrategyTitle] = useState("");
 
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +89,35 @@ export default function CommunityPage() {
             if (json.status === "success") setStrategies(json.data);
         } catch (e) { console.error(e); }
         finally { setMarketLoading(false); }
+    };
+
+    const handleApplyFilter = async (strategy: Strategy) => {
+        setScanningId(strategy.id);
+        setSelectedStrategyTitle(strategy.title);
+        
+        try {
+            // 백엔드 터보 스캐너 호출
+            const res = await fetch(`${API_BASE_URL}/api/market/strategy/scan`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filters: strategy.filters
+                })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                setScanResults(json.data);
+                setShowResultModal(true);
+            } else {
+                alert(json.message || "스캔 중 오류가 발생했습니다.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("서버 연결에 실패했습니다.");
+        } finally {
+            setScanningId(null);
+        }
     };
 
     const handleSendMessage = async () => {
@@ -265,9 +300,17 @@ export default function CommunityPage() {
                                                     </div>
                                                     <span className="text-[10px] font-bold text-gray-500">{strat.user_name}</span>
                                                 </div>
-                                                <button className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95">
-                                                    <Download className="w-3 h-3" />
-                                                    필터 적용
+                                                <button 
+                                                    onClick={() => handleApplyFilter(strat)}
+                                                    disabled={scanningId === strat.id}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                                >
+                                                    {scanningId === strat.id ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Download className="w-3 h-3" />
+                                                    )}
+                                                    {scanningId === strat.id ? "스캔 중..." : "필터 적용"}
                                                 </button>
                                             </div>
                                         </div>
@@ -358,6 +401,14 @@ export default function CommunityPage() {
                     </div>
                 </div>
             </div>
+
+            {/* 전략 결과 모달 */}
+            <StrategyResultModal 
+                isOpen={showResultModal}
+                onClose={() => setShowResultModal(false)}
+                results={scanResults}
+                strategyName={selectedStrategyTitle}
+            />
         </div>
     );
 }

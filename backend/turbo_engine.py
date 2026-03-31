@@ -83,6 +83,79 @@ class TurboEngine:
         score = (momentum / (volatility + 1e-9)) * 100
         return float(np.round(score, 2))
 
+    async def scan_with_filters(self, filters: Dict[str, Any]):
+        """
+        [Turbo Filter] 복합 지표 기반 고속 필터링 스캐너
+        사용자가 지정한 전략 필터(F-Score, PER 등)를 시장 전체 종목에 적용합니다.
+        """
+        logger.info(f"🔍 [Turbo Filter] Scanning with: {filters}")
+        
+        # 1단계: 기본 정보 로드 (실제 구현 시 DB나 캐시에서 상위 N개 가져오기)
+        # 여기서는 예시를 위해 korea_data 등에서 가져오는 것으로 가정
+        # (실제 서비스에서는 미리 연산된 지표 테이블을 활용)
+        from korea_data import get_all_stock_codes
+        symbols = get_all_stock_codes()[:100] # 성능상 100개로 제한 (테스트용)
+        
+        results = []
+        
+        # 2단계: 각 종목별 지표 체크 (병렬 처리 권장이나 여기선 로직 집중)
+        # 실제로는 get_financial_summary 등의 데이터를 활용
+        from korea_data import get_financial_summary
+        
+        async def check_stock(symbol_info):
+            symbol = symbol_info['symbol']
+            name = symbol_info['name']
+            
+            # 재무 데이터 가져오기 (캐시 활용)
+            summary = get_financial_summary(symbol)
+            if not summary: return None
+            
+            # 필터 조건 검증 로직
+            match = True
+            
+            # 1. F-Score 필터
+            if "f_score" in filters:
+                target_f = filters["f_score"]
+                current_f = summary.get("f_score", 0)
+                if current_f < target_f: match = False
+                
+            # 2. PER 필터
+            if match and "per" in filters:
+                per_filter = filters["per"]
+                current_per = summary.get("per", 999)
+                if "max" in per_filter and current_per > per_filter["max"]: match = False
+                if "min" in per_filter and current_per < per_filter["min"]: match = False
+                
+            # 3. 배당수익률 필터 (dividend_yield)
+            if match and "dividend_yield" in filters:
+                div_filter = filters["dividend_yield"]
+                current_div = summary.get("dividend_yield", 0)
+                if "min" in div_filter and current_div < div_filter["min"]: match = False
+
+            if match:
+                return {
+                    "symbol": symbol,
+                    "name": name,
+                    "price": summary.get("price", 0),
+                    "change": summary.get("change", 0),
+                    "change_percent": summary.get("change_percent", "0%"),
+                    "f_score": summary.get("f_score", 0),
+                    "per": summary.get("per", 0),
+                    "dividend_yield": summary.get("dividend_yield", 0)
+                }
+            return None
+
+        # 병렬 실행
+        tasks = [check_stock(s) for s in symbols]
+        scan_results = await asyncio.gather(*tasks)
+        results = [r for r in scan_results if r]
+        
+        # F-Score 및 점수순 정렬
+        results.sort(key=lambda x: (x['f_score'], -x['per']), reverse=True)
+        
+        logger.info(f"✅ [Turbo Filter] Found {len(results)} matches")
+        return results
+
 # 전역 엔진 인스턴스 (앱 전체에서 공유)
 turbo_engine = TurboEngine()
 

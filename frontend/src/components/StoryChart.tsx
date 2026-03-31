@@ -46,7 +46,7 @@ interface StoryChartProps {
 
 export default function StoryChart({ symbol, period: initialPeriod = "1y" }: StoryChartProps) {
     const [period, setPeriod] = useState(initialPeriod);
-    const [interval, setInterval] = useState<"1d" | "1wk" | "1mo">("1d");
+    const [interval, setInterval] = useState<string>("1d");
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [stories, setStories] = useState<StoryPoint[]>([]);
     const [selectedStory, setSelectedStory] = useState<StoryPoint | null>(null);
@@ -59,6 +59,11 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
     }, []);
 
     useEffect(() => {
+        // [NEW] Adjust period if interval is intraday (Optimized: Force 1d for intraday to prevent lag)
+        const isIntraday = interval.includes("m") || interval === "1h";
+        if (isIntraday) {
+            if (period !== "1d") setPeriod("1d");
+        }
         loadStoryData();
     }, [symbol, period, interval]);
 
@@ -108,6 +113,19 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             ma120: calculateMA(closes, 120)
         };
     }, [chartData]);
+ 
+    // [NEW] Find Highest and Lowest points for annotations
+    const { highest, lowest } = useMemo(() => {
+        if (chartData.length === 0) return { highest: null, lowest: null };
+        let high = chartData[0];
+        let low = chartData[0];
+        chartData.forEach(d => {
+            if (d.high > high.high) high = d;
+            if (d.low < low.low) low = d;
+        });
+        return { highest: high, lowest: low };
+    }, [chartData]);
+
 
     // Format data for ApexCharts
     const candleSeries = useMemo(() => [{
@@ -145,7 +163,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             x: new Date(d.date).getTime(),
             y: movingAverages.ma120[i]
         }))
-    }], [chartData, movingAverages]);
+    }], [chartData, movingAverages, interval]); // Added interval to dependency
 
     const volumeSeries = useMemo(() => [{
         name: 'Volume',
@@ -173,7 +191,8 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
         },
         stroke: {
             width: [1, 2, 2, 2, 2],
-            curve: 'smooth'
+            curve: 'smooth',
+            colors: ['#ef4444', '#22c55e', '#ef4444', '#f97316', '#a855f7'] // Colors for Candle, MA5, MA20, MA60, MA120
         },
         plotOptions: {
             candlestick: {
@@ -191,12 +210,18 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             labels: {
                 datetimeFormatter: {
                     year: 'yyyy',
-                    month: 'MM',
-                    day: 'dd'
+                    month: 'yyyy/MM',
+                    day: 'MM/dd',
+                    hour: 'HH:mm'
+                },
+                style: {
+                    colors: '#6b7280',
+                    fontSize: '10px'
                 }
             },
             axisBorder: { show: false },
-            axisTicks: { show: false }
+            axisTicks: { show: false },
+            tooltip: { enabled: false }
         },
         yaxis: {
             opposite: true,
@@ -218,46 +243,101 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                 const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex]
                 const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex]
                 const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex]
-                const d = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]).toLocaleDateString()
+                
+                const timestamp = w.globals.seriesX[seriesIndex][dataPointIndex];
+                const date = new Date(timestamp);
+                const isIntraday = interval.includes("m") || interval === "1h";
+                const d = isIntraday 
+                    ? `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+                    : date.toLocaleDateString();
                 
                 return `
-                    <div className="bg-gray-900 border border-gray-700 p-2 text-xs rounded shadow-lg">
-                        <div className="font-bold border-b border-gray-700 pb-1 mb-1">${d}</div>
-                        <div className="flex gap-2 justify-between"><span>시:</span> <span className="font-mono">${o?.toLocaleString()}</span></div>
-                        <div className="flex gap-2 justify-between"><span>고:</span> <span className="font-mono text-red-400">${h?.toLocaleString()}</span></div>
-                        <div className="flex gap-2 justify-between"><span>저:</span> <span className="font-mono text-blue-400">${l?.toLocaleString()}</span></div>
-                        <div className="flex gap-2 justify-between"><span>종:</span> <span className="font-mono font-bold">${c?.toLocaleString()}</span></div>
+                    <div class="bg-gray-900 border border-gray-700 p-2 text-xs rounded shadow-lg">
+                        <div class="font-bold border-b border-gray-700 pb-1 mb-1 text-white">${d}</div>
+                        <div class="flex gap-4 justify-between text-gray-400"><span>시:</span> <span class="font-mono text-white">${o?.toLocaleString()}</span></div>
+                        <div class="flex gap-4 justify-between text-gray-400"><span>고:</span> <span class="font-mono text-red-400">${h?.toLocaleString()}</span></div>
+                        <div class="flex gap-4 justify-between text-gray-400"><span>저:</span> <span class="font-mono text-blue-400">${l?.toLocaleString()}</span></div>
+                        <div class="flex gap-4 justify-between text-gray-400"><span>종:</span> <span class="font-mono font-bold text-white">${c?.toLocaleString()}</span></div>
                     </div>
                 `
             }
         },
         annotations: {
-            points: stories.map(s => ({
-                x: new Date(s.date).getTime(),
-                y: s.price,
-                marker: {
-                    size: 6,
-                    fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280',
-                    strokeColor: '#fff',
-                    radius: 2
-                },
-                label: {
-                    borderColor: '#ffffff20',
-                    offsetY: -30,
-                    style: {
-                        color: '#fff',
-                        background: '#1f2937',
-                        fontSize: '10px',
-                        padding: {
-                            left: 5,
-                            right: 5,
-                            top: 2,
-                            bottom: 2
-                        }
+            points: [
+                // Highest Point Annotation
+                ...(highest ? [{
+                    x: new Date(highest.date).getTime(),
+                    y: highest.high,
+                    marker: {
+                        size: 4,
+                        fillColor: '#ef4444',
+                        strokeColor: '#fff',
+                        radius: 2,
                     },
-                    text: s.icon
-                }
-            }))
+                    label: {
+                        borderColor: '#ef4444',
+                        offsetY: -30,
+                        style: {
+                            color: '#fff',
+                            background: '#ef4444',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: { left: 8, right: 8, top: 2, bottom: 2 }
+                        },
+                        text: `최고 ${highest.high.toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}) ↓`
+                    }
+                }] : []),
+                // Lowest Point Annotation
+                ...(lowest ? [{
+                    x: new Date(lowest.date).getTime(),
+                    y: lowest.low,
+                    marker: {
+                        size: 4,
+                        fillColor: '#3b82f6',
+                        strokeColor: '#fff',
+                        radius: 2,
+                    },
+                    label: {
+                        borderColor: '#3b82f6',
+                        offsetY: 40,
+                        style: {
+                            color: '#fff',
+                            background: '#3b82f6',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: { left: 8, right: 8, top: 1, bottom: 1 }
+                        },
+                        text: `↑ 최저 ${lowest.low.toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })})`
+                    }
+                }] : []),
+                // Historical Stories
+                ...stories.map(s => ({
+                    x: new Date(s.date).getTime(),
+                    y: s.price,
+                    marker: {
+                        size: 6,
+                        fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280',
+                        strokeColor: '#fff',
+                        radius: 2
+                    },
+                    label: {
+                        borderColor: '#ffffff20',
+                        offsetY: -30,
+                        style: {
+                            color: '#fff',
+                            background: '#1f2937',
+                            fontSize: '10px',
+                            padding: {
+                                left: 5,
+                                right: 5,
+                                top: 2,
+                                bottom: 2
+                            }
+                        },
+                        text: s.icon
+                    }
+                }))
+            ]
         },
         legend: {
             position: 'top',
@@ -295,7 +375,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                     ranges: [{
                         from: 0,
                         to: 1000000000000,
-                        color: '#60a5fa30'
+                        color: '#7c3aed40' // Soft purple for volume
                     }]
                 }
             }
@@ -326,6 +406,17 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
+        const isIntraday = interval.includes("m") || interval === "1h";
+        
+        if (isIntraday) {
+            return date.toLocaleString('ko-KR', { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+        
         return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
@@ -354,39 +445,72 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                 
                 <div className="flex flex-wrap items-center gap-2">
                     {/* Interval Selector */}
-                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10 overflow-x-auto max-w-[300px] md:max-w-none no-scrollbar">
+                        <button 
+                            onClick={() => setInterval("1m")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '1m' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            1분
+                        </button>
+                        <button 
+                            onClick={() => setInterval("3m")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '3m' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            3분
+                        </button>
+                        <button 
+                            onClick={() => setInterval("5m")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '5m' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            5분
+                        </button>
+                        <button 
+                            onClick={() => setInterval("15m")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '15m' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            15분
+                        </button>
+                        <button 
+                            onClick={() => setInterval("30m")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '30m' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            30분
+                        </button>
+                        <button 
+                            onClick={() => setInterval("1h")}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '1h' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            1시간
+                        </button>
+                        <div className="w-[1px] h-4 bg-white/10 mx-1 self-center" />
                         <button 
                             onClick={() => setInterval("1d")}
-                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1d' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '1d' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             일봉
                         </button>
                         <button 
                             onClick={() => setInterval("1wk")}
-                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1wk' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all whitespace-nowrap ${interval === '1wk' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             주봉
                         </button>
-                        <button 
-                            onClick={() => setInterval("1mo")}
-                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${interval === '1mo' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            월봉
-                        </button>
                     </div>
 
-                    {/* Period Selector */}
-                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
-                        {['1mo', '3mo', '6mo', '1y'].map((p) => (
-                            <button 
-                                key={p}
-                                onClick={() => setPeriod(p)}
-                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                {p === '1mo' ? '1M' : p === '3mo' ? '3M' : p === '6mo' ? '6M' : '1Y'}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Period Selector (Hidden for Intraday to prevent lag) */}
+                    {!(interval.includes("m") || interval === "1h") && (
+                        <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                            {['1mo', '3mo', '6mo', '1y'].map((p) => (
+                                <button 
+                                    key={p}
+                                    onClick={() => setPeriod(p)}
+                                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    {p === '1mo' ? '1M' : p === '3mo' ? '3M' : p === '6mo' ? '6M' : '1Y'}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -394,10 +518,10 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             <div className="flex flex-wrap gap-4 mb-4 text-[10px] md:text-xs">
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#FEB019]" /><span>MA5</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#00E396]" /><span>MA20</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#008FFB]" /><span>MA60</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#775DD0]" /><span>MA120</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#22c55e]" /><span>MA5</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#ef4444]" /><span>MA20</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#f97316]" /><span>MA60</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#a855f7]" /><span>MA120</span></div>
             </div>
 
             {/* Main Chart Case */}

@@ -578,9 +578,32 @@ def post_lounge_chat(data: dict):
     return {"status": "success", "data": new_chat}
 
 @app.get("/api/community/strategies")
-def get_strategies():
-    """발굴 필터 공유 시장 조회"""
+def read_strategies():
+    """전략 마켓 데이터 조회"""
     return {"status": "success", "data": STRATEGY_MARKET}
+
+@app.post("/api/market/strategy/scan")
+async def scan_strategy_endpoint(payload: Dict[str, Any]):
+    """
+    [Turbo Scan] 특정 전략 필터를 적용하여 실시간 종목 발굴
+    """
+    try:
+        filters = payload.get("filters", {})
+        if not filters:
+            return {"status": "error", "message": "필터 조건이 필요합니다."}
+        
+        from turbo_engine import turbo_engine
+        results = await turbo_engine.scan_with_filters(filters)
+        
+        return {
+            "status": "success", 
+            "data": results,
+            "count": len(results),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as e:
+        logger.error(f"❌ [Strategy Scan Error] {str(e)}")
+        return {"status": "error", "message": f"스캔 중 오류가 발생했습니다: {str(e)}"}
 
 @app.post("/api/community/strategies")
 def post_strategy(data: dict):

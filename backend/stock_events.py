@@ -133,12 +133,16 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
     Args:
         symbol: 종목 코드
         period: 기간 (1mo, 3mo, 6mo, 1y, 2y, 5y)
-        interval: 데이터 간격 (1d, 1wk, 1mo)
+        interval: 데이터 간격 (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)
     
     Returns:
         변곡점 리스트
     """
     try:
+        # [NEW] Strictly limit intraday data to 1d to prevent performance lag
+        if "m" in interval or interval == "1h":
+            period = "1d"
+
         # 가격 데이터 가져오기
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period=period, interval=interval)
@@ -148,15 +152,21 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
         
         events = []
         
-        # 1. 급등/급락 구간 탐지 (일간 변동률 20% 이상)
+        # Date format based on interval
+        date_format = "%Y-%m-%d %H:%M" if ("m" in interval or "h" in interval) else "%Y-%m-%d"
+
+        # 1. 급등/급락 구간 탐지
+        # 변동성 문턱값 조정 (분봉은 더 작게)
+        surge_threshold = 2.0 if "m" in interval else 15.0
+        
         hist['daily_change'] = hist['Close'].pct_change() * 100
         
         for i in range(1, len(hist)):
             change = hist['daily_change'].iloc[i]
             
-            if abs(change) >= 15:  # 15% 이상 변동
+            if abs(change) >= surge_threshold:
                 events.append({
-                    "date": hist.index[i].strftime("%Y-%m-%d"),
+                    "date": hist.index[i].strftime(date_format),
                     "price": float(hist['Close'].iloc[i]),
                     "type": "surge" if change > 0 else "crash",
                     "change": float(change),
@@ -164,18 +174,22 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
                 })
         
         # 2. 추세 전환점 탐지 (이동평균선 교차)
-        hist['MA20'] = hist['Close'].rolling(window=20).mean()
-        hist['MA50'] = hist['Close'].rolling(window=50).mean()
+        # 윈도우 크기 분봉 데이터에 맞춰 조정
+        window_short = 5 if "m" in interval else 20
+        window_long = 20 if "m" in interval else 50
+
+        hist['MA_S'] = hist['Close'].rolling(window=window_short).mean()
+        hist['MA_L'] = hist['Close'].rolling(window=window_long).mean()
         
         for i in range(1, len(hist)):
-            if pd.isna(hist['MA20'].iloc[i]) or pd.isna(hist['MA50'].iloc[i]):
+            if pd.isna(hist['MA_S'].iloc[i]) or pd.isna(hist['MA_L'].iloc[i]):
                 continue
             
             # 골든 크로스 (상승 전환)
-            if (hist['MA20'].iloc[i-1] <= hist['MA50'].iloc[i-1] and 
-                hist['MA20'].iloc[i] > hist['MA50'].iloc[i]):
+            if (hist['MA_S'].iloc[i-1] <= hist['MA_L'].iloc[i-1] and 
+                hist['MA_S'].iloc[i] > hist['MA_L'].iloc[i]):
                 events.append({
-                    "date": hist.index[i].strftime("%Y-%m-%d"),
+                    "date": hist.index[i].strftime(date_format),
                     "price": float(hist['Close'].iloc[i]),
                     "type": "golden_cross",
                     "change": 0,
@@ -183,10 +197,10 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
                 })
             
             # 데드 크로스 (하락 전환)
-            elif (hist['MA20'].iloc[i-1] >= hist['MA50'].iloc[i-1] and 
-                  hist['MA20'].iloc[i] < hist['MA50'].iloc[i]):
+            elif (hist['MA_S'].iloc[i-1] >= hist['MA_L'].iloc[i-1] and 
+                  hist['MA_S'].iloc[i] < hist['MA_L'].iloc[i]):
                 events.append({
-                    "date": hist.index[i].strftime("%Y-%m-%d"),
+                    "date": hist.index[i].strftime(date_format),
                     "price": float(hist['Close'].iloc[i]),
                     "type": "dead_cross",
                     "change": 0,
@@ -197,9 +211,9 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
         avg_volume = hist['Volume'].mean()
         
         for i in range(len(hist)):
-            if hist['Volume'].iloc[i] >= avg_volume * 3:
+            if hist['Volume'].iloc[i] >= avg_volume * 5: # 분봉은 더 높은 기준 적용
                 events.append({
-                    "date": hist.index[i].strftime("%Y-%m-%d"),
+                    "date": hist.index[i].strftime(date_format),
                     "price": float(hist['Close'].iloc[i]),
                     "type": "volume_spike",
                     "change": float(hist['daily_change'].iloc[i]) if i > 0 else 0,
@@ -290,60 +304,6 @@ def create_story_for_event(symbol: str, event: Dict) -> Optional[Dict]:
     # 3. 자동 생성 스토리 (변동률 기반)
     return create_auto_story(symbol, event)
 
-
-def create_auto_story(symbol: str, event: Dict) -> Dict:
-    """
-    변동률 기반 자동 스토리 생성
-    """
-    change = event.get('change', 0)
-    
-    # 변동률에 따른 아이콘 및 설명
-    if change > 10:
-        icon = "🚀"
-        title = "급등 발생"
-        description = f"{abs(change):.1f}% 급등했습니다. 강력한 상승 모멘텀을 보였습니다."
-        impact = "positive"
-    elif change > 5:
-        icon = "📈"
-        title = "강한 상승"
-        description = f"{abs(change):.1f}% 상승했습니다. 긍정적인 시장 반응이 있었습니다."
-        impact = "positive"
-    elif change > 2:
-        icon = "↗️"
-        title = "완만한 상승"
-        description = f"{abs(change):.1f}% 상승했습니다."
-        impact = "positive"
-    elif change < -10:
-        icon = "📉"
-        title = "급락 발생"
-        description = f"{abs(change):.1f}% 급락했습니다. 강한 하락 압력이 있었습니다."
-        impact = "negative"
-    elif change < -5:
-        icon = "⚠️"
-        title = "데드 크로스 발생"
-        description = f"{abs(change):.1f}% 하락했습니다. 단기 평균선이 장기 평균선을 아래로 뚫었으며, 주의가 필요합니다."
-        impact = "negative"
-    elif change < -2:
-        icon = "↘️"
-        title = "하락 움직임"
-        description = f"{abs(change):.1f}% 하락했습니다."
-        impact = "negative"
-    else:
-        icon = "➡️"
-        title = "횡보 움직임"
-        description = f"변동폭이 작은 횡보 흐름을 보였습니다."
-        impact = "neutral"
-    
-    return {
-        "date": event['date'],
-        "price": event['price'],
-        "icon": icon,
-        "title": title,
-        "description": description,
-        "impact": impact,
-        "change": change,
-        "type": "auto"
-    }
 
 
 def create_auto_story(symbol: str, event: Dict) -> Dict:
@@ -547,23 +507,22 @@ def get_chart_story(symbol: str, period: str = "1y", interval: str = "1d") -> Di
         # 2. 스토리 매칭
         stories = match_events_with_stories(symbol, events)
         
-        # 3. 각 스토리에 뉴스/공시 정보 추가
-        enriched_stories = []
-        for story in stories:
-            if 'date' in story:
-                enriched_story = enrich_event_with_news(symbol, story['date'], story)
-                enriched_stories.append(enriched_story)
-            else:
-                enriched_stories.append(story)
-        
         # 4. 가격 데이터 가져오기 (OHLV 포함)
+        # Fix: Re-fetch or reuse hist to ensure period/interval matched
         ticker = yf.Ticker(symbol)
+        
+        # [NEW] Strictly limit intraday data to 1d to prevent performance lag
+        if "m" in interval or interval == "1h":
+            period = "1d"
+            
         hist = ticker.history(period=period, interval=interval)
+        
+        date_format = "%Y-%m-%d %H:%M" if ("m" in interval or "h" in interval) else "%Y-%m-%d"
         
         price_data = []
         for date, row in hist.iterrows():
             price_data.append({
-                "date": date.strftime("%Y-%m-%d"),
+                "date": date.strftime(date_format),
                 "open": float(row['Open']),
                 "high": float(row['High']),
                 "low": float(row['Low']),
@@ -575,9 +534,10 @@ def get_chart_story(symbol: str, period: str = "1y", interval: str = "1d") -> Di
             "success": True,
             "symbol": symbol,
             "period": period,
+            "interval": interval, # [NEW] Return interval
             "price_data": price_data,
-            "stories": enriched_stories,
-            "total_stories": len(enriched_stories)
+            "stories": stories,
+            "total_stories": len(stories)
         }
         
     except Exception as e:
