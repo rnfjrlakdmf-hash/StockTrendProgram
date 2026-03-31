@@ -333,6 +333,10 @@ export default function PatternPage() {
                 ...(result?.history && result.history.length > 0 ? [
                     (() => {
                         const highest = [...result.history].sort((a, b) => b.high - a.high)[0];
+                        const idx = result.history.indexOf(highest);
+                        const n = result.history.length;
+                        const isStart = idx < n * 0.15;
+                        const isEnd = idx > n * 0.85;
                         return {
                             x: new Date(highest.date).getTime(),
                             y: highest.high,
@@ -340,12 +344,17 @@ export default function PatternPage() {
                             label: {
                                 text: `최고 ${highest.high.toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
                                 borderColor: '#ef4444',
+                                offsetX: isStart ? +60 : (isEnd ? -60 : 0),
                                 style: { color: '#fff', background: '#ef4444' }
                             }
                         };
                     })(),
                     (() => {
                         const lowest = [...result.history].sort((a, b) => a.low - b.low)[0];
+                        const idx = result.history.indexOf(lowest);
+                        const n = result.history.length;
+                        const isStart = idx < n * 0.15;
+                        const isEnd = idx > n * 0.85;
                         return {
                             x: new Date(lowest.date).getTime(),
                             y: lowest.low,
@@ -354,6 +363,7 @@ export default function PatternPage() {
                                 text: `↑ 최저 ${lowest.low.toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
                                 borderColor: '#3b82f6',
                                 offsetY: 40,
+                                offsetX: isStart ? +60 : (isEnd ? -60 : 0),
                                 style: { color: '#fff', background: '#3b82f6' }
                             }
                         };
