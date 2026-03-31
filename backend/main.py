@@ -164,6 +164,132 @@ def read_risk_alerts():
     data = get_dart_risk_alerts()
     return {"status": "success", "data": data}
 
+@app.get("/api/stock/{symbol}/consensus")
+@turbo_cache(ttl_seconds=3600)
+def read_stock_consensus(symbol: str):
+    """
+    [KR Only] 종목 컨센서스 (목표주가, 투자의견, 애널리스트 수)
+    - 한국 주식(6자리 숫자): 네이버 금융 스크래핑
+    - 해외 주식: 빈 데이터 반환
+    """
+    import re, urllib.parse as up
+    symbol = up.unquote(symbol).strip()
+    clean = symbol.split('.')[0]
+    if not (len(clean) == 6 and clean.isdigit()):
+        return {"status": "success", "data": None, "market": "US"}
+    try:
+        import requests as rq
+        headers = {"User-Agent": "Mozilla/5.0"}
+        url = f"https://finance.naver.com/item/coinfo.nhn?code={clean}"
+        r = rq.get(url, headers=headers, timeout=5)
+        html = r.text
+        # 목표주가 및 투자의견 파싱
+        target = re.search(r'목표주가.*?(\d[\d,]+)', html)
+        opinion_map = {"강력매수": 5, "매수": 4, "중립": 3, "매도": 2, "강력매도": 1}
+        opinion = "중립"
+        for op in opinion_map:
+            if op in html:
+                opinion = op
+                break
+        analyst_match = re.search(r'(\d+)\s*개\s*증권사', html)
+        analyst_count = int(analyst_match.group(1)) if analyst_match else None
+        target_price = int(target.group(1).replace(',', '')) if target else None
+        return {
+            "status": "success",
+            "market": "KR",
+            "data": {
+                "target_price": target_price,
+                "opinion": opinion,
+                "opinion_score": opinion_map.get(opinion, 3),
+                "analyst_count": analyst_count
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e), "data": None}
+
+@app.get("/api/stock/{symbol}/sector-analysis")
+@turbo_cache(ttl_seconds=3600)
+def read_sector_analysis(symbol: str):
+    """
+    [KR Only] 업종/섹터 비교 분석
+    - 동종업종 PER, 주요 경쟁사 등락률 비교
+    """
+    import urllib.parse as up, re
+    symbol = up.unquote(symbol).strip()
+    clean = symbol.split('.')[0]
+    if not (len(clean) == 6 and clean.isdigit()):
+        return {"status": "success", "data": None, "market": "US"}
+    try:
+        import requests as rq
+        headers = {"User-Agent": "Mozilla/5.0"}
+        # 네이버 금융 업종 정보
+        url = f"https://finance.naver.com/item/coinfo.nhn?code={clean}"
+        r = rq.get(url, headers=headers, timeout=5)
+        html = r.text
+        # 업종 PER 파싱
+        sector_per = re.search(r'업종PER[^0-9]*?([\d.]+)', html)
+        sector_name = re.search(r'업종</th>.*?<td[^>]*>(.*?)</td>', html, re.DOTALL)
+        sector_per_val = float(sector_per.group(1)) if sector_per else None
+        sector_name_val = re.sub(r'<[^>]+>', '', sector_name.group(1)).strip() if sector_name else None
+        # 동종업종 상위 종목 시세
+        industry_url = f"https://finance.naver.com/sise/sise_group_detail.nhn?type=upjong&no={clean}"
+        peers = []
+        try:
+            r2 = rq.get(f"https://finance.naver.com/item/coinfo.nhn?code={clean}&target=industry", headers=headers, timeout=5)
+            peer_matches = re.findall(r'code=(\d{6})[^"]*"[^>]*>([^<]+)</a>.*?(\d[\d,]+)\s*</td>.*?([+-]?\d+\.?\d*)', r2.text)
+            for p in peer_matches[:5]:
+                peers.append({"code": p[0], "name": p[1].strip(), "price": p[2], "change": p[3]})
+        except:
+            pass
+        return {
+            "status": "success",
+            "market": "KR",
+            "data": {
+                "sector_name": sector_name_val,
+                "sector_per": sector_per_val,
+                "peers": peers
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e), "data": None}
+
+@app.get("/api/stock/{symbol}/ownership")
+@turbo_cache(ttl_seconds=3600)
+def read_stock_ownership(symbol: str):
+    """
+    [KR Only] 지분현황 (대주주, 기관, 외국인, 개인 비중)
+    """
+    import urllib.parse as up, re
+    symbol = up.unquote(symbol).strip()
+    clean = symbol.split('.')[0]
+    if not (len(clean) == 6 and clean.isdigit()):
+        return {"status": "success", "data": None, "market": "US"}
+    try:
+        import requests as rq
+        headers = {"User-Agent": "Mozilla/5.0"}
+        url = f"https://finance.naver.com/item/main.nhn?code={clean}"
+        r = rq.get(url, headers=headers, timeout=5)
+        html = r.text
+        # 외국인/기관/개인 지분율
+        foreign = re.search(r'외국인\s*<[^>]+>\s*([\d.]+)%', html)
+        institution = re.search(r'기관\s*<[^>]+>\s*([\d.]+)%', html)
+        individual = re.search(r'개인\s*<[^>]+>\s*([\d.]+)%', html)
+        # 최대주주
+        major_holder = re.search(r'최대주주.*?([가-힣A-Za-z\s]+)\s*([\d.]+)%', html, re.DOTALL)
+        return {
+            "status": "success",
+            "market": "KR",
+            "data": {
+                "foreign_pct": float(foreign.group(1)) if foreign else None,
+                "institution_pct": float(institution.group(1)) if institution else None,
+                "individual_pct": float(individual.group(1)) if individual else None,
+                "major_holder": major_holder.group(1).strip() if major_holder else None,
+                "major_holder_pct": float(major_holder.group(2)) if major_holder else None
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e), "data": None}
+
 @app.get("/api/stock/{symbol}/financials")
 @turbo_cache(ttl_seconds=3600)
 def read_stock_financials(symbol: str):

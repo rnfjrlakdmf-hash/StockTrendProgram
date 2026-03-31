@@ -23,6 +23,7 @@ import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
 import InvestorTrendTab from "@/components/InvestorTrendTab";
 import OverhangTab from "@/components/OverhangTab";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
+import KoreanComprehensiveAnalysis from "@/components/KoreanComprehensiveAnalysis";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -1003,8 +1004,21 @@ function DiscoveryContent() {
 
                                     {activeTab === 'analysis' ? (
                                         <>
+                                            {/* [한국 종목 전용] 종합 분석 서브탭 */}
+                                            {stock.currency === 'KRW' && !stock.symbol?.toUpperCase().includes('MARKET') && (
+                                                <div className="mb-8">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <h4 className="text-sm font-black text-blue-300 uppercase tracking-widest">📋 데이터 종합 분석</h4>
+                                                        <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">한국 종목 전용</span>
+                                                    </div>
+                                                    <KoreanComprehensiveAnalysis stock={stock} />
+                                                    <div className="mt-8 border-t border-white/10 pt-6" />
+                                                </div>
+                                            )}
+
                                             {/* Chart Section */}
                                             <FinancialHighlights data={financialHighlights} loading={financialsLoading} />
+
 
                                             {/* AI Opinion */}
                                             {/* AI Opinion */}
