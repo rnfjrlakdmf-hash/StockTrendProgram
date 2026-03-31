@@ -636,6 +636,16 @@ def post_strategy(data: dict):
 # ------------------------------------------------------------
 # [AI Sentiment] 라운지 여론 요약 분석
 # ------------------------------------------------------------
+@app.get("/api/community/hot-stocks")
+def get_hot_stocks():
+    """실시간 인기 종목 토론 랭킹 (메시지 수 기준 상위 10개)"""
+    from collections import Counter
+    # 전역 라운지 제외한 종목별 메시지 집계
+    symbols = [c['symbol'] for c in COMMUNITY_CHATS if c.get('symbol') and c['symbol'] != 'global']
+    counter = Counter(symbols)
+    hot = [{"symbol": sym, "count": cnt} for sym, cnt in counter.most_common(10)]
+    return {"status": "success", "data": hot}
+
 @app.get("/api/community/sentiment/{symbol}")
 @turbo_cache(ttl_seconds=60)
 def get_lounge_sentiment(symbol: str):
