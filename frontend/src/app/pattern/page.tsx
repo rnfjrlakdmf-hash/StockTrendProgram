@@ -284,12 +284,12 @@ export default function PatternPage() {
                 }
             }
         },
-        yaxis: { opposite: true, labels: { formatter: (val: number) => val?.toLocaleString() } },
+        yaxis: { opposite: true, labels: { formatter: (val: number) => Math.round(val || 0).toLocaleString() } },
         grid: { borderColor: '#ffffff08', strokeDashArray: 4, padding: { left: 10, right: 10 } },
         tooltip: {
             shared: true,
             x: { format: ['1m','5m','30m','60m'].includes(candleInterval) ? 'yyyy년 MM월 dd일 HH:mm' : 'yyyy년 MM월 dd일' },
-            y: { formatter: (val: number) => val?.toLocaleString() },
+            y: { formatter: (val: number) => Math.round(val || 0).toLocaleString() },
             custom: chartType === 'candle' ? function({ seriesIndex, dataPointIndex, w }: any) {
                 const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
                 const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
@@ -313,10 +313,10 @@ export default function PatternPage() {
                         <div class="text-sm font-black text-emerald-400 border-b border-gray-700/50 pb-2 mb-2">
                             ${d}
                         </div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${o?.toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${h?.toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${l?.toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mt-2 pt-2 border-t border-gray-700/50 text-sm"><span class="text-gray-400">종가</span> <span class="font-mono font-black text-white">${c?.toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${Math.round(o || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${Math.round(h || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${Math.round(l || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-8 justify-between mt-2 pt-2 border-t border-gray-700/50 text-sm"><span class="text-gray-400">종가</span> <span class="font-mono font-black text-white">${Math.round(c || 0).toLocaleString()}</span></div>
                     </div>
                 `;
             } : undefined
@@ -342,7 +342,7 @@ export default function PatternPage() {
                             y: highest.high,
                             marker: { size: 0 },
                             label: {
-                                text: `최고 ${highest.high.toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
+                                text: `최고 ${Math.round(highest.high).toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
                                 borderColor: '#ef4444',
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
                                 style: { color: '#fff', background: '#ef4444' }
@@ -360,7 +360,7 @@ export default function PatternPage() {
                             y: lowest.low,
                             marker: { size: 0 },
                             label: {
-                                text: `↑ 최저 ${lowest.low.toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
+                                text: `↑ 최저 ${Math.round(lowest.low).toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
                                 borderColor: '#3b82f6',
                                 offsetY: 40,
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
