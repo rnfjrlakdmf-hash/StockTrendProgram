@@ -190,10 +190,10 @@ def read_stock_overview(symbol: str):
 
 @app.get("/api/stock/{symbol}/indicators")
 @turbo_cache(ttl_seconds=3600)
-def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL"):
-    """특정 종목의 상세 투자지표(안정성 등) 반환 (연간/분기, 회계기준 필터 포함)"""
+def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "3"):
+    """특정 종목의 상세 투자지표(수익성, 성장성, 안정성, 활동성 등) 반환"""
     from korea_data import get_korean_investment_indicators
-    data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun)
+    data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
     if data:
         return {"status": "success", "data": data}
     else:

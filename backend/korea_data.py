@@ -2043,19 +2043,18 @@ def get_korean_company_overview(symbol: str):
 
 
 @turbo_cache(ttl_seconds=3600)
-def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: str = "IFRSL"):
+def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: str = "IFRSL", rpt: str = "3"):
     """
-    네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 안정성 지표를 스크랩합니다.
-    (부채비율, 유동비율, 이자보상배율 등)
+    네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 지표를 스크랩합니다.
+    - rpt=1: 수익성, rpt=2: 성장성, rpt=3: 안정성, rpt=4: 활동성
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
     if not (len(code) == 6 and code.isdigit()):
         return None
 
-    # WiseReport Data Endpoint (rpt=3 for Stability Indicators)
-    # n-th tab is often represented by rpt (3=Stability, 1=Profitability, 2=Growth, etc.)
-    url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&rpt=3&frq={freq}&finGubun={fin_gubun}"
+    # WiseReport Data Endpoint (rpt: 1=Profitability, 2=Growth, 3=Stability, 4=Activity)
+    url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&rpt={rpt}&frq={freq}&finGubun={fin_gubun}"
     
     try:
         res = requests.get(url, headers=HEADER, timeout=7)
@@ -2119,6 +2118,7 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
             "symbol": symbol,
             "freq": freq,
             "finGubun": fin_gubun,
+            "category": rpt,
             "headers": headers,
             "indicators": indicators
         }
