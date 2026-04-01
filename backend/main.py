@@ -178,11 +178,14 @@ def read_stock_dividends(symbol: str):
     data = get_dividend_history(symbol)
     return {"status": "success", "data": data}
 
-@app.get("/api/stock/{symbol}/health")
+
+@app.get("/api/stock/{symbol}/overview")
+
 @turbo_cache(ttl_seconds=3600)
-def read_stock_health(symbol: str):
-    """특정 종목의 재무 건전성 지표 추이 반환 (부채비율, 유동비율, ROE)"""
-    data = get_financial_health(symbol)
+def read_stock_overview(symbol: str):
+    """특정 종목의 상세 기업 개요(연혁, 매출구성, R&D 등) 반환"""
+    from korea_data import get_korean_company_overview
+    data = get_korean_company_overview(symbol)
     return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/investor")

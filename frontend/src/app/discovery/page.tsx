@@ -23,6 +23,7 @@ import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
 import InvestorTrendTab from "@/components/InvestorTrendTab";
 import OverhangTab from "@/components/OverhangTab";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
+import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -1008,7 +1009,17 @@ function DiscoveryContent() {
 
                                             {/* AI Opinion */}
                                             {/* AI Opinion */}
-                                            {/* [New] Corporate Overview Section */}
+                                            {/* [New] Detailed Corporate Overview Section (KR Only) */}
+                                            {(stock.symbol.split('.')[0].length === 6 && /^\d+$/.test(stock.symbol.split('.')[0])) && (
+                                                <div className="mb-10">
+                                                    <KoreanCompanyOverview 
+                                                        symbol={stock.symbol} 
+                                                        stockName={stock.name} 
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* [New] Corporate Overview Section (Basic Description) */}
                                             {stock.description && (
                                                 <div className="mb-8 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 p-5 md:p-6 shadow-lg">
                                                     <h4 className="text-sm font-black text-indigo-300 flex items-center gap-2 mb-4 uppercase tracking-widest">

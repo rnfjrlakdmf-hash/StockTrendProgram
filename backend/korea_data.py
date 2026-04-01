@@ -34,10 +34,14 @@ def decode_safe(res: requests.Response) -> str:
              return res.content.decode('cp949', 'ignore')
              
         # 2. Heuristic: Naver Finance is usually CP949
-        if "finance.naver.com" in res.url:
+        if "finance.naver.com" in res.url or "navercomp.wisereport.co.kr" in res.url:
             try:
+                # WiseReport is usually UTF-8, Finance is CP949
+                if "wisereport.co.kr" in res.url:
+                    return res.content.decode('utf-8')
                 return res.content.decode('cp949')
             except:
+                return res.content.decode('cp949', 'ignore')
                 pass
 
         # 3. Try UTF-8 strict
@@ -1798,6 +1802,7 @@ async def fetch_stocks_for_heatmap(session, item, item_type='sector'):
                 s_name_tag = s_cols[0].select_one("a")
                 if not s_name_tag: continue
                 s_name = s_name_tag.text.strip()
+                
                 s_change_txt = s_cols[change_idx].text.strip()
                 
                 s_change_val = 0.0
@@ -1928,3 +1933,111 @@ async def get_theme_heatmap_data():
     except Exception as e:
         print(f"Theme Heatmap Async Error: {e}")
         return []
+
+@turbo_cache(ttl_seconds=3600)
+def get_korean_company_overview(symbol: str):
+    """
+    네이버 금융 기업정보(WiseReport Iframe)로부터 상세 기업 개요를 스크랩합니다.
+    (기본정보, 최근연혁, 매출구성, 연구개발비, 인원현황 등)
+    """
+    code = symbol.split('.')[0]
+    code = re.sub(r'[^0-9]', '', code)
+    if not (len(code) == 6 and code.isdigit()):
+        return None
+
+    # WiseReport Iframe URL (Overview Tab: c1020001.aspx)
+    url = f"https://navercomp.wisereport.co.kr/v2/company/c1020001.aspx?cmp_cd={code}"
+    
+    try:
+        res = requests.get(url, headers=HEADER, timeout=7)
+        # Naver components are often UTF-8 or CP949
+        html = decode_safe(res)
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        data = {
+            "basic_info": {},
+            "history": [],
+            "sales_composition": [],
+            "rnd_status": [],
+            "staff_status": []
+        }
+        
+        # 1. 기본 정보 (table#cTB201)
+        basic_table = soup.select_one("table#cTB201")
+        if basic_table:
+            rows = basic_table.select("tr")
+            for row in rows:
+                th_list = row.select("th")
+                td_list = row.select("td")
+                for th, td in zip(th_list, td_list):
+                    key = th.text.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+                    val = td.text.strip()
+                    if key:
+                        data["basic_info"][key] = val
+        
+        # 2. 최근 연혁 (table#cTB202)
+        history_table = soup.select_one("table#cTB202")
+        if history_table:
+            rows = history_table.select("tbody tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) >= 2:
+                    data["history"].append({
+                        "date": cols[0].text.strip(),
+                        "content": cols[1].text.strip()
+                    })
+        
+        # 3. 주요제품 및 매출구성 (table#cTB203)
+        sales_table = soup.select_one("table#cTB203")
+        if sales_table:
+            rows = sales_table.select("tbody tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) >= 2:
+                    product = cols[0].text.strip()
+                    pct_str = cols[1].text.strip()
+                    try:
+                        pct_val = float(re.sub(r'[^0-9.]', '', pct_str))
+                    except:
+                        pct_val = 0.0
+                    data["sales_composition"].append({
+                        "product": product,
+                        "percentage": pct_val
+                    })
+        
+        # 4. 연구개발비 지출 현황 (table#cTB205_1)
+        rnd_table = soup.select_one("table#cTB205_1")
+        if rnd_table:
+            headers = [th.text.strip() for th in rnd_table.select("thead tr th")]
+            rows = rnd_table.select("tbody tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) > 0:
+                    row_data = {"period": cols[0].text.strip()}
+                    for i, col in enumerate(cols[1:]):
+                        if i+1 < len(headers):
+                            h_key = headers[i+1].replace(" ", "").replace("\n", "")
+                            row_data[h_key] = col.text.strip()
+                    data["rnd_status"].append(row_data)
+        
+        # 5. 인원 현황 (table#cTB205_2)
+        staff_table = soup.select_one("table#cTB205_2")
+        if staff_table:
+            headers = [th.text.strip() for th in staff_table.select("thead tr th")]
+            rows = staff_table.select("tbody tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) > 0:
+                    row_data = {"period": cols[0].text.strip()}
+                    for i, col in enumerate(cols[1:]):
+                        if i+1 < len(headers):
+                            h_key = headers[i+1].replace(" ", "").replace("\n", "")
+                            row_data[h_key] = col.text.strip()
+                    data["staff_status"].append(row_data)
+                        
+        return data
+        
+    except Exception as e:
+        print(f"Overview scraping error for {symbol}: {e}")
+        return None
+

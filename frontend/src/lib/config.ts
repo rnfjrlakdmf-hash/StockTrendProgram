@@ -20,8 +20,7 @@ if (process.env.NEXT_PUBLIC_API_URL) {
     } else {
         // Web Browser / Desktop
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Even on localhost, we point to real server during this final fix to ensure it works
-            apiBase = "https://stock-server-rnfjr.up.railway.app";
+            apiBase = "http://localhost:8000";
         } else {
             // [Fix] Production Backend URL (Railway - Specific App)
             apiBase = "https://stock-server-rnfjr.up.railway.app";
