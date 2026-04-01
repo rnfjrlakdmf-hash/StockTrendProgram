@@ -1051,7 +1051,7 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            {/* [New] Healthcare Analysis Integration */}
+                                            {/* [New] Healthcare Analysis Integration - Hidden by user request 
                                             {stock.symbol && !stock.symbol.includes("MARKET") && (
                                                 <div className="mt-8 pt-8 border-t border-white/10">
                                                     <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
@@ -1060,6 +1060,8 @@ function DiscoveryContent() {
                                                     <CompanyAnalysisScore symbol={stock.symbol} autoLoad={true} />
                                                 </div>
                                             )}
+                                            */}
+
 
                                             {/* [New] 3-Line Rationale */}
                                             {stock.rationale && stock.rationale.supply && (
