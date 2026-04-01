@@ -24,7 +24,7 @@ function AnalysisContent() {
     const urlSymbol = searchParams.get("symbol");
 
     const [symbol, setSymbol] = useState("");
-    const [activeTab, setActiveTab] = useState<"summary" | "quant" | "financial" | "peer">("summary");
+    const [activeTab, setActiveTab] = useState<"summary" | "quant" | "financial" | "sector" | "peer">("summary");
 
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
@@ -34,6 +34,10 @@ function AnalysisContent() {
     // Financial Analysis State
     const [financialData, setFinancialData] = useState<any>(null);
     const [financialLoading, setFinancialLoading] = useState(false);
+
+    // Sector State
+    const [sectorData, setSectorData] = useState<any>(null);
+    const [sectorLoading, setSectorLoading] = useState(false);
 
     // Peer State
     const [peerSymbols, setPeerSymbols] = useState("005930,000660,035420");
@@ -61,6 +65,7 @@ function AnalysisContent() {
         // Load initial data based on active tab
         if (activeTab === "quant") fetchQuant(sym);
         else if (activeTab === "financial") fetchFinancial(sym);
+        else if (activeTab === "sector") fetchSectorAnalysis(sym);
         // Summary tab handles its own data fetching via component
     };
 
@@ -102,6 +107,17 @@ function AnalysisContent() {
             if (json.status === "success") setFinancialData(json.data);
         } catch (err) { console.error(err); }
         finally { setFinancialLoading(false); }
+    };
+
+    const fetchSectorAnalysis = async (sym: string) => {
+        if (!sym) return;
+        setSectorLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/sector-analysis/${sym}`);
+            const json = await res.json();
+            if (json.status === "success") setSectorData(json.data);
+        } catch (err) { console.error(err); }
+        finally { setSectorLoading(false); }
     };
 
     const fetchPeer = async () => {
@@ -286,6 +302,7 @@ function AnalysisContent() {
                             { id: "summary", label: "요약 리포트", icon: Activity },
                             { id: "quant", label: "TurboQuant", icon: Zap },
                             { id: "financial", label: "재무 분석", icon: Shield },
+                            { id: "sector", label: "섹터 분석", icon: PieChart },
                             { id: "peer", label: "동종비교", icon: Users }
                         ].map((tab: any) => (
                             <button
@@ -630,6 +647,83 @@ function AnalysisContent() {
                                     <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" />
                                     <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p>
                                     <p className="text-xs text-gray-600 mt-2">Altman Z-Score · Piotroski F-Score · 핵심 비율</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === "sector" && (
+                        <div className="space-y-6">
+                            {sectorLoading ? (
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-blue-400 mb-3" /><p className="text-gray-500">섹터 비교 데이터 분석 중...</p></div>
+                            ) : sectorData ? (
+                                <div className="space-y-6 animate-in fade-in duration-300">
+                                    <div className="bg-gradient-to-br from-blue-900/30 to-black border border-blue-500/30 rounded-3xl p-6">
+                                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                                            <div>
+                                                <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
+                                                <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다.</p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
+                                                    <select className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
+                                                        {(sectorData.compare_sectors || []).map((s: any) => (
+                                                            <option key={s.id} value={s.id} selected={s.selected} className="bg-gray-900 text-white">
+                                                                {s.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Chart Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {Object.entries(sectorData.charts || {}).map(([title, data]: any) => (
+                                                <div key={title} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
+                                                    <div className="flex items-center justify-between mb-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <BarChart3 className="w-4 h-4 text-blue-400" />
+                                                            <h4 className="text-xs font-black uppercase tracking-widest text-blue-300">{title} 추이</h4>
+                                                        </div>
+                                                        {showEasy && <span className="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-bold">비교 분석</span>}
+                                                    </div>
+                                                    <div className="h-[250px] w-full">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <LineChart data={data.chart_data}>
+                                                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                                                <XAxis dataKey="period" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                                                <Tooltip 
+                                                                    contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
+                                                                    itemStyle={{ fontWeight: 'bold' }}
+                                                                />
+                                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                                                {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key, idx) => (
+                                                                    <Line 
+                                                                        key={key} 
+                                                                        type="monotone" 
+                                                                        dataKey={key} 
+                                                                        stroke={idx === 0 ? "#6366f1" : idx === 1 ? "#ef4444" : "#22c55e"} 
+                                                                        strokeWidth={idx === 0 ? 4 : 2} 
+                                                                        dot={{ r: idx === 0 ? 4 : 2 }} 
+                                                                        activeDot={{ r: 6 }}
+                                                                    />
+                                                                ))}
+                                                            </LineChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                    <PieChart className="w-12 h-12 text-blue-400/30 mx-auto mb-4" />
+                                    <p className="text-gray-500">종목코드를 입력하면 업종/섹터 비교 분석을 시작합니다</p>
+                                    <p className="text-xs text-gray-600 mt-2">주가수익률 · 배당 · PER · PBR · ROE 추이</p>
                                 </div>
                             )}
                         </div>

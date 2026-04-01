@@ -95,6 +95,7 @@ from rank_data import get_etf_ranking
 from etf_detail import get_etf_detail
 from turbo_engine import turbo_engine, turbo_cache
 from pro_analysis import get_peer_comparison
+from sector_analysis import get_sector_analysis_data
 
 @app.get("/api/rank/etf")
 @turbo_cache(ttl_seconds=300)
@@ -249,6 +250,23 @@ def read_stock_financials(symbol: str):
     """특정 종목의 최근 3개년 재무 하이라이트 반환"""
     data = get_company_financials(symbol)
     return {"status": "success", "data": data}
+
+@app.get("/api/sector-analysis/{symbol}")
+def read_sector_analysis(symbol: str):
+    """
+    [v1.5.0] 네이버 금융 기반 섹터 분석 데이터 반환
+    주가수익률, 배당, PER, PBR 등 섹터 비교 시계열 데이터 포함
+    """
+    cache_key = f"sector_analysis_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+        
+    data = get_sector_analysis_data(symbol)
+    if data and data.get("status") == "success":
+        turbo_engine.set_cache(cache_key, data)
+        
+    return data
 
 @app.get("/api/stock/{symbol}/dividends")
 @turbo_cache(ttl_seconds=3600)
