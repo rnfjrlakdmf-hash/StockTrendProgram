@@ -274,70 +274,47 @@ function AnalysisContent() {
 
                                     {/* Radar Chart */}
                                     <RadarChart factors={quantData.factors} />
-                                </div>
 
-                                {/* Factor Detail Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                    {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
-                                        const getFactorMetaphor = (label: string) => {
-                                            if (label === "가치") return { title: "할인 마트 가격표", desc: "능력 대비 지금 가격이 '착한지' (가성비) 체크" };
-                                            if (label === "성장") return { title: "내일은 더 클 아이?", desc: "매출과 이익이 얼마나 쑥쑥 자라는지 (성장성) 연구" };
-                                            if (label === "모멘텀") return { title: "요즘 인기 폭발 중?", desc: "요즘 주가 흐름이 얼마나 힘찬지 (기세) 확인" };
-                                            if (label === "수익성") return { title: "에너지 효율", desc: "투자 대비 얼마나 알차게 수익을 내나 확인" };
-                                            if (label === "안정성") return { title: "뼈대 건강도", desc: "위기에도 쉽게 넘어지지 않는 튼튼한 체격인가" };
-                                            return null;
-                                        };
-                                        const metaphor = getFactorMetaphor(f.label);
+                                    {/* Consolidated Factor Detail Dashboard */}
+                                    <div className="mt-8 pt-6 border-t border-white/10">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                            {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
+                                                const getFactorMetaphor = (label: string) => {
+                                                    if (label === "가치") return { title: "가성비", desc: "가격표 매력" };
+                                                    if (label === "성장") return { title: "성장판", desc: "자라나는 속도" };
+                                                    if (label === "모멘텀") return { title: "기세", desc: "주가 달리기" };
+                                                    if (label === "수익성") return { title: "효율", desc: "돈 버는 기술" };
+                                                    if (label === "안정성") return { title: "뼈대", desc: "위기 견디기" };
+                                                    return null;
+                                                };
+                                                const metaphor = getFactorMetaphor(f.label);
 
-                                        return (
-                                            <div key={key} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center transition-all hover:border-indigo-500/30">
-                                                <h4 className="text-xs text-gray-400 mb-1 flex flex-col items-center gap-1">
-                                                    {f.label}
-                                                    {showEasy && metaphor && (
-                                                        <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.5 rounded leading-none">
-                                                            {metaphor.title}
+                                                return (
+                                                    <div key={key} className="flex flex-col items-center text-center group">
+                                                        <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
+                                                        <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>
+                                                            {f.score}
                                                         </span>
-                                                    )}
-                                                </h4>
-                                                <span className={`text-2xl font-black ${getScoreColor(f.score)}`}>{f.score}</span>
-                                                {showEasy && metaphor && (
-                                                    <p className="text-[9px] text-gray-500 mt-1 leading-tight font-medium">
-                                                        {metaphor.desc}
-                                                    </p>
-                                                )}
-                                                <div className="mt-2 space-y-1">
-                                                    {Object.entries(f.metrics || {}).map(([mk, mv]: any) => {
-                                                        const getMetricMetaphor = (mKey: string) => {
-                                                            if (mKey === "PER") return "버는 돈 대비 가격표";
-                                                            if (mKey === "PBR") return "재산 대비 가격표";
-                                                            if (mKey === "매출성장률") return "덩치 커지는 속도";
-                                                            if (mKey === "이익성장률") return "남는 돈 느는 속도";
-                                                            if (mKey === "3개월수익률") return "최근 3달 달리기 성적";
-                                                            if (mKey === "ROE") return "내 돈으로 알차게 벌었나";
-                                                            if (mKey === "영업이익률") return "장사 순수 마진";
-                                                            if (mKey === "부채비율") return "남의 살(빚) 무게";
-                                                            if (mKey === "Beta") return "파도에 출렁이는 정도";
-                                                            return null;
-                                                        };
-                                                        const mMetaphor = getMetricMetaphor(mk);
-
-                                                        return (
-                                                            <div key={mk} className="text-[10px] text-gray-500 flex flex-col items-center">
-                                                                <div className="flex items-center gap-1">
-                                                                    {mk}: <span className="text-gray-300 font-bold">{mv}</span>
-                                                                </div>
-                                                                {showEasy && mMetaphor && (
-                                                                    <span className="text-[8px] text-indigo-400/80 leading-none mt-0.5">
-                                                                        ({mMetaphor})
-                                                                    </span>
-                                                                )}
+                                                        {showEasy && metaphor && (
+                                                            <div className="mb-2">
+                                                                <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded">
+                                                                    {metaphor.title}
+                                                                </span>
                                                             </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                                        )}
+                                                        <div className="space-y-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                            {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
+                                                                <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1">
+                                                                    <span>{mk}</span>
+                                                                    <span className="text-gray-200 font-bold">{mv}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* [New] TurboQuant Precision Indicators Deep-Dive */}
