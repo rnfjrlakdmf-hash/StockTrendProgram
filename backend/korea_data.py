@@ -2041,3 +2041,89 @@ def get_korean_company_overview(symbol: str):
         print(f"Overview scraping error for {symbol}: {e}")
         return None
 
+
+@turbo_cache(ttl_seconds=3600)
+def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: str = "IFRSL"):
+    """
+    네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 안정성 지표를 스크랩합니다.
+    (부채비율, 유동비율, 이자보상배율 등)
+    """
+    code = symbol.split('.')[0]
+    code = re.sub(r'[^0-9]', '', code)
+    if not (len(code) == 6 and code.isdigit()):
+        return None
+
+    # WiseReport Data Endpoint (rpt=3 for Stability Indicators)
+    # n-th tab is often represented by rpt (3=Stability, 1=Profitability, 2=Growth, etc.)
+    url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&rpt=3&frq={freq}&finGubun={fin_gubun}"
+    
+    try:
+        res = requests.get(url, headers=HEADER, timeout=7)
+        html = decode_safe(res)
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # The data is in table#draggable-table-body
+        tbody = soup.select_one("#draggable-table-body")
+        if not tbody:
+            # Fallback check if search returned no results
+            if "검색 결과가 없습니다" in html:
+                return {"status": "empty", "message": "해당 조건의 데이터가 없습니다."}
+            return None
+            
+        # Get Headers (Years/Quarters) from the fixed header row (usually above the draggable body)
+        headers = []
+        # In cF4002.aspx, headers are often in th.num elements within the same response
+        header_cols = soup.select("th.num")
+        for h in header_cols:
+            clean_h = h.text.strip().replace("\n", "").replace("\t", "")
+            if clean_h and clean_h not in headers:
+                headers.append(clean_h)
+        
+        rows = tbody.select("tr")
+        indicators = []
+        
+        for row in rows:
+            # First <th> is the indicator name
+            name_col = row.select_one("th")
+            if not name_col: continue
+            
+            # Clean name (remove symbols like +, -)
+            indicator_name = name_col.text.strip().replace(" ", "").replace("\n", "").replace("\t", "")
+            # Remove leading +/- used for expanding tree
+            indicator_name = re.sub(r'^[+-]', '', indicator_name)
+            
+            if not indicator_name: continue
+            
+            values_cols = row.select("td")
+            values = {}
+            
+            for i, col in enumerate(values_cols):
+                if i < len(headers):
+                    year_key = headers[i]
+                    val_str = col.text.strip().replace(",", "")
+                    try:
+                        # Clean special chars like % or N/A
+                        clean_val = re.sub(r'[^0-9.-]', '', val_str)
+                        val = float(clean_val) if clean_val else None
+                    except:
+                        val = None
+                    values[year_key] = val
+            
+            indicators.append({
+                "name": indicator_name,
+                "values": values
+            })
+            
+        return {
+            "status": "success",
+            "symbol": symbol,
+            "freq": freq,
+            "finGubun": fin_gubun,
+            "headers": headers,
+            "indicators": indicators
+        }
+        
+    except Exception as e:
+        print(f"Indicators scraping error for {symbol}: {e}")
+        return None
+

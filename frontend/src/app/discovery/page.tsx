@@ -24,6 +24,7 @@ import InvestorTrendTab from "@/components/InvestorTrendTab";
 import OverhangTab from "@/components/OverhangTab";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
+import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -1013,6 +1014,16 @@ function DiscoveryContent() {
                                             {(stock.symbol.split('.')[0].length === 6 && /^\d+$/.test(stock.symbol.split('.')[0])) && (
                                                 <div className="mb-10">
                                                     <KoreanCompanyOverview 
+                                                        symbol={stock.symbol} 
+                                                        stockName={stock.name} 
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* [New] TurboQuant Precision Indicators (KR Only) */}
+                                            {(stock.symbol.split('.')[0].length === 6 && /^\d+$/.test(stock.symbol.split('.')[0])) && (
+                                                <div className="mb-10">
+                                                    <TurboQuantIndicators 
                                                         symbol={stock.symbol} 
                                                         stockName={stock.name} 
                                                     />

@@ -188,6 +188,17 @@ def read_stock_overview(symbol: str):
     data = get_korean_company_overview(symbol)
     return {"status": "success", "data": data}
 
+@app.get("/api/stock/{symbol}/indicators")
+@turbo_cache(ttl_seconds=3600)
+def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL"):
+    """특정 종목의 상세 투자지표(안정성 등) 반환 (연간/분기, 회계기준 필터 포함)"""
+    from korea_data import get_korean_investment_indicators
+    data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun)
+    if data:
+        return {"status": "success", "data": data}
+    else:
+        return {"status": "error", "message": "Failed to fetch indicators"}
+
 @app.get("/api/stock/{symbol}/investor")
 @turbo_cache(ttl_seconds=60)
 def read_stock_investor(symbol: str, period: int = 1):
