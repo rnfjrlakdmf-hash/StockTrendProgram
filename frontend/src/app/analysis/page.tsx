@@ -9,6 +9,7 @@ import {
     Activity, Zap, AlertTriangle, ChevronRight, X, Info, HelpCircle,
     Eye, EyeOff
 } from "lucide-react";
+import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 
 
 // [v1.2.0] Added intuitive metaphors for beginners
@@ -338,6 +339,15 @@ function AnalysisContent() {
                                         );
                                     })}
                                 </div>
+
+                                {/* [New] TurboQuant Precision Indicators Deep-Dive */}
+                                {(symbol.length >= 6) && (
+                                    <div className="mt-8">
+                                        <TurboQuantIndicators 
+                                            symbol={symbol} 
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
