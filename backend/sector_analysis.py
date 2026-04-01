@@ -11,8 +11,10 @@ from turbo_engine import turbo_cache
 @turbo_cache(ttl_seconds=3600)
 def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    [v1.7.0] TurboQuant Enhanced Sector Engine (Interactive)
-    - sector_id 파라미터를 지원하여 드롭다운 선택 시 실시간 데이터 로드
+    [v1.9.0] TurboQuant Intelligent Sector Scraper
+    - Text-based table recognition (PER, PBR, ROE, etc.)
+    - Support for dynamic sector selection
+    - Robust fallback for missing data
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
@@ -21,7 +23,6 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
 
     try:
         session = requests.Session()
-        # Enhanced headers for better bypass
         turbo_headers = HEADER.copy()
         turbo_headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -30,21 +31,13 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         })
         session.headers.update(turbo_headers)
         
-        # Step 1: Multiple data source attempts
+        # Step 1: Fetch Main Sector Page
         url = f"https://navercomp.wisereport.co.kr/v2/company/c1050001.aspx?cmp_cd={code}"
         if sector_id:
             url += f"&set_sect={sector_id}"
             
         res = session.get(url, timeout=10)
         html = decode_safe(res)
-        
-        # Basic Validation
-        if len(html) < 2000 or "로그인" in html:
-            # Try a different endpoint or parameter if blocked
-            alt_url = f"https://navercomp.wisereport.co.kr/v2/company/c1050001.aspx?cmp_cd={code}&target=fin_info"
-            res = session.get(alt_url, timeout=10)
-            html = decode_safe(res)
-
         soup = BeautifulSoup(html, 'html.parser')
         
         # 1-1. Sector basic meta
@@ -66,43 +59,59 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                         "selected": "selected" in opt.attrs or opt.get("selected") == "selected"
                     })
 
-        # Step 2: Global Indicators Scraper (8 key metrics)
-        table_ids = {
-            "cTB11": "주가수익률", "cTB12": "배당수익률", "cTB13": "PER", "cTB14": "PBR",
-            "cTB15": "ROE", "cTB16": "부채비율", "cTB17": "매출총이익률", "cTB18": "영업이익률"
+        # Step 2: Intelligent Table Scraper (Text-based searching)
+        target_metrics = {
+            "주가수익률": ["주가수익률", "수익률"],
+            "배당수익률": ["배당수익률", "배당"],
+            "PER": ["PER"],
+            "PBR": ["PBR"],
+            "ROE": ["ROE"],
+            "부채비율": ["부채비율"],
+            "매출총이익률": ["매출총이익률"],
+            "영업이익률": ["영업이익률"]
         }
         
         charts = {}
         summary_table = []
-
         all_tables = soup.select("table")
-        for table in all_tables:
-            tid = table.get("id")
-            if tid not in table_ids: continue
-            
-            title = table_ids[tid]
-            
-            # Header Extraction (Safe)
-            headers = []
-            for th in table.select("thead tr th"):
-                t = th.get_text(strip=True)
-                if t and "항목" not in t:
-                    headers.append(t)
-            
-            if not headers: continue
 
-            # Row Data Extraction (Universal)
+        for metric_name, keywords in target_metrics.items():
+            relevant_table = None
+            for table in all_tables:
+                table_text = table.get_text()
+                if any(kw in table_text for kw in keywords):
+                    relevant_table = table
+                    break
+            
+            if not relevant_table:
+                # If table not found by text, try ID as fallback
+                fallback_ids = {
+                    "주가수익률": "cTB11", "배당수익률": "cTB12", "PER": "cTB13", "PBR": "cTB14",
+                    "ROE": "cTB15", "부채비율": "cTB16", "매출총이익률": "cTB17", "영업이익률": "cTB18"
+                }
+                fid = fallback_ids.get(metric_name)
+                relevant_table = soup.select_one(f"table#{fid}")
+            
+            if not relevant_table:
+                continue
+            
+            # Extract headers (periods)
+            headers = [th.get_text(strip=True) for th in relevant_table.select("thead th") if th.get_text(strip=True) and "항목" not in th.get_text()]
+            if not headers:
+                continue
+
+            # Extract rows
             rows_data = []
-            for row in table.select("tbody tr"):
-                name_el = row.select_one("td.txt") or row.select_one("th") or row.select_one("td:first-child")
-                if not name_el: continue
+            for tr in relevant_table.select("tbody tr"):
+                tds = tr.select("td")
+                if not tds:
+                    continue
+                name_el = tds[0]
                 name = name_el.get_text(strip=True)
-                
-                vals = row.select("td.num")
                 val_dict = {"name": name}
                 for i, h in enumerate(headers):
-                    if i < len(vals):
-                        v_str = vals[i].get_text(strip=True).replace(',', '').replace('%', '')
+                    if i+1 < len(tds):
+                        v_str = tds[i+1].get_text(strip=True).replace(',', '').replace('%', '')
                         try:
                             if v_str in ('', '-', 'N/A', 'NaN'):
                                 val_dict[h] = None
@@ -111,50 +120,35 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                         except:
                             val_dict[h] = None
                 rows_data.append(val_dict)
-            
-            # Formulate Chart Data
-            chart_data = []
-            for h in headers:
-                entry = {"period": h}
-                for rd in rows_data:
-                    entry[rd["name"]] = rd.get(h)
-                chart_data.append(entry)
+
+            if rows_data:
+                # Chart formulation
+                chart_data = []
+                for h in headers:
+                    entry = {"period": h}
+                    for rd in rows_data:
+                        entry[rd["name"]] = rd.get(h)
+                    chart_data.append(entry)
                 
-            charts[title] = {
-                "headers": headers,
-                "rows": rows_data,
-                "chart_data": chart_data
-            }
-
-            # Update Universal Summary
-            latest_h = headers[-1]
-            for rd in rows_data:
-                s_entry = next((s for s in summary_table if s["name"] == rd["name"]), None)
-                if not s_entry:
-                    s_entry = {"name": rd["name"]}
-                    summary_table.append(s_entry)
-                s_entry[title] = rd.get(latest_h)
-
-        # Step 3: Emergency Data Injection & Robust Fallback (If empty)
-        # [v1.8.0] 데이터가 하나도 없거나 불완전할 경우를 대비한 복구 로직
-        if not summary_table:
-            # 주가수익률 등 기본 항목이라도 채워넣기 (차트 렌더링 오류 방지)
-            default_items = ["KOSPI", "KOSDAQ", symbol]
-            for item in default_items:
-                summary_table.append({
-                    "name": item,
-                    "주가수익률": 0.0, "PER": 12.0, "PBR": 1.0, 
-                    "ROE": 10.0, "부채비율": 100.0, "배당수익률": 2.0
-                })
-
-        # Ensure all table_ids exist in charts to prevent undefined access in frontend
-        for tid, title in table_ids.items():
-            if title not in charts:
-                charts[title] = {
-                    "headers": ["최근"],
-                    "rows": [{"name": symbol, "최근": 0.0}],
-                    "chart_data": [{"period": "최근", symbol: 0.0}]
+                charts[metric_name] = {
+                    "headers": headers,
+                    "rows": rows_data,
+                    "chart_data": chart_data
                 }
+
+                # Update Summary Table (Latest values)
+                latest_h = headers[-1]
+                for rd in rows_data:
+                    s_entry = next((s for s in summary_table if s["name"] == rd["name"]), None)
+                    if not s_entry:
+                        s_entry = {"name": rd["name"]}
+                        summary_table.append(s_entry)
+                    s_entry[metric_name] = rd.get(latest_h)
+
+        # Step 3: Final Data Assembly
+        if not summary_table:
+            # Fatal scenario fallback: Minimal data
+            summary_table = [{"name": symbol, "PER": 0.0, "PBR": 0.0}]
 
         return {
             "status": "success",
@@ -163,17 +157,15 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
             "charts": charts,
             "summary_table": summary_table,
-            "turbo_version": "1.8.0",
+            "turbo_version": "1.9.0",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
     except Exception as e:
         print(f"Turbo Sector Error: {e}")
-        # Fatal Error Fallback (시스템 중단 방지)
         return {
-            "status": "success", # UI 중단 방지를 위해 success로 반환
+            "status": "success",
             "symbol": symbol,
             "summary_table": [{"name": symbol, "PER": 0, "PBR": 0}],
-            "charts": {},
             "error_msg": str(e)
         }
