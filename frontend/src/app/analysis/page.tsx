@@ -212,8 +212,8 @@ function AnalysisContent() {
                     </div>
                 )}
 
-                {/* Easy Mode Toggle - Positioned BELOW Search/Tabs on right as in screenshot */}
-                <div className="flex justify-end">
+                {/* Easy Mode Toggle */}
+                <div className="flex justify-end mb-4">
                     <button 
                         onClick={() => setShowEasy(!showEasy)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-orange-500/20 border-orange-500 text-orange-400" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"}`}
@@ -226,9 +226,11 @@ function AnalysisContent() {
                 {/* ===== QUANT TAB ===== */}
                 {activeTab === "quant" && (
                     <div className="space-y-6">
-
                         {quantLoading ? (
-                            <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">퀀트 분석 중...</p></div>
+                            <div className="text-center py-16">
+                                <RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" />
+                                <p className="text-gray-500">퀀트 분석 중...</p>
+                            </div>
                         ) : quantData ? (
                             <div className="space-y-6 animate-in fade-in duration-300">
                                 {showEasy && (
@@ -244,9 +246,10 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )}
+                                
                                 {/* Unified TurboQuant Pro Dashboard Container */}
                                 <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl">
-                                    {/* Top Section: Grade & Radar Chart (Grade Card content) */}
+                                    {/* Top Section: Grade & Radar Chart */}
                                     <div className="p-6 relative">
                                         {isTurbo && (
                                             <div className="absolute top-0 right-0 p-2">
@@ -319,12 +322,10 @@ function AnalysisContent() {
                                         </div>
                                     </div>
 
-                                    {/* Bottom Section: Precision Indicators Deep-Dive (Integrated seamlessly) */}
+                                    {/* Bottom Section: Precision Indicators Deep-Dive */}
                                     {(symbol.length >= 6) && (
                                         <div className="border-t border-indigo-500/20 bg-indigo-500/5">
-                                            <TurboQuantIndicators 
-                                                symbol={symbol} 
-                                            />
+                                            <TurboQuantIndicators symbol={symbol} />
                                         </div>
                                     )}
                                 </div>
