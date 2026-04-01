@@ -2046,73 +2046,82 @@ def get_korean_company_overview(symbol: str):
 def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: str = "IFRSL", rpt: str = "3"):
     """
     네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 지표를 스크랩합니다.
-    - rpt=1: 수익성, rpt=2: 성장성, rpt=3: 안정성, rpt=4: 활동성
+    (수익성, 성장성, 안정성, 활동성 통합 지원)
+    - encparam 보안 토큰을 실시간 파싱하여 정밀 요청을 수행합니다.
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
     if not (len(code) == 6 and code.isdigit()):
         return None
 
-    # WiseReport Data Endpoint (rpt: 1=Profitability, 2=Growth, 3=Stability, 4=Activity)
-    url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&rpt={rpt}&frq={freq}&finGubun={fin_gubun}"
-    
     try:
-        res = requests.get(url, headers=HEADER, timeout=7)
-        html = decode_safe(res)
-        soup = BeautifulSoup(html, 'html.parser')
+        session = requests.Session()
+        session.headers.update(HEADER)
         
-        # The data is in table#draggable-table-body
-        tbody = soup.select_one("#draggable-table-body")
-        if not tbody:
-            # Fallback check if search returned no results
-            if "검색 결과가 없습니다" in html:
-                return {"status": "empty", "message": "해당 조건의 데이터가 없습니다."}
+        # Step 1: Parent Frame에 접속하여 보안 토큰(encparam) 추출
+        frame_url = f"https://navercomp.wisereport.co.kr/v2/company/c1040001.aspx?cmp_cd={code}"
+        res_frame = session.get(frame_url, timeout=7)
+        html_frame = decode_safe(res_frame)
+        
+        # encparam: '...' 형태의 토큰 추출
+        match = re.search(r"encparam\s*:\s*'([^']+)'", html_frame)
+        if not match:
+            print(f"Failed to find encparam for {code}")
             return None
-            
-        # Get Headers (Years/Quarters) from the fixed header row (usually above the draggable body)
+        encparam = match.group(1)
+
+        # Step 2: 실시간 데이터 API 호출 (JSON 포맷 반환)
+        # frqTyp: 0(연간), 1(분기)
+        data_url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&frq={freq}&rpt={rpt}&finGubun={fin_gubun}&encparam={encparam}"
+        
+        ajax_headers = {
+            "Referer": frame_url,
+            "X-Requested-With": "XMLHttpRequest"
+        }
+        res_data = session.get(data_url, headers=ajax_headers, timeout=7)
+        
+        # JSON 파싱 시도 (cF4002.aspx는 encparam이 있으면 JSON으로 반환함)
+        try:
+            json_data = res_data.json()
+        except:
+            print(f"Failed to parse JSON for {code}")
+            return None
+
+        # Step 3: 데이터 가공 (Header: YYMM, Data: indicators)
+        if not json_data or "YYMM" not in json_data:
+            return {"status": "empty", "message": "데이터가 없습니다."}
+
+        # Header 정제 (HTML 태그 제거)
         headers = []
-        # In cF4002.aspx, headers are often in th.num elements within the same response
-        header_cols = soup.select("th.num")
-        for h in header_cols:
-            clean_h = h.text.strip().replace("\n", "").replace("\t", "")
+        for h in json_data.get("YYMM", []):
+            clean_h = re.sub(r'<[^>]*>', '', h).replace("\n", "").replace("\t", "").strip()
             if clean_h and clean_h not in headers:
                 headers.append(clean_h)
         
-        rows = tbody.select("tr")
         indicators = []
-        
-        for row in rows:
-            # First <th> is the indicator name
-            name_col = row.select_one("th")
-            if not name_col: continue
+        for row in json_data.get("DATA", []):
+            name = row.get("ACC_NM", "").strip()
+            if not name: continue
             
-            # Clean name (remove symbols like +, -)
-            indicator_name = name_col.text.strip().replace(" ", "").replace("\n", "").replace("\t", "")
-            # Remove leading +/- used for expanding tree
-            indicator_name = re.sub(r'^[+-]', '', indicator_name)
-            
-            if not indicator_name: continue
-            
-            values_cols = row.select("td")
             values = {}
-            
-            for i, col in enumerate(values_cols):
-                if i < len(headers):
-                    year_key = headers[i]
-                    val_str = col.text.strip().replace(",", "")
-                    try:
-                        # Clean special chars like % or N/A
-                        clean_val = re.sub(r'[^0-9.-]', '', val_str)
-                        val = float(clean_val) if clean_val else None
-                    except:
-                        val = None
-                    values[year_key] = val
+            # DATA1, DATA2 ... 순서대로 헤더와 매칭
+            for i, h in enumerate(headers):
+                key = f"DATA{i+1}"
+                val = row.get(key)
+                # N/A 등 문자열 정리
+                try:
+                    if isinstance(val, (int, float)):
+                        values[h] = val
+                    else:
+                        values[h] = None
+                except:
+                    values[h] = None
             
             indicators.append({
-                "name": indicator_name,
+                "name": name,
                 "values": values
             })
-            
+
         return {
             "status": "success",
             "symbol": symbol,
@@ -2124,6 +2133,6 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         }
         
     except Exception as e:
-        print(f"Indicators scraping error for {symbol}: {e}")
+        print(f"Indicators intensive scraping error for {symbol}: {e}")
         return None
 
