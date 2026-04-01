@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import ProSummaryReport from "@/components/ProSummaryReport";
-import StoryChart from "@/components/StoryChart";
 import BlinkingPrice from "@/components/BlinkingPrice";
 
 
@@ -249,12 +248,7 @@ function AnalysisContent() {
                     </div>
                 )}
 
-                {/* 3. Main Chart */}
-                {symbol && (
-                    <div className="animate-in fade-in duration-700">
-                        <StoryChart symbol={symbol} />
-                    </div>
-                )}
+
 
                 {/* 4. Analysis Tabs */}
                 <div className="sticky top-4 z-40 flex justify-center py-2 bg-black/50 backdrop-blur-md rounded-2xl border border-white/5">
