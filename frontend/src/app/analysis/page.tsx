@@ -51,11 +51,11 @@ function AnalysisContent() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
-    // [v1.3.0] Auto-search only when symbol is provided in URL (initial load)
+    // [v1.8.7] URL 파라미터가 있어도 즉시 분석하지 않고 입력창만 채움 (사용자 클릭 유도)
     useEffect(() => {
         if (urlSymbol) {
             setSymbol(urlSymbol);
-            executeAnalysis(urlSymbol);
+            // URL에 심볼이 있어도 분석 실행 단추를 누르기 전까진 대기
         }
     }, [urlSymbol]);
 
@@ -141,16 +141,21 @@ function AnalysisContent() {
         
         let targetSymbol = symbol.trim();
         
+        // 데이터 초기화 (이전 검색 결과 제거하여 로딩 상태 명확화)
+        setStockInfo(null);
+        setQuantData(null);
+        setFinancialData(null);
+        setSectorData(null);
+        
         // 한글이 포함되어 있으면 종목 코드 검색 시도
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
-                // 기존 검색 API 활용 (검색결과 첫 번째 항목의 코드를 사용)
                 const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(targetSymbol)}`);
                 const json = await res.json();
                 if (json.status === "success" && json.data.length > 0) {
                     targetSymbol = json.data[0].code;
-                    setSymbol(targetSymbol); // 입력창도 코드로 업데이트
+                    setSymbol(targetSymbol); // 입력창을 코드로 변경 (사용자 가이드 승인 사항)
                 } else {
                     alert("해당 종목을 찾을 수 없습니다.");
                     setStockLoading(false);
@@ -349,7 +354,19 @@ function AnalysisContent() {
                 {/* 5. Tab Contents */}
                 <div className="min-h-[400px] mt-4">
                     {activeTab === "summary" && (
-                        <ProSummaryReport symbol={symbol} />
+                        <div className="space-y-6">
+                            {stockInfo ? (
+                                <ProSummaryReport symbol={symbol} />
+                            ) : (
+                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
+                                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <Zap className="w-8 h-8 text-blue-400" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-white mb-2">분석 준비 완료</h3>
+                                    <p className="text-gray-500 text-sm max-w-xs mx-auto">종목을 입력하고 위 [분석 실행] 버튼을 누르면 AI 통합 리포트를 즉시 생성합니다.</p>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {activeTab === "quant" && (
