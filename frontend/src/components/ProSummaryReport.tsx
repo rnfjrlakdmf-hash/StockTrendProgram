@@ -3,7 +3,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import { 
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
-    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell 
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
+    CartesianGrid
 } from 'recharts';
 import { 
     Shield, TrendingUp, Zap, Activity, AlertTriangle, CheckCircle2, 
@@ -133,8 +134,8 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* 왼쪽: 퀀트 분석 (Radar) */}
-                <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/30 transition-all shadow-xl relative overflow-hidden group">
+                {/* 퀀트 분석 (Radar) */}
+                <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-indigo-500/30 transition-all">
                     <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Activity className="w-32 h-32 text-indigo-400" />
                     </div>
@@ -145,11 +146,11 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                         <h3 className="text-lg font-black text-white tracking-tight">퀀트 팩터 분석 (5축)</h3>
                     </div>
                     
-                    <div className="h-[300px] w-full flex items-center justify-center">
+                    <div className="h-[250px] w-full flex items-center justify-center relative">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                                 <PolarGrid stroke="#334155" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 'bold' }} />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 'bold' }} />
                                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                                 <Radar
                                     name="Factor Score"
@@ -163,88 +164,130 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                         </ResponsiveContainer>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-5 gap-2">
+                    <div className="mt-4 grid grid-cols-5 gap-2 relative">
                         {radarData.map((d: any) => (
                             <div key={d.subject} className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
-                                <div className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-tighter">{d.subject}</div>
-                                <div className={`text-sm font-black ${d.A >= 70 ? 'text-indigo-400' : d.A >= 40 ? 'text-slate-300' : 'text-slate-500'}`}>{d.A}</div>
+                                <div className="text-[9px] text-slate-500 font-bold mb-1 uppercase tracking-tighter">{d.subject}</div>
+                                <div className={`text-xs font-black ${d.A >= 70 ? 'text-indigo-400' : d.A >= 40 ? 'text-slate-300' : 'text-slate-500'}`}>{d.A}</div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* 오른쪽: 재무 건전성 & AI 소견 */}
-                <div className="space-y-6">
-                    {/* 재무 건전성 리포트 */}
-                    <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500/20 rounded-xl">
-                                    <Shield className="w-5 h-5 text-emerald-400" />
-                                </div>
-                                <h3 className="text-lg font-black text-white tracking-tight">재무 리스크 스캐닝</h3>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${health?.z_score?.color === 'green' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                {health?.z_score?.zone} ZONE
-                            </div>
+                {/* 핵심 실적 성장 추이 (NEW) */}
+                <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity">
+                        <TrendingUp className="w-32 h-32 text-emerald-400" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-6 relative">
+                        <div className="p-2 bg-emerald-500/20 rounded-xl">
+                            <TrendingUp className="w-5 h-5 text-emerald-400" />
                         </div>
+                        <h3 className="text-lg font-black text-white tracking-tight">핵심 실적 성장 추이</h3>
+                    </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                <div>
-                                    <div className="text-xs text-slate-400 font-bold mb-1">Altman Z-Score (파산 위험도)</div>
-                                    <div className="text-2xl font-black text-white">{health?.z_score?.value}</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-widest">Threshold</div>
-                                    <div className="text-xs text-slate-400">1.8(Care) / 3.0(Safe)</div>
-                                </div>
+                    <div className="h-[250px] w-full">
+                        {data?.financial_indicators ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={data.financial_indicators}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                    <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '11px' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Bar dataKey="매출액" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={20} />
+                                    <Bar dataKey="영업이익" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-600 text-sm font-bold gap-2">
+                                <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" />
+                                <span className="animate-pulse">성장 데이터를 로드 중...</span>
                             </div>
+                        )}
+                    </div>
+                    <div className="flex justify-center gap-6 mt-4 relative">
+                        <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"/> <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Revenue</span></div>
+                        <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"/> <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Profit</span></div>
+                    </div>
+                </div>
+            </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <div className="text-xs text-slate-400 font-bold mb-1">Piotroski F-Score</div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-2xl font-black text-white">{health?.f_score?.value}</span>
-                                        <span className="text-xs text-slate-500">/ 9</span>
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <div className="text-xs text-slate-400 font-bold mb-1">부채비율</div>
-                                    <div className="text-2xl font-black text-white">{health?.ratios?.['부채비율'] || '0%'}</div>
-                                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 재무 리스크 스캐닝 */}
+                <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-rose-500/30 transition-all">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Shield className="w-32 h-32 text-rose-400" />
+                    </div>
+                    <div className="flex items-center justify-between mb-6 relative">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-rose-500/20 rounded-xl">
+                                <Shield className="w-5 h-5 text-rose-400" />
                             </div>
+                            <h3 className="text-lg font-black text-white tracking-tight">재무 건강도 진단</h3>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${health?.z_score?.color === 'green' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {health?.z_score?.zone} ZONE
                         </div>
                     </div>
 
-                    {/* AI 종합 소견 */}
-                    <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-3xl p-6 relative overflow-hidden">
-                        <div className="absolute -top-4 -right-4 opacity-10">
-                            <Zap className="w-24 h-24 text-indigo-400" />
-                        </div>
-                        <h4 className="text-sm font-black text-indigo-300 flex items-center gap-2 mb-3">
-                            <Zap className="w-4 h-4" /> AI Unified Insight
-                        </h4>
-                        <div className="text-sm text-slate-300 leading-relaxed font-medium">
-                            <p className="mb-2">
-                                {quant?.total_score >= 70 ? '🚀 우수한 퀀트 팩터를 보유하고 있습니다.' : '📊 중립적인 퀀트 팩터가 관찰됩니다.'}
-                                {' '}
-                                {health?.health_score >= 70 ? '재무적으로 매우 탄탄한 구조를 가지고 있으며 파산 리스크가 극히 낮습니다.' : '재무 지표가 다소 불안정하므로 현금 흐름 추이를 면밀히 살펴야 합니다.'}
-                            </p>
-                            <div className="flex flex-wrap gap-2 mt-4">
-                                {health?.f_score?.value >= 7 && <Badge text="수익성 우수" color="bg-emerald-500/20 text-emerald-400" />}
-                                {quant?.factors?.value?.score >= 70 && <Badge text="저평가 매력" color="bg-indigo-500/20 text-indigo-400" />}
-                                {investorSummary && investorSummary.sums.inst > 0 && <Badge text="기관 매집중" color="bg-blue-500/20 text-blue-400" />}
+                    <div className="space-y-4 relative">
+                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div>
+                                <div className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-widest">Altman Z-Score (파산 위험)</div>
+                                <div className="text-2xl font-black text-white">{health?.z_score?.value}</div>
                             </div>
+                            <div className="text-right">
+                                <div className="text-[9px] text-slate-500 font-bold mb-1 uppercase tracking-widest">Safe Line</div>
+                                <div className="text-xs text-slate-400 font-mono">{'>'} 3.0</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-widest">F-Score</div>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-white">{health?.f_score?.value}</span>
+                                    <span className="text-xs text-slate-500">/ 9</span>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-widest">Debt Ratio</div>
+                                <div className="text-2xl font-black text-white">{health?.ratios?.['부채비율'] || '0%'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* AI 종합 소견 */}
+                <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-center group hover:border-indigo-500/40 transition-all">
+                    <div className="absolute -top-4 -right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Zap className="w-24 h-24 text-indigo-400" />
+                    </div>
+                    <h4 className="text-sm font-black text-indigo-300 flex items-center gap-2 mb-4 tracking-widest uppercase">
+                        <Zap className="w-4 h-4 fill-current" /> AI Unified Insight
+                    </h4>
+                    <div className="text-sm text-slate-300 leading-relaxed font-medium">
+                        <p className="mb-4">
+                            {quant?.total_score >= 70 ? '🚀 업종 내 상위권의 우수한 퀀트 팩터를 보유하고 있습니다.' : '📊 특정 리스크 관찰이 필요한 중립적 팩터가 감지됩니다.'}
+                            {' '}
+                            {health?.health_score >= 70 ? '재무적으로 매우 탄탄하여 위기 대응 능력이 높습니다.' : '일부 재무 지표의 변동성이 확인되므로 현금 흐름을 주시하십시오.'}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {health?.f_score?.value >= 7 && <Badge text="수익성 우수" color="bg-emerald-500/20 text-emerald-400" />}
+                            {quant?.factors?.value?.score >= 70 && <Badge text="저평가 매력" color="bg-indigo-500/20 text-indigo-400" />}
+                            {investorSummary && investorSummary.sums.inst > 0 && <Badge text="기관 매집중" color="bg-blue-500/20 text-blue-400" />}
                         </div>
                     </div>
                 </div>
             </div>
             
             {/* 하단 면책 조항 */}
-            <div className="flex items-center gap-2 justify-center p-4 bg-slate-900/20 rounded-2xl border border-slate-800 text-[10px] text-slate-600">
+            <div className="flex items-center gap-2 justify-center p-4 bg-slate-900/20 rounded-2xl border border-slate-800 text-[9px] text-slate-600 uppercase tracking-tighter">
                 <Info className="w-3 h-3" />
-                <span>TurboQuant Pro 통합 리포트는 실시간 데이터와 백테스트 알고리즘을 기반으로 생성된 참고 자료입니다. 최종 투자 결정은 투자자 본인의 책임하에 이루어져야 합니다.</span>
+                <span>TurboQuant Pro: Data-driven analysis only. Not investment advice. final decisions reflect user discretion.</span>
             </div>
         </div>
     );

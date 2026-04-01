@@ -162,7 +162,7 @@ def read_pro_summary(symbol: str):
 
     try:
         from pro_analysis import get_quant_scorecard, get_financial_health
-        from korea_data import get_naver_investor_data, gather_naver_stock_data
+        from korea_data import get_naver_investor_data, gather_naver_stock_data, get_korean_investment_indicators
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             # 4가지 핵심 데이터를 병렬로 요청
@@ -170,12 +170,32 @@ def read_pro_summary(symbol: str):
             future_health = executor.submit(run_sync, get_financial_health, symbol)
             future_investor = executor.submit(run_sync, get_naver_investor_data, symbol, 20) # 1개월 기준 수공
             future_stock = executor.submit(run_sync, gather_naver_stock_data, symbol)
+            # [NEW] 실적 추이 데이터 (Charts용)
+            future_indicators = executor.submit(run_sync, get_korean_investment_indicators, symbol, "0", "IFRSL", "1") # 연간 수익성 지표
             
             # 결과 대기
             quant_data = future_quant.result()
             health_data = future_health.result()
             inv_res = future_investor.result()
             stock_data = future_stock.result()
+            indicators_res = future_indicators.result()
+            
+        # 실적 추이 데이터 가공 (Chart-friendly format)
+        fin_charts = []
+        if indicators_res and indicators_res.get("status") == "success":
+            headers = indicators_res.get("headers", [])
+            indicators = indicators_res.get("indicators", [])
+            
+            rev_row = next((row for row in indicators if "매출액" in row["name"]), None)
+            op_row = next((row for row in indicators if "영업이익" in row["name"]), None)
+            
+            for h in headers:
+                # '2023/12' -> '2023'
+                year = h.split('/')[0]
+                entry = {"year": year}
+                if rev_row: entry["매출액"] = rev_row["values"].get(h, 0)
+                if op_row: entry["영업이익"] = op_row["values"].get(h, 0)
+                fin_charts.append(entry)
             
         combined_data = {
             "symbol": symbol,
@@ -183,6 +203,7 @@ def read_pro_summary(symbol: str):
             "quant": quant_data,
             "health": health_data,
             "investor": inv_res.get("data") if inv_res and isinstance(inv_res, dict) and inv_res.get("status") == "success" else None,
+            "financial_indicators": fin_charts, # NEW
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
         }
         

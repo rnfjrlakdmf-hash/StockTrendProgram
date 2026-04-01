@@ -43,14 +43,22 @@ function AnalysisContent() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
-    // Auto-search if symbol is provided in URL via Next.js router hook
+    // [v1.3.0] Auto-search only when symbol is provided in URL (initial load)
     useEffect(() => {
         if (urlSymbol) {
             setSymbol(urlSymbol);
-            fetchBasicInfo(urlSymbol);
-            fetchQuant(urlSymbol);
+            executeAnalysis(urlSymbol);
         }
     }, [urlSymbol]);
+
+    const executeAnalysis = (sym: string) => {
+        if (!sym) return;
+        fetchBasicInfo(sym);
+        // Load initial data based on active tab
+        if (activeTab === "quant") fetchQuant(sym);
+        else if (activeTab === "financial") fetchFinancial(sym);
+        // Summary tab handles its own data fetching via component
+    };
 
     const fetchBasicInfo = async (sym: string) => {
         if (!sym) return;
@@ -105,10 +113,7 @@ function AnalysisContent() {
 
     const handleSearch = () => {
         if (!symbol) return;
-        fetchBasicInfo(symbol);
-        if (activeTab === "summary") return; // Handled by component internal effect
-        if (activeTab === "quant") fetchQuant(symbol);
-        else if (activeTab === "financial") fetchFinancial(symbol);
+        executeAnalysis(symbol);
     };
 
     const getGradeStyle = (grade: string) => {
