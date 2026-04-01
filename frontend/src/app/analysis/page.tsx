@@ -61,12 +61,14 @@ function AnalysisContent() {
 
     const executeAnalysis = (sym: string) => {
         if (!sym) return;
+        
+        // [v1.7.5] Turbo Parallel Loading: 모든 데이터를 한꺼번에 로드
         fetchBasicInfo(sym);
-        // Load initial data based on active tab
-        if (activeTab === "quant") fetchQuant(sym);
-        else if (activeTab === "financial") fetchFinancial(sym);
-        else if (activeTab === "sector") fetchSectorAnalysis(sym);
-        // Summary tab handles its own data fetching via component
+        fetchQuant(sym);
+        fetchFinancial(sym);
+        fetchSectorAnalysis(sym);
+        
+        // Note: Summary tab data is handled within its component via sym prop
     };
 
     const fetchBasicInfo = async (sym: string) => {
@@ -134,9 +136,34 @@ function AnalysisContent() {
         finally { setPeerLoading(false); }
     };
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!symbol) return;
-        executeAnalysis(symbol);
+        
+        let targetSymbol = symbol.trim();
+        
+        // 한글이 포함되어 있으면 종목 코드 검색 시도
+        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
+            setStockLoading(true);
+            try {
+                // 기존 검색 API 활용 (검색결과 첫 번째 항목의 코드를 사용)
+                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(targetSymbol)}`);
+                const json = await res.json();
+                if (json.status === "success" && json.data.length > 0) {
+                    targetSymbol = json.data[0].code;
+                    setSymbol(targetSymbol); // 입력창도 코드로 업데이트
+                } else {
+                    alert("해당 종목을 찾을 수 없습니다.");
+                    setStockLoading(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Search failed:", err);
+                setStockLoading(false);
+                return;
+            }
+        }
+        
+        executeAnalysis(targetSymbol);
     };
 
     const getGradeStyle = (grade: string) => {
