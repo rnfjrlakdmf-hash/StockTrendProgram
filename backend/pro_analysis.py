@@ -215,6 +215,8 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         t = yf.Ticker(ticker_sym)
         info = t.info or {}
         
+        nav_full = naver_data.get("detailed_financials", {}).get("full_data", {}) if naver_data else {}
+        
         # 1. Prepare Primary Metrics (Prefer Naver/DART)
         nav_summary = naver_data.get("detailed_financials", {}).get("summary", {}) if naver_data else {}
         
@@ -427,6 +429,24 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
             "z_score": {"value": z_score, "zone": z_zone, "color": z_color},
             "f_score": {"value": f_score, "max": 9, "details": f_details},
             "ratios": ratios,
+            "charts": {
+                "stability": [
+                    {"year": yr.split('/')[0], "부채비율": d, "유동비율": c}
+                    for yr, d, c in zip(
+                        nav_full.get("debt_ratio", {}).get("dates", [])[:4],
+                        nav_full.get("debt_ratio", {}).get("values", [])[:4],
+                        nav_full.get("current_ratio", {}).get("values", [])[:4]
+                    ) if d is not None and c is not None
+                ],
+                "profitability": [
+                    {"year": yr.split('/')[0], "ROE": r, "ROA": a}
+                    for yr, r, a in zip(
+                        nav_full.get("roe", {}).get("dates", [])[:4],
+                        nav_full.get("roe", {}).get("values", [])[:4],
+                        nav_full.get("roa", {}).get("values", [])[:4]
+                    ) if r is not None and a is not None
+                ]
+            },
             "disclaimer": "본 데이터는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
         }
     except Exception as e:
