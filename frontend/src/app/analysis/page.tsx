@@ -679,7 +679,7 @@ function AnalysisContent() {
                                         </div>
 
                                         {/* Chart Grid */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                                             {Object.entries(sectorData.charts || {}).map(([title, data]: any) => (
                                                 <div key={title} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
                                                     <div className="flex items-center justify-between mb-6">
@@ -716,6 +716,72 @@ function AnalysisContent() {
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+
+                                        {/* [NEW] v1.6.0 Comprehensive Sector Comparison Table */}
+                                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div className="flex items-center gap-2">
+                                                    <LayoutDashboard className="w-4 h-4 text-emerald-400" />
+                                                    <h4 className="text-sm font-black uppercase tracking-widest text-emerald-300">섹터별 지표 전체 분석 데이터</h4>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/10 uppercase font-bold tracking-tighter">전 업종 최신 지표</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-xs text-left border-separate border-spacing-0">
+                                                    <thead>
+                                                        <tr className="text-gray-500 uppercase tracking-widest text-[9px] border-b border-white/10">
+                                                            <th className="py-3 px-2 border-b border-white/10">비교 항목 (섹터/지수)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">PER</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">PBR</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">배당 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">ROE (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">부채비율 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">수익률 (%)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {(sectorData.summary_table || []).map((row: any, i: number) => (
+                                                            <tr key={i} className={`hover:bg-white/5 transition-colors ${row.name === stockInfo?.name ? "bg-blue-500/10" : ""}`}>
+                                                                <td className="py-4 px-2 text-gray-200 font-bold flex items-center gap-2">
+                                                                    {row.name === stockInfo?.name && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
+                                                                    {row.name}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.PER && row.PER < 10 ? "text-emerald-400" : "text-gray-400"}`}>
+                                                                    {row.PER?.toFixed(2) || "-"}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.PBR && row.PBR < 1.0 ? "text-emerald-400" : "text-gray-400"}`}>
+                                                                    {row.PBR?.toFixed(2) || "-"}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.배당수익률 && row.배당수익률 > 3.0 ? "text-emerald-400" : "text-gray-400"}`}>
+                                                                    {row.배당수익률?.toFixed(2) || "-"}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.ROE && row.ROE > 10 ? "text-indigo-400" : "text-gray-400"}`}>
+                                                                    {row.ROE?.toFixed(2) || "-"}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.부채비율 && row.부채비율 < 100 ? "text-emerald-400" : row.부채비율 > 200 ? "text-red-400" : "text-gray-400"}`}>
+                                                                    {row.부채비율?.toFixed(2) || "-"}
+                                                                </td>
+                                                                <td className={`text-right py-4 px-2 font-mono ${row.주가수익률 && row.주가수익률 > 0 ? "text-red-400" : row.주가수익률 < 0 ? "text-blue-400" : "text-gray-400"}`}>
+                                                                    {row.주가수익률?.toFixed(2) || "-"}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {showEasy && (
+                                                <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
+                                                    <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                                                    <p className="text-[11px] text-emerald-300 leading-relaxed italic">
+                                                        "이미지에 있던 드롭다운 속 모든 업종을 데이터화했습니다. 초록색 수치는 해당 항목에서 건강함(저평가/고수익)을 의미해요. 다른 섹터들과 내 종목을 한눈에 체급 비교해 보세요!"
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -2,7 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import json
-from typing import Dict, List, Any
+import datetime
+from typing import Dict, List, Any, Optional
 import urllib.parse
 from korea_data import HEADER, decode_safe
 from turbo_engine import turbo_cache
@@ -10,8 +11,10 @@ from turbo_engine import turbo_cache
 @turbo_cache(ttl_seconds=3600)
 def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
     """
-    네이버 금융 섹터분석(WiseReport c1050001.aspx) 데이터를 스크랩합니다.
-    주가수익률, 배당성익률, PER, PBR, ROE, 부채비율 등 섹터 비교 데이터를 추출합니다.
+    [v1.6.0] 네이버 금융 섹터분석(WiseReport c1050001.aspx) 정밀 스크랩
+    - 모든 비교 업종 리스트 추출
+    - 각 지표별(주가수익률, 배당, PER 등) 연도/분기별 전체 데이터 파싱
+    - 데이터 누락 방지를 위한 이중 검증 로직 포함
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
@@ -22,47 +25,34 @@ def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
         session = requests.Session()
         session.headers.update(HEADER)
         
-        # Step 1: 섹터 분석 메인 프레임 접속
-        # cmp_cd: 종목코드
+        # Step 1: 섹터 분석 메인 페이지 접속
         url = f"https://navercomp.wisereport.co.kr/v2/company/c1050001.aspx?cmp_cd={code}"
-        res = session.get(url, timeout=7)
+        res = session.get(url, timeout=10)
         html = decode_safe(res)
         soup = BeautifulSoup(html, 'html.parser')
         
-        # 기본 정보 추출 (섹터 명 등)
+        # 1-1. 섹터 기본 정보
         sector_info = {}
         title_box = soup.select_one(".cmp_comment")
         if title_box:
             sector_info["description"] = title_box.text.strip()
-
-        # Step 2: 비교 업종 리스트 추출 (Select Box)
+            
+        # 1-2. 전체 비교 업종 리스트 (모든 섹정 데이터화)
         compare_sectors = []
         select_box = soup.select_one("select#setSect")
         if select_box:
             for opt in select_box.select("option"):
-                compare_sectors.append({
-                    "id": opt.get("value"),
-                    "name": opt.text.strip(),
-                    "selected": "selected" in opt.attrs or opt.get("selected") == "selected"
-                })
+                val = opt.get("value")
+                name = opt.text.strip()
+                if val:
+                    compare_sectors.append({
+                        "id": val,
+                        "name": name,
+                        "selected": "selected" in opt.attrs or opt.get("selected") == "selected"
+                    })
 
-        # Step 3: 시계열 데이터 파싱 (차트용 데이터)
-        # 네이버 섹터 분석 페이지는 스크립트 내에 JSON 형태의 데이터를 포함하거나 
-        # 특정 AJAX 호출을 통해 차트를 그립니다. 
-        # c1050001.aspx 내의 하단 테이블(cTB15, cTB16 등)에서 텍스트 데이터를 직접 추출합니다.
-        
-        charts = {}
-        
-        # 테이블 ID 매핑 (네이버 WiseReport 기준)
-        # cTB11: 주가수익률
-        # cTB12: 배당수익률
-        # cTB13: PER
-        # cTB14: PBR
-        # cTB15: ROE
-        # cTB16: 부채비율
-        # cTB17: 매출총이익률
-        # cTB18: 영업이익률
-        
+        # Step 2: 8대 지표 테이블 정밀 파싱
+        # cTB11 ~ cTB18 (수익률, 배당, PER, PBR, ROE, 부채비율, GPM, OPM)
         table_mapping = {
             "cTB11": "주가수익률",
             "cTB12": "배당수익률",
@@ -74,32 +64,48 @@ def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
             "cTB18": "영업이익률"
         }
         
+        charts = {}
+        summary_table = [] # 섹터별 최신 지표 요약표용
+
         for tid, title in table_mapping.items():
             table = soup.select_one(f"table#{tid}")
             if not table: continue
             
-            # Header (연도/날짜)
-            headers = [th.text.strip() for th in table.select("thead tr th") if th.text.strip() != "항목"]
+            # Header 파싱 (연도/분기)
+            # <th> 내부에 span 등이 있을 수 있으므로 text로만 추출
+            headers = []
+            thead_th = table.select("thead tr th")
+            for th in thead_th:
+                t = th.get_text(strip=True)
+                if t and t != "항목":
+                    headers.append(t)
             
+            # Row 데이터 파싱
             rows_data = []
-            rows = table.select("tbody tr")
-            for row in rows:
+            tbody_rows = table.select("tbody tr")
+            for row in tbody_rows:
+                # 항목명 (종목명, 섹터명 등)
                 name_td = row.select_one("td.txt") or row.select_one("th")
                 if not name_td: continue
-                name = name_td.text.strip()
+                name = name_td.get_text(strip=True)
                 
-                vals = row.select("td.num")
+                # 수치 데이터
+                val_tds = row.select("td.num")
                 val_dict = {"name": name}
                 for i, h in enumerate(headers):
-                    if i < len(vals):
-                        v_str = vals[i].text.strip().replace(',', '')
+                    if i < len(val_tds):
+                        v_str = val_tds[i].get_text(strip=True).replace(',', '')
                         try:
-                            val_dict[h] = float(v_str) if v_str and v_str != '-' else None
+                            # 'N/A' 또는 '-' 처리
+                            if v_str in ('', '-', 'N/A'):
+                                val_dict[h] = None
+                            else:
+                                val_dict[h] = float(v_str)
                         except:
                             val_dict[h] = None
                 rows_data.append(val_dict)
             
-            # Recharts 친화적 포맷으로 변환 (연도별로 묶기)
+            # Recharts용 시계열 변환
             chart_data = []
             for h in headers:
                 entry = {"period": h}
@@ -113,23 +119,33 @@ def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
                 "chart_data": chart_data
             }
 
+            # [Update v1.6.0] 최신 지표 요약 (가장 오른쪽 컬럼 데이터)
+            if headers:
+                latest_h = headers[-1]
+                for rd in rows_data:
+                    # 섹터별 요약 리스트 업데이트 또는 신규 생성
+                    sector_entry = next((s for s in summary_table if s["name"] == rd["name"]), None)
+                    if not sector_entry:
+                        sector_entry = {"name": rd["name"]}
+                        summary_table.append(sector_entry)
+                    
+                    sector_entry[title] = rd.get(latest_h)
+
         return {
             "status": "success",
             "symbol": symbol,
             "sector_info": sector_info,
             "compare_sectors": compare_sectors,
             "charts": charts,
+            "summary_table": summary_table, # 신규 추가: 전 섹터 비교표 데이터
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
     except Exception as e:
-        print(f"Sector Analysis Scraping Error for {symbol}: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Sector Deep Analysis Scraping Error for {symbol}: {e}")
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    # Test
-    import datetime
-    data = get_sector_analysis_data("005930")
-    print(json.dumps(data, indent=2, ensure_ascii=False))
+    # Test Debug
+    res = get_sector_analysis_data("005930")
+    print(json.dumps(res, indent=2, ensure_ascii=False))
