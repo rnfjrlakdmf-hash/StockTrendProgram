@@ -244,87 +244,90 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )}
-                                {/* Grade Card */}
-                                <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl p-6 relative overflow-hidden">
-                                    {isTurbo && (
-                                        <div className="absolute top-0 right-0 p-2">
-                                            <div className="bg-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-bl-xl flex items-center gap-1 animate-pulse">
-                                                <Zap className="w-3 h-3 fill-current" /> TURBO ACTIVE
+                                {/* Unified TurboQuant Pro Dashboard Container */}
+                                <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl">
+                                    {/* Top Section: Grade & Radar Chart (Grade Card content) */}
+                                    <div className="p-6 relative">
+                                        {isTurbo && (
+                                            <div className="absolute top-0 right-0 p-2">
+                                                <div className="bg-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-bl-xl flex items-center gap-1 animate-pulse">
+                                                    <Zap className="w-3 h-3 fill-current" /> TURBO ACTIVE
+                                                </div>
                                             </div>
+                                        )}
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h2 className="text-2xl font-black">{quantData.name}</h2>
+                                                    {isTurbo && <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">Turbo</span>}
+                                                </div>
+                                                <p className="text-gray-400 text-sm">{quantData.symbol}</p>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>
+                                                    {quantData.grade}
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`text-4xl font-black ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}</span>
+                                                    <p className="text-xs text-gray-500">종합 점수</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Radar Chart */}
+                                        <RadarChart factors={quantData.factors} />
+
+                                        {/* Consolidated Factor Detail Dashboard */}
+                                        <div className="mt-8 pt-6 border-t border-white/10">
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
+                                                    const getFactorMetaphor = (label: string) => {
+                                                        if (label === "가치") return { title: "가성비", desc: "가격표 매력" };
+                                                        if (label === "성장") return { title: "성장판", desc: "자라나는 속도" };
+                                                        if (label === "모멘텀") return { title: "기세", desc: "주가 달리기" };
+                                                        if (label === "수익성") return { title: "효율", desc: "돈 버는 기술" };
+                                                        if (label === "안정성") return { title: "뼈대", desc: "위기 견디기" };
+                                                        return null;
+                                                    };
+                                                    const metaphor = getFactorMetaphor(f.label);
+
+                                                    return (
+                                                        <div key={key} className="flex flex-col items-center text-center group">
+                                                            <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
+                                                            <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>
+                                                                {f.score}
+                                                            </span>
+                                                            {showEasy && metaphor && (
+                                                                <div className="mb-2">
+                                                                    <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded">
+                                                                        {metaphor.title}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="space-y-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                                {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
+                                                                    <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1">
+                                                                        <span>{mk}</span>
+                                                                        <span className="text-gray-200 font-bold">{mv}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom Section: Precision Indicators Deep-Dive (Integrated seamlessly) */}
+                                    {(symbol.length >= 6) && (
+                                        <div className="border-t border-indigo-500/20 bg-indigo-500/5">
+                                            <TurboQuantIndicators 
+                                                symbol={symbol} 
+                                            />
                                         </div>
                                     )}
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <h2 className="text-2xl font-black">{quantData.name}</h2>
-                                                {isTurbo && <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">Turbo</span>}
-                                            </div>
-                                            <p className="text-gray-400 text-sm">{quantData.symbol}</p>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>
-                                                {quantData.grade}
-                                            </div>
-                                            <div className="text-right">
-                                                <span className={`text-4xl font-black ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}</span>
-                                                <p className="text-xs text-gray-500">종합 점수</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Radar Chart */}
-                                    <RadarChart factors={quantData.factors} />
-
-                                    {/* Consolidated Factor Detail Dashboard */}
-                                    <div className="mt-8 pt-6 border-t border-white/10">
-                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                            {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
-                                                const getFactorMetaphor = (label: string) => {
-                                                    if (label === "가치") return { title: "가성비", desc: "가격표 매력" };
-                                                    if (label === "성장") return { title: "성장판", desc: "자라나는 속도" };
-                                                    if (label === "모멘텀") return { title: "기세", desc: "주가 달리기" };
-                                                    if (label === "수익성") return { title: "효율", desc: "돈 버는 기술" };
-                                                    if (label === "안정성") return { title: "뼈대", desc: "위기 견디기" };
-                                                    return null;
-                                                };
-                                                const metaphor = getFactorMetaphor(f.label);
-
-                                                return (
-                                                    <div key={key} className="flex flex-col items-center text-center group">
-                                                        <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
-                                                        <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>
-                                                            {f.score}
-                                                        </span>
-                                                        {showEasy && metaphor && (
-                                                            <div className="mb-2">
-                                                                <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded">
-                                                                    {metaphor.title}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        <div className="space-y-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                            {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                                <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1">
-                                                                    <span>{mk}</span>
-                                                                    <span className="text-gray-200 font-bold">{mv}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
                                 </div>
-
-                                {/* [New] TurboQuant Precision Indicators Deep-Dive */}
-                                {(symbol.length >= 6) && (
-                                    <div className="mt-8">
-                                        <TurboQuantIndicators 
-                                            symbol={symbol} 
-                                        />
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">

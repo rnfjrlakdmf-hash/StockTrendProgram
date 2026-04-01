@@ -143,7 +143,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
     };
 
     return (
-        <div className="bg-slate-900/40 rounded-3xl border border-white/10 overflow-hidden shadow-2xl backdrop-blur-md mt-10">
+        <div className="w-full overflow-hidden mt-2">
             {/* Nav Categories */}
             <div className="flex border-b border-white/10 bg-white/5 overflow-x-auto no-scrollbar">
                 {CATEGORIES.map(cat => (
