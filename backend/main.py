@@ -252,17 +252,17 @@ def read_stock_financials(symbol: str):
     return {"status": "success", "data": data}
 
 @app.get("/api/sector-analysis/{symbol}")
-def read_sector_analysis(symbol: str):
+def read_sector_analysis(symbol: str, sector_id: Optional[str] = None):
     """
-    [v1.5.0] 네이버 금융 기반 섹터 분석 데이터 반환
-    주가수익률, 배당, PER, PBR 등 섹터 비교 시계열 데이터 포함
+    [v1.7.0] 네이버 금융 기반 섹터 분석 데이터 반환 (Interactive)
+    sector_id 파라미터가 있을 경우 해당 업종을 기준으로 데이터 재구축
     """
-    cache_key = f"sector_analysis_{symbol}"
+    cache_key = f"sector_analysis_{symbol}_{sector_id}"
     cached = turbo_engine.get_cache(cache_key)
     if cached:
         return {"status": "success", "data": cached, "turbo": True}
         
-    data = get_sector_analysis_data(symbol)
+    data = get_sector_analysis_data(symbol, sector_id)
     if data and data.get("status") == "success":
         turbo_engine.set_cache(cache_key, data)
         

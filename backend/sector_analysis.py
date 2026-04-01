@@ -9,12 +9,10 @@ from korea_data import HEADER, decode_safe
 from turbo_engine import turbo_cache
 
 @turbo_cache(ttl_seconds=3600)
-def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
+def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    [v1.6.5] TurboQuant Enhanced Sector Engine
-    - Multi-layered data extraction with robust fallback
-    - Enhanced session handling to prevent blocking
-    - Comprehensive data cleaning and validation
+    [v1.7.0] TurboQuant Enhanced Sector Engine (Interactive)
+    - sector_id 파라미터를 지원하여 드롭다운 선택 시 실시간 데이터 로드
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
@@ -34,6 +32,9 @@ def get_sector_analysis_data(symbol: str) -> Dict[str, Any]:
         
         # Step 1: Multiple data source attempts
         url = f"https://navercomp.wisereport.co.kr/v2/company/c1050001.aspx?cmp_cd={code}"
+        if sector_id:
+            url += f"&set_sect={sector_id}"
+            
         res = session.get(url, timeout=10)
         html = decode_safe(res)
         

@@ -109,11 +109,14 @@ function AnalysisContent() {
         finally { setFinancialLoading(false); }
     };
 
-    const fetchSectorAnalysis = async (sym: string) => {
+    const fetchSectorAnalysis = async (sym: string, sectorId: string | null = null) => {
         if (!sym) return;
         setSectorLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/sector-analysis/${sym}`);
+            const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
+            if (sectorId) url.searchParams.append("sector_id", sectorId);
+            
+            const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") setSectorData(json.data);
         } catch (err) { console.error(err); }
@@ -667,7 +670,10 @@ function AnalysisContent() {
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
-                                                    <select className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
+                                                    <select 
+                                                        onChange={(e) => fetchSectorAnalysis(symbol, e.target.value)}
+                                                        className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                                                    >
                                                         {(sectorData.compare_sectors || []).map((s: any) => (
                                                             <option key={s.id} value={s.id} selected={s.selected} className="bg-gray-900 text-white">
                                                                 {s.name}
