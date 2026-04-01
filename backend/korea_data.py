@@ -2066,12 +2066,21 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         # encparam: '...' 형태의 토큰 추출
         match = re.search(r"encparam\s*:\s*'([^']+)'", html_frame)
         if not match:
+            # Fallback search if the regex above fails
+            match = re.search(r"encparam\s*=\s*'([^']+)'", html_frame)
+            
+        if not match:
             print(f"Failed to find encparam for {code}")
-            return None
+            return {"status": "empty", "message": "해당 종목의 데이터 토큰을 찾을 수 없습니다. (ETF 등 재무제표 미존재 종목일 수 있음)"}
+        
         encparam = match.group(1)
 
         # Step 2: 실시간 데이터 API 호출 (JSON 포맷 반환)
-        # frqTyp: 0(연간), 1(분기)
+        # finGubun: IFRSL(연결), IFRSS(별도), GAAPL(연결), GAAPS(별도), MAIN(주재무제표)
+        valid_fingubun = ["IFRSL", "IFRSS", "GAAPL", "GAAPS", "MAIN"]
+        if fin_gubun not in valid_fingubun:
+            fin_gubun = "MAIN" # Default to MAIN for stability
+
         data_url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&frq={freq}&rpt={rpt}&finGubun={fin_gubun}&encparam={encparam}"
         
         ajax_headers = {

@@ -31,11 +31,11 @@ interface Props {
 }
 
 const FIN_GUBUN_MAP = [
+    { label: '주재무제표', value: 'MAIN' },
     { label: 'K-IFRS(연결)', value: 'IFRSL' },
     { label: 'K-IFRS(별도)', value: 'IFRSS' },
     { label: 'K-GAAP(연결)', value: 'GAAPL' },
     { label: 'K-GAAP(별도)', value: 'GAAPS' },
-    { label: '주재무제표', value: 'MAIN' },
 ];
 
 const CATEGORIES = [
@@ -47,7 +47,7 @@ const CATEGORIES = [
 
 export default function TurboQuantIndicators({ symbol, stockName }: Props) {
     const [freq, setFreq] = useState('0'); // 0: 연간, 1: 분기
-    const [finGubun, setFinGubun] = useState('IFRSL');
+    const [finGubun, setFinGubun] = useState('MAIN'); // Default to MAIN
     const [category, setCategory] = useState('1'); // 1: 수익성, 2: 성장성, 3: 안정성, 4: 활동성
     const [data, setData] = useState<IndicatorsResponse['data'] | null>(null);
     const [loading, setLoading] = useState(false);
@@ -65,6 +65,8 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             if (result.status === 'success') {
                 setData(result.data);
             } else {
+                // If it's an empty case (like ETF), result.message will contain the guidance
+                setData(null);
                 setError(result.message || '데이터를 불러오는데 실패했습니다.');
             }
         } catch (err) {
