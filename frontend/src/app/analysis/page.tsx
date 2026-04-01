@@ -777,7 +777,7 @@ function AnalysisContent() {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
-                                                        {(sectorData.summary_table || []).map((row: any, i: number) => (
+                                                        {(sectorData?.summary_table || []).map((row: any, i: number) => (
                                                             <tr key={i} className={`hover:bg-white/5 transition-colors ${row.name === stockInfo?.name ? "bg-blue-500/10" : ""}`}>
                                                                 <td className="py-4 px-2 text-gray-200 font-bold flex items-center gap-2">
                                                                     {row.name === stockInfo?.name && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
