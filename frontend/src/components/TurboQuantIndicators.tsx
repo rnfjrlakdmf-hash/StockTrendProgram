@@ -1,28 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
     Tooltip, Legend, ResponsiveContainer, ComposedChart, Cell
 } from 'recharts';
-import { Loader2, TrendingUp, ShieldCheck, AlertCircle, ChevronDown, BarChart3, Activity, Zap } from 'lucide-react';
-import { API_BASE_URL } from '@/lib/config';
+import { 
+    Loader2, TrendingUp, ShieldCheck, AlertCircle, ChevronDown, 
+    BarChart3, Activity, Zap, Plus, Minus 
+} from 'lucide-react';
 
-interface IndicatorData {
-    name: string;
-    values: Record<string, number | null>;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stock-server-production-9040.up.railway.app';
 
 interface IndicatorsResponse {
     status: string;
     data: {
+        name: string;
         symbol: string;
-        freq: string;
-        finGubun: string;
-        category: string;
-        headers: string[];
-        indicators: IndicatorData[];
+        years: string[];
+        rows: {
+            label: string;
+            values: string[];
+        }[];
     };
+    message?: string;
 }
 
 interface Props {
@@ -45,6 +46,14 @@ const CATEGORIES = [
     { label: '활동성', value: '4', icon: <Activity className="w-4 h-4" /> },
 ];
 
+// 카테고리별 핵심 지표 (가독성 요약용)
+const CORE_INDICATORS: Record<string, string[]> = {
+    '1': ['영업이익률', '매출액순이익률', 'ROE', 'ROA', 'EBITDA마진율'],
+    '2': ['매출액증가율', '영업이익증가율', '순이익증가율', 'EPS증가율', '총자산증가율'],
+    '3': ['부채비율', '유동비율', '이자보상배율', '유보율', '당좌비율'],
+    '4': ['총자산회전율', '매출채권회전율', '재고자산회전율', '매입채무회전율']
+};
+
 export default function TurboQuantIndicators({ symbol, stockName }: Props) {
     const [freq, setFreq] = useState('0'); // 0: 연간, 1: 분기
     const [finGubun, setFinGubun] = useState('MAIN'); // Default to MAIN
@@ -52,11 +61,13 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
     const [data, setData] = useState<IndicatorsResponse['data'] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isFullView, setIsFullView] = useState(false); // 요약/전체보기 상태
 
     const fetchData = async () => {
         if (!symbol) return;
         setLoading(true);
         setError(null);
+        setData(null);
         try {
             const cleanSymbol = symbol.split('.')[0];
             const response = await fetch(`${API_BASE_URL}/api/stock/${cleanSymbol}/indicators?freq=${freq}&finGubun=${finGubun}&category=${category}`);
@@ -65,8 +76,6 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             if (result.status === 'success') {
                 setData(result.data);
             } else {
-                // If it's an empty case (like ETF), result.message will contain the guidance
-                setData(null);
                 setError(result.message || '데이터를 불러오는데 실패했습니다.');
             }
         } catch (err) {
@@ -80,68 +89,37 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
         fetchData();
     }, [symbol, freq, finGubun, category]);
 
+    // 지표 필터링 로직 (요약 모드인 경우 핵심 지표만)
+    const filteredRows = useMemo(() => {
+        if (!data || !data.rows) return [];
+        if (isFullView) return data.rows;
+        
+        const coreList = CORE_INDICATORS[category] || [];
+        // 지표 이름에 핵심 키워드가 포함된 것만 필터링
+        return data.rows.filter(row => coreList.some(core => row.label.includes(core)));
+    }, [data, category, isFullView]);
+
     if (!symbol) return null;
 
-    // 차트 데이터 변환 (상단 주 차트)
-    const getMainChartData = () => {
-        if (!data) return [];
-        
-        // 카테고리에 따른 지표 필터링
-        let targetMetrics: string[] = [];
-        if (category === '1') targetMetrics = ['ROE', 'ROA', '영업이익률', '매출총이익률'];
-        else if (category === '2') targetMetrics = ['매출액증가율', '영업이익증가율', '순이익증가율'];
-        else if (category === '3') targetMetrics = ['부채비율', '유동부채비율', '비유동부채비율'];
-        else if (category === '4') targetMetrics = ['총자산회전율', '자기자본회전율', '매출채권회전율'];
-
-        return data.headers.map(header => {
-            const entry: any = { name: header };
-            data.indicators.forEach(ind => {
-                if (targetMetrics.includes(ind.name)) {
-                    entry[ind.name] = ind.values[header];
-                }
+    // 차트 데이터 변환
+    const getChartData = () => {
+        if (!data || !data.rows || data.rows.length === 0) return [];
+        const chartData: any[] = [];
+        data.years.forEach((year, idx) => {
+            const entry: any = { name: year };
+            // 상위 3개 지표를 차트에 표시
+            data.rows.slice(0, 3).forEach(row => {
+                const valStr = row.values[idx] || '0';
+                const val = parseFloat(valStr.replace(/,/g, ''));
+                entry[row.label] = isNaN(val) ? 0 : val;
             });
-            return entry;
+            chartData.push(entry);
         });
-    };
-
-    // 차트 데이터 변환 (하단 보조 차트)
-    const getSubChartData = () => {
-        if (!data) return [];
-        let targetMetrics: string[] = [];
-        if (category === '1') targetMetrics = ['ROIC', 'EBITDA마진율'];
-        else if (category === '2') targetMetrics = ['총자산증가율', '자기자본증가율'];
-        else if (category === '3') targetMetrics = ['순부채비율', '이자보상배율'];
-        else if (category === '4') targetMetrics = ['재고자산회전율', '매입채무회전율'];
-
-        return data.headers.map(header => {
-            const entry: any = { name: header };
-            data.indicators.forEach(ind => {
-                if (targetMetrics.includes(ind.name)) {
-                    entry[ind.name] = ind.values[header];
-                }
-            });
-            return entry;
-        });
+        return chartData;
     };
 
     const getCategoryTitle = () => {
         return CATEGORIES.find(c => c.value === category)?.label || '재무 지표';
-    };
-
-    const getChart1Title = () => {
-        if (category === '1') return '주요 수익성 추이 (%)';
-        if (category === '2') return '성장 속도 분석 (%)';
-        if (category === '3') return '안정성 지표 추이 (%)';
-        if (category === '4') return '자본 운용 효율성 (회)';
-        return '지표 추이';
-    };
-
-    const getChart2Title = () => {
-        if (category === '1') return '투하자본 및 현금창출력';
-        if (category === '2') return '자산 규모 확장성';
-        if (category === '3') return '부채 체력 분석 (배/%)';
-        if (category === '4') return '재고 및 채무 관리 (회)';
-        return '상세 분석';
     };
 
     return (
@@ -151,12 +129,16 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                 {CATEGORIES.map(cat => (
                     <button
                         key={cat.value}
-                        onClick={() => setCategory(cat.value)}
-                        className={`flex items-center gap-2 px-6 py-4 text-sm font-black transition-all border-b-2 whitespace-nowrap
+                        onClick={() => {
+                            setCategory(cat.value);
+                            setIsFullView(false); // 카테고리 이동 시 다시 요약모드로
+                        }}
+                        className={`flex items-center gap-2 px-6 py-4 text-sm font-black transition-all border-b-2 whitespace-nowrap notranslate
                             ${category === cat.value 
-                                ? 'bg-blue-600/20 text-blue-400 border-blue-500 shadow-[inset_0_-2px_10px_rgba(59,130,246,0.3)]' 
+                                ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500 shadow-[inset_0_-2px_10px_rgba(79,70,229,0.3)]' 
                                 : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'
                             }`}
+                        translate="no"
                     >
                         {cat.icon}
                         {cat.label}
@@ -165,12 +147,12 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             </div>
 
             {/* Header & Filters */}
-            <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-blue-600/10 to-indigo-600/5">
+            <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-indigo-600/10 to-indigo-600/5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2">
-                            <BarChart3 className="w-7 h-7 text-blue-400" />
-                            터보퀸트 정밀 진단: <span className="text-blue-400">{getCategoryTitle()}</span>
+                        <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
+                            <BarChart3 className="w-7 h-7 text-indigo-400" />
+                            터보퀸트 정밀 진단: <span className="text-indigo-400">{getCategoryTitle()}</span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
                             {stockName ? `${stockName}(${symbol})` : symbol} WiseReport 연동 고성능 데이터 파싱
@@ -180,18 +162,16 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Freq Toggle */}
                         <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex items-center">
-                            <button 
-                                onClick={() => setFreq('0')}
-                                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${freq === '0' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                            >
-                                연간
-                            </button>
-                            <button 
-                                onClick={() => setFreq('1')}
-                                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${freq === '1' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                            >
-                                분기
-                            </button>
+                            {['0', '1'].map(f => (
+                                <button 
+                                    key={f}
+                                    onClick={() => setFreq(f)}
+                                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all notranslate ${freq === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                    translate="no"
+                                >
+                                    {f === '0' ? '연간' : '분기'}
+                                </button>
+                            ))}
                         </div>
 
                         {/* Gubun Select */}
@@ -199,7 +179,8 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                             <select 
                                 value={finGubun}
                                 onChange={(e) => setFinGubun(e.target.value)}
-                                className="bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl px-4 py-2.5 outline-none hover:bg-white/10 transition-all appearance-none pr-8 cursor-pointer"
+                                className="bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl px-4 py-2.5 outline-none hover:bg-white/10 transition-all appearance-none pr-8 cursor-pointer notranslate"
+                                translate="no"
                             >
                                 {FIN_GUBUN_MAP.map(opt => (
                                     <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
@@ -216,7 +197,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             <div className="p-6 md:p-8">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
                         <p className="text-slate-400 font-bold animate-pulse text-sm">터보 엔진이 지표 데이터를 실시간 분석 중입니다...</p>
                     </div>
                 ) : error ? (
@@ -224,88 +205,60 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                         <AlertCircle className="w-6 h-6 flex-shrink-0" />
                         <span className="font-bold text-sm">{error}</span>
                     </div>
-                ) : data && data.indicators.length > 0 ? (
+                ) : data && data.rows.length > 0 ? (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {/* Charts Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Chart 1 */}
-                            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
-                                <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4 text-blue-400" /> {getChart1Title()}
-                                </h4>
-                                <div className="h-[280px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={getMainChartData()}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                            <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                            <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                            <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }} />
-                                            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                                            {Object.keys(getMainChartData()[0] || {}).filter(k => k !== 'name').map((key, i) => (
-                                                <Line 
-                                                    key={key} 
-                                                    name={key} 
-                                                    type="monotone" 
-                                                    dataKey={key} 
-                                                    stroke={i === 0 ? '#3b82f6' : i === 1 ? '#ef4444' : i === 2 ? '#10b981' : '#f59e0b'} 
-                                                    strokeWidth={3} 
-                                                    dot={{ r: 4 }} 
-                                                />
-                                            ))}
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Chart 2 */}
-                            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
-                                <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4 text-indigo-400" /> {getChart2Title()}
-                                </h4>
-                                <div className="h-[280px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={getSubChartData()}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                            <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                            <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                            <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                            <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }} />
-                                            <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                                            {Object.keys(getSubChartData()[0] || {}).find(k => k.includes('율') || k.includes('증가')) ? (
-                                                <Bar yAxisId="left" name={Object.keys(getSubChartData()[0] || {}).find(k => k.includes('율') || k.includes('증가'))} dataKey={Object.keys(getSubChartData()[0] || {}).find(k => k.includes('율') || k.includes('증가'))} fill="#6366f1bf" radius={[4, 4, 0, 0]} barSize={35} />
-                                            ) : null}
-                                            {Object.keys(getSubChartData()[0] || {}).filter(k => k !== 'name' && !k.includes('율') && !k.includes('증가')).map((key, i) => (
-                                                <Line key={key} yAxisId="right" name={key} type="monotone" dataKey={key} stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
-                                            ))}
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                </div>
+                        {/* Chart Area */}
+                        <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
+                            <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2 notranslate" translate="no">
+                                <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 지표 추이 분석 (%)
+                            </h4>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={getChartData()}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }} />
+                                        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                                        {Object.keys(getChartData()[0] || {}).filter(k => k !== 'name').map((key, i) => (
+                                            <Line 
+                                                key={key} 
+                                                name={key} 
+                                                type="monotone" 
+                                                dataKey={key} 
+                                                stroke={i === 0 ? '#6366f1' : i === 1 ? '#10b981' : i === 2 ? '#f59e0b' : '#ef4444'} 
+                                                strokeWidth={3} 
+                                                dot={{ r: 4 }} 
+                                            />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Table Section */}
+                        {/* Table Area */}
                         <div className="bg-white/5 rounded-2xl border border-white/5 overflow-x-auto shadow-xl">
-                            <table className="w-full text-left border-collapse min-w-[800px]">
+                            <table className="w-full text-left border-collapse min-w-[800px]" translate="no">
                                 <thead>
                                     <tr className="bg-white/10 border-b border-white/10">
-                                        <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10">항목</th>
-                                        {data.headers.map(h => (
-                                            <th key={h} className="p-4 text-xs font-black text-slate-300 text-center">{h}</th>
+                                        <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no">항목</th>
+                                        {data.years.map(y => (
+                                            <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no">{y}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.indicators.map((ind, idx) => (
+                                    {filteredRows.map((row, idx) => (
                                         <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
-                                            <td className="p-4 text-sm font-bold text-slate-200 sticky left-0 bg-[#0e1629]/95 z-10 border-r border-white/5 group-hover:text-blue-400 transition-colors">
-                                                {ind.name}
+                                            <td className="p-4 text-sm font-bold text-slate-200 sticky left-0 bg-[#0e1629]/95 z-10 border-r border-white/5 group-hover:text-indigo-400 transition-colors notranslate" translate="no">
+                                                {row.label}
                                             </td>
-                                            {data.headers.map(h => {
-                                                const val = ind.values[h];
-                                                const isNegative = typeof val === 'number' && val < 0;
+                                            {row.values.map((val, vIdx) => {
+                                                const rawVal = parseFloat((val || '0').replace(/,/g, ''));
+                                                const isNegative = !isNaN(rawVal) && rawVal < 0;
                                                 return (
-                                                    <td key={h} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'}`}>
-                                                        {val === null ? '-' : val.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                    <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'}`}>
+                                                        {val || '-'}
                                                     </td>
                                                 );
                                             })}
@@ -315,22 +268,42 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                             </table>
                         </div>
 
+                        {/* Toggle Button */}
+                        <div className="flex justify-center mt-4">
+                            <button
+                                onClick={() => setIsFullView(!isFullView)}
+                                className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-slate-300 transition-all shadow-lg active:scale-95 notranslate"
+                                translate="no"
+                            >
+                                {isFullView ? (
+                                    <>
+                                        <Minus className="w-4 h-4 text-indigo-400" />
+                                        핵심 지표만 보기 (요약 모드)
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="w-4 h-4 text-indigo-400" />
+                                        세부 지표 전체 보기 (+{data.rows.length - filteredRows.length}개)
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
                         <div className="p-5 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 flex items-start gap-4 shadow-lg">
                             <ShieldCheck className="w-5 h-5 text-indigo-400 mt-1 flex-shrink-0" />
                             <div>
-                                <h5 className="text-indigo-300 text-sm font-black mb-1">터보퀸트 정밀 분석 가이드</h5>
+                                <h5 className="text-indigo-300 text-sm font-black mb-1 notranslate" translate="no">터보퀸트 정밀 분석 가이드</h5>
                                 <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                    이 화면의 데이터는 실시간 공시 지표를 바탕으로 파싱되었습니다. 
-                                    차트 상단의 탭을 통해 **{getCategoryTitle()}** 데이터뿐만 아니라 다른 핵심 지표들도 함께 연동하여 입체적으로 종목을 분석하세요.
-                                    회동률이나 수익성 지표가 산업 평균보다 높은지 확인하는 것이 전략 수립의 핵심입니다.
+                                    이 화면의 데이터는 실시간 공시 지표를 바탕으로 파싱되었습니다. 현재 **핵심 요약 모드**가 활성화되어 있어 투자 결정에 가장 중요한 지표들만 선별하여 보여드립니다. 
+                                    상단의 탭을 통해 수익성, 성장성, 안정성, 활동성 데이터를 입체적으로 분석하세요.
                                 </p>
                             </div>
                         </div>
                     </div>
                 ) : (
                     <div className="py-24 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
-                        <Loader2 className="w-8 h-8 text-slate-600 mx-auto mb-4 animate-spin" />
-                        <p className="text-slate-500 font-bold">선택하신 조건(회계기준/주기)의 데이터를 불러올 수 없습니다.</p>
+                        <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 animate-bounce" />
+                        <p className="text-slate-500 font-bold">선택하신 조건(회계기준/주기)의 데이터를 분석 중이거나 불러올 수 없습니다.</p>
                         <p className="text-slate-600 text-xs mt-1">상단의 필터를 변경하여 다시 시도해 보세요.</p>
                     </div>
                 )}
