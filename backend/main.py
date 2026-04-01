@@ -138,6 +138,64 @@ def read_theme_rank():
     data = get_naver_theme_rank()
     return {"status": "success", "data": data}
 
+@app.get("/api/pro/summary/{symbol}")
+def read_pro_summary(symbol: str):
+    """
+    [TurboQuant Pro] 통합 요약 리포트 (퀀트 + 재무 + 수급 통합)
+    병렬 처리를 통해 최상의 응답 속도 제공
+    """
+    cache_key = f"pro_summary_{symbol}"
+    cached = turbo_engine.get_cache(cache_key)
+    if cached:
+        return {"status": "success", "data": cached, "turbo": True}
+
+    import concurrent.futures
+    import time
+    
+    # 헬퍼 함수: 동기 함수를 별도 스레드에서 실행
+    def run_sync(func, *args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Sub-task error in {func.__name__}: {e}")
+            return None
+
+    try:
+        from pro_analysis import get_quant_scorecard, get_financial_health
+        from korea_data import get_naver_investor_data, gather_naver_stock_data
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            # 4가지 핵심 데이터를 병렬로 요청
+            future_quant = executor.submit(run_sync, get_quant_scorecard, symbol)
+            future_health = executor.submit(run_sync, get_financial_health, symbol)
+            future_investor = executor.submit(run_sync, get_naver_investor_data, symbol, 20) # 1개월 기준 수공
+            future_stock = executor.submit(run_sync, gather_naver_stock_data, symbol)
+            
+            # 결과 대기
+            quant_data = future_quant.result()
+            health_data = future_health.result()
+            inv_res = future_investor.result()
+            stock_data = future_stock.result()
+            
+        combined_data = {
+            "symbol": symbol,
+            "stock_info": stock_data,
+            "quant": quant_data,
+            "health": health_data,
+            "investor": inv_res.get("data") if inv_res and isinstance(inv_res, dict) and inv_res.get("status") == "success" else None,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        # 유효한 득점 결과가 최소 하나는 있어야 캐싱 (에러 방지)
+        if quant_data or health_data:
+            turbo_engine.set_cache(cache_key, combined_data)
+        
+        return {"status": "success", "data": combined_data, "turbo": False}
+        
+    except Exception as e:
+        print(f"Pro Summary API Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 # [NEW] Assets & Risk Alerts Endpoints
 from stock_data import (
     get_all_market_assets, get_dart_risk_alerts, get_company_financials,
