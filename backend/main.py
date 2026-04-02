@@ -49,11 +49,12 @@ from alerts import (
 )
 from chatbot import chat_with_ai
 from korea_data import (
-    get_integrated_stock_data, get_integrated_stock_news, search_stock_code,
-    get_market_trend_data, get_korean_market_indices, get_korean_interest_rates,
-    get_top_sectors, get_theme_heatmap_data,
+    get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
+    get_live_investor_estimates, get_indexing_status, search_stock_code,
+    get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
     get_market_investors, get_index_chart_data, get_investor_history,
-    get_market_summary_stats, get_live_disclosures
+    get_market_summary_stats, get_live_disclosures, get_integrated_stock_news,
+    get_korean_interest_rates
 )
 from global_search import search_global_ticker
 from pydantic import BaseModel, Field
@@ -79,7 +80,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
