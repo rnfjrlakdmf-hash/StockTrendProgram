@@ -753,7 +753,7 @@ function AnalysisContent() {
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
                                                     <select 
-                                                        onChange={(e) => fetchSectorAnalysis(symbol, e.target.value)}
+                                                        onChange={(e) => fetchSectorAnalysis(secSymbol || symbol, e.target.value)}
                                                         className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                                                     >
                                                         {(sectorData.compare_sectors || []).map((s: any) => (

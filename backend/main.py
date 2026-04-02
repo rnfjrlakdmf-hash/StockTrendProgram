@@ -276,7 +276,7 @@ def read_sector_analysis(symbol: str, sector_id: Optional[str] = None):
     if data and data.get("status") == "success":
         turbo_engine.set_cache(cache_key, data)
         
-    return data
+    return {"status": "success", "data": data}
 
 @app.get("/api/stock/{symbol}/dividends")
 @turbo_cache(ttl_seconds=3600)

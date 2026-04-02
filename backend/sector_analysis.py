@@ -70,8 +70,9 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
 
         ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={code}&sec_cd={target_sec}&data_typ=1"
         ajax_res = session.get(ajax_url, timeout=10)
-        ajax_res.encoding = 'euc-kr'
-        ajax_json = ajax_res.json()
+        # v1.9.3: Fix encoding issue by manual decoding
+        ajax_content = ajax_res.content.decode('euc-kr', errors='replace')
+        ajax_json = json.loads(ajax_content)
         
         # Step 3: Intelligent Data Mapping
         charts = {}
