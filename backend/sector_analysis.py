@@ -147,7 +147,7 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
             "charts": charts,
             "summary_table": summary_table,
-            "turbo_version": "1.9.2 (AJAX)",
+            "turbo_version": "1.9.7 (Stable-Final)",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         

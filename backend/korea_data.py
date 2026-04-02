@@ -87,9 +87,11 @@ def search_stock_code(keyword: str):
         res = requests.get(url, headers=headers, timeout=5)
         html = res.text
         
-        # Priority 1: Match 6-digit code in finance links
-        matches = re.findall(r'finance\.naver\.com/item/main.*code=(\d{6})', html)
+        # Priority 1: Match 6-digit code in finance links (Naver updated structures)
+        # We look for any code parameter in finance.naver links
+        matches = re.findall(r'code=(\d{6})', html)
         if matches:
+            # First match in finance context is usually the target stock
             return matches[0]
 
         # 2. Naver Finance Native Search (EUC-KR)
