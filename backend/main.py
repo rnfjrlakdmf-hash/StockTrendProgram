@@ -49,12 +49,13 @@ from alerts import (
 )
 from chatbot import chat_with_ai
 from korea_data import (
-    get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
-    get_live_investor_estimates, get_indexing_status, search_stock_code,
-    get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
+    get_integrated_stock_data, get_integrated_stock_news, search_stock_code,
+    get_market_trend_data, get_korean_market_indices, get_korean_interest_rates,
+    get_top_sectors, get_theme_heatmap_data,
     get_market_investors, get_index_chart_data, get_investor_history,
     get_market_summary_stats, get_live_disclosures
 )
+from global_search import search_global_ticker
 from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
@@ -1012,19 +1013,33 @@ def read_stock_news(symbol: str, period: str = "1d"):
 
 @app.get("/api/stock/search")
 def search_stock_api(q: str):
-    """Search for stock by name or code (Global Map)"""
+    """
+    Search for stock by name or code (KR + Global)
+    v2.0.0 (Gold-Standard): Smart Fallback KR -> Global
+    """
     if not q:
         return {"status": "error", "message": "Query parameter 'q' is required"}
-        
-    result = search_stock_code(q)
-    if result:
-        # [Fix] Return as list for frontend compatibility (Matches analysis/page.tsx)
+    
+    # 1. Try Korea (Naver Search)
+    kr_result = search_stock_code(q)
+    if kr_result:
+        # Check if kr_result is purely numeric (Korean stock)
+        # Naver search sometimes returns news or other strings, but search_stock_code should return digits
+        if kr_result.isdigit() and len(kr_result) == 6:
+            return {
+                "status": "success", 
+                "data": [{"code": kr_result, "symbol": kr_result, "name": q, "market": "KR"}]
+            }
+
+    # 2. Try Global (Yahoo Finance Lookup)
+    gb_result = search_global_ticker(q)
+    if gb_result:
         return {
             "status": "success", 
-            "data": [{"code": result, "symbol": result, "name": q}]
+            "data": [{"code": gb_result, "symbol": gb_result, "name": q, "market": "Global"}]
         }
-    else:
-        return {"status": "error", "message": f"No stock found for '{q}'"}
+
+    return {"status": "error", "message": f"No stock found for '{q}'"}
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):
