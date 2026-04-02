@@ -41,7 +41,7 @@ export default function ClosingBanner() {
                     const res = await fetch(`${API_BASE_URL}/api/watchlist/closing-summary`);
                     const json = await res.json();
 
-                    if (json.status === "success" && json.data.length > 0) {
+                    if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
                         setData(json.data);
                         setMarketType(type);
                         setVisible(true);

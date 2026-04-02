@@ -96,7 +96,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
         
         const coreList = CORE_INDICATORS[category] || [];
         // 지표 이름에 핵심 키워드가 포함된 것만 필터링
-        return data.rows.filter(row => row && row.label && coreList.some(core => row.label.includes(core)));
+        return data.rows.filter(row => row && typeof row.label === 'string' && coreList.some(core => row.label.includes(core)));
     }, [data, category, isFullView]);
 
     if (!symbol) return null;
@@ -109,7 +109,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             const entry: any = { name: year };
             // 상위 3개 지표를 차트에 표시
             data.rows.slice(0, 3).forEach(row => {
-                const valStr = row.values[idx] || '0';
+                const valStr = String(row.values?.[idx] || '0');
                 const val = parseFloat(valStr.replace(/,/g, ''));
                 entry[row.label] = isNaN(val) ? 0 : val;
             });
@@ -253,8 +253,8 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                             <td className="p-4 text-sm font-bold text-slate-200 sticky left-0 bg-[#0e1629]/95 z-10 border-r border-white/5 group-hover:text-indigo-400 transition-colors notranslate" translate="no">
                                                 {row.label}
                                             </td>
-                                            {row.values.map((val, vIdx) => {
-                                                const rawVal = parseFloat((val || '0').replace(/,/g, ''));
+                                            {Array.isArray(row.values) && row.values.map((val, vIdx) => {
+                                                const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
                                                 const isNegative = !isNaN(rawVal) && rawVal < 0;
                                                 return (
                                                     <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'}`}>
@@ -303,8 +303,8 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                 ) : (
                     <div className="py-24 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
                         <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 animate-bounce" />
-                        <p className="text-slate-500 font-bold">선택하신 조건(회계기준/주기)의 데이터를 분석 중이거나 불러올 수 없습니다.</p>
-                        <p className="text-slate-600 text-xs mt-1">상단의 필터를 변경하여 다시 시도해 보세요.</p>
+                        <p className="text-slate-400 font-bold">{error || '선택하신 조건(회계기준/주기)의 데이터를 분석 중이거나 불러올 수 없습니다.'}</p>
+                        <p className="text-slate-600 text-xs mt-2 italic">종목 코드(6자리)를 입력하시면 더 정확한 데이터 조회가 가능합니다.</p>
                     </div>
                 )}
             </div>

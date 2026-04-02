@@ -31,8 +31,8 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         })
         session.headers.update(turbo_headers)
         
-        # Step 1: Fetch Main Sector Page
-        url = f"https://navercomp.wisereport.co.kr/v2/company/c1050001.aspx?cmp_cd={code}"
+        # Step 1: Fetch Main Sector Page (v1.9.1 Correct Source)
+        url = f"https://navercomp.wisereport.co.kr/v2/company/c1090001.aspx?cmp_cd={code}"
         if sector_id:
             url += f"&set_sect={sector_id}"
             
@@ -46,9 +46,9 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         if desc_box:
             sector_info["description"] = desc_box.get_text(strip=True)
             
-        # 1-2. Sector comparison list
+        # 1-2. Sector comparison list (ID fixed as 'sector')
         compare_sectors = []
-        select_box = soup.select_one("select#setSect")
+        select_box = soup.select_one("select#sector")
         if select_box:
             for opt in select_box.select("option"):
                 v = opt.get("value")
@@ -59,95 +59,84 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                         "selected": "selected" in opt.attrs or opt.get("selected") == "selected"
                     })
 
-        # Step 2: Intelligent Table Scraper (Text-based searching)
-        target_metrics = {
-            "주가수익률": ["주가수익률", "수익률"],
-            "배당수익률": ["배당수익률", "배당"],
-            "PER": ["PER"],
-            "PBR": ["PBR"],
-            "ROE": ["ROE"],
-            "부채비율": ["부채비율"],
-            "매출총이익률": ["매출총이익률"],
-            "영업이익률": ["영업이익률"]
-        }
+        # Step 2: Fetch AJAX Data for Charts and Tables (v1.9.2 AJAX Integration)
+        target_sec = sector_id
+        if not target_sec and compare_sectors:
+            # Pick currently selected or first one
+            target_sec = next((s["id"] for s in compare_sectors if s.get("selected")), compare_sectors[0]["id"])
         
+        if not target_sec:
+            target_sec = "WI620" # Default fallback (Semiconductor)
+
+        ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={code}&sec_cd={target_sec}&data_typ=1"
+        ajax_res = session.get(ajax_url, timeout=10)
+        ajax_res.encoding = 'euc-kr'
+        ajax_json = ajax_res.json()
+        
+        # Step 3: Intelligent Data Mapping
         charts = {}
         summary_table = []
-        all_tables = soup.select("table")
-
-        for metric_name, keywords in target_metrics.items():
-            relevant_table = None
-            for table in all_tables:
-                table_text = table.get_text()
-                if any(kw in table_text for kw in keywords):
-                    relevant_table = table
-                    break
+        
+        # 3-1. Yield (dt0)
+        yield_data = ajax_json.get("dt0", {})
+        y_headers = yield_data.get("yymm", [])
+        if y_headers:
+            yield_rows = []
+            for item in yield_data.get("data", []):
+                row = {"name": item.get("NM", "Unknown")}
+                for i, h in enumerate(y_headers):
+                    key = f"FY{i-1}" if i > 0 else "FY_4" # Logic might vary, let's map by sequence
+                    # Actually, WiseReport uses FY_4 to FY1
+                    fy_key = f"FY_{4-i}" if i < 5 else f"FY{i-4}"
+                    val = item.get(fy_key)
+                    row[h] = float(val) if val is not None else None
+                yield_rows.append(row)
             
-            if not relevant_table:
-                # If table not found by text, try ID as fallback
-                fallback_ids = {
-                    "주가수익률": "cTB11", "배당수익률": "cTB12", "PER": "cTB13", "PBR": "cTB14",
-                    "ROE": "cTB15", "부채비율": "cTB16", "매출총이익률": "cTB17", "영업이익률": "cTB18"
-                }
-                fid = fallback_ids.get(metric_name)
-                relevant_table = soup.select_one(f"table#{fid}")
-            
-            if not relevant_table:
-                continue
-            
-            # Extract headers (periods)
-            headers = [th.get_text(strip=True) for th in relevant_table.select("thead th") if th.get_text(strip=True) and "항목" not in th.get_text()]
-            if not headers:
-                continue
+            charts["주가수익률"] = {
+                "headers": y_headers,
+                "rows": yield_rows,
+                "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in yield_rows}} for h in y_headers]
+            }
 
-            # Extract rows
-            rows_data = []
-            for tr in relevant_table.select("tbody tr"):
-                tds = tr.select("td")
-                if not tds:
-                    continue
-                name_el = tds[0]
-                name = name_el.get_text(strip=True)
-                val_dict = {"name": name}
-                for i, h in enumerate(headers):
-                    if i+1 < len(tds):
-                        v_str = tds[i+1].get_text(strip=True).replace(',', '').replace('%', '')
-                        try:
-                            if v_str in ('', '-', 'N/A', 'NaN'):
-                                val_dict[h] = None
-                            else:
-                                val_dict[h] = float(v_str)
-                        except:
-                            val_dict[h] = None
-                rows_data.append(val_dict)
-
-            if rows_data:
-                # Chart formulation
-                chart_data = []
-                for h in headers:
-                    entry = {"period": h}
-                    for rd in rows_data:
-                        entry[rd["name"]] = rd.get(h)
-                    chart_data.append(entry)
+        # 3-2. Core Metrics (dt3: PER, PBR, ROE, etc.)
+        metrics_map = {
+            1: "PER", 2: "PBR", 3: "ROE", 9: "부채비율", 
+            6: "영업이익률", 8: "배당수익률"
+        }
+        indicators_data = ajax_json.get("dt3", {})
+        i_headers = indicators_data.get("yymm", [])
+        
+        if i_headers:
+            for i_code, m_name in metrics_map.items():
+                m_rows = []
+                for item in indicators_data.get("data", []):
+                    # v1.9.2: AJAX ITEM IDs are often integers
+                    if str(item.get("ITEM")) == str(i_code):
+                        row = {"name": item.get("NM", "Unknown")}
+                        for idx, h in enumerate(i_headers):
+                            fy_key = f"FY_{4-idx}" if idx < 5 else f"FY{idx-4}"
+                            val = item.get(fy_key)
+                            row[h] = float(val) if val is not None else None
+                        m_rows.append(row)
                 
-                charts[metric_name] = {
-                    "headers": headers,
-                    "rows": rows_data,
-                    "chart_data": chart_data
-                }
+                if m_rows:
+                    charts[m_name] = {
+                        "headers": i_headers,
+                        "rows": m_rows,
+                        "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in i_headers]
+                    }
+                    
+                    # Update Summary Table (Latest)
+                    latest_h = i_headers[-1]
+                    for r in m_rows:
+                        s_entry = next((s for s in summary_table if s["name"] == r["name"]), None)
+                        if not s_entry:
+                            s_entry = {"name": r["name"]}
+                            summary_table.append(s_entry)
+                        s_entry[m_name] = r.get(latest_h)
 
-                # Update Summary Table (Latest values)
-                latest_h = headers[-1]
-                for rd in rows_data:
-                    s_entry = next((s for s in summary_table if s["name"] == rd["name"]), None)
-                    if not s_entry:
-                        s_entry = {"name": rd["name"]}
-                        summary_table.append(s_entry)
-                    s_entry[metric_name] = rd.get(latest_h)
-
-        # Step 3: Final Data Assembly
+        # Step 4: Final Data Assembly
         if not summary_table:
-            # Fatal scenario fallback: Minimal data
             summary_table = [{"name": symbol, "PER": 0.0, "PBR": 0.0}]
 
         return {
@@ -157,12 +146,13 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
             "charts": charts,
             "summary_table": summary_table,
-            "turbo_version": "1.9.0",
+            "turbo_version": "1.9.2 (AJAX)",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
     except Exception as e:
-        print(f"Turbo Sector Error: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "status": "success",
             "symbol": symbol,

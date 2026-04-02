@@ -57,7 +57,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
     }, [data]);
 
     const investorSummary = useMemo(() => {
-        if (!data?.investor?.trend || data.investor.trend.length === 0) return null;
+        if (!data?.investor?.trend || !Array.isArray(data.investor.trend) || data.investor.trend.length === 0) return null;
         const trend = data.investor.trend;
         const latest = trend[trend.length - 1];
         
@@ -187,7 +187,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                     </div>
 
                     <div className="h-[250px] w-full">
-                        {data?.financial_indicators ? (
+                        {Array.isArray(data?.financial_indicators) && data.financial_indicators.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={data.financial_indicators}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />

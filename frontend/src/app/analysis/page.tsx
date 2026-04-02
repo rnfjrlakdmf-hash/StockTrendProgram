@@ -51,31 +51,60 @@ function AnalysisContent() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
-    // [v1.8.7] URL 파라미터가 있어도 즉시 분석하지 않고 입력창만 채움 (사용자 클릭 유도)
+    // [v1.9.0] 개별 분석 실행을 위한 타겟 심볼 상태들
+    const [summarySymbol, setSummarySymbol] = useState("");
+    const [quantSymbol, setQuantSymbol] = useState("");
+    const [finSymbol, setFinSymbol] = useState("");
+    const [secSymbol, setSecSymbol] = useState("");
+
+    // [v1.8.7] URL 파라미터가 있어도 즉시 분석하지 않고 입력창만 채움
     useEffect(() => {
         if (urlSymbol) {
             setSymbol(urlSymbol);
-            // URL에 심볼이 있어도 분석 실행 단추를 누르기 전까진 대기
         }
     }, [urlSymbol]);
 
-    const executeAnalysis = (sym: string) => {
-        if (!sym) return;
+    const handleGlobalSearch = async (tab: typeof activeTab) => {
+        if (!symbol) return;
         
-        // [v1.7.5] Turbo Parallel Loading: 모든 데이터를 한꺼번에 로드
-        fetchBasicInfo(sym);
-        fetchQuant(sym);
-        fetchFinancial(sym);
-        fetchSectorAnalysis(sym);
+        let targetSymbol = symbol.trim();
         
-        // Note: Summary tab data is handled within its component via sym prop
+        // 한글이 포함되어 있으면 종목 코드 검색 시도
+        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
+            setStockLoading(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`);
+                const json = await res.json();
+                if (json.status === "success" && json.data.length > 0) {
+                    targetSymbol = json.data[0].code;
+                    setSymbol(targetSymbol); 
+                } else {
+                    alert("해당 종목을 찾을 수 없습니다.");
+                    setStockLoading(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Search failed:", err);
+                setStockLoading(false);
+                return;
+            } finally {
+                setStockLoading(false);
+            }
+        }
+        
+        // 해당 탭에 맞는 트리거 실행
+        switch(tab) {
+            case "summary": setSummarySymbol(targetSymbol); fetchBasicInfo(targetSymbol); break;
+            case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
+            case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
+            case "sector": setSecSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchSectorAnalysis(targetSymbol); break;
+        }
     };
 
     const fetchBasicInfo = async (sym: string) => {
         if (!sym) return;
         setStockLoading(true);
         try {
-            // we use the pro summary to get global info or dedicated endpoint
             const res = await fetch(`${API_BASE_URL}/api/pro/summary/${sym}`);
             const json = await res.json();
             if (json.status === "success") {
@@ -134,41 +163,6 @@ function AnalysisContent() {
             if (json.status === "success") setPeerData(json);
         } catch (err) { console.error(err); }
         finally { setPeerLoading(false); }
-    };
-
-    const handleSearch = async () => {
-        if (!symbol) return;
-        
-        let targetSymbol = symbol.trim();
-        
-        // 데이터 초기화 (이전 검색 결과 제거하여 로딩 상태 명확화)
-        setStockInfo(null);
-        setQuantData(null);
-        setFinancialData(null);
-        setSectorData(null);
-        
-        // 한글이 포함되어 있으면 종목 코드 검색 시도
-        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
-            setStockLoading(true);
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(targetSymbol)}`);
-                const json = await res.json();
-                if (json.status === "success" && json.data.length > 0) {
-                    targetSymbol = json.data[0].code;
-                    setSymbol(targetSymbol); // 입력창을 코드로 변경 (사용자 가이드 승인 사항)
-                } else {
-                    alert("해당 종목을 찾을 수 없습니다.");
-                    setStockLoading(false);
-                    return;
-                }
-            } catch (err) {
-                console.error("Search failed:", err);
-                setStockLoading(false);
-                return;
-            }
-        }
-        
-        executeAnalysis(targetSymbol);
     };
 
     const getGradeStyle = (grade: string) => {
@@ -246,22 +240,21 @@ function AnalysisContent() {
             <Header title="프로 분석" subtitle="데이터 기반 종목 정밀 검진" />
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
-                {/* 1. Global Search Bar */}
+                {/* 1. Global Stock Picker (No big button) */}
                 <div className="max-w-3xl mx-auto w-full">
-                    <div className="flex flex-row items-center gap-2">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4" />
-                            <input type="text" placeholder="종목코드 입력 (예: 005930, AAPL)"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono transition-all"
-                                value={symbol} onChange={e => setSymbol(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
-                            />
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4 group-focus-within:text-indigo-400 transition-colors" />
+                        <input type="text" placeholder="종목코드 입력 (예: 005930, 삼성전자)"
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-5 text-base outline-none focus:ring-2 focus:ring-indigo-500/50 uppercase font-mono transition-all placeholder:text-gray-600 shadow-2xl"
+                            value={symbol} onChange={e => setSymbol(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") handleGlobalSearch(activeTab); }}
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                             {stockLoading && <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />}
+                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Quick Set</span>
                         </div>
-                        <button onClick={handleSearch}
-                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all whitespace-nowrap">
-                            분석 실행
-                        </button>
                     </div>
+                    <p className="text-center text-[10px] text-gray-500 mt-3 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                 </div>
 
                 {/* 2. Stock Header & Mode Toggle */}
@@ -355,15 +348,24 @@ function AnalysisContent() {
                 <div className="min-h-[400px] mt-4">
                     {activeTab === "summary" && (
                         <div className="space-y-6">
-                            {stockInfo ? (
-                                <ProSummaryReport symbol={symbol} />
+                            {/* Local Trigger for Summary */}
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-500/20 rounded-lg"><Activity className="w-5 h-5 text-indigo-400" /></div>
+                                    <h3 className="font-bold">요약 리포트 파트</h3>
+                                </div>
+                                <button onClick={() => handleGlobalSearch("summary")}
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    리포트 생성
+                                </button>
+                            </div>
+
+                            {summarySymbol ? (
+                                <ProSummaryReport symbol={summarySymbol} />
                             ) : (
-                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-500">
-                                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <Zap className="w-8 h-8 text-blue-400" />
-                                    </div>
-                                    <h3 className="text-xl font-black text-white mb-2">분석 준비 완료</h3>
-                                    <p className="text-gray-500 text-sm max-w-xs mx-auto">종목을 입력하고 위 [분석 실행] 버튼을 누르면 AI 통합 리포트를 즉시 생성합니다.</p>
+                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <Zap className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" />
+                                    <p className="text-gray-500 font-bold text-sm">상단에서 종목 선택 후 [리포트 생성]을 눌러주세요.</p>
                                 </div>
                             )}
                         </div>
@@ -371,10 +373,22 @@ function AnalysisContent() {
 
                     {activeTab === "quant" && (
                         <div className="space-y-6">
+                            {/* Local Trigger for Quant */}
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-amber-500/20 rounded-lg"><Zap className="w-5 h-5 text-amber-400" /></div>
+                                    <h3 className="font-bold">TurboQuant 정밀 분석</h3>
+                                </div>
+                                <button onClick={() => handleGlobalSearch("quant")}
+                                    className="px-6 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    퀀트 로드
+                                </button>
+                            </div>
+
                             {quantLoading ? (
                                 <div className="text-center py-16">
                                     <RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" />
-                                    <p className="text-gray-500">퀀트 분석 중...</p>
+                                    <p className="text-gray-500">지표 분석 중...</p>
                                 </div>
                             ) : quantData ? (
                                 <div className="space-y-6 animate-in fade-in duration-300">
@@ -479,6 +493,18 @@ function AnalysisContent() {
 
                     {activeTab === "financial" && (
                         <div className="space-y-6">
+                            {/* Local Trigger for Financial */}
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-emerald-500/20 rounded-lg"><Shield className="w-5 h-5 text-emerald-400" /></div>
+                                    <h3 className="font-bold">재무 건강도 진단</h3>
+                                </div>
+                                <button onClick={() => handleGlobalSearch("financial")}
+                                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    건강도 측정
+                                </button>
+                            </div>
+
                             {financialLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                             ) : financialData ? (
@@ -701,6 +727,18 @@ function AnalysisContent() {
 
                     {activeTab === "sector" && (
                         <div className="space-y-6">
+                            {/* Local Trigger for Sector */}
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/20 rounded-lg"><PieChart className="w-5 h-5 text-blue-400" /></div>
+                                    <h3 className="font-bold">섹터 비교 분석</h3>
+                                </div>
+                                <button onClick={() => handleGlobalSearch("sector")}
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    섹터 비교
+                                </button>
+                            </div>
+
                             {sectorLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-blue-400 mb-3" /><p className="text-gray-500">섹터 비교 데이터 분석 중...</p></div>
                             ) : sectorData ? (
@@ -847,7 +885,19 @@ function AnalysisContent() {
 
                     {activeTab === "peer" && (
                         <div className="space-y-6">
-                            <div className="flex gap-2">
+                             {/* Local Trigger for Peer */}
+                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-500/20 rounded-lg"><Users className="w-5 h-5 text-purple-400" /></div>
+                                    <h3 className="font-bold">동종 업계 비교</h3>
+                                </div>
+                                <button onClick={fetchPeer}
+                                    className="px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    피어 분석
+                                </button>
+                            </div>
+
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
                                 <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660,035420)"
                                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono"
                                     value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)}

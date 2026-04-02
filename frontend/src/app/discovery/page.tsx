@@ -234,14 +234,15 @@ const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, pre
         }
     }
     
-    if (amtStr && baseFormat.text.includes('%')) {
-       const iconMatch = baseFormat.text.match(/^[▲▼]/);
+    const textStr = String(baseFormat.text || "");
+    if (amtStr && textStr.includes('%')) {
+       const iconMatch = textStr.match(/^[▲▼]/);
        const icon = iconMatch ? iconMatch[0] + ' ' : '';
-       const pct = baseFormat.text.replace(/^[▲▼]\s*/, '');
+       const pct = textStr.replace(/^[▲▼]\s*/, '');
        return { ...baseFormat, text: `${icon}${amtStr}(${pct})` };
     }
-    if (amtStr && !baseFormat.text.includes('%')) {
-       const iconMatch = baseFormat.text.match(/^[▲▼]/);
+    if (amtStr && !textStr.includes('%')) {
+       const iconMatch = textStr.match(/^[▲▼]/);
        const icon = iconMatch ? iconMatch[0] + ' ' : '';
        return { ...baseFormat, text: `${icon}${amtStr}` };
     }
@@ -447,11 +448,10 @@ function DiscoveryContent() {
                     const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeTicker}`);
                     const searchJson = await searchRes.json();
 
-                    if (searchJson.status === "success" && searchJson.data && searchJson.data.symbol) {
+                    if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
                         // Found a better match! Retry with this symbol
-                        // Prevent infinite loop: if returned symbol is same as input, stop
-                        const foundSymbol = searchJson.data.symbol;
-                        if (foundSymbol !== ticker) {
+                        const foundSymbol = searchJson.data[0].symbol;
+                        if (foundSymbol && foundSymbol !== ticker) {
                             handleSearch(foundSymbol);
                             return;
                         }
@@ -1909,10 +1909,10 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-2 font-mono text-gray-300">{row.time}</td>
                                     <td className={`px-4 py-2 text-right font-mono font-bold ${row.foreigner > 0 ? 'text-red-400' : row.foreigner < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                        {row.foreigner.toLocaleString()}
+                                        {(row.foreigner || 0).toLocaleString()}
                                     </td>
                                     <td className={`px-4 py-2 text-right font-mono font-bold ${row.institution > 0 ? 'text-red-400' : row.institution < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                        {row.institution.toLocaleString()}
+                                        {(row.institution || 0).toLocaleString()}
                                     </td>
                                 </tr>
                             ))
@@ -2167,7 +2167,7 @@ function DividendHealthTab({
     }
 
     const divChartData = hasDividend && Array.isArray(dividendData.years) && Array.isArray(dividendData.amounts)
-        ? dividendData.years.map((y: string, i: number) => ({ year: y, div: dividendData.amounts[i] ?? 0 }))
+        ? dividendData.years.map((y: string, i: number) => ({ year: String(y || ""), div: Number(dividendData.amounts[i] || 0) }))
         : [];
 
     const healthChartData = hasHealth && Array.isArray(healthData.years)

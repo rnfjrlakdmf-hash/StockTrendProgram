@@ -302,9 +302,11 @@ def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL",
     from korea_data import get_korean_investment_indicators
     data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
     if data:
+        if isinstance(data, dict) and data.get("status") == "empty":
+             return {"status": "error", "message": data.get("message", "데이터가 없습니다.")}
         return {"status": "success", "data": data}
     else:
-        return {"status": "error", "message": "Failed to fetch indicators"}
+        return {"status": "error", "message": "Failed to fetch indicators (Network error)"}
 
 @app.get("/api/stock/{symbol}/investor")
 @turbo_cache(ttl_seconds=60)
@@ -1016,7 +1018,11 @@ def search_stock_api(q: str):
         
     result = search_stock_code(q)
     if result:
-        return {"status": "success", "data": result}
+        # [Fix] Return as list for frontend compatibility (Matches analysis/page.tsx)
+        return {
+            "status": "success", 
+            "data": [{"code": result, "symbol": result, "name": q}]
+        }
     else:
         return {"status": "error", "message": f"No stock found for '{q}'"}
 

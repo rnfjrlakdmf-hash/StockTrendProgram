@@ -65,30 +65,48 @@ get_korean_stock_name = get_korean_name  # Alias
 def search_stock_code(keyword: str):
     """
     Search stock by name/code and return code (6 digits)
-    [Improved] Scrapes Naver Search (Integration) instead of Finance Search (Blocked).
+    [Improved] Strategy:
+    1. Try Naver Integration Search (Best for Korean stocks)
+    2. Try Naver Finance Direct Search (Specific for Stocks)
+    3. Fallback to Ticker if 6 digits
     """
+    code = re.sub(r'[^0-9]', '', keyword)
+    if len(code) == 6 and code.isdigit():
+        return code
+
     try:
-        # Use Naver Integration Search (more robust, UTF-8 supported)
+        # 1. Naver Integration Search (Try to find a finance link)
         query = f"{keyword} 주가"
         encoded = urllib.parse.quote(query)
         url = f"https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={encoded}"
         
-        # Standard Browser Headers
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         
         res = requests.get(url, headers=headers, timeout=5)
-        html = res.text # Naver Search is UTF-8 usually
+        html = res.text
         
-        # Regex to find finance.naver.com links with code
-        # Pattern: finance.naver.com/item/main.naver?code=005930
+        # Priority 1: Match 6-digit code in finance links
         matches = re.findall(r'finance\.naver\.com/item/main.*code=(\d{6})', html)
-        
         if matches:
-            # Return first finding (Best Match)
             return matches[0]
-            
+
+        # 2. Naver Finance Native Search (EUC-KR)
+        try:
+             # Naver Finance search uses EUC-KR for the query param
+             encoded_finance = urllib.parse.quote(keyword.encode('euc-kr'))
+             search_url = f"https://finance.naver.com/search/searchList.naver?query={encoded_finance}"
+             res_fin = requests.get(search_url, headers=headers, timeout=5)
+             html_fin = decode_safe(res_fin) 
+             
+             # Look for 6-digit codes in the results table
+             matches_fin = re.findall(r'code=(\d{6})"', html_fin)
+             if matches_fin:
+                 return matches_fin[0]
+        except:
+             pass
+
         return None
     except Exception as e:
         print(f"Search Code Error: {e}")
@@ -2097,8 +2115,12 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
             return None
 
         # Step 3: 데이터 가공 (Header: YYMM, Data: indicators)
-        if not json_data or "YYMM" not in json_data:
-            return {"status": "empty", "message": "데이터가 없습니다."}
+        if not json_data or "YYMM" not in json_data or not json_data.get("YYMM"):
+            msg = "해당 종목의 지표 정보를 불러올 수 없거나 존재하지 않는 페이지입니다."
+            if "삼성전자" in str(keyword) or code == "005930":
+                 # Extra diagnostic for core stocks
+                 msg = f"WiseReport 서버로부터 {code} 지표 데이터를 정상적으로 로드하지 못했습니다. (네트워크/IP 차단 가능성)"
+            return {"status": "empty", "message": msg}
 
         # Header 정제 (HTML 태그 제거)
         headers = []

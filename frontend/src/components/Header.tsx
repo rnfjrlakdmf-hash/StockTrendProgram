@@ -31,15 +31,24 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             try {
                 const res = await fetch(`${API_BASE_URL}/api/alerts`);
                 const json = await res.json();
-                if (json.status === "success") {
+                if (json.status === "success" && Array.isArray(json.data)) {
                     const triggered = json.data.filter((a: any) => a.status === "triggered");
 
                     // Check local storage to see if we already notified this specific trigger
-                    // Trigger ID usually is timestamp, but triggered_at is better unique key for the event
-                    const lastSeen = JSON.parse(localStorage.getItem("seenAlerts") || "[]");
+                    let lastSeen = [];
+                    try {
+                        const stored = localStorage.getItem("seenAlerts");
+                        if (stored) {
+                            const parsed = JSON.parse(stored);
+                            if (Array.isArray(parsed)) lastSeen = parsed;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse seenAlerts", e);
+                    }
+                    
                     const newTriggers = triggered.filter((a: any) => !lastSeen.includes(a.id + "_" + a.triggered_at));
 
-                    if (newTriggers.length > 0) {
+                    if (Array.isArray(newTriggers) && newTriggers.length > 0) {
                         // Play Alert Sound
                         try {
                             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();

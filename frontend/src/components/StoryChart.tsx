@@ -90,22 +90,24 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
 
     // Calculate Moving Averages
     const movingAverages = useMemo(() => {
-        if (chartData.length === 0) return { ma5: [], ma20: [], ma60: [], ma120: [] };
+        if (!Array.isArray(chartData) || chartData.length === 0) return { ma5: [], ma20: [], ma60: [], ma120: [] };
 
         const calculateMA = (data: number[], window: number) => {
             const results = [];
+            if (!Array.isArray(data)) return [];
             for (let i = 0; i < data.length; i++) {
                 if (i < window - 1) {
                     results.push(null);
                     continue;
                 }
-                const sum = data.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0);
+                const slice = data.slice(i - window + 1, i + 1);
+                const sum = slice.reduce((a, b) => a + b, 0);
                 results.push(Number((sum / window).toFixed(2)));
             }
             return results;
         };
 
-        const closes = chartData.map(d => d.close);
+        const closes = chartData.map(d => d.close || 0);
         return {
             ma5: calculateMA(closes, 5),
             ma20: calculateMA(closes, 20),
@@ -116,63 +118,69 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
  
     // [NEW] Find Highest and Lowest points for annotations
     const { highest, lowest } = useMemo(() => {
-        if (chartData.length === 0) return { highest: null, lowest: null };
+        if (!Array.isArray(chartData) || chartData.length === 0) return { highest: null, lowest: null };
         let high = chartData[0];
         let low = chartData[0];
         chartData.forEach(d => {
-            if (d.high > high.high) high = d;
-            if (d.low < low.low) low = d;
+            if (d && d.high > (high?.high || 0)) high = d;
+            if (d && d.low < (low?.low || Infinity)) low = d;
         });
         return { highest: high, lowest: low };
     }, [chartData]);
 
 
     // Format data for ApexCharts
-    const candleSeries = useMemo(() => [{
-        name: 'Candle',
-        type: 'candlestick',
-        data: chartData.map(d => ({
-            x: new Date(d.date).getTime(),
-            y: [d.open, d.high, d.low, d.close]
-        }))
-    }, {
-        name: 'MA5',
-        type: 'line',
-        data: chartData.map((d, i) => ({
-            x: new Date(d.date).getTime(),
-            y: movingAverages.ma5[i]
-        }))
-    }, {
-        name: 'MA20',
-        type: 'line',
-        data: chartData.map((d, i) => ({
-            x: new Date(d.date).getTime(),
-            y: movingAverages.ma20[i]
-        }))
-    }, {
-        name: 'MA60',
-        type: 'line',
-        data: chartData.map((d, i) => ({
-            x: new Date(d.date).getTime(),
-            y: movingAverages.ma60[i]
-        }))
-    }, {
-        name: 'MA120',
-        type: 'line',
-        data: chartData.map((d, i) => ({
-            x: new Date(d.date).getTime(),
-            y: movingAverages.ma120[i]
-        }))
-    }], [chartData, movingAverages, interval]); // Added interval to dependency
+    const candleSeries = useMemo(() => {
+        if (!Array.isArray(chartData)) return [];
+        return [{
+            name: 'Candle',
+            type: 'candlestick',
+            data: chartData.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: [d.open || 0, d.high || 0, d.low || 0, d.close || 0]
+            }))
+        }, {
+            name: 'MA5',
+            type: 'line',
+            data: chartData.map((d, i) => ({
+                x: new Date(d.date).getTime(),
+                y: movingAverages?.ma5?.[i] ?? null
+            }))
+        }, {
+            name: 'MA20',
+            type: 'line',
+            data: chartData.map((d, i) => ({
+                x: new Date(d.date).getTime(),
+                y: movingAverages?.ma20?.[i] ?? null
+            }))
+        }, {
+            name: 'MA60',
+            type: 'line',
+            data: chartData.map((d, i) => ({
+                x: new Date(d.date).getTime(),
+                y: movingAverages?.ma60?.[i] ?? null
+            }))
+        }, {
+            name: 'MA120',
+            type: 'line',
+            data: chartData.map((d, i) => ({
+                x: new Date(d.date).getTime(),
+                y: movingAverages?.ma120?.[i] ?? null
+            }))
+        }];
+    }, [chartData, movingAverages, interval]); // Added interval to dependency
 
-    const volumeSeries = useMemo(() => [{
-        name: 'Volume',
-        type: 'bar',
-        data: chartData.map(d => ({
-            x: new Date(d.date).getTime(),
-            y: d.volume
-        }))
-    }], [chartData]);
+    const volumeSeries = useMemo(() => {
+        if (!Array.isArray(chartData)) return [];
+        return [{
+            name: 'Volume',
+            type: 'bar',
+            data: chartData.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: d.volume || 0
+            }))
+        }];
+    }, [chartData]);
 
     const chartOptions: any = {
         chart: {
@@ -265,9 +273,9 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
         annotations: {
             points: [
                 // Highest Point Annotation
-                ...(highest ? [{
+                ...(highest && highest.date ? [{
                     x: new Date(highest.date).getTime(),
-                    y: highest.high,
+                    y: highest.high || 0,
                     marker: {
                         size: 4,
                         fillColor: '#ef4444',
@@ -284,13 +292,13 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             fontWeight: 700,
                             padding: { left: 8, right: 8, top: 2, bottom: 2 }
                         },
-                        text: `최고 ${highest.high.toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}) ↓`
+                        text: `최고 ${(highest.high || 0).toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}) ↓`
                     }
                 }] : []),
                 // Lowest Point Annotation
-                ...(lowest ? [{
+                ...(lowest && lowest.date ? [{
                     x: new Date(lowest.date).getTime(),
-                    y: lowest.low,
+                    y: lowest.low || 0,
                     marker: {
                         size: 4,
                         fillColor: '#3b82f6',
@@ -307,13 +315,13 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             fontWeight: 700,
                             padding: { left: 8, right: 8, top: 1, bottom: 1 }
                         },
-                        text: `↑ 최저 ${lowest.low.toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })})`
+                        text: `↑ 최저 ${(lowest.low || 0).toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })})`
                     }
                 }] : []),
                 // Historical Stories
-                ...stories.map(s => ({
+                ...(Array.isArray(stories) ? stories : []).map(s => ({
                     x: new Date(s.date).getTime(),
-                    y: s.price,
+                    y: s.price || 0,
                     marker: {
                         size: 6,
                         fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280',
@@ -334,7 +342,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                                 bottom: 2
                             }
                         },
-                        text: s.icon
+                        text: s.icon || '📍'
                     }
                 }))
             ]

@@ -56,7 +56,7 @@ export default function FlipIndexTicker() {
             const res = await fetch(`${API_BASE_URL}/api/market/indices`);
             const json = await res.json();
             if (json.status === 'success') {
-                setIndices(json.data);
+                setIndices(Array.isArray(json.data) ? json.data : []);
             }
         } catch (err) {
             console.error("Failed to fetch market indices:", err);
@@ -71,7 +71,7 @@ export default function FlipIndexTicker() {
         return () => clearInterval(interval);
     }, []);
 
-    if (loading && indices.length === 0) {
+    if (loading && (!Array.isArray(indices) || indices.length === 0)) {
         return (
             <div className="flex items-center gap-3 px-6 h-12">
                 {[1, 2, 3, 4, 5].map(i => (
