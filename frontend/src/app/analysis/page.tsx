@@ -64,10 +64,9 @@ function AnalysisContent() {
         }
     }, [urlSymbol]);
 
-    const handleGlobalSearch = async (tab: typeof activeTab) => {
-        if (!symbol) return;
-        
+    const handleGlobalSearch = async (tab: string) => {
         let targetSymbol = symbol.trim();
+        if (!targetSymbol) return;
         
         // 한글이 포함되어 있으면 종목 코드 검색 시도
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
@@ -77,7 +76,7 @@ function AnalysisContent() {
                 const json = await res.json();
                 if (json.status === "success" && json.data.length > 0) {
                     targetSymbol = json.data[0].code;
-                    setSymbol(targetSymbol); 
+                    setSymbol(targetSymbol); // 상태 업데이트 (비동기)
                 } else {
                     alert("해당 종목을 찾을 수 없습니다.");
                     setStockLoading(false);
@@ -92,6 +91,7 @@ function AnalysisContent() {
             }
         }
         
+        // [중요] targetSymbol은 이제 무조건 숫자 코드(005930 등)인 상태입니다.
         // 해당 탭에 맞는 트리거 실행
         switch(tab) {
             case "summary": setSummarySymbol(targetSymbol); fetchBasicInfo(targetSymbol); break;
