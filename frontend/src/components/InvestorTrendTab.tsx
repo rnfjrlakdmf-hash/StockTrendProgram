@@ -61,7 +61,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
     }, [apiResponse]);
 
     const brokerage = apiResponse?.brokerage || { sell: [], buy: [], foreign_estimate: null };
-    const latestData = trendData.length > 0 ? trendData[trendData.length - 1] : null;
+    const latestData = (trendData && trendData.length > 0) ? trendData[trendData.length - 1] : null;
 
     const maxValue = useMemo(() => {
         if (trendData.length === 0) return 0;
@@ -130,7 +130,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <span className="text-[10px] text-blue-400 font-mono">Sell Side</span>
                     </div>
                     <div className="p-4 space-y-2">
-                        {brokerage.sell.length > 0 ? brokerage.sell.slice(0, 5).map((b: any, i: number) => (
+                        {(brokerage?.sell || []).length > 0 ? (brokerage?.sell || []).slice(0, 5).map((b: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-sm">
                                 <span className="text-gray-300 font-medium">{b.name}</span>
                                 <span className="text-gray-400 font-mono text-xs">{formatNumber(b.volume)}주</span>
@@ -148,7 +148,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <span className="text-[10px] text-red-400 font-mono">Buy Side</span>
                     </div>
                     <div className="p-4 space-y-2">
-                        {brokerage.buy.length > 0 ? brokerage.buy.slice(0, 5).map((b: any, i: number) => (
+                        {(brokerage?.buy || []).length > 0 ? (brokerage?.buy || []).slice(0, 5).map((b: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-sm">
                                 <span className="text-gray-300 font-medium">{b.name}</span>
                                 <span className="text-gray-400 font-mono text-xs">{formatNumber(b.volume)}주</span>
@@ -187,7 +187,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Briefcase className="w-3.5 h-3.5 text-blue-400" />
-                            기관 순매수 ({latestData.date.substring(5)})
+                            기관 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.institution > 0 ? 'text-red-400' : latestData.institution < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
                             {latestData.institution > 0 ? '+' : ''}{formatNumber(latestData.institution)}
@@ -197,7 +197,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Globe className="w-3.5 h-3.5 text-purple-400" />
-                            외국인 순매수 ({latestData.date.substring(5)})
+                            외국인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.foreigner > 0 ? 'text-red-400' : latestData.foreigner < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
                             {latestData.foreigner > 0 ? '+' : ''}{formatNumber(latestData.foreigner)}
@@ -207,7 +207,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Users className="w-3.5 h-3.5 text-emerald-400" />
-                            개인 순매수 ({latestData.date.substring(5)})
+                            개인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.retail > 0 ? 'text-red-400' : latestData.retail < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
                             {latestData.retail > 0 ? '+' : ''}{formatNumber(latestData.retail || 0)}

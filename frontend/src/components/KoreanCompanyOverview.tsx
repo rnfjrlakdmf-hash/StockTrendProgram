@@ -72,7 +72,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       </section>
 
       {/* 2. 최근 연혁 */}
-      {history && history.length > 0 && (
+      {Array.isArray(history) && history.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-purple-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
             <History className="w-4 h-4" /> 최근 주요 연혁
@@ -93,7 +93,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       )}
 
       {/* 3. 주요 제품 및 매출 구성 */}
-      {sales_composition && sales_composition.length > 0 && (
+      {Array.isArray(sales_composition) && sales_composition.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
             <PieChart className="w-4 h-4" /> 주요 제품 및 매출 구성
@@ -155,7 +155,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       )}
 
       {/* 4. 연구개발비 지출 현황 */}
-      {rnd_status && rnd_status.length > 0 && (
+      {Array.isArray(rnd_status) && rnd_status.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-amber-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
             <FlaskConical className="w-4 h-4" /> 연구개발비 지출 현황
@@ -165,7 +165,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
               <table className="w-full text-xs text-left">
                 <thead className="bg-white/5 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
                   <tr>
-                    {Object.keys(rnd_status[0]).map(h => (
+                    {Array.isArray(rnd_status) && rnd_status.length > 0 && rnd_status[0] && Object.keys(rnd_status[0]).map(h => (
                       <th key={h} className="py-3 px-4 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -188,7 +188,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       )}
 
       {/* 5. 인원 현황 */}
-      {staff_status && staff_status.length > 0 && (
+      {Array.isArray(staff_status) && staff_status.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-rose-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
             <Users className="w-4 h-4" /> 임직원 및 급여 현황
@@ -198,7 +198,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
               <table className="w-full text-xs text-left">
                 <thead className="bg-white/5 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
                   <tr>
-                    {Object.keys(staff_status[0]).map(h => (
+                    {Array.isArray(staff_status) && staff_status.length > 0 && staff_status[0] && Object.keys(staff_status[0]).map(h => (
                       <th key={h} className="py-3 px-4 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>

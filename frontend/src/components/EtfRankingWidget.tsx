@@ -39,12 +39,12 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
     };
 
     // Filter data if keyword exists
-    const displayData = filterKeyword 
+    const displayData = (Array.isArray(data) && filterKeyword)
         ? data.filter(item => 
             (item.name && item.name.toLowerCase().includes(filterKeyword.toLowerCase())) || 
             (item.symbol && item.symbol.toLowerCase().includes(filterKeyword.toLowerCase()))
           )
-        : data;
+        : (Array.isArray(data) ? data : []);
 
     return (
         <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden">
@@ -71,7 +71,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-                {displayData.length > 0 ? (
+                {Array.isArray(displayData) && displayData.length > 0 ? (
                     displayData.map((item, idx) => {
                         const positive = isPositive(item.change);
                         const negative = isNegative(item.change);
@@ -129,7 +129,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 )}
                 
-                {displayData.length > 0 && (
+                {Array.isArray(displayData) && displayData.length > 0 && (
                     <div className="col-span-full mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/5 border border-white/10 group cursor-default">
                         <Zap className="w-3.5 h-3.5 text-yellow-500" />
                         <p className="text-[10px] md:text-xs text-gray-400 font-bold">

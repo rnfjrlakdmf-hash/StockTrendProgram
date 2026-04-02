@@ -288,7 +288,7 @@ function ThemeResultView({ result }: { result: any }) {
             <TrendingUp className="text-red-400" /> 대장주 (Leaders)
           </h4>
           <div className="space-y-4">
-            {result.leaders.map((stock: any, i: number) => (
+            {Array.isArray(result.leaders) && result.leaders.map((stock: any, i: number) => (
               <Link href={`/`} key={i} className="block hover:no-underline">
                 {/* In a real app, this link might trigger a search for this stock */}
                 <div className="flex gap-4 p-4 rounded-xl bg-black/40 border border-white/5 hover:border-red-500/30 transition-colors group">
@@ -311,7 +311,7 @@ function ThemeResultView({ result }: { result: any }) {
             <Layers className="text-blue-400" /> 관련주 (Related)
           </h4>
           <div className="space-y-4">
-            {result.followers.map((stock: any, i: number) => (
+            {Array.isArray(result.followers) && result.followers.map((stock: any, i: number) => (
               <Link href={`/`} key={i} className="block hover:no-underline">
                 <div className="flex gap-4 p-4 rounded-xl bg-black/40 border border-white/5 hover:border-blue-500/30 transition-colors group">
                   <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">

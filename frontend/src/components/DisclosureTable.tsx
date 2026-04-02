@@ -68,7 +68,7 @@ function DisclosureTable({ symbol }: { symbol: string }) {
                 📝 최근 공시 내역 (DART)
             </h3>
 
-            {disclosures && disclosures.length > 0 ? (
+            {Array.isArray(disclosures) && disclosures.length > 0 ? (
                 <div className="space-y-3">
                     {disclosures.map((disclosure: any, idx: number) => (
                         <a

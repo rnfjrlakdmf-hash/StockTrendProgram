@@ -91,19 +91,19 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
 
     // 지표 필터링 로직 (요약 모드인 경우 핵심 지표만)
     const filteredRows = useMemo(() => {
-        if (!data || !data.rows) return [];
+        if (!data || !Array.isArray(data.rows)) return [];
         if (isFullView) return data.rows;
         
         const coreList = CORE_INDICATORS[category] || [];
         // 지표 이름에 핵심 키워드가 포함된 것만 필터링
-        return data.rows.filter(row => coreList.some(core => row.label.includes(core)));
+        return data.rows.filter(row => row && row.label && coreList.some(core => row.label.includes(core)));
     }, [data, category, isFullView]);
 
     if (!symbol) return null;
 
     // 차트 데이터 변환
     const getChartData = () => {
-        if (!data || !data.rows || data.rows.length === 0) return [];
+        if (!data || !Array.isArray(data.rows) || data.rows.length === 0 || !Array.isArray(data.years)) return [];
         const chartData: any[] = [];
         data.years.forEach((year, idx) => {
             const entry: any = { name: year };
@@ -205,7 +205,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                         <AlertCircle className="w-6 h-6 flex-shrink-0" />
                         <span className="font-bold text-sm">{error}</span>
                     </div>
-                ) : data && data.rows.length > 0 ? (
+                ) : data && Array.isArray(data.rows) && data.rows.length > 0 ? (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Chart Area */}
                         <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
@@ -242,7 +242,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                 <thead>
                                     <tr className="bg-white/10 border-b border-white/10">
                                         <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no">항목</th>
-                                        {data.years.map(y => (
+                                        {Array.isArray(data.years) && data.years.map(y => (
                                             <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no">{y}</th>
                                         ))}
                                     </tr>
@@ -283,7 +283,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                 ) : (
                                     <>
                                         <Plus className="w-4 h-4 text-indigo-400" />
-                                        세부 지표 전체 보기 (+{data.rows.length - filteredRows.length}개)
+                                        세부 지표 전체 보기 (+{(Array.isArray(data?.rows) && Array.isArray(filteredRows)) ? (data.rows.length - filteredRows.length) : 0}개)
                                     </>
                                 )}
                             </button>

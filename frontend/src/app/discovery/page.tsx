@@ -1046,7 +1046,7 @@ function DiscoveryContent() {
                                                 <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-blue-400" /> 종합 분석 리포트
                                             </h4>
                                             <div className={`leading-relaxed text-sm md:text-lg font-medium whitespace-pre-wrap mb-6 min-h-[100px] ${(stock.summary || "").includes("오류") ? 'text-red-300' : 'text-gray-100'}`}>
-                                                {isAnalyzing && (!stock?.summary || stock.summary.length < 50) ? (
+                                                {isAnalyzing && (!stock?.summary || (stock.summary && stock.summary.length < 50)) ? (
                                                     <div className="flex flex-col items-center justify-center h-full py-8 space-y-3 bg-white/5 rounded-xl border border-white/5">
                                                         <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                                                         <div className="text-center">
@@ -1137,8 +1137,8 @@ function DiscoveryContent() {
                                                         <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
                                                         <p className="text-gray-400 text-sm">실시간 뉴스를 집계하고 있습니다...</p>
                                                     </div>
-                                                ) : (periodNews.length > 0 || (stock.news && stock.news.length > 0)) ? (
-                                                    (periodNews.length > 0 ? periodNews : stock.news).map((n, idx) => (
+                                                ) : (Array.isArray(periodNews) && periodNews.length > 0) || (stock?.news && Array.isArray(stock.news) && stock.news.length > 0) ? (
+                                                    (Array.isArray(periodNews) && periodNews.length > 0 ? periodNews : (stock?.news || [])).map((n: any, idx: number) => (
                                                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer" onClick={() => window.open(n.link, '_blank')}>
                                                             <div className="w-full">
                                                                 <h5 className="font-bold text-white mb-2 group-hover:text-yellow-400 text-lg leading-snug break-all">{n.title}</h5>
@@ -1172,7 +1172,7 @@ function DiscoveryContent() {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
-                                                        {stock.daily_prices && stock.daily_prices.length > 0 ? (
+                                                        {stock.daily_prices && Array.isArray(stock.daily_prices) && stock.daily_prices.length > 0 ? (
                                                             stock.daily_prices.map((day, idx) => (
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                                     <td className="py-3 px-2 text-gray-300 font-mono text-sm">{toKoreanDate(day.date)}</td>
@@ -1225,7 +1225,7 @@ function DiscoveryContent() {
                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                     <div className="rounded-3xl bg-black/40 border border-white/20 p-6 h-full shadow-lg">
                                         <h3 className="text-lg font-bold mb-4 text-white">관련 섹터 종목</h3>
-                                        {stock.related_stocks && stock.related_stocks.length > 0 ? (
+                                        {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 ? (
                                             <div className="space-y-3">
                                                 {stock.related_stocks.map((item, idx) => (
                                                     <div
@@ -1307,7 +1307,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            setHistory(true as any); // Loading state
+            setLoading(true);
             try {
                 const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/history`);
                 const json = await res.json();
@@ -1330,13 +1330,13 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                 {loading && <Loader2 className="animate-spin w-4 h-4 text-blue-400" />}
             </h4>
 
-            {!loading && history.length === 0 && (
+            {!loading && (!Array.isArray(history) || history.length === 0) && (
                 <div className="p-8 text-center text-gray-400 bg-white/5 rounded-xl border border-dashed border-white/10">
                     <p>저장된 점수 히스토리가 없습니다.</p>
                 </div>
             )}
 
-            {history.length > 0 && (
+            {Array.isArray(history) && history.length > 0 && (
                 <div className="h-64 w-full bg-white/5 rounded-xl border border-white/10 p-4">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={history}>
@@ -1503,7 +1503,7 @@ interface PredictionReport {
 // [New] Financial Highlights Component
 function FinancialHighlights({ data, loading }: { data: any[], loading: boolean }) {
     if (loading) return <div className="h-32 flex items-center justify-center bg-white/5 rounded-2xl border border-white/10 animate-pulse text-gray-500 text-xs">재무 데이터를 불러오는 중...</div>;
-    if (!data || data.length === 0) return null;
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
 
     return (
         <div className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl p-5 mb-6 shadow-xl relative overflow-hidden">
@@ -1533,15 +1533,15 @@ function FinancialHighlights({ data, loading }: { data: any[], loading: boolean 
                 </div>
 
                 <div className="space-y-4">
-                    {data.slice(-1).map((latest, i) => (
+                    {Array.isArray(data) && data.slice(-1).map((latest, i) => (
                         <div key={i} className="space-y-3">
                             <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
                                 <p className="text-[10px] text-gray-500 mb-0.5">최근 연매출</p>
-                                <p className="text-sm font-bold text-blue-300">{(latest.revenue / 100000000).toLocaleString()} 억원</p>
+                                <p className="text-sm font-bold text-blue-300">{(Number(latest?.revenue || 0) / 100000000).toLocaleString()} 억원</p>
                             </div>
                             <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
                                 <p className="text-[10px] text-gray-500 mb-0.5">영업이익</p>
-                                <p className="text-sm font-bold text-emerald-400">{(latest.op_income / 100000000).toLocaleString()} 억원</p>
+                                <p className="text-sm font-bold text-emerald-400">{(Number(latest?.op_income || 0) / 100000000).toLocaleString()} 억원</p>
                             </div>
                         </div>
                     ))}
@@ -1809,7 +1809,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
     const isWeekend = day === 0 || day === 6;
     const isMarketOpen = !isWeekend && hour >= 9 && hour < 16;
 
-    if (!data || data.length === 0) {
+    if (!data || !Array.isArray(data) || data.length === 0) {
         if (loading) return null;
 
         return (
@@ -1843,7 +1843,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
     }
 
     // Calculate totals
-    const last = data[data.length - 1];
+    const last = (Array.isArray(data) && data.length > 0) ? data[data.length - 1] : null;
     const totalForeigner = last?.foreigner || 0;
     const totalInst = last?.institution || 0;
     const isDaily = last?.is_daily || false; // Check if this is daily confirmed data
@@ -1904,7 +1904,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {data && data.length > 0 ? (
+                        {Array.isArray(data) && data.length > 0 ? (
                             data.slice().reverse().map((row, idx) => (
                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-2 font-mono text-gray-300">{row.time}</td>
@@ -2097,9 +2097,9 @@ function StockLiveChart({ symbol }: { symbol: string }) {
     }, [symbol]);
 
     if (loading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-gray-500" /></div>;
-    if (!data || data.length === 0) return <div className="text-gray-500 text-sm">실시간 차트 데이터 없음</div>;
+    if (!data || !Array.isArray(data) || data.length === 0) return <div className="text-gray-500 text-sm">실시간 차트 데이터 없음</div>;
 
-    const isUp = (data[data.length - 1]?.close || 0) >= (data[0]?.close || 0);
+    const isUp = (Array.isArray(data) && data.length > 0) ? ((data[data.length - 1]?.close || 0) >= (data[0]?.close || 0)) : false;
     const color = isUp ? "#ef4444" : "#3b82f6"; // Red or Blue
 
     return (
@@ -2153,8 +2153,8 @@ function DividendHealthTab({
         );
     }
 
-    const hasDividend = dividendData?.years?.length > 0;
-    const hasHealth = healthData?.years?.length > 0;
+    const hasDividend = dividendData && Array.isArray(dividendData.years) && dividendData.years.length > 0;
+    const hasHealth = healthData && Array.isArray(healthData.years) && healthData.years.length > 0;
 
     if (!hasDividend && !hasHealth) {
         return (
@@ -2166,16 +2166,16 @@ function DividendHealthTab({
         );
     }
 
-    const divChartData = hasDividend
+    const divChartData = hasDividend && Array.isArray(dividendData.years) && Array.isArray(dividendData.amounts)
         ? dividendData.years.map((y: string, i: number) => ({ year: y, div: dividendData.amounts[i] ?? 0 }))
         : [];
 
-    const healthChartData = hasHealth
+    const healthChartData = hasHealth && Array.isArray(healthData.years)
         ? healthData.years.map((y: string, i: number) => ({
             year: y,
-            debt: healthData.debt_ratio[i],
-            current: healthData.current_ratio[i],
-            roe: healthData.roe[i],
+            debt: (healthData.debt_ratio || [])[i],
+            current: (healthData.current_ratio || [])[i],
+            roe: (healthData.roe || [])[i],
         }))
         : [];
 

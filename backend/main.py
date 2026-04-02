@@ -66,6 +66,8 @@ app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "https://stock-trend-program.vercel.app",
     "https://stock-trend-program.vercel.app/",
     "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
@@ -235,7 +237,15 @@ def read_assets():
     data = get_all_market_assets()
     if data:
         turbo_engine.set_cache(cache_key, data)
-    return {"status": "success", "data": data, "turbo": false}
+    
+    # [Fix] Ensure data is never None
+    if not data:
+        data = {
+            "Indices": [], "Crypto": [], "Forex": [], 
+            "Commodity": [], "Interest": []
+        }
+        
+    return {"status": "success", "data": data, "turbo": False}
 
 @app.get("/api/market/risk-alerts")
 @turbo_cache(ttl_seconds=300)
@@ -322,7 +332,17 @@ def read_stock_investor(symbol: str, period: int = 1):
         
     data_result = get_naver_investor_data(symbol, trader_day=period)
     if data_result.get("status") == "success":
-        return {"status": "success", "market": "KR", "data": data_result.get("data", {})}
+        # Ensure data structure is robust for frontend
+        raw_data = data_result.get("data", {})
+        robust_data = {
+            "trend": raw_data.get("trend") if isinstance(raw_data.get("trend"), list) else [],
+            "brokerage": raw_data.get("brokerage") if isinstance(raw_data.get("brokerage"), dict) else {"sell":[], "buy":[], "foreign_estimate":None}
+        }
+        # Special check for internal brokerage fields
+        if not isinstance(robust_data["brokerage"].get("sell"), list): robust_data["brokerage"]["sell"] = []
+        if not isinstance(robust_data["brokerage"].get("buy"), list): robust_data["brokerage"]["buy"] = []
+        
+        return {"status": "success", "market": "KR", "data": robust_data}
     else:
         return {"status": "error", "message": data_result.get("message", "Data fetch failed")}
 
@@ -1105,9 +1125,14 @@ def read_market_scanner():
     try:
         stats = get_market_summary_stats()
         disclosures = get_live_disclosures()
-        return {"status": "success", "data": {"stats": stats, "disclosures": disclosures}}
+        # Ensure stats and disclosures are not None
+        safe_stats = stats if stats else {"kospi": {"up":0,"same":0,"down":0}, "kosdaq": {"up":0,"same":0,"down":0}}
+        safe_disclosures = disclosures if disclosures is not None else []
+        return {"status": "success", "data": {"stats": safe_stats, "disclosures": safe_disclosures}}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        print(f"Market Scanner API Error: {e}")
+        return {"status": "error", "message": str(e), "data": {"stats": {"kospi": {"up":0,"same":0,"down":0}, "kosdaq": {"up":0,"same":0,"down":0}}, "disclosures": []}}
+
 
 
 @app.get("/api/theme/{keyword:path}")
@@ -1594,10 +1619,11 @@ def read_naver_ranking(market: str, rank_type: str):
         
     try:
         data = get_naver_ranking(market, rank_type)
-        return {"status": "success", "data": data}
+        return {"status": "success", "data": data if data is not None else []}
     except Exception as e:
         print(f"Naver Ranking API Error: {e}")
         return {"status": "error", "message": str(e), "data": []}
+
 
 
 

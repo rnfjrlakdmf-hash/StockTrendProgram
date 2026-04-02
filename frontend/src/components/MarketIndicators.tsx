@@ -27,19 +27,19 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 // [Fix] Robust Update: Only update if we have valid data
-                // This prevents flickering if one request returns empty/partial data
-                if (Object.keys(json.data).length > 0) {
+                if (json.data && typeof json.data === 'object' && Object.keys(json.data).length > 0) {
                     setData((prev: any) => {
                         if (!prev) return json.data;
+                        const newData = json.data;
                         return {
                             ...prev,
-                            ...json.data,
+                            ...newData,
                             // Preserve existing arrays if new ones are empty (optional safety)
-                            Indices: (json.data.Indices && json.data.Indices.length > 0) ? json.data.Indices : prev.Indices,
-                            Crypto: (json.data.Crypto && json.data.Crypto.length > 0) ? json.data.Crypto : prev.Crypto,
-                            Forex: (json.data.Forex && json.data.Forex.length > 0) ? json.data.Forex : prev.Forex,
-                            Commodity: (json.data.Commodity && json.data.Commodity.length > 0) ? json.data.Commodity : prev.Commodity,
-                            Interest: (json.data.Interest && json.data.Interest.length > 0) ? json.data.Interest : prev.Interest,
+                            Indices: (Array.isArray(newData.Indices) && newData.Indices.length > 0) ? newData.Indices : prev.Indices,
+                            Crypto: (Array.isArray(newData.Crypto) && newData.Crypto.length > 0) ? newData.Crypto : prev.Crypto,
+                            Forex: (Array.isArray(newData.Forex) && newData.Forex.length > 0) ? newData.Forex : prev.Forex,
+                            Commodity: (Array.isArray(newData.Commodity) && newData.Commodity.length > 0) ? newData.Commodity : prev.Commodity,
+                            Interest: (Array.isArray(newData.Interest) && newData.Interest.length > 0) ? newData.Interest : prev.Interest,
                         };
                     });
                 }

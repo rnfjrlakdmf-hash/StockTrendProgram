@@ -92,15 +92,15 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
         );
     }
 
-    const firstMetric = Object.values(data)[0];
-    if (!firstMetric || !firstMetric.dates || firstMetric.dates.length === 0) {
+    const firstMetric = data ? Object.values(data)[0] : null;
+    if (!firstMetric || !Array.isArray(firstMetric.dates) || firstMetric.dates.length === 0) {
         return <div className="text-center py-10 text-gray-500">표시할 데이터가 없습니다.</div>;
     }
 
     const dates = firstMetric.dates;
     // 연간과 분기 구분 (E가 있으면 예상치)
     const isEstimate = (d: string) => d.includes('(E)');
-    const isQuarterly = (d: string) => /\d{4}\.\d{2}$/.test(d) && !d.includes('(E)') && dates.filter(x => x.startsWith(d.split('.')[0]) && !x.includes('(E)')).length > 2;
+    const isQuarterly = (d: string) => /\d{4}\.\d{2}$/.test(d) && !d.includes('(E)') && Array.isArray(dates) && dates.filter(x => x.startsWith(d.split('.')[0]) && !x.includes('(E)')).length > 2;
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-4">

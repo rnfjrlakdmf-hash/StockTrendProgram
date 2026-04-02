@@ -21,7 +21,11 @@ export default function RankingWidget() {
                 const res = await fetch(`${API_BASE_URL}/api/rank/movers/${market}`);
                 const json = await res.json();
                 if (!ignore && json.status === "success") {
-                    setData(json.data);
+                    const rankingData = json.data || { gainers: [], losers: [] };
+                    setData({
+                        gainers: Array.isArray(rankingData.gainers) ? rankingData.gainers : [],
+                        losers: Array.isArray(rankingData.losers) ? rankingData.losers : []
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -82,7 +86,7 @@ export default function RankingWidget() {
                     <TrendingUp className="w-5 h-5" /> {market === 'US' ? '미국 대형주 상승' : '실시간 상승 (Top 5)'}
                 </h3>
                 <div className="space-y-3">
-                    {data.gainers.length > 0 ? data.gainers.map((item, idx) => (
+                    {Array.isArray(data.gainers) && data.gainers.length > 0 ? data.gainers.map((item, idx) => (
                         <div
                             key={idx}
                             onClick={() => handleStockClick(item.symbol || item.name)}
@@ -119,7 +123,7 @@ export default function RankingWidget() {
                     <TrendingDown className="w-5 h-5" /> {market === 'US' ? '미국 대형주 하락' : '실시간 하락 (Bottom 5)'}
                 </h3>
                 <div className="space-y-3">
-                    {data.losers.length > 0 ? data.losers.map((item, idx) => (
+                    {Array.isArray(data.losers) && data.losers.length > 0 ? data.losers.map((item, idx) => (
                         <div
                             key={idx}
                             onClick={() => handleStockClick(item.symbol || item.name)}

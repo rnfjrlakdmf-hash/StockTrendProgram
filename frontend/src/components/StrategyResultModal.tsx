@@ -45,7 +45,7 @@ export default function StrategyResultModal({ isOpen, onClose, results, strategy
                             <span className="ml-2 text-blue-500 text-lg font-bold">포착 결과</span>
                         </h2>
                         <p className="text-gray-500 text-sm mt-1">
-                            TurboQuant 엔진이 시장 전체를 분석하여 선별한 {results.length}개의 종목입니다.
+                            TurboQuant 엔진이 시장 전체를 분석하여 선별한 {Array.isArray(results) ? results.length : 0}개의 종목입니다.
                         </p>
                     </div>
                     <button
@@ -58,7 +58,7 @@ export default function StrategyResultModal({ isOpen, onClose, results, strategy
 
                 {/* 결과 리스트 섹션 */}
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {results.length > 0 ? (
+                    {Array.isArray(results) && results.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                             {results.map((stock, index) => (
                                 <div 

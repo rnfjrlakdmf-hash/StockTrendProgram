@@ -20,7 +20,7 @@ export default function NaverTopWidget() {
                 const res = await fetch(`${API_BASE_URL}/api/rank/naver/${market}/${rankType}`);
                 const json = await res.json();
                 if (!ignore && json.status === "success") {
-                    setData(json.data);
+                    setData(Array.isArray(json.data) ? json.data : []);
                 }
             } catch (e) {
                 console.error("NaverTopWidget Fetch Error:", e);
@@ -109,11 +109,11 @@ export default function NaverTopWidget() {
 
             {/* List */}
             <div className="min-h-[400px]">
-                {loading && data.length === 0 ? (
+                {loading && (Array.isArray(data) ? data.length === 0 : true) ? (
                     <div className="flex justify-center items-center h-[300px]">
                         <RefreshCw className="w-8 h-8 animate-spin text-gray-600" />
                     </div>
-                ) : data.length === 0 ? (
+                ) : (Array.isArray(data) ? data.length === 0 : true) ? (
                     <div className="flex justify-center items-center h-[300px] text-gray-500 text-sm">
                         데이터를 불러올 수 없습니다. 시장이 닫혀있거나 통신 오류일 수 있습니다.
                     </div>

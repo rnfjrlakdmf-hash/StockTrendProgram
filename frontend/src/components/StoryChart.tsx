@@ -560,12 +560,12 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                         <h2 className="text-xl font-bold text-white">📖 주식 위인전</h2>
                     </div>
                     <div className="text-sm text-gray-400">
-                        총 {stories.length}개의 역사적 순간 확인됨
+                        총 {Array.isArray(stories) ? stories.length : 0}개의 역사적 순간 확인됨
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-                    {stories.map((story, idx) => (
+                    {Array.isArray(stories) && stories.map((story, idx) => (
                         <div
                             key={idx}
                             onClick={() => setSelectedStory(story)}
@@ -603,7 +603,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             </div>
                         </div>
                     ))}
-                    {stories.length === 0 && (
+                    {(!Array.isArray(stories) || stories.length === 0) && (
                         <div className="col-span-2 py-12 text-center text-gray-500 border border-dashed border-white/10 rounded-2xl">
                             이 기간 동안 탐지된 특별한 역사적 변동이 없습니다.
                         </div>

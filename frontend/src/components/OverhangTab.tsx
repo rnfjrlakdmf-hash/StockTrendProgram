@@ -35,8 +35,8 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
             const data = await res.json();
             
             if (data.status === 'success' && data.data) {
-                setOverhangs(data.data.overhang || []);
-                setInvestments(data.data.investments || []);
+                setOverhangs(Array.isArray(data.data.overhang) ? data.data.overhang : []);
+                setInvestments(Array.isArray(data.data.investments) ? data.data.investments : []);
             } else {
                 setError('데이터를 불러오지 못했습니다.');
             }

@@ -69,10 +69,11 @@ export default function MarketScannerDashboard() {
     if (!data) return null;
 
     const renderStatsBar = (stats: MarketStats, name: string) => {
-        const total = stats.up + stats.same + stats.down || 1;
-        const upPct = (stats.up / total) * 100;
-        const downPct = (stats.down / total) * 100;
-        const samePct = (stats.same / total) * 100;
+        if (!stats) return null;
+        const total = (stats.up || 0) + (stats.same || 0) + (stats.down || 0) || 1;
+        const upPct = ((stats.up || 0) / total) * 100;
+        const downPct = ((stats.down || 0) / total) * 100;
+        const samePct = ((stats.same || 0) / total) * 100;
 
         return (
             <div className="space-y-2">
@@ -105,8 +106,8 @@ export default function MarketScannerDashboard() {
                     지수 숫자보다 중요한 <strong>&apos;시장 체감 온도&apos;</strong>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 <strong>보수적인 현금 비중 확대</strong>를 고려해야 합니다. (1분마다 자동 갱신)
                 </p>
                 <div className="space-y-6">
-                    {renderStatsBar(data.stats.kospi, "KOSPI (코스피)")}
-                    {renderStatsBar(data.stats.kosdaq, "KOSDAQ (코스닥)")}
+                    {data.stats?.kospi && renderStatsBar(data.stats.kospi, "KOSPI (코스피)")}
+                    {data.stats?.kosdaq && renderStatsBar(data.stats.kosdaq, "KOSDAQ (코스닥)")}
                 </div>
             </div>
 
@@ -128,7 +129,7 @@ export default function MarketScannerDashboard() {
                 </p>
 
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-3">
-                    {data.disclosures && data.disclosures.length > 0 ? (
+                    {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
                         data.disclosures.map((item, idx) => (
                             <a
                                 key={idx}
