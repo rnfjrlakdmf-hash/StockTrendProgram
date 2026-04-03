@@ -845,33 +845,41 @@ function AnalysisContent() {
                                                             <th className="py-3 px-2 text-right border-b border-white/10">배당 (%)</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">ROE (%)</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">부채비율 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">이익률 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">성장률 (%)</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">수익률 (%)</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
                                                         {(sectorData?.summary_table || []).map((row: any, i: number) => (
-                                                            <tr key={i} className={`hover:bg-white/5 transition-colors ${row.name === stockInfo?.name ? "bg-blue-500/10" : ""}`}>
+                                                            <tr key={i} className={`hover:bg-white/5 transition-colors ${row.name === "대상 종목" ? "bg-blue-500/10" : ""}`}>
                                                                 <td className="py-4 px-2 text-gray-200 font-bold flex items-center gap-2">
-                                                                    {row.name === stockInfo?.name && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
+                                                                    {row.name === "대상 종목" && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
                                                                     {row.name}
                                                                 </td>
                                                                 <td className={`text-right py-4 px-2 font-mono ${row.PER && row.PER < 10 ? "text-emerald-400" : "text-gray-400"}`}>
-                                                                    {row.PER?.toFixed(2) || "-"}
+                                                                    {row.PER ? row.PER.toFixed(2) : '-'}
                                                                 </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.PBR && row.PBR < 1.0 ? "text-emerald-400" : "text-gray-400"}`}>
-                                                                    {row.PBR?.toFixed(2) || "-"}
+                                                                <td className="text-right py-4 px-2 font-mono text-gray-400">
+                                                                    {row.PBR ? row.PBR.toFixed(2) : '-'}
                                                                 </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.배당수익률 && row.배당수익률 > 3.0 ? "text-emerald-400" : "text-gray-400"}`}>
-                                                                    {row.배당수익률?.toFixed(2) || "-"}
+                                                                <td className="text-right py-4 px-2 font-mono text-emerald-400">
+                                                                    {row.배당수익률 ? `${row.배당수익률.toFixed(2)}%` : '-'}
                                                                 </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.ROE && row.ROE > 10 ? "text-indigo-400" : "text-gray-400"}`}>
-                                                                    {row.ROE?.toFixed(2) || "-"}
+                                                                <td className="text-right py-4 px-2 font-mono text-blue-400">
+                                                                    {row.ROE ? `${row.ROE.toFixed(2)}%` : '-'}
                                                                 </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.부채비율 && row.부채비율 < 100 ? "text-emerald-400" : row.부채비율 > 200 ? "text-red-400" : "text-gray-400"}`}>
-                                                                    {row.부채비율?.toFixed(2) || "-"}
+                                                                <td className="text-right py-4 px-2 font-mono text-gray-400">
+                                                                    {row.부채비율 ? `${row.부채비율.toFixed(2)}%` : '-'}
+                                                                </td>
+                                                                <td className="text-right py-4 px-2 font-mono text-indigo-400">
+                                                                    {row.영업이익률 ? `${row.영업이익률.toFixed(2)}%` : '-'}
+                                                                </td>
+                                                                <td className="text-right py-4 px-2 font-mono text-amber-400">
+                                                                    {row.매출성장률 ? `${row.매출성장률.toFixed(2)}%` : '-'}
                                                                 </td>
                                                                 <td className={`text-right py-4 px-2 font-mono ${row.주가수익률 && row.주가수익률 > 0 ? "text-red-400" : row.주가수익률 < 0 ? "text-blue-400" : "text-gray-400"}`}>
-                                                                    {row.주가수익률?.toFixed(2) || "-"}
+                                                                    {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : '-'}
                                                                 </td>
                                                             </tr>
                                                         ))}
