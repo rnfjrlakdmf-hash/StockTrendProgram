@@ -1,3 +1,5 @@
+from __future__ import annotations
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
 # [Deployment Trigger] dart multi-year final - 2026-03-06
