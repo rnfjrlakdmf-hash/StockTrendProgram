@@ -115,6 +115,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                     row[h] = float(val) if val is not None and val != "" else None
                 yield_rows.append(row)
             
+            # [v2.1.5] Filter out future/estimate years (containing '(E)') to ensure data reliability
+            yield_rows = [r for r in yield_rows if "(E)" not in str(r.get("name", ""))]
+            y_headers = [h for h in y_headers if "(E)" not in h]
+            
             charts["주가수익률(연간)"] = {
                 "headers": y_headers,
                 "rows": yield_rows,
