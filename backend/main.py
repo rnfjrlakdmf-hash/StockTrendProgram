@@ -98,10 +98,18 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.1-fixed",
-        "build_id": "2026-04-03-deploy-v2",
-        "service": "AI Stock Analyst Backend - Unicode Normalization Applied"
+        "version": "v3.0.2-korean-fix",
+        "build_id": "2026-04-03-deploy-v3",
+        "service": "AI Stock Analyst Backend - Korean Stock Search Fixed"
     }
+
+@app.post("/api/admin/clear-cache")
+def clear_cache():
+    """[Admin] Force clear all server-side cache"""
+    from turbo_engine import turbo_engine
+    turbo_engine.clear_cache()
+    return {"status": "ok", "message": "Cache cleared successfully"}
+
 from fastapi import Request
 from rank_data import get_etf_ranking
 from etf_detail import get_etf_detail

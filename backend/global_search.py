@@ -4,12 +4,20 @@ import requests
 def search_global_ticker(query: str):
     """
     Search for global tickers using Yahoo Finance lookup API.
-    Example: 'AAPL' -> 'AAPL', 'Tesla' -> 'TSLA', '삼성전자' -> '005930.KS' (handled by Naver first)
+    Example: 'AAPL' -> 'AAPL', 'Tesla' -> 'TSLA'
+    NOTE: Korean characters are NOT processed here - they must be resolved by korea_data.py first.
     """
     try:
         # 1. Clean query
         q = query.strip().upper()
         if not q: return None
+        
+        # [v3.0.1-Fixed] CRITICAL: Block Korean characters to prevent wrong global matches
+        # e.g., '삼성전자' must NOT be searched via Yahoo Finance
+        import re
+        if re.search(r'[가-힣ㄱ-ㅎㅏ-ㅣ]', query):
+            print(f"[GlobalSearch] Blocked Korean query: '{query}' - use korea_data instead.")
+            return None
         
         # 2. Try Yahoo Finance Ticker Lookup API (Fast & Direct)
         # Yahoo Finance uses this for their own autocomplete
