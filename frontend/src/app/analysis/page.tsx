@@ -814,80 +814,78 @@ function AnalysisContent() {
 
                                                     return (
                                                         <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
-                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                                                                        <cat.icon className="w-3.5 h-3.5 text-blue-400" />
+                                                            <div className="flex flex-col gap-4 mb-5">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2.5">
+                                                                        <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                                                                            <cat.icon className="w-4 h-4 text-blue-400" />
+                                                                        </div>
+                                                                        <div>
+                                                                            <h4 className="text-sm font-black text-white leading-none mb-1">{activeItemName} 분석</h4>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.1.2</p>
+                                                                        </div>
                                                                     </div>
-                                                                    <h4 className="text-[13px] font-black uppercase tracking-tight text-blue-200">{activeItemName} 추이</h4>
-                                                                </div>
-                                                                {/* Indicator Toggle Buttons - Always Visible Glassmorphism Style */}
-                                                                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md shadow-inner">
-                                                                    {cat.items.map((item, idx) => (
-                                                                        <button 
-                                                                            key={idx}
-                                                                            onClick={() => setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }))}
-                                                                            title={item}
-                                                                            className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all duration-300 flex items-center justify-center gap-1 ${
-                                                                                subMode === idx + 1 
-                                                                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] scale-100 opacity-100" 
-                                                                                : "text-gray-500 hover:text-blue-300 hover:bg-white/5 opacity-60"
-                                                                            }`}
-                                                                        >
-                                                                            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-black/20">{idx + 1}</span>
-                                                                            {cat.items.length <= 2 && <span className="hidden lg:inline">{item.replace("지표", "").trim()}</span>}
-                                                                        </button>
-                                                                    ))}
+                                                                    {/* Indicator Selection - Prominent High-Contrast Buttons */}
+                                                                    <div className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/10 shadow-xl">
+                                                                        {cat.items.map((item, idx) => (
+                                                                            <button 
+                                                                                key={idx}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }));
+                                                                                }}
+                                                                                className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center justify-center ${
+                                                                                    subMode === idx + 1 
+                                                                                    ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105" 
+                                                                                    : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300"
+                                                                                }`}
+                                                                            >
+                                                                                {idx + 1}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="h-[260px] w-full mt-2">
+                                                            <div className="h-[260px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={data.chart_data} margin={{ top: 15, right: 15, left: -10, bottom: 0 }}>
-                                                                        <defs>
-                                                                            <filter id="shadow" height="200%">
-                                                                                <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
-                                                                                <feOffset dx="0" dy="4" result="offsetblur" />
-                                                                                <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
-                                                                                <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
-                                                                            </filter>
-                                                                        </defs>
+                                                                    <LineChart 
+                                                                        data={data.chart_data} 
+                                                                        margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+                                                                    >
                                                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                                                         <XAxis 
                                                                             dataKey="period" 
-                                                                            stroke="#475569" 
-                                                                            fontSize={9} 
+                                                                            stroke="#64748b" 
+                                                                            fontSize={10} 
                                                                             tickLine={false} 
                                                                             axisLine={false}
-                                                                            minTickGap={activeItemName.includes("수익률") ? 80 : 30}
-                                                                            dy={10}
+                                                                            minTickGap={activeItemName.includes("수익률") ? 80 : 40}
                                                                         />
                                                                         <YAxis 
-                                                                            stroke="#475569" 
-                                                                            fontSize={9} 
+                                                                            stroke="#64748b" 
+                                                                            fontSize={10} 
                                                                             tickLine={false} 
                                                                             axisLine={false} 
-                                                                            dx={-5}
                                                                             tickFormatter={(val) => {
                                                                                 if (val === 0) return "0";
-                                                                                const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "x" : "%";
-                                                                                return `${val}${unit}`;
+                                                                                // High Precision Unit Logic
+                                                                                const isRatio = activeItemName.includes("PER") || activeItemName.includes("PBR");
+                                                                                return `${val}${isRatio ? "x" : "%"}`;
                                                                             }}
                                                                         />
                                                                         <Tooltip 
-                                                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '11px', backdropFilter: 'blur(12px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', padding: '12px' }}
-                                                                            itemStyle={{ fontWeight: '900', padding: '2px 0' }}
+                                                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                                                                            itemStyle={{ fontWeight: 'bold' }}
                                                                             formatter={(val: any) => {
                                                                                 const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
                                                                                 return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
                                                                             }}
-                                                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
                                                                         />
                                                                         <Legend 
                                                                             verticalAlign="top" 
-                                                                            align="right" 
+                                                                            align="left" 
                                                                             iconType="circle" 
-                                                                            iconSize={6}
-                                                                            wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', top: -35, right: 0 }}
+                                                                            wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingBottom: '20px', marginLeft: '0px' }}
                                                                         />
                                                                         {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
                                                                             const isTarget = key === "대상 종목";
@@ -899,13 +897,11 @@ function AnalysisContent() {
                                                                                     type="monotone" 
                                                                                     dataKey={key} 
                                                                                     name={key}
-                                                                                    stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#4b5563"} 
+                                                                                    stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"} 
                                                                                     strokeWidth={isTarget ? 3.5 : 1.5} 
-                                                                                    dot={isTarget ? { r: 3, fill: '#818cf8', strokeWidth: 0 } : false} 
-                                                                                    activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
-                                                                                    animationDuration={1500}
-                                                                                    strokeDasharray={(!isTarget && !isIndustry) ? "5 5" : "0"}
-                                                                                    filter={isTarget ? "url(#shadow)" : ""}
+                                                                                    dot={isTarget ? { r: 3, fill: '#818cf8' } : false} 
+                                                                                    activeDot={{ r: 6 }}
+                                                                                    animationDuration={1200}
                                                                                 />
                                                                             );
                                                                         })}
