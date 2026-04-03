@@ -259,8 +259,21 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                                 
                                                 // 가독성 향상을 위한 숫자 포맷팅 (콤마 및 소수점 2자리 제한)
                                                 let displayVal = val || '-';
-                                                if (displayVal !== '-' && !isNaN(rawVal)) {
-                                                    displayVal = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(rawVal);
+                                                try {
+                                                    if (displayVal !== '-' && displayVal !== '') {
+                                                        // 숫자를 제외한 문자 제거 시 음수(-)와 소수점(.)은 남겨둠
+                                                        const cleanVal = String(displayVal).replace(/[^0-9.-]/g, '');
+                                                        const num = parseFloat(cleanVal);
+                                                        
+                                                        if (!isNaN(num)) {
+                                                            displayVal = new Intl.NumberFormat('ko-KR', { 
+                                                                maximumFractionDigits: 2,
+                                                                minimumFractionDigits: 0
+                                                            }).format(num);
+                                                        }
+                                                    }
+                                                } catch (e) {
+                                                    console.warn("Formatting failed for", val, e);
                                                 }
                                                 
                                                 return (
