@@ -814,58 +814,81 @@ function AnalysisContent() {
 
                                                     return (
                                                         <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
-                                                            <div className="flex items-center justify-between mb-6">
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                                                                 <div className="flex items-center gap-2">
-                                                                    <cat.icon className="w-4 h-4 text-blue-400" />
-                                                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-300">{activeItemName} 추이</h4>
+                                                                    <div className="p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                                                        <cat.icon className="w-3.5 h-3.5 text-blue-400" />
+                                                                    </div>
+                                                                    <h4 className="text-[13px] font-black uppercase tracking-tight text-blue-200">{activeItemName} 추이</h4>
                                                                 </div>
-                                                                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-lg border border-white/10 backdrop-blur-md">
-                                                                    {cat.items.length > 1 && cat.items.map((_, idx) => (
+                                                                {/* Indicator Toggle Buttons - Always Visible Glassmorphism Style */}
+                                                                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md shadow-inner">
+                                                                    {cat.items.map((item, idx) => (
                                                                         <button 
                                                                             key={idx}
                                                                             onClick={() => setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }))}
-                                                                            className={`w-7 h-7 rounded-md text-[10px] font-black flex items-center justify-center transition-all ${
+                                                                            title={item}
+                                                                            className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all duration-300 flex items-center justify-center gap-1 ${
                                                                                 subMode === idx + 1 
-                                                                                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] scale-105" 
-                                                                                : "text-gray-400 hover:bg-white/10 hover:text-white"
+                                                                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] scale-100 opacity-100" 
+                                                                                : "text-gray-500 hover:text-blue-300 hover:bg-white/5 opacity-60"
                                                                             }`}
                                                                         >
-                                                                            {idx + 1}
+                                                                            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-black/20">{idx + 1}</span>
+                                                                            {cat.items.length <= 2 && <span className="hidden lg:inline">{item.replace("지표", "").trim()}</span>}
                                                                         </button>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <div className="h-[250px] w-full">
+                                                            <div className="h-[260px] w-full mt-2">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={data.chart_data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                                    <LineChart data={data.chart_data} margin={{ top: 15, right: 15, left: -10, bottom: 0 }}>
+                                                                        <defs>
+                                                                            <filter id="shadow" height="200%">
+                                                                                <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+                                                                                <feOffset dx="0" dy="4" result="offsetblur" />
+                                                                                <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
+                                                                                <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+                                                                            </filter>
+                                                                        </defs>
                                                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                                                         <XAxis 
                                                                             dataKey="period" 
                                                                             stroke="#475569" 
-                                                                            fontSize={10} 
+                                                                            fontSize={9} 
                                                                             tickLine={false} 
                                                                             axisLine={false}
-                                                                            minTickGap={activeItemName === "주가수익률" ? 100 : 30}
+                                                                            minTickGap={activeItemName.includes("수익률") ? 80 : 30}
+                                                                            dy={10}
                                                                         />
                                                                         <YAxis 
                                                                             stroke="#475569" 
-                                                                            fontSize={10} 
+                                                                            fontSize={9} 
                                                                             tickLine={false} 
                                                                             axisLine={false} 
+                                                                            dx={-5}
                                                                             tickFormatter={(val) => {
+                                                                                if (val === 0) return "0";
                                                                                 const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "x" : "%";
                                                                                 return `${val}${unit}`;
                                                                             }}
                                                                         />
                                                                         <Tooltip 
-                                                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', backdropFilter: 'blur(10px)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
-                                                                            itemStyle={{ fontWeight: 'bold' }}
+                                                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '11px', backdropFilter: 'blur(12px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', padding: '12px' }}
+                                                                            itemStyle={{ fontWeight: '900', padding: '2px 0' }}
                                                                             formatter={(val: any) => {
                                                                                 const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
                                                                                 return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
                                                                             }}
+                                                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
                                                                         />
-                                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '15px' }} />
+                                                                        <Legend 
+                                                                            verticalAlign="top" 
+                                                                            align="right" 
+                                                                            iconType="circle" 
+                                                                            iconSize={6}
+                                                                            wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', top: -35, right: 0 }}
+                                                                        />
                                                                         {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
                                                                             const isTarget = key === "대상 종목";
                                                                             const isIndustry = key === "업종 평균";
@@ -876,11 +899,13 @@ function AnalysisContent() {
                                                                                     type="monotone" 
                                                                                     dataKey={key} 
                                                                                     name={key}
-                                                                                    stroke={isTarget ? "#6366f1" : isIndustry ? "#22c55e" : "#94a3b8"} 
-                                                                                    strokeWidth={isTarget ? 3 : 1.5} 
-                                                                                    dot={activeItemName === "주가수익률" ? false : (isTarget ? { r: 3, fill: '#6366f1', strokeWidth: 0 } : { r: 0 })} 
-                                                                                    activeDot={{ r: 5, strokeWidth: 0 }}
-                                                                                    animationDuration={1000}
+                                                                                    stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#4b5563"} 
+                                                                                    strokeWidth={isTarget ? 3.5 : 1.5} 
+                                                                                    dot={isTarget ? { r: 3, fill: '#818cf8', strokeWidth: 0 } : false} 
+                                                                                    activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+                                                                                    animationDuration={1500}
+                                                                                    strokeDasharray={(!isTarget && !isIndustry) ? "5 5" : "0"}
+                                                                                    filter={isTarget ? "url(#shadow)" : ""}
                                                                                 />
                                                                             );
                                                                         })}
