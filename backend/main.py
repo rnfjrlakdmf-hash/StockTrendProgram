@@ -98,9 +98,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.4-perf-fix",
-        "build_id": "2026-04-03-deploy-v4",
-        "service": "AI Stock Analyst Backend - Final Indicators Fix"
+        "version": "v3.0.5-final-check",
+        "build_id": "2026-04-03-deploy-v5",
+        "service": "AI Stock Analyst Backend - Double Hardened Indicators"
     }
 
 @app.post("/api/admin/clear-cache")
@@ -333,7 +333,25 @@ def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL",
         for ind in indicators:
             label = ind.get("name", "")
             vals_dict = ind.get("values", {})
-            row_values = [str(vals_dict.get(h)) if vals_dict.get(h) is not None else "" for h in headers]
+            
+            row_values = []
+            for h in headers:
+                val = vals_dict.get(h)
+                if val is not None:
+                    # 숫자인 경우 소수점 2자리에서 반올림하여 긴 소수점 방지
+                    try:
+                        if isinstance(val, (int, float)):
+                            formatted_val = f"{float(val):.2f}"
+                            # .00 은 제거하여 정수로 표현
+                            if formatted_val.endswith(".00"):
+                                formatted_val = formatted_val[:-3]
+                            row_values.append(formatted_val)
+                        else:
+                            row_values.append(str(val))
+                    except:
+                        row_values.append(str(val))
+                else:
+                    row_values.append("")
             
             rows.append({
                 "label": label,
