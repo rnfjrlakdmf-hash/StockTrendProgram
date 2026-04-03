@@ -115,11 +115,11 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                     row[h] = float(val) if val is not None and val != "" else None
                 yield_rows.append(row)
             
-            # [v2.1.5] Filter out future/estimate years (containing '(E)') to ensure data reliability
+            # [v2.2.0] Standardized key and filter estimates
             yield_rows = [r for r in yield_rows if "(E)" not in str(r.get("name", ""))]
             y_headers = [h for h in y_headers if "(E)" not in h]
             
-            charts["주가수익률(연간)"] = {
+            charts["주가수익률_연간"] = {
                 "headers": y_headers,
                 "rows": yield_rows,
                 "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in yield_rows}} for h in y_headers]
@@ -135,9 +135,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                 s_entry["주가수익률"] = r.get(latest_y_h)
 
         # 3-3. Comprehensive Data Extraction (dt3)
+        # [v2.2.0] Standardized METRICS_MAP (No dots/spaces in Keys for button stability)
         METRICS_MAP = {
-            1: "PER", 18: "Fwd. 12M PER", 
-            2: "PBR", 20: "Fwd. 12M PBR",
+            1: "PER", 18: "Fwd_12M_PER", 
+            2: "PBR", 20: "Fwd_12M_PBR",
             6: "부채비율", 14: "유동비율", 
             9: "ROE", 10: "ROA", 
             8: "배당수익률", 15: "배당성향",
