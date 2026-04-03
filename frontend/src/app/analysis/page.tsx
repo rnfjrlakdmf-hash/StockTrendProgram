@@ -819,15 +819,15 @@ function AnalysisContent() {
                                                                     <cat.icon className="w-4 h-4 text-blue-400" />
                                                                     <h4 className="text-xs font-black uppercase tracking-widest text-blue-300">{activeItemName} 추이</h4>
                                                                 </div>
-                                                                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-lg border border-white/10 backdrop-blur-md">
                                                                     {cat.items.length > 1 && cat.items.map((_, idx) => (
                                                                         <button 
                                                                             key={idx}
                                                                             onClick={() => setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }))}
-                                                                            className={`w-6 h-6 rounded-md text-[10px] font-black flex items-center justify-center transition-all ${
+                                                                            className={`w-7 h-7 rounded-md text-[10px] font-black flex items-center justify-center transition-all ${
                                                                                 subMode === idx + 1 
-                                                                                ? "bg-blue-600 text-white shadow-lg scale-110" 
-                                                                                : "bg-white/5 text-gray-400 hover:bg-white/10"
+                                                                                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] scale-105" 
+                                                                                : "text-gray-400 hover:bg-white/10 hover:text-white"
                                                                             }`}
                                                                         >
                                                                             {idx + 1}
@@ -837,7 +837,7 @@ function AnalysisContent() {
                                                             </div>
                                                             <div className="h-[250px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={data.chart_data}>
+                                                                    <LineChart data={data.chart_data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                                                         <XAxis 
                                                                             dataKey="period" 
@@ -847,12 +847,25 @@ function AnalysisContent() {
                                                                             axisLine={false}
                                                                             minTickGap={activeItemName === "주가수익률" ? 100 : 30}
                                                                         />
-                                                                        <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                        <Tooltip 
-                                                                            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
-                                                                            itemStyle={{ fontWeight: 'bold' }}
+                                                                        <YAxis 
+                                                                            stroke="#475569" 
+                                                                            fontSize={10} 
+                                                                            tickLine={false} 
+                                                                            axisLine={false} 
+                                                                            tickFormatter={(val) => {
+                                                                                const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "x" : "%";
+                                                                                return `${val}${unit}`;
+                                                                            }}
                                                                         />
-                                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                                                        <Tooltip 
+                                                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', backdropFilter: 'blur(10px)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
+                                                                            itemStyle={{ fontWeight: 'bold' }}
+                                                                            formatter={(val: any) => {
+                                                                                const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
+                                                                                return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
+                                                                            }}
+                                                                        />
+                                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '15px' }} />
                                                                         {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
                                                                             const isTarget = key === "대상 종목";
                                                                             const isIndustry = key === "업종 평균";
@@ -865,8 +878,9 @@ function AnalysisContent() {
                                                                                     name={key}
                                                                                     stroke={isTarget ? "#6366f1" : isIndustry ? "#22c55e" : "#94a3b8"} 
                                                                                     strokeWidth={isTarget ? 3 : 1.5} 
-                                                                                    dot={activeItemName === "주가수익률" ? false : (isTarget ? { r: 3, fill: '#6366f1' } : { r: 0 })} 
-                                                                                    activeDot={{ r: 5 }}
+                                                                                    dot={activeItemName === "주가수익률" ? false : (isTarget ? { r: 3, fill: '#6366f1', strokeWidth: 0 } : { r: 0 })} 
+                                                                                    activeDot={{ r: 5, strokeWidth: 0 }}
+                                                                                    animationDuration={1000}
                                                                                 />
                                                                             );
                                                                         })}
