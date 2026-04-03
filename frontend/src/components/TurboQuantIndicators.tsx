@@ -10,7 +10,7 @@ import {
     BarChart3, Activity, Zap, Plus, Minus 
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stock-server-production-9040.up.railway.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stocktrendprogram-production.up.railway.app';
 
 interface IndicatorsResponse {
     status: string;
@@ -152,10 +152,10 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                     <div>
                         <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
                             <BarChart3 className="w-7 h-7 text-indigo-400" />
-                            터보퀸트 정밀 진단: <span className="text-indigo-400">{getCategoryTitle()}</span>
+                            터보퀸트 정밀 진단 <span className="text-[10px] text-indigo-500/50 font-normal">v2.2</span>: <span className="text-indigo-400">{getCategoryTitle()}</span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
-                            {stockName ? `${stockName}(${symbol})` : symbol} WiseReport 연동 고성능 데이터 파싱
+                            {stockName ? `${stockName}(${symbol})` : symbol} 실시간 데이터 가독성 엔진 가동 중
                         </p>
                     </div>
 
@@ -257,19 +257,49 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                                 const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
                                                 const isNegative = !isNaN(rawVal) && rawVal < 0;
                                                 
-                                                // 가독성 향상을 위한 숫자 포맷팅 (콤마 및 소수점 2자리 제한)
+                                                // 가독성 및 직관성 향상을 위한 한국어 단위 변환 (조/억/만)
                                                 let displayVal = val || '-';
+                                                
                                                 try {
                                                     if (displayVal !== '-' && displayVal !== '') {
-                                                        // 숫자를 제외한 문자 제거 시 음수(-)와 소수점(.)은 남겨둠
                                                         const cleanVal = String(displayVal).replace(/[^0-9.-]/g, '');
                                                         const num = parseFloat(cleanVal);
                                                         
                                                         if (!isNaN(num)) {
-                                                            displayVal = new Intl.NumberFormat('ko-KR', { 
-                                                                maximumFractionDigits: 2,
-                                                                minimumFractionDigits: 0
-                                                            }).format(num);
+                                                            const labelClean = String(row.label).replace(/\s+/g, '');
+                                                            
+                                                            // 1. 비율 지표 (%)
+                                                            if (labelClean.includes('률') || labelClean.includes('비율')) {
+                                                                displayVal = `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+                                                            }
+                                                            // 2. 주당 가격 지표 (원)
+                                                            else if (labelClean.includes('EPS') || labelClean.includes('BPS') || labelClean.includes('주당')) {
+                                                                displayVal = `${Math.round(num).toLocaleString()}원`;
+                                                            }
+                                                            // 3. 배수 지표 (배)
+                                                            else if (labelClean.includes('PER') || labelClean.includes('PBR') || labelClean.includes('배')) {
+                                                                displayVal = `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}배`;
+                                                            }
+                                                            // 4. 금액 지표 (Million Won base -> 조/억 변환)
+                                                            else {
+                                                                // Million Won base: 1 = 100만, 100 = 1억, 1,000,000 = 1조
+                                                                const absNum = Math.abs(num);
+                                                                const sign = num < 0 ? '-' : '';
+                                                                
+                                                                if (absNum >= 1000000) {
+                                                                    const trillion = Math.floor(absNum / 1000000);
+                                                                    const billion = Math.round((absNum % 1000000) / 100);
+                                                                    displayVal = `${sign}${trillion}조${billion > 0 ? ` ${billion.toLocaleString()}억` : ''}`;
+                                                                } else if (absNum >= 100) {
+                                                                    const billion = Math.floor(absNum / 100);
+                                                                    const million = Math.round(absNum % 100);
+                                                                    displayVal = `${sign}${billion}억${million > 0 ? ` ${million}만` : ''}`;
+                                                                } else {
+                                                                    displayVal = `${sign}${Math.round(absNum * 100).toLocaleString()}만`;
+                                                                }
+                                                                // '원' 추가
+                                                                displayVal += '원';
+                                                            }
                                                         }
                                                     }
                                                 } catch (e) {
@@ -277,7 +307,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                                 }
                                                 
                                                 return (
-                                                    <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'}`}>
+                                                    <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'} whitespace-nowrap`}>
                                                         {displayVal}
                                                     </td>
                                                 );
