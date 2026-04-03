@@ -318,11 +318,36 @@ def read_stock_overview(symbol: str):
 def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "3"):
     """특정 종목의 상세 투자지표(수익성, 성장성, 안정성, 활동성 등) 반환"""
     from korea_data import get_korean_investment_indicators
-    data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
-    if data:
-        if isinstance(data, dict) and data.get("status") == "empty":
-             return {"status": "error", "message": data.get("message", "데이터가 없습니다.")}
-        return {"status": "success", "data": data}
+    raw_data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+    if raw_data:
+        if isinstance(raw_data, dict) and raw_data.get("status") == "empty":
+             return {"status": "error", "message": raw_data.get("message", "데이터가 없습니다.")}
+        
+        # 프론트엔드 UI(TurboQuantIndicators.tsx) 형식에 맞게 데이터 트랜스폼
+        headers = raw_data.get("headers", [])
+        indicators = raw_data.get("indicators", [])
+        
+        years = [h.split('(')[0] if '(' in h else h for h in headers]
+        
+        rows = []
+        for ind in indicators:
+            label = ind.get("name", "")
+            vals_dict = ind.get("values", {})
+            row_values = [str(vals_dict.get(h)) if vals_dict.get(h) is not None else "" for h in headers]
+            
+            rows.append({
+                "label": label,
+                "values": row_values
+            })
+            
+        transformed_data = {
+            "name": "",
+            "symbol": symbol,
+            "years": years,
+            "rows": rows
+        }
+
+        return {"status": "success", "data": transformed_data}
     else:
         return {"status": "error", "message": "Failed to fetch indicators (Network error)"}
 

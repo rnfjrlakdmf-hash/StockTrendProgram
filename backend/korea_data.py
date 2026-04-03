@@ -2156,7 +2156,7 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         # Step 3: 데이터 가공 (Header: YYMM, Data: indicators)
         if not json_data or "YYMM" not in json_data or not json_data.get("YYMM"):
             msg = "해당 종목의 지표 정보를 불러올 수 없거나 존재하지 않는 페이지입니다."
-            if "삼성전자" in str(keyword) or code == "005930":
+            if "삼성전자" in str(symbol) or code == "005930":
                  # Extra diagnostic for core stocks
                  msg = f"WiseReport 서버로부터 {code} 지표 데이터를 정상적으로 로드하지 못했습니다. (네트워크/IP 차단 가능성)"
             return {"status": "empty", "message": msg}
