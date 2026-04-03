@@ -7,7 +7,8 @@ import { API_BASE_URL } from "@/lib/config";
 import {
     Search, RefreshCw, Shield, BarChart3, Users, TrendingUp, TrendingDown,
     Activity, Zap, AlertTriangle, ChevronRight, X, Info, HelpCircle,
-    Eye, EyeOff, LayoutDashboard, History, PieChart, LineChart as LineIcon
+    Eye, EyeOff, LayoutDashboard, History, PieChart, LineChart as LineIcon,
+    Coins, ArrowUpRight
 } from "lucide-react";
 import { 
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
@@ -56,6 +57,18 @@ function AnalysisContent() {
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
+    
+    // [v2.1.0] Sector Analysis Sub-Modes State
+    const [sectorSubModes, setSectorSubModes] = useState<Record<string, number>>({
+        "returns": 1,
+        "dividend": 1,
+        "per": 1,
+        "pbr": 1,
+        "roe": 1,
+        "stability": 1,
+        "growth": 1,
+        "margin": 1
+    });
 
     // [v1.8.7] URL 파라미터가 있어도 즉시 분석하지 않고 입력창만 채움
     useEffect(() => {
@@ -777,50 +790,93 @@ function AnalysisContent() {
 
                                         {/* Chart Grid */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                            {Object.entries(sectorData.charts || {}).map(([title, data]: any) => (
-                                                <div key={title} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
-                                                    <div className="flex items-center justify-between mb-6">
-                                                        <div className="flex items-center gap-2">
-                                                            <BarChart3 className="w-4 h-4 text-blue-400" />
-                                                            <h4 className="text-xs font-black uppercase tracking-widest text-blue-300">{title} 추이</h4>
-                                                        </div>
-                                                        {showEasy && <span className="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-bold">비교 분석</span>}
-                                                    </div>
-                                                    <div className="h-[250px] w-full">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <LineChart data={data.chart_data}>
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                <XAxis dataKey="period" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <Tooltip 
-                                                                    contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
-                                                                    itemStyle={{ fontWeight: 'bold' }}
-                                                                />
-                                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                                                {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key, idx) => {
-                                                                    const isTarget = key === "대상 종목";
-                                                                    const isIndustry = key === "업종 평균";
-                                                                    const isIndex = key === "시장 지수";
-                                                                    
-                                                                    return (
-                                                                        <Line 
-                                                                            key={key} 
-                                                                            type="monotone" 
-                                                                            dataKey={key} 
-                                                                            name={key}
-                                                                            stroke={isTarget ? "#6366f1" : isIndustry ? "#22c55e" : "#94a3b8"} 
-                                                                            strokeWidth={isTarget ? 4 : 1.5} 
-                                                                            strokeDasharray={isIndex ? "5 5" : "0"}
-                                                                            dot={isTarget ? { r: 5, fill: '#6366f1' } : { r: 0 }} 
-                                                                            activeDot={{ r: 6 }}
+                                            {(() => {
+                                                if (!(sectorData?.charts)) return null;
+                                                
+                                                // Category Definitions
+                                                const categories = [
+                                                    { id: "returns", title: "주가 수익률", items: ["주가수익률", "주가수익률(연간)"], icon: TrendingUp },
+                                                    { id: "dividend", title: "배당 지표", items: ["배당수익률", "배당성향"], icon: Coins },
+                                                    { id: "per", title: "PER 지표", items: ["PER", "Fwd. 12M PER"], icon: BarChart3 },
+                                                    { id: "pbr", title: "PBR 지표", items: ["PBR", "Fwd. 12M PBR"], icon: BarChart3 },
+                                                    { id: "roe", title: "수익 효율 (ROE/ROA)", items: ["ROE", "ROA"], icon: Activity },
+                                                    { id: "stability", title: "안정성 (부채/유동)", items: ["부채비율", "유동비율"], icon: Shield },
+                                                    { id: "growth", title: "성장성 증가율", items: ["매출액증가율", "영업이익증가율", "순이익증가율"], icon: ArrowUpRight },
+                                                    { id: "margin", title: "이익률 분석", items: ["매출총이익률", "영업이익률", "순이익률"], icon: PieChart }
+                                                ];
+
+                                                return categories.map((cat) => {
+                                                    const subMode = sectorSubModes[cat.id] || 1;
+                                                    const activeItemName = cat.items[subMode - 1] || cat.items[0];
+                                                    const data = sectorData.charts[activeItemName];
+                                                    
+                                                    if (!data) return null;
+
+                                                    return (
+                                                        <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
+                                                            <div className="flex items-center justify-between mb-6">
+                                                                <div className="flex items-center gap-2">
+                                                                    <cat.icon className="w-4 h-4 text-blue-400" />
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-300">{activeItemName} 추이</h4>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    {cat.items.length > 1 && cat.items.map((_, idx) => (
+                                                                        <button 
+                                                                            key={idx}
+                                                                            onClick={() => setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }))}
+                                                                            className={`w-6 h-6 rounded-md text-[10px] font-black flex items-center justify-center transition-all ${
+                                                                                subMode === idx + 1 
+                                                                                ? "bg-blue-600 text-white shadow-lg scale-110" 
+                                                                                : "bg-white/5 text-gray-400 hover:bg-white/10"
+                                                                            }`}
+                                                                        >
+                                                                            {idx + 1}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div className="h-[250px] w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <LineChart data={data.chart_data}>
+                                                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                                                        <XAxis 
+                                                                            dataKey="period" 
+                                                                            stroke="#475569" 
+                                                                            fontSize={10} 
+                                                                            tickLine={false} 
+                                                                            axisLine={false}
+                                                                            minTickGap={activeItemName === "주가수익률" ? 100 : 30}
                                                                         />
-                                                                    );
-                                                                })}
-                                                            </LineChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                                        <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                                                        <Tooltip 
+                                                                            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
+                                                                            itemStyle={{ fontWeight: 'bold' }}
+                                                                        />
+                                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                                                        {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
+                                                                            const isTarget = key === "대상 종목";
+                                                                            const isIndustry = key === "업종 평균";
+                                                                            
+                                                                            return (
+                                                                                <Line 
+                                                                                    key={key} 
+                                                                                    type="monotone" 
+                                                                                    dataKey={key} 
+                                                                                    name={key}
+                                                                                    stroke={isTarget ? "#6366f1" : isIndustry ? "#22c55e" : "#94a3b8"} 
+                                                                                    strokeWidth={isTarget ? 3 : 1.5} 
+                                                                                    dot={activeItemName === "주가수익률" ? false : (isTarget ? { r: 3, fill: '#6366f1' } : { r: 0 })} 
+                                                                                    activeDot={{ r: 5 }}
+                                                                                />
+                                                                            );
+                                                                        })}
+                                                                    </LineChart>
+                                                                </ResponsiveContainer>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                });
+                                            })()}
                                         </div>
 
                                         {/* [NEW] v1.6.0 Comprehensive Sector Comparison Table */}
@@ -876,7 +932,7 @@ function AnalysisContent() {
                                                                     {row.영업이익률 ? `${row.영업이익률.toFixed(2)}%` : '-'}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-amber-400">
-                                                                    {row.매출성장률 ? `${row.매출성장률.toFixed(2)}%` : '-'}
+                                                                    {row.매출액증가율 ? `${row.매출액증가율.toFixed(2)}%` : '-'}
                                                                 </td>
                                                                 <td className={`text-right py-4 px-2 font-mono ${row.주가수익률 && row.주가수익률 > 0 ? "text-red-400" : row.주가수익률 < 0 ? "text-blue-400" : "text-gray-400"}`}>
                                                                     {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : '-'}

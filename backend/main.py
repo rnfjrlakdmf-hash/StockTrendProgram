@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # [v3.0.0-Gold] Startup Diagnostics
 STOCK_MAP_PATH = os.path.join(os.path.dirname(__file__), "stock_names.py")
 if os.path.exists(STOCK_MAP_PATH):
-    print(f"🚀 [Startup] Found STOCK_MAP at: {STOCK_MAP_PATH}")
+    print(f"[Startup] Found STOCK_MAP at: {STOCK_MAP_PATH}")
 else:
     print(f"⚠️ [Startup] WARNING: STOCK_MAP (stock_names.py) NOT FOUND!")
 
