@@ -29,7 +29,63 @@ interface IndicatorsResponse {
 interface Props {
     symbol: string;
     stockName?: string;
+    showEasy?: boolean;
 }
+
+// 지표 포맷팅 통합 헬퍼 함수
+const formatInvestValue = (val: any, label: string) => {
+    if (val === '-' || val === '' || val == null) return '-';
+    
+    try {
+        const cleanVal = String(val).replace(/[^0-9.-]/g, '');
+        const num = parseFloat(cleanVal);
+        if (isNaN(num)) return val;
+
+        const labelClean = String(label).replace(/\s+/g, '');
+        
+        // 1. 비율 지표 (%)
+        if (labelClean.includes('률') || labelClean.includes('비율')) {
+            return `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+        }
+        // 2. 주당 가격 지표 (원)
+        else if (labelClean.includes('EPS') || labelClean.includes('BPS') || labelClean.includes('주당')) {
+            return `${Math.round(num).toLocaleString()}원`;
+        }
+        // 3. 배수 지표 (배)
+        else if (labelClean.includes('PER') || labelClean.includes('PBR') || labelClean.includes('배')) {
+            return `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}배`;
+        }
+        // 4. 금액 지표 (Million Won base -> 조/억 변환)
+        else {
+            const absNum = Math.abs(num);
+            const sign = num < 0 ? '-' : '';
+            let result = '';
+            
+            if (absNum >= 1000000) {
+                const trillion = Math.floor(absNum / 1000000);
+                const billion = Math.round((absNum % 1000000) / 100);
+                result = `${sign}${trillion}조${billion > 0 ? ` ${billion.toLocaleString()}억` : ''}`;
+            } else if (absNum >= 100) {
+                const billion = Math.floor(absNum / 100);
+                const million = Math.round(absNum % 100);
+                result = `${sign}${billion}억${million > 0 ? ` ${million}만` : ''}`;
+            } else {
+                result = `${sign}${Math.round(absNum * 100).toLocaleString()}만`;
+            }
+            return result + '원';
+        }
+    } catch (e) {
+        return val;
+    }
+};
+
+// 초보자 가이드 데이터
+const EASY_GUIDE: Record<string, { title: string; desc: string }> = {
+    '1': { title: '💰 수익성 분석 (얼마나 효율적으로 버는가?)', desc: '이 지표들은 남의 돈 안 쓰고 내 돈(자본)으로 얼마나 알짜배기 장사를 했는지 보여줍니다. ROE가 높을수록 효율적인 기업입니다.' },
+    '2': { title: '🚀 성장성 분석 (얼마나 빨리 크는가?)', desc: '작년보다 매출이나 이익이 얼마나 늘었는지 보여줍니다. 숫자가 클수록 회사가 빠르게 성장하고 있다는 뜻입니다.' },
+    '3': { title: '🛡️ 안정성 분석 (튼튼한 회사인가?)', desc: '빌린 돈(부채)이 너무 많지는 않은지, 갑자기 돈을 갚아야 할 때 바로 줄 수 있는 돈이 있는지 체크합니다.' },
+    '4': { title: '⚙️ 활동성 분석 (얼마나 바쁘게 움직이는가?)', desc: '가진 자산을 놀리지 않고 얼마나 빠르게 회전시켜서 매출을 일으키는지 보여줍니다.' }
+};
 
 const FIN_GUBUN_MAP = [
     { label: '주재무제표', value: 'MAIN' },
@@ -54,7 +110,7 @@ const CORE_INDICATORS: Record<string, string[]> = {
     '4': ['총자산회전율', '매출채권회전율', '재고자산회전율', '매입채무회전율']
 };
 
-export default function TurboQuantIndicators({ symbol, stockName }: Props) {
+export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Props) {
     const [freq, setFreq] = useState('0'); // 0: 연간, 1: 분기
     const [finGubun, setFinGubun] = useState('MAIN'); // Default to MAIN
     const [category, setCategory] = useState('1'); // 1: 수익성, 2: 성장성, 3: 안정성, 4: 활동성
@@ -152,7 +208,7 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                     <div>
                         <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
                             <BarChart3 className="w-7 h-7 text-indigo-400" />
-                            터보퀸트 정밀 진단 <span className="text-[10px] text-indigo-500/50 font-normal">v2.2</span>: <span className="text-indigo-400">{getCategoryTitle()}</span>
+                            터보퀸트 정밀 진단 <span className="text-[10px] text-indigo-500/50 font-normal">v2.3</span>: <span className="text-indigo-400">{getCategoryTitle()}</span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
                             {stockName ? `${stockName}(${symbol})` : symbol} 실시간 데이터 가독성 엔진 가동 중
@@ -195,6 +251,17 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
             </div>
 
             <div className="p-6 md:p-8">
+                {/* Beginner Guide Banner */}
+                {showEasy && EASY_GUIDE[category] && (
+                    <div className="mb-6 bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl animate-in fade-in zoom-in duration-300">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Zap className="w-5 h-5 text-emerald-400" />
+                            <h4 className="font-black text-emerald-400 text-sm">{EASY_GUIDE[category].title}</h4>
+                        </div>
+                        <p className="text-emerald-100/70 text-xs leading-relaxed">{EASY_GUIDE[category].desc}</p>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
                         <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
@@ -210,15 +277,27 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                         {/* Chart Area */}
                         <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
                             <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2 notranslate" translate="no">
-                                <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 지표 추이 분석 (%)
+                                <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 지표 추이 분석
                             </h4>
                             <div className="h-[300px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={getChartData()}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }} />
+                                        <YAxis 
+                                            stroke="#94a3b8" 
+                                            fontSize={11} 
+                                            tickLine={false} 
+                                            axisLine={false}
+                                            tickFormatter={(val) => {
+                                                if (Math.abs(val) >= 100) return `${(val/100).toFixed(0)}억`;
+                                                return val;
+                                            }}
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }}
+                                            formatter={(value, name) => [formatInvestValue(value, String(name)), name]}
+                                        />
                                         <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
                                         {Object.keys(getChartData()[0] || {}).filter(k => k !== 'name').map((key, i) => (
                                             <Line 
@@ -257,54 +336,8 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                                 const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
                                                 const isNegative = !isNaN(rawVal) && rawVal < 0;
                                                 
-                                                // 가독성 및 직관성 향상을 위한 한국어 단위 변환 (조/억/만)
-                                                let displayVal = val || '-';
-                                                
-                                                try {
-                                                    if (displayVal !== '-' && displayVal !== '') {
-                                                        const cleanVal = String(displayVal).replace(/[^0-9.-]/g, '');
-                                                        const num = parseFloat(cleanVal);
-                                                        
-                                                        if (!isNaN(num)) {
-                                                            const labelClean = String(row.label).replace(/\s+/g, '');
-                                                            
-                                                            // 1. 비율 지표 (%)
-                                                            if (labelClean.includes('률') || labelClean.includes('비율')) {
-                                                                displayVal = `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
-                                                            }
-                                                            // 2. 주당 가격 지표 (원)
-                                                            else if (labelClean.includes('EPS') || labelClean.includes('BPS') || labelClean.includes('주당')) {
-                                                                displayVal = `${Math.round(num).toLocaleString()}원`;
-                                                            }
-                                                            // 3. 배수 지표 (배)
-                                                            else if (labelClean.includes('PER') || labelClean.includes('PBR') || labelClean.includes('배')) {
-                                                                displayVal = `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}배`;
-                                                            }
-                                                            // 4. 금액 지표 (Million Won base -> 조/억 변환)
-                                                            else {
-                                                                // Million Won base: 1 = 100만, 100 = 1억, 1,000,000 = 1조
-                                                                const absNum = Math.abs(num);
-                                                                const sign = num < 0 ? '-' : '';
-                                                                
-                                                                if (absNum >= 1000000) {
-                                                                    const trillion = Math.floor(absNum / 1000000);
-                                                                    const billion = Math.round((absNum % 1000000) / 100);
-                                                                    displayVal = `${sign}${trillion}조${billion > 0 ? ` ${billion.toLocaleString()}억` : ''}`;
-                                                                } else if (absNum >= 100) {
-                                                                    const billion = Math.floor(absNum / 100);
-                                                                    const million = Math.round(absNum % 100);
-                                                                    displayVal = `${sign}${billion}억${million > 0 ? ` ${million}만` : ''}`;
-                                                                } else {
-                                                                    displayVal = `${sign}${Math.round(absNum * 100).toLocaleString()}만`;
-                                                                }
-                                                                // '원' 추가
-                                                                displayVal += '원';
-                                                            }
-                                                        }
-                                                    }
-                                                } catch (e) {
-                                                    console.warn("Formatting failed for", val, e);
-                                                }
+                                                // 헬퍼 함수를 통한 통합 포맷팅
+                                                let displayVal = formatInvestValue(val, row.label);
                                                 
                                                 return (
                                                     <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'} whitespace-nowrap`}>

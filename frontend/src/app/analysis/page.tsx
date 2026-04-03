@@ -485,7 +485,7 @@ function AnalysisContent() {
 
                                         {(symbol.length >= 6) && (
                                             <div className="border-t border-indigo-500/20 bg-indigo-500/5">
-                                                <TurboQuantIndicators symbol={symbol} />
+                                                <TurboQuantIndicators symbol={symbol} showEasy={showEasy} />
                                             </div>
                                         )}
                                     </div>
