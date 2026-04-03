@@ -327,7 +327,15 @@ def read_stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL",
         headers = raw_data.get("headers", [])
         indicators = raw_data.get("indicators", [])
         
-        years = [h.split('(')[0] if '(' in h else h for h in headers]
+        # 헤더 정제: 연도만 추출하고, 깨진 글자(YoY 등) 예외 처리
+        years = []
+        for h in headers:
+            clean_h = h.split('(')[0] if '(' in h else h
+            # 깨진 글자 패턴 (전년동기 YoY 등) 대응
+            if "i??" in clean_h or "e?" in clean_h or "YoY" in h:
+                years.append("전년동기(YoY)")
+            else:
+                years.append(clean_h)
         
         rows = []
         for ind in indicators:
