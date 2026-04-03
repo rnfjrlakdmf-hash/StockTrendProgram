@@ -256,9 +256,16 @@ export default function TurboQuantIndicators({ symbol, stockName }: Props) {
                                             {Array.isArray(row.values) && row.values.map((val, vIdx) => {
                                                 const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
                                                 const isNegative = !isNaN(rawVal) && rawVal < 0;
+                                                
+                                                // 가독성 향상을 위한 숫자 포맷팅 (콤마 및 소수점 2자리 제한)
+                                                let displayVal = val || '-';
+                                                if (displayVal !== '-' && !isNaN(rawVal)) {
+                                                    displayVal = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(rawVal);
+                                                }
+                                                
                                                 return (
                                                     <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'}`}>
-                                                        {val || '-'}
+                                                        {displayVal}
                                                     </td>
                                                 );
                                             })}
