@@ -9,6 +9,7 @@ import json
 from functools import lru_cache
 from typing import Dict, List, Optional
 from turbo_engine import turbo_cache
+from stock_names import STOCK_MAP
 
 # [Config]
 HEADER = {
@@ -61,58 +62,92 @@ def get_korean_name(symbol: str):
 
 get_korean_stock_name = get_korean_name  # Alias
 
-@turbo_cache(ttl_seconds=3600)
+@turbo_cache(ttl_seconds=86400) # Mapping is stable, cache longer
 def search_stock_code(keyword: str):
     """
-    Search stock by name/code and return code (6 digits)
-    [Improved] Strategy:
-    1. Try Naver Integration Search (Best for Korean stocks)
-    2. Try Naver Finance Direct Search (Specific for Stocks)
-    3. Fallback to Ticker if 6 digits
+    [v3.0.0] Mission-Critical Multi-layer Search Engine
+    Goal: 100% resolution for Korean stocks using internal & external layers.
     """
-    code = re.sub(r'[^0-9]', '', keyword)
+    if not keyword:
+        return None
+        
+    keyword_clean = keyword.strip()
+    print(f"\n[Search Tier 0] Processing: '{keyword_clean}'")
+    
+    # 0. Direct Ticker Check (6 digits)
+    code = re.sub(r'[^0-9]', '', keyword_clean)
     if len(code) == 6 and code.isdigit():
+        print(f" -> Found direct code: {code}")
         return code
 
+    # 1. Internal Mapping Table (Fastest & 100% Reliable for major stocks)
+    if keyword_clean in STOCK_MAP:
+        found_code = STOCK_MAP[keyword_clean]
+        print(f" -> Found in internal map: {found_code}")
+        return found_code
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://finance.naver.com/"
+    }
+
+    # 2. Naver Finance Auto-Complete API (Official mapping service)
     try:
-        # 1. Naver Integration Search (Try to find a finance link)
-        query = f"{keyword} 주가"
+        print(f"[Search Tier 2] Trying Naver AC API for '{keyword_clean}'...")
+        ac_url = f"https://ac.finance.naver.com/ac?q={urllib.parse.quote(keyword_clean)}&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111"
+        res_ac = requests.get(ac_url, headers=headers, timeout=3)
+        if res_ac.status_code == 200:
+            data = res_ac.json()
+            items = data.get("items", [])
+            if items and len(items) > 0 and len(items[0]) > 0:
+                for match in items[0]:
+                    if match and len(match) > 0 and len(match[0]) >= 2:
+                        found_name = match[0][0]
+                        found_code = match[0][1]
+                        # Exact match or high similarity
+                        if keyword_clean in found_name or found_name in keyword_clean:
+                            print(f" -> Found via AC API: {found_code} ({found_name})")
+                            return found_code
+    except Exception as acre:
+        print(f"  !! AC API Stage failed: {acre}")
+
+    # 3. Yahoo Finance Global Lookup (Surprisingly good at mapping KR names to tickers)
+    # Useful if Naver subdomains are blocked or DNS failing.
+    try:
+        print(f"[Search Tier 3] Trying Yahoo Finance Fallback for '{keyword_clean}'...")
+        yurl = f"https://query2.finance.yahoo.com/v1/finance/search?q={urllib.parse.quote(keyword_clean)}&lang=ko-KR"
+        res_y = requests.get(yurl, headers=headers, timeout=5)
+        ydata = res_y.json()
+        if ydata.get('quotes'):
+            for q in ydata['quotes']:
+                symbol = q.get('symbol', '')
+                # Korea symbols usually end in .KS (KOSPI) or .KQ (KOSDAQ)
+                if symbol.endswith('.KS') or symbol.endswith('.KQ'):
+                    ycode = symbol.split('.')[0]
+                    if len(ycode) == 6 and ycode.isdigit():
+                        print(f" -> Found via Yahoo: {ycode} ({symbol})")
+                        return ycode
+    except Exception as ye:
+        print(f"  !! Yahoo Stage failed: {ye}")
+
+    # 4. Final Fallback: Naver Integration Search (Best for news-relevant stocks)
+    try:
+        print(f"[Search Tier 4] Trying Naver Integration Search Fallback...")
+        query = f"{keyword_clean} 주가"
         encoded = urllib.parse.quote(query)
         url = f"https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={encoded}"
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        
         res = requests.get(url, headers=headers, timeout=5)
         html = res.text
-        
-        # Priority 1: Match 6-digit code in finance links (Naver updated structures)
-        # We look for any code parameter in finance.naver links
-        matches = re.findall(r'code=(\d{6})', html)
+        # We look for ANY code in a finance.naver link context
+        matches = re.findall(r'finance\.naver\.com/item/main\.(?:naver|nhn)\?code=(\d{6})', html)
         if matches:
-            # First match in finance context is usually the target stock
+            print(f" -> Found via Integration Search: {matches[0]}")
             return matches[0]
+    except Exception as ie:
+        print(f"  !! Integration Search Stage failed: {ie}")
 
-        # 2. Naver Finance Native Search (EUC-KR)
-        try:
-             # Naver Finance search uses EUC-KR for the query param
-             encoded_finance = urllib.parse.quote(keyword.encode('euc-kr'))
-             search_url = f"https://finance.naver.com/search/searchList.naver?query={encoded_finance}"
-             res_fin = requests.get(search_url, headers=headers, timeout=5)
-             html_fin = decode_safe(res_fin) 
-             
-             # Look for 6-digit codes in the results table
-             matches_fin = re.findall(r'code=(\d{6})"', html_fin)
-             if matches_fin:
-                 return matches_fin[0]
-        except:
-             pass
-
-        return None
-    except Exception as e:
-        print(f"Search Code Error: {e}")
-        return None
+    print(f" -> [Search Failed] No results for '{keyword_clean}' in any tier.")
+    return None
         
 search_korean_stock_symbol = search_stock_code # Alias
 

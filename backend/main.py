@@ -1016,31 +1016,52 @@ def read_stock_news(symbol: str, period: str = "1d"):
 def search_stock_api(q: str):
     """
     Search for stock by name or code (KR + Global)
-    v2.0.0 (Gold-Standard): Smart Fallback KR -> Global
+    [v3.0.0] Mission-Critical: Optimized, Logged & Encoding-Safe
     """
     if not q:
         return {"status": "error", "message": "Query parameter 'q' is required"}
     
-    # 1. Try Korea (Naver Search)
-    kr_result = search_stock_code(q)
-    if kr_result:
-        # Check if kr_result is purely numeric (Korean stock)
-        # Naver search sometimes returns news or other strings, but search_stock_code should return digits
-        if kr_result.isdigit() and len(kr_result) == 6:
-            return {
-                "status": "success", 
-                "data": [{"code": kr_result, "symbol": kr_result, "name": q, "market": "KR"}]
-            }
+    # 1. Diagnostic: Log raw hex to detect encoding corruption
+    q_raw = q.encode('utf-8', errors='replace').hex()
+    print("\n" + "="*60)
+    print(f"CRITICAL DEBUG: Stock Search Request Received")
+    print(f"  - Query String: '{q}'")
+    print(f"  - Hex (UTF-8):  {q_raw}")
+    print("="*60 + "\n")
 
-    # 2. Try Global (Yahoo Finance Lookup)
-    gb_result = search_global_ticker(q)
-    if gb_result:
+    q_clean = q.strip()
+
+    # 2. Optimization: If already 6-digit code, return immediately
+    if q_clean.isdigit() and len(q_clean) == 6:
+        print(f" -> Found direct match for KR code: {q_clean}")
         return {
             "status": "success", 
-            "data": [{"code": gb_result, "symbol": gb_result, "name": q, "market": "Global"}]
+            "data": [{"code": q_clean, "symbol": q_clean, "name": q_clean, "market": "KR"}]
+        }
+    
+    # 3. Try Korea (v3.0.0 Multi-layer)
+    # search_stock_code now handles internal mapping and multiple fallbacks
+    kr_result = search_stock_code(q_clean)
+    
+    if kr_result:
+        if kr_result.isdigit() and len(kr_result) == 6:
+            print(f" -> [SUCCESS] Resolved '{q_clean}' to KR:{kr_result}")
+            return {
+                "status": "success", 
+                "data": [{"code": kr_result, "symbol": kr_result, "name": q_clean, "market": "KR"}]
+            }
+
+    # 4. Try Global (Yahoo Finance Lookup)
+    gb_result = search_global_ticker(q_clean)
+    if gb_result:
+        print(f" -> [SUCCESS] Resolved '{q_clean}' to Global:{gb_result}")
+        return {
+            "status": "success", 
+            "data": [{"code": gb_result, "symbol": gb_result, "name": q_clean, "market": "Global"}]
         }
 
-    return {"status": "error", "message": f"No stock found for '{q}'"}
+    print(f" -> [FAILED] No stock found for: '{q_clean}'")
+    return {"status": "error", "message": f"No stock found for '{q_clean}'"}
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):

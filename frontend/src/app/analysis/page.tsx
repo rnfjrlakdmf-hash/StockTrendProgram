@@ -68,22 +68,31 @@ function AnalysisContent() {
         let targetSymbol = symbol.trim();
         if (!targetSymbol) return;
         
-        // 한글이 포함되어 있으면 종목 코드 검색 시도
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`);
+                const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`;
+                console.log(`[Search] Requesting: ${searchUrl}`);
+                
+                const res = await fetch(searchUrl);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                
                 const json = await res.json();
-                if (json.status === "success" && json.data.length > 0) {
+                console.log(`[Search] Response:`, json);
+
+                if (json.status === "success" && json.data && json.data.length > 0) {
                     targetSymbol = json.data[0].code;
-                    setSymbol(targetSymbol); // 상태 업데이트 (비동기)
+                    console.log(`[Search] Success! Found code: ${targetSymbol}`);
+                    setSymbol(targetSymbol); // 상태 업데이트
                 } else {
-                    alert("해당 종목을 찾을 수 없습니다.");
+                    console.warn(`[Search] No stock found for: ${targetSymbol}`, json);
+                    alert(`해당 종목('${targetSymbol}')을 찾을 수 없습니다.\n검색 결과가 없거나 백엔드 오류일 수 있습니다.`);
                     setStockLoading(false);
                     return;
                 }
             } catch (err) {
-                console.error("Search failed:", err);
+                console.error("[Search] Failed to fetch search API:", err);
+                alert("검색 중 오류가 발생했습니다. 서버 연결 상태를 확인해주세요.");
                 setStockLoading(false);
                 return;
             } finally {
