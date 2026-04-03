@@ -966,6 +966,53 @@ def read_history_investors(symbol: str):
 
 
 
+# [v3.0.2 CRITICAL] /api/stock/search MUST be defined BEFORE /api/stock/{symbol}
+# FastAPI matches routes in registration order - putting {symbol} first causes
+# '/api/stock/search' to match {symbol}='search', returning wrong stock data.
+@app.get("/api/stock/search")
+def search_stock_api(q: str):
+    """
+    Search for stock by name or code (KR + Global)
+    [v3.0.2] CRITICAL FIX: Moved before dynamic {symbol} route
+    """
+    if not q:
+        return {"status": "error", "message": "Query parameter 'q' is required"}
+    
+    # Unicode Normalization (NFC) for robust matching
+    q_norm = unicodedata.normalize('NFC', q.strip())
+    
+    print(f"\n[Search v3.0.2] Query: '{q}' -> Normalized: '{q_norm}'")
+
+    # 1. If already 6-digit code, return immediately
+    if q_norm.isdigit() and len(q_norm) == 6:
+        print(f" -> Found direct KR code: {q_norm}")
+        return {
+            "status": "success", 
+            "data": [{"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"}]
+        }
+    
+    # 2. Try Korea (Internal Map -> Naver AC -> Yahoo KR -> Naver Search)
+    kr_result = search_stock_code(q_norm)
+    if kr_result and kr_result.isdigit() and len(kr_result) == 6:
+        print(f" -> [SUCCESS KR] '{q_norm}' -> {kr_result}")
+        return {
+            "status": "success", 
+            "data": [{"code": kr_result, "symbol": kr_result, "name": q_norm, "market": "KR"}]
+        }
+
+    # 3. Try Global (Yahoo Finance - Korean chars blocked inside)
+    gb_result = search_global_ticker(q_norm)
+    if gb_result:
+        print(f" -> [SUCCESS Global] '{q_norm}' -> {gb_result}")
+        return {
+            "status": "success", 
+            "data": [{"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"}]
+        }
+
+    print(f" -> [FAILED] No stock found for: '{q_norm}'")
+    return {"status": "error", "message": f"해당 종목을 찾을 수 없습니다: '{q_norm}'"}
+
+
 @app.get("/api/stock/{symbol}")
 def read_stock(symbol: str, skip_ai: bool = False):
     import urllib.parse
@@ -1027,61 +1074,6 @@ def read_stock_news(symbol: str, period: str = "1d"):
     
     news = get_integrated_stock_news(symbol=symbol, days=days)
     return {"status": "success", "data": news or []}
-
-@app.get("/api/stock/search")
-def search_stock_api(q: str):
-    """
-    Search for stock by name or code (KR + Global)
-    [v3.0.1-Fixed] Mission-Critical: Unicode NFC Normalization Applied
-    """
-    if not q:
-        return {"status": "error", "message": "Query parameter 'q' is required"}
-    
-    # Unicode Normalization (NFC) for robust matching
-    q_norm = unicodedata.normalize('NFC', q.strip())
-    
-    # 1. Diagnostic: Log raw hex to detect encoding corruption
-    q_raw_orig = q.encode('utf-8', errors='replace').hex()
-    q_raw_norm = q_norm.encode('utf-8', errors='replace').hex()
-    
-    print("\n" + "="*60)
-    print(f"CRITICAL DEBUG: Stock Search Request Received")
-    print(f"  - Original Query: '{q}'")
-    print(f"  - Normalized Query: '{q_norm}'")
-    print(f"  - Hex (Original):  {q_raw_orig}")
-    print(f"  - Hex (Normalized): {q_raw_norm}")
-    print("="*60 + "\n")
-
-    # 2. Optimization: If already 6-digit code, return immediately
-    if q_norm.isdigit() and len(q_norm) == 6:
-        print(f" -> Found direct match for KR code: {q_norm}")
-        return {
-            "status": "success", 
-            "data": [{"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"}]
-        }
-    
-    # 3. Try Korea (v3.0.1-Fixed Multi-layer)
-    kr_result = search_stock_code(q_norm)
-    
-    if kr_result:
-        if kr_result.isdigit() and len(kr_result) == 6:
-            print(f" -> [SUCCESS] Resolved '{q_norm}' to KR:{kr_result}")
-            return {
-                "status": "success", 
-                "data": [{"code": kr_result, "symbol": kr_result, "name": q_norm, "market": "KR"}]
-            }
-
-    # 4. Try Global (Yahoo Finance Lookup)
-    gb_result = search_global_ticker(q_norm)
-    if gb_result:
-        print(f" -> [SUCCESS] Resolved '{q_norm}' to Global:{gb_result}")
-        return {
-            "status": "success", 
-            "data": [{"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"}]
-        }
-
-    print(f" -> [FAILED] No stock found for: '{q_norm}'")
-    return {"status": "error", "message": f"No stock found for '{q_norm}'"}
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):
