@@ -168,6 +168,8 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sectorId) url.searchParams.append("sector_id", sectorId);
+            // [v2.1.6] Force Cache Invalidation with timestamp
+            url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
             const json = await res.json();
@@ -823,7 +825,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{activeItemName} 분석</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.1.5</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.1.6</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
