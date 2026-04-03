@@ -98,9 +98,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.2-korean-fix",
-        "build_id": "2026-04-03-deploy-v3",
-        "service": "AI Stock Analyst Backend - Korean Stock Search Fixed"
+        "version": "v3.0.4-perf-fix",
+        "build_id": "2026-04-03-deploy-v4",
+        "service": "AI Stock Analyst Backend - Final Indicators Fix"
     }
 
 @app.post("/api/admin/clear-cache")
