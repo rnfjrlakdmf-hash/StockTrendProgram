@@ -2148,6 +2148,7 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         
         # JSON 파싱 시도 (cF4002.aspx는 encparam이 있으면 JSON으로 반환함)
         try:
+            res_data.encoding = 'utf-8' # 강제로 UTF-8 명시 (requests가 잘못된 인코딩으로 파싱하는 것 방지)
             json_data = res_data.json()
         except:
             print(f"Failed to parse JSON for {code}")
