@@ -14,8 +14,14 @@ import time
 import urllib.parse
 import threading
 
-# [Fix] Ensure backend directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# [v3.0.0-Gold] Startup Diagnostics
+STOCK_MAP_PATH = os.path.join(os.path.dirname(__file__), "stock_names.py")
+if os.path.exists(STOCK_MAP_PATH):
+    print(f"🚀 [Startup] Found STOCK_MAP at: {STOCK_MAP_PATH}")
+else:
+    print(f"⚠️ [Startup] WARNING: STOCK_MAP (stock_names.py) NOT FOUND!")
 
 from sockets import manager
 from stock_data import (
@@ -91,8 +97,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "20260331-chart-opt-v1",
-        "service": "AI Stock Analyst Backend - Investor Trend Cursor API"
+        "version": "v3.0.0-gold",
+        "build_id": "2026-04-03-deploy-v1",
+        "service": "AI Stock Analyst Backend - Mission Critical Search Enabled"
     }
 from fastapi import Request
 from rank_data import get_etf_ranking
