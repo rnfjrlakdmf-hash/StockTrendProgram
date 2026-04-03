@@ -6,6 +6,7 @@ import re
 import datetime
 import urllib.parse
 import json
+import unicodedata
 from functools import lru_cache
 from typing import Dict, List, Optional
 from turbo_engine import turbo_cache
@@ -65,14 +66,15 @@ get_korean_stock_name = get_korean_name  # Alias
 @turbo_cache(ttl_seconds=86400) # Mapping is stable, cache longer
 def search_stock_code(keyword: str):
     """
-    [v3.0.0] Mission-Critical Multi-layer Search Engine
-    Goal: 100% resolution for Korean stocks using internal & external layers.
+    [v3.0.1-Fixed] Mission-Critical Multi-layer Search Engine
+    Goal: 100% resolution for Korean stocks with Unicode Normalization (NFC).
     """
     if not keyword:
         return None
         
-    keyword_clean = keyword.strip()
-    print(f"\n[Search Tier 0] Processing: '{keyword_clean}'")
+    # Unicode Normalization (NFC) for robust matching (Prevents NFC/NFD mismatch)
+    keyword_clean = unicodedata.normalize('NFC', keyword.strip())
+    print(f"\n[Search Tier 0] Processing: '{keyword_clean}' (Standardized)")
     
     # 0. Direct Ticker Check (6 digits)
     code = re.sub(r'[^0-9]', '', keyword_clean)

@@ -1,6 +1,5 @@
-from __future__ import annotations
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
+import unicodedata
 # [Deployment Trigger] dart multi-year final - 2026-03-06
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
@@ -97,9 +96,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.0-gold",
-        "build_id": "2026-04-03-deploy-v1",
-        "service": "AI Stock Analyst Backend - Mission Critical Search Enabled"
+        "version": "v3.0.1-fixed",
+        "build_id": "2026-04-03-deploy-v2",
+        "service": "AI Stock Analyst Backend - Unicode Normalization Applied"
     }
 from fastapi import Request
 from rank_data import get_etf_ranking
@@ -1023,52 +1022,56 @@ def read_stock_news(symbol: str, period: str = "1d"):
 def search_stock_api(q: str):
     """
     Search for stock by name or code (KR + Global)
-    [v3.0.0] Mission-Critical: Optimized, Logged & Encoding-Safe
+    [v3.0.1-Fixed] Mission-Critical: Unicode NFC Normalization Applied
     """
     if not q:
         return {"status": "error", "message": "Query parameter 'q' is required"}
     
+    # Unicode Normalization (NFC) for robust matching
+    q_norm = unicodedata.normalize('NFC', q.strip())
+    
     # 1. Diagnostic: Log raw hex to detect encoding corruption
-    q_raw = q.encode('utf-8', errors='replace').hex()
+    q_raw_orig = q.encode('utf-8', errors='replace').hex()
+    q_raw_norm = q_norm.encode('utf-8', errors='replace').hex()
+    
     print("\n" + "="*60)
     print(f"CRITICAL DEBUG: Stock Search Request Received")
-    print(f"  - Query String: '{q}'")
-    print(f"  - Hex (UTF-8):  {q_raw}")
+    print(f"  - Original Query: '{q}'")
+    print(f"  - Normalized Query: '{q_norm}'")
+    print(f"  - Hex (Original):  {q_raw_orig}")
+    print(f"  - Hex (Normalized): {q_raw_norm}")
     print("="*60 + "\n")
 
-    q_clean = q.strip()
-
     # 2. Optimization: If already 6-digit code, return immediately
-    if q_clean.isdigit() and len(q_clean) == 6:
-        print(f" -> Found direct match for KR code: {q_clean}")
+    if q_norm.isdigit() and len(q_norm) == 6:
+        print(f" -> Found direct match for KR code: {q_norm}")
         return {
             "status": "success", 
-            "data": [{"code": q_clean, "symbol": q_clean, "name": q_clean, "market": "KR"}]
+            "data": [{"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"}]
         }
     
-    # 3. Try Korea (v3.0.0 Multi-layer)
-    # search_stock_code now handles internal mapping and multiple fallbacks
-    kr_result = search_stock_code(q_clean)
+    # 3. Try Korea (v3.0.1-Fixed Multi-layer)
+    kr_result = search_stock_code(q_norm)
     
     if kr_result:
         if kr_result.isdigit() and len(kr_result) == 6:
-            print(f" -> [SUCCESS] Resolved '{q_clean}' to KR:{kr_result}")
+            print(f" -> [SUCCESS] Resolved '{q_norm}' to KR:{kr_result}")
             return {
                 "status": "success", 
-                "data": [{"code": kr_result, "symbol": kr_result, "name": q_clean, "market": "KR"}]
+                "data": [{"code": kr_result, "symbol": kr_result, "name": q_norm, "market": "KR"}]
             }
 
     # 4. Try Global (Yahoo Finance Lookup)
-    gb_result = search_global_ticker(q_clean)
+    gb_result = search_global_ticker(q_norm)
     if gb_result:
-        print(f" -> [SUCCESS] Resolved '{q_clean}' to Global:{gb_result}")
+        print(f" -> [SUCCESS] Resolved '{q_norm}' to Global:{gb_result}")
         return {
             "status": "success", 
-            "data": [{"code": gb_result, "symbol": gb_result, "name": q_clean, "market": "Global"}]
+            "data": [{"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"}]
         }
 
-    print(f" -> [FAILED] No stock found for: '{q_clean}'")
-    return {"status": "error", "message": f"No stock found for '{q_clean}'"}
+    print(f" -> [FAILED] No stock found for: '{q_norm}'")
+    return {"status": "error", "message": f"No stock found for '{q_norm}'"}
 
 @app.get("/api/quote/{symbol}")
 def read_quote(symbol: str):
