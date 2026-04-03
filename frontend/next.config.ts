@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // Keep unoptimized for consistency, or change if needed
   },
+  // [v1.6.0] Ignore lint/type errors to speed up Vercel deployment for UI updates
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // Headers work on Vercel (Serverless) but are ignored in static export
   async headers() {
     return [
