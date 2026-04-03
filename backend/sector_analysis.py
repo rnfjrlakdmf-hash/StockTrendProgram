@@ -70,8 +70,14 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
 
         ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={code}&sec_cd={target_sec}&data_typ=1"
         ajax_res = session.get(ajax_url, timeout=10)
-        # v1.9.3: Fix encoding issue by manual decoding
-        ajax_content = ajax_res.content.decode('euc-kr', errors='replace')
+        
+        # v1.9.3: Fix mojibake by using correct UTF-8 decoding
+        # WiseReport AJAX responses are now usually UTF-8
+        try:
+            ajax_content = ajax_res.content.decode('utf-8')
+        except UnicodeDecodeError:
+            ajax_content = decode_safe(ajax_res)
+            
         ajax_json = json.loads(ajax_content)
         
         # Step 3: Intelligent Data Mapping
@@ -84,13 +90,18 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         if y_headers:
             yield_rows = []
             for item in yield_data.get("data", []):
-                row = {"name": item.get("NM", "Unknown")}
+                # Use NM if available, else derive from GUBN
+                name = item.get("NM", "Unknown")
+                gubn = str(item.get("GUBN"))
+                if gubn == "1": name = "대상 종목"
+                elif gubn == "2": name = "업종 평균"
+                elif gubn == "3": name = "시장 지수"
+                
+                row = {"name": name}
                 for i, h in enumerate(y_headers):
-                    key = f"FY{i-1}" if i > 0 else "FY_4" # Logic might vary, let's map by sequence
-                    # Actually, WiseReport uses FY_4 to FY1
                     fy_key = f"FY_{4-i}" if i < 5 else f"FY{i-4}"
                     val = item.get(fy_key)
-                    row[h] = float(val) if val is not None else None
+                    row[h] = float(val) if val is not None and val != "" else None
                 yield_rows.append(row)
             
             charts["주가수익률"] = {
@@ -100,9 +111,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             }
 
         # 3-2. Core Metrics (dt3: PER, PBR, ROE, etc.)
+        # ITEM 1: PER, 2: PBR, 3: Revenue Growth, 6: Debt Ratio, 8: Div, 9: ROE, 11: GPM
         metrics_map = {
-            1: "PER", 2: "PBR", 3: "ROE", 9: "부채비율", 
-            6: "영업이익률", 8: "배당수익률"
+            1: "PER", 2: "PBR", 9: "ROE", 6: "부채비율", 
+            11: "영업이익률", 8: "배당수익률", 3: "매출성장률"
         }
         indicators_data = ajax_json.get("dt3", {})
         i_headers = indicators_data.get("yymm", [])
@@ -111,13 +123,18 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             for i_code, m_name in metrics_map.items():
                 m_rows = []
                 for item in indicators_data.get("data", []):
-                    # v1.9.2: AJAX ITEM IDs are often integers
                     if str(item.get("ITEM")) == str(i_code):
-                        row = {"name": item.get("NM", "Unknown")}
+                        name = item.get("NM", "Unknown")
+                        gubn = str(item.get("GUBN"))
+                        if gubn == "1": name = "대상 종목"
+                        elif gubn == "2": name = "업종 평균"
+                        elif gubn == "3": name = "시장 지수"
+
+                        row = {"name": name}
                         for idx, h in enumerate(i_headers):
                             fy_key = f"FY_{4-idx}" if idx < 5 else f"FY{idx-4}"
                             val = item.get(fy_key)
-                            row[h] = float(val) if val is not None else None
+                            row[h] = float(val) if val is not None and val != "" else None
                         m_rows.append(row)
                 
                 if m_rows:

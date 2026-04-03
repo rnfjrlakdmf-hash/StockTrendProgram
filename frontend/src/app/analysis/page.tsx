@@ -797,17 +797,25 @@ function AnalysisContent() {
                                                                     itemStyle={{ fontWeight: 'bold' }}
                                                                 />
                                                                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                                                {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key, idx) => (
-                                                                    <Line 
-                                                                        key={key} 
-                                                                        type="monotone" 
-                                                                        dataKey={key} 
-                                                                        stroke={idx === 0 ? "#6366f1" : idx === 1 ? "#ef4444" : "#22c55e"} 
-                                                                        strokeWidth={idx === 0 ? 4 : 2} 
-                                                                        dot={{ r: idx === 0 ? 4 : 2 }} 
-                                                                        activeDot={{ r: 6 }}
-                                                                    />
-                                                                ))}
+                                                                {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key, idx) => {
+                                                                    const isTarget = key === "대상 종목";
+                                                                    const isIndustry = key === "업종 평균";
+                                                                    const isIndex = key === "시장 지수";
+                                                                    
+                                                                    return (
+                                                                        <Line 
+                                                                            key={key} 
+                                                                            type="monotone" 
+                                                                            dataKey={key} 
+                                                                            name={key}
+                                                                            stroke={isTarget ? "#6366f1" : isIndustry ? "#22c55e" : "#94a3b8"} 
+                                                                            strokeWidth={isTarget ? 4 : 1.5} 
+                                                                            strokeDasharray={isIndex ? "5 5" : "0"}
+                                                                            dot={isTarget ? { r: 5, fill: '#6366f1' } : { r: 0 }} 
+                                                                            activeDot={{ r: 6 }}
+                                                                        />
+                                                                    );
+                                                                })}
                                                             </LineChart>
                                                         </ResponsiveContainer>
                                                     </div>

@@ -110,6 +110,24 @@ const CORE_INDICATORS: Record<string, string[]> = {
     '4': ['총자산회전율', '매출채권회전율', '재고자산회전율', '매입채무회전율']
 };
 
+// [v3.2.0] 초보자용 지표 세부 설명 사전 (위키 한글 힌트)
+const INDICATOR_HINTS: Record<string, string> = {
+    '매출액': '회사가 물건을 팔아서 벌어들인 총 금액이에요. (장사의 크기)',
+    '영업이익': '장사를 통해 실제로 남긴 순수 현금이에요. (진짜 실속)',
+    '매출총이익률': '물건을 팔아 원가를 빼고 얼마나 남겼는지 보여주는 마진율이에요.',
+    '영업이익률': '회사가 얼마나 효율적으로 장사를 잘했는지 보여주는 핵심 효율 지표예요.',
+    '순이익률': '각종 세금과 비용을 다 빼고 최종적으로 주머니에 남은 돈의 비율이에요.',
+    'ROE': '내 돈(자본)으로 얼마나 알짜 경영을 했는지 알려주는 수익성 지표예요.',
+    'ROA': '전체 자산(내 돈 + 빌린 돈)을 얼마나 잘 굴려서 돈을 벌었는지 보여줍니다.',
+    '부채비율': '회사가 빌린 돈이 내 돈 대비 몇 %인지 나타내요. (낮을수록 안전)',
+    '유동비율': '1년 내에 갚아야 할 빚보다 당장 현금화할 수 있는 자산이 얼마나 많은지 보여요.',
+    '이자보상배율': '장사해서 번 돈으로 대출 이자를 얼마나 넉넉히 낼 수 있는지 보여줍니다.',
+    'PER': '현재 주가가 이익에 비해 얼마나 비싼지/저렴한지 나타내는 척도예요.',
+    'PBR': '회사가 가진 자산 가치 대비 주가가 어느 수준인지 보여줍니다.',
+    '배당수익률': '주식을 가지고 있을 때 보너스로 받는 배당금이 주가의 몇 %인지 나타내요.',
+    'EPS': '주식 1주당 얼마의 이익을 냈는지 보여주는 단위예요.'
+};
+
 export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Props) {
     const [freq, setFreq] = useState('0'); // 0: 연간, 1: 분기
     const [finGubun, setFinGubun] = useState('MAIN'); // Default to MAIN
@@ -320,12 +338,13 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <table className="w-full text-left border-collapse min-w-[800px]" translate="no">
                                 <thead>
                                     <tr className="bg-white/10 border-b border-white/10">
-                                        <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no">항목</th>
+                                        <th className="p-4 text-xs font-black text-slate-400 border-r border-white/5 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no">항목</th>
                                         {Array.isArray(data.years) && data.years.map(y => (
                                             <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no">{y}</th>
                                         ))}
+                                        {showEasy && <th className="p-4 text-xs font-black text-emerald-400 text-center bg-emerald-500/5">쉽게 풀이</th>}
                                     </tr>
-                                </thead>
+</thead>
                                 <tbody>
                                     {filteredRows.map((row, idx) => (
                                         <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
@@ -345,6 +364,11 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                                     </td>
                                                 );
                                             })}
+                                            {showEasy && (
+                                                <td className="p-4 text-[11px] font-medium text-emerald-400/80 bg-emerald-500/5 italic leading-snug max-w-[200px]">
+                                                    {INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
