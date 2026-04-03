@@ -8,7 +8,7 @@ import urllib.parse
 from korea_data import HEADER, decode_safe
 from turbo_engine import turbo_cache
 
-@turbo_cache(ttl_seconds=3600)
+# # @turbo_cache(ttl_seconds=3600)
 def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Dict[str, Any]:
     """
     [v2.1.0] TurboQuant Intelligent Sector Scraper (Elite Precision)
