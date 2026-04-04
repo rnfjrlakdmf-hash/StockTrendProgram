@@ -16,3 +16,4 @@ pydantic-settings
 apscheduler
 pyupbit
 pytz
+GoogleNews

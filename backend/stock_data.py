@@ -10,7 +10,11 @@ import requests
 import os
 import yfinance as yf
 import pandas as pd
-from GoogleNews import GoogleNews
+try:
+    from GoogleNews import GoogleNews
+except ImportError:
+    GoogleNews = None
+    print("⚠️ [Warning] GoogleNews package not found. News fetch may be limited.")
 from deep_translator import GoogleTranslator
 
 from korea_data import (
@@ -815,6 +819,8 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
     """
     try:
         def _exec_google_search():
+            if GoogleNews is None:
+                return []
             gn = GoogleNews(lang=lang, region=region, period=period)
             gn.search(query)
             return gn.results()
