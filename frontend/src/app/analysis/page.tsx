@@ -57,6 +57,7 @@ function AnalysisContent() {
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
+    const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
     
     // [v2.1.0] Sector Analysis Sub-Modes State
     const [sectorSubModes, setSectorSubModes] = useState<Record<string, number>>({
@@ -162,19 +163,24 @@ function AnalysisContent() {
         finally { setFinancialLoading(false); }
     };
 
-    const fetchSectorAnalysis = async (sym: string, sectorId: string | null = null) => {
+    const fetchSectorAnalysis = async (sym: string, sector_id: string | null = null) => {
         if (!sym) return;
         setSectorLoading(true);
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
-            if (sectorId) url.searchParams.append("sector_id", sectorId);
+            if (sector_id) url.searchParams.append("sector_id", sector_id);
             // [v2.4.0] Diamond Forced Cache Invalidation
             url.searchParams.append("v", "2.4.0");
             url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
             const json = await res.json();
-            if (json.status === "success") setSectorData(json.data);
+            if (json.status === "success") {
+                setSectorData(json.data);
+                // [v2.4.1] Sync selected sector from response
+                const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
+                if (activeId) setSelectedSectorId(activeId);
+            }
         } catch (err) { console.error(err); }
         finally { setSectorLoading(false); }
     };
@@ -778,10 +784,10 @@ function AnalysisContent() {
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
                                                     <select 
-                                                        value={sectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
+                                                        value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
                                                         onChange={(e) => {
                                                             const newId = e.target.value;
-                                                            setSectorId(newId);
+                                                            setSelectedSectorId(newId);
                                                             fetchSectorAnalysis(secSymbol || symbol, newId);
                                                         }}
                                                         className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
