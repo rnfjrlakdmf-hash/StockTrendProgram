@@ -11,6 +11,10 @@ def get_sector_analysis_data(symbol, sector_id):
     Endpoint: cF9001.aspx (Industry Comparison)
     """
     try:
+        # sector_id가 None이거나 'None' 문자열인 경우 처리
+        if not sector_id or sector_id == "None":
+            sector_id = ""
+            
         # 1. Fetch Industry Comparison Data (cF9001.aspx)
         ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={symbol}&sec_cd={sector_id}&data_typ=1"
         

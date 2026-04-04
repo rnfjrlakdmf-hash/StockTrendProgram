@@ -84,9 +84,8 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # Vercel 모든 서브도메인 허용
-    allow_credentials=True,
+    allow_origins=["*"], # 임시 전체 허용하여 통신 차단 해결
+    allow_credentials=False, # allow_origins = ["*"] 시 False여야 함
     allow_methods=["*"],
     allow_headers=["*"],
 )
