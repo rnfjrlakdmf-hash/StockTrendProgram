@@ -125,5 +125,16 @@ def get_sector_analysis_data(symbol, sector_id):
         }
 
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        return {"error": str(e)}
+        import traceback
+        logger.error(f"Critical error in get_sector_analysis_data: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "status": "error",
+            "message": str(e),
+            "data": {
+                "overview": {"name": "데이터 오류", "symbol": symbol},
+                "charts": {},
+                "summary_table": [],
+                "compare_sectors": []
+            }
+        }

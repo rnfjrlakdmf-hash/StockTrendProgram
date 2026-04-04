@@ -170,14 +170,14 @@ function AnalysisContent() {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
             // [v2.4.0] Diamond Forced Cache Invalidation
-            url.searchParams.append("v", "2.4.0");
+            url.searchParams.append("v", "2.6.0");
             url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
                 setSectorData(json.data);
-                // [v2.4.1] Diamond Fixed: Keep user's selected sector even if server response differs
+                // [v2.6.0] Global-Sync Fixed: Keep user's selected sector even if server response differs
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
@@ -834,7 +834,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.5.7 (Force-Push)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.6.0 (Global-Sync)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
