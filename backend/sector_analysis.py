@@ -53,6 +53,8 @@ def get_sector_analysis_data(symbol, sector_id):
                 elif "배당성향" in nm: m_key = "payout_ratio"
                 elif "매출액증가율" in nm: m_key = "sales_growth"
                 elif "영업이익증가율" in nm: m_key = "op_growth"
+                elif "배당수익률" in nm: m_key = "div_yield"
+                elif "주가수익률" in nm: m_key = "주가수익률"
                 elif "영업이익률" in nm: m_key = "op_margin"
                 
                 if m_key:
@@ -113,15 +115,18 @@ def get_sector_analysis_data(symbol, sector_id):
             summary_table = [{"name": "대상 종목", "per": 0.0, "pbr": 0.0}]
 
         return {
-            "overview": {
-                "sector_name": overview.get("SEC_NM_K", "Unknown"),
-                "stock_count": overview.get("SEC_NM_K_CNT", "0"),
-                "sector_return_1d": overview.get("SEC_RTN_1D", "0"),
-                "sector_return_1m": overview.get("SEC_RTN_1M", "0")
-            },
-            "charts": charts,
-            "summary_table": summary_table,
-            "raw_headers": i_headers
+            "status": "success",
+            "data": {
+                "overview": {
+                    "sector_name": overview.get("SEC_NM_K", "Unknown"),
+                    "stock_count": overview.get("SEC_NM_K_CNT", "0"),
+                    "sector_return_1d": overview.get("SEC_RTN_1D", "0"),
+                    "sector_return_1m": overview.get("SEC_RTN_1M", "0")
+                },
+                "charts": charts,
+                "summary_table": summary_table,
+                "raw_headers": i_headers
+            }
         }
 
     except Exception as e:
@@ -132,9 +137,9 @@ def get_sector_analysis_data(symbol, sector_id):
             "status": "error",
             "message": str(e),
             "data": {
-                "overview": {"name": "데이터 오류", "symbol": symbol},
+                "overview": {"sector_name": "데이터 오류", "stock_count": "0"},
                 "charts": {},
                 "summary_table": [],
-                "compare_sectors": []
+                "raw_headers": []
             }
         }

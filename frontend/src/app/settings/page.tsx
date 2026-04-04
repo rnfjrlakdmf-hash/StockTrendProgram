@@ -271,7 +271,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="p-6 text-center text-gray-500 text-xs">
-                            <p>StockTrend Pro v1.0.0</p>
+                            <p className="text-indigo-400 font-bold">Sector Trend v2.6.0 (Unified-Release)</p>
                             <p className="mt-1">© 2026 Gemini Antigravity. All rights reserved.</p>
                             {/* Hint for Admin Mode */}
                             <p className="mt-4 opacity-10 hover:opacity-100 transition-opacity cursor-pointer">

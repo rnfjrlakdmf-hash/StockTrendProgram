@@ -70,7 +70,7 @@ from auth import router as auth_router
 
 app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 
-# Force Reload Trigger: v2.6.0-Final-CORS-Resolved
+# Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
 origins = [
     "http://localhost:3000",
@@ -78,9 +78,8 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "https://stock-trend-program.vercel.app",
-    "https://stock-trend-program.vercel.app/",
-    "http://stock-trend-program.vercel.app",
-    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app"
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app"
 ]
 
 app.add_middleware(
@@ -281,19 +280,19 @@ def read_stock_financials(symbol: str):
 @app.get("/api/sector-analysis/{symbol}")
 def read_sector_analysis(symbol: str, sector_id: Optional[str] = None):
     """
-    [v1.7.0] 네이버 금융 기반 섹터 분석 데이터 반환 (Interactive)
-    sector_id 파라미터가 있을 경우 해당 업종을 기준으로 데이터 재구축
+    [v2.6.0] 네이버 금융 기반 섹터 분석 데이터 반환 (Interactive)
     """
     cache_key = f"sector_analysis_{symbol}_{sector_id}"
     cached = turbo_engine.get_cache(cache_key)
     if cached:
-        return {"status": "success", "data": cached, "turbo": True}
+        return cached # Already contains status: success
         
     data = get_sector_analysis_data(symbol, sector_id)
     if data and data.get("status") == "success":
         turbo_engine.set_cache(cache_key, data)
+        return data
         
-    return {"status": "success", "data": data}
+    return data # Success or Error case from sector_analysis.py
 
 @app.get("/api/stock/{symbol}/dividends")
 @turbo_cache(ttl_seconds=3600)
