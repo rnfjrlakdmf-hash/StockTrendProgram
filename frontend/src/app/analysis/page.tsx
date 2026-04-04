@@ -984,7 +984,10 @@ function AnalysisContent() {
                                                                     {row.debt_ratio ? `${row.debt_ratio.toFixed(2)}%` : (row.부채비율 ? `${row.부채비율.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-indigo-400">
-                                                                    {row.op_margin ? `${row.op_margin.toFixed(2)}%` : (row.영업이익률 ? `${row.영업이익률.toFixed(2)}%` : '-')}
+                                                                    {(() => {
+                                                                        const val = row.op_margin ?? row.gross_margin ?? row.net_margin ?? row.영업이익률;
+                                                                        return val ? `${val.toFixed(2)}%` : '-';
+                                                                    })()}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-amber-400">
                                                                     {row.sales_growth ? `${row.sales_growth.toFixed(2)}%` : (row.매출액증가율 ? `${row.매출액증가율.toFixed(2)}%` : '-')}
