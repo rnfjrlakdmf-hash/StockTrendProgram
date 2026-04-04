@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] dart multi-year final - 2026-03-06
+# [Deployment Trigger] sector-fix-final - 2026-04-05
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
