@@ -157,10 +157,13 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         if i_headers:
             item_groups = {}
             for item in indicators_data.get("data", []):
-                # [Fix] Critical: Only pick SEQ 1 (Ratio/Multiple) for all metrics
-                if int(item.get("SEQ", 0)) != 1: continue
-                
+                # [Fix] Critical: Support both SEQ 1 (Ratio/Multiple) and SEQ 2 (Growth/Margin variants)
+                seq = int(item.get("SEQ", 0))
                 i_code = int(item.get("ITEM", 0))
+                
+                # Allow SEQ 1 for most metrics, SEQ 2 for op_growth (4)
+                if seq not in [1, 2]: continue
+                
                 if i_code not in item_groups: item_groups[i_code] = []
                 item_groups[i_code].append(item)
                 
