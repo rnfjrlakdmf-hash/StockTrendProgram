@@ -3,8 +3,13 @@ import asyncio
 import json
 import logging
 import time
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
+try:
+    from Crypto.Cipher import AES
+    from Crypto.Util.Padding import unpad
+except ImportError:
+    AES = None
+    unpad = None
+    print("⚠️ [Warning] Crypto(pycryptodome) package not found. KIS WebSocket encryption will be disabled.")
 import base64
 
 # Logger setup
