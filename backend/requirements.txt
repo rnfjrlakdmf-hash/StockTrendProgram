@@ -1,3 +1,4 @@
+# Build Trigger: v2.6.0-global-sync-final
 fastapi
 uvicorn[standard]
 pandas
@@ -8,12 +9,10 @@ beautifulsoup4
 yfinance
 plotly
 python-dotenv
-GoogleNews
-scipy
-firebase-admin
-pycryptodome
 aiohttp
-websockets
-selenium
-webdriver_manager
-deep-translator
+aiofiles
+pydantic
+pydantic-settings
+apscheduler
+pyupbit
+pytz
