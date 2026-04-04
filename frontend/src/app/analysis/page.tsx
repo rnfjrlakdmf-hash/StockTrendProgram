@@ -777,8 +777,11 @@ function AnalysisContent() {
                                     <div className="bg-gradient-to-br from-blue-900/30 to-black border border-blue-500/30 rounded-3xl p-6">
                                         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                                             <div>
-                                                <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
-                                                <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다.</p>
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">V2.6.0 LIVE</span>
+                                                </div>
+                                                <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">

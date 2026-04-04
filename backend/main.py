@@ -70,7 +70,7 @@ from auth import router as auth_router
 
 app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 
-# Force Reload Trigger 7
+# Force Reload Trigger: v2.6.0-Final-CORS-Resolved
 # CORS 설정 (Frontend인 localhost:3000 에서의 접근 허용)
 origins = [
     "http://localhost:3000",
@@ -79,15 +79,13 @@ origins = [
     "http://127.0.0.1:3001",
     "https://stock-trend-program.vercel.app",
     "https://stock-trend-program.vercel.app/",
-    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stocktrendprogram-production.up.railway.app",
-    "https://stock-server-rnfjr.up.railway.app",
-    "https://stock-server-rnfjr.up.railway.app/"
+    "http://stock-trend-program.vercel.app",
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
