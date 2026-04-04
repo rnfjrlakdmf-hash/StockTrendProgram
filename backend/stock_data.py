@@ -15,7 +15,11 @@ try:
 except ImportError:
     GoogleNews = None
     print("⚠️ [Warning] GoogleNews package not found. News fetch may be limited.")
-from deep_translator import GoogleTranslator
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    GoogleTranslator = None
+    print("⚠️ [Warning] deep_translator package not found. Translation will be disabled.")
 
 from korea_data import (
     get_korean_name, get_naver_flash_news, get_naver_stock_info, 
