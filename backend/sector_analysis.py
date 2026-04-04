@@ -179,7 +179,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
 
                     row = {"name": name}
                     for idx, h in enumerate(i_headers):
-                        fy_key = f"FY_{4-idx}" if idx < 4 else f"FY{idx-4}"
+                        # Naver AJAX keys for 5 columns: FY_3, FY_2, FY_1, FY0, FY1
+                        # idx=0 -> FY_3, idx=1 -> FY_2, idx=2 -> FY_1, idx=3 -> FY0, idx=4 -> FY1
+                        fy_offset = idx - 3
+                        fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
                         val = item.get(fy_key)
                         row[h] = float(val) if val is not None and val != "" else None
                     m_rows.append(row)
