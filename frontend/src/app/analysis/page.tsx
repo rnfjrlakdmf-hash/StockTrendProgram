@@ -834,7 +834,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.4.1 (Diamond-Fix)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.5.4 (Diamond-Fix)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
@@ -882,7 +882,7 @@ function AnalysisContent() {
                                                                                 tickFormatter={(val) => {
                                                                                     if (val === 0) return "0";
                                                                                     // High Precision Unit Logic
-                                                                                    const isRatio = activeItemName.includes("PER") || activeItemName.includes("PBR");
+                                                                                    const isRatio = ['PER', 'PBR', 'PSR', 'EV/EBITDA'].some(k => activeItemName.toUpperCase().includes(k.toUpperCase()));
                                                                                     return `${val}${isRatio ? "x" : "%"}`;
                                                                                 }}
                                                                             />

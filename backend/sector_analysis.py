@@ -142,13 +142,16 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         # 3-3. Comprehensive Data Extraction (dt3)
         # [v2.5.0] Royal Final METRICS_MAP (Enhanced Alphanumeric Keys)
         METRICS_MAP = {
-            1: "per", 18: "fwd_per", 
-            2: "pbr", 20: "fwd_pbr",
-            6: "debt_ratio", 14: "current_ratio", 
-            9: "roe", 10: "roa", 
-            8: "div_yield", 15: "payout_ratio",
-            3: "sales_growth", 4: "op_growth", 5: "net_growth",
-            11: "gross_margin", 12: "op_margin", 13: "net_margin"
+            # [Fix] ITEM IDs for cF9001.aspx (Industry Comparison) are different!
+            # 4: PER, 5: PBR, 6: DebtRatio, 7: ROE, 8: Payout, 11: OPMargin, 13: OP_Growth, 15: CurrRatio, 18: FwdPER
+            1: "eps", 2: "bps",
+            4: "per", 18: "fwd_per", 
+            5: "pbr", 20: "fwd_pbr",
+            6: "debt_ratio", 15: "current_ratio", 
+            7: "roe", 10: "roa", 
+            8: "payout_ratio",
+            12: "sales_growth", 13: "op_growth", 14: "net_growth",
+            11: "op_margin", 17: "gross_margin", 19: "net_margin"
         }
         
         indicators_data = ajax_json.get("dt3", {})
@@ -157,11 +160,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         if i_headers:
             item_groups = {}
             for item in indicators_data.get("data", []):
-                # [Fix] Critical: Support both SEQ 1 (Ratio/Multiple) and SEQ 2 (Growth/Margin variants)
                 seq = int(item.get("SEQ", 0))
                 i_code = int(item.get("ITEM", 0))
                 
-                # Allow SEQ 1 for most metrics, SEQ 2 for op_growth (4)
+                # Permissive but careful filtering for industry comparison
                 if seq not in [1, 2]: continue
                 
                 if i_code not in item_groups: item_groups[i_code] = []
@@ -194,13 +196,19 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                         "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in i_headers]
                     }
                     
-                    latest_h = i_headers[-1]
                     for r in m_rows:
                         s_entry = next((s for s in summary_table if s["name"] == r["name"]), None)
                         if not s_entry:
                             s_entry = {"name": r["name"]}
                             summary_table.append(s_entry)
-                        s_entry[m_name] = r.get(latest_h)
+                        
+                        # [Fix] Find the latest non-null value from headers reversed (latest likely 2025/12 E)
+                        latest_val = None
+                        for h in reversed(i_headers):
+                            if r.get(h) is not None:
+                                latest_val = r.get(h)
+                                break
+                        s_entry[m_name] = latest_val
 
         if not summary_table:
             summary_table = [{"name": symbol, "PER": 0.0, "PBR": 0.0}]
