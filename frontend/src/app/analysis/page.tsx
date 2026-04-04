@@ -177,9 +177,9 @@ function AnalysisContent() {
             const json = await res.json();
             if (json.status === "success") {
                 setSectorData(json.data);
-                // [v2.4.1] Sync selected sector from response
+                // [v2.4.1] Diamond Fixed: Keep user's selected sector even if server response differs
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
-                if (activeId) setSelectedSectorId(activeId);
+                if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
         } catch (err) { console.error(err); }
         finally { setSectorLoading(false); }
@@ -809,7 +809,7 @@ function AnalysisContent() {
                                                 
                                                 // Category Definitions
                                                 const categories = [
-                                                    { id: "returns", title: "주가 수익률 분석", items: ["주가수익률", "주가수익률_연간"], icon: TrendingUp },
+                                                    { id: "returns", title: "주가 수익률 분석", items: ["주가수익률", "주가수익률_연간"], icon: TrendingUp, labels: ["최근 수익률", "연간 수익률"] },
                                                     { id: "dividend", title: "배당 수익/성향", items: ["div_yield", "payout_ratio"], icon: Coins, labels: ["배당수익률", "배당성향"] },
                                                     { id: "per", title: "PER 지표 분석", items: ["per", "fwd_per"], icon: BarChart3, labels: ["PER", "Fwd. 12M PER 추이"] },
                                                     { id: "pbr", title: "PBR 지표 분석", items: ["pbr", "fwd_pbr"], icon: BarChart3, labels: ["PBR", "Fwd. 12M PBR 추이"] },
@@ -824,8 +824,6 @@ function AnalysisContent() {
                                                     const activeItemName = cat.items[subMode - 1] || cat.items[0];
                                                     const data = sectorData.charts[activeItemName];
                                                     
-                                                    if (!data) return null;
-
                                                     return (
                                                         <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
                                                             <div className="flex flex-col gap-4 mb-5">
@@ -836,7 +834,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.4.0 (Diamond Fix Edition)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.4.1 (Diamond-Fix)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
@@ -861,66 +859,74 @@ function AnalysisContent() {
                                                                 </div>
                                                             </div>
                                                             <div className="h-[260px] w-full">
-                                                                <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart 
-                                                                        data={data.chart_data} 
-                                                                        margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-                                                                    >
-                                                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                        <XAxis 
-                                                                            dataKey="period" 
-                                                                            stroke="#64748b" 
-                                                                            fontSize={10} 
-                                                                            tickLine={false} 
-                                                                            axisLine={false}
-                                                                            minTickGap={activeItemName.includes("수익률") ? 80 : 40}
-                                                                        />
-                                                                        <YAxis 
-                                                                            stroke="#64748b" 
-                                                                            fontSize={10} 
-                                                                            tickLine={false} 
-                                                                            axisLine={false} 
-                                                                            tickFormatter={(val) => {
-                                                                                if (val === 0) return "0";
-                                                                                // High Precision Unit Logic
-                                                                                const isRatio = activeItemName.includes("PER") || activeItemName.includes("PBR");
-                                                                                return `${val}${isRatio ? "x" : "%"}`;
-                                                                            }}
-                                                                        />
-                                                                        <Tooltip 
-                                                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-                                                                            itemStyle={{ fontWeight: 'bold' }}
-                                                                            formatter={(val: any) => {
-                                                                                const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
-                                                                                return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
-                                                                            }}
-                                                                        />
-                                                                        <Legend 
-                                                                            verticalAlign="top" 
-                                                                            align="left" 
-                                                                            iconType="circle" 
-                                                                            wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingBottom: '20px', marginLeft: '0px' }}
-                                                                        />
-                                                                        {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
-                                                                            const isTarget = key === "대상 종목";
-                                                                            const isIndustry = key === "업종 평균";
-                                                                            
-                                                                            return (
-                                                                                <Line 
-                                                                                    key={key} 
-                                                                                    type="monotone" 
-                                                                                    dataKey={key} 
-                                                                                    name={key}
-                                                                                    stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"} 
-                                                                                    strokeWidth={isTarget ? 3.5 : 1.5} 
-                                                                                    dot={isTarget ? { r: 3, fill: '#818cf8' } : false} 
-                                                                                    activeDot={{ r: 6 }}
-                                                                                    animationDuration={1200}
-                                                                                />
-                                                                            );
-                                                                        })}
-                                                                    </LineChart>
-                                                                </ResponsiveContainer>
+                                                                {data ? (
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <LineChart 
+                                                                            data={data.chart_data} 
+                                                                            margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+                                                                        >
+                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                                                            <XAxis 
+                                                                                dataKey="period" 
+                                                                                stroke="#64748b" 
+                                                                                fontSize={10} 
+                                                                                tickLine={false} 
+                                                                                axisLine={false}
+                                                                                minTickGap={activeItemName.includes("수익률") ? 80 : 40}
+                                                                            />
+                                                                            <YAxis 
+                                                                                stroke="#64748b" 
+                                                                                fontSize={10} 
+                                                                                tickLine={false} 
+                                                                                axisLine={false} 
+                                                                                tickFormatter={(val) => {
+                                                                                    if (val === 0) return "0";
+                                                                                    // High Precision Unit Logic
+                                                                                    const isRatio = activeItemName.includes("PER") || activeItemName.includes("PBR");
+                                                                                    return `${val}${isRatio ? "x" : "%"}`;
+                                                                                }}
+                                                                            />
+                                                                            <Tooltip 
+                                                                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                                                                                itemStyle={{ fontWeight: 'bold' }}
+                                                                                formatter={(val: any) => {
+                                                                                    const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
+                                                                                    return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
+                                                                                }}
+                                                                            />
+                                                                            <Legend 
+                                                                                verticalAlign="top" 
+                                                                                align="left" 
+                                                                                iconType="circle" 
+                                                                                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingBottom: '20px', marginLeft: '0px' }}
+                                                                            />
+                                                                            {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
+                                                                                const isTarget = key === "대상 종목";
+                                                                                const isIndustry = key === "업종 평균";
+                                                                                
+                                                                                return (
+                                                                                    <Line 
+                                                                                        key={key} 
+                                                                                        type="monotone" 
+                                                                                        dataKey={key} 
+                                                                                        name={key}
+                                                                                        stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"} 
+                                                                                        strokeWidth={isTarget ? 3.5 : 1.5} 
+                                                                                        dot={isTarget ? { r: 3, fill: '#818cf8' } : false} 
+                                                                                        activeDot={{ r: 6 }}
+                                                                                        animationDuration={1200}
+                                                                                    />
+                                                                                );
+                                                                            })}
+                                                                        </LineChart>
+                                                                    </ResponsiveContainer>
+                                                                ) : (
+                                                                    <div className="h-full flex flex-col items-center justify-center text-gray-700 bg-white/5 rounded-2xl border border-white/5 border-dashed">
+                                                                        <Info className="w-8 h-8 mb-3 opacity-20" />
+                                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">No Data Available for {activeItemName}</p>
+                                                                        <p className="text-[9px] text-gray-600 mt-1">다른 지표 버튼(숫자)을 눌러 다른 데이터를 확인해 보세요</p>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );

@@ -56,6 +56,11 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                         "id": v, "name": n,
                         "selected": "selected" in opt.attrs or opt.get("selected") == "selected"
                     })
+        
+        # [v2.4.1] Diamond Fix: Force specific sector as selected if requested
+        if sector_id:
+            for s in compare_sectors:
+                s["selected"] = (s["id"] == sector_id)
 
         # Step 2: Fetch Multi-proc AJAX Data
         target_sec = sector_id
@@ -135,7 +140,7 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                 s_entry["주가수익률"] = r.get(latest_y_h)
 
         # 3-3. Comprehensive Data Extraction (dt3)
-        # [v2.4.0] Diamond Fix METRICS_MAP (Standard Alphanumeric Keys for UI Stability)
+        # [v2.5.0] Royal Final METRICS_MAP (Enhanced Alphanumeric Keys)
         METRICS_MAP = {
             1: "per", 18: "fwd_per", 
             2: "pbr", 20: "fwd_pbr",
@@ -214,7 +219,7 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
             "charts": cleaned_charts,
             "summary_table": summary_table,
-            "turbo_version": "2.4.0 (Diamond-Fix)",
+            "turbo_version": "2.5.0 (Royal-Final)",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
