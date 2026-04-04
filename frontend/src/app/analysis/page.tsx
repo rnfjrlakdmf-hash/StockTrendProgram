@@ -168,8 +168,8 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sectorId) url.searchParams.append("sector_id", sectorId);
-            // [v2.3.0] Platinum Forced Cache Invalidation
-            url.searchParams.append("v", "2.3.0");
+            // [v2.4.0] Diamond Forced Cache Invalidation
+            url.searchParams.append("v", "2.4.0");
             url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
@@ -778,8 +778,12 @@ function AnalysisContent() {
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
                                                     <select 
-                                                        value={(sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
-                                                        onChange={(e) => fetchSectorAnalysis(secSymbol || symbol, e.target.value)}
+                                                        value={sectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
+                                                        onChange={(e) => {
+                                                            const newId = e.target.value;
+                                                            setSectorId(newId);
+                                                            fetchSectorAnalysis(secSymbol || symbol, newId);
+                                                        }}
                                                         className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                                                     >
                                                         {(sectorData.compare_sectors || []).map((s: any) => (
@@ -800,13 +804,13 @@ function AnalysisContent() {
                                                 // Category Definitions
                                                 const categories = [
                                                     { id: "returns", title: "주가 수익률 분석", items: ["주가수익률", "주가수익률_연간"], icon: TrendingUp },
-                                                    { id: "dividend", title: "배당 수익/성향", items: ["배당수익률", "배당성향"], icon: Coins },
-                                                    { id: "per", title: "PER 지표 분석", items: ["PER", "Fwd. 12M PER 추이"], icon: BarChart3 },
-                                                    { id: "pbr", title: "PBR 지표 분석", items: ["PBR", "Fwd. 12M PBR 추이"], icon: BarChart3 },
-                                                    { id: "roe", title: "효율성 (ROE/ROA)", items: ["ROE", "ROA"], icon: Activity },
-                                                    { id: "stability", title: "안정성 (부채/유동)", items: ["부채비율", "유동비율"], icon: Shield },
-                                                    { id: "growth", title: "성장성 (매출/이익)", items: ["매출액증가율", "영업이익증가율", "순이익증가율"], icon: ArrowUpRight },
-                                                    { id: "margin", title: "이익률 (총/영업/순)", items: ["매출총이익률", "영업이익률", "순이익률"], icon: PieChart }
+                                                    { id: "dividend", title: "배당 수익/성향", items: ["div_yield", "payout_ratio"], icon: Coins, labels: ["배당수익률", "배당성향"] },
+                                                    { id: "per", title: "PER 지표 분석", items: ["per", "fwd_per"], icon: BarChart3, labels: ["PER", "Fwd. 12M PER 추이"] },
+                                                    { id: "pbr", title: "PBR 지표 분석", items: ["pbr", "fwd_pbr"], icon: BarChart3, labels: ["PBR", "Fwd. 12M PBR 추이"] },
+                                                    { id: "roe", title: "효율성 (ROE/ROA)", items: ["roe", "roa"], icon: Activity, labels: ["ROE", "ROA"] },
+                                                    { id: "stability", title: "안정성 (부채/유동)", items: ["debt_ratio", "current_ratio"], icon: Shield, labels: ["부채비율", "유동비율"] },
+                                                    { id: "growth", title: "성장성 (매출/이익)", items: ["sales_growth", "op_growth", "net_growth"], icon: ArrowUpRight, labels: ["매출액증가율", "영업이익증가율", "순이익증가율"] },
+                                                    { id: "margin", title: "이익률 (총/영업/순)", items: ["gross_margin", "op_margin", "net_margin"], icon: PieChart, labels: ["매출총이익률", "영업이익률", "순이익률"] }
                                                 ];
 
                                                 return categories.map((cat) => {
@@ -825,8 +829,8 @@ function AnalysisContent() {
                                                                             <cat.icon className="w-4 h-4 text-blue-400" />
                                                                         </div>
                                                                         <div>
-                                                                            <h4 className="text-sm font-black text-white leading-none mb-1">{activeItemName} 분석</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.3.0 (Platinum Edition)</p>
+                                                                            <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.4.0 (Diamond Fix Edition)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}

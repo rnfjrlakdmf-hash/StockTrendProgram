@@ -135,15 +135,15 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                 s_entry["주가수익률"] = r.get(latest_y_h)
 
         # 3-3. Comprehensive Data Extraction (dt3)
-        # [v2.3.0] Ultimate Platinum METRICS_MAP (Exact naming match with User Request)
+        # [v2.4.0] Diamond Fix METRICS_MAP (Standard Alphanumeric Keys for UI Stability)
         METRICS_MAP = {
-            1: "PER", 18: "Fwd. 12M PER 추이", 
-            2: "PBR", 20: "Fwd. 12M PBR 추이",
-            6: "부채비율", 14: "유동비율", 
-            9: "ROE", 10: "ROA", 
-            8: "배당수익률", 15: "배당성향",
-            3: "매출액증가율", 4: "영업이익증가율", 5: "순이익증가율",
-            11: "매출총이익률", 12: "영업이익률", 13: "순이익률"
+            1: "per", 18: "fwd_per", 
+            2: "pbr", 20: "fwd_pbr",
+            6: "debt_ratio", 14: "current_ratio", 
+            9: "roe", 10: "roa", 
+            8: "div_yield", 15: "payout_ratio",
+            3: "sales_growth", 4: "op_growth", 5: "net_growth",
+            11: "gross_margin", 12: "op_margin", 13: "net_margin"
         }
         
         indicators_data = ajax_json.get("dt3", {})
@@ -214,7 +214,7 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
             "charts": cleaned_charts,
             "summary_table": summary_table,
-            "turbo_version": "2.3.0 (Platinum-Purged)",
+            "turbo_version": "2.4.0 (Diamond-Fix)",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
