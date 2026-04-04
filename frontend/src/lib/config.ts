@@ -23,7 +23,7 @@ if (process.env.NEXT_PUBLIC_API_URL) {
             apiBase = "http://localhost:8000";
         } else {
             // [Fix] Production Backend URL (Railway - Specific App)
-            apiBase = "https://stock-server-rnfjr.up.railway.app";
+            apiBase = "https://stocktrendprogram-production.up.railway.app";
         }
     }
     console.log(`[Config] Running on ${isAndroid ? 'Android' : 'Web'}, API URL: ${apiBase}`);

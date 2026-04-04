@@ -285,7 +285,14 @@ function AnalysisContent() {
                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Quick Set</span>
                         </div>
                     </div>
-                    <p className="text-center text-[10px] text-gray-500 mt-3 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
+                    <div className="flex justify-between items-center mb-3">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
+                        <div className="flex items-center gap-2">
+                            <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
+                                Sector Trend v2.6.0 (Unified-Release)
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 2. Stock Header & Mode Toggle */}
@@ -779,7 +786,7 @@ function AnalysisContent() {
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">V2.6.0 LIVE</span>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">Sector Trend v2.6.0 (Unified-Release)</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
@@ -1018,8 +1025,13 @@ function AnalysisContent() {
                             ) : (
                                 <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                     <PieChart className="w-12 h-12 text-blue-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500">종목코드를 입력하면 업종/섹터 비교 분석을 시작합니다</p>
-                                    <p className="text-xs text-gray-600 mt-2">주가수익률 · 배당 · PER · PBR · ROE 추이</p>
+                                    <p className="text-gray-500 font-bold">종목코드를 입력하면 업종/섹터 비교 분석을 시작합니다</p>
+                                    <p className="text-xs text-gray-600 mt-2 font-medium">대상 종목 vs 업종 평균 vs 시장 지수 (3-Way 데이터 통합)</p>
+                                    <div className="mt-4 flex justify-center gap-4">
+                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div> 대상 종목</div>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> 업종 평균</div>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div> 시장 지수</div>
+                                    </div>
                                 </div>
                             )}
                         </div>

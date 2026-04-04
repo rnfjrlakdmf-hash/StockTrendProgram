@@ -71,7 +71,7 @@ from auth import router as auth_router
 app = FastAPI(title="AI Stock Analyst", version="1.0.0")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Resolved
-# CORS 설정 (Frontend인 localhost:3000 에서의 접근 허용)
+# CORS 설정 (Vercel 및 Local 개발 환경 허용)
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -86,6 +86,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # Vercel 모든 서브도메인 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
