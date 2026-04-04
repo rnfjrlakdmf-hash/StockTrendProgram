@@ -135,10 +135,10 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
                 s_entry["주가수익률"] = r.get(latest_y_h)
 
         # 3-3. Comprehensive Data Extraction (dt3)
-        # [v2.2.0] Standardized METRICS_MAP (No dots/spaces in Keys for button stability)
+        # [v2.3.0] Ultimate Platinum METRICS_MAP (Exact naming match with User Request)
         METRICS_MAP = {
-            1: "PER", 18: "Fwd_12M_PER", 
-            2: "PBR", 20: "Fwd_12M_PBR",
+            1: "PER", 18: "Fwd. 12M PER 추이", 
+            2: "PBR", 20: "Fwd. 12M PBR 추이",
             6: "부채비율", 14: "유동비율", 
             9: "ROE", 10: "ROA", 
             8: "배당수익률", 15: "배당성향",
@@ -194,14 +194,27 @@ def get_sector_analysis_data(symbol: str, sector_id: Optional[str] = None) -> Di
         if not summary_table:
             summary_table = [{"name": symbol, "PER": 0.0, "PBR": 0.0}]
 
+        # [v2.3.0] Final Data Purge - Recursive (E) removal from all charts
+        def purge_estimates(obj):
+            if isinstance(obj, dict):
+                # Remove keys containing (E)
+                new_dict = {k: purge_estimates(v) for k, v in obj.items() if "(E)" not in str(k)}
+                return new_dict
+            elif isinstance(obj, list):
+                # Remove entire rows/items containing (E) in their values (specifically under 'period' or 'name')
+                return [purge_estimates(i) for i in obj if not any("(E)" in str(v) for v in (i.values() if isinstance(i, dict) else [i]))]
+            return obj
+
+        cleaned_charts = purge_estimates(charts)
+
         return {
             "status": "success",
             "symbol": symbol,
             "sector_info": sector_info,
             "compare_sectors": compare_sectors if compare_sectors else [{"id": "0", "name": "시장평균", "selected": True}],
-            "charts": charts,
+            "charts": cleaned_charts,
             "summary_table": summary_table,
-            "turbo_version": "2.1.2 (Precision-Verified)",
+            "turbo_version": "2.3.0 (Platinum-Purged)",
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
