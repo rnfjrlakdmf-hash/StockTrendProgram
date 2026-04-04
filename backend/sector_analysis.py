@@ -12,7 +12,6 @@ def get_sector_analysis_data(symbol, sector_id):
     """
     try:
         # 1. Fetch Industry Comparison Data (cF9001.aspx)
-        # data_typ=1 (Annual), data_typ=2 (Quarterly)
         ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={symbol}&sec_cd={sector_id}&data_typ=1"
         
         headers = {
@@ -30,7 +29,6 @@ def get_sector_analysis_data(symbol, sector_id):
         overview = ajax_json.get("dt1", [{}])[0] if ajax_json.get("dt1") else {}
         
         # 3. Extract Detailed Comparison Data (dt3)
-        # We map items by Name (NM) because ITEM IDs and SEQs are inconsistent across categories (Stock/Industry/Market)
         charts = {}
         summary_table = []
         
@@ -42,7 +40,6 @@ def get_sector_analysis_data(symbol, sector_id):
             metric_groups = {}
             for item in indicators_data.get("data", []):
                 nm = item.get("NM", "").upper()
-                gubn = str(item.get("GUBN", "1"))
                 seq = int(item.get("SEQ", 0))
                 
                 m_key = None
@@ -59,60 +56,52 @@ def get_sector_analysis_data(symbol, sector_id):
                 elif "영업이익률" in nm: m_key = "op_margin"
                 
                 if m_key:
-                    # Defensive filtering: Skip "Total Amount" items (e.g. Total Debt vs Debt Ratio)
-                    # Amount items often have large numbers and distinct NM keywords
+                    # Filter out total amount items
                     if ("금액" in nm or "자산" in nm or ("부채" in nm and "비율" not in nm)) and seq > 1:
                         continue
                     
                     if m_key not in metric_groups: metric_groups[m_key] = []
                     metric_groups[m_key].append(item)
 
-            # Step 3-2. Process each metric group into time-series charts and summary table
+            # Step 3-2. Build charts and summary table
+            category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
+            
             for m_key, items in metric_groups.items():
                 m_rows = []
-                # Ensure we only have one row per category (Target, Industry, Market)
-                category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
-                processed_gubns = set()
+                processed_categories = set()
                 
                 for item in items:
                     gubn = str(item.get("GUBN", "1"))
-                    if gubn in processed_gubns: continue
-                    processed_gubns.add(gubn)
+                    if gubn in processed_categories: continue
+                    processed_categories.add(gubn)
                     
                     name = category_map.get(gubn, "기타")
                     row = {"name": name}
                     
-                    # Naver AJAX keys for 5 columns: FY_3, FY_2, FY_1, FY0, FY1
-                    # Align them with the order of yymm (i_headers)
                     for idx, h in enumerate(i_headers):
-                        # idx=0 -> 3 years ago (FY_3), ..., idx=3 -> Current Est (FY0), idx=4 -> Next Est (FY1)
                         fy_offset = idx - 3
                         fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
                         val = item.get(fy_key)
-                        
                         try:
                             row[h] = float(val) if val is not None and val != "" else None
                         except:
                             row[h] = None
-                    
                     m_rows.append(row)
 
                 if m_rows:
-                    # Add to charts
                     charts[m_key] = {
                         "headers": i_headers,
                         "rows": m_rows,
                         "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in i_headers]
                     }
                     
-                    # Update summary table with the LATEST non-null value from the time-series
+                    # Update summary table
                     for r in m_rows:
                         s_entry = next((s for s in summary_table if s["name"] == r["name"]), None)
                         if not s_entry:
                             s_entry = {"name": r["name"]}
                             summary_table.append(s_entry)
                         
-                        # Search backwards for the latest actual data point
                         latest_val = None
                         for h in reversed(i_headers):
                             if r.get(h) is not None:
@@ -120,7 +109,6 @@ def get_sector_analysis_data(symbol, sector_id):
                                 break
                         s_entry[m_key] = latest_val
 
-        # Final fallback for summary table
         if not summary_table:
             summary_table = [{"name": "대상 종목", "per": 0.0, "pbr": 0.0}]
 
@@ -137,5 +125,5 @@ def get_sector_analysis_data(symbol, sector_id):
         }
 
     except Exception as e:
-        logger.error(f"Error in sector analysis: {str(e)}")
+        logger.error(f"Error: {str(e)}")
         return {"error": str(e)}
