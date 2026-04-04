@@ -968,26 +968,26 @@ function AnalysisContent() {
                                                                     {row.name === "대상 종목" && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
                                                                     {row.name}
                                                                 </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.PER && row.PER < 10 ? "text-emerald-400" : "text-gray-400"}`}>
-                                                                    {row.PER ? row.PER.toFixed(2) : '-'}
+                                                                <td className={`text-right py-4 px-2 font-mono ${(row.per || row.PER) && (row.per || row.PER) < 10 ? "text-emerald-400" : "text-gray-400"}`}>
+                                                                    {row.per ? row.per.toFixed(2) : (row.PER ? row.PER.toFixed(2) : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-gray-400">
-                                                                    {row.PBR ? row.PBR.toFixed(2) : '-'}
+                                                                    {row.pbr ? row.pbr.toFixed(2) : (row.PBR ? row.PBR.toFixed(2) : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-emerald-400">
-                                                                    {row.배당수익률 ? `${row.배당수익률.toFixed(2)}%` : '-'}
+                                                                    {row.div_yield ? `${row.div_yield.toFixed(2)}%` : (row.배당수익률 ? `${row.배당수익률.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-blue-400">
-                                                                    {row.ROE ? `${row.ROE.toFixed(2)}%` : '-'}
+                                                                    {row.roe ? `${row.roe.toFixed(2)}%` : (row.ROE ? `${row.ROE.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-gray-400">
-                                                                    {row.부채비율 ? `${row.부채비율.toFixed(2)}%` : '-'}
+                                                                    {row.debt_ratio ? `${row.debt_ratio.toFixed(2)}%` : (row.부채비율 ? `${row.부채비율.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-indigo-400">
-                                                                    {row.영업이익률 ? `${row.영업이익률.toFixed(2)}%` : '-'}
+                                                                    {row.op_margin ? `${row.op_margin.toFixed(2)}%` : (row.영업이익률 ? `${row.영업이익률.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className="text-right py-4 px-2 font-mono text-amber-400">
-                                                                    {row.매출액증가율 ? `${row.매출액증가율.toFixed(2)}%` : '-'}
+                                                                    {row.sales_growth ? `${row.sales_growth.toFixed(2)}%` : (row.매출액증가율 ? `${row.매출액증가율.toFixed(2)}%` : '-')}
                                                                 </td>
                                                                 <td className={`text-right py-4 px-2 font-mono ${row.주가수익률 && row.주가수익률 > 0 ? "text-red-400" : row.주가수익률 < 0 ? "text-blue-400" : "text-gray-400"}`}>
                                                                     {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : '-'}
