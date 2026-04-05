@@ -68,7 +68,7 @@ from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
 
-app = FastAPI(title="AI Stock Analyst", version="2.7.7")
+app = FastAPI(title="AI Stock Analyst", version="2.7.8")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
@@ -101,7 +101,7 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v2.7.7 (Stability-Sync)",
+        "version": "v2.7.8 (Stability-Sync)",
         "build_id": "2026-04-06-deploy-v1",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
@@ -650,7 +650,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend is running.",
-        "version": "2.6.0"
+        "version": "2.7.8"
     }
 
 class PortfolioItem(BaseModel):

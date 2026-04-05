@@ -10,9 +10,9 @@ import {
     Eye, EyeOff, LayoutDashboard, History, PieChart, LineChart as LineIcon,
     Coins, ArrowUpRight
 } from "lucide-react";
-import { 
-    LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-    Tooltip, ResponsiveContainer, Legend 
+import {
+    LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import ProSummaryReport from "@/components/ProSummaryReport";
@@ -23,6 +23,11 @@ import BlinkingPrice from "@/components/BlinkingPrice";
 function AnalysisContent() {
     const searchParams = useSearchParams();
     const urlSymbol = searchParams.get("symbol");
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const [symbol, setSymbol] = useState("");
     const [activeTab, setActiveTab] = useState<"summary" | "quant" | "financial" | "sector" | "peer">("summary");
@@ -44,11 +49,11 @@ function AnalysisContent() {
     const [peerSymbols, setPeerSymbols] = useState("005930,000660,035420");
     const [peerData, setPeerData] = useState<any>(null);
     const [peerLoading, setPeerLoading] = useState(false);
-    
+
     // Global Stock Info (Price, Change, etc.)
     const [stockInfo, setStockInfo] = useState<any>(null);
     const [stockLoading, setStockLoading] = useState(false);
-    
+
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
@@ -58,7 +63,7 @@ function AnalysisContent() {
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
     const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
-    
+
     // [v2.1.0] Sector Analysis Sub-Modes State
     const [sectorSubModes, setSectorSubModes] = useState<Record<string, number>>({
         "returns": 1,
@@ -74,10 +79,10 @@ function AnalysisContent() {
     // [v2.7.2] Auto-Sync Trigger: Automatically fetch data when tab changes if symbol is present
     useEffect(() => {
         if (!symbol || stockLoading) return;
-        
+
         const targetSymbol = symbol.trim();
         // 한글이 포함되어 있으면 검색이 필요하므로 자동 트리거에서 제외 (사용자가 직접 검색 유도)
-        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) return; 
+        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) return;
         if (targetSymbol.length < 5) return; // 유효한 코드가 아닐 가능성
 
         if (activeTab === "sector" && secSymbol !== targetSymbol) {
@@ -96,16 +101,16 @@ function AnalysisContent() {
     const handleGlobalSearch = async (tab: string) => {
         let targetSymbol = symbol.trim();
         if (!targetSymbol) return;
-        
+
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
                 const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`;
                 console.log(`[Search] Requesting: ${searchUrl}`);
-                
+
                 const res = await fetch(searchUrl);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                
+
                 const json = await res.json();
                 console.log(`[Search] Response:`, json);
 
@@ -128,10 +133,10 @@ function AnalysisContent() {
                 setStockLoading(false);
             }
         }
-        
+
         // [중요] targetSymbol은 이제 무조건 숫자 코드(005930 등)인 상태입니다.
         // 해당 탭에 맞는 트리거 실행
-        switch(tab) {
+        switch (tab) {
             case "summary": setSummarySymbol(targetSymbol); fetchBasicInfo(targetSymbol); break;
             case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
             case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
@@ -187,7 +192,7 @@ function AnalysisContent() {
             // [v2.7.7] Stability-Sync Forced Cache Invalidation
             url.searchParams.append("v", "2.7.7");
             url.searchParams.append("t", new Date().getTime().toString());
-            
+
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
@@ -288,6 +293,8 @@ function AnalysisContent() {
         );
     };
 
+    if (!mounted) return null;
+
     return (
         <div className="min-h-screen pb-20 text-white bg-black notranslate" translate="no">
             <Header title="프로 분석" subtitle="데이터 기반 종목 정밀 검진" />
@@ -303,15 +310,15 @@ function AnalysisContent() {
                             onKeyDown={e => { if (e.key === "Enter") handleGlobalSearch(activeTab); }}
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                             {stockLoading && <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />}
-                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Quick Set</span>
+                            {stockLoading && <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />}
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Quick Set</span>
                         </div>
                     </div>
                     <div className="flex justify-between items-center mb-3">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v2.6.0 (Unified-Release)
+                                Sector Trend v2.7.8 (Stability-Sync)
                             </span>
                         </div>
                     </div>
@@ -330,9 +337,9 @@ function AnalysisContent() {
                                             {isTurbo && <span className="bg-indigo-500/20 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">Turbo Active</span>}
                                         </div>
                                         <div className="flex items-baseline gap-3">
-                                            <BlinkingPrice 
-                                                price={stockInfo.price || "---"} 
-                                                className="text-4xl font-black font-mono tracking-tighter" 
+                                            <BlinkingPrice
+                                                price={stockInfo.price || "---"}
+                                                className="text-4xl font-black font-mono tracking-tighter"
                                             />
                                             <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) >= 0 ? "text-red-400" : "text-blue-400"}`}>
                                                 {parseFloat(stockInfo.change_rate) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
@@ -365,13 +372,12 @@ function AnalysisContent() {
                     </div>
 
                     {/* [v1.4.0] Beginner Mode Toggle Button */}
-                    <button 
+                    <button
                         onClick={() => setShowEasy(!showEasy)}
-                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl group border ${
-                            showEasy 
-                            ? "bg-indigo-600 border-indigo-400 text-white" 
-                            : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
-                        }`}
+                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl group border ${showEasy
+                                ? "bg-indigo-600 border-indigo-400 text-white"
+                                : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                            }`}
                     >
                         <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : "group-hover:rotate-12 transition-transform"}`} />
                         <div className="text-left leading-none">
@@ -465,7 +471,7 @@ function AnalysisContent() {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl">
                                         <div className="p-6 relative">
                                             {isTurbo && (
@@ -633,8 +639,8 @@ function AnalysisContent() {
                                                             <AreaChart data={financialData.charts.profitability}>
                                                                 <defs>
                                                                     <linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                                                     </linearGradient>
                                                                 </defs>
                                                                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
@@ -808,14 +814,14 @@ function AnalysisContent() {
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v2.7.7 (Stability-Sync)</span>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v2.7.8 (Stability-Sync)</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
-                                                    <select 
+                                                    <select
                                                         value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
                                                         onChange={(e) => {
                                                             const newId = e.target.value;
@@ -838,7 +844,7 @@ function AnalysisContent() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                                             {(() => {
                                                 if (!(sectorData?.charts)) return null;
-                                                
+
                                                 // Category Definitions
                                                 const categories = [
                                                     { id: "returns", title: "주가 수익률 분석", items: ["주가수익률", "주가수익률_연간"], icon: TrendingUp, labels: ["최근 수익률", "연간 수익률"] },
@@ -855,7 +861,7 @@ function AnalysisContent() {
                                                     const subMode = sectorSubModes[cat.id] || 1;
                                                     const activeItemName = cat.items[subMode - 1] || cat.items[0];
                                                     const data = sectorData.charts[activeItemName];
-                                                    
+
                                                     return (
                                                         <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
                                                             <div className="flex flex-col gap-4 mb-5">
@@ -872,17 +878,16 @@ function AnalysisContent() {
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
                                                                     <div className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/10 shadow-xl">
                                                                         {cat.items.map((item, idx) => (
-                                                                            <button 
+                                                                            <button
                                                                                 key={idx}
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }));
                                                                                 }}
-                                                                                className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center justify-center ${
-                                                                                    subMode === idx + 1 
-                                                                                    ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105" 
-                                                                                    : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300"
-                                                                                }`}
+                                                                                className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center justify-center ${subMode === idx + 1
+                                                                                        ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105"
+                                                                                        : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300"
+                                                                                    }`}
                                                                             >
                                                                                 {idx + 1}
                                                                             </button>
@@ -893,24 +898,24 @@ function AnalysisContent() {
                                                             <div className="h-[260px] w-full">
                                                                 {data ? (
                                                                     <ResponsiveContainer width="100%" height="100%" key={`${cat.id}-${subMode}`}>
-                                                                        <LineChart 
-                                                                            data={data.chart_data} 
+                                                                        <LineChart
+                                                                            data={data.chart_data}
                                                                             margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
                                                                         >
                                                                             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                            <XAxis 
-                                                                                dataKey="period" 
-                                                                                stroke="#64748b" 
-                                                                                fontSize={10} 
-                                                                                tickLine={false} 
+                                                                            <XAxis
+                                                                                dataKey="period"
+                                                                                stroke="#64748b"
+                                                                                fontSize={10}
+                                                                                tickLine={false}
                                                                                 axisLine={false}
                                                                                 minTickGap={activeItemName.includes("수익률") ? 80 : 40}
                                                                             />
-                                                                            <YAxis 
-                                                                                stroke="#64748b" 
-                                                                                fontSize={10} 
-                                                                                tickLine={false} 
-                                                                                axisLine={false} 
+                                                                            <YAxis
+                                                                                stroke="#64748b"
+                                                                                fontSize={10}
+                                                                                tickLine={false}
+                                                                                axisLine={false}
                                                                                 tickFormatter={(val) => {
                                                                                     if (val === 0) return "0";
                                                                                     // High Precision Unit Logic
@@ -918,7 +923,7 @@ function AnalysisContent() {
                                                                                     return `${val}${isRatio ? "x" : "%"}`;
                                                                                 }}
                                                                             />
-                                                                            <Tooltip 
+                                                                            <Tooltip
                                                                                 contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
                                                                                 itemStyle={{ fontWeight: 'bold' }}
                                                                                 formatter={(val: any) => {
@@ -926,25 +931,25 @@ function AnalysisContent() {
                                                                                     return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
                                                                                 }}
                                                                             />
-                                                                            <Legend 
-                                                                                verticalAlign="top" 
-                                                                                align="left" 
-                                                                                iconType="circle" 
+                                                                            <Legend
+                                                                                verticalAlign="top"
+                                                                                align="left"
+                                                                                iconType="circle"
                                                                                 wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingBottom: '20px', marginLeft: '0px' }}
                                                                             />
                                                                             {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
                                                                                 const isTarget = key === "대상 종목";
                                                                                 const isIndustry = key === "업종 평균";
-                                                                                
+
                                                                                 return (
-                                                                                    <Line 
-                                                                                        key={key} 
-                                                                                        type="monotone" 
-                                                                                        dataKey={key} 
+                                                                                    <Line
+                                                                                        key={key}
+                                                                                        type="monotone"
+                                                                                        dataKey={key}
                                                                                         name={key}
-                                                                                        stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"} 
-                                                                                        strokeWidth={isTarget ? 3.5 : 1.5} 
-                                                                                        dot={isTarget ? { r: 3, fill: '#818cf8' } : false} 
+                                                                                        stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"}
+                                                                                        strokeWidth={isTarget ? 3.5 : 1.5}
+                                                                                        dot={isTarget ? { r: 3, fill: '#818cf8' } : false}
                                                                                         activeDot={{ r: 6 }}
                                                                                         animationDuration={1200}
                                                                                     />
@@ -1061,8 +1066,8 @@ function AnalysisContent() {
 
                     {activeTab === "peer" && (
                         <div className="space-y-6">
-                             {/* Local Trigger for Peer */}
-                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                            {/* Local Trigger for Peer */}
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-500/20 rounded-lg"><Users className="w-5 h-5 text-purple-400" /></div>
                                     <h3 className="font-bold">동종 업계 비교</h3>
@@ -1205,10 +1210,10 @@ function AnalysisContent() {
                                                 ].map(item => {
                                                     const validData = peerData.data.filter((s: any) => (parseFloat(s[item.key]) || 0) > 0);
                                                     if (validData.length === 0) return null;
-                                                    const leader = item.isLowBetter 
+                                                    const leader = item.isLowBetter
                                                         ? validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) < parseFloat(curr[item.key]) ? prev : curr))
                                                         : validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) > parseFloat(curr[item.key]) ? prev : curr));
-                                                    
+
                                                     return (
                                                         <div key={item.key} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
                                                             <span className="text-xs text-gray-300">{item.label}</span>
@@ -1226,7 +1231,7 @@ function AnalysisContent() {
                                                         const avgRoe = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.roe) || 0), 0) / peerData.data.length;
                                                         return (
                                                             <div className="text-xs leading-relaxed text-gray-400">
-                                                                검색된 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>, 
+                                                                검색된 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>,
                                                                 평균 ROE는 <span className="text-white font-bold">{avgRoe.toFixed(1)}%</span>입니다.
                                                                 <br /><br />
                                                                 {avgPer < 15 ? "이 그룹은 전반적으로 가치가 저평가된 '알짜' 종목들이 포함되어 있습니다. " : "이 그룹은 전반적으로 시장의 높은 기대를 받고 있는 '성장주' 위주의 구성입니다. "}
@@ -1237,11 +1242,11 @@ function AnalysisContent() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="mt-6 pt-4 border-t border-white/5 flex items-start gap-2">
                                             <AlertTriangle className="w-3 h-3 text-gray-600 mt-0.5" />
                                             <p className="text-[10px] text-gray-600 leading-tight">
-                                                위 정보는 입력된 종목들 간의 상대적인 수치 비교이며, 절대적인 투자 판단의 근거가 될 수 없습니다. 
+                                                위 정보는 입력된 종목들 간의 상대적인 수치 비교이며, 절대적인 투자 판단의 근거가 될 수 없습니다.
                                                 특정 종목의 매수 또는 매도를 권유하는 것이 아닌 단순 데이터 요약임을 밝힙니다.
                                             </p>
                                         </div>

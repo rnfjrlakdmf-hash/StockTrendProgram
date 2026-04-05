@@ -38,7 +38,7 @@ export default function Sidebar() {
     // [New] Timer State
     const [timeLeftStr, setTimeLeftStr] = useState<string | null>(null);
     const [isPro, setIsPro] = useState(false);
-    
+
     // [New] Watchlist Preview State
     const [watchlistPreview, setWatchlistPreview] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
@@ -144,7 +144,7 @@ export default function Sidebar() {
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [user, showAdRewardModal]); // Update on modal close too
-    
+
     // [New] Watchlist Synchronizer
     useEffect(() => {
         const fetchWatchlist = async () => {
@@ -167,7 +167,7 @@ export default function Sidebar() {
         };
 
         fetchWatchlist();
-        
+
         // Listen for internal changes (Discovery page toggle)
         window.addEventListener('watchlistChanged', fetchWatchlist);
         return () => window.removeEventListener('watchlistChanged', fetchWatchlist);
@@ -326,7 +326,7 @@ export default function Sidebar() {
                                         </div>
                                     </Link>
                                 ))}
-                                <Link 
+                                <Link
                                     href="/watchlist"
                                     className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-2 py-1 transition-colors font-bold"
                                 >
