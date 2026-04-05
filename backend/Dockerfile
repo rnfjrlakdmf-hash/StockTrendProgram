@@ -6,7 +6,10 @@ RUN apt-get update && apt-get install -y \
     chromium \
     chromium-driver \
     libnss3 \
-    libgconf-2-4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libasound2 \
     libfontconfig1 \
     libxrender1 \
     libxtst6 \
