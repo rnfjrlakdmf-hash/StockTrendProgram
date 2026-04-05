@@ -336,24 +336,31 @@ def gather_naver_stock_data(symbol: str):
                             break
         except: pass
 
-        # Extra details (Restored)
+        # Extra details (Robust Scraping v2.7.3)
         market_cap_str = ""
         try:
             mc = soup.select_one("#_market_sum")
             if not mc:
-                # Fallback: Find by text if ID fails
-                th_tags = soup.select("th")
-                for th in th_tags:
-                    if "시가총액" in th.text:
-                        mc = th.find_next_sibling("td")
-                        if mc: break
+                # Fallback: Search for label text in any TH or TD
+                for tag in soup.find_all(['th', 'td', 'em']):
+                    txt = tag.text.strip()
+                    if "시가총액" in txt and len(txt) < 10:
+                        # Value is often in the next sibling or a nested span
+                        val_tag = tag.find_next_sibling(['td', 'span', 'em'])
+                        if val_tag:
+                            mc = val_tag
+                            break
             
             if mc:
                 raw = mc.text.strip()
-                # Remove extra whitespace, newlines, and tabs
-                cleaned = re.sub(r'\s+', ' ', raw).strip()
+                # Clean up units and formatting
+                cleaned = re.sub(r'\s+', ' ', raw).replace(",", "").strip()
                 if cleaned:
-                    market_cap_str = cleaned + " 억원"
+                    # Append '억원' if missing, but be smart about it
+                    if "조" not in cleaned and "억" not in cleaned:
+                        market_cap_str = cleaned + " 억원"
+                    else:
+                        market_cap_str = cleaned
         except Exception as sce:
             print(f"Market Cap Scraping Error: {sce}")
             market_cap_str = "N/A"

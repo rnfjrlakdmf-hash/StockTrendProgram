@@ -50,6 +50,7 @@ def get_sector_analysis_data(symbol, sector_id):
                 if "PER" in nm and "FWD" not in nm: m_key = "per"
                 elif "PBR" in nm and "FWD" not in nm: m_key = "pbr"
                 elif "FWD. 12M PER" in nm: m_key = "fwd_per"
+                elif "FWD. 12M PBR" in nm: m_key = "fwd_pbr"
                 elif "ROE" in nm: m_key = "roe"
                 elif "ROA" in nm: m_key = "roa"
                 elif "부채비율" in nm: m_key = "debt_ratio"
@@ -57,9 +58,12 @@ def get_sector_analysis_data(symbol, sector_id):
                 elif "배당성향" in nm: m_key = "payout_ratio"
                 elif "매출액증가율" in nm: m_key = "sales_growth"
                 elif "영업이익증가율" in nm: m_key = "op_growth"
+                elif "순이익증가율" in nm: m_key = "net_growth"
                 elif "배당수익률" in nm: m_key = "div_yield"
                 elif "주가수익률" in nm: m_key = "주가수익률"
                 elif "영업이익률" in nm: m_key = "op_margin"
+                elif "순이익률" in nm: m_key = "net_margin"
+                elif "매출총이익률" in nm: m_key = "gross_margin"
                 
                 if m_key:
                     # Filter out total amount items
