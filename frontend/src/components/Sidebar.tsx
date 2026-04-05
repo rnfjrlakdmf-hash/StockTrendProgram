@@ -41,6 +41,11 @@ export default function Sidebar() {
     
     // [New] Watchlist Preview State
     const [watchlistPreview, setWatchlistPreview] = useState<any[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const fetchExchangeRate = async () => {
@@ -232,6 +237,19 @@ export default function Sidebar() {
         }
     };
 
+    if (!mounted) {
+        return (
+            <div className="fixed inset-y-0 left-0 z-50 h-full w-80 bg-[#09090b] border-r border-white/10 flex flex-col p-4 animate-pulse">
+                <div className="h-8 w-32 bg-white/5 rounded-lg mb-8" />
+                <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="h-10 w-full bg-white/5 rounded-xl" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* Mobile Toggle Button */}
@@ -344,7 +362,7 @@ export default function Sidebar() {
 
                     <MarketClock />
                     <div className="px-2 pt-4 border-t border-white/5 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-gray-500 font-mono text-center">v2.6.0 (Unified-Release)</p>
+                        <p className="text-[10px] text-gray-500 font-mono text-center">v2.7.2 (Stable-Flow)</p>
                     </div>
                 </div>
 
@@ -479,9 +497,9 @@ export default function Sidebar() {
                                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-[1.02] shadow-lg shadow-blue-600/30 flex flex-col items-center justify-center gap-1"
                             >
                                 <span className="text-blue-200 text-xs font-normal line-through">$10.00/mo</span>
-                                <span>월 ${proPriceUsd} (약 ₩{proPriceKrw.toLocaleString()})으로 시작하기</span>
+                                <span suppressHydrationWarning>월 ${proPriceUsd} (약 ₩{proPriceKrw.toLocaleString()})으로 시작하기</span>
                             </button>
-                            <p className="text-center text-xs text-gray-500 mt-4">
+                            <p className="text-center text-xs text-gray-500 mt-4" suppressHydrationWarning>
                                 * 실시간 환율({exchangeRate.toLocaleString()}원/$) 적용
                             </p>
                         </div>
