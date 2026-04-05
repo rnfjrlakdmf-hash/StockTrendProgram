@@ -116,7 +116,11 @@ def get_sector_analysis_data(symbol, sector_id):
                         s_entry[m_key] = latest_val
 
         if not summary_table:
-            summary_table = [{"name": "대상 종목", "per": 0.0, "pbr": 0.0}]
+            # Provide a more complete skeleton for UI stability
+            summary_table = [
+                {"name": "대상 종목", "per": 0.0, "pbr": 0.0, "roe": 0.0, "div_yield": 0.0, "debt_ratio": 0.0},
+                {"name": "업종 평균", "per": 0.0, "pbr": 0.0, "roe": 0.0, "div_yield": 0.0, "debt_ratio": 0.0}
+            ]
 
         return {
             "status": "success",

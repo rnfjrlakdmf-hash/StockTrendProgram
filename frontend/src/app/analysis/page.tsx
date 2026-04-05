@@ -71,12 +71,27 @@ function AnalysisContent() {
         "margin": 1
     });
 
-    // [v1.8.7] URL 파라미터가 있어도 즉시 분석하지 않고 입력창만 채움
+    // [v2.7.2] Auto-Sync Trigger: Automatically fetch data when tab changes if symbol is present
     useEffect(() => {
-        if (urlSymbol) {
-            setSymbol(urlSymbol);
+        if (!symbol || stockLoading) return;
+        
+        const targetSymbol = symbol.trim();
+        // 한글이 포함되어 있으면 검색이 필요하므로 자동 트리거에서 제외 (사용자가 직접 검색 유도)
+        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) return; 
+        if (targetSymbol.length < 5) return; // 유효한 코드가 아닐 가능성
+
+        if (activeTab === "sector" && secSymbol !== targetSymbol) {
+            handleGlobalSearch("sector");
+        } else if (activeTab === "quant" && quantSymbol !== targetSymbol) {
+            handleGlobalSearch("quant");
+        } else if (activeTab === "financial" && finSymbol !== targetSymbol) {
+            handleGlobalSearch("financial");
+        } else if (activeTab === "summary" && summarySymbol !== targetSymbol) {
+            if (!stockInfo || stockInfo.symbol !== targetSymbol) {
+                handleGlobalSearch("summary");
+            }
         }
-    }, [urlSymbol]);
+    }, [activeTab, symbol]);
 
     const handleGlobalSearch = async (tab: string) => {
         let targetSymbol = symbol.trim();
@@ -169,15 +184,15 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
-            // [v2.4.0] Diamond Forced Cache Invalidation
-            url.searchParams.append("v", "2.6.0");
+            // [v2.7.2] Stable-Flow Forced Cache Invalidation
+            url.searchParams.append("v", "2.7.2");
             url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
                 setSectorData(json.data);
-                // [v2.6.0] Global-Sync Fixed: Keep user's selected sector even if server response differs
+                // [v2.7.2] Global-Sync Fixed: Keep user's selected sector even if server response differs
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
@@ -844,7 +859,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.6.0 (Unified-Release)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.7.2 (Stable-Flow)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}

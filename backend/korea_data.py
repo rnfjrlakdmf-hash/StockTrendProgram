@@ -166,7 +166,7 @@ def gather_naver_stock_data(symbol: str):
             return None
             
         url = f"https://finance.naver.com/item/main.naver?code={code}"
-        res = requests.get(url, headers=HEADER, timeout=5)
+        res = requests.get(url, headers=HEADER, timeout=10)
         
         # [Fix] Smart Decoding v2: UTF-8 First
         # EUC-KR bytes are often invalid UTF-8 (fail fast), 
@@ -340,10 +340,23 @@ def gather_naver_stock_data(symbol: str):
         market_cap_str = ""
         try:
             mc = soup.select_one("#_market_sum")
+            if not mc:
+                # Fallback: Find by text if ID fails
+                th_tags = soup.select("th")
+                for th in th_tags:
+                    if "시가총액" in th.text:
+                        mc = th.find_next_sibling("td")
+                        if mc: break
+            
             if mc:
                 raw = mc.text.strip()
-                market_cap_str = re.sub(r'\s+', ' ', raw) + " 억원"
-        except: pass
+                # Remove extra whitespace, newlines, and tabs
+                cleaned = re.sub(r'\s+', ' ', raw).strip()
+                if cleaned:
+                    market_cap_str = cleaned + " 억원"
+        except Exception as sce:
+            print(f"Market Cap Scraping Error: {sce}")
+            market_cap_str = "N/A"
         
         # Initialize variables (None instead of 0.0 to distinguish 'not found')
         per = None
