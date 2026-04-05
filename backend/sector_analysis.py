@@ -29,8 +29,9 @@ def get_sector_analysis_data(symbol, sector_id):
             
         ajax_json = response.json()
         
-        # 2. Extract Industry Overview (dt1)
-        overview = ajax_json.get("dt1", [{}])[0] if ajax_json.get("dt1") else {}
+        # 2. Extract Industry Overview (dt1) - Safe Indexing (v2.7.4)
+        dt1 = ajax_json.get("dt1", [])
+        overview = dt1[0] if dt1 and len(dt1) > 0 else {}
         
         # 3. Extract Detailed Comparison Data (dt3)
         charts = {}

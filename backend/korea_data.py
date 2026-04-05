@@ -353,14 +353,26 @@ def gather_naver_stock_data(symbol: str):
             
             if mc:
                 raw = mc.text.strip()
-                # Clean up units and formatting
-                cleaned = re.sub(r'\s+', ' ', raw).replace(",", "").strip()
-                if cleaned:
-                    # Append '억원' if missing, but be smart about it
-                    if "조" not in cleaned and "억" not in cleaned:
+                # Advanced Clean Up (v2.7.4) - 1,102조 2,366억원 대응
+                # Remove commmas and extra space
+                c1 = raw.replace(",", "").strip()
+                
+                # Check for "조" and "억" combinations
+                if "조" in c1:
+                    # e.g. "1102조 2366억원" -> "1102조 2366억원"
+                    # Simply cleaning up multiple spaces is enough if we keep the units
+                    market_cap_str = re.sub(r'\s+', ' ', c1)
+                    if not market_cap_str.endswith("원"):
+                        market_cap_str += "원"
+                elif "억" in c1:
+                    market_cap_str = re.sub(r'\s+', ' ', c1)
+                    if not market_cap_str.endswith("원"):
+                        market_cap_str += "원"
+                else:
+                    # Just numbers? fallback to 억원
+                    cleaned = re.sub(r'[^0-9]', '', c1)
+                    if cleaned:
                         market_cap_str = cleaned + " 억원"
-                    else:
-                        market_cap_str = cleaned
         except Exception as sce:
             print(f"Market Cap Scraping Error: {sce}")
             market_cap_str = "N/A"
