@@ -27,7 +27,18 @@ def get_sector_analysis_data(symbol, sector_id):
         if response.status_code != 200:
             return {"error": f"Failed to fetch sector data (HTTP {response.status_code})"}
             
-        ajax_json = response.json()
+        # [v2.7.9] Enhanced Decoding Logic
+        content = response.content
+        try:
+            # Try UTF-8 first
+            ajax_json = json.loads(content.decode('utf-8'))
+        except:
+            try:
+                # Fallback to CP949 (EUC-KR) if it's a Naver legacy response
+                ajax_json = json.loads(content.decode('cp949'))
+            except:
+                # Last resort: replace errors
+                ajax_json = json.loads(content.decode('utf-8', errors='replace'))
         
         # 2. Extract Industry Overview (dt1) - Safe Indexing (v2.7.5)
         dt1 = ajax_json.get("dt1")
@@ -69,7 +80,9 @@ def get_sector_analysis_data(symbol, sector_id):
                 elif "영업이익증가율" in nm: m_key = "op_growth"
                 elif "순이익증가율" in nm: m_key = "net_growth"
                 elif "배당수익률" in nm: m_key = "div_yield"
-                elif "주가수익률" in nm: m_key = "주가수익률"
+                elif "주가수익률" in nm: 
+                    if "연간" in nm: m_key = "주가수익률_연간"
+                    else: m_key = "주가수익률"
                 elif "영업이익률" in nm: m_key = "op_margin"
                 elif "순이익률" in nm: m_key = "net_margin"
                 elif "매출총이익률" in nm: m_key = "gross_margin"
