@@ -353,23 +353,19 @@ def gather_naver_stock_data(symbol: str):
             
             if mc:
                 raw = mc.text.strip()
-                # Advanced Clean Up (v2.7.4) - 1,102조 2,366억원 대응
-                # Remove commmas and extra space
+                # Advanced Clean Up (v2.7.5) - 1,102조 2,366억원 대응
+                # Remove commas and handle spaces
                 c1 = raw.replace(",", "").strip()
                 
-                # Check for "조" and "억" combinations
-                if "조" in c1:
-                    # e.g. "1102조 2366억원" -> "1102조 2366억원"
-                    # Simply cleaning up multiple spaces is enough if we keep the units
-                    market_cap_str = re.sub(r'\s+', ' ', c1)
-                    if not market_cap_str.endswith("원"):
-                        market_cap_str += "원"
-                elif "억" in c1:
+                # Intelligent Unit Parser
+                if "조" in c1 or "억" in c1:
+                    # e.g. "1조 102억원" -> "1조 102억원"
+                    # Just normalize spacing
                     market_cap_str = re.sub(r'\s+', ' ', c1)
                     if not market_cap_str.endswith("원"):
                         market_cap_str += "원"
                 else:
-                    # Just numbers? fallback to 억원
+                    # Just numbers?
                     cleaned = re.sub(r'[^0-9]', '', c1)
                     if cleaned:
                         market_cap_str = cleaned + " 억원"

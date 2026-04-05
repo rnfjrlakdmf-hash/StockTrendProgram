@@ -29,16 +29,24 @@ def get_sector_analysis_data(symbol, sector_id):
             
         ajax_json = response.json()
         
-        # 2. Extract Industry Overview (dt1) - Safe Indexing (v2.7.4)
-        dt1 = ajax_json.get("dt1", [])
-        overview = dt1[0] if dt1 and len(dt1) > 0 else {}
+        # 2. Extract Industry Overview (dt1) - Safe Indexing (v2.7.5)
+        dt1 = ajax_json.get("dt1")
+        if not dt1 or not isinstance(dt1, list) or len(dt1) == 0:
+            overview = {}
+        else:
+            overview = dt1[0]
         
         # 3. Extract Detailed Comparison Data (dt3)
         charts = {}
         summary_table = []
         
         indicators_data = ajax_json.get("dt3", {})
+        if not isinstance(indicators_data, dict):
+            indicators_data = {}
+            
         i_headers = indicators_data.get("yymm", [])
+        if not isinstance(i_headers, list):
+            i_headers = []
         
         if i_headers:
             # Step 3-1. Group all raw items by our target metric names

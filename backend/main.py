@@ -68,7 +68,7 @@ from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
 
-app = FastAPI(title="AI Stock Analyst", version="2.7.2")
+app = FastAPI(title="AI Stock Analyst", version="2.7.5")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
