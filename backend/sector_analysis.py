@@ -128,6 +128,20 @@ def get_sector_analysis_data(symbol, sector_id):
                                 break
                         s_entry[m_key] = latest_val
 
+        # 4. Extract Comparison Sectors (dt2) - v2.7.6
+        dt2 = ajax_json.get("dt2", [])
+        compare_sectors = []
+        if isinstance(dt2, list):
+            for sec in dt2:
+                sec_id = sec.get("SEC_CD")
+                sec_nm = sec.get("SEC_NM_K")
+                if sec_id and sec_nm:
+                    compare_sectors.append({
+                        "id": sec_id,
+                        "name": sec_nm,
+                        "selected": str(sec_id) == str(sector_id)
+                    })
+
         if not summary_table:
             # Provide a more complete skeleton for UI stability
             summary_table = [
@@ -144,6 +158,7 @@ def get_sector_analysis_data(symbol, sector_id):
                     "sector_return_1d": overview.get("SEC_RTN_1D", "0"),
                     "sector_return_1m": overview.get("SEC_RTN_1M", "0")
                 },
+                "compare_sectors": compare_sectors,
                 "charts": charts,
                 "summary_table": summary_table,
                 "raw_headers": i_headers
