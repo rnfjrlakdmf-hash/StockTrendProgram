@@ -343,7 +343,9 @@ export default function Sidebar() {
                     )}
 
                     <MarketClock />
-
+                    <div className="px-2 pt-4 border-t border-white/5 opacity-30 group-hover:opacity-100 transition-opacity">
+                        <p className="text-[10px] text-gray-500 font-mono text-center">v2.6.0 (Unified-Release)</p>
+                    </div>
                 </div>
 
                 {isPro ? (

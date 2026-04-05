@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] sector-fix-final - 2026-04-05
+# [Deployment Trigger] v2.6.8-Hotfix-Final - 2026-04-06
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -17,7 +17,7 @@ import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# [v3.0.0-Gold] Startup Diagnostics
+# [v2.6.0-Unified] Startup Diagnostics
 STOCK_MAP_PATH = os.path.join(os.path.dirname(__file__), "stock_names.py")
 if os.path.exists(STOCK_MAP_PATH):
     print(f"[Startup] Found STOCK_MAP at: {STOCK_MAP_PATH}")
@@ -68,7 +68,7 @@ from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
 
-app = FastAPI(title="AI Stock Analyst", version="1.0.0")
+app = FastAPI(title="AI Stock Analyst", version="2.6.0")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
@@ -84,8 +84,14 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # 임시 전체 허용하여 통신 차단 해결
-    allow_credentials=False, # allow_origins = ["*"] 시 False여야 함
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://stock-trend-program.vercel.app",
+        "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
+        "https://stocktrendprogram-production.up.railway.app"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -95,9 +101,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.5-final-check",
-        "build_id": "2026-04-03-deploy-v5",
-        "service": "AI Stock Analyst Backend - Double Hardened Indicators"
+        "version": "v2.6.0-Unified-Release",
+        "build_id": "2026-04-06-deploy-v1",
+        "service": "AI Stock Analyst Backend - Production Stable"
     }
 
 @app.post("/api/admin/clear-cache")
@@ -644,7 +650,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend is running.",
-        "version": "1.0.0"
+        "version": "2.6.0"
     }
 
 class PortfolioItem(BaseModel):

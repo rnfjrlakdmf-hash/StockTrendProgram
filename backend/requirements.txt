@@ -1,4 +1,4 @@
-# Build Trigger: v2.6.0-global-sync-final
+# Build Trigger: v2.6.5-global-sync-hotfix
 fastapi
 uvicorn[standard]
 pandas
@@ -19,3 +19,7 @@ pytz
 GoogleNews
 deep-translator
 pycryptodome
+firebase-admin
+scipy
+selenium
+webdriver-manager
