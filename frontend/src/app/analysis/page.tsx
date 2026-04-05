@@ -184,15 +184,15 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
-            // [v2.7.6] Final-Release Forced Cache Invalidation
-            url.searchParams.append("v", "2.7.6");
+            // [v2.7.7] Stability-Sync Forced Cache Invalidation
+            url.searchParams.append("v", "2.7.7");
             url.searchParams.append("t", new Date().getTime().toString());
             
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
                 setSectorData(json.data);
-                // [v2.7.6] Global-Sync Fixed: Keep user's selected sector even if server response differs
+                // [v2.7.7] Global-Sync Fixed: Keep user's selected sector even if server response differs
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             } else {
@@ -808,7 +808,7 @@ function AnalysisContent() {
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">Sector Trend v2.6.0 (Unified-Release)</span>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v2.7.7 (Stability-Sync)</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
@@ -866,7 +866,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Sector Trend v2.7.6 (Final-Release)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider" suppressHydrationWarning>Sector Trend v2.7.7 (Stability-Sync)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
@@ -892,7 +892,7 @@ function AnalysisContent() {
                                                             </div>
                                                             <div className="h-[260px] w-full">
                                                                 {data ? (
-                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                    <ResponsiveContainer width="100%" height="100%" key={`${cat.id}-${subMode}`}>
                                                                         <LineChart 
                                                                             data={data.chart_data} 
                                                                             margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
