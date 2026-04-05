@@ -64,7 +64,11 @@ export default function MarketClock() {
         return () => clearInterval(interval);
     }, []);
 
-    if (!mounted) return null;
+    if (!mounted) {
+        return (
+            <div className="mb-4 h-[64px] animate-pulse bg-white/5 rounded-lg border border-white/5" />
+        );
+    }
 
     return (
         <div className="mb-4">
@@ -120,7 +124,10 @@ export default function MarketClock() {
                             <span className={`text-[10px] font-bold mb-0.5 ${isOpen ? 'text-blue-300' : 'text-gray-500'}`}>
                                 {m.name.split(' ')[0]}
                             </span>
-                            <div className={`font-mono font-bold leading-none ${isOpen ? 'text-white text-xs' : 'text-gray-500 text-[10px]'}`}>
+                            <div 
+                                className={`font-mono font-bold leading-none ${isOpen ? 'text-white text-xs' : 'text-gray-500 text-[10px]'}`}
+                                suppressHydrationWarning
+                            >
                                 {localTime.getHours().toString().padStart(2, '0')}:{localTime.getMinutes().toString().padStart(2, '0')}
                             </div>
                             {isOpen && <div className="w-1 h-1 rounded-full bg-green-500 mt-1 animate-pulse" />}
