@@ -1,82 +1,75 @@
 import requests
 import json
 import logging
+import re
 
-# [v2.8.5] Ultimate-Fix
-# Robust indicator collection from both dt3 and dt0 to ensure PER/ROE availability.
+# [v3.0.0] Core-Sync (Ultimate Mashup)
+# This module implements a hybrid data fetching strategy.
+# It merges Sector Comparison (cF9001) with Financial Summary (cF1001) 
+# to restore missing PER and ROE indicators.
 
 def get_sector_analysis_data(symbol, sector_id=None):
     """
-    Fetches comparative sector data with ultimate robustness for PER, ROE, etc.
+    Ultimate hybrid fetch for comparative analysis.
+    Combines industry-level metrics (EPS, BPS, PBR, etc.) with company-level (PER, ROE).
     """
     try:
-        url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
+        # 1. Fetch Sector Data (cF9001)
+        sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
         if sector_id:
-            url += f"&sec_cd={sector_id}"
+            sector_url += f"&sec_cd={sector_id}"
             
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.37 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.37",
             "Referer": f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={symbol}"
         }
 
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        # Multi-stage decoding (UTF-8 / CP949)
+        s_resp = requests.get(sector_url, headers=headers, timeout=10)
         try:
-            ajax_json = response.json()
+            ajax_json = s_resp.json()
         except:
             try:
-                decoded_content = response.content.decode('cp949', errors='replace')
-                ajax_json = json.loads(decoded_content)
+                ajax_json = json.loads(s_resp.content.decode('cp949', errors='replace'))
             except:
-                decoded_content = response.content.decode('utf-8', errors='replace')
-                ajax_json = json.loads(decoded_content)
+                ajax_json = json.loads(s_resp.content.decode('utf-8', errors='replace'))
 
-        if not ajax_json:
-            return None
+        if not ajax_json: return None
 
-        # Headers and Setup
+        # 2. Fetch Core Financials (cF1001) as Fallback for PER/ROE
+        # freq_typ=Y (Annual), fin_typ=0 (Consolidated)
+        fin_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF1001.aspx?cmp_cd={symbol}&fin_typ=0&freq_typ=Y"
+        f_resp = requests.get(fin_url, headers=headers, timeout=10)
+        fin_html = f_resp.text
+
+        # 3. Process Sector Indicators (dt3)
         indicators_data = ajax_json.get("dt3", {})
-        if not isinstance(indicators_data, dict): indicators_data = {}
         i_headers = indicators_data.get("yymm", [])
-        if not isinstance(i_headers, list): i_headers = []
+        if not i_headers: i_headers = []
         data_items = indicators_data.get("data", [])
-        
         dt0_data = ajax_json.get("dt0", {}).get("data", [])
-        category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
         
+        category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
         charts = {}
         summary_table = []
         metric_groups = {}
         id_to_key = {}
 
-        # 1. Map ITEM IDs to Indicator Keys (v2.8.5 Hybrid Strategy)
+        # Scan for existing metrics in dt3
         for item in data_items:
             if item.get("GUBN") == "1":
                 it_id = str(item.get("ITEM"))
                 nm = str(item.get("NM", "")).upper()
-                
                 m_key = None
-                # Strategic Mapping
                 if it_id == "1": m_key = "eps"
                 elif it_id == "2": m_key = "bps"
-                elif "PER" in nm or "주가수익비율" in nm or it_id == "4": m_key = "per"
-                elif "PBR" in nm or "주가순자산" in nm or it_id == "3": m_key = "pbr"
-                elif "ROE" in nm or "자기자본" in nm or it_id == "5": m_key = "roe"
-                elif "ROA" in nm or "총자산" in nm: m_key = "roa"
-                elif "배당성향" in nm: m_key = "payout_ratio"
-                elif "배당수익률" in nm or "DPS" in nm or it_id == "8": m_key = "div_yield"
-                elif "부채비율" in nm or it_id == "6": m_key = "debt_ratio"
-                elif "유동비율" in nm: m_key = "current_ratio"
-                elif "영업이익률" in nm: m_key = "op_margin"
-                elif "매출액증가율" in nm: m_key = "sales_growth"
-                elif "주가수익률" in nm:
-                    if "연간" in nm: m_key = "주가수익률_연간"
-                    else: m_key = "주가수익률"
+                elif it_id == "3" or "PBR" in nm: m_key = "pbr"
+                elif it_id == "6" or "부채" in nm: m_key = "debt_ratio"
+                elif it_id == "8" or "배당" in nm: m_key = "div_yield"
+                elif it_id == "9": m_key = "current_ratio"
                 
                 if m_key: id_to_key[it_id] = m_key
 
-        # 2. Extract Data from dt3
+        # Group existing data
         for item in data_items:
             it_id = str(item.get("ITEM"))
             m_key = id_to_key.get(it_id)
@@ -84,19 +77,46 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 if m_key not in metric_groups: metric_groups[m_key] = []
                 metric_groups[m_key].append(item)
 
-        # 3. Fallback: Search dt0 for Missing PER/ROE (Ultimate logic)
-        for item in dt0_data:
-            nm = str(item.get("NM", "")).upper()
-            target_key = None
-            if "PER" in nm or "주가수익비율" in nm: target_key = "per"
-            elif "ROE" in nm or "자기자본" in nm: target_key = "roe"
-            elif "PBR" in nm: target_key = "pbr"
-            
-            if target_key and target_key not in metric_groups:
-                # dt0 has same FY_4...FY1 structure
-                metric_groups[target_key] = [item]
+        # 4. Hybrid Sync: Injecting PER/ROE from cF1001 HTML
+        # Extract headers (Years) from HTML
+        html_years = re.findall(r'<th[^>]*>(\d{4}/\d{2})', fin_html)
+        if not html_years:
+            # Fallback to sector headers if regex failed
+            html_years = i_headers if i_headers else ["N/A"]
 
-        # 4. Form Charts and Summary
+        for target in ["PER", "ROE"]:
+            m_key = target.lower()
+            if m_key in metric_groups: continue # Skip if already found (unlikely)
+
+            # Find the row containing PER or ROE
+            # Extract values using regex lookaround
+            row_pattern = rf'{target}.*?</tr>'
+            row_match = re.search(row_pattern, fin_html, re.S | re.I)
+            if row_match:
+                vals = re.findall(r'<td[^>]*>([\d,\.-]+)</td>', row_match.group(), re.S)
+                if vals:
+                    # Construct a dummy item compatible with our mapper
+                    # We map HTML values to our current headers
+                    dummy_item = {"GUBN": "1", "NM": target, "ITEM": f"HP_{target}"}
+                    for i, v in enumerate(vals):
+                        if i < len(html_years):
+                            h = html_years[i]
+                            # Try to match h with i_headers or just use FY indices
+                            val_clean = v.replace(',', '')
+                            try:
+                                float_val = float(val_clean)
+                            except:
+                                float_val = None
+                            
+                            # Naver usually shows 8 columns in cF1001
+                            # We map them to FY indices (-3 to 4)
+                            fy_idx = i - 3
+                            fy_key = f"FY{fy_idx}" if fy_idx >= 0 else f"FY_{abs(fy_idx)}"
+                            dummy_item[fy_key] = float_val
+                    
+                    metric_groups[m_key] = [dummy_item]
+
+        # 5. Form Final Charts and Summary
         for m_key, items in metric_groups.items():
             m_rows = []
             processed_categories = set()
@@ -108,13 +128,12 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 name = category_map.get(gubn, "기타")
                 row = {"name": name}
                 
-                for idx, h in enumerate(i_headers):
+                # Preferred header set
+                target_headers = i_headers if i_headers else html_years
+                
+                for idx, h in enumerate(target_headers):
                     fy_offset = idx - 3
                     fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
-                    # Handle Naver special cases
-                    if fy_offset == 0: fy_key = "FY0"
-                    if fy_offset == 1: fy_key = "FY1"
-                    
                     val = item.get(fy_key)
                     try:
                         row[h] = float(val) if val is not None and val != "" else None
@@ -123,10 +142,11 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 m_rows.append(row)
 
             if m_rows:
+                final_headers = i_headers if i_headers else html_years
                 charts[m_key] = {
-                    "headers": i_headers,
+                    "headers": final_headers,
                     "rows": m_rows,
-                    "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in i_headers if h]
+                    "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in final_headers if h]
                 }
                 
                 for r in m_rows:
@@ -135,29 +155,25 @@ def get_sector_analysis_data(symbol, sector_id=None):
                         s_entry = {"name": r["name"]}
                         summary_table.append(s_entry)
                     
-                    latest_h = i_headers[-2] if len(i_headers) > 1 else (i_headers[-1] if i_headers else None)
+                    latest_h = final_headers[-2] if len(final_headers) > 1 else (final_headers[-1] if final_headers else None)
                     if latest_h: s_entry[m_key] = r.get(latest_h)
 
-        # 5. Comparison Sectors
+        # 6. Sector Dropdown (dt2)
         compare_sectors = []
         dt2 = ajax_json.get("dt2", [])
         if dt2 and isinstance(dt2, list):
             for sec in dt2:
                 sec_nm = str(sec.get("SEC_NM_K", "")).strip()
-                sec_id = sec.get("SEC_CD", "")
-                if sec_nm and sec_id:
+                if sec_nm:
+                    sec_id = sec.get("SEC_CD", "")
                     compare_sectors.append({"id": sec_id, "name": sec_nm, "selected": str(sec_id) == str(sector_id)})
         
         if not compare_sectors:
             for item in dt0_data:
                 if item.get("GUBN") == "1" and item.get("SEQ") == 2:
                     nm = str(item.get("NM", "")).strip()
-                    if nm and len(nm) > 1:
+                    if nm:
                         compare_sectors.append({"id": sector_id or "DEFAULT", "name": nm, "selected": True})
-        
-        # If still empty, use skeleton
-        if not summary_table:
-            summary_table = [{"name": "대상 종목"}, {"name": "업종 평균"}, {"name": "시장 지수"}]
 
         return {
             "symbol": symbol,
@@ -165,7 +181,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
             "compare_sectors": compare_sectors,
             "summary_table": summary_table,
             "charts": charts,
-            "raw_headers": i_headers
+            "raw_headers": i_headers if i_headers else html_years
         }
 
     except Exception as e:

@@ -323,7 +323,7 @@ function AnalysisContent() {
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v2.8.5 (Ultimate-Data)
+                                Sector Trend v3.0.0 (Core-Sync)
                             </span>
                         </div>
                     </div>
