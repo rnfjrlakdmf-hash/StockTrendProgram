@@ -190,6 +190,14 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
     try:
         import yfinance as yf
 
+        def safe(df, key, col=0):
+            try:
+                if df is None or df.empty: return 0
+                val = df.loc[key].iloc[col] if key in df.index else 0
+                return float(val) if val is not None else 0
+            except:
+                return 0
+
         symbol = urllib.parse.unquote(symbol)
         
         # [New] Resolve Korean Name to Code if needed
@@ -211,14 +219,24 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
             naver_data = gather_naver_stock_data(symbol)
             if naver_data:
                 ticker_sym = f"{naver_data['code']}.{naver_data['market_type']}"
+            else:
+                # Fallback: Guess market type if Naver call fails
+                if len(symbol) == 6 and symbol.isdigit():
+                    ticker_sym = f"{symbol}.KS"
+        
+        if not naver_data: naver_data = {}
         
         t = yf.Ticker(ticker_sym)
         info = t.info or {}
         
-        nav_full = naver_data.get("detailed_financials", {}).get("full_data", {}) if naver_data else {}
+        # Safely extract detailed financials
+        detailed = naver_data.get("detailed_financials") if naver_data else None
+        if not detailed: detailed = {}
+        
+        nav_full = detailed.get("full_data", {})
         
         # 1. Prepare Primary Metrics (Prefer Naver/DART)
-        nav_summary = naver_data.get("detailed_financials", {}).get("summary", {}) if naver_data else {}
+        nav_summary = detailed.get("summary", {})
         
         # Balance Sheet & Cashflow (Only if Naver failed to get key summaries)
         bs = None
@@ -305,18 +323,12 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         if is_korean and (bs is None or bs.empty) and get_dart_financials:
             print(f"[Analysis] YF empty for {symbol}. Fetching from DART...")
             dart_res = get_dart_financials(symbol)
-            if dart_res.get("success"):
+            if dart_res and isinstance(dart_res, dict) and dart_res.get("success"):
                 # Use the latest year's data
-                latest = dart_res["data"][-1]
-                dart_data = latest
+                if dart_res.get("data") and len(dart_res["data"]) > 0:
+                    latest = dart_res["data"][-1]
+                    dart_data = latest
 
-        def safe(df, key, col=0):
-            try:
-                if df is None or df.empty: return 0
-                val = df.loc[key].iloc[col] if key in df.index else 0
-                return float(val) if val is not None else 0
-            except:
-                return 0
 
         # Assemble Primary Metrics
         # This section is now largely redundant due to the new if/else block above
@@ -431,19 +443,19 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
             "ratios": ratios,
             "charts": {
                 "stability": [
-                    {"year": yr.split('/')[0], "부채비율": d, "유동비율": c}
+                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "부채비율": d, "유동비율": c}
                     for yr, d, c in zip(
-                        nav_full.get("debt_ratio", {}).get("dates", [])[:4],
-                        nav_full.get("debt_ratio", {}).get("values", [])[:4],
-                        nav_full.get("current_ratio", {}).get("values", [])[:4]
+                        (nav_full.get("debt_ratio") or {}).get("dates", [])[:4],
+                        (nav_full.get("debt_ratio") or {}).get("values", [])[:4],
+                        (nav_full.get("current_ratio") or {}).get("values", [])[:4]
                     ) if d is not None and c is not None
                 ],
                 "profitability": [
-                    {"year": yr.split('/')[0], "ROE": r, "ROA": a}
+                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "ROE": r, "ROA": a}
                     for yr, r, a in zip(
-                        nav_full.get("roe", {}).get("dates", [])[:4],
-                        nav_full.get("roe", {}).get("values", [])[:4],
-                        nav_full.get("roa", {}).get("values", [])[:4]
+                        (nav_full.get("roe") or {}).get("dates", [])[:4],
+                        (nav_full.get("roe") or {}).get("values", [])[:4],
+                        (nav_full.get("roa") or {}).get("values", [])[:4]
                     ) if r is not None and a is not None
                 ]
             },

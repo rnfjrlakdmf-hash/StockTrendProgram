@@ -195,9 +195,9 @@ def gather_naver_stock_data(symbol: str):
         if market_img:
             alt = market_img.get('alt', '')
             if '코스닥' in alt:
-                market_type = 'KOSDAQ'
+                market_type = 'KQ'
             elif '코스피' in alt:
-                market_type = 'KOSPI'
+                market_type = 'KS'
                 
         # [New] Company Description (Summary) - Mobile API integration
         description = ""

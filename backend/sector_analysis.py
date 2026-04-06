@@ -138,10 +138,11 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 
                 # Update Summary Table (Always matching TARGET_LABEL)
                 for r in m_rows:
-                    if r["name"] == TARGET_LABEL:
-                        s_e = next((s for s in summary_table if s["name"] == TARGET_LABEL), None)
+                    t_name = r["name"]
+                    if t_name in [TARGET_LABEL, INDUSTRY_LABEL, MARKET_LABEL]:
+                        s_e = next((s for s in summary_table if s["name"] == t_name), None)
                         if not s_e:
-                            s_e = {"name": TARGET_LABEL}
+                            s_e = {"name": t_name}
                             summary_table.append(s_e)
                         
                         # Fix FY0 position (index 3 if 4 years set)

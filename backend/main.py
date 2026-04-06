@@ -101,8 +101,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v4.6.0 (Victory-Gold)",
-        "build_id": "2026-04-06-deploy-v12-gold",
+        "version": "v4.6.9 (Victory-Unified-Final)",
+        "build_id": "2026-04-06-deploy-v15-final",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
