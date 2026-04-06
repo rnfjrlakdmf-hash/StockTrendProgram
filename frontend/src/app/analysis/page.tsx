@@ -323,7 +323,7 @@ function AnalysisContent() {
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v3.2.1 (SSR-Mashup)
+                                Sector Trend v4.0.0 (Ironclad-Sync)
                             </span>
                         </div>
                     </div>
@@ -820,13 +820,13 @@ function AnalysisContent() {
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
                                                     <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v2.7.9 (Stable-Data)</span>
-                                                    <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" suppressHydrationWarning>v3.2.1 (SSR-Mashup)</span>
+                                                    <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" suppressHydrationWarning>v4.0.0 (Ironclad-Sync)</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-[10px] font-bold text-emerald-400/80 tracking-widest uppercase mb-1">v3.2.1 (SSR-Mashup)</span>
+                                                    <span className="text-[10px] font-bold text-emerald-400/80 tracking-widest uppercase mb-1">v4.0.0 (Ironclad-Sync)</span>
                                                     <select
                                                         value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
                                                         onChange={(e) => {
