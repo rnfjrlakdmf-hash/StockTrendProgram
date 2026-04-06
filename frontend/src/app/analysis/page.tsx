@@ -787,7 +787,7 @@ function AnalysisContent() {
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white uppercase tracking-tight">Sector Health Analytics</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Naver-Mirror v4.7.0</span>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Naver-Mirror v4.7.1</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (3-Way 비교)</p>
                                             </div>
@@ -1142,7 +1142,7 @@ function AnalysisContent() {
 
                 <p className="text-center text-[10px] text-gray-600 mt-8 font-bold tracking-tight">
                     * 본 정보는 투자 참고용이며, 최종 투자 판단의 책임은 본인에게 있습니다.<br />
-                    v4.7.0 SYNC-RELEASE (Naver-Mirror Optimized)
+                    v4.7.1 SYNC-RELEASE (Naver-Mirror Optimized)
                 </p>
             </div>
         </div>
