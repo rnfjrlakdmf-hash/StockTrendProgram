@@ -59,38 +59,66 @@ def get_sector_analysis_data(symbol, sector_id):
         if not isinstance(i_headers, list):
             i_headers = []
         
+        data_items = indicators_data.get("data", [])
+        category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
+        
         if i_headers:
-            # Step 3-1. Group all raw items by our target metric names
-            metric_groups = {}
-            for item in indicators_data.get("data", []):
-                nm = item.get("NM", "").upper()
-                seq = int(item.get("SEQ", 0))
+            # [v2.8.0] Pre-scan dt3 to map ITEM IDs to Indicator Keys
+            # This solves the "Missing Industry/Market Data" bug where names are corrupted in non-target rows.
+            id_to_key = {}
+            for item in data_items:
+                # We identify the indicator from the Target Stock (GUBN 1) row which usually has a better NM
+                if item.get("GUBN") == "1":
+                    it_id = str(item.get("ITEM"))
+                    nm = item.get("NM", "").upper()
+                    
+                    m_key = None
+                    # Return/Price related
+                    if it_id == "1":
+                        if "EPS" in nm: m_key = "eps"
+                    elif it_id == "2":
+                        if "BPS" in nm: m_key = "bps"
+                    elif it_id == "8" or "DPS" in nm: 
+                        m_key = "div_yield" # Defaulting ITEM 8 to div related
+                    
+                    # Keywords Matching (Hybrid)
+                    if "PER" in nm or "주가수익비율" in nm: m_key = "per"
+                    elif "PBR" in nm or "주가순자산" in nm or it_id == "3": m_key = "pbr"
+                    elif "ROE" in nm or "자기자본" in nm: m_key = "roe"
+                    elif "ROA" in nm or "총자산" in nm: m_key = "roa"
+                    elif "배당성향" in nm: m_key = "payout_ratio"
+                    elif "배당수익률" in nm: m_key = "div_yield"
+                    elif "부채비율" in nm or it_id == "6": m_key = "debt_ratio"
+                    elif "유동비율" in nm: m_key = "current_ratio"
+                    elif "영업이익률" in nm: m_key = "op_margin"
+                    elif "순이익률" in nm: m_key = "net_margin"
+                    elif "매출액증가율" in nm: m_key = "sales_growth"
+                    elif "영업이익증가율" in nm: m_key = "op_growth"
+                    elif "순이익증가율" in nm: m_key = "net_growth"
+                    elif "주가수익률" in nm:
+                        if "연간" in nm: m_key = "주가수익률_연간"
+                        else: m_key = "주가수익률"
+                    
+                    if m_key: id_to_key[it_id] = m_key
+
+            # 3. Form Charts (v2.8.0 Hierarchical Mapping)
+            for item in data_items:
+                it_id = str(item.get("ITEM"))
+                gubn = item.get("GUBN")
+                category_name = category_map.get(gubn, "기타")
                 
-                m_key = None
-                if "PER" in nm and "FWD" not in nm: m_key = "per"
-                elif "PBR" in nm and "FWD" not in nm: m_key = "pbr"
-                elif "FWD. 12M PER" in nm: m_key = "fwd_per"
-                elif "FWD. 12M PBR" in nm: m_key = "fwd_pbr"
-                elif "ROE" in nm: m_key = "roe"
-                elif "ROA" in nm: m_key = "roa"
-                elif "부채비율" in nm: m_key = "debt_ratio"
-                elif "유동비율" in nm: m_key = "current_ratio"
-                elif "배당성향" in nm: m_key = "payout_ratio"
-                elif "매출액증가율" in nm: m_key = "sales_growth"
-                elif "영업이익증가율" in nm: m_key = "op_growth"
-                elif "순이익증가율" in nm: m_key = "net_growth"
-                elif "배당수익률" in nm: m_key = "div_yield"
-                elif "주가수익률" in nm: 
-                    if "연간" in nm: m_key = "주가수익률_연간"
-                    else: m_key = "주가수익률"
-                elif "영업이익률" in nm: m_key = "op_margin"
-                elif "순이익률" in nm: m_key = "net_margin"
-                elif "매출총이익률" in nm: m_key = "gross_margin"
+                # Map the item to a key using our pre-scanned ID map
+                m_key = id_to_key.get(it_id)
+                
+                # Fallback to NM matching if ID mapping failed
+                if not m_key:
+                    nm = item.get("NM", "").upper()
+                    if "PER" in nm: m_key = "per"
+                    elif "PBR" in nm: m_key = "pbr"
+                    elif "ROE" in nm: m_key = "roe"
+                    elif "배당" in nm: m_key = "div_yield"
                 
                 if m_key:
-                    # Filter out total amount items
-                    if ("금액" in nm or "자산" in nm or ("부채" in nm and "비율" not in nm)) and seq > 1:
-                        continue
                     
                     if m_key not in metric_groups: metric_groups[m_key] = []
                     metric_groups[m_key].append(item)

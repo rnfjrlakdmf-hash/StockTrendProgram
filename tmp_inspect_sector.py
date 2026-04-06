@@ -29,16 +29,22 @@ try:
     
     if response.status_code == 200:
         print(f"Keys in JSON: {list(data.keys())}")
-        if "finStdList" in data:
-            fin_items = data.get("finStdList", [])
-            print(f"Total items in finStdList: {len(fin_items)}")
-            for item in fin_items:
-                print(f"finStdList Item: {item}")
-        else:
-            print("finStdList key is missing")
-
-        # Check dt0 as well
-        if "dt0" in data:
-            print(f"dt0 Item: {data['dt0'].get('data', [])[:2]}")
+        if "dt3" in data:
+            data_items = data['dt3'].get('data', [])
+            print(f"Total data items in dt3: {len(data_items)}")
+            
+            print("\nIndicator Data Values (Guessing by Values):")
+            indicator_samples = {}
+            for item in data_items:
+                if item.get("GUBN") == "1" and item.get("SEQ", 0) > 1:
+                    it_id = item.get("ITEM")
+                    nm = item.get("NM", "")
+                    val = item.get("FY_1") # Using FY_1 as it's more likely present
+                    if it_id not in indicator_samples:
+                        indicator_samples[it_id] = []
+                    indicator_samples[it_id].append((nm, val))
+            
+            for it_id, samples in sorted(indicator_samples.items()):
+                print(f"ITEM {it_id}: {samples}")
 except Exception as e:
     print(f"Error: {e}")
