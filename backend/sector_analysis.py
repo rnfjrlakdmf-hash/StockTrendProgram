@@ -15,7 +15,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
     
     try:
         # Standard Literal Labels (Matching Naver UI)
-        TARGET_LABEL = "대상 종목"
+        TARGET_LABEL = "내 종목"
         INDUSTRY_LABEL = "섹터 평균"  # Changed from 업종 to 섹터 for Perfect Mirror
         MARKET_LABEL = "시장 지수"
         
