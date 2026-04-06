@@ -110,7 +110,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
         # 6. Returns Chart (dt0) - "주가수익률"
         rtn_items = ajax_json.get("dt0", {}).get("data", [])
         if rtn_items:
-            rtn_headers = ajax_json.get("dt0", {}).get("yymm", [])
+            # Normalize Returns Chart (dt0) to Master i_headers
             rtn_rows = []
             processed_rtn = set()
             sorted_rtn = sorted(rtn_items, key=lambda x: str(x.get("GUBN")))
@@ -120,18 +120,21 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 processed_rtn.add(gubn)
                 nm = category_map.get(gubn, "ETC")
                 row = {"name": nm}
-                for i, h in enumerate(rtn_headers):
-                    off = i - 3
+                # Sync with master i_headers
+                for idx, h in enumerate(i_headers):
+                    # FY_4=2020, FY_3=2021, FY_2=2022, FY_1=2023, FY0=2024, FY1=2025
+                    # idx=0 (2021) should be FY_3
+                    off = idx - 3
                     key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
                     row[h] = item.get(key)
                 rtn_rows.append(row)
             
             c_data = []
-            for h in rtn_headers:
+            for h in i_headers:
                 ent = {"period": h}
                 for r in rtn_rows: ent[r["name"]] = r.get(h) or 0.0
                 c_data.append(ent)
-            charts["주가수익률"] = {"headers": rtn_headers, "rows": rtn_rows, "chart_data": c_data}
+            charts["주가수익률"] = {"headers": i_headers, "rows": rtn_rows, "chart_data": c_data}
 
         # 7. Integration & Summary Table (Core 8)
         titles = {
@@ -190,7 +193,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 e_resp = requests.get(e_url, headers=headers, timeout=5)
                 e_json = e_resp.json()
                 
-                e_headers = e_json.get("yymm", [])
+                e_headers = i_headers # Universal Timeline Sync
                 e_items = e_json.get("data", [])
                 if not e_items: continue
                 
@@ -200,13 +203,17 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     if gubn not in ["1", "2", "3"]: continue
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
-                    # Map FY_4 to FY1
+                    # Precise Multi-Year Alignment logic
                     for idx, h in enumerate(e_headers):
-                        # Naver Detailed API uses FY_4 (T-4) up to FY1 (T+1)
-                        # We use 0-5 index mapping
-                        key = f"FY_{4-idx}" if idx < 4 else f"FY{idx-4}"
-                        if idx == 4: key = "FY0"
-                        if idx == 5: key = "FY1"
+                        # Naver Details API logic:
+                        # 2021 (idx=0) -> FY_3
+                        # 2022 (idx=1) -> FY_2
+                        # 2023 (idx=2) -> FY_1
+                        # 2024 (idx=3) -> FY0
+                        # 2025 (idx=4) -> FY1
+                        # 2026(E) (idx=5) -> FY2 (often null)
+                        off = idx - 3
+                        key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
                         row[h] = item.get(key)
                     e_rows.append(row)
                 
