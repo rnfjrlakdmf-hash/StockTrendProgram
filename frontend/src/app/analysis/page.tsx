@@ -15,7 +15,6 @@ import {
     Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
-import ProSummaryReport from "@/components/ProSummaryReport";
 import BlinkingPrice from "@/components/BlinkingPrice";
 
 
@@ -30,7 +29,7 @@ function AnalysisContent() {
     }, []);
 
     const [symbol, setSymbol] = useState("");
-    const [activeTab, setActiveTab] = useState<"summary" | "quant" | "financial" | "sector" | "peer">("summary");
+    const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer">("quant");
 
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
@@ -58,7 +57,6 @@ function AnalysisContent() {
     const [showEasy, setShowEasy] = useState(false);
 
     // [v1.9.0] 개별 분석 실행을 위한 타겟 심볼 상태들
-    const [summarySymbol, setSummarySymbol] = useState("");
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
@@ -91,10 +89,6 @@ function AnalysisContent() {
             handleGlobalSearch("quant");
         } else if (activeTab === "financial" && finSymbol !== targetSymbol) {
             handleGlobalSearch("financial");
-        } else if (activeTab === "summary" && summarySymbol !== targetSymbol) {
-            if (!stockInfo || stockInfo.symbol !== targetSymbol) {
-                handleGlobalSearch("summary");
-            }
         }
     }, [activeTab, symbol]);
 
@@ -137,7 +131,6 @@ function AnalysisContent() {
         // [중요] targetSymbol은 이제 무조건 숫자 코드(005930 등)인 상태입니다.
         // 해당 탭에 맞는 트리거 실행
         switch (tab) {
-            case "summary": setSummarySymbol(targetSymbol); fetchBasicInfo(targetSymbol); break;
             case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
             case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
             case "sector": 
@@ -398,7 +391,6 @@ function AnalysisContent() {
                 <div className="sticky top-4 z-40 flex justify-center py-2 bg-black/50 backdrop-blur-md rounded-2xl border border-white/5">
                     <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full max-w-2xl">
                         {[
-                            { id: "summary", label: "요약 리포트", icon: Activity },
                             { id: "quant", label: "TurboQuant", icon: Zap },
                             { id: "financial", label: "재무 분석", icon: Shield },
                             { id: "sector", label: "섹터 분석", icon: PieChart },
@@ -417,30 +409,6 @@ function AnalysisContent() {
 
                 {/* 5. Tab Contents */}
                 <div className="min-h-[400px] mt-4">
-                    {activeTab === "summary" && (
-                        <div className="space-y-6">
-                            {/* Local Trigger for Summary */}
-                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-500/20 rounded-lg"><Activity className="w-5 h-5 text-indigo-400" /></div>
-                                    <h3 className="font-bold">요약 리포트 파트</h3>
-                                </div>
-                                <button onClick={() => handleGlobalSearch("summary")}
-                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    리포트 생성
-                                </button>
-                            </div>
-
-                            {summarySymbol ? (
-                                <ProSummaryReport symbol={summarySymbol} />
-                            ) : (
-                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                                    <Zap className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500 font-bold text-sm">상단에서 종목 선택 후 [리포트 생성]을 눌러주세요.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     {activeTab === "quant" && (
                         <div className="space-y-6">
