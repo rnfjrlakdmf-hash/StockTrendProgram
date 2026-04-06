@@ -132,6 +132,12 @@ def read_etf_rank(market: str = "KR", category: Optional[str] = None):
 def peer_data(symbol: str):
     return get_peer_comparison(symbol)
 
+@app.get("/api/sector-analysis/{symbol}")
+@turbo_cache(ttl_seconds=300)
+def sector_analysis_api(symbol: str, sector_id: Optional[str] = Query(None)):
+    """v3.0.0 Core-Sync 기반 하이브리드 섹터 분석 API"""
+    return get_sector_analysis_data(symbol, sector_id)
+
 @app.get("/api/etf-detail/{symbol}")
 def etf_detail(symbol: str):
     """엔드포인트: 주어진 심볼을 기반으로 ETF의 순자산총액, 총보수, 편입종목 Top 10 등을 조회합니다. (Turbo Cache 적용)"""
