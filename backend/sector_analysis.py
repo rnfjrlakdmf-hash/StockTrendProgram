@@ -3,56 +3,45 @@ import json
 import logging
 import re
 
-# [v3.0.0] Core-Sync (Ultimate Mashup)
-# This module implements a hybrid data fetching strategy.
-# It merges Sector Comparison (cF9001) with Financial Summary (cF1001) 
-# to restore missing PER and ROE indicators.
+# [v3.2.1] Ultimate SSR-Mashup (Final)
+# Combines Wisereport AJAX for industry data and Naver SSR for target company financials.
+# Solves the "AJAX 0-byte" and "Naver Security" issues.
 
 def get_sector_analysis_data(symbol, sector_id=None):
-    """
-    Ultimate hybrid fetch for comparative analysis.
-    Combines industry-level metrics (EPS, BPS, PBR, etc.) from cF9001 
-    with company-level valuation (PER, ROE) from cF1001.
-    """
-    logging.info(f"Starting v3.0.0 Hybrid Analysis for {symbol}")
+    logging.info(f"Starting v3.2.1 Ultimate SSR-Mashup for {symbol}")
+    
     try:
-        # 1. Headers (Strict Browser Simulation)
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.37 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.37",
-            "Referer": f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={symbol}",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Referer": "https://finance.naver.com/"
         }
 
-        # 2. Fetch Sector Data (cF9001) - Focus on Industry Metrics
+        # 1. Fetch Sector AJAX (cF9001) - Industry/Market Baseline
         sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
         if sector_id:
             sector_url += f"&sec_cd={sector_id}"
             
-        s_resp = requests.get(sector_url, headers=headers, timeout=15)
+        s_resp = requests.get(sector_url, headers=headers, timeout=10)
         try:
             ajax_json = s_resp.json()
         except:
             json_str = s_resp.content.decode('cp949', errors='replace')
             ajax_json = json.loads(json_str)
 
-        if not ajax_json: 
-            logging.error(f"cF9001 returned empty for {symbol}")
-            return None
+        if not ajax_json: return None
 
-        # 3. Fetch Core Financials (cF1001) - Restoration of PER/ROE
-        # freq_typ=Y (Annual), fin_typ=0 (Consolidated)
-        fin_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF1001.aspx?cmp_cd={symbol}&fin_typ=0&freq_typ=Y"
-        f_resp = requests.get(fin_url, headers=headers, timeout=15)
-        # Naver uses EUC-KR/CP949 for HTML responses sometimes
+        # 2. Fetch Naver SSR (main.naver) - Target Company Financials (PER, ROE, etc.)
+        ssr_url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+        f_resp = requests.get(ssr_url, headers=headers, timeout=10)
+        # Naver SSR uses UTF-8 now, but EUC-KR fallback just in case
         try:
-            fin_html = f_resp.content.decode('utf-8')
+            ssr_html = f_resp.content.decode('utf-8')
         except:
-            fin_html = f_resp.content.decode('cp949', errors='replace')
+            ssr_html = f_resp.content.decode('cp949', errors='replace')
 
-        # 4. Standardizing Headers across both sources
+        # 3. Headers & Data Items Setup
         indicators_data = ajax_json.get("dt3", {})
-        i_headers = indicators_data.get("yymm", []) # e.g. ["2020/12", ...]
+        i_headers = indicators_data.get("yymm", [])
         data_items = indicators_data.get("data", [])
         
         category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
@@ -61,7 +50,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
         metric_groups = {}
         id_to_key = {}
 
-        # Scan for existing metrics in dt3 (EPS, BPS, PBR, etc.)
+        # Scan for existing metrics in AJAX
         for item in data_items:
             if item.get("GUBN") == "1":
                 it_id = str(item.get("ITEM"))
@@ -72,10 +61,11 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 elif it_id == "3" or "PBR" in nm: m_key = "pbr"
                 elif it_id == "6" or "부채" in nm: m_key = "debt_ratio"
                 elif it_id == "8" or "배당" in nm: m_key = "div_yield"
+                elif it_id == "9": m_key = "current_ratio"
                 
                 if m_key: id_to_key[it_id] = m_key
 
-        # Group existing data
+        # Group data
         for item in data_items:
             it_id = str(item.get("ITEM"))
             m_key = id_to_key.get(it_id)
@@ -83,42 +73,46 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 if m_key not in metric_groups: metric_groups[m_key] = []
                 metric_groups[m_key].append(item)
 
-        # 5. Hybrid Restoration Logic: Extracting PER/ROE from cF1001 HTML
-        # Extract headers (Years) from HTML to ensure alignment
-        html_years = re.findall(r'<th[^>]*>(\d{4}/\d{2})', fin_html)
-        if not html_years: html_years = i_headers if i_headers else ["N/A"]
-
+        # 4. Critical Restoration: Extracting from SSR Table
+        # The table of interest is usually "section_cop_analysis" (기업실적분석)
+        # Extract Years from the table header first
+        # Format: <th[^>]*><span>2023.12</span></th>
+        table_years = re.findall(r'(\d{4}\.\d{2})', ssr_html)
+        # Filter for the summary table years (typically 10-15 occurrences)
+        unique_years = []
+        for y in table_years:
+            if y not in unique_years: unique_years.append(y.replace('.', '/'))
+        
+        # Mapping Logic
         for target in ["PER", "ROE"]:
             m_key = target.lower()
             if m_key in metric_groups: continue
 
-            # Search row for PER or ROE
-            # Note: NM can be 'PER' or 'ROE' or 'ROE(%)'
-            target_regex = rf'{target}.*?</tr>'
-            row_match = re.search(target_regex, fin_html, re.S | re.I)
+            # Final Regex: Search for the label and extract all following numeric values in that row
+            # Naver's table structure is rows like <tr><th scope="row">...PER...</th><td>...</td>...</tr>
+            row_pattern = rf'<th[^>]*>.*?{target}.*?</th>(.*?)(?:</tr>|<th)'
+            row_match = re.search(row_pattern, ssr_html, re.S | re.I)
             if row_match:
-                # Find all <td> values in this row
-                vals = re.findall(r'<td[^>]*>(?:<span[^>]*>)?\s*([\d,\.-]+)\s*(?:</span>)?</td>', row_match.group(), re.S)
-                if vals:
-                    # Construct dummy object compatible with DT3 format
-                    dummy_item = {"GUBN": "1", "NM": target, "ITEM": f"HP_{target}"}
-                    # Map values to FY keys (FY_3 to FY4)
-                    for i, v in enumerate(vals):
-                        val_clean = v.replace(',', '')
-                        try:
-                            float_val = float(val_clean)
-                        except:
-                            float_val = None
-                        
+                vals = re.findall(r'<td[^>]*>[\s\n\t]*([\d,\.-]+)[\s\n\t]*</td>', row_match.group(), re.S)
+                # Cleanup and convert to numeric
+                clean_vals = [v.replace(',', '') for v in vals if v.strip()]
+                if clean_vals:
+                    dummy_item = {"GUBN": "1", "NM": target, "ITEM": f"RESTORED_{target}"}
+                    # Map to FY keys (FY_3 to FY4)
+                    # Naver SSR Summary Table typically: FY_3, FY_2, FY_1, FY0, FY1(E), FY2(E), FY3(E)
+                    for i, v in enumerate(clean_vals):
                         fy_idx = i - 3
                         fy_key = f"FY{fy_idx}" if fy_idx >= 0 else f"FY_{abs(fy_idx)}"
-                        dummy_item[fy_key] = float_val
+                        try:
+                            dummy_item[fy_key] = float(v)
+                        except:
+                            dummy_item[fy_key] = None
                     
                     metric_groups[m_key] = [dummy_item]
-                    logging.info(f"Restored {target} from cF1001 mashup.")
+                    logging.info(f"Restored {target} from SSR Mashup.")
 
-        # 6. Final Data Assembly
-        final_headers = i_headers if i_headers else html_years
+        # 5. Assembly
+        final_headers = i_headers if i_headers else unique_years[:4] # Historical 4 years
         for m_key, items in metric_groups.items():
             m_rows = []
             processed_categories = set()
@@ -134,10 +128,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     fy_offset = idx - 3
                     fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
                     val = item.get(fy_key)
-                    try:
-                        row[h] = float(val) if val is not None and val != "" else None
-                    except:
-                        row[h] = None
+                    row[h] = val
                 m_rows.append(row)
 
             if m_rows:
@@ -147,35 +138,29 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in final_headers if h]
                 }
                 
-                # Add to summary table (using last stable year if available)
                 for r in m_rows:
                     s_entry = next((s for s in summary_table if s["name"] == r["name"]), None)
                     if not s_entry:
                         s_entry = {"name": r["name"]}
                         summary_table.append(s_entry)
                     
-                    latest_h = final_headers[-2] if len(final_headers) > 1 else (final_headers[-1] if final_headers else None)
-                    if latest_h: s_entry[m_key] = r.get(latest_h)
+                    # FY0 mapping (typically index 3 in a 4-year historical set)
+                    fy0_h = final_headers[3] if len(final_headers) > 3 else (final_headers[-1] if final_headers else None)
+                    if fy0_h: s_entry[m_key] = r.get(fy0_h)
 
-        # 7. Sector Dropdown (dt2)
+        # 6. Sector Mapping (dt2)
         compare_sectors = []
         dt2 = ajax_json.get("dt2", [])
         if dt2 and isinstance(dt2, list):
             for sec in dt2:
                 sec_nm = str(sec.get("SEC_NM_K", "")).strip()
                 if sec_nm:
-                    sec_id = sec.get("SEC_CD", "")
-                    compare_sectors.append({"id": sec_id, "name": sec_nm, "selected": str(sec_id) == str(sector_id)})
+                    compare_sectors.append({
+                        "id": str(sec.get("SEC_CD", "")),
+                        "name": sec_nm,
+                        "selected": str(sec.get("SEC_CD", "")) == str(sector_id)
+                    })
         
-        # Fallback for sector dropdown
-        if not compare_sectors:
-            dt0_data = ajax_json.get("dt0", {}).get("data", [])
-            for item in dt0_data:
-                if item.get("GUBN") == "1" and item.get("SEQ") == 2:
-                    nm = str(item.get("NM", "")).strip()
-                    if nm:
-                        compare_sectors.append({"id": sector_id or "UNKNOWN", "name": nm, "selected": True})
-
         return {
             "symbol": symbol,
             "sector_id": sector_id,
@@ -186,5 +171,5 @@ def get_sector_analysis_data(symbol, sector_id=None):
         }
 
     except Exception as e:
-        logging.error(f"Critical Error in hybrid analysis: {e}", exc_info=True)
+        logging.error(f"Critical Error in SSR-Mashup: {e}", exc_info=True)
         return None

@@ -101,8 +101,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.0.0 (Core-Sync)",
-        "build_id": "2026-04-06-deploy-v1",
+        "version": "v3.2.1 (SSR-Mashup)",
+        "build_id": "2026-04-06-deploy-v4",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -135,7 +135,7 @@ def peer_data(symbol: str):
 @app.get("/api/sector-analysis/{symbol}")
 @turbo_cache(ttl_seconds=300)
 def sector_analysis_api(symbol: str, sector_id: Optional[str] = Query(None)):
-    """v3.0.0 Core-Sync 기반 하이브리드 섹터 분석 API"""
+    """v3.2.1 SSR-Mashup 하이브리드 섹터 분석 API"""
     return get_sector_analysis_data(symbol, sector_id)
 
 @app.get("/api/etf-detail/{symbol}")
