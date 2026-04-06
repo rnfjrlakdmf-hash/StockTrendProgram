@@ -140,7 +140,12 @@ function AnalysisContent() {
             case "summary": setSummarySymbol(targetSymbol); fetchBasicInfo(targetSymbol); break;
             case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
             case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
-            case "sector": setSecSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchSectorAnalysis(targetSymbol); break;
+            case "sector": 
+                setSelectedSectorId(null);
+                setSecSymbol(targetSymbol); 
+                fetchBasicInfo(targetSymbol); 
+                fetchSectorAnalysis(targetSymbol); 
+                break;
         }
     };
 

@@ -141,19 +141,50 @@ def get_sector_analysis_data(symbol, sector_id):
                                 break
                         s_entry[m_key] = latest_val
 
-        # 4. Extract Comparison Sectors (dt2) - v2.7.6
-        dt2 = ajax_json.get("dt2", [])
+        # 4. Extract Comparison Sectors (dt2) - v2.7.9 Emergency Fix
         compare_sectors = []
-        if isinstance(dt2, list):
+        dt2 = ajax_json.get("dt2")
+        
+        # Fallback to predefined major sectors if dt2 is missing (Naver API changed)
+        major_sectors = [
+            {"id": "WI620", "name": "반도체"},
+            {"id": "WI600", "name": "소프트웨어"},
+            {"id": "WI610", "name": "IT하드웨어"},
+            {"id": "WI300", "name": "자동차"},
+            {"id": "WI110", "name": "화학"},
+            {"id": "WI200", "name": "철강"},
+            {"id": "WI400", "name": "에너지"},
+            {"id": "IKS013", "name": "KOSPI 전기전자"},
+            {"id": "IKS012", "name": "KOSPI 비금속"}
+        ]
+        
+        if dt2 and isinstance(dt2, list) and len(dt2) > 0:
             for sec in dt2:
-                sec_id = sec.get("SEC_CD")
-                sec_nm = sec.get("SEC_NM_K")
-                if sec_id and sec_nm:
-                    compare_sectors.append({
-                        "id": sec_id,
-                        "name": sec_nm,
-                        "selected": str(sec_id) == str(sector_id)
-                    })
+                sec_nm = sec.get("SEC_NM_K", "").strip()
+                sec_id = sec.get("SEC_CD", "")
+                if sec_nm and sec_id:
+                    compare_sectors.append({"id": sec_id, "name": sec_nm, "selected": str(sec_id) == str(sector_id)})
+        else:
+            # Try to find the default sector from dt0 (v2.7.9 Logic)
+            dt0_data = ajax_json.get("dt0", {}).get("data", [])
+            for item in dt0_data:
+                if item.get("GUBN") == "1" and item.get("SEQ") == 2:
+                    default_nm = item.get("NM", "").strip()
+                    # Clean up encoding/garbage if needed
+                    if default_nm and len(default_nm) > 1:
+                        compare_sectors.append({"id": sector_id or "DEFAULT", "name": default_nm, "selected": True})
+            
+            # Append major sectors as fallback options
+            existing_names = [s["name"] for s in compare_sectors]
+            for ms in major_sectors:
+                if ms["name"] not in existing_names:
+                    ms_copy = ms.copy()
+                    if ms_copy["id"] == sector_id: ms_copy["selected"] = True
+                    compare_sectors.append(ms_copy)
+
+        # If still empty, add at least one
+        if not compare_sectors:
+            compare_sectors.append({"id": sector_id or "", "name": "주요 업종 (기본)", "selected": True})
 
         if not summary_table:
             # Provide a more complete skeleton for UI stability

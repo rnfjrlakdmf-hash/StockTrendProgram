@@ -29,20 +29,16 @@ try:
     
     if response.status_code == 200:
         print(f"Keys in JSON: {list(data.keys())}")
-        if "dt3" in data:
-            data_items = data['dt3'].get('data', [])
-            print(f"Total data items in dt3: {len(data_items)}")
-            
-            # Check for specific search terms
-            search_terms = ["PER", "PBR", "ROE", "배당성향", "부채비율", "수익률"]
-            for term in search_terms:
-                matches = [item.get("NM", "") for item in data_items if term in item.get("NM", "")]
-                print(f"Matches for '{term}': {matches}")
-            
-            # Print unique NM for each GUBN to understand structure
-            for g in ["1", "2", "3"]:
-                g_items = [item for item in data_items if item.get("GUBN") == g]
-                g_names = [item.get("NM", "") for item in g_items]
-                print(f"\nGUBN {g} Names: {g_names}")
+        if "finStdList" in data:
+            fin_items = data.get("finStdList", [])
+            print(f"Total items in finStdList: {len(fin_items)}")
+            for item in fin_items:
+                print(f"finStdList Item: {item}")
+        else:
+            print("finStdList key is missing")
+
+        # Check dt0 as well
+        if "dt0" in data:
+            print(f"dt0 Item: {data['dt0'].get('data', [])[:2]}")
 except Exception as e:
     print(f"Error: {e}")
