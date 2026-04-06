@@ -86,30 +86,30 @@ def get_sector_analysis_data(symbol, sector_id=None):
 
         for target in ["PER", "ROE"]:
             m_key = target.lower()
-            if m_key in metric_groups: continue # Skip if already found (unlikely)
+            if m_key in metric_groups: continue
 
-            # Find the row containing PER or ROE
-            # Extract values using regex lookaround
+            # Robust searching for PER/ROE row
+            # Naver HTML might have tags inside <td> like <span class="txt">
+            # Using broader regex to capture values
             row_pattern = rf'{target}.*?</tr>'
             row_match = re.search(row_pattern, fin_html, re.S | re.I)
             if row_match:
-                vals = re.findall(r'<td[^>]*>([\d,\.-]+)</td>', row_match.group(), re.S)
+                # Find all values including those inside spans or with commas
+                vals = re.findall(r'<td[^>]*>(?:<span[^>]*>)?\s*([\d,\.-]+)\s*(?:</span>)?</td>', row_match.group(), re.S)
                 if vals:
-                    # Construct a dummy item compatible with our mapper
-                    # We map HTML values to our current headers
                     dummy_item = {"GUBN": "1", "NM": target, "ITEM": f"HP_{target}"}
                     for i, v in enumerate(vals):
                         if i < len(html_years):
                             h = html_years[i]
-                            # Try to match h with i_headers or just use FY indices
                             val_clean = v.replace(',', '')
                             try:
                                 float_val = float(val_clean)
                             except:
                                 float_val = None
                             
-                            # Naver usually shows 8 columns in cF1001
-                            # We map them to FY indices (-3 to 4)
+                            # We map HTML values positions (0-7) to our FY keys
+                            # cF1001 usually has 8 columns: 4 past, 4 future.
+                            # Column 4 corresponds to FY0 (Current Year)
                             fy_idx = i - 3
                             fy_key = f"FY{fy_idx}" if fy_idx >= 0 else f"FY_{abs(fy_idx)}"
                             dummy_item[fy_key] = float_val
