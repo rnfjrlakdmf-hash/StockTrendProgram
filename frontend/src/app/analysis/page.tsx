@@ -316,7 +316,7 @@ function AnalysisContent() {
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v4.6.9 (Victory-Unified-Final)
+                                Sector Trend v4.7.0 (Naver-Perfect-Mirror)
                             </span>
                         </div>
                     </div>
@@ -757,7 +757,7 @@ function AnalysisContent() {
                             ) : (
                                 <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                     <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p>
+                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">종목코드를 입력하면 재무 분석을 시작합니다</p>
                                     <p className="text-xs text-gray-600 mt-2">Altman Z-Score · Piotroski F-Score · 핵심 비율</p>
                                 </div>
                             )}
@@ -766,281 +766,190 @@ function AnalysisContent() {
 
                     {activeTab === "sector" && (
                         <div className="space-y-6">
-                            {/* Local Trigger for Sector */}
+                            {/* Local Trigger for Sector Analysis */}
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-500/20 rounded-lg"><PieChart className="w-5 h-5 text-blue-400" /></div>
+                                    <div className="p-2 bg-indigo-500/20 rounded-lg"><PieChart className="w-5 h-5 text-indigo-400" /></div>
                                     <h3 className="font-bold">섹터 비교 분석</h3>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("sector")}
-                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    섹터 비교
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                    섹터 데이터 생성
                                 </button>
                             </div>
 
                             {sectorLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-blue-400 mb-3" /><p className="text-gray-500">섹터 비교 데이터 분석 중...</p></div>
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">섹터 비교 데이터 구성 중 (v4.7.0)...</p></div>
                             ) : sectorData ? (
                                 <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div className="bg-gradient-to-br from-blue-900/30 to-black border border-blue-500/30 rounded-3xl p-6">
+                                    <div className="bg-gradient-to-br from-indigo-900/20 to-black border border-indigo-500/30 rounded-3xl p-6">
                                         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
-                                                    <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v4.6.9 (Victory-Unified-Final)</span>
-                                                    <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" suppressHydrationWarning>v4.6.9 Stable</span>
+                                                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">Sector Health Analytics</h2>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Naver-Mirror v4.7.0</span>
                                                 </div>
-                                                <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
+                                                <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (3-Way 비교)</p>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-[10px] font-bold text-emerald-400/80 tracking-widest uppercase mb-1">v4.6.9 Final</span>
-                                                    <select
-                                                        value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
-                                                        onChange={(e) => {
-                                                            const newId = e.target.value;
-                                                            setSelectedSectorId(newId);
-                                                            fetchSectorAnalysis(secSymbol || symbol, newId);
-                                                        }}
-                                                        className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
-                                                    >
-                                                        {(sectorData.compare_sectors || []).map((s: any) => (
-                                                            <option key={s.id} value={s.id} className="bg-gray-900 text-white">
-                                                                {s.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] font-bold text-indigo-400/80 tracking-widest uppercase mb-1">Select Sector Range</span>
+                                                <select
+                                                    value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
+                                                    onChange={(e) => {
+                                                        const newId = e.target.value;
+                                                        setSelectedSectorId(newId);
+                                                        fetchSectorAnalysis(secSymbol || symbol, newId);
+                                                    }}
+                                                    className="bg-black/60 border border-white/20 rounded-xl px-4 py-2 text-sm font-black text-white outline-none focus:ring-2 focus:ring-indigo-500/50 min-w-[200px] cursor-pointer"
+                                                >
+                                                    {(sectorData.compare_sectors || []).map((s: any) => (
+                                                        <option key={s.id} value={s.id} className="bg-gray-900 text-white">
+                                                            {s.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
 
-                                        {/* Chart Grid */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                            {(() => {
-                                                if (!(sectorData?.charts)) return null;
-
-                                                // Category Definitions
-                                                const categories = [
-                                                    { id: "returns", title: "주가 수익률 분석", items: ["주가수익률", "주가수익률_연간"], icon: TrendingUp, labels: ["최근 수익률", "연간 수익률"] },
-                                                    { id: "dividend", title: "배당 수익/성향", items: ["div_yield", "payout_ratio"], icon: Coins, labels: ["배당수익률", "배당성향"] },
-                                                    { id: "per", title: "PER 지표 분석", items: ["per", "fwd_per"], icon: BarChart3, labels: ["PER", "Fwd. 12M PER 추이"] },
-                                                    { id: "pbr", title: "PBR 지표 분석", items: ["pbr", "fwd_pbr"], icon: BarChart3, labels: ["PBR", "Fwd. 12M PBR 추이"] },
-                                                    { id: "roe", title: "효율성 (ROE/ROA)", items: ["roe", "roa"], icon: Activity, labels: ["ROE", "ROA"] },
-                                                    { id: "stability", title: "안정성 (부채/유동)", items: ["debt_ratio", "current_ratio"], icon: Shield, labels: ["부채비율", "유동비율"] },
-                                                    { id: "growth", title: "성장성 (매출/이익)", items: ["sales_growth", "op_growth", "net_growth"], icon: ArrowUpRight, labels: ["매출액증가율", "영업이익증가율", "순이익증가율"] },
-                                                    { id: "margin", title: "이익률 (총/영업/순)", items: ["gross_margin", "op_margin", "net_margin"], icon: PieChart, labels: ["매출총이익률", "영업이익률", "순이익률"] }
-                                                ];
-
-                                                return categories.map((cat) => {
-                                                    const subMode = sectorSubModes[cat.id] || 1;
-                                                    const activeItemName = cat.items[subMode - 1] || cat.items[0];
-                                                    const data = sectorData.charts?.[activeItemName];
-                                                    
-                                                    if (!data || !data.chart_data || data.chart_data.length === 0) {
-                                                        return (
-                                                            <div key={cat.id} className="bg-black/40 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[400px] text-gray-500 border border-white/5">
-                                                                <AlertCircle className="w-12 h-12 mb-4 opacity-10" />
-                                                                <p className="text-sm">{cat.labels?.[subMode - 1] || activeItemName} 수집 중...</p>
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
-                                                            <div className="flex flex-col gap-4 mb-5">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2.5">
-                                                                        <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                                                                            <cat.icon className="w-4 h-4 text-blue-400" />
-                                                                        </div>
-                                                                        <div>
-                                                                            <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider" suppressHydrationWarning>Sector Trend v4.6.9 (Victory-Unified-Final)</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    {/* Indicator Selection - Prominent High-Contrast Buttons */}
-                                                                    <div className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/10 shadow-xl">
-                                                                        {cat.items.map((item, idx) => (
-                                                                            <button
-                                                                                key={idx}
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setSectorSubModes(prev => ({ ...prev, [cat.id]: idx + 1 }));
-                                                                                }}
-                                                                                className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center justify-center ${subMode === idx + 1
-                                                                                        ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105"
-                                                                                        : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300"
-                                                                                    }`}
-                                                                            >
-                                                                                {idx + 1}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
+                                        {/* 8-Grid Metric Section (Naver-Mirror) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {[
+                                                { key: "주가수익률", label: "주가수익률 (%)" },
+                                                { key: "배당수익률", label: "배당수익률 (%)" },
+                                                { key: "PER", label: "PER (배)" },
+                                                { key: "PBR", label: "PBR (배)" },
+                                                { key: "ROE", label: "ROE (%)" },
+                                                { key: "부채비율", label: "부채비율 (%)" },
+                                                { key: "매출액증가율", label: "매출액증가율 (%)" },
+                                                { key: "매출총이익률", label: "매출총이익률 (%)" }
+                                            ].map((metric) => {
+                                                const cat = (sectorData.charts || {})[metric.key];
+                                                const subMode = sectorSubModes[metric.key.toLowerCase()] || 1;
+                                                
+                                                return (
+                                                    <div key={metric.key} className="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden group hover:border-indigo-500/30 transition-all">
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                                                                    <Activity className="w-4 h-4 text-indigo-400" />
                                                                 </div>
+                                                                <h4 className="text-sm font-black text-white tracking-tight">{metric.label}</h4>
                                                             </div>
-                                                            <div className="h-[260px] w-full">
-                                                                {data ? (
-                                                                    <ResponsiveContainer width="100%" height="100%" key={`${cat.id}-${subMode}`}>
-                                                                        <LineChart
-                                                                            data={data.chart_data}
-                                                                            margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-                                                                        >
-                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                            <XAxis
-                                                                                dataKey="period"
-                                                                                stroke="#64748b"
-                                                                                fontSize={10}
-                                                                                tickLine={false}
-                                                                                axisLine={false}
-                                                                                minTickGap={activeItemName.includes("수익률") ? 80 : 40}
-                                                                            />
-                                                                            <YAxis
-                                                                                stroke="#64748b"
-                                                                                fontSize={10}
-                                                                                tickLine={false}
-                                                                                axisLine={false}
-                                                                                tickFormatter={(val) => {
-                                                                                    if (val === 0) return "0";
-                                                                                    // High Precision Unit Logic
-                                                                                    const isRatio = ['PER', 'PBR', 'PSR', 'EV/EBITDA'].some(k => activeItemName.toUpperCase().includes(k.toUpperCase()));
-                                                                                    return `${val}${isRatio ? "x" : "%"}`;
-                                                                                }}
-                                                                            />
-                                                                            <Tooltip
-                                                                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '11px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-                                                                                itemStyle={{ fontWeight: 'bold' }}
-                                                                                formatter={(val: any) => {
-                                                                                    const unit = (activeItemName.includes("PER") || activeItemName.includes("PBR")) ? "배" : "%";
-                                                                                    return [typeof val === 'number' ? `${val.toFixed(2)}${unit}` : val, ""];
-                                                                                }}
-                                                                            />
-                                                                            <Legend
-                                                                                verticalAlign="top"
-                                                                                align="left"
-                                                                                iconType="circle"
-                                                                                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingBottom: '20px', marginLeft: '0px' }}
-                                                                            />
-                                                                            {Object.keys(data.chart_data[0] || {}).filter(k => k !== 'period').map((key) => {
-                                                                                const isTarget = key === "대상 종목";
-                                                                                const isIndustry = key === "업종 평균";
+                                                            <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
+                                                                {[1, 2].map((m) => (
+                                                                    <button key={m}
+                                                                        onClick={() => setSectorSubModes(prev => ({ ...prev, [metric.key.toLowerCase()]: m }))}
+                                                                        className={`px-3 py-1 rounded text-[9px] font-black transition-all ${subMode === m ? "bg-indigo-600 text-white" : "text-gray-500 hover:text-gray-300"}`}
+                                                                    >
+                                                                        {m === 1 ? "VISUAL" : "DATA"}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
 
-                                                                                return (
-                                                                                    <Line
-                                                                                        key={key}
-                                                                                        type="monotone"
-                                                                                        dataKey={key}
-                                                                                        name={key}
-                                                                                        stroke={isTarget ? "#818cf8" : isIndustry ? "#10b981" : "#475569"}
-                                                                                        strokeWidth={isTarget ? 3.5 : 1.5}
-                                                                                        dot={isTarget ? { r: 3, fill: '#818cf8' } : false}
-                                                                                        activeDot={{ r: 6 }}
-                                                                                        animationDuration={1200}
-                                                                                    />
-                                                                                );
-                                                                            })}
+                                                        <div className="h-64">
+                                                            {subMode === 1 ? (
+                                                                cat && cat.chart_data ? (
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <LineChart data={cat.chart_data}>
+                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                                                            <XAxis dataKey="period" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                                                                            <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                                                                            <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', fontSize: '10px' }} />
+                                                                            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                                                                            <Line type="monotone" dataKey="대상 종목" name="내 종목" stroke="#818cf8" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                                                            <Line type="monotone" dataKey="섹터 평균" name="섹터 평균" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="3 3" />
+                                                                            <Line type="monotone" dataKey="시장 지수" name="시장 지수" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" />
                                                                         </LineChart>
                                                                     </ResponsiveContainer>
                                                                 ) : (
-                                                                    <div className="h-full flex flex-col items-center justify-center text-gray-700 bg-white/5 rounded-2xl border border-white/5 border-dashed">
-                                                                        <Info className="w-8 h-8 mb-3 opacity-20" />
-                                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">No Data Available for {activeItemName}</p>
-                                                                        <p className="text-[9px] text-gray-600 mt-1">다른 지표 버튼(숫자)을 눌러 다른 데이터를 확인해 보세요</p>
+                                                                    <div className="h-full flex flex-col items-center justify-center text-gray-500 border border-dashed border-white/5 rounded-xl">
+                                                                        <RefreshCw className="w-8 h-8 animate-spin mb-2 opacity-10" />
+                                                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-20">LOADING {metric.key}...</p>
                                                                     </div>
-                                                                )}
-                                                            </div>
+                                                                )
+                                                            ) : (
+                                                                <div className="h-full overflow-y-auto custom-scrollbar">
+                                                                    <table className="w-full text-[11px] text-left border-collapse">
+                                                                        <thead>
+                                                                            <tr className="border-b border-white/10 uppercase tracking-widest text-gray-500 font-bold">
+                                                                                <th className="py-2 pl-2">ENTRY</th>
+                                                                                {cat?.headers?.map((h: string) => <th key={h} className="py-2 text-right">{h}</th>)}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {cat?.rows?.map((row: any, j: number) => (
+                                                                                <tr key={j} className={`border-b border-white/5 ${row.name === "대상 종목" ? "text-indigo-400 bg-indigo-500/5" : "text-gray-400"}`}>
+                                                                                    <td className="py-3 pl-2 font-black">{row.name}</td>
+                                                                                    {cat?.headers?.map((h: string) => (
+                                                                                        <td key={h} className="text-right py-3 pr-2 font-mono font-bold">
+                                                                                            {row[h] !== null ? row[h].toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "-"}
+                                                                                        </td>
+                                                                                    ))}
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    );
-                                                });
-                                            })()}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
 
-                                        {/* [NEW] v1.6.0 Comprehensive Sector Comparison Table */}
-                                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <LayoutDashboard className="w-4 h-4 text-emerald-400" />
-                                                    <h4 className="text-sm font-black uppercase tracking-widest text-emerald-300">섹터별 지표 전체 분석 데이터</h4>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/10 uppercase font-bold tracking-tighter">전 업종 최신 지표</span>
-                                                </div>
+                                        {/* Summary Table Section */}
+                                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5 mt-8 hover:border-indigo-500/20 transition-all">
+                                            <div className="flex items-center gap-2 mb-6">
+                                                <LayoutDashboard className="w-4 h-4 text-emerald-400" />
+                                                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">Sector Indicators Comprehensive Summary</h4>
                                             </div>
-
                                             <div className="overflow-x-auto">
-                                                <table className="w-full text-xs text-left border-separate border-spacing-0">
+                                                <table className="w-full text-[11px] text-left border-separate border-spacing-0">
                                                     <thead>
-                                                        <tr className="text-gray-500 uppercase tracking-widest text-[9px] border-b border-white/10">
-                                                            <th className="py-3 px-2 border-b border-white/10">비교 항목 (섹터/지수)</th>
+                                                        <tr className="text-gray-500 uppercase tracking-widest border-b border-white/10 font-bold">
+                                                            <th className="py-3 px-2 border-b border-white/10">CATEGORY</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">PER</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">PBR</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">배당 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">DIV (%)</th>
                                                             <th className="py-3 px-2 text-right border-b border-white/10">ROE (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">부채비율 (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">이익률 (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">성장률 (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">수익률 (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">DEBT (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">MARGIN (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">GROWTH (%)</th>
+                                                            <th className="py-3 px-2 text-right border-b border-white/10">RETURN (%)</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
-                                                        {(sectorData?.summary_table || []).map((row: any, i: number) => (
-                                                            <tr key={i} className={`hover:bg-white/5 transition-colors ${row.name === "대상 종목" ? "bg-indigo-500/20 border-l-4 border-indigo-500" : ""}`}>
-                                                                <td className="py-4 px-2 text-gray-200 font-bold flex items-center gap-2">
-                                                                    {row.name === "대상 종목" && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
-                                                                    {row.name}
-                                                                </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${(row.per || row.PER) && (row.per || row.PER) < 10 ? "text-emerald-400" : "text-gray-400"}`}>
-                                                                    {row.per ? row.per.toFixed(2) : (row.PER ? row.PER.toFixed(2) : '-')}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-gray-400">
-                                                                    {row.pbr ? row.pbr.toFixed(2) : (row.PBR ? row.PBR.toFixed(2) : '-')}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-emerald-400">
-                                                                    {row.div_yield ? `${row.div_yield.toFixed(2)}%` : (row.배당수익률 ? `${row.배당수익률.toFixed(2)}%` : '-')}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-blue-400">
-                                                                    {row.roe ? `${row.roe.toFixed(2)}%` : (row.ROE ? `${row.ROE.toFixed(2)}%` : '-')}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-gray-400">
-                                                                    {row.debt_ratio ? `${row.debt_ratio.toFixed(2)}%` : (row.부채비율 ? `${row.부채비율.toFixed(2)}%` : '-')}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-indigo-400">
-                                                                    {(() => {
-                                                                        const val = row.op_margin ?? row.gross_margin ?? row.net_margin ?? row.영업이익률;
-                                                                        return val ? `${val.toFixed(2)}%` : '-';
-                                                                    })()}
-                                                                </td>
-                                                                <td className="text-right py-4 px-2 font-mono text-amber-400">
-                                                                    {row.sales_growth ? `${row.sales_growth.toFixed(2)}%` : (row.매출액증가율 ? `${row.매출액증가율.toFixed(2)}%` : '-')}
-                                                                </td>
-                                                                <td className={`text-right py-4 px-2 font-mono ${row.주가수익률 && row.주가수익률 > 0 ? "text-red-400" : row.주가수익률 < 0 ? "text-blue-400" : "text-gray-400"}`}>
-                                                                    {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : '-'}
+                                                        {(sectorData?.summary_table || []).map((row: any, k: number) => (
+                                                            <tr key={k} className={`hover:bg-white/5 transition-colors ${row.name === "대상 종목" ? "bg-indigo-500/10" : ""}`}>
+                                                                <td className="py-4 px-2 text-white font-black">{row.name}</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-gray-300 font-bold">{row.per?.toFixed(2) || (row.PER?.toFixed(2)) || "-"}</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-gray-300 font-bold">{row.pbr?.toFixed(2) || (row.PBR?.toFixed(2)) || "-"}</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-emerald-400 font-bold">{row.div_yield?.toFixed(2) || (row.배당수익률?.toFixed(2)) || "-"}%</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-blue-400 font-bold">{row.roe?.toFixed(2) || (row.ROE?.toFixed(2)) || "-"}%</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-amber-400 font-bold">{row.debt_ratio?.toFixed(2) || (row.부채비율?.toFixed(2)) || "-"}%</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-indigo-400 font-bold">{row.margin?.toFixed(2) || (row.매출총이익률?.toFixed(2)) || "-"}%</td>
+                                                                <td className="text-right py-4 px-2 font-mono text-pink-400 font-bold">{row.growth?.toFixed(2) || (row.매출액증가율?.toFixed(2)) || "-"}%</td>
+                                                                <td className={`text-right py-4 px-2 font-mono font-black ${row.주가수익률 > 0 ? "text-red-400" : "text-blue-400"}`}>
+                                                                    {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : "-"}
                                                                 </td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                 </table>
                                             </div>
-
-                                            {showEasy && (
-                                                <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
-                                                    <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                                                    <p className="text-[11px] text-emerald-300 leading-relaxed italic">
-                                                        "이미지에 있던 드롭다운 속 모든 업종을 데이터화했습니다. 초록색 수치는 해당 항목에서 건강함(저평가/고수익)을 의미해요. 다른 섹터들과 내 종목을 한눈에 체급 비교해 보세요!"
-                                                    </p>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                    <PieChart className="w-12 h-12 text-blue-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500 font-bold">종목코드를 입력하면 업종/섹터 비교 분석을 시작합니다</p>
-                                    <p className="text-xs text-gray-600 mt-2 font-medium">대상 종목 vs 업종 평균 vs 시장 지수 (3-Way 데이터 통합)</p>
-                                    <div className="mt-4 flex justify-center gap-4">
-                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div> 대상 종목</div>
-                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> 업종 평균</div>
-                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-bold uppercase"><div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div> 시장 지수</div>
+                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <PieChart className="w-16 h-16 text-indigo-400/20 mx-auto mb-4" />
+                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sector Analysis v4.7.0 Standing By</p>
+                                    <p className="text-[10px] text-gray-600 mt-2">NAVER FINANCE '섹터분석' 완벽 미러링 시스템</p>
+                                    <div className="mt-6 flex justify-center gap-6">
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div> 대상 종목</div>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div> 섹터 평균</div>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-gray-500 rounded-full shadow-[0_0_10px_rgba(107,114,128,0.5)]"></div> 시장 지수</div>
                                     </div>
                                 </div>
                             )}
@@ -1049,7 +958,7 @@ function AnalysisContent() {
 
                     {activeTab === "peer" && (
                         <div className="space-y-6">
-                            {/* Local Trigger for Peer */}
+                            {/* Local Trigger for Peer Analysis */}
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-500/20 rounded-lg"><Users className="w-5 h-5 text-purple-400" /></div>
@@ -1061,13 +970,13 @@ function AnalysisContent() {
                                 </button>
                             </div>
 
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-                                <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660,035420)"
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono"
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex gap-4">
+                                <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660)"
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono text-white"
                                     value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)}
                                     onKeyDown={e => { if (e.key === "Enter") fetchPeer(); }}
                                 />
-                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-bold text-sm">
+                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-black text-sm text-white transition-all active:scale-95">
                                     비교 분석
                                 </button>
                             </div>
@@ -1079,11 +988,11 @@ function AnalysisContent() {
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
-                                                <tr className="border-b border-white/10">
-                                                    <th className="text-left py-3 px-2 text-gray-500 text-xs font-bold">지표</th>
+                                                <tr className="border-b border-white/10 text-gray-500 uppercase tracking-widest text-[10px] font-bold">
+                                                    <th className="text-left py-3 px-2">지표 항목</th>
                                                     {peerData.data.map((s: any) => (
-                                                        <th key={s.symbol} className="py-3 px-2 text-center">
-                                                            <div className="font-black text-white">{s.name}</div>
+                                                        <th key={s.symbol} className="py-3 px-2 text-center text-white">
+                                                            <div className="font-black">{s.name}</div>
                                                             <div className="text-[10px] text-gray-500">{s.symbol}</div>
                                                         </th>
                                                     ))}
@@ -1099,8 +1008,8 @@ function AnalysisContent() {
                                                     { key: "revenue_growth", label: "매출성장률 (%)" },
                                                     { key: "dividend_yield", label: "배당수익률 (%)" },
                                                     { key: "debt_to_equity", label: "부채비율 (%)" },
-                                                    { key: "beta", label: "베타" },
-                                                    { key: "change_3m", label: "3개월 수익률 (%)" },
+                                                    { key: "beta", label: "베타 (변동성)" },
+                                                    { key: "change_3m", label: "3월 수익률 (%)" }
                                                 ].map(metric => {
                                                     const values = peerData.data.map((s: any) => parseFloat(s[metric.key]) || 0);
                                                     const maxIdx = values.indexOf(Math.max(...values));
@@ -1108,27 +1017,25 @@ function AnalysisContent() {
                                                     const isHigherBetter = !["per", "debt_to_equity", "beta"].includes(metric.key);
 
                                                     return (
-                                                        <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5">
+                                                        <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                                             <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">
                                                                 <div className="flex flex-col">
                                                                     <span>{metric.label}</span>
                                                                     {showEasy && (() => {
                                                                         const metaphors: any = {
-                                                                            "market_cap_display": "덩치 (회사 규모)",
-                                                                            "per": "가성비 (이익 대비 주가)",
-                                                                            "pbr": "장부 가격 (자산 대비 주가)",
-                                                                            "roe": "성장판 (내실 있는 성장)",
-                                                                            "operating_margin": "장사 실력 (마진)",
+                                                                            "market_cap_display": "덩치/규모",
+                                                                            "per": "가성비 측정",
+                                                                            "pbr": "자산 가치",
+                                                                            "roe": "내실 경영",
+                                                                            "operating_margin": "장사 마진",
                                                                             "revenue_growth": "성장 속도",
-                                                                            "dividend_yield": "보너스 (배당금)",
-                                                                            "debt_to_equity": "군살 (낮을수록 안전)",
-                                                                            "beta": "민감도 (변동성)",
-                                                                            "change_3m": "최근 흐름 (3개월)"
+                                                                            "dividend_yield": "배당 보너스",
+                                                                            "debt_to_equity": "재무 건강",
+                                                                            "beta": "시장 민감도",
+                                                                            "change_3m": "최근 흐름"
                                                                         };
                                                                         return metaphors[metric.key] ? (
-                                                                            <span className="text-[9px] text-orange-400 font-normal mt-0.5">
-                                                                                {metaphors[metric.key]}
-                                                                            </span>
+                                                                            <span className="text-[9px] text-orange-400 font-normal mt-0.5">{metaphors[metric.key]}</span>
                                                                         ) : null;
                                                                     })()}
                                                                 </div>
@@ -1150,23 +1057,23 @@ function AnalysisContent() {
                                         </table>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                                         {["roe", "operating_margin", "change_3m"].map(metric => {
                                             const label = peerData.metrics_labels?.[metric] || metric;
                                             const maxVal = Math.max(...peerData.data.map((s: any) => Math.abs(parseFloat(s[metric]) || 0)), 1);
                                             return (
-                                                <div key={metric} className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                                                    <h4 className="text-xs text-gray-500 font-bold mb-3">{label}</h4>
+                                                <div key={metric} className="bg-white/5 rounded-2xl p-4 border border-white/10 shadow-lg">
+                                                    <h4 className="text-xs text-gray-500 font-bold mb-3 uppercase tracking-tighter">{label} Ranking</h4>
                                                     {peerData.data.map((s: any) => {
                                                         const val = parseFloat(s[metric]) || 0;
                                                         const w = Math.abs(val) / maxVal * 100;
                                                         return (
                                                             <div key={s.symbol} className="flex items-center gap-2 mb-2">
-                                                                <span className="text-xs text-gray-400 w-16 truncate">{s.name?.slice(0, 4)}</span>
-                                                                <div className="flex-1 h-4 bg-gray-800 rounded-full overflow-hidden">
-                                                                    <div className={`h-full rounded-full ${val >= 0 ? "bg-green-500" : "bg-red-500"}`} style={{ width: `${w}%` }} />
+                                                                <span className="text-xs text-gray-400 w-16 truncate font-bold">{s.name}</span>
+                                                                <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                                                                    <div className={`h-full rounded-full ${val >= 0 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "bg-red-500"}`} style={{ width: `${w}%` }} />
                                                                 </div>
-                                                                <span className={`text-xs font-bold w-12 text-right ${val >= 0 ? "text-red-400" : "text-blue-400"}`}>{val}</span>
+                                                                <span className={`text-[10px] font-black w-12 text-right ${val >= 0 ? "text-red-400" : "text-blue-400"}`}>{val}</span>
                                                             </div>
                                                         );
                                                     })}
@@ -1177,19 +1084,16 @@ function AnalysisContent() {
 
                                     <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 rounded-2xl p-6 mt-6">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-2 bg-orange-500/20 rounded-lg">
-                                                <BarChart3 className="w-5 h-5 text-orange-400" />
-                                            </div>
-                                            <h3 className="font-bold text-lg">그룹 종합 검진 리뷰</h3>
+                                            <div className="p-2 bg-orange-500/20 rounded-lg"><BarChart3 className="w-5 h-5 text-orange-400" /></div>
+                                            <h3 className="font-bold text-lg">그룹 종합 분석 리포트</h3>
                                         </div>
-
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-3">
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">주요 지표 우수 종목</p>
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">주요 우수 모델</p>
                                                 {[
-                                                    { label: "💰 가성비 대장 (최저 PER)", key: "per", isLowBetter: true },
-                                                    { label: "🚀 성장판 우등생 (최상 ROE)", key: "roe", isLowBetter: false },
-                                                    { label: "🛡️ 강철 체력 (최저 부채비율)", key: "debt_to_equity", isLowBetter: true },
+                                                    { label: "💰 가성비 리더 (LOW PER)", key: "per", isLowBetter: true },
+                                                    { label: "🚀 성장판 1위 (HIGH ROE)", key: "roe", isLowBetter: false },
+                                                    { label: "🛡️ 초건전 재무 (LOW DEBT)", key: "debt_to_equity", isLowBetter: true },
                                                 ].map(item => {
                                                     const validData = peerData.data.filter((s: any) => (parseFloat(s[item.key]) || 0) > 0);
                                                     if (validData.length === 0) return null;
@@ -1198,62 +1102,53 @@ function AnalysisContent() {
                                                         : validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) > parseFloat(curr[item.key]) ? prev : curr));
 
                                                     return (
-                                                        <div key={item.key} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
-                                                            <span className="text-xs text-gray-300">{item.label}</span>
+                                                        <div key={item.key} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5 hover:border-orange-500/30 transition-all">
+                                                            <span className="text-xs text-gray-300 font-bold">{item.label}</span>
                                                             <span className="text-sm font-black text-orange-400">{leader.name}</span>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-
                                             <div className="space-y-3">
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">데이터 요약 분석</p>
-                                                <div className="bg-black/40 p-4 rounded-xl border border-white/5 space-y-2">
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">그룹 데이터 진단</p>
+                                                <div className="bg-black/40 p-4 rounded-xl border border-white/5 text-xs text-gray-400 leading-relaxed">
                                                     {(() => {
                                                         const avgPer = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.per) || 0), 0) / peerData.data.length;
                                                         const avgRoe = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.roe) || 0), 0) / peerData.data.length;
                                                         return (
-                                                            <div className="text-xs leading-relaxed text-gray-400">
-                                                                검색된 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>,
-                                                                평균 ROE는 <span className="text-white font-bold">{avgRoe.toFixed(1)}%</span>입니다.
+                                                            <>
+                                                                비교 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>, 평균 ROE는 <span className="text-white font-bold">{avgRoe.toFixed(1)}%</span>입니다.
                                                                 <br /><br />
-                                                                {avgPer < 15 ? "이 그룹은 전반적으로 가치가 저평가된 '알짜' 종목들이 포함되어 있습니다. " : "이 그룹은 전반적으로 시장의 높은 기대를 받고 있는 '성장주' 위주의 구성입니다. "}
-                                                                {avgRoe > 15 ? "수익성 또한 우수하여 효율적으로 돈을 벌고 있는 상태로 분석됩니다." : "수익성은 보통 수준이며, 업계 평균 수준과 비교해 볼 필요가 있습니다."}
-                                                            </div>
+                                                                {avgPer < 15 ? "전반적으로 가성비가 높은 구간에 진입해 있습니다. " : "업계 전반적으로 고평가 인식이 강하거나 큰 성장을 기대받고 있습니다. "}
+                                                                {avgRoe > 12 ? "투자 효율이 우수한 건강한 그룹입니다." : "수익성이 낮거나 구조조정이 필요한 구간일 수 있습니다."}
+                                                            </>
                                                         );
                                                     })()}
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div className="mt-6 pt-4 border-t border-white/5 flex items-start gap-2">
-                                            <AlertTriangle className="w-3 h-3 text-gray-600 mt-0.5" />
-                                            <p className="text-[10px] text-gray-600 leading-tight">
-                                                위 정보는 입력된 종목들 간의 상대적인 수치 비교이며, 절대적인 투자 판단의 근거가 될 수 없습니다.
-                                                특정 종목의 매수 또는 매도를 권유하는 것이 아닌 단순 데이터 요약임을 밝힙니다.
-                                            </p>
-                                        </div>
                                     </div>
                                 </div>
                             ) : !peerLoading && (
-                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                    <Users className="w-12 h-12 text-orange-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500">종목코드를 입력하면 나란히 비교 분석합니다</p>
-                                    <p className="text-xs text-gray-600 mt-2">최대 5개 종목 · PER/PBR/ROE/성장률 등</p>
+                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <Users className="w-16 h-16 text-orange-400/20 mx-auto mb-4" />
+                                    <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Compare mode Stand-By</p>
+                                    <p className="text-[10px] text-gray-600 mt-2">최대 5개 종목 코드를 쉼표로 구분하여 입력하세요</p>
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
 
-                <p className="text-center text-[10px] text-gray-600 mt-6">
-                    * 본 정보는 투자 참고용 데이터이며, 특정 종목의 매수·매도를 권유하지 않습니다.<br />
-                    퀀트 점수는 과거 데이터 기반이며, 미래 수익을 보장하지 않습니다.
+                <p className="text-center text-[10px] text-gray-600 mt-8 font-bold tracking-tight">
+                    * 본 정보는 투자 참고용이며, 최종 투자 판단의 책임은 본인에게 있습니다.<br />
+                    v4.7.0 SYNC-RELEASE (Naver-Mirror Optimized)
                 </p>
             </div>
         </div>
     );
 }
+
 
 export default function AnalysisPage() {
     return (
