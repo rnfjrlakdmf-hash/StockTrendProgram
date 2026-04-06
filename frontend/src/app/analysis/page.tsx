@@ -8,7 +8,7 @@ import {
     Search, RefreshCw, Shield, BarChart3, Users, TrendingUp, TrendingDown,
     Activity, Zap, AlertTriangle, ChevronRight, X, Info, HelpCircle,
     Eye, EyeOff, LayoutDashboard, History, PieChart, LineChart as LineIcon,
-    Coins, ArrowUpRight
+    Coins, ArrowUpRight, AlertCircle
 } from "lucide-react";
 import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -323,7 +323,7 @@ function AnalysisContent() {
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <div className="flex items-center gap-2">
                             <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v2.8.1 (Diamond-Fix)
+                                Sector Trend v2.8.5 (Ultimate-Data)
                             </span>
                         </div>
                     </div>
@@ -865,7 +865,16 @@ function AnalysisContent() {
                                                 return categories.map((cat) => {
                                                     const subMode = sectorSubModes[cat.id] || 1;
                                                     const activeItemName = cat.items[subMode - 1] || cat.items[0];
-                                                    const data = sectorData.charts[activeItemName];
+                                                    const data = sectorData.charts?.[activeItemName];
+                                                    
+                                                    if (!data || !data.chart_data || data.chart_data.length === 0) {
+                                                        return (
+                                                            <div key={cat.id} className="bg-black/40 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[400px] text-gray-500 border border-white/5">
+                                                                <AlertCircle className="w-12 h-12 mb-4 opacity-10" />
+                                                                <p className="text-sm">{cat.labels?.[subMode - 1] || activeItemName} 수집 중...</p>
+                                                            </div>
+                                                        );
+                                                    }
 
                                                     return (
                                                         <div key={cat.id} className="bg-black/40 rounded-3xl p-6 border border-white/5 transition-all hover:border-blue-500/20 group">
@@ -877,7 +886,7 @@ function AnalysisContent() {
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="text-sm font-black text-white leading-none mb-1">{(cat.labels ? cat.labels[subMode - 1] : activeItemName) || "데이터 준비 중"}</h4>
-                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider" suppressHydrationWarning>Sector Trend v2.7.9 (Stable-Data)</p>
+                                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider" suppressHydrationWarning>Sector Trend v2.8.5 (Ultimate-Data)</p>
                                                                         </div>
                                                                     </div>
                                                                     {/* Indicator Selection - Prominent High-Contrast Buttons */}
