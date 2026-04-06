@@ -1,0 +1,49 @@
+import logging
+import json
+from backend.sector_analysis import get_sector_analysis_data
+
+logging.basicConfig(level=logging.INFO)
+
+symbol = "005930"
+print(f"--- Simulating v4.2.0 Ironclad-Final for {symbol} ---")
+data = get_sector_analysis_data(symbol)
+
+if data:
+    print("\nSUCCESS: Data retrieved!")
+    
+    # Check PER Specifically
+    per = data.get('charts', {}).get('per')
+    if per:
+        chart_data = per.get('chart_data', [])
+        print("\nPER Data Sample (Checking for Labels):")
+        sample_node = chart_data[0]
+        print(f"Keys: {list(sample_node.keys())}")
+        
+        # Checking for exact Unicode matches
+        target_name = "\ub300\uc0c1 \uc885\ubaa9" # 대상 종목
+        industry_name = "\uc5c5\uc885 \ud3c9\uade0" # 업종 평균
+        
+        if target_name in sample_node:
+            print(f"VERIFIED: '{target_name}' (Target) FOUND.")
+            print(f"Value: {sample_node[target_name]}")
+        else:
+            print(f"FAILURE: '{target_name}' NOT FOUND.")
+            
+        if industry_name in sample_node:
+            print(f"VERIFIED: '{industry_name}' (Industry) FOUND.")
+        else:
+            print(f"EXPECTED: '{industry_name}' NOT FOUND (Normal if Industry is empty in AJAX).")
+
+    else:
+        print("\nPER Data MISSING in charts!")
+        
+    # Check Summary Table
+    if data.get('summary_table'):
+        entry = data['summary_table'][0]
+        print(f"\nSummary Table Entry: {entry}")
+        if entry.get('per') is not None and entry['per'] < 1000:
+             print("VERIFIED: PER in summary table is a RATIO.")
+        else:
+             print(f"FAILURE: PER in summary table is {entry.get('per')}")
+else:
+    print("\nFAILURE: get_sector_analysis_data returned None!")

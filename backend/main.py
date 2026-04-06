@@ -101,8 +101,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v4.0.0 (Ironclad-Sync)",
-        "build_id": "2026-04-06-deploy-v6-final",
+        "version": "v4.5.5 (Absolute-Victory)",
+        "build_id": "2026-04-06-deploy-v11-victory",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -135,7 +135,11 @@ def peer_data(symbol: str):
 @app.get("/api/sector-analysis/{symbol}")
 @turbo_cache(ttl_seconds=300)
 def sector_analysis_api(symbol: str, sector_id: Optional[str] = Query(None)):
-    """v4.0.0 Ironclad-Sync 하이브리드 섹터 분석 API"""
+    """v4.5.5 Absolute-Victory 하이브리드 섹터 분석 API"""
+    return get_sector_analysis_data(symbol, sector_id)
+@app.get("/api/sector-analysis-json/{symbol}")
+def sector_analysis_json_debug(symbol: str, sector_id: Optional[str] = Query(None)):
+    """v4.5.5 JSON 디벨로퍼 디버그 API (Victory-Spec)"""
     return get_sector_analysis_data(symbol, sector_id)
 
 @app.get("/api/etf-detail/{symbol}")
