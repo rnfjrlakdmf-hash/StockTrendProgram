@@ -59,26 +59,19 @@ def get_sector_analysis_data(symbol, sector_id=None):
         summary_table = []
         metric_groups = {}
 
-        # 4. Metric Mapping (Exact Naver Indicator Matching)
+        # 4. Metric Mapping (Exact Naver Indicator Mapping - v4.8.0 Updated)
+        # ID 1:PER, 2:PBR, 3:Revenue Growth, 4:ROE, 5:Gross Margin, 6:Debt Ratio, 8:Div Yield, 9:ROA (sometimes)
         for item in data_items:
             it_id = str(item.get("ITEM"))
             nm = str(item.get("NM", ""))
             m_key = None
-            if it_id == "3": m_key = "pbr"
+            if it_id == "1": m_key = "per"
+            elif it_id == "2": m_key = "pbr"
+            elif it_id == "3": m_key = "growth" # 매출액증가율
+            elif it_id == "4": m_key = "roe"
+            elif it_id == "5": m_key = "margin" # 매출총이익률
             elif it_id == "6": m_key = "debt_ratio"
             elif it_id == "8": m_key = "div_yield"
-            elif it_id == "9": m_key = "roe"
-            elif it_id in ["5", "12"]: m_key = "per"
-            elif it_id == "10": m_key = "growth"
-            elif it_id == "11": m_key = "margin"
-            elif not m_key:
-                if "PBR" in nm.upper(): m_key = "pbr"
-                elif "부채" in nm: m_key = "debt_ratio"
-                elif "배당" in nm: m_key = "div_yield"
-                elif "ROE" in nm.upper(): m_key = "roe"
-                elif "PER" in nm.upper(): m_key = "per"
-                elif "증가율" in nm: m_key = "growth"
-                elif "이익률" in nm: m_key = "margin"
             
             if m_key:
                 if m_key not in metric_groups: metric_groups[m_key] = []
@@ -86,7 +79,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 if not any(str(x.get("GUBN")) == gubn for x in metric_groups[m_key]):
                     metric_groups[m_key].append(item)
 
-        # 5. SSR-Independent Restoration for PER/ROE
+        # 5. SSR-Independent Restoration for PER/ROE (Safe fallback)
         cop_analysis = re.search(r'section cop_analysis.*?tbody(.*?)</tbody>', ssr_html, re.S)
         if cop_analysis:
             row_htmls = re.findall(r'<tr[^>]*>.*?</tr>', cop_analysis.group(1), re.S)
@@ -139,7 +132,12 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 c_data.append(ent)
             charts["주가수익률"] = {"headers": rtn_headers, "rows": rtn_rows, "chart_data": c_data}
 
-        # 7. Integration & Summary Table
+        # 7. Integration & Summary Table (Core 8)
+        titles = {
+            "per": "PER", "pbr": "PBR", "roe": "ROE", 
+            "div_yield": "배당수익률", "debt_ratio": "부채비율", 
+            "margin": "매출총이익률", "growth": "매출액증가율"
+        }
         for m_key, items in metric_groups.items():
             m_rows = []
             sorted_items = sorted(items, key=lambda x: str(x.get("GUBN")))
@@ -160,12 +158,6 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     ent = {"period": h}
                     for r in m_rows: ent[r["name"]] = r.get(h) or 0.0
                     c_data.append(ent)
-                
-                titles = {
-                    "per": "PER", "pbr": "PBR", "roe": "ROE", 
-                    "div_yield": "배당수익률", "debt_ratio": "부채비율", 
-                    "margin": "매출총이익률", "growth": "매출액증가율"
-                }
                 charts[titles.get(m_key, m_key)] = {"headers": i_headers, "rows": m_rows, "chart_data": c_data}
                 
                 for r in m_rows:
@@ -177,47 +169,82 @@ def get_sector_analysis_data(symbol, sector_id=None):
                         fy0_h = i_headers[3]
                         s_r[m_key] = r.get(fy0_h)
 
-        # 8. Dropdown Synchronization (Scraping from HTML for Perfect Match)
-        compare_sectors = []
-        active_sector_id = str(sector_id) if sector_id else None
+        # 8. Extra Detailed Metrics (v4.8.0 - c1090001.aspx proc API)
+        extra_procs = {
+            "15": "배당성향",
+            "18": "Fwd. 12M PER 추이",
+            "20": "Fwd. 12M PBR 추이",
+            "10": "ROA",
+            "14": "유동비율",
+            "4": "영업이익증가율",
+            "5": "순이익증가율",
+            "12": "영업이익률",
+            "13": "순이익률"
+        }
         
+        for proc_id, label in extra_procs.items():
+            try:
+                e_url = f"https://navercomp.wisereport.co.kr/company/chart/c1090001.aspx?proc={proc_id}&cmp_cd={symbol}&data_typ=1&chartType=svg"
+                if active_sector_id: e_url += f"&sec_cd={active_sector_id}"
+                e_resp = requests.get(e_url, headers=headers, timeout=5)
+                e_json = e_resp.json()
+                
+                e_headers = e_json.get("yymm", [])
+                e_items = e_json.get("data", [])
+                if not e_items: continue
+                
+                e_rows = []
+                for item in e_items:
+                    gubn = str(item.get("GUBN"))
+                    if gubn not in ["1", "2", "3"]: continue
+                    nm = category_map.get(gubn, "Other")
+                    row = {"name": nm}
+                    # Map FY_4 to FY1
+                    for idx, h in enumerate(e_headers):
+                        # Naver Detailed API uses FY_4 (T-4) up to FY1 (T+1)
+                        # We use 0-5 index mapping
+                        key = f"FY_{4-idx}" if idx < 4 else f"FY{idx-4}"
+                        if idx == 4: key = "FY0"
+                        if idx == 5: key = "FY1"
+                        row[h] = item.get(key)
+                    e_rows.append(row)
+                
+                if e_rows:
+                    c_data = []
+                    for h in e_headers:
+                        ent = {"period": h}
+                        for r in e_rows: ent[r["name"]] = r.get(h) or 0.0
+                        c_data.append(ent)
+                    charts[label] = {"headers": e_headers, "rows": e_rows, "chart_data": c_data}
+            except Exception as e:
+                logging.error(f"Error fetching extra metric {label}: {e}")
+
+        # 9. Dropdown Synchronization (Unchanged Logic)
+        compare_sectors = []
         try:
-            # Fetch Sector Page HTML
             page_url = f"https://navercomp.wisereport.co.kr/v2/company/c1090001.aspx?cmp_cd={symbol}"
             p_resp = requests.get(page_url, headers=headers, timeout=5)
+            try: p_html = p_resp.content.decode('cp949')
+            except: p_html = p_resp.content.decode('utf-8', errors='replace')
             
-            # Use CP949 for navercomp domain (standard)
-            try:
-                p_html = p_resp.content.decode('cp949')
-            except:
-                p_html = p_resp.content.decode('utf-8', errors='replace')
-            
-            # Find select id="sector"
             select_match = re.search(r'<select[^>]*id=["\']sector["\'][^>]*>(.*?)</select>', p_html, re.S)
             if select_match:
                 opts = re.findall(r'<option[^>]*value=["\']([^"\']+)["\'][^>]*>(.*?)</option>', select_match.group(1), re.S)
                 for opt_id, opt_nm in opts:
                     if not opt_id: continue
-                    nm_clean = opt_nm.strip()
                     compare_sectors.append({
                         "id": opt_id,
-                        "name": nm_clean,
+                        "name": opt_nm.strip(),
                         "selected": opt_id == active_sector_id
                     })
                 
-                # If no active yet, pick the one that was 'selected' in HTML
                 if not active_sector_id:
                     sel_match = re.search(r'<option[^>]*value=["\']([^"\']+)["\'][^>]*selected[^>]*>', select_match.group(1), re.S)
                     if sel_match: active_sector_id = sel_match.group(1)
                     elif compare_sectors: active_sector_id = compare_sectors[0]["id"]
             
         except Exception as e:
-            logging.error(f"Fallback Sector Scraping Error: {e}")
-            # Fallback to dt2 if scraping fails
-            dt2 = ajax_json.get("dt2", [])
-            for s in dt2:
-                s_id, s_nm = str(s.get("SEC_CD", "")), str(s.get("SEC_NM_K", "")).strip()
-                compare_sectors.append({"id": s_id, "name": s_nm, "selected": s_id == active_sector_id})
+            logging.error(f"Sector Dropdown Error: {e}")
 
         return {
             "status": "success",
@@ -227,10 +254,10 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 "charts": charts,
                 "compare_sectors": compare_sectors,
                 "active_sector_id": active_sector_id,
-                "version": "v4.7.1 (Naver-Mirror-Sync)"
+                "version": "v4.8.0 (Deep-Sector-Matrix)"
             }
         }
 
     except Exception as e:
-        logging.error(f"Error in v4.7.1 Mirror Sync: {e}", exc_info=True)
+        logging.error(f"Error in v4.8.0 Mirror Sync: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}

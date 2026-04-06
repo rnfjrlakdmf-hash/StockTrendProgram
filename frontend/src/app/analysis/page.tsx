@@ -18,7 +18,7 @@ import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
 
 
-// [v1.2.0] Added intuitive metaphors for beginners
+// [v4.8.0] Deep-Sector-Matrix Analysis Dashboard
 function AnalysisContent() {
     const searchParams = useSearchParams();
     const urlSymbol = searchParams.get("symbol");
@@ -62,26 +62,12 @@ function AnalysisContent() {
     const [secSymbol, setSecSymbol] = useState("");
     const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
-    // [v2.1.0] Sector Analysis Sub-Modes State
-    const [sectorSubModes, setSectorSubModes] = useState<Record<string, number>>({
-        "returns": 1,
-        "dividend": 1,
-        "per": 1,
-        "pbr": 1,
-        "roe": 1,
-        "stability": 1,
-        "growth": 1,
-        "margin": 1
-    });
-
-    // [v2.7.2] Auto-Sync Trigger: Automatically fetch data when tab changes if symbol is present
+    // [v4.8.0] Sync Trigger
     useEffect(() => {
         if (!symbol || stockLoading) return;
-
         const targetSymbol = symbol.trim();
-        // 한글이 포함되어 있으면 검색이 필요하므로 자동 트리거에서 제외 (사용자가 직접 검색 유도)
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) return;
-        if (targetSymbol.length < 5) return; // 유효한 코드가 아닐 가능성
+        if (targetSymbol.length < 5) return;
 
         if (activeTab === "sector" && secSymbol !== targetSymbol) {
             handleGlobalSearch("sector");
@@ -100,27 +86,18 @@ function AnalysisContent() {
             setStockLoading(true);
             try {
                 const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`;
-                console.log(`[Search] Requesting: ${searchUrl}`);
-
                 const res = await fetch(searchUrl);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
                 const json = await res.json();
-                console.log(`[Search] Response:`, json);
-
                 if (json.status === "success" && json.data && json.data.length > 0) {
                     targetSymbol = json.data[0].code;
-                    console.log(`[Search] Success! Found code: ${targetSymbol}`);
-                    setSymbol(targetSymbol); // 상태 업데이트
+                    setSymbol(targetSymbol);
                 } else {
-                    console.warn(`[Search] No stock found for: ${targetSymbol}`, json);
-                    alert(`해당 종목('${targetSymbol}')을 찾을 수 없습니다.\n검색 결과가 없거나 백엔드 오류일 수 있습니다.`);
+                    alert(`해당 종목('${targetSymbol}')을 찾을 수 없습니다.`);
                     setStockLoading(false);
                     return;
                 }
             } catch (err) {
-                console.error("[Search] Failed to fetch search API:", err);
-                alert("검색 중 오류가 발생했습니다. 서버 연결 상태를 확인해주세요.");
+                console.error(err);
                 setStockLoading(false);
                 return;
             } finally {
@@ -128,8 +105,6 @@ function AnalysisContent() {
             }
         }
 
-        // [중요] targetSymbol은 이제 무조건 숫자 코드(005930 등)인 상태입니다.
-        // 해당 탭에 맞는 트리거 실행
         switch (tab) {
             case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
             case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
@@ -148,9 +123,7 @@ function AnalysisContent() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/pro/summary/${sym}`);
             const json = await res.json();
-            if (json.status === "success") {
-                setStockInfo(json.data.stock_info);
-            }
+            if (json.status === "success") setStockInfo(json.data.stock_info);
         } catch (err) { console.error(err); }
         finally { setStockLoading(false); }
     };
@@ -187,24 +160,15 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
-            // [v2.7.7] Stability-Sync Forced Cache Invalidation
-            url.searchParams.append("v", "2.7.7");
+            url.searchParams.append("v", "4.8.0");
             url.searchParams.append("t", new Date().getTime().toString());
 
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
                 setSectorData(json.data);
-                // [v2.7.7] Global-Sync Fixed: Keep user's selected sector even if server response differs
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
-            } else {
-                console.error("[Sector] API Error:", json.message);
-                if (json.message === "0") {
-                    alert("네이버 금융 구조 변경으로 인해 데이터를 일시적으로 가져올 수 없습니다. 긴급 복구 중입니다.");
-                } else {
-                    alert(`데이터 수집 오류: ${json.message}`);
-                }
             }
         } catch (err) { console.error(err); }
         finally { setSectorLoading(false); }
@@ -239,54 +203,25 @@ function AnalysisContent() {
         return "text-red-400";
     };
 
-    // SVG Radar Chart
     const RadarChart = ({ factors }: { factors: any }) => {
         const keys = ["value", "growth", "momentum", "quality", "stability"];
         const labels = ["가치", "성장", "모멘텀", "수익성", "안정성"];
         const cx = 150, cy = 150, r = 110;
-
         const getPoint = (index: number, score: number) => {
             const angle = (Math.PI * 2 * index / 5) - Math.PI / 2;
             const dist = (score / 100) * r;
             return { x: cx + dist * Math.cos(angle), y: cy + dist * Math.sin(angle) };
         };
-
         const gridLevels = [20, 40, 60, 80, 100];
-
         return (
             <svg viewBox="0 0 300 300" className="w-full max-w-xs mx-auto">
-                {/* Grid */}
                 {gridLevels.map(level => (
-                    <polygon key={level}
-                        points={keys.map((_, i) => { const p = getPoint(i, level); return `${p.x},${p.y}`; }).join(" ")}
-                        fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1"
-                    />
+                    <polygon key={level} points={keys.map((_, i) => { const p = getPoint(i, level); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
                 ))}
-                {/* Axes */}
-                {keys.map((_, i) => {
-                    const p = getPoint(i, 100);
-                    return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />;
-                })}
-                {/* Data */}
-                <polygon
-                    points={keys.map((k, i) => { const p = getPoint(i, factors[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")}
-                    fill="rgba(99,102,241,0.3)" stroke="rgb(99,102,241)" strokeWidth="2"
-                />
-                {/* Points */}
-                {keys.map((k, i) => {
-                    const p = getPoint(i, factors[k]?.score || 0);
-                    return <circle key={k} cx={p.x} cy={p.y} r="4" fill="rgb(129,140,248)" />;
-                })}
-                {/* Labels */}
-                {keys.map((k, i) => {
-                    const p = getPoint(i, 120);
-                    return (
-                        <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-                            fill="white" fontSize="11" fontWeight="bold">
-                            {labels[i]}
-                        </text>
-                    );
-                })}
+                {keys.map((_, i) => { const p = getPoint(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />; })}
+                <polygon points={keys.map((k, i) => { const p = getPoint(i, factors[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")} fill="rgba(99,102,241,0.3)" stroke="rgb(99,102,241)" strokeWidth="2" />
+                {keys.map((k, i) => { const p = getPoint(i, factors[k]?.score || 0); return <circle key={k} cx={p.x} cy={p.y} r="4" fill="rgb(129,140,248)" />; })}
+                {keys.map((k, i) => { const p = getPoint(i, 120); return <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="11" fontWeight="bold"> {labels[i]} </text>; })}
             </svg>
         );
     };
@@ -298,7 +233,6 @@ function AnalysisContent() {
             <Header title="프로 분석" subtitle="데이터 기반 종목 정밀 검진" />
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
-                {/* 1. Global Stock Picker (No big button) */}
                 <div className="max-w-3xl mx-auto w-full">
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4 group-focus-within:text-indigo-400 transition-colors" />
@@ -307,38 +241,27 @@ function AnalysisContent() {
                             value={symbol} onChange={e => setSymbol(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") handleGlobalSearch(activeTab); }}
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                            {stockLoading && <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />}
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Quick Set</span>
-                        </div>
                     </div>
-                    <div className="flex justify-between items-center mb-3">
+                    <div className="flex justify-between items-center mt-2">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
-                        <div className="flex items-center gap-2">
-                            <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded border border-indigo-500/20 animate-pulse">
-                                Sector Trend v4.7.0 (Naver-Perfect-Mirror)
-                            </span>
-                        </div>
+                        <span className="bg-red-500/10 text-red-400 text-[9px] font-black px-2 py-0.5 rounded border border-red-500/20">
+                            Deep-Sector-Matrix v4.8.0 SYNC-RELEASE
+                        </span>
                     </div>
                 </div>
 
-                {/* 2. Stock Header & Mode Toggle */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex-1 w-full">
                         {stockInfo && (
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
                                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
                                             <h2 className="text-3xl font-black">{stockInfo.name}</h2>
                                             <span className="text-gray-500 font-mono text-sm tracking-widest">{stockInfo.symbol}</span>
-                                            {isTurbo && <span className="bg-indigo-500/20 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">Turbo Active</span>}
                                         </div>
                                         <div className="flex items-baseline gap-3">
-                                            <BlinkingPrice
-                                                price={stockInfo.price || "---"}
-                                                className="text-4xl font-black font-mono tracking-tighter"
-                                            />
+                                            <BlinkingPrice price={stockInfo.price || "---"} className="text-4xl font-black font-mono tracking-tighter" />
                                             <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) >= 0 ? "text-red-400" : "text-blue-400"}`}>
                                                 {parseFloat(stockInfo.change_rate) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                                 <span className="text-lg">{stockInfo.change?.toLocaleString()}</span>
@@ -368,26 +291,16 @@ function AnalysisContent() {
                             </div>
                         )}
                     </div>
-
-                    {/* [v1.4.0] Beginner Mode Toggle Button */}
-                    <button
-                        onClick={() => setShowEasy(!showEasy)}
-                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl group border ${showEasy
-                                ? "bg-indigo-600 border-indigo-400 text-white"
-                                : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
-                            }`}
-                    >
-                        <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : "group-hover:rotate-12 transition-transform"}`} />
+                    <button onClick={() => setShowEasy(!showEasy)}
+                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl group border ${showEasy ? "bg-indigo-600 border-indigo-400 text-white" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"}`}>
+                        <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : ""}`} />
                         <div className="text-left leading-none">
                             <p className="text-[10px] uppercase tracking-widest mb-1 opacity-70">Guide Mode</p>
-                            <p className="text-xs">{showEasy ? "초보자 가이드 끄기" : "초보자 가이드 켜기"}</p>
+                            <p className="text-xs">{showEasy ? "가이드 끄기" : "가이드 켜기"}</p>
                         </div>
                     </button>
                 </div>
 
-
-
-                {/* 4. Analysis Tabs */}
                 <div className="sticky top-4 z-40 flex justify-center py-2 bg-black/50 backdrop-blur-md rounded-2xl border border-white/5">
                     <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full max-w-2xl">
                         {[
@@ -396,27 +309,21 @@ function AnalysisContent() {
                             { id: "sector", label: "섹터 분석", icon: PieChart },
                             { id: "peer", label: "동종비교", icon: Users }
                         ].map((tab: any) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-                            >
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
                                 <tab.icon className="w-3.5 h-3.5" /> {tab.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* 5. Tab Contents */}
                 <div className="min-h-[400px] mt-4">
-
                     {activeTab === "quant" && (
                         <div className="space-y-6">
-                            {/* Local Trigger for Quant */}
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-amber-500/20 rounded-lg"><Zap className="w-5 h-5 text-amber-400" /></div>
-                                    <h3 className="font-bold">TurboQuant 정밀 분석</h3>
+                                    <h3 className="font-bold whitespace-nowrap">TurboQuant 정밀 분석</h3>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("quant")}
                                     className="px-6 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
@@ -425,739 +332,239 @@ function AnalysisContent() {
                             </div>
 
                             {quantLoading ? (
-                                <div className="text-center py-16">
-                                    <RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" />
-                                    <p className="text-gray-500">지표 분석 중...</p>
-                                </div>
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">지표 분석 중...</p></div>
                             ) : quantData ? (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    {showEasy && (
-                                        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
-                                            <div className="bg-indigo-500/20 p-2 rounded-lg h-fit">
-                                                <HelpCircle className="w-5 h-5 text-indigo-400" />
+                                <div className="space-y-6">
+                                    <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl p-6">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade}</div>
+                                                <div><h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3><p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p></div>
                                             </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-indigo-400 mb-1">TurboQuant 가이드 활성화됨</h4>
-                                                <p className="text-xs text-gray-300 leading-relaxed">
-                                                    TurboEngine의 고성능 퀀트 분석 비유를 확인해 보세요. 종목의 종합적인 체질을 확인해 보세요!
-                                                </p>
+                                            <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
+                                        </div>
+                                        <RadarChart factors={quantData.factors} />
+                                        <div className="mt-8 pt-6 border-t border-white/10">
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                {Object.entries(quantData.factors || {}).map(([key, f]: any) => (
+                                                    <div key={key} className="flex flex-col items-center text-center">
+                                                        <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
+                                                        <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>{f.score}</span>
+                                                        <div className="space-y-0.5 opacity-60">
+                                                            {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
+                                                                <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    )}
-
-                                    <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl">
-                                        <div className="p-6 relative">
-                                            {isTurbo && (
-                                                <div className="absolute top-0 right-0 p-2">
-                                                    <div className="bg-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-bl-xl flex items-center gap-1 animate-pulse">
-                                                        <Zap className="w-3 h-3 fill-current" /> TURBO ACTIVE
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>
-                                                        {quantData.grade}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3>
-                                                        <p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className={`text-3xl font-black ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}</span>
-                                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p>
-                                                </div>
-                                            </div>
-
-                                            <RadarChart factors={quantData.factors} />
-
-                                            <div className="mt-8 pt-6 border-t border-white/10">
-                                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                                    {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
-                                                        const getFactorMetaphor = (label: string) => {
-                                                            if (label === "가치") return { title: "가성비", desc: "가격표 매력" };
-                                                            if (label === "성장") return { title: "성장판", desc: "자라나는 속도" };
-                                                            if (label === "모멘텀") return { title: "기세", desc: "주가 달리기" };
-                                                            if (label === "수익성") return { title: "효율", desc: "돈 버는 기술" };
-                                                            if (label === "안정성") return { title: "뼈대", desc: "위기 견디기" };
-                                                            return null;
-                                                        };
-                                                        const metaphor = getFactorMetaphor(f.label);
-
-                                                        return (
-                                                            <div key={key} className="flex flex-col items-center text-center group">
-                                                                <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
-                                                                <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>
-                                                                    {f.score}
-                                                                </span>
-                                                                {showEasy && metaphor && (
-                                                                    <div className="mb-2">
-                                                                        <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded">
-                                                                            {metaphor.title}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                                <div className="space-y-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                                    {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                                        <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1">
-                                                                            <span>{mk}</span>
-                                                                            <span className="text-gray-200 font-bold">{mv}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {(symbol.length >= 6) && (
-                                            <div className="border-t border-indigo-500/20 bg-indigo-500/5">
-                                                <TurboQuantIndicators symbol={symbol} showEasy={showEasy} />
-                                            </div>
-                                        )}
+                                    </div>
+                                    <div className="border-t border-indigo-500/20 bg-indigo-500/5">
+                                        <TurboQuantIndicators symbol={quantSymbol || symbol} showEasy={showEasy} />
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                    <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500">종목코드를 입력하면 5축 퀀트 분석을 시작합니다</p>
-                                    <p className="text-xs text-gray-600 mt-2">가치 · 성장 · 모멘텀 · 수익성 · 안정성</p>
-                                </div>
-                            )}
+                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 5축 퀀트 분석을 시작합니다</p> </div>}
                         </div>
                     )}
 
                     {activeTab === "financial" && (
                         <div className="space-y-6">
-                            {/* Local Trigger for Financial */}
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-emerald-500/20 rounded-lg"><Shield className="w-5 h-5 text-emerald-400" /></div>
-                                    <h3 className="font-bold">재무 건강도 진단</h3>
+                                    <h3 className="font-bold whitespace-nowrap">재무 건강도 진단</h3>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("financial")}
                                     className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
                                     건강도 측정
                                 </button>
                             </div>
-
                             {financialLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                             ) : financialData ? (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    {showEasy && (
-                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
-                                            <div className="bg-emerald-500/20 p-2 rounded-lg h-fit">
-                                                <HelpCircle className="w-5 h-5 text-emerald-400" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
-                                                <p className="text-xs text-gray-300 leading-relaxed">
-                                                    어려운 재무 용어들을 알기 쉽게 풀어 설명해 드릴게요. 각 수치가 의미하는 '건강 상태'를 확인해 보세요!
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
+                                <div className="space-y-6">
                                     <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
                                         <div className="flex items-center justify-between mb-6">
-                                            <div>
-                                                <h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2>
-                                                <p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>
-                                                    {financialData.grade}
-                                                </div>
-                                            </div>
+                                            <div><h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2><p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p></div>
+                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>{financialData.grade}</div>
                                         </div>
-
-                                        {/* [v1.4.0] Stability & Efficiency Charts */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                            {/* 안전성 추이 Chart */}
                                             <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                <div className="flex items-center gap-2 mb-6">
-                                                    <Shield className="w-4 h-4 text-emerald-400" />
-                                                    <h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3개년 안전성 추이 (Debt/Liquid)</h4>
-                                                </div>
+                                                <div className="flex items-center gap-2 mb-6"><Shield className="w-4 h-4 text-emerald-400" /><h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3개년 안전성 추이</h4></div>
                                                 <div className="h-[200px] w-full">
                                                     {financialData.charts?.stability ? (
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <LineChart data={financialData.charts.stability}>
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} />
-                                                                <Legend iconType="circle" />
-                                                                <Line type="monotone" dataKey="부채비율" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
-                                                                <Line type="monotone" dataKey="유동비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                                                            </LineChart>
-                                                        </ResponsiveContainer>
+                                                        <ResponsiveContainer width="100%" height="100%"><LineChart data={financialData.charts.stability}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="부채비율" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} /><Line type="monotone" dataKey="유동비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer>
                                                     ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
                                                 </div>
                                             </div>
-
-                                            {/* 수익 효율 Chart */}
                                             <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                <div className="flex items-center gap-2 mb-6">
-                                                    <TrendingUp className="w-4 h-4 text-indigo-400" />
-                                                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3개년 수익 효율 추이 (ROE/ROA)</h4>
-                                                </div>
+                                                <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-4 h-4 text-indigo-400" /><h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3개년 수익 효율 추이</h4></div>
                                                 <div className="h-[200px] w-full">
                                                     {financialData.charts?.profitability ? (
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <AreaChart data={financialData.charts.profitability}>
-                                                                <defs>
-                                                                    <linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                                                    </linearGradient>
-                                                                </defs>
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                                                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} />
-                                                                <Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} />
-                                                                <Area type="monotone" dataKey="ROA" stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} />
-                                                            </AreaChart>
-                                                        </ResponsiveContainer>
+                                                        <ResponsiveContainer width="100%" height="100%"><AreaChart data={financialData.charts.profitability}><defs><linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} /><Area type="monotone" dataKey="ROA" stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} /></AreaChart></ResponsiveContainer>
                                                     ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
-                                                        📐 Altman Z-Score
-                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded animate-pulse">부도 위험 체크</span>}
-                                                    </h4>
-                                                </div>
-                                                {showEasy && (
-                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                        "회사가 갑자기 망하지 않을지 보는 **정밀 건강검진**이에요. **3.0점 이상**이면 비바람이 불어도 끄떡없는 상태랍니다!"
-                                                    </p>
-                                                )}
-
-                                                <div className="flex items-end gap-3">
-                                                    <span className="text-3xl font-black">{financialData.z_score?.value}</span>
-                                                    <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
-                                                        {financialData.z_score?.zone} ZONE
-                                                    </span>
-                                                </div>
-                                                <div className="mt-2 h-2 bg-gray-800 rounded-full overflow-hidden">
-                                                    <div className={`h-full rounded-full transition-all ${financialData.z_score?.color === "green" ? "bg-green-500" : financialData.z_score?.color === "yellow" ? "bg-yellow-500" : "bg-red-500"}`}
-                                                        style={{ width: `${Math.min((financialData.z_score?.value || 0) / 5 * 100, 100)}%` }} />
-                                                </div>
-                                                <div className="flex justify-between text-[9px] text-gray-500 mt-1">
-                                                    <span>위험 (&lt;1.8)</span>
-                                                    <span>주의</span>
-                                                    <span>안전 (&gt;3.0)</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5">
-                                                        🏋️ Piotroski F-Score
-                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded animate-pulse">체력 개선 체크</span>}
-                                                    </h4>
-                                                </div>
-                                                {showEasy && (
-                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                        "작년보다 몸매(재무상태)가 좋아졌는지 채점하는 **9가지 체크리스트**예요. 높을수록 나날이 발전하고 있다는 뜻이에요!"
-                                                    </p>
-                                                )}
-
-                                                <div className="flex items-end gap-3">
-                                                    <span className="text-3xl font-black">{financialData.f_score?.value}</span>
-                                                    <span className="text-sm text-gray-500 pb-1">/ {financialData.f_score?.max}</span>
-                                                </div>
-                                                <div className="flex gap-1 mt-2">
-                                                    {Array.from({ length: 9 }, (_, i) => (
-                                                        <div key={i} className={`h-3 flex-1 rounded-full ${i < (financialData.f_score?.value || 0) ? "bg-emerald-500" : "bg-gray-700"}`} />
-                                                    ))}
-                                                </div>
-                                                <p className="text-[9px] text-gray-500 mt-1">0-3: 허약 | 4-6: 보통 | 7-9: 탄탄</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                        <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                            {(financialData.f_score?.details || []).map((d: string, i: number) => {
-                                                const getFScoreMetaphor = (detail: string) => {
-                                                    const lower = detail.toLowerCase();
-                                                    if (lower.includes("순이익") && lower.includes("흑자")) return "올해 밥값 했나? (순이익 > 0)";
-                                                    if (lower.includes("영업현금흐름") && lower.includes("양수")) return "피가 잘 도나? (현금유입 > 0)";
-                                                    if (lower.includes("roa") && lower.includes("양수")) return "에너지 효율 체크 (ROA > 0)";
-                                                    if (lower.includes("현금흐름") && lower.includes("순이익")) return "장부보다 실속 있나? (현금 > 순이익)";
-                                                    if (lower.includes("부채비율")) return "군살(빚)이 빠졌나? (부채비율 < 50%)";
-                                                    if (lower.includes("유동비율")) return "비상금(현금여유) 늘었나? (유동비율 > 1.0)";
-                                                    if (lower.includes("신주발행")) return "새 사람한테 손 안벌렸나? (증자 없음)";
-                                                    if (lower.includes("매출총이익률")) return "장사 실력이 늘었나? (마진 개선)";
-                                                    if (lower.includes("자산회전율")) return "기계가 부지런히 돌아가나? (회전율 > 0.5)";
-                                                    return null;
-                                                };
-                                                const fMetaphor = getFScoreMetaphor(d);
-
-                                                return (
-                                                    <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-emerald-500">✅</span>
-                                                            <span className="text-gray-200">{d}</span>
-                                                        </div>
-                                                        {showEasy && fMetaphor && (
-                                                            <span className="text-[10px] text-emerald-400 font-bold ml-6 leading-none italic bg-emerald-500/10 px-1.5 py-0.5 rounded w-fit">
-                                                                "{fMetaphor}"
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                        <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
-                                                const getExplanation = (key: string) => {
-                                                    if (key === "PER") return "버는 돈 대비 '지금 가격표' (권장: < 15배)";
-                                                    if (key === "PBR") return "가진 재산 대비 '지금 가격표' (권장: < 1.0)";
-                                                    if (key === "ROE") return "내 돈으로 얼마나 잘 불렸나? (권장: > 10%)";
-                                                    if (key === "부채비율") return "남한테 빌린 돈이 너무 많진 않나? (권장: < 100%)";
-                                                    if (key === "유동비율") return "급할 때 당장 뺄 '비상금'이 있나? (권장: > 1.0)";
-                                                    if (key === "영업이익률") return "물건 팔아서 남긴 진짜 내 몫 (권장: > 10%)";
-                                                    if (key === "매출총이익률") return "원가 빼고 남긴 순수 마진 (권장: > 20%)";
-                                                    if (key === "자산회전율") return "내 재산을 얼마나 열심히 굴리나 (권장: > 0.5)";
-                                                    return "";
-                                                };
-
-                                                return (
-                                                    <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
-                                                        <p className="text-[10px] text-gray-500 font-bold mb-0.5">{k}</p>
-                                                        <p className="text-lg font-black text-white">{v}</p>
-                                                        {showEasy && (
-                                                            <p className="text-[10px] text-emerald-400/70 mt-1 font-medium leading-tight">
-                                                                {getExplanation(k)}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10"> <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">📐 Altman Z-Score</h4> <div className="flex items-end gap-3"><span className="text-3xl font-black">{financialData.z_score?.value}</span><span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : "text-red-400"}`}>{financialData.z_score?.zone} ZONE</span></div> </div>
+                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10"> <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">🏋️ Piotroski F-Score</h4> <div className="flex items-end gap-3"><span className="text-3xl font-black">{financialData.f_score?.value}</span><span className="text-sm text-gray-500 pb-1">/ 9</span></div> </div>
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                    <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">종목코드를 입력하면 재무 분석을 시작합니다</p>
-                                    <p className="text-xs text-gray-600 mt-2">Altman Z-Score · Piotroski F-Score · 핵심 비율</p>
-                                </div>
-                            )}
+                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p> </div>}
                         </div>
                     )}
 
                     {activeTab === "sector" && (
-                        <div className="space-y-6">
-                            {/* Local Trigger for Sector Analysis */}
-                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-500/20 rounded-lg"><PieChart className="w-5 h-5 text-indigo-400" /></div>
-                                    <h3 className="font-bold">섹터 비교 분석</h3>
+                        <div className="space-y-8 animate-in fade-in duration-500">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white/5 p-6 rounded-[2rem] border border-white/10 shadow-2xl">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-3 bg-red-500/20 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]"><PieChart className="w-6 h-6 text-red-500" /></div>
+                                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase">Deep-Sector-Matrix v4.8.0</h3>
+                                    </div>
+                                    <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (17개 지표 초정밀 분석)</p>
                                 </div>
-                                <button onClick={() => handleGlobalSearch("sector")}
-                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    섹터 데이터 생성
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    <select
+                                        value={selectedSectorId || (sectorData?.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
+                                        onChange={(e) => { const newId = e.target.value; setSelectedSectorId(newId); fetchSectorAnalysis(secSymbol || symbol, newId); }}
+                                        className="bg-black/80 border border-white/20 rounded-2xl px-6 py-3 text-sm font-black text-white outline-none focus:ring-4 focus:ring-red-500/30 min-w-[240px] cursor-pointer appearance-none shadow-xl"
+                                    >
+                                        {(sectorData?.compare_sectors || []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}</option>)}
+                                    </select>
+                                    <button onClick={() => handleGlobalSearch("sector")} className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-black shadow-[0_10px_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 text-white">데이터 갱신</button>
+                                </div>
                             </div>
 
                             {sectorLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">섹터 비교 데이터 구성 중 (v4.7.0)...</p></div>
+                                <div className="text-center py-32"><RefreshCw className="w-16 h-16 animate-spin mx-auto text-red-500 mb-6 opacity-50" /><p className="text-gray-400 font-black tracking-widest uppercase">Fetching 17-Factor Deep Matrix...</p></div>
                             ) : sectorData ? (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div className="bg-gradient-to-br from-indigo-900/20 to-black border border-indigo-500/30 rounded-3xl p-6">
-                                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">Sector Health Analytics</h2>
-                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Naver-Mirror v4.7.1</span>
-                                                </div>
-                                                <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (3-Way 비교)</p>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-bold text-indigo-400/80 tracking-widest uppercase mb-1">Select Sector Range</span>
-                                                <select
-                                                    value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
-                                                    onChange={(e) => {
-                                                        const newId = e.target.value;
-                                                        setSelectedSectorId(newId);
-                                                        fetchSectorAnalysis(secSymbol || symbol, newId);
-                                                    }}
-                                                    className="bg-black/60 border border-white/20 rounded-xl px-4 py-2 text-sm font-black text-white outline-none focus:ring-2 focus:ring-indigo-500/50 min-w-[200px] cursor-pointer"
-                                                >
-                                                    {(sectorData.compare_sectors || []).map((s: any) => (
-                                                        <option key={s.id} value={s.id} className="bg-gray-900 text-white">
-                                                            {s.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        {/* 8-Grid Metric Section (Naver-Mirror) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {[
-                                                { key: "주가수익률", label: "주가수익률 (%)" },
-                                                { key: "배당수익률", label: "배당수익률 (%)" },
+                                <div className="space-y-16">
+                                    {[
+                                        {
+                                            group: "Value Analytics (가치 분석)",
+                                            metrics: [
                                                 { key: "PER", label: "PER (배)" },
                                                 { key: "PBR", label: "PBR (배)" },
+                                                { key: "Fwd. 12M PER 추이", label: "Fwd. 12M PER" },
+                                                { key: "Fwd. 12M PBR 추이", label: "Fwd. 12M PBR" }
+                                            ]
+                                        },
+                                        {
+                                            group: "Growth Dynamics (성장성 분석)",
+                                            metrics: [
+                                                { key: "매출액증가율", label: "매출액 증가율 (%)" },
+                                                { key: "영업이익증가율", label: "영업이익 증가율 (%)" },
+                                                { key: "순이익증가율", label: "순이익 증가율 (%)" }
+                                            ]
+                                        },
+                                        {
+                                            group: "Profitability Engine (수익성 분석)",
+                                            metrics: [
                                                 { key: "ROE", label: "ROE (%)" },
+                                                { key: "ROA", label: "ROA (%)" },
+                                                { key: "매출총이익률", label: "매출총이익률 (%)" },
+                                                { key: "영업이익률", label: "영업이익률 (%)" },
+                                                { key: "순이익률", label: "순이익률 (%)" }
+                                            ]
+                                        },
+                                        {
+                                            group: "Stability & Returns (안정성 및 수익률)",
+                                            metrics: [
                                                 { key: "부채비율", label: "부채비율 (%)" },
-                                                { key: "매출액증가율", label: "매출액증가율 (%)" },
-                                                { key: "매출총이익률", label: "매출총이익률 (%)" }
-                                            ].map((metric) => {
-                                                const cat = (sectorData.charts || {})[metric.key];
-                                                const subMode = sectorSubModes[metric.key.toLowerCase()] || 1;
-                                                
-                                                return (
-                                                    <div key={metric.key} className="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden group hover:border-indigo-500/30 transition-all">
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                                                                    <Activity className="w-4 h-4 text-indigo-400" />
+                                                { key: "유동비율", label: "유동비율 (%)" },
+                                                { key: "배당수익률", label: "배당수익률 (%)" },
+                                                { key: "배당성향", label: "배당성향 (%)" },
+                                                { key: "주가수익률", label: "주가 수익률 (%)" }
+                                            ]
+                                        }
+                                    ].map((section) => (
+                                        <div key={section.group} className="space-y-8">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                                                <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.4em]">{section.group}</h3>
+                                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                {section.metrics.map((metric) => {
+                                                    const cat = (sectorData.charts || {})[metric.key];
+                                                    if (!cat) return null;
+                                                    return (
+                                                        <div key={metric.key} className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 hover:bg-white/[0.04] transition-all duration-500 hover:scale-[1.01] hover:border-red-500/20 group shadow-2xl">
+                                                            <div className="flex items-center justify-between mb-8">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-2.5 h-10 bg-red-600 rounded-full group-hover:bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all" />
+                                                                    <h3 className="text-xl font-black text-white tracking-tighter uppercase">{metric.label}</h3>
                                                                 </div>
-                                                                <h4 className="text-sm font-black text-white tracking-tight">{metric.label}</h4>
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="text-[10px] font-black text-gray-500 uppercase mb-1 tracking-widest">Curr FY0</span>
+                                                                    <span className="text-3xl font-black text-red-500 tabular-nums drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                                                                        {cat.rows?.find((r: any) => r.name === "내 종목")?.[cat.headers?.[4] || ""] || "-"}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
-                                                                {[1, 2].map((m) => (
-                                                                    <button key={m}
-                                                                        onClick={() => setSectorSubModes(prev => ({ ...prev, [metric.key.toLowerCase()]: m }))}
-                                                                        className={`px-3 py-1 rounded text-[9px] font-black transition-all ${subMode === m ? "bg-indigo-600 text-white" : "text-gray-500 hover:text-gray-300"}`}
-                                                                    >
-                                                                        {m === 1 ? "VISUAL" : "DATA"}
-                                                                    </button>
-                                                                ))}
+                                                            <div className="h-[300px] w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <LineChart data={cat.chart_data}>
+                                                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                                                        <XAxis dataKey="period" stroke="#4b5563" fontSize={11} tickLine={false} axisLine={false} dy={15} />
+                                                                        <YAxis stroke="#4b5563" fontSize={11} tickLine={false} axisLine={false} width={40} />
+                                                                        <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '24px', fontSize: '11px', color: '#fff', boxShadow: '0 25px 60px rgba(0,0,0,0.8)' }} itemStyle={{ fontWeight: '900', padding: '4px 0' }} cursor={{ stroke: '#ffffff10', strokeWidth: 1 }} />
+                                                                        <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: '900', paddingBottom: '40px' }} />
+                                                                        <Line type="monotone" dataKey="내 종목" stroke="#ef4444" strokeWidth={6} dot={{ r: 6, strokeWidth: 3, fill: '#ef4444', stroke: '#000' }} activeDot={{ r: 10, strokeWidth: 0 }} animationDuration={2500} />
+                                                                        <Line type="monotone" dataKey="섹터 평균" stroke="#10b981" strokeWidth={2.5} strokeDasharray="8 4" dot={{ r: 4, fill: '#10b981' }} animationDuration={2500} />
+                                                                        <Line type="monotone" dataKey="시장 지수" stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="4 8" dot={{ r: 4, fill: '#3b82f6' }} animationDuration={2500} />
+                                                                    </LineChart>
+                                                                </ResponsiveContainer>
                                                             </div>
                                                         </div>
-
-                                                        <div className="h-64">
-                                                            {subMode === 1 ? (
-                                                                cat && cat.chart_data ? (
-                                                                    <ResponsiveContainer width="100%" height="100%">
-                                                                        <LineChart data={cat.chart_data}>
-                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                                                            <XAxis dataKey="period" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                                                                            <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                                                                            <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', fontSize: '10px' }} />
-                                                                            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
-                                                                            <Line type="monotone" dataKey="대상 종목" name="내 종목" stroke="#818cf8" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                                                                            <Line type="monotone" dataKey="섹터 평균" name="섹터 평균" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="3 3" />
-                                                                            <Line type="monotone" dataKey="시장 지수" name="시장 지수" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" />
-                                                                        </LineChart>
-                                                                    </ResponsiveContainer>
-                                                                ) : (
-                                                                    <div className="h-full flex flex-col items-center justify-center text-gray-500 border border-dashed border-white/5 rounded-xl">
-                                                                        <RefreshCw className="w-8 h-8 animate-spin mb-2 opacity-10" />
-                                                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-20">LOADING {metric.key}...</p>
-                                                                    </div>
-                                                                )
-                                                            ) : (
-                                                                <div className="h-full overflow-y-auto custom-scrollbar">
-                                                                    <table className="w-full text-[11px] text-left border-collapse">
-                                                                        <thead>
-                                                                            <tr className="border-b border-white/10 uppercase tracking-widest text-gray-500 font-bold">
-                                                                                <th className="py-2 pl-2">ENTRY</th>
-                                                                                {cat?.headers?.map((h: string) => <th key={h} className="py-2 text-right">{h}</th>)}
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {cat?.rows?.map((row: any, j: number) => (
-                                                                                <tr key={j} className={`border-b border-white/5 ${row.name === "대상 종목" ? "text-indigo-400 bg-indigo-500/5" : "text-gray-400"}`}>
-                                                                                    <td className="py-3 pl-2 font-black">{row.name}</td>
-                                                                                    {cat?.headers?.map((h: string) => (
-                                                                                        <td key={h} className="text-right py-3 pr-2 font-mono font-bold">
-                                                                                            {row[h] !== null ? row[h].toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "-"}
-                                                                                        </td>
-                                                                                    ))}
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Summary Table Section */}
-                                        <div className="bg-black/40 rounded-3xl p-6 border border-white/5 mt-8 hover:border-indigo-500/20 transition-all">
-                                            <div className="flex items-center gap-2 mb-6">
-                                                <LayoutDashboard className="w-4 h-4 text-emerald-400" />
-                                                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">Sector Indicators Comprehensive Summary</h4>
-                                            </div>
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-[11px] text-left border-separate border-spacing-0">
-                                                    <thead>
-                                                        <tr className="text-gray-500 uppercase tracking-widest border-b border-white/10 font-bold">
-                                                            <th className="py-3 px-2 border-b border-white/10">CATEGORY</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">PER</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">PBR</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">DIV (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">ROE (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">DEBT (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">MARGIN (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">GROWTH (%)</th>
-                                                            <th className="py-3 px-2 text-right border-b border-white/10">RETURN (%)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-white/5">
-                                                        {(sectorData?.summary_table || []).map((row: any, k: number) => (
-                                                            <tr key={k} className={`hover:bg-white/5 transition-colors ${row.name === "대상 종목" ? "bg-indigo-500/10" : ""}`}>
-                                                                <td className="py-4 px-2 text-white font-black">{row.name}</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-gray-300 font-bold">{row.per?.toFixed(2) || (row.PER?.toFixed(2)) || "-"}</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-gray-300 font-bold">{row.pbr?.toFixed(2) || (row.PBR?.toFixed(2)) || "-"}</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-emerald-400 font-bold">{row.div_yield?.toFixed(2) || (row.배당수익률?.toFixed(2)) || "-"}%</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-blue-400 font-bold">{row.roe?.toFixed(2) || (row.ROE?.toFixed(2)) || "-"}%</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-amber-400 font-bold">{row.debt_ratio?.toFixed(2) || (row.부채비율?.toFixed(2)) || "-"}%</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-indigo-400 font-bold">{row.margin?.toFixed(2) || (row.매출총이익률?.toFixed(2)) || "-"}%</td>
-                                                                <td className="text-right py-4 px-2 font-mono text-pink-400 font-bold">{row.growth?.toFixed(2) || (row.매출액증가율?.toFixed(2)) || "-"}%</td>
-                                                                <td className={`text-right py-4 px-2 font-mono font-black ${row.주가수익률 > 0 ? "text-red-400" : "text-blue-400"}`}>
-                                                                    {row.주가수익률 ? `${row.주가수익률.toFixed(2)}%` : "-"}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ) : (
-                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                                    <PieChart className="w-16 h-16 text-indigo-400/20 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sector Analysis v4.7.0 Standing By</p>
-                                    <p className="text-[10px] text-gray-600 mt-2">NAVER FINANCE '섹터분석' 완벽 미러링 시스템</p>
-                                    <div className="mt-6 flex justify-center gap-6">
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div> 대상 종목</div>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div> 섹터 평균</div>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase"><div className="w-2 h-2 bg-gray-500 rounded-full shadow-[0_0_10px_rgba(107,114,128,0.5)]"></div> 시장 지수</div>
-                                    </div>
-                                </div>
-                            )}
+                            ) : <div className="text-center py-32 bg-white/5 rounded-[3rem] border border-dashed border-white/10"><PieChart className="w-20 h-20 text-red-500/20 mx-auto mb-6" /><p className="text-gray-400 font-black tracking-[0.3em] text-sm uppercase">Sector Matrix Stand-By</p></div>}
                         </div>
                     )}
 
                     {activeTab === "peer" && (
                         <div className="space-y-6">
-                            {/* Local Trigger for Peer Analysis */}
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-500/20 rounded-lg"><Users className="w-5 h-5 text-purple-400" /></div>
                                     <h3 className="font-bold">동종 업계 비교</h3>
                                 </div>
-                                <button onClick={fetchPeer}
-                                    className="px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    피어 분석
-                                </button>
+                                <button onClick={fetchPeer} className="px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">피어 분석</button>
                             </div>
-
                             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex gap-4">
-                                <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660)"
-                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono text-white"
-                                    value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)}
-                                    onKeyDown={e => { if (e.key === "Enter") fetchPeer(); }}
-                                />
-                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-black text-sm text-white transition-all active:scale-95">
-                                    비교 분석
-                                </button>
+                                <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660)" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono text-white" value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)} onKeyDown={e => { if (e.key === "Enter") fetchPeer(); }} />
+                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-black text-sm text-white transition-all active:scale-95">비교 분석</button>
                             </div>
-
                             {peerLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">동종업계 비교 분석 중...</p></div>
-                            ) : peerData?.data && peerData.data.length > 0 ? (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="border-b border-white/10 text-gray-500 uppercase tracking-widest text-[10px] font-bold">
-                                                    <th className="text-left py-3 px-2">지표 항목</th>
-                                                    {peerData.data.map((s: any) => (
-                                                        <th key={s.symbol} className="py-3 px-2 text-center text-white">
-                                                            <div className="font-black">{s.name}</div>
-                                                            <div className="text-[10px] text-gray-500">{s.symbol}</div>
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {[
-                                                    { key: "market_cap_display", label: "시가총액" },
-                                                    { key: "per", label: "PER (배)" },
-                                                    { key: "pbr", label: "PBR (배)" },
-                                                    { key: "roe", label: "ROE (%)" },
-                                                    { key: "operating_margin", label: "영업이익률 (%)" },
-                                                    { key: "revenue_growth", label: "매출성장률 (%)" },
-                                                    { key: "dividend_yield", label: "배당수익률 (%)" },
-                                                    { key: "debt_to_equity", label: "부채비율 (%)" },
-                                                    { key: "beta", label: "베타 (변동성)" },
-                                                    { key: "change_3m", label: "3월 수익률 (%)" }
-                                                ].map(metric => {
-                                                    const values = peerData.data.map((s: any) => parseFloat(s[metric.key]) || 0);
-                                                    const maxIdx = values.indexOf(Math.max(...values));
-                                                    const minIdx = values.indexOf(Math.min(...values));
-                                                    const isHigherBetter = !["per", "debt_to_equity", "beta"].includes(metric.key);
-
-                                                    return (
-                                                        <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                                            <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">
-                                                                <div className="flex flex-col">
-                                                                    <span>{metric.label}</span>
-                                                                    {showEasy && (() => {
-                                                                        const metaphors: any = {
-                                                                            "market_cap_display": "덩치/규모",
-                                                                            "per": "가성비 측정",
-                                                                            "pbr": "자산 가치",
-                                                                            "roe": "내실 경영",
-                                                                            "operating_margin": "장사 마진",
-                                                                            "revenue_growth": "성장 속도",
-                                                                            "dividend_yield": "배당 보너스",
-                                                                            "debt_to_equity": "재무 건강",
-                                                                            "beta": "시장 민감도",
-                                                                            "change_3m": "최근 흐름"
-                                                                        };
-                                                                        return metaphors[metric.key] ? (
-                                                                            <span className="text-[9px] text-orange-400 font-normal mt-0.5">{metaphors[metric.key]}</span>
-                                                                        ) : null;
-                                                                    })()}
-                                                                </div>
-                                                            </td>
-                                                            {peerData.data.map((s: any, i: number) => {
-                                                                const val = s[metric.key];
-                                                                const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
-                                                                return (
-                                                                    <td key={s.symbol} className={`py-3 px-2 text-center font-mono ${isBest ? "text-green-400 font-black" : "text-gray-300"}`}>
-                                                                        {val ?? "N/A"}
-                                                                        {isBest && <span className="ml-1 text-[8px]">👑</span>}
-                                                                    </td>
-                                                                );
-                                                            })}
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                                        {["roe", "operating_margin", "change_3m"].map(metric => {
-                                            const label = peerData.metrics_labels?.[metric] || metric;
-                                            const maxVal = Math.max(...peerData.data.map((s: any) => Math.abs(parseFloat(s[metric]) || 0)), 1);
-                                            return (
-                                                <div key={metric} className="bg-white/5 rounded-2xl p-4 border border-white/10 shadow-lg">
-                                                    <h4 className="text-xs text-gray-500 font-bold mb-3 uppercase tracking-tighter">{label} Ranking</h4>
-                                                    {peerData.data.map((s: any) => {
-                                                        const val = parseFloat(s[metric]) || 0;
-                                                        const w = Math.abs(val) / maxVal * 100;
-                                                        return (
-                                                            <div key={s.symbol} className="flex items-center gap-2 mb-2">
-                                                                <span className="text-xs text-gray-400 w-16 truncate font-bold">{s.name}</span>
-                                                                <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
-                                                                    <div className={`h-full rounded-full ${val >= 0 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "bg-red-500"}`} style={{ width: `${w}%` }} />
-                                                                </div>
-                                                                <span className={`text-[10px] font-black w-12 text-right ${val >= 0 ? "text-red-400" : "text-blue-400"}`}>{val}</span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 rounded-2xl p-6 mt-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-2 bg-orange-500/20 rounded-lg"><BarChart3 className="w-5 h-5 text-orange-400" /></div>
-                                            <h3 className="font-bold text-lg">그룹 종합 분석 리포트</h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-3">
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">주요 우수 모델</p>
-                                                {[
-                                                    { label: "💰 가성비 리더 (LOW PER)", key: "per", isLowBetter: true },
-                                                    { label: "🚀 성장판 1위 (HIGH ROE)", key: "roe", isLowBetter: false },
-                                                    { label: "🛡️ 초건전 재무 (LOW DEBT)", key: "debt_to_equity", isLowBetter: true },
-                                                ].map(item => {
-                                                    const validData = peerData.data.filter((s: any) => (parseFloat(s[item.key]) || 0) > 0);
-                                                    if (validData.length === 0) return null;
-                                                    const leader = item.isLowBetter
-                                                        ? validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) < parseFloat(curr[item.key]) ? prev : curr))
-                                                        : validData.reduce((prev: any, curr: any) => (parseFloat(prev[item.key]) > parseFloat(curr[item.key]) ? prev : curr));
-
-                                                    return (
-                                                        <div key={item.key} className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5 hover:border-orange-500/30 transition-all">
-                                                            <span className="text-xs text-gray-300 font-bold">{item.label}</span>
-                                                            <span className="text-sm font-black text-orange-400">{leader.name}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <div className="space-y-3">
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">그룹 데이터 진단</p>
-                                                <div className="bg-black/40 p-4 rounded-xl border border-white/5 text-xs text-gray-400 leading-relaxed">
-                                                    {(() => {
-                                                        const avgPer = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.per) || 0), 0) / peerData.data.length;
-                                                        const avgRoe = peerData.data.reduce((acc: number, s: any) => acc + (parseFloat(s.roe) || 0), 0) / peerData.data.length;
-                                                        return (
-                                                            <>
-                                                                비교 그룹의 평균 PER은 <span className="text-white font-bold">{avgPer.toFixed(1)}배</span>, 평균 ROE는 <span className="text-white font-bold">{avgRoe.toFixed(1)}%</span>입니다.
-                                                                <br /><br />
-                                                                {avgPer < 15 ? "전반적으로 가성비가 높은 구간에 진입해 있습니다. " : "업계 전반적으로 고평가 인식이 강하거나 큰 성장을 기대받고 있습니다. "}
-                                                                {avgRoe > 12 ? "투자 효율이 우수한 건강한 그룹입니다." : "수익성이 낮거나 구조조정이 필요한 구간일 수 있습니다."}
-                                                            </>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : !peerLoading && (
-                                <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                                    <Users className="w-16 h-16 text-orange-400/20 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Compare mode Stand-By</p>
-                                    <p className="text-[10px] text-gray-600 mt-2">최대 5개 종목 코드를 쉼표로 구분하여 입력하세요</p>
-                                </div>
-                            )}
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">피어 데이터 분석 중...</p></div>
+                            ) : peerData ? (
+                                <div className="overflow-x-auto"><table className="w-full text-sm border-separate border-spacing-0"><thead className="text-gray-500 uppercase tracking-widest text-[10px] font-bold"><tr className="border-b border-white/10"><th className="text-left py-4 px-2">지표</th>{peerData.data.map((s: any) => <th key={s.symbol} className="py-4 px-2 text-center text-white font-black">{s.name}</th>)}</tr></thead><tbody className="divide-y divide-white/5">{[{ key: "per", label: "PER (배)" }, { key: "roe", label: "ROE (%)" }, { key: "dividend_yield", label: "배당 (%)" }].map(m => <tr key={m.key} className="hover:bg-white/5"><td className="py-4 px-2 text-gray-400 text-xs font-bold">{m.label}</td>{peerData.data.map((s: any) => <td key={s.symbol} className="py-4 px-2 text-center font-mono font-bold text-gray-200">{s[m.key] || "N/A"}</td>)}</tr>)}</tbody></table></div>
+                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"><Users className="w-12 h-12 text-orange-400/20 mx-auto mb-4" /><p className="text-gray-500">비교 종목 코드를 입력하세요</p></div>}
                         </div>
                     )}
                 </div>
 
-                <p className="text-center text-[10px] text-gray-600 mt-8 font-bold tracking-tight">
+                <p className="text-center text-[10px] text-gray-600 mt-16 font-bold tracking-tight opacity-50">
                     * 본 정보는 투자 참고용이며, 최종 투자 판단의 책임은 본인에게 있습니다.<br />
-                    v4.7.1 SYNC-RELEASE (Naver-Mirror Optimized)
+                    v4.8.0 SYNC-RELEASE (Deep-Sector-Matrix)
                 </p>
             </div>
         </div>
     );
 }
 
-
 export default function AnalysisPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-                <RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" />
-                <p className="text-gray-400 font-bold">데이터를 렌더링하고 있습니다...</p>
-            </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-black text-white flex flex-col items-center justify-center"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" /><p className="text-gray-400 font-bold">로딩 중...</p></div>}>
             <AnalysisContent />
         </Suspense>
     );
