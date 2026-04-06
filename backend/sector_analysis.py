@@ -1,56 +1,48 @@
 import requests
 import json
 import logging
-import re
 
-logger = logging.getLogger(__name__)
+# [v2.8.1] Diamond-Fix
+# This module handles the fetching and parsing of sector analysis data from Naver Finance.
 
-def get_sector_analysis_data(symbol, sector_id):
+def get_sector_analysis_data(symbol, sector_id=None):
     """
-    Fetches comprehensive sector comparison data from Naver Finance.
-    Endpoint: cF9001.aspx (Industry Comparison)
+    Fetches comparative sector data including PER, PBR, ROE, etc.
     """
     try:
-        # sector_id가 None이거나 'None' 문자열인 경우 처리
-        if not sector_id or sector_id == "None":
-            sector_id = ""
+        # 1. Base API URL (Naver Finance WiseReport Ajax)
+        # cmp_cd: Company code
+        # data_typ: 1 (Return/Indicator comparison)
+        # sec_cd: Sector code (WI26 standard)
+        url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
+        if sector_id:
+            url += f"&sec_cd={sector_id}"
             
-        # 1. Fetch Industry Comparison Data (cF9001.aspx)
-        ajax_url = f"https://navercomp.wisereport.co.kr/v2/company/ajax/cF9001.aspx?cmp_cd={symbol}&sec_cd={sector_id}&data_typ=1"
-        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.37 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.37",
             "Referer": f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={symbol}"
         }
+
+        response = requests.get(url, headers=headers, timeout=10)
         
-        response = requests.get(ajax_url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            return {"error": f"Failed to fetch sector data (HTTP {response.status_code})"}
-            
-        # [v2.7.9] Enhanced Decoding Logic
-        content = response.content
+        # [v2.7.9] Multi-stage decoding for Naver Finance Response (EUC-KR/CP949 fallback)
         try:
-            # Try UTF-8 first
-            ajax_json = json.loads(content.decode('utf-8'))
+            ajax_json = response.json()
         except:
             try:
-                # Fallback to CP949 (EUC-KR) if it's a Naver legacy response
-                ajax_json = json.loads(content.decode('cp949'))
+                # Try explicit CP949 decoding
+                decoded_content = response.content.decode('cp949', errors='replace')
+                ajax_json = json.loads(decoded_content)
             except:
-                # Last resort: replace errors
-                ajax_json = json.loads(content.decode('utf-8', errors='replace'))
-        
-        # 2. Extract Industry Overview (dt1) - Safe Indexing (v2.7.5)
-        dt1 = ajax_json.get("dt1")
-        if not dt1 or not isinstance(dt1, list) or len(dt1) == 0:
-            overview = {}
-        else:
-            overview = dt1[0]
-        
-        # 3. Extract Detailed Comparison Data (dt3)
-        charts = {}
-        summary_table = []
-        
+                # Last resort fallback
+                decoded_content = response.content.decode('utf-8', errors='replace')
+                ajax_json = json.loads(decoded_content)
+
+        if not ajax_json:
+            return None
+
+        # 2. Extract Indicator Headers (Timeline)
+        # Usually dt3 contains the financial indicators
         indicators_data = ajax_json.get("dt3", {})
         if not isinstance(indicators_data, dict):
             indicators_data = {}
@@ -62,26 +54,27 @@ def get_sector_analysis_data(symbol, sector_id):
         data_items = indicators_data.get("data", [])
         category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
         
+        charts = {}
+        summary_table = []
+        
         if i_headers:
+            metric_groups = {}
             # [v2.8.0] Pre-scan dt3 to map ITEM IDs to Indicator Keys
-            # This solves the "Missing Industry/Market Data" bug where names are corrupted in non-target rows.
             id_to_key = {}
             for item in data_items:
-                # We identify the indicator from the Target Stock (GUBN 1) row which usually has a better NM
                 if item.get("GUBN") == "1":
                     it_id = str(item.get("ITEM"))
-                    nm = item.get("NM", "").upper()
+                    nm_raw = item.get("NM", "")
+                    nm = nm_raw.upper() if isinstance(nm_raw, str) else ""
                     
                     m_key = None
-                    # Return/Price related
                     if it_id == "1":
                         if "EPS" in nm: m_key = "eps"
                     elif it_id == "2":
                         if "BPS" in nm: m_key = "bps"
                     elif it_id == "8" or "DPS" in nm: 
-                        m_key = "div_yield" # Defaulting ITEM 8 to div related
+                        m_key = "div_yield"
                     
-                    # Keywords Matching (Hybrid)
                     if "PER" in nm or "주가수익비율" in nm: m_key = "per"
                     elif "PBR" in nm or "주가순자산" in nm or it_id == "3": m_key = "pbr"
                     elif "ROE" in nm or "자기자본" in nm: m_key = "roe"
@@ -101,31 +94,25 @@ def get_sector_analysis_data(symbol, sector_id):
                     
                     if m_key: id_to_key[it_id] = m_key
 
-            # 3. Form Charts (v2.8.0 Hierarchical Mapping)
+            # Group items by matched key
             for item in data_items:
                 it_id = str(item.get("ITEM"))
-                gubn = item.get("GUBN")
-                category_name = category_map.get(gubn, "기타")
-                
-                # Map the item to a key using our pre-scanned ID map
                 m_key = id_to_key.get(it_id)
                 
-                # Fallback to NM matching if ID mapping failed
                 if not m_key:
-                    nm = item.get("NM", "").upper()
-                    if "PER" in nm: m_key = "per"
-                    elif "PBR" in nm: m_key = "pbr"
-                    elif "ROE" in nm: m_key = "roe"
-                    elif "배당" in nm: m_key = "div_yield"
+                    nm_raw = item.get("NM")
+                    if nm_raw and isinstance(nm_raw, str):
+                        nm = nm_raw.upper()
+                        if "PER" in nm: m_key = "per"
+                        elif "PBR" in nm: m_key = "pbr"
+                        elif "ROE" in nm: m_key = "roe"
+                        elif "배당" in nm: m_key = "div_yield"
                 
                 if m_key:
-                    
                     if m_key not in metric_groups: metric_groups[m_key] = []
                     metric_groups[m_key].append(item)
 
-            # Step 3-2. Build charts and summary table
-            category_map = {"1": "대상 종목", "2": "업종 평균", "3": "시장 지수"}
-            
+            # Build charts and summary table from groups
             for m_key, items in metric_groups.items():
                 m_rows = []
                 processed_categories = set()
@@ -155,19 +142,16 @@ def get_sector_analysis_data(symbol, sector_id):
                         "chart_data": [{"period": h, **{r["name"]: r.get(h) for r in m_rows}} for h in i_headers]
                     }
                     
-                    # Update summary table
                     for r in m_rows:
                         s_entry = next((s for s in summary_table if s["name"] == r["name"]), None)
                         if not s_entry:
                             s_entry = {"name": r["name"]}
                             summary_table.append(s_entry)
                         
-                        latest_val = None
-                        for h in reversed(i_headers):
-                            if r.get(h) is not None:
-                                latest_val = r.get(h)
-                                break
-                        s_entry[m_key] = latest_val
+                        # Use latest value for summary
+                        latest_h = i_headers[-2] if len(i_headers) > 1 else (i_headers[-1] if i_headers else None)
+                        if latest_h:
+                            s_entry[m_key] = r.get(latest_h)
 
         # 4. Extract Comparison Sectors (dt2) - v2.7.9 Emergency Fix
         compare_sectors = []
@@ -188,7 +172,7 @@ def get_sector_analysis_data(symbol, sector_id):
         
         if dt2 and isinstance(dt2, list) and len(dt2) > 0:
             for sec in dt2:
-                sec_nm = sec.get("SEC_NM_K", "").strip()
+                sec_nm = sec.get("SEC_NM_K", "").strip() if isinstance(sec.get("SEC_NM_K"), str) else ""
                 sec_id = sec.get("SEC_CD", "")
                 if sec_nm and sec_id:
                     compare_sectors.append({"id": sec_id, "name": sec_nm, "selected": str(sec_id) == str(sector_id)})
@@ -197,8 +181,8 @@ def get_sector_analysis_data(symbol, sector_id):
             dt0_data = ajax_json.get("dt0", {}).get("data", [])
             for item in dt0_data:
                 if item.get("GUBN") == "1" and item.get("SEQ") == 2:
-                    default_nm = item.get("NM", "").strip()
-                    # Clean up encoding/garbage if needed
+                    default_nm_raw = item.get("NM")
+                    default_nm = default_nm_raw.strip() if isinstance(default_nm_raw, str) else ""
                     if default_nm and len(default_nm) > 1:
                         compare_sectors.append({"id": sector_id or "DEFAULT", "name": default_nm, "selected": True})
             
@@ -210,44 +194,26 @@ def get_sector_analysis_data(symbol, sector_id):
                     if ms_copy["id"] == sector_id: ms_copy["selected"] = True
                     compare_sectors.append(ms_copy)
 
-        # If still empty, add at least one
         if not compare_sectors:
             compare_sectors.append({"id": sector_id or "", "name": "주요 업종 (기본)", "selected": True})
 
         if not summary_table:
-            # Provide a more complete skeleton for UI stability
+            # Provide skeleton for UI stability
             summary_table = [
-                {"name": "대상 종목", "per": 0.0, "pbr": 0.0, "roe": 0.0, "div_yield": 0.0, "debt_ratio": 0.0},
-                {"name": "업종 평균", "per": 0.0, "pbr": 0.0, "roe": 0.0, "div_yield": 0.0, "debt_ratio": 0.0}
+                {"name": "대상 종목"},
+                {"name": "업종 평균"},
+                {"name": "시장 지수"}
             ]
 
         return {
-            "status": "success",
-            "data": {
-                "overview": {
-                    "sector_name": overview.get("SEC_NM_K", "Unknown"),
-                    "stock_count": overview.get("SEC_NM_K_CNT", "0"),
-                    "sector_return_1d": overview.get("SEC_RTN_1D", "0"),
-                    "sector_return_1m": overview.get("SEC_RTN_1M", "0")
-                },
-                "compare_sectors": compare_sectors,
-                "charts": charts,
-                "summary_table": summary_table,
-                "raw_headers": i_headers
-            }
+            "symbol": symbol,
+            "sector_id": sector_id,
+            "compare_sectors": compare_sectors,
+            "summary_table": summary_table,
+            "charts": charts,
+            "raw_headers": i_headers
         }
 
     except Exception as e:
-        import traceback
-        logger.error(f"Critical error in get_sector_analysis_data: {str(e)}")
-        logger.error(traceback.format_exc())
-        return {
-            "status": "error",
-            "message": str(e),
-            "data": {
-                "overview": {"sector_name": "데이터 오류", "stock_count": "0"},
-                "charts": {},
-                "summary_table": [],
-                "raw_headers": []
-            }
-        }
+        logging.error(f"Error in get_sector_analysis_data: {e}")
+        return None
