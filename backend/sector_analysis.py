@@ -10,7 +10,8 @@ import re
 # 3. Dynamic Sectoring: WICS-based industry selection logic.
 
 def get_sector_analysis_data(symbol, sector_id=None):
-    logging.info(f"Starting v4.7.0 Naver-Perfect-Mirror Analysis for {symbol}")
+    logging.info(f"Starting v4.8.0 Deep-Sector-Matrix Analysis for {symbol}")
+    active_sector_id = str(sector_id) if sector_id else ""
     
     try:
         # Standard Literal Labels (Matching Naver UI)
