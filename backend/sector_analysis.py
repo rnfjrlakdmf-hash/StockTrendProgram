@@ -1,44 +1,42 @@
+# -*- coding: utf-8 -*-
 import requests
 import json
 import logging
 import re
 
-# [v4.4.0] Absolute-Successor (The Definitive Fix)
-# 1. Independent Restoration: Restores PER/ROE regardless of AJAX status.
-# 2. SSR-Fallback Headers: Uses Naver's own table years if Wisereport is blocked.
-# 3. Unicode Protection: Absolute label matching for charts/summary.
+# [v4.6.0] Victory-Gold (The Final Unification)
+# 1. Literal Korean Labels: Ensures perfect matching between Backend and Frontend.
+# 2. SSR Independent Extraction: Restores PER/ROE even when AJAX is blocked.
+# 3. Definite Mapping: FY0 fixed for Summary Table (Stock Trend Perfection).
 
 def get_sector_analysis_data(symbol, sector_id=None):
-    logging.info(f"Starting v4.4.0 Absolute-Successor Analysis for {symbol}")
+    logging.info(f"Starting v4.6.0 Victory-Gold Analysis for {symbol}")
     
     try:
-        # Precision Unicode Labels
-        TARGET_LABEL = "\ub300\uc0c1 \uc885\ubaa9" # 대상 종목
-        INDUSTRY_LABEL = "\uc5c5\uc885 \ud3c9\uade0" # 업종 평균
-        MARKET_LABEL = "\uc2dc\uc7a5 \uc9c0\uc218" # 시장 지수
+        # Standard Literal Labels (No Unicode Escapes for absolute clarity)
+        TARGET_LABEL = "대상 종목"
+        INDUSTRY_LABEL = "업종 평균"
+        MARKET_LABEL = "시장 지수"
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Referer": "https://finance.naver.com/"
         }
 
-        # 1. Fetch Naver SSR (main.naver) - Data Source A
+        # 1. Fetch Naver SSR (main.naver) - Financial Summary (PER, ROE)
         f_resp = requests.get(f"https://finance.naver.com/item/main.naver?code={symbol}", headers=headers, timeout=10)
         ssr_html = f_resp.content.decode('utf-8', errors='replace')
 
-        # 2. Extract Basic Info & Years from SSR (Fallback Headers)
-        # Search for years in '기업실적분석' header
+        # 2. Extract Years from SSR (Defensive Fallback)
         ssr_years = re.findall(r'(\d{4}\.\d{2})', ssr_html)
-        # Unique and sanitized: 2021.12 -> 2021/12
         unique_ssr_years = []
         for y in ssr_years:
             fmt = y.replace('.', '/')
             if fmt not in unique_ssr_years: unique_ssr_years.append(fmt)
-        
-        # Historical years from SSR (typically first 4)
-        fallback_headers = unique_ssr_years[:4]
+        fallback_headers = unique_ssr_years[:4] # Typically 4 historical years
 
-        # 3. Fetch Sector AJAX (cF9001) - Data Source B (Baseline Metrics)
+        # 3. Fetch Sector AJAX (cF9001) - Baseline Metrics (EPS, BPS, PBR)
+        # Even if this returns 0 bytes, our SSR-independent restoration will save PER/ROE.
         sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
         if sector_id: sector_url += f"&sec_cd={sector_id}"
             
@@ -52,9 +50,9 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 ajax_json = json.loads(json_str)
             except: pass
 
-        # 4. Standard Headers Setup
+        # 4. Timeline Setup (Prioritize Wisereport if alive)
         i_headers = [h for h in ajax_json.get("dt3", {}).get("yymm", []) if h]
-        if not i_headers: i_headers = fallback_headers # DEFENSIVE FALLBACK
+        if not i_headers: i_headers = fallback_headers # FALLBACK
         
         data_items = ajax_json.get("dt3", {}).get("data", [])
         category_map = {"1": TARGET_LABEL, "2": INDUSTRY_LABEL, "3": MARKET_LABEL}
@@ -76,26 +74,30 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 elif it_id == "8" or "배당" in nm: m_key = "div_yield"
                 if m_key: id_to_key[it_id] = m_key
 
-        # Group AJAX data
+        # Group data from AJAX
         for item in data_items:
-            m_key = id_to_key.get(str(item.get("ITEM")))
+            it_id = str(item.get("ITEM"))
+            m_key = id_to_key.get(it_id)
             if m_key:
                 if m_key not in metric_groups: metric_groups[m_key] = []
                 metric_groups[m_key].append(item)
 
-        # 5. IRONCLAD Independent Restoration for Target PER/ROE
-        cop_match = re.search(r'section cop_analysis.*?tbody(.*?)</tbody>', ssr_html, re.S)
-        if cop_match:
-            rows = re.findall(r'<tr[^>]*>.*?</tr>', cop_match.group(1), re.S)
+        # 5. SSR-Independent Restoration for PER/ROE
+        # Look for the 'section cop_analysis' area
+        cop_analysis = re.search(r'section cop_analysis.*?tbody(.*?)</tbody>', ssr_html, re.S)
+        if cop_analysis:
+            rows = re.findall(r'<tr[^>]*>.*?</tr>', cop_analysis.group(1), re.S)
             for row in rows:
                 for target in ["PER", "ROE"]:
                     m_key = target.lower()
+                    # Only restore if AJAX failed to provide it
                     if m_key in metric_groups: continue
                     if target in row and '<th' in row:
                         vals = re.findall(r'<td[^>]*>(?:<span[^>]*>)?\s*([\d,\.-]+)\s*(?:</span>)?</td>', row, re.S)
                         if vals:
+                            # Standardizing restored item
                             restored = {"GUBN": "1", "NM": target, "ITEM": f"SSR_{target}"}
-                            # Independent Mapping: Always map 4 historical years to FY_3...FY0
+                            # Map columns to relative fiscal years
                             for i, v in enumerate(vals[:4]):
                                 fy_offset = i - 3
                                 fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
@@ -103,10 +105,11 @@ def get_sector_analysis_data(symbol, sector_id=None):
                                 if v_c and v_c != '-':
                                     try: restored[fy_key] = float(v_c)
                                     except: restored[fy_key] = None
+                            
                             metric_groups[m_key] = [restored]
-                            logging.info(f"Independent Restoration of {target} complete.")
+                            logging.info(f"Target {target} Restored Independent of AJAX.")
 
-        # 6. Final Assembly & Global Version Sync
+        # 6. Final Assembly & Synchronization
         for m_key, items in metric_groups.items():
             m_rows = []
             processed_categories = set()
@@ -133,7 +136,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 
                 charts[m_key] = {"headers": i_headers, "rows": m_rows, "chart_data": chart_data}
                 
-                # Summary Table Update (Always use FY0 - index 3 of 4 historical years)
+                # Update Summary Table (Always matching TARGET_LABEL)
                 for r in m_rows:
                     if r["name"] == TARGET_LABEL:
                         s_e = next((s for s in summary_table if s["name"] == TARGET_LABEL), None)
@@ -141,12 +144,12 @@ def get_sector_analysis_data(symbol, sector_id=None):
                             s_e = {"name": TARGET_LABEL}
                             summary_table.append(s_e)
                         
-                        # Use the specific FY0 value (index 3 if we have at least 4 years)
+                        # Fix FY0 position (index 3 if 4 years set)
                         if len(i_headers) >= 4:
-                            current_year_header = i_headers[3]
-                            s_e[m_key] = r.get(current_year_header)
+                            fy0_h = i_headers[3]
+                            s_e[m_key] = r.get(fy0_h)
 
-        # 7. Sector Comparison Dropdown
+        # 7. Sector Dropdown
         compare_sectors = []
         dt2 = ajax_json.get("dt2", [])
         if dt2 and isinstance(dt2, list):
@@ -166,9 +169,9 @@ def get_sector_analysis_data(symbol, sector_id=None):
             "summary_table": summary_table,
             "charts": charts,
             "raw_headers": i_headers,
-            "version": "v4.4.0 (Absolute-Successor)"
+            "version": "v4.6.0 (Victory-Gold)"
         }
 
     except Exception as e:
-        logging.error(f"Critical Error in v4.4.0: {e}", exc_info=True)
+        logging.error(f"Critical Error in Victory-Gold: {e}", exc_info=True)
         return None
