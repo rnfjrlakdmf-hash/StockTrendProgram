@@ -132,11 +132,6 @@ def read_etf_rank(market: str = "KR", category: Optional[str] = None):
 def peer_data(symbol: str):
     return get_peer_comparison(symbol)
 
-@app.get("/api/sector-analysis/{symbol}")
-@turbo_cache(ttl_seconds=300)
-def sector_analysis_api(symbol: str, sector_id: Optional[str] = Query(None)):
-    """v4.6.0 Victory-Gold 하이브리드 섹터 분석 API"""
-    return get_sector_analysis_data(symbol, sector_id)
 @app.get("/api/sector-analysis-json/{symbol}")
 def sector_analysis_json_debug(symbol: str, sector_id: Optional[str] = Query(None)):
     """v4.6.0 JSON 디벨로퍼 디버그 API (Gold-Spec)"""
@@ -293,19 +288,19 @@ def read_stock_financials(symbol: str):
     return {"status": "success", "data": data}
 
 @app.get("/api/sector-analysis/{symbol}")
-def read_sector_analysis(symbol: str, sector_id: Optional[str] = None):
+def read_sector_analysis(symbol: str, sector_id: Optional[str] = Query(None)):
     """
-    [v2.6.0] 네이버 금융 기반 섹터 분석 데이터 반환 (Interactive)
+    [통합 v4.6.5] 최신 데이터 엔진(Victory-Unified) + 캐싱 시스템
     """
     cache_key = f"sector_analysis_{symbol}_{sector_id}"
     cached = turbo_engine.get_cache(cache_key)
     if cached:
-        return cached # Already contains status: success
+        return {**cached, "turbo": True}
         
     data = get_sector_analysis_data(symbol, sector_id)
     if data and data.get("status") == "success":
         turbo_engine.set_cache(cache_key, data)
-        return data
+        return {**data, "turbo": False}
         
     return data # Success or Error case from sector_analysis.py
 

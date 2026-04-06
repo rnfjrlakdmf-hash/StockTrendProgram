@@ -163,15 +163,18 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     })
         
         return {
-            "symbol": symbol,
-            "sector_id": sector_id,
-            "compare_sectors": compare_sectors,
-            "summary_table": summary_table,
-            "charts": charts,
-            "raw_headers": i_headers,
-            "version": "v4.6.0 (Victory-Gold)"
+            "status": "success",
+            "data": {
+                "symbol": symbol,
+                "sector_id": sector_id,
+                "compare_sectors": compare_sectors,
+                "summary_table": summary_table,
+                "charts": charts,
+                "raw_headers": i_headers,
+                "version": "v4.6.5 (Victory-Unified)"
+            }
         }
 
     except Exception as e:
-        logging.error(f"Critical Error in Victory-Gold: {e}", exc_info=True)
-        return None
+        logging.error(f"Critical Error in Victory-Unified: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
