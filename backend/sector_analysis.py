@@ -4,16 +4,15 @@ import json
 import logging
 import re
 
-# [v4.6.0] Victory-Gold (The Final Unification)
-# 1. Literal Korean Labels: Ensures perfect matching between Backend and Frontend.
-# 2. SSR Independent Extraction: Restores PER/ROE even when AJAX is blocked.
-# 3. Definite Mapping: FY0 fixed for Summary Table (Stock Trend Perfection).
+# [v4.6.9] Victory-Unified-Final (Absolute Reliability)
+# 1. Mega-Merger: Preserves Industry/Market lines while restoring Target metrics.
+# 2. Dropdown Fix: Robust sector list extraction from AJAX dt2/dt3.
+# 3. Encoding Guard: Pure UTF-8 handling for summary tables.
 
 def get_sector_analysis_data(symbol, sector_id=None):
-    logging.info(f"Starting v4.6.0 Victory-Gold Analysis for {symbol}")
+    logging.info(f"Starting v4.6.9 Victory-Unified Analysis for {symbol}")
     
     try:
-        # Standard Literal Labels (No Unicode Escapes for absolute clarity)
         TARGET_LABEL = "대상 종목"
         INDUSTRY_LABEL = "업종 평균"
         MARKET_LABEL = "시장 지수"
@@ -27,16 +26,15 @@ def get_sector_analysis_data(symbol, sector_id=None):
         f_resp = requests.get(f"https://finance.naver.com/item/main.naver?code={symbol}", headers=headers, timeout=10)
         ssr_html = f_resp.content.decode('utf-8', errors='replace')
 
-        # 2. Extract Years from SSR (Defensive Fallback)
+        # 2. Extract Years from SSR (Fallback)
         ssr_years = re.findall(r'(\d{4}\.\d{2})', ssr_html)
         unique_ssr_years = []
         for y in ssr_years:
             fmt = y.replace('.', '/')
             if fmt not in unique_ssr_years: unique_ssr_years.append(fmt)
-        fallback_headers = unique_ssr_years[:4] # Typically 4 historical years
+        fallback_headers = unique_ssr_years[:4]
 
-        # 3. Fetch Sector AJAX (cF9001) - Baseline Metrics (EPS, BPS, PBR)
-        # Even if this returns 0 bytes, our SSR-independent restoration will save PER/ROE.
+        # 3. Fetch Sector AJAX (cF9001) - Baseline Metrics
         sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
         if sector_id: sector_url += f"&sec_cd={sector_id}"
             
@@ -50,9 +48,9 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 ajax_json = json.loads(json_str)
             except: pass
 
-        # 4. Timeline Setup (Prioritize Wisereport if alive)
+        # 4. Timeline Setup
         i_headers = [h for h in ajax_json.get("dt3", {}).get("yymm", []) if h]
-        if not i_headers: i_headers = fallback_headers # FALLBACK
+        if not i_headers: i_headers = fallback_headers
         
         data_items = ajax_json.get("dt3", {}).get("data", [])
         category_map = {"1": TARGET_LABEL, "2": INDUSTRY_LABEL, "3": MARKET_LABEL}
@@ -62,42 +60,38 @@ def get_sector_analysis_data(symbol, sector_id=None):
         metric_groups = {}
         id_to_key = {}
 
-        # Scan for existing metrics from AJAX
+        # 4.1 Define Metric Mapping
         for item in data_items:
-            if str(item.get("GUBN")) == "1":
-                it_id, nm = str(item.get("ITEM")), str(item.get("NM", "")).upper()
-                m_key = None
-                if it_id == "1" or "EPS" in nm: m_key = "eps"
-                elif it_id == "2" or "BPS" in nm: m_key = "bps"
-                elif it_id == "3" or "PBR" in nm: m_key = "pbr"
-                elif it_id == "6" or "부채" in nm: m_key = "debt_ratio"
-                elif it_id == "8" or "배당" in nm: m_key = "div_yield"
-                if m_key: id_to_key[it_id] = m_key
-
-        # Group data from AJAX
-        for item in data_items:
+            # We map metrics primarily based on NM to be robust
+            nm = str(item.get("NM", "")).upper()
             it_id = str(item.get("ITEM"))
-            m_key = id_to_key.get(it_id)
+            m_key = None
+            if "EPS" in nm or it_id == "1": m_key = "eps"
+            elif "BPS" in nm or it_id == "2": m_key = "bps"
+            elif "PBR" in nm or it_id == "3": m_key = "pbr"
+            elif "부채" in nm or it_id == "6": m_key = "debt_ratio"
+            elif "배당" in nm or it_id == "8": m_key = "div_yield"
+            elif "ROE" in nm or it_id == "9": m_key = "roe"
+            elif "영업이익" in nm or it_id == "11": m_key = "operating_margin"
+            
             if m_key:
                 if m_key not in metric_groups: metric_groups[m_key] = []
-                metric_groups[m_key].append(item)
+                # Check for duplicates within GUBN
+                gubn = str(item.get("GUBN"))
+                if not any(str(x.get("GUBN")) == gubn for x in metric_groups[m_key]):
+                    metric_groups[m_key].append(item)
 
-        # 5. SSR-Independent Restoration for PER/ROE
-        # Look for the 'section cop_analysis' area
+        # 5. SSR-Independent Restoration for PER/ROE (High-Precision Merge)
         cop_analysis = re.search(r'section cop_analysis.*?tbody(.*?)</tbody>', ssr_html, re.S)
         if cop_analysis:
             rows = re.findall(r'<tr[^>]*>.*?</tr>', cop_analysis.group(1), re.S)
             for row in rows:
                 for target in ["PER", "ROE"]:
                     m_key = target.lower()
-                    # Only restore if AJAX failed to provide it
-                    if m_key in metric_groups: continue
                     if target in row and '<th' in row:
                         vals = re.findall(r'<td[^>]*>(?:<span[^>]*>)?\s*([\d,\.-]+)\s*(?:</span>)?</td>', row, re.S)
                         if vals:
-                            # Standardizing restored item
                             restored = {"GUBN": "1", "NM": target, "ITEM": f"SSR_{target}"}
-                            # Map columns to relative fiscal years
                             for i, v in enumerate(vals[:4]):
                                 fy_offset = i - 3
                                 fy_key = f"FY{fy_offset}" if fy_offset >= 0 else f"FY_{abs(fy_offset)}"
@@ -106,76 +100,104 @@ def get_sector_analysis_data(symbol, sector_id=None):
                                     try: restored[fy_key] = float(v_c)
                                     except: restored[fy_key] = None
                             
-                            metric_groups[m_key] = [restored]
-                            logging.info(f"Target {target} Restored Independent of AJAX.")
+                            # Mega-Merger: Update ONLY target, keep Industry/Market
+                            if m_key not in metric_groups:
+                                metric_groups[m_key] = [restored]
+                            else:
+                                existing = metric_groups[m_key]
+                                target_idx = next((i for i, x in enumerate(existing) if str(x.get("GUBN")) == "1"), None)
+                                if target_idx is not None:
+                                    existing[target_idx].update(restored)
+                                else:
+                                    existing.append(restored)
 
-        # 6. Final Assembly & Synchronization
+        # 6. Final Integration & Returns Chart
+        # 6.1 Process Returns Chart (dt0)
+        rtn_items = ajax_json.get("dt0", {}).get("data", [])
+        if rtn_items:
+            rtn_headers = ajax_json.get("dt0", {}).get("yymm", [])
+            rtn_rows = []
+            processed_rtn = set()
+            for item in rtn_items:
+                gubn = str(item.get("GUBN"))
+                if gubn in processed_rtn: continue
+                processed_rtn.add(gubn)
+                nm = category_map.get(gubn, item.get("NM", "ETC"))
+                row = {"name": nm}
+                for i, h in enumerate(rtn_headers):
+                    fy_o = i - 3
+                    fy_k = f"FY{fy_o}" if fy_o >= 0 else f"FY_{abs(fy_o)}"
+                    row[h] = item.get(fy_k)
+                rtn_rows.append(row)
+            
+            c_data = []
+            for h in rtn_headers:
+                ent = {"period": h}
+                for r in rtn_rows: ent[r["name"]] = r.get(h) or 0.0
+                c_data.append(ent)
+            charts["주가수익률"] = {"headers": rtn_headers, "rows": rtn_rows, "chart_data": c_data}
+
+        # 6.2 Process Other Metrics
         for m_key, items in metric_groups.items():
             m_rows = []
-            processed_categories = set()
             for item in items:
-                gubn = str(item.get("GUBN", "1"))
-                if gubn in processed_categories: continue
-                processed_categories.add(gubn)
-                
-                name = category_map.get(gubn, "기타")
-                row_d = {"name": name}
+                gubn = str(item.get("GUBN"))
+                name = category_map.get(gubn, "Other")
+                row = {"name": name}
                 for idx, h in enumerate(i_headers):
                     fy_o = idx - 3
                     fy_k = f"FY{fy_o}" if fy_o >= 0 else f"FY_{abs(fy_o)}"
-                    row_d[h] = item.get(fy_k)
-                m_rows.append(row_d)
-
+                    row[h] = item.get(fy_k)
+                m_rows.append(row)
+            
             if m_rows:
-                chart_data = []
+                c_data = []
                 for h in i_headers:
-                    entry = {"period": h}
-                    for r in m_rows:
-                        entry[r["name"]] = r.get(h) if r.get(h) is not None else 0.0
-                    chart_data.append(entry)
+                    ent = {"period": h}
+                    for r in m_rows: ent[r["name"]] = r.get(h) or 0.0
+                    c_data.append(ent)
+                charts[m_key] = {"headers": i_headers, "rows": m_rows, "chart_data": c_data}
                 
-                charts[m_key] = {"headers": i_headers, "rows": m_rows, "chart_data": chart_data}
-                
-                # Update Summary Table (Always matching TARGET_LABEL)
+                # Update Summary Table with latest value (FY0)
                 for r in m_rows:
-                    t_name = r["name"]
-                    if t_name in [TARGET_LABEL, INDUSTRY_LABEL, MARKET_LABEL]:
-                        s_e = next((s for s in summary_table if s["name"] == t_name), None)
-                        if not s_e:
-                            s_e = {"name": t_name}
-                            summary_table.append(s_e)
-                        
-                        # Fix FY0 position (index 3 if 4 years set)
-                        if len(i_headers) >= 4:
-                            fy0_h = i_headers[3]
-                            s_e[m_key] = r.get(fy0_h)
+                    s_r = next((x for x in summary_table if x["name"] == r["name"]), None)
+                    if not s_r:
+                        s_r = {"name": r["name"]}
+                        summary_table.append(s_r)
+                    if len(i_headers) >= 4:
+                        s_r[m_key] = r.get(i_headers[len(i_headers)-3]) # FY0 logic
 
-        # 7. Sector Dropdown
+        # 7. Enhanced Dropdown (Industry Selection)
         compare_sectors = []
+        seen_ids = set()
         dt2 = ajax_json.get("dt2", [])
-        if dt2 and isinstance(dt2, list):
-            for sec in dt2:
-                sec_nm = str(sec.get("SEC_NM_K", "")).strip()
-                if sec_nm:
-                    compare_sectors.append({
-                        "id": str(sec.get("SEC_CD", "")),
-                        "name": sec_nm,
-                        "selected": str(sec.get("SEC_CD", "")) == str(sector_id)
-                    })
+        if dt2:
+            for s in dt2:
+                s_id, s_nm = str(s.get("SEC_CD", "")), str(s.get("SEC_NM_K", "")).strip()
+                if s_id and s_id not in seen_ids:
+                    seen_ids.add(s_id)
+                    compare_sectors.append({"id": s_id, "name": s_nm, "selected": s_id == str(sector_id)})
         
+        # Fallback for sectors if dt2 empty (from dt3 GUBN rows)
+        if not compare_sectors:
+            for item in data_items:
+                if str(item.get("GUBN")) == "2":
+                    s_nm = str(item.get("NM")).strip()
+                    if s_nm and s_nm not in seen_ids:
+                        seen_ids.add(s_nm)
+                        compare_sectors.append({"id": "", "name": s_nm, "selected": False})
+
         return {
             "status": "success",
             "data": {
                 "symbol": symbol,
-                "sector_id": sector_id,
-                "compare_sectors": compare_sectors,
                 "summary_table": summary_table,
                 "charts": charts,
-                "raw_headers": i_headers,
-                "version": "v4.6.5 (Victory-Unified)"
+                "compare_sectors": compare_sectors,
+                "version": "v4.6.9 (Victory-Unified-Final)"
             }
         }
 
     except Exception as e:
-        logging.error(f"Critical Error in Victory-Unified: {e}", exc_info=True)
+        logging.error(f"Error in v4.6.9 Analysis: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}

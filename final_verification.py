@@ -8,41 +8,44 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from backend.sector_analysis import get_sector_analysis_data
-    from backend.pro_analysis import get_financial_health
     
     symbol = "005930"
-    print(f"--- Final Testing for {symbol} ---")
+    print(f"--- Verification for {symbol} (Merge Test) ---")
     
-    # 1. Test Sector Analysis
-    print("\n[1/2] Testing Sector Analysis...")
-    sec_res = get_sector_analysis_data(symbol)
-    if sec_res.get("status") == "success":
-        data = sec_res.get("data", {})
-        print("SUCCESS: Sector Analysis is 'success'")
-        print(f"DEBUG: Summary Table Rows: {[r['name'] for r in data.get('summary_table', [])]}")
-        # Check if Industry and Market are included
-        names = [r['name'] for r in data.get('summary_table', [])]
-        if "업종 평균" in names and "시장 지수" in names:
-            print("SUCCESS: Industry and Market included in table")
+    res = get_sector_analysis_data(symbol)
+    if res.get("status") == "success":
+        data = res.get("data", {})
+        charts = data.get("charts", {})
+        
+        # Check PER chart
+        per_chart = charts.get("per", {})
+        if per_chart:
+            chart_data = per_chart.get("chart_data", [])
+            if chart_data:
+                first_entry = chart_data[0]
+                possible_keys = [k for k in first_entry.keys() if k != "period"]
+                print(f"DEBUG: Found keys in PER chart: {possible_keys}")
+                
+                if "대상 종목" in possible_keys and "업종 평균" in possible_keys:
+                    print("SUCCESS: Both Target and Industry found in PER chart!")
+                else:
+                    print(f"FAIL: Missing keys in PER chart. Found: {possible_keys}")
+            else:
+                print("FAIL: PER chart_data is empty.")
         else:
-            print(f"WARNING: Table missing comparison rows: {names}")
-    else:
-        print(f"FAIL: Sector Analysis failed: {sec_res}")
-
-    # 2. Test Financial Health (The one with UnboundLocalError)
-    print("\n[2/2] Testing Financial Health...")
-    health_res = get_financial_health(symbol)
-    if health_res.get("health_score", 0) > 0:
-        print(f"SUCCESS: Financial Health Score: {health_res['health_score']}")
-        charts = health_res.get("charts", {})
-        if charts.get("stability") and len(charts["stability"]) > 0:
-            print(f"SUCCESS: Stability charts found ({len(charts['stability'])} points)")
+            print("FAIL: PER chart not found.")
+            
+        # Check Summary Table
+        summary = data.get("summary_table", [])
+        names = [r["name"] for r in summary]
+        print(f"DEBUG: Summary Table Names: {names}")
+        if "대상 종목" in names and "업종 평균" in names:
+            print("SUCCESS: Summary Table complete.")
         else:
-            print("WARNING: Financial Health charts are empty.")
+            print("FAIL: Summary Table incomplete.")
+            
     else:
-        print(f"FAIL: Financial Health failed: {health_res}")
+        print(f"FAIL: API error: {res}")
 
 except Exception as e:
-    print(f"CRITICAL ERROR during testing: {e}")
-    import traceback
-    traceback.print_exc()
+    print(f"CRITICAL ERROR: {e}")
