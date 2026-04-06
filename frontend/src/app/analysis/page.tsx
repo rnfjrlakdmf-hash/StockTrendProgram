@@ -820,12 +820,13 @@ function AnalysisContent() {
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <h2 className="text-2xl font-black text-white">섹터 비교 분석 (Sector Health)</h2>
                                                     <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>Sector Trend v2.7.9 (Stable-Data)</span>
+                                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]" suppressHydrationWarning>v3.0.0 (Core-Sync)</span>
                                                 </div>
                                                 <p className="text-gray-400 text-sm">업종 및 시장 지수 대비 현재 위치를 추적합니다. (Synced-Release)</p>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">비교 업종</span>
+                                                    <span className="text-[10px] font-bold text-indigo-400/80 tracking-widest uppercase mb-1">v3.0.0 (Core-Sync)</span>
                                                     <select
                                                         value={selectedSectorId || (sectorData.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
                                                         onChange={(e) => {
