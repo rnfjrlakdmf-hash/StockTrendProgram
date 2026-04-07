@@ -664,9 +664,93 @@ function AnalysisContent() {
                             </div>
                             {peerLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">피어 데이터 분석 중...</p></div>
-                            ) : peerData ? (
-                                <div className="overflow-x-auto"><table className="w-full text-sm border-separate border-spacing-0"><thead className="text-gray-500 uppercase tracking-widest text-[10px] font-bold"><tr className="border-b border-white/10"><th className="text-left py-4 px-2">지표</th>{peerData.data.map((s: any) => <th key={s.symbol} className="py-4 px-2 text-center text-white font-black">{s.name}</th>)}</tr></thead><tbody className="divide-y divide-white/5">{[{ key: "per", label: "PER (배)" }, { key: "roe", label: "ROE (%)" }, { key: "dividend_yield", label: "배당 (%)" }].map(m => <tr key={m.key} className="hover:bg-white/5"><td className="py-4 px-2 text-gray-400 text-xs font-bold">{m.label}</td>{peerData.data.map((s: any) => <td key={s.symbol} className="py-4 px-2 text-center font-mono font-bold text-gray-200">{s[m.key] || "N/A"}</td>)}</tr>)}</tbody></table></div>
-                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"><Users className="w-12 h-12 text-orange-400/20 mx-auto mb-4" /><p className="text-gray-500">비교 종목 코드를 입력하세요</p></div>}
+                            ) : peerData?.data && peerData.data.length > 0 ? (
+                                <div className="space-y-4 animate-in fade-in duration-300">
+                                    {/* Comparison Table */}
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-white/10">
+                                                    <th className="text-left py-3 px-2 text-gray-500 text-xs font-bold">지표</th>
+                                                    {peerData.data.map((s: any) => (
+                                                        <th key={s.symbol} className="py-3 px-2 text-center">
+                                                            <div className="font-black text-white">{s.name}</div>
+                                                            <div className="text-[10px] text-gray-500">{s.symbol}</div>
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {[
+                                                    { key: "market_cap_display", label: "시가총액" },
+                                                    { key: "per", label: "PER (배)" },
+                                                    { key: "pbr", label: "PBR (배)" },
+                                                    { key: "roe", label: "ROE (%)" },
+                                                    { key: "operating_margin", label: "영업이익률 (%)" },
+                                                    { key: "revenue_growth", label: "매출성장률 (%)" },
+                                                    { key: "dividend_yield", label: "배당수익률 (%)" },
+                                                    { key: "debt_to_equity", label: "부채비율 (%)" },
+                                                    { key: "beta", label: "베타" },
+                                                    { key: "change_3m", label: "3개월 수익률 (%)" },
+                                                ].map(metric => {
+                                                    const values = peerData.data.map((s: any) => parseFloat(s[metric.key]) || 0);
+                                                    const maxIdx = values.indexOf(Math.max(...values));
+                                                    const minIdx = values.indexOf(Math.min(...values));
+                                                    const isHigherBetter = !["per", "debt_to_equity", "beta"].includes(metric.key);
+
+                                                    return (
+                                                        <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5">
+                                                            <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">{metric.label}</td>
+                                                            {peerData.data.map((s: any, i: number) => {
+                                                                const val = s[metric.key];
+                                                                const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
+                                                                return (
+                                                                    <td key={s.symbol} className={`py-3 px-2 text-center font-mono ${isBest ? "text-green-400 font-black" : "text-gray-300"}`}>
+                                                                        {val ?? "N/A"}
+                                                                        {isBest && <span className="ml-1 text-[8px]">👑</span>}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Visual Bars */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {["roe", "operating_margin", "change_3m"].map(metric => {
+                                            const label = peerData.metrics_labels?.[metric] || metric;
+                                            const maxVal = Math.max(...peerData.data.map((s: any) => Math.abs(parseFloat(s[metric]) || 0)), 1);
+                                            return (
+                                                <div key={metric} className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                                                    <h4 className="text-xs text-gray-500 font-bold mb-3">{label}</h4>
+                                                    {peerData.data.map((s: any) => {
+                                                        const val = parseFloat(s[metric]) || 0;
+                                                        const w = Math.abs(val) / maxVal * 100;
+                                                        return (
+                                                            <div key={s.symbol} className="flex items-center gap-2 mb-2">
+                                                                <span className="text-xs text-gray-400 w-16 truncate">{s.name?.slice(0, 4)}</span>
+                                                                <div className="flex-1 h-4 bg-gray-800 rounded-full overflow-hidden">
+                                                                    <div className={`h-full rounded-full ${val >= 0 ? "bg-green-500" : "bg-red-500"}`} style={{ width: `${w}%` }} />
+                                                                </div>
+                                                                <span className={`text-xs font-bold w-12 text-right ${val >= 0 ? "text-green-400" : "text-red-400"}`}>{val}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : !peerLoading && (
+                                <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                    <Users className="w-12 h-12 text-orange-400/30 mx-auto mb-4" />
+                                    <p className="text-gray-500">비교할 종목 코드를 입력하세요</p>
+                                    <p className="text-xs text-gray-600 mt-2">최대 5개 종목 · PER/PBR/ROE/성장률 등</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
