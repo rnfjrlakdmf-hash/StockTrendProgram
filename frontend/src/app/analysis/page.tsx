@@ -60,6 +60,7 @@ function AnalysisContent() {
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
+    const [activeSectorTab, setActiveSectorTab] = useState(0);
     const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
     // [v4.9.5] Sync Trigger
@@ -443,53 +444,70 @@ function AnalysisContent() {
                                 <div className="text-center py-32"><RefreshCw className="w-16 h-16 animate-spin mx-auto text-red-500 mb-6 opacity-50" /><p className="text-gray-400 font-black tracking-widest uppercase">Fetching 17-Factor Deep Matrix...</p></div>
                             ) : sectorData ? (
                                 <div className="space-y-16">
-                                    {[
-                                        {
-                                            group: "Value Analytics (가치 분석)",
-                                            metrics: [
-                                                { key: "PER", label: "PER (배)" },
-                                                { key: "PBR", label: "PBR (배)" },
-                                                { key: "Fwd. 12M PER 추이", label: "Fwd. 12M PER" },
-                                                { key: "Fwd. 12M PBR 추이", label: "Fwd. 12M PBR" }
-                                            ]
-                                        },
-                                        {
-                                            group: "Growth Dynamics (성장성 분석)",
-                                            metrics: [
-                                                { key: "매출액증가율", label: "매출액 증가율 (%)" },
-                                                { key: "영업이익증가율", label: "영업이익 증가율 (%)" },
-                                                { key: "순이익증가율", label: "순이익 증가율 (%)" }
-                                            ]
-                                        },
-                                        {
-                                            group: "Profitability Engine (수익성 분석)",
-                                            metrics: [
-                                                { key: "ROE", label: "ROE (%)" },
-                                                { key: "ROA", label: "ROA (%)" },
-                                                { key: "매출총이익률", label: "매출총이익률 (%)" },
-                                                { key: "영업이익률", label: "영업이익률 (%)" },
-                                                { key: "순이익률", label: "순이익률 (%)" }
-                                            ]
-                                        },
-                                        {
-                                            group: "Stability & Returns (안정성 및 수익률)",
-                                            metrics: [
-                                                { key: "부채비율", label: "부채비율 (%)" },
-                                                { key: "유동비율", label: "유동비율 (%)" },
-                                                { key: "배당수익률", label: "배당수익률 (%)" },
-                                                { key: "배당성향", label: "배당성향 (%)" },
-                                                { key: "주가수익률", label: "주가 수익률 (%)" }
-                                            ]
-                                        }
-                                    ].map((section) => (
-                                        <div key={section.group} className="space-y-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
-                                                <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.4em]">{section.group}</h3>
-                                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                                    {(() => {
+                                        const sectorSections = [
+                                            {
+                                                group: "Value Analytics (가치 분석)",
+                                                metrics: [
+                                                    { key: "PER", label: "PER (배)" },
+                                                    { key: "PBR", label: "PBR (배)" },
+                                                    { key: "Fwd. 12M PER 추이", label: "Fwd. 12M PER" },
+                                                    { key: "Fwd. 12M PBR 추이", label: "Fwd. 12M PBR" }
+                                                ]
+                                            },
+                                            {
+                                                group: "Growth Dynamics (성장성 분석)",
+                                                metrics: [
+                                                    { key: "매출액증가율", label: "매출액 증가율 (%)" },
+                                                    { key: "영업이익증가율", label: "영업이익 증가율 (%)" },
+                                                    { key: "순이익증가율", label: "순이익 증가율 (%)" }
+                                                ]
+                                            },
+                                            {
+                                                group: "Profitability Engine (수익성 분석)",
+                                                metrics: [
+                                                    { key: "ROE", label: "ROE (%)" },
+                                                    { key: "ROA", label: "ROA (%)" },
+                                                    { key: "매출총이익률", label: "매출총이익률 (%)" },
+                                                    { key: "영업이익률", label: "영업이익률 (%)" },
+                                                    { key: "순이익률", label: "순이익률 (%)" }
+                                                ]
+                                            },
+                                            {
+                                                group: "Stability & Returns (안정성 및 수익률)",
+                                                metrics: [
+                                                    { key: "부채비율", label: "부채비율 (%)" },
+                                                    { key: "유동비율", label: "유동비율 (%)" },
+                                                    { key: "배당수익률", label: "배당수익률 (%)" },
+                                                    { key: "배당성향", label: "배당성향 (%)" },
+                                                    { key: "주가수익률", label: "주가 수익률 (%)" }
+                                                ]
+                                            }
+                                        ];
+                                        return (
+                                            <div className="space-y-6">
+                                                <div className="flex flex-wrap gap-2 bg-white/5 p-2 rounded-2xl border border-white/10">
+                                                    {sectorSections.map((sec: any, idx: number) => (
+                                                        <button 
+                                                            key={idx}
+                                                            onClick={() => setActiveSectorTab(idx)}
+                                                            className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSectorTab === idx ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-transparent text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                                                    >
+                                                        {sec.group.split(' (')[1].replace(')', '')} 
+                                                    </button>
+                                                ))}
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                {section.metrics.map((metric) => {
+                                            
+                                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                                                    <h3 className="text-sm font-black text-white uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                                                        {sectorSections[activeSectorTab].group}
+                                                    </h3>
+                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {sectorSections[activeSectorTab].metrics.map((metric) => {
                                                     const cat = (sectorData.charts || {})[metric.key];
                                                     if (!cat) return null;
                                                     return (
@@ -531,9 +549,11 @@ function AnalysisContent() {
                                                         </div>
                                                     );
                                                 })}
+                                                </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    );
+                                    })()}
                                 </div>
                             ) : <div className="text-center py-32 bg-white/5 rounded-[3rem] border border-dashed border-white/10"><PieChart className="w-20 h-20 text-red-500/20 mx-auto mb-6" /><p className="text-gray-400 font-black tracking-[0.3em] text-sm uppercase">Sector Matrix Stand-By</p></div>}
                         </div>
