@@ -14,9 +14,7 @@ const nextConfig: NextConfig = {
     unoptimized: true, // Keep unoptimized for consistency, or change if needed
   },
   // [v1.6.0] Ignore lint/type errors to speed up Vercel deployment for UI updates
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
   typescript: {
     ignoreBuildErrors: true,
   },
