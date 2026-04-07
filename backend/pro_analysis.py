@@ -443,19 +443,19 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
             "ratios": ratios,
             "charts": {
                 "stability": [
-                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "부채비율": d, "유동비율": c}
+                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "부채비율": d, "당좌비율": c}
                     for yr, d, c in zip(
                         (nav_full.get("debt_ratio") or {}).get("dates", [])[:4],
                         (nav_full.get("debt_ratio") or {}).get("values", [])[:4],
-                        (nav_full.get("current_ratio") or {}).get("values", [])[:4]
+                        (nav_full.get("quick_ratio") or {}).get("values", [])[:4]
                     ) if d is not None and c is not None
                 ],
                 "profitability": [
-                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "ROE": r, "ROA": a}
+                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "ROE": r, "영업이익률": a}
                     for yr, r, a in zip(
                         (nav_full.get("roe") or {}).get("dates", [])[:4],
                         (nav_full.get("roe") or {}).get("values", [])[:4],
-                        (nav_full.get("roa") or {}).get("values", [])[:4]
+                        (nav_full.get("operating_margin") or {}).get("values", [])[:4]
                     ) if r is not None and a is not None
                 ]
             },
