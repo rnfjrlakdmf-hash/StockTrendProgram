@@ -86,7 +86,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:3001",
+        "http://127.0.0.1:3001",
         "https://stock-trend-program.vercel.app",
         "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
         "https://stocktrendprogram-production.up.railway.app"

@@ -18,7 +18,7 @@ import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
 
 
-// [v4.8.0] Deep-Sector-Matrix Analysis Dashboard
+// [v4.9.5] Deep-Sector-Matrix Analysis Dashboard
 function AnalysisContent() {
     const searchParams = useSearchParams();
     const urlSymbol = searchParams.get("symbol");
@@ -62,7 +62,7 @@ function AnalysisContent() {
     const [secSymbol, setSecSymbol] = useState("");
     const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
-    // [v4.8.0] Sync Trigger
+    // [v4.9.5] Sync Trigger
     useEffect(() => {
         if (!symbol || stockLoading) return;
         const targetSymbol = symbol.trim();
@@ -160,7 +160,7 @@ function AnalysisContent() {
         try {
             const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
-            url.searchParams.append("v", "4.8.0");
+            url.searchParams.append("v", "4.9.5");
             url.searchParams.append("t", new Date().getTime().toString());
 
             const res = await fetch(url.toString());
@@ -245,7 +245,7 @@ function AnalysisContent() {
                     <div className="flex justify-between items-center mt-2">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <span className="bg-red-500/10 text-red-400 text-[9px] font-black px-2 py-0.5 rounded border border-red-500/20">
-                            Deep-Sector-Matrix v4.8.0 SYNC-RELEASE
+                            Deep-Sector-Matrix v4.9.5 PRECISION-SYNC
                         </span>
                     </div>
                 </div>
@@ -423,7 +423,7 @@ function AnalysisContent() {
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="p-3 bg-red-500/20 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]"><PieChart className="w-6 h-6 text-red-500" /></div>
-                                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase">Deep-Sector-Matrix v4.8.0</h3>
+                                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase">Deep-Sector-Matrix v4.9.5</h3>
                                     </div>
                                     <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (17개 지표 초정밀 분석)</p>
                                 </div>
@@ -502,7 +502,15 @@ function AnalysisContent() {
                                                                 <div className="flex flex-col items-end">
                                                                     <span className="text-[10px] font-black text-gray-500 uppercase mb-1 tracking-widest">Curr FY0</span>
                                                                     <span className="text-3xl font-black text-red-500 tabular-nums drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">
-                                                                        {cat.rows?.find((r: any) => r.name === "내 종목")?.[cat.headers?.[4] || ""] || "-"}
+                                                                        {(() => {
+                                                                            const r = cat.rows?.find((r: any) => r.name === "내 종목");
+                                                                            if (!r) return "-";
+                                                                            const hds = cat.headers || [];
+                                                                            const isEst = hds.some((h: string) => h.includes('(E)') || h.includes('(A)'));
+                                                                            const targetIdx = isEst && hds.length > 1 ? hds.length - 2 : hds.length - 1;
+                                                                            const targetH = hds[targetIdx] || "";
+                                                                            return r[targetH] ?? "-";
+                                                                        })()}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -555,7 +563,7 @@ function AnalysisContent() {
 
                 <p className="text-center text-[10px] text-gray-600 mt-16 font-bold tracking-tight opacity-50">
                     * 본 정보는 투자 참고용이며, 최종 투자 판단의 책임은 본인에게 있습니다.<br />
-                    v4.8.0 SYNC-RELEASE (Deep-Sector-Matrix)
+                    v4.9.5 PRECISION-SYNC (Deep-Sector-Matrix)
                 </p>
             </div>
         </div>

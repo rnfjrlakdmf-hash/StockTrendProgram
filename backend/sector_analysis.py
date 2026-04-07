@@ -4,13 +4,29 @@ import json
 import logging
 import re
 
+# [Helper] Robust Decoding
+def decode_safe(res: requests.Response) -> str:
+    """
+    Decodes response content robustly.
+    Always uses explicit try-except fallback to prevent Mojibake.
+    """
+    content = res.content
+    try:
+        return content.decode('utf-8')
+    except UnicodeDecodeError:
+        try:
+            return content.decode('cp949')
+        except UnicodeDecodeError:
+            return content.decode('utf-8', 'replace')
+
 # [v4.9.0] Naver-Absolute-Mirror (Sector Analysis Perfect Integration)
 # 1. 100% UI Parity: All 17 metrics now match Naver's Sector Analysis (c1090001.aspx) exactly.
 # 2. Dynamic Mapping: Uses Naver's internal 'proc' IDs for each indicator.
 # 3. Synchronized Sectoring: Ensures the exact WICS peer group is used for comparisons.
 
 def get_sector_analysis_data(symbol, sector_id=None):
-    logging.info(f"Starting v4.9.0 Absolute-Mirror Analysis for {symbol}")
+    logging.info(f"Starting v4.9.5 Precision-Sync Analysis for {symbol}")
+    active_sector_id = str(sector_id) if sector_id else ""
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -25,11 +41,10 @@ def get_sector_analysis_data(symbol, sector_id=None):
     try:
         # 1. Extract Accurate Sector ID (sec_cd) from UI
         # We visit c1090001.aspx to find the active sector ID if not provided.
-        active_sector_id = str(sector_id) if sector_id else ""
         try:
             ui_page_url = f"https://navercomp.wisereport.co.kr/v2/company/c1090001.aspx?cmp_cd={symbol}"
             ui_resp = requests.get(ui_page_url, headers=headers, timeout=5)
-            ui_html = ui_resp.content.decode('cp949', errors='replace')
+            ui_html = decode_safe(ui_resp)
             
             # Find sector dropdown
             select_match = re.search(r'<select[^>]*id=["\']sector["\'][^>]*>(.*?)</select>', ui_html, re.S)
@@ -91,7 +106,13 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 if active_sector_id: url += f"&sec_cd={active_sector_id}"
                 
                 resp = requests.get(url, headers=headers, timeout=5)
-                j = resp.json()
+                # Parse robustly - MUST use decode_safe to prevent mojibake
+                decoded_text = decode_safe(resp)
+                try:
+                    j = json.loads(decoded_text)
+                except Exception as e:
+                    logging.error(f"JSON Parse Error: {e}")
+                    continue
                 
                 m_yymm = j.get("yymm", [])
                 if not final_headers and m_yymm: final_headers = m_yymm
@@ -103,12 +124,17 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     if gubn not in ["1", "2", "3"]: continue
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
-                    # Dynamic Year Mapping
+                    
+                    # [v4.9.5] Dynamic FY Alignment Logic
+                    is_est = any('(E)' in x or '(A)' in x for x in m_yymm)
+                    fy0_idx = len(m_yymm) - 2 if is_est and len(m_yymm) > 1 else len(m_yymm) - 1
+                    if fy0_idx < 0: fy0_idx = 0
+                    
                     for idx, h in enumerate(m_yymm):
-                        # Naver data uses FY_4...FY1 mapping relative to yymm
-                        off = idx - 3 # Assuming 2024=idx 3 is FY0
+                        off = idx - fy0_idx
                         key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
-                        row[h] = item.get(key)
+                        val = item.get(key)
+                        row[h] = val
                     rows.append(row)
                 
                 if rows:
@@ -119,14 +145,18 @@ def get_sector_analysis_data(symbol, sector_id=None):
                         c_data.append(ent)
                     charts[label] = {"headers": m_yymm, "rows": rows, "chart_data": c_data}
                     
-                    # Summary Table update (using standard 2024 point if possible)
+                    # Summary Table update (using the determined FY0 index)
+                    fy0_idx = len(m_yymm) - 2 if (any('(E)' in x for x in m_yymm) and len(m_yymm) > 1) else len(m_yymm) - 1
+                    if fy0_idx < 0: fy0_idx = 0
+                    
+                    target_h = m_yymm[fy0_idx] if len(m_yymm) > fy0_idx else None
                     for r in rows:
                         s_r = next((x for x in summary_table if x["name"] == r["name"]), None)
                         if not s_r:
                             s_r = {"name": r["name"]}
                             summary_table.append(s_r)
-                        if len(m_yymm) >= 4:
-                            s_r[m_key] = r.get(m_yymm[3]) # Map to FY0 index
+                        if target_h:
+                            s_r[m_key] = r.get(target_h)
             except Exception as e:
                 logging.error(f"Error fetching {label}: {e}")
 
@@ -135,19 +165,28 @@ def get_sector_analysis_data(symbol, sector_id=None):
             sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
             if active_sector_id: sector_url += f"&sec_cd={active_sector_id}"
             s_resp = requests.get(sector_url, headers=headers, timeout=10)
-            ajax_json = s_resp.json()
+            try:
+                decoded_text = decode_safe(s_resp)
+                ajax_json = json.loads(decoded_text)
+            except Exception as e:
+                logging.error(f"JSON Parse Error in Price Returns: {e}")
+                ajax_json = {}
             rtn_items = ajax_json.get("dt0", {}).get("data", [])
             rtn_yymm = ajax_json.get("dt0", {}).get("yymm", [])
             
             if rtn_items:
                 rtn_rows = []
+                is_est = any('(E)' in x or '(A)' in x for x in rtn_yymm)
+                fy0_idx = len(rtn_yymm) - 2 if is_est and len(rtn_yymm) > 1 else len(rtn_yymm) - 1
+                if fy0_idx < 0: fy0_idx = 0
+
                 for item in rtn_items:
                     gubn = str(item.get("GUBN"))
                     if gubn not in ["1", "2", "3"]: continue
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
                     for idx, h in enumerate(rtn_yymm):
-                        off = idx - 3
+                        off = idx - fy0_idx
                         key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
                         row[h] = item.get(key)
                     rtn_rows.append(row)
@@ -169,7 +208,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 "charts": charts,
                 "compare_sectors": compare_sectors,
                 "active_sector_id": active_sector_id,
-                "version": "v4.9.0 (Absolute-Mirror)"
+                "version": "v4.9.5 (Precision-Sync)"
             }
         }
 
