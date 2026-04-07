@@ -98,19 +98,24 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
     }
 
     const dates = firstMetric.dates;
-    // 연간과 분기 구분 (E가 있으면 예상치)
-    const isEstimate = (d: string) => d.includes('(E)');
-    const isQuarterly = (d: string) => /\d{4}\.\d{2}$/.test(d) && !d.includes('(E)') && Array.isArray(dates) && dates.filter(x => x.startsWith(d.split('.')[0]) && !x.includes('(E)')).length > 2;
+    
+    // 연간/분기 데이터 분리 (네이버 금융 cop_analysis 기준: 앞 4개 연간, 뒤 6개 분기)
+    const annualDates = dates.slice(0, 4);
+    const quarterlyDates = dates.slice(4);
+
+    const isEstimate = (d: string) => d?.includes('(E)');
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-4">
             {/* 헤더 */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h4 className="text-lg font-bold text-white flex items-center gap-2">
-                    📋 기업 상세 실적 분석
-                </h4>
+                <div className="flex flex-col">
+                    <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                        📋 기업 상세 실적 분석
+                    </h4>
+                    <p className="text-[10px] text-gray-500 mt-0.5 ml-7 italic">네이버 금융 제공 데이터 기반 (단위: 억원/원/%)</p>
+                </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">* 연간/분기 실적 기준</span>
                     <button
                         onClick={() => setShowEasyMode(!showEasyMode)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${showEasyMode ? 'bg-yellow-400/15 text-yellow-300 border-yellow-400/30' : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}`}
@@ -120,23 +125,13 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
                 </div>
             </div>
 
-            {/* 날짜 헤더 범례 */}
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-[11px] text-gray-500">기간:</span>
-                {dates.map((date, idx) => (
-                    <span key={idx} className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${isEstimate(date) ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' : 'bg-white/5 text-gray-300 border-white/10'}`}>
-                        {date}{isEstimate(date) ? ' 예상' : ''}
-                    </span>
-                ))}
-            </div>
-
             {/* 카테고리별 그룹 렌더링 */}
             {METRIC_GROUPS.map((group) => {
                 const groupKeys = group.keys.filter(k => data[k]);
                 if (groupKeys.length === 0) return null;
 
                 return (
-                    <div key={group.title} className="bg-black/40 rounded-2xl border border-white/10 shadow-xl overflow-hidden">
+                    <div key={group.title} className="bg-black/40 rounded-2xl border border-white/10 shadow-xl overflow-hidden group/container">
                         {/* 그룹 제목 */}
                         <div className="px-4 py-3 bg-white/5 border-b border-white/10 flex items-center gap-2">
                             <span className="font-bold text-white text-sm">{group.title}</span>
@@ -146,15 +141,34 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
                         </div>
 
                         <div className="overflow-x-auto scrollbar-hide">
-                            <table className="w-full text-left border-collapse min-w-[550px]">
+                            <table className="w-full text-left border-collapse min-w-[700px]">
                                 <thead>
-                                    <tr className="border-b border-white/5">
-                                        <th className="py-2 px-4 text-gray-500 text-xs font-medium sticky left-0 bg-black/70 z-10 backdrop-blur-md w-32">지표</th>
-                                        {dates.map((date, idx) => (
-                                            <th key={idx} className={`py-2 px-3 text-xs font-bold text-center ${isEstimate(date) ? 'text-purple-400' : idx === dates.length - 1 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                {date}
-                                            </th>
-                                        ))}
+                                    {/* 1층: 그룹 헤더 (연간 / 분기) */}
+                                    <tr className="bg-white/2">
+                                        <th className="py-1.5 px-4 sticky left-0 bg-black/90 z-20 w-32"></th>
+                                        <th colSpan={annualDates.length} className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest text-emerald-400 text-center border-b border-emerald-500/20 bg-emerald-500/5">
+                                            📊 연간 실적 (Yearly)
+                                        </th>
+                                        <th colSpan={quarterlyDates.length} className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest text-blue-400 text-center border-b border-blue-500/20 bg-blue-500/5 border-l border-white/10">
+                                            ⏰ 분기 실적 (Quarterly)
+                                        </th>
+                                    </tr>
+                                    {/* 2층: 날짜 헤더 */}
+                                    <tr className="border-b border-white/10">
+                                        <th className="py-2 px-4 text-gray-500 text-[10px] font-black uppercase tracking-tighter sticky left-0 bg-black/90 z-20 backdrop-blur-md w-32 border-r border-white/5">지표</th>
+                                        {dates.map((date, idx) => {
+                                            const isQStart = idx === 4;
+                                            return (
+                                                <th 
+                                                    key={idx} 
+                                                    className={`py-2 px-3 text-xs font-bold text-center whitespace-nowrap ${
+                                                        isEstimate(date) ? 'text-purple-400' : 'text-gray-300'
+                                                    } ${isQStart ? 'border-l border-white/20' : ''}`}
+                                                >
+                                                    {date}
+                                                </th>
+                                            );
+                                        })}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -171,18 +185,20 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
                                                 onMouseLeave={() => setHoveredKey(null)}
                                             >
                                                 {/* 지표 이름 */}
-                                                <td className="py-3 px-4 sticky left-0 bg-black/70 group-hover:bg-gray-900/80 transition-colors z-10 backdrop-blur-md border-r border-white/5">
+                                                <td className="py-3 px-4 sticky left-0 bg-black/80 group-hover:bg-gray-900/90 transition-colors z-10 backdrop-blur-md border-r border-white/5 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="text-base">{config.emoji}</span>
                                                         <div>
                                                             <div className="text-xs font-bold text-gray-200">{config.label}</div>
-                                                            <div className="text-[10px] text-gray-500">{config.unit}</div>
+                                                            <div className="text-[9px] text-gray-500 uppercase font-bold">{config.unit}</div>
                                                         </div>
                                                     </div>
                                                     {/* 쉬운 설명 툴팁 */}
                                                     {showEasyMode && hoveredKey === key && (
-                                                        <div className="absolute left-36 top-1 z-50 w-52 bg-indigo-950 border border-indigo-500/30 rounded-xl p-3 shadow-2xl text-xs text-gray-200 leading-relaxed pointer-events-none">
-                                                            <span className="text-yellow-300 font-bold block mb-1">💡 {config.label}이란?</span>
+                                                        <div className="absolute left-36 top-1 z-50 w-52 bg-indigo-950/95 border border-indigo-500/40 rounded-xl p-3 shadow-2xl text-xs text-gray-200 leading-relaxed pointer-events-none backdrop-blur-md">
+                                                            <span className="text-yellow-300 font-bold block mb-1 flex items-center gap-1">
+                                                                <span className="animate-pulse">💡</span> {config.label}이란?
+                                                            </span>
                                                             {config.description}
                                                         </div>
                                                     )}
@@ -190,23 +206,30 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
 
                                                 {/* 값들 */}
                                                 {metric.values.map((val, idx) => {
+                                                    const isQuarter = idx >= 4;
+                                                    const isQStart = idx === 4;
                                                     const trend = getTrend(metric.values, idx);
                                                     const colorClass = val !== null
                                                         ? getColorClass(val, config.higherIsBetter, val === 0)
                                                         : '';
 
                                                     return (
-                                                        <td key={idx} className={`py-3 px-3 text-center ${isEstimate(dates[idx]) ? 'bg-purple-500/5' : idx === dates.length - 1 ? 'bg-blue-400/5' : ''}`}>
+                                                        <td 
+                                                            key={idx} 
+                                                            className={`py-3 px-3 text-center transition-colors ${
+                                                                isEstimate(dates[idx]) ? 'bg-purple-500/5' : isQuarter ? 'bg-blue-400/2' : 'bg-emerald-400/2'
+                                                            } ${isQStart ? 'border-l border-white/20' : ''}`}
+                                                        >
                                                             {val === null ? (
-                                                                <span className="text-gray-600 text-sm">-</span>
+                                                                <span className="text-gray-700 text-sm">-</span>
                                                             ) : (
                                                                 <div className="flex flex-col items-center gap-0.5">
-                                                                    <span className={`font-mono text-sm font-bold ${colorClass}`}>
+                                                                    <span className={`font-mono text-sm font-bold tracking-tight ${colorClass}`}>
                                                                         {formatValue(val, config.format, config.unit)}
                                                                     </span>
                                                                     {/* 전기 대비 추세 */}
                                                                     {trend !== 'none' && showEasyMode && (
-                                                                        <span className={`text-[10px] font-medium ${
+                                                                        <span className={`text-[10px] font-black ${
                                                                             trend === 'up'
                                                                                 ? config.higherIsBetter ? 'text-emerald-400' : 'text-red-400'
                                                                                 : trend === 'down'
