@@ -1065,15 +1065,7 @@ function DiscoveryContent() {
                                                 </div>
                                             )}
 
-                                            {/* [New] TurboQuant Precision Indicators (KR Only) */}
-                                            {(stock.symbol.split('.')[0].length === 6 && /^\d+$/.test(stock.symbol.split('.')[0])) && (
-                                                <div className="mb-10">
-                                                    <TurboQuantIndicators 
-                                                        symbol={stock.symbol} 
-                                                        stockName={stock.name} 
-                                                    />
-                                                </div>
-                                            )}
+
 
                                             {/* [New] Corporate Overview Section (Basic Description) */}
                                             {stock.description && (
