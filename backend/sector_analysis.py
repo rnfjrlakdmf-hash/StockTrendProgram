@@ -122,6 +122,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 for item in m_items:
                     gubn = str(item.get("GUBN"))
                     if gubn not in ["1", "2", "3"]: continue
+                    if str(item.get("SEQ", "1")) != "1": continue
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
                     
@@ -183,6 +184,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 for item in rtn_items:
                     gubn = str(item.get("GUBN"))
                     if gubn not in ["1", "2", "3"]: continue
+                    if str(item.get("SEQ", "1")) != "1": continue
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
                     for idx, h in enumerate(rtn_yymm):
