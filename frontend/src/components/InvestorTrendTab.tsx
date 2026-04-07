@@ -96,7 +96,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                 }`}
         >
-            {label}
+            <span>{label}</span>
         </button>
     );
 
@@ -125,17 +125,17 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="px-4 py-3 bg-blue-500/10 border-b border-blue-500/20 flex justify-between items-center">
                         <h4 className="text-sm font-bold text-blue-300 flex items-center gap-2">
-                            <TrendingDown className="w-4 h-4" /> 매도 상위 5개사
+                            <TrendingDown className="w-4 h-4" /> <span>매도 상위 5개사</span>
                         </h4>
-                        <span className="text-[10px] text-blue-400 font-mono">Sell Side</span>
+                        <span className="text-[10px] text-blue-400 font-mono"><span>Sell Side</span></span>
                     </div>
                     <div className="p-4 space-y-2">
                         {(brokerage?.sell || []).length > 0 ? (brokerage?.sell || []).slice(0, 5).map((b: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-sm">
-                                <span className="text-gray-300 font-medium">{b.name}</span>
-                                <span className="text-gray-400 font-mono text-xs">{formatNumber(b.volume)}주</span>
+                                <span className="text-gray-300 font-medium"><span>{b.name}</span></span>
+                                <span className="text-gray-400 font-mono text-xs"><span>{formatNumber(b.volume)}</span><span>주</span></span>
                             </div>
-                        )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500">데이터 없음</div>}
+                        )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500"><span>데이터 없음</span></div>}
                     </div>
                 </div>
 
@@ -143,17 +143,17 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20 flex justify-between items-center">
                         <h4 className="text-sm font-bold text-red-300 flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" /> 매수 상위 5개사
+                            <TrendingUp className="w-4 h-4" /> <span>매수 상위 5개사</span>
                         </h4>
-                        <span className="text-[10px] text-red-400 font-mono">Buy Side</span>
+                        <span className="text-[10px] text-red-400 font-mono"><span>Buy Side</span></span>
                     </div>
                     <div className="p-4 space-y-2">
                         {(brokerage?.buy || []).length > 0 ? (brokerage?.buy || []).slice(0, 5).map((b: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-sm">
-                                <span className="text-gray-300 font-medium">{b.name}</span>
-                                <span className="text-gray-400 font-mono text-xs">{formatNumber(b.volume)}주</span>
+                                <span className="text-gray-300 font-medium"><span>{b.name}</span></span>
+                                <span className="text-gray-400 font-mono text-xs"><span>{formatNumber(b.volume)}</span><span>주</span></span>
                             </div>
-                        )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500">데이터 없음</div>}
+                        )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500"><span>데이터 없음</span></div>}
                     </div>
                 </div>
             </div>
@@ -172,10 +172,10 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     </div>
                     <div className="text-right">
                         <div className={`text-xl font-black ${brokerage.foreign_estimate.net > 0 ? 'text-red-400' : brokerage.foreign_estimate.net < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                            {brokerage.foreign_estimate.net > 0 ? '+' : ''}{formatNumber(brokerage.foreign_estimate.net)}
+                            <span>{brokerage.foreign_estimate.net > 0 ? '+' : ''}</span><span>{formatNumber(brokerage.foreign_estimate.net)}</span>
                         </div>
                         <div className="text-[10px] text-gray-500 font-mono">
-                            매수 {formatNumber(brokerage.foreign_estimate.buy)} / 매도 {formatNumber(brokerage.foreign_estimate.sell)}
+                            <span>매수 {formatNumber(brokerage.foreign_estimate.buy)} / 매도 {formatNumber(brokerage.foreign_estimate.sell)}</span>
                         </div>
                     </div>
                 </div>
@@ -187,31 +187,31 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Briefcase className="w-3.5 h-3.5 text-blue-400" />
-                            기관 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
+                            <span>기관 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})</span>
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.institution > 0 ? 'text-red-400' : latestData.institution < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
-                            {latestData.institution > 0 ? '+' : ''}{formatNumber(latestData.institution)}
-                            <span className="text-xs font-normal text-slate-500 uppercase">Shares</span>
+                            <span>{latestData.institution > 0 ? '+' : ''}</span><span>{formatNumber(latestData.institution)}</span>
+                            <span className="text-xs font-normal text-slate-500 uppercase"><span>Shares</span></span>
                         </div>
                     </div>
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Globe className="w-3.5 h-3.5 text-purple-400" />
-                            외국인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
+                            <span>외국인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})</span>
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.foreigner > 0 ? 'text-red-400' : latestData.foreigner < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
-                            {latestData.foreigner > 0 ? '+' : ''}{formatNumber(latestData.foreigner)}
-                            <span className="text-xs font-normal text-slate-500 uppercase">Shares</span>
+                            <span>{latestData.foreigner > 0 ? '+' : ''}</span><span>{formatNumber(latestData.foreigner)}</span>
+                            <span className="text-xs font-normal text-slate-500 uppercase"><span>Shares</span></span>
                         </div>
                     </div>
                     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-center hover:bg-slate-800/40 transition-colors">
                         <div className="text-slate-400 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                             <Users className="w-3.5 h-3.5 text-emerald-400" />
-                            개인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})
+                            <span>개인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})</span>
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.retail > 0 ? 'text-red-400' : latestData.retail < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
-                            {latestData.retail > 0 ? '+' : ''}{formatNumber(latestData.retail || 0)}
-                            <span className="text-xs font-normal text-slate-500 uppercase">Shares</span>
+                            <span>{latestData.retail > 0 ? '+' : ''}</span><span>{formatNumber(latestData.retail || 0)}</span>
+                            <span className="text-xs font-normal text-slate-500 uppercase"><span>Shares</span></span>
                         </div>
                     </div>
                 </div>
@@ -377,20 +377,20 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                 {[...trendData].reverse().map((day: any, idx) => (
                                     <tr key={idx} className="hover:bg-white/5 transition-colors group">
                                         <td className="px-6 py-4 text-gray-200 group-hover:text-white font-bold">
-                                            {day.date.substring(5)}
+                                            <span>{day.date.substring(5)}</span>
                                         </td>
                                         <td className="px-6 py-4 text-right font-bold text-white">
-                                            {formatNumber(day.close)}
+                                            <span>{formatNumber(day.close)}</span>
                                         </td>
                                         <td className={`px-6 py-4 text-right font-black ${day.institution > 0 ? 'text-red-400' : day.institution < 0 ? 'text-blue-400' : ''}`}>
-                                            {day.institution > 0 ? '+' : ''}{formatNumber(day.institution)}
+                                            <span>{day.institution > 0 ? '+' : ''}</span><span>{formatNumber(day.institution)}</span>
                                         </td>
                                         <td className={`px-6 py-4 text-right font-black ${day.foreigner > 0 ? 'text-red-400' : day.foreigner < 0 ? 'text-blue-400' : ''}`}>
-                                            {day.foreigner > 0 ? '+' : ''}{formatNumber(day.foreigner)}
+                                            <span>{day.foreigner > 0 ? '+' : ''}</span><span>{formatNumber(day.foreigner)}</span>
                                         </td>
                                         <td className="px-4 py-4 text-right">
-                                           <div className="text-gray-400 text-[11px]">{formatNumber(day.foreign_holdings)}</div>
-                                           <div className="text-gray-500 text-[10px]">{day.foreign_ratio}%</div>
+                                           <div className="text-gray-400 text-[11px]"><span>{formatNumber(day.foreign_holdings)}</span></div>
+                                           <div className="text-gray-500 text-[10px]"><span>{day.foreign_ratio}</span><span>%</span></div>
                                         </td>
                                     </tr>
                                 ))}
@@ -401,7 +401,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
             )}
             <div className="text-[10px] text-gray-600 flex items-center gap-2 justify-center bg-white/5 py-2 rounded-xl border border-white/5">
                 <AlertCircle className="w-3 h-3" />
-                <span>데이터 소스: 네이버 금융 실시간 거래원 및 모바일 투자자 트렌드 API 연동. 해외 주식은 거래소 제한으로 인해 제공하지 않습니다.</span>
+                <span><span>데이터 소스: 네이버 금융 실시간 거래원 및 모바일 투자자 트렌드 API 연동. 해외 주식은 거래소 제한으로 인해 제공하지 않습니다.</span></span>
             </div>
         </div>
     );

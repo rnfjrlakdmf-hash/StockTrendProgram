@@ -60,7 +60,7 @@ export default function MarketScannerDashboard() {
         return (
             <div className="flex justify-center py-10 opacity-50">
                 <div className="animate-pulse flex items-center gap-2 text-gray-400">
-                    <Activity className="w-5 h-5" /> 시장 데이터 스캐닝 중...
+                    <Activity className="w-5 h-5" /> <span>시장 데이터 스캐닝 중...</span>
                 </div>
             </div>
         );
@@ -78,8 +78,8 @@ export default function MarketScannerDashboard() {
         return (
             <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm font-bold">
-                    <span className="text-gray-300">{name}</span>
-                    <span className="text-gray-500 text-xs font-mono">총 {total.toLocaleString()}종목</span>
+                    <span className="text-gray-300"><span>{name}</span></span>
+                    <span className="text-gray-500 text-xs font-mono"><span>총 {total.toLocaleString()}</span><span>종목</span></span>
                 </div>
                 <div className="h-3 w-full flex rounded-full overflow-hidden bg-white/5 border border-white/10">
                     <div style={{ width: `${upPct}%` }} className="bg-red-500/80 transition-all duration-500" />
@@ -87,9 +87,9 @@ export default function MarketScannerDashboard() {
                     <div style={{ width: `${downPct}%` }} className="bg-blue-500/80 transition-all duration-500" />
                 </div>
                 <div className="flex justify-between text-xs font-mono">
-                    <span className="text-red-400 flex items-center gap-1">▲ {stats.up}</span>
-                    <span className="text-gray-500 flex items-center gap-1"><Minus className="w-3 h-3" /> {stats.same}</span>
-                    <span className="text-blue-400 flex items-center gap-1">▼ {stats.down}</span>
+                    <span className="text-red-400 flex items-center gap-1"><span>▲ {stats.up}</span></span>
+                    <span className="text-gray-500 flex items-center gap-1"><Minus className="w-3 h-3" /> <span>{stats.same}</span></span>
+                    <span className="text-blue-400 flex items-center gap-1"><span>▼ {stats.down}</span></span>
                 </div>
             </div>
         );
@@ -100,10 +100,10 @@ export default function MarketScannerDashboard() {
             {/* 증시 스캐너 (상승/하락 비율) */}
             <div className="bg-black/40 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-emerald-400" /> Today&apos;s 증시 스캐너
+                    <Activity className="w-5 h-5 text-emerald-400" /> <span>Today&apos;s 증시 스캐너</span>
                 </h3>
                 <p className="text-xs text-gray-400 mb-6 leading-relaxed drop-shadow-md">
-                    지수 숫자보다 중요한 <strong>&apos;시장 체감 온도&apos;</strong>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 <strong>보수적인 현금 비중 확대</strong>를 고려해야 합니다. (1분마다 자동 갱신)
+                    <span>지수 숫자보다 중요한 </span><strong><span>&apos;시장 체감 온도&apos;</span></strong><span>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 </span><strong><span>보수적인 현금 비중 확대</span></strong><span>를 고려해야 합니다. (1분마다 자동 갱신)</span>
                 </p>
                 <div className="space-y-6">
                     {data.stats?.kospi && renderStatsBar(data.stats.kospi, "KOSPI (코스피)")}
@@ -115,17 +115,17 @@ export default function MarketScannerDashboard() {
             <div className="bg-black/40 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md flex flex-col h-[300px]">
                 <div className="flex justify-between items-center mb-1 shrink-0">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Radio className={`w-5 h-5 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} /> LIVE 특이 공시 속보
+                        <Radio className={`w-5 h-5 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} /> <span>LIVE 특이 공시 속보</span>
                     </h3>
                     {lastUpdated && (
                         <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
                             <span className={`w-1 h-1 rounded-full ${isRefreshing ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                            {lastUpdated}
+                            <span>{lastUpdated}</span>
                         </span>
                     )}
                 </div>
                 <p className="text-xs text-gray-400 mb-4 drop-shadow-md shrink-0 border-b border-white/10 pb-3">
-                    호재/악재성 키워드(유상증자, 단일판매 등)가 포함된 최근 1시간 이내 실시간 공시입니다. 관심 종목을 위에서 검색해 보세요.
+                    <span>호재/악재성 키워드(유상증자, 단일판매 등)가 포함된 최근 1시간 이내 실시간 공시입니다. 관심 종목을 위에서 검색해 보세요.</span>
                 </p>
 
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-3">
@@ -139,18 +139,18 @@ export default function MarketScannerDashboard() {
                                 className="block p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors group"
                             >
                                 <div className="flex justify-between text-[10px] text-gray-500 font-mono mb-1">
-                                    <span className="text-red-400/80 font-bold px-1.5 py-0.5 bg-red-400/10 rounded">{item.press}</span>
-                                    <span>{item.date}</span>
+                                    <span className="text-red-400/80 font-bold px-1.5 py-0.5 bg-red-400/10 rounded"><span>{item.press}</span></span>
+                                    <span><span>{item.date}</span></span>
                                 </div>
                                 <h4 className="text-sm font-bold text-gray-200 group-hover:text-amber-300 leading-tight transition-colors">
-                                    {item.title}
+                                    <span>{item.title}</span>
                                 </h4>
                             </a>
                         ))
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-500 text-sm space-y-2 opacity-70">
                             <AlertCircle className="w-8 h-8 opacity-50" />
-                            <p>현재 포착된 특이 공시가 없습니다.</p>
+                            <p><span>현재 포착된 특이 공시가 없습니다.</span></p>
                         </div>
                     )}
                 </div>

@@ -157,8 +157,8 @@ function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, is
                 {label} <span className="text-[10px] text-yellow-400 opacity-80">📋</span>
             </span>
             <div className="absolute bottom-full left-0 mb-2 w-52 p-3 bg-indigo-900/95 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md border border-white/10 leading-relaxed font-medium">
-                <span className="text-yellow-300 font-bold block mb-1">💡 {term} 지표 풀이</span>
-                {explanation || "쉬운 설명이 준비 중이에요!"}
+                <span className="text-yellow-300 font-bold block mb-1"><span>💡</span> <span>{term}</span> <span>지표 풀이</span></span>
+                <span>{explanation || "쉬운 설명이 준비 중이에요!"}</span>
                 <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-indigo-900/95"></div>
             </div>
         </div>
@@ -701,34 +701,36 @@ function DiscoveryContent() {
                                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-0">
                                         <div>
                                             <h3 className="text-2xl md:text-3xl font-bold flex flex-wrap items-center gap-2 md:gap-3 text-white">
-                                                {stock.name} 
+                                                <span>{stock.name}</span>
                                                 {stock.market_type && (
                                                     <span className={`text-[10px] md:text-xs px-2 py-0.5 rounded-md border font-black uppercase tracking-wider ${
                                                         stock.market_type.includes('KOSPI') ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 
                                                         stock.market_type.includes('KOSDAQ') ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 
                                                         'bg-gray-500/10 text-gray-400 border-gray-500/30'
                                                     }`}>
-                                                        {stock.market_type}
+                                                        <span>{stock.market_type}</span>
                                                     </span>
                                                 )}
-                                                <span className="text-base md:text-lg text-gray-400 font-medium whitespace-nowrap">{stock.symbol}</span>
+                                                <span className="text-base md:text-lg text-gray-400 font-medium whitespace-nowrap">
+                                                    <span>{stock.symbol}</span>
+                                                </span>
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
                                                 <span className="text-3xl md:text-4xl font-bold text-white">
                                                     {stock.currency === 'KRW'
-                                                        ? `₩${Number(String(stock.price).replace(/,/g, '')).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                                                        ? <span><span>{"₩"}</span><span>{Number(String(stock.price).replace(/,/g, '')).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
                                                         : (stock.currency === 'USD' || (stock.currency && typeof stock.currency === 'string' && stock.currency.includes('USD')))
-                                                            ? `$${stock.price}`
-                                                            : `${stock.currency} ${stock.price}`}
+                                                            ? <span><span>{"$"}</span><span>{stock.price}</span></span>
+                                                            : <span><span>{stock.currency}</span> <span>{stock.price}</span></span>}
                                                 </span>
                                                 {/* [Updated] Show KRW for foreign stocks ONLY */}
                                                 {stock.currency !== 'KRW' && (stock.symbol && !stock.symbol.includes('.KS') && !stock.symbol.includes('.KQ')) && (
                                                     <span className="text-lg md:text-xl text-gray-400 font-mono">
-                                                        (약 ₩{stock.price_krw || getKrwPrice(stock.price)})
+                                                        <span>(약 ₩</span><span>{stock.price_krw || getKrwPrice(stock.price)}</span><span>)</span>
                                                     </span>
                                                 )}
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorText} ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorBg}`}>
-                                                    {formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}
+                                                    <span>{formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}</span>
                                                 </span>
                                                 {/* [New] Market Status Badge with Green Light */}
                                                 {stock.details?.market_status && (
@@ -742,9 +744,9 @@ function DiscoveryContent() {
                                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                                                             </span>
                                                         )}
-                                                        {stock.details.market_status === 'After-Market' ? '야간거래(NXT)' : 
-                                                         stock.details.market_status === 'Unknown' ? '데이터 준비중' : 
-                                                         stock.details.market_status}
+                                                        {stock.details.market_status === 'After-Market' ? <span>야간거래(NXT)</span> : 
+                                                         stock.details.market_status === 'Unknown' ? <span>데이터 준비중</span> : 
+                                                         <span>{stock.details.market_status}</span>}
                                                     </span>
                                                 )}
                                             </div>
@@ -752,13 +754,13 @@ function DiscoveryContent() {
                                             {stock.details?.nxt_data && (
                                                 <div className="mt-2 flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-3 py-2 w-fit">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">NXT After Market</span>
+                                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider"><span>NXT After Market</span></span>
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xl font-black text-white">
-                                                                ₩{stock.details.nxt_data.price.toLocaleString()}
+                                                                <span>₩</span><span>{stock.details.nxt_data.price.toLocaleString()}</span>
                                                             </span>
                                                             <span className={`text-xs font-bold ${formatChangeWithAmountDisplay(stock.details.nxt_data.change_pct, stock.details.nxt_data.price, undefined, stock.details.nxt_data.change_val, 'KRW').colorText}`}>
-                                                                {formatChangeWithAmountDisplay(stock.details.nxt_data.change_pct, stock.details.nxt_data.price, undefined, stock.details.nxt_data.change_val, 'KRW').text}
+                                                                <span>{formatChangeWithAmountDisplay(stock.details.nxt_data.change_pct, stock.details.nxt_data.price, undefined, stock.details.nxt_data.change_val, 'KRW').text}</span>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -767,8 +769,8 @@ function DiscoveryContent() {
                                         </div>
                                         <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
                                             <div className="flex items-center gap-3 md:flex-col md:items-end">
-                                                <div className="text-sm text-gray-400 md:mb-1">AI 종합 점수</div>
-                                                <div className={`text-4xl md:text-5xl font-black ${stock.score >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm`}>{stock.score}</div>
+                                                <div className="text-sm text-gray-400 md:mb-1"><span>AI 종합 점수</span></div>
+                                                <div className={`text-4xl md:text-5xl font-black ${stock.score >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm`}><span>{stock.score}</span></div>
                                             </div>
                                             <div className="w-full md:w-auto mt-2 md:mt-2 flex items-center justify-end gap-2">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && <WatchlistButton symbol={stock.symbol} />}
@@ -831,90 +833,93 @@ function DiscoveryContent() {
                                             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="시가총액 (Market Cap)" term="시가총액" isEasyMode={easyMode} />
-                                                    <div className="font-bold text-white text-lg tracking-tight">{stock.details?.market_cap || 'N/A'}</div>
+                                                    <div className="font-bold text-white text-lg tracking-tight"><span>{stock.details?.market_cap || 'N/A'}</span></div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="거래량 (Volume)" term="거래량" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">{stock.details?.volume?.toLocaleString() || 'N/A'}</div>
+                                                    <div className="font-mono text-white"><span>{stock.details?.volume?.toLocaleString() || 'N/A'}</span></div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PER (주가수익비율)" term="PER" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
                                                         {(typeof stock.details?.pe_ratio === 'number' && stock.details.pe_ratio !== 0)
-                                                            ? `${stock.details.pe_ratio.toFixed(2)}배`
-                                                            : '-'}
+                                                            ? <span><span>{stock.details.pe_ratio.toFixed(2)}</span><span>배</span></span>
+                                                            : <span>{'-'}</span>}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}
+                                                        <span>{typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}</span>
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="배당수익률 (Yield)" term="배당수익률" isEasyMode={easyMode} />
                                                     <div className="font-mono text-green-400">
-                                                        {(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0)
-                                                            ? `${(stock.details.dividend_yield * 100).toFixed(2)}%`
-                                                            : '-'}
+                                                        <span>{(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0)
+                                                            ? <span>{(stock.details.dividend_yield * 100).toFixed(2)}</span>
+                                                            : <span>{'-'}</span>}
+                                                            {(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0) && <span>%</span>}</span>
                                                     </div>
                                                 </div>
 
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
-                                                        {(typeof stock.details?.forward_pe === 'number' && stock.details.forward_pe !== 0)
-                                                            ? `${stock.details.forward_pe.toFixed(2)}배`
-                                                            : '-'}
+                                                        <span>{(typeof stock.details?.forward_pe === 'number' && stock.details.forward_pe !== 0)
+                                                            ? <span><span>{stock.details.forward_pe.toFixed(2)}</span><span>배</span></span>
+                                                            : <span>{'-'}</span>}</span>
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
                                                         {typeof stock.details?.forward_eps === 'number'
-                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : '-'}
+                                                            ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
+                                                            : <span><span>{'-'}</span></span>}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
                                                         {(typeof stock.details?.pbr === 'number' && stock.details.pbr !== 0)
-                                                            ? `${stock.details.pbr.toFixed(2)}배`
-                                                            : '-'}
+                                                            ? <span>{stock.details.pbr.toFixed(2)}배</span>
+                                                            : <span>{'-'}</span>}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
                                                         {typeof stock.details?.bps === 'number'
-                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : '-'}
+                                                            ? <span>{stock.currency === 'KRW' ? '₩' : '$'}{stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
+                                                            : <span>{'-'}</span>}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                                                     <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} />
                                                     <div className="font-mono text-white">
                                                         {(typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate !== 0)
-                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : '-'}
+                                                            ? <span>{stock.currency === 'KRW' ? '₩' : '$'}{stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
+                                                            : <span>{'-'}</span>}
                                                     </div>
                                                 </div>
 
                                                 <div className="p-2">
                                                     <div className="text-gray-500 text-xs mb-1">전일 종가</div>
                                                     <div className="font-mono text-gray-300">
-                                                        {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.prev_close?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
+                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                        <span>{stock.details?.prev_close?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
                                                     </div>
                                                 </div>
                                                 <div className="p-2">
                                                     <div className="text-gray-500 text-xs mb-1">시가 (Open)</div>
                                                     <div className="font-mono text-gray-300">
-                                                        {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
+                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                        <span>{stock.details?.open?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
                                                     </div>
                                                 </div>
                                                 <div className="p-2">
-                                                    <div className="text-gray-500 text-xs mb-1">고가 / 저가</div>
+                                                    <div className="text-gray-500 text-xs mb-1"><span>고가 / 저가</span></div>
                                                     <div className="font-mono text-sm">
                                                         <span className="text-red-400">{stock.details?.day_high?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
                                                         <span className="text-gray-600 mx-1">/</span>
@@ -922,7 +927,7 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="col-span-2 p-2">
-                                                    <div className="text-gray-500 text-xs mb-1">52주 최고 / 최저</div>
+                                                    <div className="text-gray-500 text-xs mb-1"><span>52주 최고 / 최저</span></div>
                                                     <div className="font-mono text-sm">
                                                         <span className="text-red-300">{stock.details?.year_high?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
                                                         <span className="text-gray-600 mx-2">~</span>
@@ -942,7 +947,7 @@ function DiscoveryContent() {
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'analysis' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('analysis')}
                                         >
-                                            데이터 종합 분석
+                                            <span>데이터 종합 분석</span>
                                         </button>
 
                                         {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
@@ -950,7 +955,7 @@ function DiscoveryContent() {
                                                 className={`pb-3 whitespace-nowrap ${activeTab === 'financials' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                 onClick={() => setActiveTab('financials')}
                                             >
-                                                재무제표
+                                                <span>재무제표</span>
                                             </button>
                                         )}
 
@@ -960,7 +965,7 @@ function DiscoveryContent() {
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'daily' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('daily')}
                                         >
-                                            일일 시세
+                                            <span>일일 시세</span>
                                         </button>
 
                                         {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
@@ -969,7 +974,7 @@ function DiscoveryContent() {
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('investor')}
                                                 >
-                                                    📈 투자자 동향 <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
+                                                    <span>📈 투자자 동향</span> <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'dividend_health' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
@@ -988,19 +993,19 @@ function DiscoveryContent() {
                                                         }
                                                     }}
                                                 >
-                                                    💰 배당/건전성 <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
+                                                    <span>💰 배당/건전성</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('overhang')}
                                                 >
-                                                    ⚠️ 오버행/타법인 <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
+                                                    <span>⚠️ 오버행/타법인</span> <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('disclosure')}
                                                 >
-                                                    공시(DART) <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
+                                                    <span>공시(DART)</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
                                                 </button>
                                             </>
                                         )}
@@ -1009,7 +1014,7 @@ function DiscoveryContent() {
                                             className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'news' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setActiveTab('news')}
                                         >
-                                            관련 뉴스
+                                            <span>관련 뉴스</span>
                                         </button>
 
 
@@ -1083,12 +1088,12 @@ function DiscoveryContent() {
                                                     <div className="flex flex-col items-center justify-center h-full py-8 space-y-3 bg-white/5 rounded-xl border border-white/5">
                                                         <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                                                         <div className="text-center">
-                                                            <div className="text-blue-200 text-sm font-bold mb-1">AI가 실시간 데이터를 분석 중입니다...</div>
-                                                            <div className="text-slate-500 text-xs">전략 수립 및 리포트 작성 중 (약 3~5초)</div>
+                                                            <div className="text-blue-200 text-sm font-bold mb-1"><span>AI가 실시간 데이터를 분석 중입니다...</span></div>
+                                                            <div className="text-slate-500 text-xs"><span>전략 수립 및 리포트 작성 중 (약 3~5초)</span></div>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    stock.summary || "분석 내용이 없습니다."
+                                                    <span>{stock.summary || "분석 내용이 없습니다."}</span>
                                                 )}
                                                 <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-[11px] text-gray-400 leading-relaxed">
                                                     ⚠️ **주의**: 본 분석 결과는 객관적 재무 지표와 공시 정보를 바탕으로 알고리즘이 생성한 '참고용' 요약입니다. 어떠한 경우에도 투자 권유나 수익 보장을 의미하지 않으며, 모든 투자 결정에 대한 책임은 투자자 본인에게 있습니다.
@@ -1111,16 +1116,16 @@ function DiscoveryContent() {
                                             {stock.rationale && stock.rationale.supply && (
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                                     <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                                        <div className="text-blue-400 font-bold mb-1 flex items-center gap-2">✅ 수급 (Supply)</div>
-                                                        <div className="text-sm text-gray-200">{stock.rationale.supply}</div>
+                                                        <div className="text-blue-400 font-bold mb-1 flex items-center gap-2"><span>✅ 수급 (Supply)</span></div>
+                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.supply}</span></div>
                                                     </div>
                                                     <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                                        <div className="text-purple-400 font-bold mb-1 flex items-center gap-2">🔥 모멘텀 (Momentum)</div>
-                                                        <div className="text-sm text-gray-200">{stock.rationale.momentum}</div>
+                                                        <div className="text-purple-400 font-bold mb-1 flex items-center gap-2"><span>🔥 모멘텀 (Momentum)</span></div>
+                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.momentum}</span></div>
                                                     </div>
                                                     <div className="bg-white/5 p-4 rounded-xl border border-red-500/30">
-                                                        <div className="text-red-400 font-bold mb-1 flex items-center gap-2">⚠️ 리스크 (Risk)</div>
-                                                        <div className="text-sm text-gray-200">{stock.rationale.risk}</div>
+                                                        <div className="text-red-400 font-bold mb-1 flex items-center gap-2"><span>⚠️ 리스크 (Risk)</span></div>
+                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.risk}</span></div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1174,10 +1179,16 @@ function DiscoveryContent() {
                                                     (Array.isArray(periodNews) && periodNews.length > 0 ? periodNews : (stock?.news || [])).map((n: any, idx: number) => (
                                                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer" onClick={() => window.open(n.link, '_blank')}>
                                                             <div className="w-full">
-                                                                <h5 className="font-bold text-white mb-2 group-hover:text-yellow-400 text-lg leading-snug break-all">{n.title}</h5>
+                                                                <h5 className="font-bold text-white mb-2 group-hover:text-yellow-400 text-lg leading-snug break-all">
+                                                                    <span>{n.title}</span>
+                                                                </h5>
                                                                 <div className="flex items-center gap-3 text-sm text-gray-400">
-                                                                    <span className="bg-yellow-400/10 px-2 py-0.5 rounded text-xs text-yellow-400 font-bold border border-yellow-400/20">{n.publisher}</span>
-                                                                    <span className="font-mono text-xs">{toKoreanDate(n.published)}</span>
+                                                                    <span className="bg-yellow-400/10 px-2 py-0.5 rounded text-xs text-yellow-400 font-bold border border-yellow-400/20">
+                                                                        <span>{n.publisher}</span>
+                                                                    </span>
+                                                                    <span className="font-mono text-xs">
+                                                                        <span>{toKoreanDate(n.published)}</span>
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1232,15 +1243,17 @@ function DiscoveryContent() {
                                                         {dailyPricesData && Array.isArray(dailyPricesData) && dailyPricesData.length > 0 ? (
                                                             dailyPricesData.map((day, idx) => (
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                                    <td className="py-3 px-2 text-gray-300 font-mono text-sm">{toKoreanDate(day.date)}</td>
+                                                                    <td className="py-3 px-2 text-gray-300 font-mono text-sm">
+                                                                        <span>{toKoreanDate(day.date)}</span>
+                                                                    </td>
                                                                     <td className="py-3 px-2 font-mono font-bold">
-                                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span>
+                                                                        <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span></span>
                                                                     </td>
                                                                     <td className={`py-3 px-2 font-mono font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                        <span>{day.change > 0 ? '+' : null}</span><span>{day.change.toFixed(2)}%</span>
+                                                                        <span><span>{day.change > 0 ? '+' : null}</span><span>{day.change.toFixed(2)}</span><span>%</span></span>
                                                                     </td>
                                                                     <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
-                                                                        {day.volume.toLocaleString()}
+                                                                        <span>{day.volume.toLocaleString()}</span>
                                                                     </td>
                                                                 </tr>
                                                             ))
@@ -1292,23 +1305,23 @@ function DiscoveryContent() {
                                                     >
                                                         <div className="flex-1 min-w-0 pr-3">
                                                             <div className="font-bold text-white text-sm whitespace-normal break-words group-hover:text-blue-300 transition-colors">
-                                                                {item.name}
+                                                                <span>{item.name}</span>
                                                             </div>
-                                                            <div className="text-xs text-gray-500 font-mono mb-1">{item.symbol}</div>
+                                                            <div className="text-xs text-gray-500 font-mono mb-1"><span>{item.symbol}</span></div>
                                                             <div className="text-[10px] text-gray-400 truncate">
-                                                                {item.reason}
+                                                                <span>{item.reason}</span>
                                                             </div>
                                                         </div>
 
                                                         <div className="text-right whitespace-nowrap">
                                                             {item.price && (
                                                                 <div className="font-mono text-sm text-white font-bold mb-1">
-                                                                    {item.price}
+                                                                    <span>{item.price}</span>
                                                                 </div>
                                                             )}
                                                             {item.change && (
                                                                 <div className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText} ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorBg}`}>
-                                                                    {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
+                                                                    <span>{formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1534,7 +1547,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             ) : (
                 <Star className={`w-4 h-4 ${isWatchlisted ? 'fill-black' : ''}`} />
             )}
-            {isWatchlisted ? '관심종목' : '관심등록'}
+            {isWatchlisted ? <span>관심종목</span> : <span>관심등록</span>}
         </button>
     );
 }
@@ -1593,12 +1606,12 @@ function FinancialHighlights({ data, loading }: { data: any[], loading: boolean 
                     {Array.isArray(data) && data.slice(-1).map((latest, i) => (
                         <div key={i} className="space-y-3">
                             <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
-                                <p className="text-[10px] text-gray-500 mb-0.5">최근 연매출</p>
-                                <p className="text-sm font-bold text-blue-300">{(Number(latest?.revenue || 0) / 100000000).toLocaleString()} 억원</p>
+                                <p className="text-[10px] text-gray-500 mb-0.5"><span>최근 연매출</span></p>
+                                <p className="text-sm font-bold text-blue-300"><span><span>{(Number(latest?.revenue || 0) / 100000000).toLocaleString()}</span> <span>억원</span></span></p>
                             </div>
                             <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
-                                <p className="text-[10px] text-gray-500 mb-0.5">영업이익</p>
-                                <p className="text-sm font-bold text-emerald-400">{(Number(latest?.op_income || 0) / 100000000).toLocaleString()} 억원</p>
+                                <p className="text-[10px] text-gray-500 mb-0.5"><span>영업이익</span></p>
+                                <p className="text-sm font-bold text-emerald-400"><span><span>{(Number(latest?.op_income || 0) / 100000000).toLocaleString()}</span> <span>억원</span></span></p>
                             </div>
                         </div>
                     ))}
@@ -1653,17 +1666,17 @@ function MarketSignalWidget() {
                     <p className={`text-lg font-bold leading-tight ${signal.signal === 'red' ? 'text-red-400' :
                         signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
                         }`}>
-                        {signal.message}
+                        <span>{signal.message}</span>
                     </p>
                     {signal.reason && (
                         <div className="mt-3 bg-white/5 rounded-lg p-2 text-sm text-gray-300 border border-white/5">
-                            <span className="font-bold text-blue-200">원인?</span> {signal.reason}
+                            <span className="font-bold text-blue-200"><span>원인?</span></span> <span>{signal.reason}</span>
                         </div>
                     )}
                 </div>
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${getTrafficColor(signal.signal)} animate-pulse`}>
                     <div className="text-3xl">
-                        {signal.signal === 'red' ? '🛑' : signal.signal === 'yellow' ? '⚠️' : '🚀'}
+                        {signal.signal === 'red' ? <span>🛑</span> : signal.signal === 'yellow' ? <span>⚠️</span> : <span>🚀</span>}
                     </div>
                 </div>
             </div>
@@ -1672,10 +1685,10 @@ function MarketSignalWidget() {
 
             <div className="mt-6 flex items-center gap-4 text-sm text-gray-400 z-10">
                 <div className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                    KOSPI <span className="text-gray-200 font-mono ml-1">{signal.details?.kospi}</span>
+                    <span>KOSPI</span> <span className="text-gray-200 font-mono ml-1"><span>{signal.details?.kospi}</span></span>
                 </div>
                 <div className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                    USD/KRW <span className="text-gray-200 font-mono ml-1">{signal.details?.usd}</span>
+                    <span>USD/KRW</span> <span className="text-gray-200 font-mono ml-1"><span>{signal.details?.usd}</span></span>
                 </div>
             </div>
         </div>
@@ -1777,10 +1790,10 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
                                 <div className={`text-6xl font-black mb-4 ${result.score >= 80 ? 'text-green-400' :
                                     result.score >= 50 ? 'text-yellow-400' : 'text-red-400'
                                     }`}>
-                                    {result.score}점
+                                    <span>{result.score}</span><span>점</span>
                                 </div>
                                 <div className="inline-block bg-white/10 px-4 py-2 rounded-full text-lg font-bold border border-white/20">
-                                    상태 요약: {result.diagnosis}
+                                    <span><span>상태 요약:</span> <span>{result.diagnosis}</span></span>
                                 </div>
                             </div>
 
@@ -1912,21 +1925,21 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                 {isDaily ? (
                     isToday ? (
                         <>
-                            📊 오늘의 수급 결과 <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">확정치</span>
+                            <span>📊 오늘의 수급 결과</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>확정치</span></span>
                         </>
                     ) : (
                         <>
-                            📊 최근 수급 결과 ({last?.time}) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">확정치</span>
+                            <span>📊 최근 수급 결과</span> <span>(<span>{last?.time}</span>)</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>확정치</span></span>
                         </>
                     )
                 ) : (
                     !isMarketOpen ? (
                         <>
-                            🏁 오늘의 수급 잠정치 (마감) <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">장마감</span>
+                            <span>🏁 오늘의 수급 잠정치 (마감)</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>장마감</span></span>
                         </>
                     ) : (
                         <>
-                            📊 실시간 수급 분석 데이터 <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2">09:30~14:30 집계</span>
+                            <span>📊 실시간 수급 분석 데이터</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>09:30~14:30 집계</span></span>
                         </>
                     )
                 )}
@@ -1938,7 +1951,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         {isDaily ? (isToday ? '외국인 오늘 합계' : '외국인 당일 합계') : '외국인 잠정 합계'}
                     </div>
                     <div className={`text-2xl font-bold font-mono ${totalForeigner > 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                        <span>{totalForeigner > 0 ? '+' : null}</span><span>{totalForeigner.toLocaleString()}주</span>
+                        <span>{totalForeigner > 0 ? '+' : null}</span><span><span>{totalForeigner.toLocaleString()}</span><span>주</span></span>
                     </div>
                 </div>
                 <div className={`p-4 rounded-xl border ${totalInst > 0 ? 'bg-red-900/20 border-red-500/30' : 'bg-blue-900/20 border-blue-500/30'}`}>
@@ -1946,7 +1959,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         {isDaily ? (isToday ? '기관 오늘 합계' : '기관 당일 합계') : '기관 잠정 합계'}
                     </div>
                     <div className={`text-lg md:text-2xl font-bold font-mono ${totalInst > 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                        <span>{totalInst > 0 ? '+' : null}</span><span>{totalInst.toLocaleString()}주</span>
+                        <span>{totalInst > 0 ? '+' : null}</span><span><span>{totalInst.toLocaleString()}</span><span>주</span></span>
                     </div>
                 </div>
             </div>
@@ -1964,18 +1977,18 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         {Array.isArray(data) && data.length > 0 ? (
                             data.slice().reverse().map((row, idx) => (
                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                    <td className="px-4 py-2 font-mono text-gray-300">{row.time}</td>
+                                    <td className="px-4 py-2 font-mono text-gray-300"><span>{row.time}</span></td>
                                     <td className={`px-4 py-2 text-right font-mono font-bold ${row.foreigner > 0 ? 'text-red-400' : row.foreigner < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                        {(row.foreigner || 0).toLocaleString()}
+                                        <span>{(row.foreigner || 0).toLocaleString()}</span>
                                     </td>
                                     <td className={`px-4 py-2 text-right font-mono font-bold ${row.institution > 0 ? 'text-red-400' : row.institution < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                        {(row.institution || 0).toLocaleString()}
+                                        <span>{(row.institution || 0).toLocaleString()}</span>
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={3} className="px-4 py-8 text-center text-gray-500">집계된 데이터가 없습니다.</td>
+                                <td colSpan={3} className="px-4 py-8 text-center text-gray-500"><span>집계된 데이터가 없습니다.</span></td>
                             </tr>
                         )}
                     </tbody>
@@ -2073,8 +2086,8 @@ function PriceAlertModal({ symbol, currentPrice, onClose }: { symbol: string, cu
 
                 <div className="p-6 space-y-6">
                     <div className="text-center">
-                        <div className="text-gray-400 text-xs md:text-sm mb-1">{symbol} 현재가</div>
-                        <div className="text-2xl md:text-3xl font-bold text-white tracking-widest">{currentPrice.toLocaleString()}</div>
+                        <div className="text-gray-400 text-xs md:text-sm mb-1"><span>{symbol} 현재가</span></div>
+                        <div className="text-2xl md:text-3xl font-bold text-white tracking-widest"><span>{currentPrice.toLocaleString()}</span></div>
                     </div>
 
                     <div className="space-y-4">
@@ -2096,13 +2109,13 @@ function PriceAlertModal({ symbol, currentPrice, onClose }: { symbol: string, cu
                                 onClick={() => setCondition("above")}
                                 className={`py-3 rounded-xl border font-bold transition-all ${condition === "above" ? "bg-red-500/20 border-red-500 text-red-400" : "bg-white/5 border-white/10 text-gray-400"}`}
                             >
-                                ▲ 이상일 때 (돌파)
+                                <span>▲ 이상일 때 (돌파)</span>
                             </button>
                             <button
                                 onClick={() => setCondition("below")}
                                 className={`py-3 rounded-xl border font-bold transition-all ${condition === "below" ? "bg-blue-500/20 border-blue-500 text-blue-400" : "bg-white/5 border-white/10 text-gray-400"}`}
                             >
-                                ▼ 이하일 때 (하락)
+                                <span>▼ 이하일 때 (하락)</span>
                             </button>
                         </div>
                     </div>
@@ -2122,7 +2135,7 @@ function PriceAlertModal({ symbol, currentPrice, onClose }: { symbol: string, cu
                         disabled={loading}
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/20 py-4 rounded-xl font-bold text-white text-lg transition-all active:scale-95 disabled:opacity-50"
                     >
-                        {loading ? <Loader2 className="animate-spin mx-auto" /> : "알림 저장하기"}
+                        {loading ? <Loader2 className="animate-spin mx-auto" /> : <span>알림 저장하기</span>}
                     </button>
                 </div>
             </div>
@@ -2154,7 +2167,7 @@ function StockLiveChart({ symbol }: { symbol: string }) {
     }, [symbol]);
 
     if (loading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-gray-500" /></div>;
-    if (!data || !Array.isArray(data) || data.length === 0) return <div className="text-gray-500 text-sm">실시간 차트 데이터 없음</div>;
+    if (!data || !Array.isArray(data) || data.length === 0) return <div className="text-gray-500 text-sm"><span>실시간 차트 데이터 없음</span></div>;
 
     const isUp = (Array.isArray(data) && data.length > 0) ? ((data[data.length - 1]?.close || 0) >= (data[0]?.close || 0)) : false;
     const color = isUp ? "#ef4444" : "#3b82f6"; // Red or Blue
@@ -2205,7 +2218,7 @@ function DividendHealthTab({
         return (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-                <p className="text-gray-400 text-sm">배당 &amp; 재무 건전성 데이터 불러오는 중...</p>
+                <p className="text-gray-400 text-sm"><span>배당 &amp; 재무 건전성 데이터 불러오는 중...</span></p>
             </div>
         );
     }
@@ -2217,8 +2230,8 @@ function DividendHealthTab({
         return (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
                 <BarChart2 className="w-10 h-10 opacity-30" />
-                <p className="text-sm">이 종목의 배당/재무 데이터를 수집할 수 없습니다.</p>
-                <p className="text-xs text-gray-600">국내 종목은 종목코드(6자리)로 검색하면 더 정확합니다.</p>
+                <p className="text-sm"><span>이 종목의 배당/재무 데이터를 수집할 수 없습니다.</span></p>
+                <p className="text-xs text-gray-600"><span>국내 종목은 종목코드(6자리)로 검색하면 더 정확합니다.</span></p>
             </div>
         );
     }
@@ -2243,19 +2256,19 @@ function DividendHealthTab({
             {hasDividend && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4 text-center">
-                        <p className="text-[10px] text-gray-500 mb-1">최근 연도 배당금</p>
+                        <p className="text-[10px] text-gray-500 mb-1"><span>최근 연도 배당금</span></p>
                         <p className="text-lg font-black text-emerald-400">
-                            {(summary.latest_div ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} 원
+                            <span>{ (summary.latest_div ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 }) }</span> <span>원</span>
                         </p>
-                        <p className="text-[10px] text-gray-600">{summary.latest_year}년 기준</p>
+                        <p className="text-[10px] text-gray-600"><span>{summary.latest_year}</span><span>년 기준</span></p>
                     </div>
                     <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl p-4 text-center">
-                        <p className="text-[10px] text-gray-500 mb-1">연속 배당 연수</p>
-                        <p className="text-lg font-black text-blue-400">{summary.consecutive_years ?? "-"} 년</p>
+                        <p className="text-[10px] text-gray-500 mb-1"><span>연속 배당 연수</span></p>
+                        <p className="text-lg font-black text-blue-400"><span>{summary.consecutive_years ?? "-"}</span> <span>년</span></p>
                     </div>
                     {summary.yoy_growth_pct !== undefined && (
                         <div className={`border rounded-xl p-4 text-center ${summary.yoy_growth_pct >= 0 ? "bg-green-500/5 border-green-500/15" : "bg-red-500/5 border-red-500/15"}`}>
-                            <p className="text-[10px] text-gray-500 mb-1">전년대비 배당 변화</p>
+                            <p className="text-[10px] text-gray-500 mb-1"><span>전년대비 배당 변화</span></p>
                             <p className={`text-lg font-black ${summary.yoy_growth_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
                                 <span>{summary.yoy_growth_pct >= 0 ? "+" : null}</span><span>{summary.yoy_growth_pct}%</span>
                             </p>
@@ -2266,7 +2279,7 @@ function DividendHealthTab({
 
             {hasDividend && (
                 <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
-                    <h4 className="text-sm font-bold text-emerald-300 mb-4">💰 연간 배당금 히스토리 (최근 5개년)</h4>
+                    <h4 className="text-sm font-bold text-emerald-300 mb-4"><span>💰 연간 배당금 히스토리 (최근 5개년)</span></h4>
                     <ResponsiveContainer width="100%" height={200}>
                         <AreaChart data={divChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                             <defs>
@@ -2291,11 +2304,11 @@ function DividendHealthTab({
             {hasHealth && (
                 <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-bold text-blue-300">🏦 재무 건전성 지표 추이 (부채비율 · 유동비율 · ROE)</h4>
+                        <h4 className="text-sm font-bold text-blue-300"><span>🏦 재무 건전성 지표 추이 (부채비율 · 유동비율 · ROE)</span></h4>
                         {healthData?.source === 'DART' && (
                             <span className="bg-blue-900/40 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 flex items-center gap-1 shadow-sm">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                                DART 공식 데이터
+                                <span>DART 공식 데이터</span>
                             </span>
                         )}
                     </div>
@@ -2314,15 +2327,15 @@ function DividendHealthTab({
                         </LineChart>
                     </ResponsiveContainer>
                     <div className="flex flex-wrap gap-4 mt-2">
-                        <span className="text-[10px] text-red-400">● 부채비율 — 낮을수록 안전</span>
-                        <span className="text-[10px] text-blue-400">● 유동비율 — 높을수록 단기 안전</span>
-                        <span className="text-[10px] text-yellow-400">● ROE — 높을수록 자본 효율 우수</span>
+                        <span className="text-[10px] text-red-400"><span>● 부채비율 — 낮을수록 안전</span></span>
+                        <span className="text-[10px] text-blue-400"><span>● 유동비율 — 높을수록 단기 안전</span></span>
+                        <span className="text-[10px] text-yellow-400"><span>● ROE — 높을수록 자본 효율 우수</span></span>
                     </div>
                 </div>
             )}
 
             <p className="text-[10px] text-gray-500 italic border-t border-white/5 pt-3">
-                * 위 수치는 {healthData?.source === 'DART' ? 'DART(전자공시시스템) 사업보고서 원본 데이터' : 'yfinance 공개 데이터'} 기반의 객관적 사실입니다. 향후 실적이나 주가 수익률을 보장하지 않습니다.
+                <span>* 위 수치는</span> <span>{healthData?.source === 'DART' ? 'DART(전자공시시스템) 사업보고서 원본 데이터' : 'yfinance 공개 데이터'}</span> <span>기반의 객관적 사실입니다. 향후 실적이나 주가 수익률을 보장하지 않습니다.</span>
             </p>
         </div>
     );

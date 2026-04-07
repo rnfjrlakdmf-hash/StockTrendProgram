@@ -215,7 +215,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                         translate="no"
                     >
                         {cat.icon}
-                        {cat.label}
+                        <span>{cat.label}</span>
                     </button>
                 ))}
             </div>
@@ -226,10 +226,10 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                     <div>
                         <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
                             <BarChart3 className="w-7 h-7 text-indigo-400" />
-                            터보퀸트 정밀 진단 <span className="text-[10px] text-indigo-500/50 font-normal">v2.3</span>: <span className="text-indigo-400">{getCategoryTitle()}</span>
+                            <span>터보퀸트 정밀 진단 </span><span className="text-[10px] text-indigo-500/50 font-normal"><span>v2.3</span></span><span>: </span><span className="text-indigo-400"><span>{getCategoryTitle()}</span></span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
-                            {stockName ? `${stockName}(${symbol})` : symbol} 실시간 데이터 가독성 엔진 가동 중
+                            <span>{stockName ? `${stockName}(${symbol})` : symbol} 실시간 데이터 가독성 엔진 가동 중</span>
                         </p>
                     </div>
 
@@ -243,7 +243,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                     className={`px-4 py-2 text-xs font-bold rounded-lg transition-all notranslate ${freq === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                                     translate="no"
                                 >
-                                    {f === '0' ? '연간' : '분기'}
+                                    <span>{f === '0' ? '연간' : '분기'}</span>
                                 </button>
                             ))}
                         </div>
@@ -258,7 +258,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             >
                                 {FIN_GUBUN_MAP.map(opt => (
                                     <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                                        {opt.label}
+                                        <span>{opt.label}</span>
                                     </option>
                                 ))}
                             </select>
@@ -274,9 +274,9 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                     <div className="mb-6 bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl animate-in fade-in zoom-in duration-300">
                         <div className="flex items-center gap-3 mb-2">
                             <Zap className="w-5 h-5 text-emerald-400" />
-                            <h4 className="font-black text-emerald-400 text-sm">{EASY_GUIDE[category].title}</h4>
+                            <h4 className="font-black text-emerald-400 text-sm"><span>{EASY_GUIDE[category].title}</span></h4>
                         </div>
-                        <p className="text-emerald-100/70 text-xs leading-relaxed">{EASY_GUIDE[category].desc}</p>
+                        <p className="text-emerald-100/70 text-xs leading-relaxed"><span>{EASY_GUIDE[category].desc}</span></p>
                     </div>
                 )}
 
@@ -338,18 +338,18 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <table className="w-full text-left border-collapse min-w-[800px]" translate="no">
                                 <thead>
                                     <tr className="bg-white/10 border-b border-white/10">
-                                        <th className="p-4 text-xs font-black text-slate-400 border-r border-white/5 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no">항목</th>
+                                        <th className="p-4 text-xs font-black text-slate-400 border-r border-white/5 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no"><span>항목</span></th>
                                         {Array.isArray(data.years) && data.years.map(y => (
-                                            <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no">{y}</th>
+                                            <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no"><span>{y}</span></th>
                                         ))}
-                                        {showEasy && <th className="p-4 text-xs font-black text-emerald-400 text-center bg-emerald-500/5">쉽게 풀이</th>}
+                                        {showEasy && <th className="p-4 text-xs font-black text-emerald-400 text-center bg-emerald-500/5"><span>쉽게 풀이</span></th>}
                                     </tr>
 </thead>
                                 <tbody>
                                     {filteredRows.map((row, idx) => (
                                         <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
                                             <td className="p-4 text-sm font-bold text-slate-200 sticky left-0 bg-[#0e1629]/95 z-10 border-r border-white/5 group-hover:text-indigo-400 transition-colors notranslate" translate="no">
-                                                {row.label}
+                                                <span>{row.label}</span>
                                             </td>
                                             {Array.isArray(row.values) && row.values.map((val, vIdx) => {
                                                 const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
@@ -360,13 +360,13 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                                 
                                                 return (
                                                     <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'} whitespace-nowrap`}>
-                                                        {displayVal}
+                                                        <span>{displayVal}</span>
                                                     </td>
                                                 );
                                             })}
                                             {showEasy && (
                                                 <td className="p-4 text-[11px] font-medium text-emerald-400/80 bg-emerald-500/5 italic leading-snug max-w-[200px]">
-                                                    {INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}
+                                                    <span>{INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}</span>
                                                 </td>
                                             )}
                                         </tr>
@@ -385,12 +385,12 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                 {isFullView ? (
                                     <>
                                         <Minus className="w-4 h-4 text-indigo-400" />
-                                        핵심 지표만 보기 (요약 모드)
+                                        <span>핵심 지표만 보기 (요약 모드)</span>
                                     </>
                                 ) : (
                                     <>
                                         <Plus className="w-4 h-4 text-indigo-400" />
-                                        세부 지표 전체 보기 (+{(Array.isArray(data?.rows) && Array.isArray(filteredRows)) ? (data.rows.length - filteredRows.length) : 0}개)
+                                        <span><span>세부 지표 전체 보기 (+</span><span>{(Array.isArray(data?.rows) && Array.isArray(filteredRows)) ? (data.rows.length - filteredRows.length) : 0}</span><span>개)</span></span>
                                     </>
                                 )}
                             </button>
@@ -399,10 +399,10 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                         <div className="p-5 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 flex items-start gap-4 shadow-lg">
                             <ShieldCheck className="w-5 h-5 text-indigo-400 mt-1 flex-shrink-0" />
                             <div>
-                                <h5 className="text-indigo-300 text-sm font-black mb-1 notranslate" translate="no">터보퀸트 정밀 분석 가이드</h5>
+                                <h5 className="text-indigo-300 text-sm font-black mb-1 notranslate" translate="no"><span>터보퀸트 정밀 분석 가이드</span></h5>
                                 <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                    이 화면의 데이터는 실시간 공시 지표를 바탕으로 파싱되었습니다. 현재 **핵심 요약 모드**가 활성화되어 있어 투자 결정에 가장 중요한 지표들만 선별하여 보여드립니다. 
-                                    상단의 탭을 통해 수익성, 성장성, 안정성, 활동성 데이터를 입체적으로 분석하세요.
+                                    <span>이 화면의 데이터는 실시간 공시 지표를 바탕으로 파싱되었습니다. 현재 **핵심 요약 모드**가 활성화되어 있어 투자 결정에 가장 중요한 지표들만 선별하여 보여드립니다. </span>
+                                    <span>상단의 탭을 통해 수익성, 성장성, 안정성, 활동성 데이터를 입체적으로 분석하세요.</span>
                                 </p>
                             </div>
                         </div>
@@ -410,8 +410,8 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                 ) : (
                     <div className="py-24 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
                         <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4 animate-bounce" />
-                        <p className="text-slate-400 font-bold">{error || '선택하신 조건(회계기준/주기)의 데이터를 분석 중이거나 불러올 수 없습니다.'}</p>
-                        <p className="text-slate-600 text-xs mt-2 italic">종목 코드(6자리)를 입력하시면 더 정확한 데이터 조회가 가능합니다.</p>
+                        <p className="text-slate-400 font-bold"><span>{error || '선택하신 조건(회계기준/주기)의 데이터를 분석 중이거나 불러올 수 없습니다.'}</span></p>
+                        <p className="text-slate-600 text-xs mt-2 italic"><span>종목 코드(6자리)를 입력하시면 더 정확한 데이터 조회가 가능합니다.</span></p>
                     </div>
                 )}
             </div>

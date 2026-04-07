@@ -57,7 +57,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
         return (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                <p className="text-gray-400 font-bold">{stockName}의 DART 공시 기록을 스캔 중입니다...</p>
+                <p className="text-gray-400 font-bold"><span>{stockName}</span><span>의 DART 공시 기록을 스캔 중입니다...</span></p>
             </div>
         );
     }
@@ -85,7 +85,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                 <div className="flex gap-3 text-sm text-gray-300">
                     <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                     <p className="leading-relaxed">
-                        본 데이터는 DART 공시 원문의 과거 이력을 기초로 알고리즘이 특정 키워드를 필터링한 <strong>객관적 사실</strong> 자료입니다. 주관적 가치 판단을 완전히 배제하고 오직 팩트 체크용으로만 제공됩니다.
+                        <span>본 데이터는 DART 공시 원문의 과거 이력을 기초로 알고리즘이 특정 키워드를 필터링한 </span><strong><span>객관적 사실</span></strong><span> 자료입니다. 주관적 가치 판단을 완전히 배배제하고 오직 팩트 체크용으로만 제공됩니다.</span>
                     </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -99,7 +99,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                         }`}
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {isRefreshing ? "스캔 중..." : "실시간 재추출"}
+                        <span>{isRefreshing ? "스캔 중..." : "실시간 재추출"}</span>
                     </button>
                     <a 
                         href={`https://finance.naver.com/item/news_notice.naver?code=${symbol.replace(/[^0-9]/g, '')}`}
@@ -134,12 +134,12 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded border border-yellow-500/40">
-                                            {item.type}
+                                            <span>{item.type}</span>
                                         </span>
-                                        <span className="text-xs text-gray-500 font-mono">{item.date}</span>
+                                        <span className="text-xs text-gray-500 font-mono"><span>{item.date}</span></span>
                                     </div>
                                     <h5 className="text-sm font-bold text-gray-200 group-hover:text-yellow-400 transition-colors leading-tight">
-                                        {item.title}
+                                        <span>{item.title}</span>
                                     </h5>
                                 </a>
                             ))
@@ -147,9 +147,9 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                             <div className="py-12 text-center">
                                 <AlertTriangle className="w-8 h-8 text-gray-600 mx-auto mb-3 opacity-20" />
                                 <p className="text-gray-500 text-sm font-medium">
-                                    <span className="text-blue-400 font-bold">{stockName}</span>의 최근 관련 공시 이력이 없습니다.
+                                    <span className="text-blue-400 font-bold"><span>{stockName}</span></span><span>의 최근 관련 공시 이력이 없습니다.</span>
                                 </p>
-                                <p className="text-[10px] text-gray-600 mt-1">최근 약 100건의 공시 목록을 스캔한 결과입니다.</p>
+                                <p className="text-[10px] text-gray-600 mt-1"><span>최근 약 100건의 공시 목록을 스캔한 결과입니다.</span></p>
                             </div>
                         )}
                     </div>
@@ -176,12 +176,12 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="text-[10px] font-black bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/40">
-                                            {item.type}
+                                            <span>{item.type}</span>
                                         </span>
-                                        <span className="text-xs text-gray-500 font-mono">{item.date}</span>
+                                        <span className="text-xs text-gray-500 font-mono"><span>{item.date}</span></span>
                                     </div>
                                     <h5 className="text-sm font-bold text-gray-200 group-hover:text-blue-400 transition-colors leading-tight">
-                                        {item.title}
+                                        <span>{item.title}</span>
                                     </h5>
                                 </a>
                             ))
@@ -189,9 +189,9 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                             <div className="py-12 text-center">
                                 <Building2 className="w-8 h-8 text-gray-600 mx-auto mb-3 opacity-20" />
                                 <p className="text-gray-500 text-sm font-medium">
-                                    <span className="text-blue-400 font-bold">{stockName}</span>의 최근 관련 투자 이력이 없습니다.
+                                    <span className="text-blue-400 font-bold"><span>{stockName}</span></span><span>의 최근 관련 투자 이력이 없습니다.</span>
                                 </p>
-                                <p className="text-[10px] text-gray-600 mt-1">기업의 전략적 투자 공시가 발생하면 이곳에 표시됩니다.</p>
+                                <p className="text-[10px] text-gray-600 mt-1"><span>기업의 전략적 투자 공시가 발생하면 이곳에 표시됩니다.</span></p>
                             </div>
                         )}
                     </div>

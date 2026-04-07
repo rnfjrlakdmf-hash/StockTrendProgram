@@ -39,7 +39,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
     return (
       <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <p className="text-sm font-medium">상세 기업 정보 수집 중...</p>
+        <p className="text-sm font-medium"><span>상세 기업 정보 수집 중...</span></p>
       </div>
     );
   }
@@ -55,16 +55,16 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       {/* 1. 기본 정보 테이블 */}
       <section>
         <h4 className="text-sm font-black text-blue-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-          <Building2 className="w-4 h-4" /> 기업 기본 정보
+          <Building2 className="w-4 h-4" /> <span>기업 기본 정보</span>
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/10 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
           {Object.entries(basic_info || {}).map(([key, val]: any) => (
             <div key={key} className="flex bg-slate-900/40">
               <div className="w-32 bg-white/5 p-3 text-[11px] font-bold text-slate-400 flex items-center border-r border-white/5">
-                {key}
+                <span>{key}</span>
               </div>
               <div className="flex-1 p-3 text-xs text-slate-200 flex items-center break-all whitespace-pre-wrap leading-relaxed">
-                {val === "-" ? <span className="text-slate-600">-</span> : val}
+                {val === "-" ? <span className="text-slate-600"><span>-</span></span> : <span>{val}</span>}
               </div>
             </div>
           ))}
@@ -75,16 +75,16 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       {Array.isArray(history) && history.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-purple-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-            <History className="w-4 h-4" /> 최근 주요 연혁
+            <History className="w-4 h-4" /> <span>최근 주요 연혁</span>
           </h4>
           <div className="bg-slate-900/40 rounded-2xl border border-white/10 p-5 space-y-4">
             {history.slice(0, 10).map((h: any, i: number) => (
               <div key={i} className="flex gap-4 group">
                 <div className="w-20 text-[11px] font-mono text-blue-400 font-bold pt-0.5 flex-shrink-0">
-                  {h.date}
+                  <span>{h.date}</span>
                 </div>
                 <div className="flex-1 text-sm text-slate-300 leading-relaxed group-hover:text-white transition-colors">
-                  {h.content}
+                  <span>{h.content}</span>
                 </div>
               </div>
             ))}
@@ -96,7 +96,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       {Array.isArray(sales_composition) && sales_composition.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-            <PieChart className="w-4 h-4" /> 주요 제품 및 매출 구성
+            <PieChart className="w-4 h-4" /> <span>주요 제품 및 매출 구성</span>
           </h4>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 bg-slate-900/40 rounded-3xl border border-white/10 p-6 shadow-xl">
             {/* 차트 영역 */}
@@ -140,10 +140,10 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       <td className="py-3 px-4 flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="text-slate-200 font-medium">{s.product}</span>
+                        <span className="text-slate-200 font-medium"><span>{s.product}</span></span>
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">
-                        {s.percentage.toFixed(2)}%
+                        <span>{s.percentage.toFixed(2)}%</span>
                       </td>
                     </tr>
                   ))}
@@ -158,7 +158,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       {Array.isArray(rnd_status) && rnd_status.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-amber-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-            <FlaskConical className="w-4 h-4" /> 연구개발비 지출 현황
+            <FlaskConical className="w-4 h-4" /> <span>연구개발비 지출 현황</span>
           </h4>
           <div className="bg-slate-900/40 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
@@ -175,7 +175,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       {Object.values(row).map((val: any, j: number) => (
                         <td key={j} className={`py-3 px-4 font-medium whitespace-nowrap ${j === 0 ? 'text-blue-300 font-bold' : 'text-slate-300'}`}>
-                          {val}
+                          <span>{val}</span>
                         </td>
                       ))}
                     </tr>
@@ -191,7 +191,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       {Array.isArray(staff_status) && staff_status.length > 0 && (
         <section>
           <h4 className="text-sm font-black text-rose-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-            <Users className="w-4 h-4" /> 임직원 및 급여 현황
+            <Users className="w-4 h-4" /> <span>임직원 및 급여 현황</span>
           </h4>
           <div className="bg-slate-900/40 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
@@ -208,7 +208,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       {Object.values(row).map((val: any, j: number) => (
                         <td key={j} className={`py-3 px-4 font-medium whitespace-nowrap ${j === 0 ? 'text-blue-300 font-bold' : 'text-slate-300'}`}>
-                          {val}
+                          <span>{val}</span>
                         </td>
                       ))}
                     </tr>
@@ -222,8 +222,8 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       
       <div className="mt-8 p-4 bg-indigo-900/20 rounded-2xl border border-indigo-500/20 border-dashed text-center">
         <p className="text-[11px] text-indigo-400 font-medium">
-          위 데이터는 네이버 금융 기업분석 정보를 기반으로 실시간 제공됩니다. 
-          기업의 공시 시점에 따라 실제 데이터와 미세한 시차가 발생할 수 있습니다.
+          <span>위 데이터는 네이버 금융 기업분석 정보를 기반으로 실시간 제공됩니다. </span>
+          <span>기업의 공시 시점에 따라 실제 데이터와 미세한 시차가 발생할 수 있습니다.</span>
         </p>
       </div>
     </div>
