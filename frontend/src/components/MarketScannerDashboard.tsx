@@ -103,7 +103,7 @@ export default function MarketScannerDashboard() {
                     <Activity className="w-5 h-5 text-emerald-400" /> <span>Today&apos;s 증시 스캐너</span>
                 </h3>
                 <p className="text-xs text-gray-400 mb-6 leading-relaxed drop-shadow-md">
-                    <span>지수 숫자보다 중요한 </span><strong><span>&apos;시장 체감 온도&apos;</span></strong><span>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 </span><strong><span>보수적인 현금 비중 확대</span></strong><span>를 고려해야 합니다. (1분마다 자동 갱신)</span>
+                    <span><span>지수 숫자보다 중요한 </span><strong><span>'시장 체감 온도'</span></strong><span>입니다. 📈 상승 종목(빨강) 면적이 넓을수록 수익 내기 좋은 장이며, 📉 하락(파랑) 종목이 압도적일 때는 </span><strong><span>보수적인 현금 비중 확대</span></strong><span>를 고려해야 합니다. (1분마다 자동 갱신)</span></span>
                 </p>
                 <div className="space-y-6">
                     {data.stats?.kospi && renderStatsBar(data.stats.kospi, "KOSPI (코스피)")}
@@ -125,7 +125,7 @@ export default function MarketScannerDashboard() {
                     )}
                 </div>
                 <p className="text-xs text-gray-400 mb-4 drop-shadow-md shrink-0 border-b border-white/10 pb-3">
-                    <span>호재/악재성 키워드(유상증자, 단일판매 등)가 포함된 최근 1시간 이내 실시간 공시입니다. 관심 종목을 위에서 검색해 보세요.</span>
+                    <span><span>호재/악재성 키워드(유상증자, 단일판매 등)가 포함된 최근 1시간 이내 실시간 공시입니다. 관심 종목을 위에서 검색해 보세요.</span></span>
                 </p>
 
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-3">

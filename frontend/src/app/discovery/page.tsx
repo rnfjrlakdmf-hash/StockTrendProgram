@@ -266,6 +266,7 @@ export default function DiscoveryPage() {
 
 function DiscoveryContent() {
     const searchParams = useSearchParams();
+    const [mounted, setMounted] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [stock, setStock] = useState<StockData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -281,6 +282,10 @@ function DiscoveryContent() {
     const [dividendData, setDividendData] = useState<any>(null);
     const [healthData, setHealthData] = useState<any>(null);
     const [dividendLoading, setDividendLoading] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // [New] News Period State
     const [newsPeriod, setNewsPeriod] = useState('1d');
@@ -521,8 +526,10 @@ function DiscoveryContent() {
         if (e.key === 'Enter') handleSearch();
     };
 
+    if (!mounted) return null;
+
     return (
-        <div className="min-h-screen pb-10 text-white">
+        <div className="min-h-screen pb-10 text-white notranslate" translate="no">
             <Header title="종목 발굴 & 데이터 분석" subtitle="AI가 분석하는 종목의 핵심 데이터 현황" />
 
             <div className="p-6 space-y-8">
@@ -532,10 +539,10 @@ function DiscoveryContent() {
                         {/* Search / Hero Section */}
                         <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 overflow-hidden shadow-xl">
                             <div className="relative z-10 max-w-2xl">
-                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">종목 데이터 분석 (AI Analysis)</h2>
+                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md"><span>종목 데이터 분석 (AI Analysis)</span></h2>
                                 <p className="text-gray-200 mb-4 text-sm md:text-base">
-                                    종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.<br />
-                                    <span className="text-xs text-gray-400">예시: AAPL, 삼성전자 (테마 검색 불가)</span>
+                                    <span><span>종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.</span><br />
+                                    <span className="text-xs text-gray-400"><span>예시: AAPL, 삼성전자 (테마 검색 불가)</span></span></span>
                                 </p>
 
                                 <div className="flex gap-2">
@@ -554,7 +561,7 @@ function DiscoveryContent() {
                                         disabled={loading}
                                         className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg text-sm md:text-base whitespace-nowrap"
                                     >
-                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "분석 시작"}
+                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <span>분석 시작</span>}
                                     </button>
                                 </div>
 
@@ -596,7 +603,7 @@ function DiscoveryContent() {
                             onClick={() => { setStock(null); setSearchInput(""); }}
                             className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10"
                         >
-                            <span className="text-xl">←</span> 뒤로 가기
+                            <span><span>←</span> <span>뒤로 가기</span></span>
                         </button>
 
                         <div className="rounded-3xl bg-black/40 border border-white/20 p-6 md:p-8 shadow-lg">
@@ -691,7 +698,7 @@ function DiscoveryContent() {
                             onClick={() => { setStock(null); setSearchInput(""); }}
                             className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10"
                         >
-                            <span className="text-xl">←</span> 다른 종목 검색하기
+                            <span><span>←</span> <span>다른 종목 검색하기</span></span>
                         </button>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

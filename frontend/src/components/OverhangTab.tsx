@@ -119,7 +119,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                         <AlertTriangle className="text-yellow-400 w-6 h-6" /> 오버행 공시 이력
                     </h4>
                     <p className="text-xs text-gray-500 mb-4 pb-4 border-b border-white/10">
-                        전환사채(CB), 신주인수권부사채(BW), 제3자배정 유상증자 등 잠재적 주식 수 증가(희석) 여지가 있는 공시 내역입니다.
+                        <span><span>전환사채(CB), 신주인수권부사채(BW), 제3자배정 유상증자 등 잠재적 주식 수 증가(희석) 여지가 있는 공시 내역입니다.</span></span>
                     </p>
 
                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">

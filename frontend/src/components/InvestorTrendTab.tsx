@@ -238,8 +238,8 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 <div className="bg-black/60 border border-white/10 rounded-2xl p-5 md:p-6 custom-shadow relative overflow-hidden group">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="w-5 h-5 text-indigo-400" />
-                        <h3 className="text-sm font-bold text-gray-200">투자 주체별 순매수 동향 추이</h3>
-                        <span className="text-[10px] text-gray-500 ml-auto font-mono">UNIT: SHARES</span>
+                        <h3 className="text-sm font-bold text-gray-200"><span>투자 주체별 순매수 동향 추이</span></h3>
+                        <span className="text-[10px] text-gray-500 ml-auto font-mono"><span>UNIT: SHARES</span></span>
                     </div>
 
                     <div className="h-[400px] w-full">

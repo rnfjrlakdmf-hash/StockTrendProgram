@@ -226,10 +226,10 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                     <div>
                         <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
                             <BarChart3 className="w-7 h-7 text-indigo-400" />
-                            <span>터보퀸트 정밀 진단 </span><span className="text-[10px] text-indigo-500/50 font-normal"><span>v2.3</span></span><span>: </span><span className="text-indigo-400"><span>{getCategoryTitle()}</span></span>
+                            <span><span>터보퀸트 정밀 진단 </span><span className="text-[10px] text-indigo-500/50 font-normal"><span>v2.3</span></span><span>: </span><span className="text-indigo-400"><span>{getCategoryTitle()}</span></span></span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
-                            <span>{stockName ? `${stockName}(${symbol})` : symbol} 실시간 데이터 가독성 엔진 가동 중</span>
+                            <span><span>{stockName ? `${stockName}(${symbol})` : symbol}</span> <span>실시간 데이터 가독성 엔진 가동 중</span></span>
                         </p>
                     </div>
 
