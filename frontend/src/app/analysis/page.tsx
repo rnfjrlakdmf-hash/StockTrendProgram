@@ -262,9 +262,9 @@ function AnalysisContent() {
                                             <span className="text-gray-500 font-mono text-sm tracking-widest">{stockInfo.symbol}</span>
                                         </div>
                                         <div className="flex items-baseline gap-3">
-                                            <BlinkingPrice price={stockInfo.price || "---"} className="text-4xl font-black font-mono tracking-tighter" />
-                                            <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) >= 0 ? "text-red-400" : "text-blue-400"}`}>
-                                                {parseFloat(stockInfo.change_rate) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                            <BlinkingPrice price={stockInfo.price || "---"} className={`text-4xl font-black font-mono tracking-tighter ${parseFloat(stockInfo.change_rate) > 0 ? "text-red-500" : parseFloat(stockInfo.change_rate) < 0 ? "text-blue-500" : "text-white"}`} />
+                                            <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) > 0 ? "text-red-400" : parseFloat(stockInfo.change_rate) < 0 ? "text-blue-400" : "text-gray-400"}`}>
+                                                {parseFloat(stockInfo.change_rate) > 0 ? <TrendingUp className="w-4 h-4" /> : parseFloat(stockInfo.change_rate) < 0 ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4 flex items-center justify-center">-</span>}
                                                 <span className="text-lg">{stockInfo.change?.toLocaleString()}</span>
                                                 <span className="text-sm">({parseFloat(stockInfo.change_rate) > 0 ? "+" : ""}{stockInfo.change_rate}%)</span>
                                             </div>
@@ -273,7 +273,7 @@ function AnalysisContent() {
                                     <div className="flex gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                         <div className="bg-black/40 px-4 py-3 rounded-2xl border border-white/5">
                                             <p className="mb-1 opacity-50">시가총액</p>
-                                            <p className="text-sm text-gray-300">{stockInfo.market_cap || "N/A"}</p>
+                                            <p className="text-sm text-gray-300">{stockInfo.market_cap_str || stockInfo.market_cap || "N/A"}</p>
                                         </div>
                                         {quantData && (
                                             <>
