@@ -1235,15 +1235,15 @@ def read_backtest(symbol: str, period: str = "1y", initial_capital: int = 10000)
     return {"status": "success", "data": result}
 
 @app.get("/api/stock/{symbol}/disclosures")
-def read_disclosures(symbol: str):
-    """Get DART disclosures for Korean stocks"""
+def read_disclosures(symbol: str, period: str = "1m"):
+    """Get DART disclosures for Korean stocks with period filtering"""
     try:
         from dart_disclosure import get_dart_disclosures
         
         # Clean symbol (remove .KS, .KQ suffixes)
         clean_symbol = symbol.replace('.KS', '').replace('.KQ', '')
         
-        disclosures = get_dart_disclosures(clean_symbol)
+        disclosures = get_dart_disclosures(clean_symbol, period=period)
         
         if disclosures:
             return {"status": "success", "data": disclosures}

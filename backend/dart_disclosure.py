@@ -6,99 +6,135 @@ Fetch disclosure information from Naver Finance
 import requests
 from bs4 import BeautifulSoup
 import re
-
-# Import from korea_data
 import sys
 import os
+from datetime import datetime, timedelta
+
+# Import from korea_data
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from korea_data import HEADER, decode_safe
 
-def get_dart_disclosures(symbol: str):
+def get_dart_disclosures(symbol: str, period: str = "1m"):
     """
-    Get recent DART disclosures for Korean stocks from Naver Finance
+    Get DART disclosures for Korean stocks from Naver Finance with period filtering
     
     Args:
-        symbol: Stock code (without .KS or .KQ suffix)
+        symbol: Stock code
+        period: '1d' (today), '1w', '1m', '3m', '6m', '1y'
     
     Returns:
-        List of disclosures with title, date, link, submitter, and type
+        List of disclosures within the period
     """
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
     
     disclosures = []
     
+    # Calculate cutoff date
+    now = datetime.now()
+    if period == "1d":
+        cutoff_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "1w":
+        cutoff_date = now - timedelta(weeks=1)
+    elif period == "1m":
+        cutoff_date = now - timedelta(days=30)
+    elif period == "3m":
+        cutoff_date = now - timedelta(days=90)
+    elif period == "6m":
+        cutoff_date = now - timedelta(days=180)
+    elif period == "1y":
+        cutoff_date = now - timedelta(days=365)
+    else:
+        cutoff_date = now - timedelta(days=30) # Default 1 month
+
     try:
-        # Naver Finance disclosure page
-        url = f"https://finance.naver.com/item/news_notice.naver?code={code}&page=1"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        html = decode_safe(res)
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Find disclosure table (type6, NOT type5)
-        table = soup.select_one("table.type6")
-        if not table:
-            return []
-        
-        rows = table.select("tr")
-        for row in rows:
-            cols = row.select("td")
-            if len(cols) < 3:
-                continue
+        # Loop through pages until we hit the cutoff date
+        # Limit to 30 pages to prevent infinite loops/too much load
+        for page in range(1, 31):
+            url = f"https://finance.naver.com/item/news_notice.naver?code={code}&page={page}"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            html = decode_safe(res)
+            soup = BeautifulSoup(html, 'html.parser')
             
-            try:
-                # Column 0: 제목 (Title)
-                title_td = cols[0]
-                title_link = title_td.select_one("a")
-                if not title_link:
+            table = soup.select_one("table.type6")
+            if not table:
+                break
+            
+            rows = table.select("tr")
+            found_older = False
+            
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 3:
                     continue
                 
-                title = title_link.text.strip()
-                link_href = title_link.get('href', '')
-                
-                # Build full link
-                if link_href.startswith('http'):
-                    link = link_href
-                elif 'dart.fss.or.kr' in link_href:
-                    link = link_href
-                else:
-                    link = f"https://finance.naver.com{link_href}"
-                
-                # Column 1: 정보제공 (Submitter)
-                submitter = cols[1].text.strip() if len(cols) > 1 else ""
-                
-                # Column 2: 날짜 (Date)
-                date_text = cols[2].text.strip() if len(cols) > 2 else ""
-                
-                # Determine disclosure type based on title keywords
-                disclosure_type = "일반공시"
-                if "정정" in title:
-                    disclosure_type = "정정공시"
-                elif "감사" in title:
-                    disclosure_type = "감사보고서"
-                elif "사업보고서" in title:
-                    disclosure_type = "사업보고서"
-                elif "분기보고서" in title:
-                    disclosure_type = "분기보고서"
-                elif "반기보고서" in title:
-                    disclosure_type = "반기보고서"
-                
-                disclosures.append({
-                    "title": title,
-                    "link": link,
-                    "submitter": submitter,
-                    "date": date_text,
-                    "type": disclosure_type
-                })
-                
-                # Limit to 20 most recent disclosures
-                if len(disclosures) >= 20:
-                    break
+                try:
+                    # Column 2: Date (YYYY.MM.DD HH:MM)
+                    date_text = cols[2].text.strip()
+                    if not date_text:
+                        continue
                     
-            except Exception as e:
-                print(f"Disclosure row parse error: {e}")
-                continue
-        
+                    # Parse date for comparison (Flexible format)
+                    dt = None
+                    try:
+                        # Try with time FIRST
+                        dt = datetime.strptime(date_text, '%Y.%m.%d %H:%M')
+                    except:
+                        try:
+                            # Try with only date
+                            dt = datetime.strptime(date_text, '%Y.%m.%d')
+                            # For comparison with cutoff (which has time), set to end of day
+                            dt = dt.replace(hour=23, minute=59)
+                        except:
+                            pass
+
+                    if dt and dt < cutoff_date:
+                        found_older = True
+                        break
+                    
+                    if not dt:
+                        # Skip if we couldn't parse the date at all
+                        continue
+
+                    # Column 0: Title
+                    title_td = cols[0]
+                    title_link = title_td.select_one("a")
+                    if not title_link:
+                        continue
+                    
+                    title = title_link.text.strip()
+                    link_href = title_link.get('href', '')
+                    
+                    if link_href.startswith('http') or 'dart.fss.or.kr' in link_href:
+                        link = link_href
+                    else:
+                        link = f"https://finance.naver.com{link_href}"
+                    
+                    submitter = cols[1].text.strip() if len(cols) > 1 else ""
+                    
+                    # Determine type
+                    disclosure_type = "일반공시"
+                    if "정정" in title: disclosure_type = "정정공시"
+                    elif "감사" in title: disclosure_type = "감사보고서"
+                    elif "사업보고서" in title: disclosure_type = "상장공시"
+                    elif "분기보고서" in title: disclosure_type = "상장공시"
+                    elif "반기보고서" in title: disclosure_type = "상장공시"
+                    elif "전환사채" in title or "CB" in title: disclosure_type = "채권공시"
+                    
+                    disclosures.append({
+                        "title": title,
+                        "link": link,
+                        "submitter": submitter,
+                        "date": date_text,
+                        "type": disclosure_type
+                    })
+                        
+                except Exception as e:
+                    continue
+            
+            if found_older or not rows:
+                break
+                
     except Exception as e:
         print(f"DART disclosure fetch error: {e}")
     

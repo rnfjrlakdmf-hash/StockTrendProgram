@@ -7,34 +7,25 @@ import { API_BASE_URL } from "@/lib/config";
 function DisclosureTable({ symbol }: { symbol: string }) {
     const [disclosures, setDisclosures] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState("3m"); // 기본값 3개월
 
     useEffect(() => {
         const fetchDisclosures = async () => {
-            console.log('[DisclosureTable] Starting fetch for symbol:', symbol);
+            setLoading(true);
             try {
-                // Extract clean code (remove .KS, .KQ suffixes)
                 const cleanSymbol = symbol.replace('.KS', '').replace('.KQ', '');
-                console.log('[DisclosureTable] Clean symbol:', cleanSymbol);
-
-                const url = `${API_BASE_URL}/api/stock/${encodeURIComponent(cleanSymbol)}/disclosures`;
-                console.log('[DisclosureTable] Fetching URL:', url);
-                console.log('[DisclosureTable] API_BASE_URL:', API_BASE_URL);
-
+                const url = `${API_BASE_URL}/api/stock/${encodeURIComponent(cleanSymbol)}/disclosures?period=${period}`;
+                
                 const res = await fetch(url);
-                console.log('[DisclosureTable] Response status:', res.status);
-
                 const json = await res.json();
-                console.log('[DisclosureTable] Response JSON:', json);
 
                 if (json.status === "success" && json.data) {
-                    console.log('[DisclosureTable] ✅ Setting disclosures, count:', json.data.length);
                     setDisclosures(json.data);
                 } else {
-                    console.warn('[DisclosureTable] ⚠️ No data or failed status:', json);
                     setDisclosures([]);
                 }
             } catch (err) {
-                console.error("[DisclosureTable] ❌ Fetch error:", err);
+                console.error("[DisclosureTable] Fetch error:", err);
                 setDisclosures([]);
             } finally {
                 setLoading(false);
@@ -42,14 +33,16 @@ function DisclosureTable({ symbol }: { symbol: string }) {
         };
 
         if (symbol) {
-            console.log('[DisclosureTable] Symbol provided, fetching...');
             fetchDisclosures();
-        } else {
-            console.log('[DisclosureTable] No symbol provided');
-            setDisclosures([]);
-            setLoading(false);
         }
-    }, [symbol]);
+    }, [symbol, period]);
+
+    const periods = [
+        { id: "1d", label: "오늘" },
+        { id: "3m", label: "3개월" },
+        { id: "6m", label: "6개월" },
+        { id: "1y", label: "1년" },
+    ];
 
     if (loading) {
         return (
@@ -64,9 +57,26 @@ function DisclosureTable({ symbol }: { symbol: string }) {
 
     return (
         <div className="space-y-4">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                📝 최근 공시 내역 (DART)
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    📝 공시 내역 (DART)
+                </h3>
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                    {periods.map((p) => (
+                        <button
+                            key={p.id}
+                            onClick={() => setPeriod(p.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                period === p.id 
+                                ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
+                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                            }`}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             {Array.isArray(disclosures) && disclosures.length > 0 ? (
                 <div className="space-y-3">
