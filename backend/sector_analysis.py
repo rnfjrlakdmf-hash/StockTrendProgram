@@ -161,8 +161,9 @@ def get_sector_analysis_data(symbol, sector_id=None):
             except Exception as e:
                 logging.error(f"Error fetching {label}: {e}")
 
-        # 3. Handle Special 'Price Returns' (dt0)
+        # 3. Handle Special 'Price Returns' (dt1) for genuine granular chart parity
         try:
+            import datetime
             sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
             if active_sector_id: sector_url += f"&sec_cd={active_sector_id}"
             s_resp = requests.get(sector_url, headers=headers, timeout=10)
@@ -172,42 +173,42 @@ def get_sector_analysis_data(symbol, sector_id=None):
             except Exception as e:
                 logging.error(f"JSON Parse Error in Price Returns: {e}")
                 ajax_json = {}
-            rtn_items = ajax_json.get("dt0", {}).get("data", [])
-            rtn_yymm = ajax_json.get("dt0", {}).get("yymm", [])
-            
-            if rtn_items:
-                rtn_rows = []
-                is_est = any('(E)' in x or '(A)' in x for x in rtn_yymm)
-                fy0_idx = len(rtn_yymm) - 2 if is_est and len(rtn_yymm) > 1 else len(rtn_yymm) - 1
-                if fy0_idx < 0: fy0_idx = 0
-
-                detailed_yymm = []
-                for i, h in enumerate(rtn_yymm):
-                    base_year = h.replace('(E)', '').replace('(A)', '')
-                    suffix = '(E)' if '(E)' in h else '(A)' if '(A)' in h else ''
-                    m_h = master_headers[i] if i < len(master_headers) else f"{base_year}.12"
-                    month = m_h.split('.')[-1] if '.' in m_h else "12"
-                    last_day = "28" if month == "02" else "30" if month in ["04", "06", "09", "11"] else "31"
-                    detailed_yymm.append(f"{base_year}/{month}/{last_day}{suffix}")
-
-                for item in rtn_items:
-                    gubn = str(item.get("GUBN"))
-                    if gubn not in ["1", "2", "3"]: continue
-                    if str(item.get("SEQ", "1")) != "1": continue
-                    nm = category_map.get(gubn, "Other")
-                    row = {"name": nm}
-                    for idx, h in enumerate(rtn_yymm):
-                        off = idx - fy0_idx
-                        key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
-                        row[detailed_yymm[idx]] = item.get(key)
-                    rtn_rows.append(row)
                 
+            dt1 = ajax_json.get("dt1", {})
+            if dt1 and "TRD_DT" in dt1:
+                trd_dt = dt1.get("TRD_DT", [])
+                stk_rtn = dt1.get("STK_RTN", [])
+                sec_rtn = dt1.get("SEC_RTN", [])
+                mkt_rtn = dt1.get("MKT_RTN", [])
+                
+                detailed_yymm = []
                 c_data = []
-                for idx, h in enumerate(rtn_yymm):
-                    dh = detailed_yymm[idx]
-                    ent = {"period": dh}
-                    for r in rtn_rows: ent[r["name"]] = r.get(dh) or 0.0
-                    c_data.append(ent)
+                
+                row_stk = {"name": "내 종목"}
+                row_sec = {"name": "섹터 평균"}
+                row_mkt = {"name": "시장 지수"}
+                
+                for i, ms in enumerate(trd_dt):
+                    if not ms: continue
+                    dt_str = datetime.datetime.fromtimestamp(ms / 1000.0).strftime('%Y/%m/%d')
+                    detailed_yymm.append(dt_str)
+                    
+                    v_stk = stk_rtn[i] if i < len(stk_rtn) else 0.0
+                    v_sec = sec_rtn[i] if i < len(sec_rtn) else 0.0
+                    v_mkt = mkt_rtn[i] if i < len(mkt_rtn) else 0.0
+                    
+                    row_stk[dt_str] = v_stk
+                    row_sec[dt_str] = v_sec
+                    row_mkt[dt_str] = v_mkt
+                    
+                    c_data.append({
+                        "period": dt_str,
+                        "내 종목": v_stk,
+                        "섹터 평균": v_sec,
+                        "시장 지수": v_mkt
+                    })
+                    
+                rtn_rows = [row_stk, row_sec, row_mkt]
                 charts["주가수익률"] = {"headers": detailed_yymm, "rows": rtn_rows, "chart_data": c_data}
         except Exception as e:
             logging.error(f"Error fetching Price Returns: {e}")
