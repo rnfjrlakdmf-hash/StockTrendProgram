@@ -262,11 +262,28 @@ function AnalysisContent() {
                                             <span className="text-gray-500 font-mono text-sm tracking-widest">{stockInfo.symbol}</span>
                                         </div>
                                         <div className="flex items-baseline gap-3">
-                                            <BlinkingPrice price={stockInfo.price || "---"} className={`text-4xl font-black font-mono tracking-tighter ${parseFloat(stockInfo.change_rate) > 0 ? "text-red-500" : parseFloat(stockInfo.change_rate) < 0 ? "text-blue-500" : "text-white"}`} />
-                                            <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) > 0 ? "text-red-400" : parseFloat(stockInfo.change_rate) < 0 ? "text-blue-400" : "text-gray-400"}`}>
-                                                {parseFloat(stockInfo.change_rate) > 0 ? <TrendingUp className="w-4 h-4" /> : parseFloat(stockInfo.change_rate) < 0 ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4 flex items-center justify-center">-</span>}
-                                                <span className="text-lg">{stockInfo.change?.toLocaleString()}</span>
-                                                <span className="text-sm">{`(${parseFloat(stockInfo.change_rate) > 0 ? "+" : ""}${stockInfo.change_rate}%)`}</span>
+                                            {/* [Fix] Price Blinking & Color Sync (Red for Up, Blue for Down) */}
+                                            <BlinkingPrice 
+                                                price={stockInfo.price || "---"} 
+                                                className={`text-4xl font-black font-mono tracking-tighter ${
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-red-500" : 
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-500" : 
+                                                    "text-white"
+                                                }`} 
+                                            />
+                                            <div className={`flex items-center gap-1 font-bold ${
+                                                (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-red-400" : 
+                                                (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-400" : 
+                                                "text-gray-400"
+                                            }`}>
+                                                {(parseFloat(String(stockInfo.change_rate || "0")) > 0) ? <TrendingUp className="w-4 h-4" /> : 
+                                                 (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? <TrendingDown className="w-4 h-4" /> : 
+                                                 <span className="w-4 h-4 flex items-center justify-center">-</span>}
+                                                <span className="text-lg">{stockInfo.change?.toLocaleString() || "0"}</span>
+                                                {/* [Fix] Prevent (undefined%) display */}
+                                                <span className="text-sm">
+                                                    {`(${stockInfo.change_rate === undefined || stockInfo.change_rate === null ? "0.00" : (parseFloat(String(stockInfo.change_rate)) > 0 ? "+" : "") + stockInfo.change_rate}%)`}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -347,17 +364,34 @@ function AnalysisContent() {
                                         <RadarChart factors={quantData.factors} />
                                         <div className="mt-8 pt-6 border-t border-white/10">
                                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                                {Object.entries(quantData.factors || {}).map(([key, f]: any) => (
-                                                    <div key={key} className="flex flex-col items-center text-center">
-                                                        <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
-                                                        <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>{f.score}</span>
-                                                        <div className="space-y-0.5 opacity-60">
-                                                            {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                                <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
-                                                            ))}
+                                                {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
+                                                    const factorGuide: Record<string, string> = {
+                                                        "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타내요.",
+                                                        "growth": "작년보다 매출이나 이익이 얼마나 늘었는지, 회사의 규모가 커지는 중인지 보여줘요.",
+                                                        "momentum": "사람들의 관심과 주가 상승 흐름이 얼마나 강력하게 붙었는지 측정해요.",
+                                                        "quality": "내 돈과 빌린 돈을 합쳐 얼마나 알짜배기 장사를 성실하고 효율적으로 했는지 알려줍니다.",
+                                                        "stability": "빌린 돈이 너무 많지는 않은지, 부도 위험 없이 회사가 얼마나 튼튼한지 나타내요."
+                                                    };
+                                                    return (
+                                                        <div key={key} className={`flex flex-col items-center text-center p-3 rounded-2xl transition-all ${showEasy ? "bg-white/5 ring-1 ring-indigo-500/30" : ""}`}>
+                                                            <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
+                                                            <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>{f.score}</span>
+                                                            
+                                                            {/* [New] Guide Mode Explanation */}
+                                                            {showEasy && (
+                                                                <p className="text-[10px] text-indigo-300 leading-snug mt-2 mb-3 bg-indigo-500/10 p-2 rounded-lg italic">
+                                                                    {factorGuide[key] || "팩터별 세부 지표를 분석 중입니다."}
+                                                                </p>
+                                                            )}
+
+                                                            <div className="space-y-0.5 opacity-60">
+                                                                {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
+                                                                    <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>

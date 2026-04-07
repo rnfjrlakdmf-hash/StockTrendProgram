@@ -1,0 +1,14 @@
+719: ? `₩${Number(String(stock.price).replace(/,/g, '')).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+851: {typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}
+875: ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+891: ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+899: ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+907: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.prev_close?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
+913: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}
+1537: {isWatchlisted ? '관심종목' : '관심등록'}
+1666: {signal.signal === 'red' ? '🛑' : signal.signal === 'yellow' ? '⚠️' : '🚀'}
+1938: {isDaily ? (isToday ? '외국인 오늘 합계' : '외국인 당일 합계') : '외국인 잠정 합계'}
+1946: {isDaily ? (isToday ? '기관 오늘 합계' : '기관 당일 합계') : '기관 잠정 합계'}
+2227: ? dividendData.years.map((y: string, i: number) => ({ year: String(y || ""), div: Number(dividendData.amounts[i] || 0) }))
+2309: formatter={(value: any) => [value !== null && value !== undefined ? `${value}%` : "N/A", ""]}
+2325: * 위 수치는 {healthData?.source === 'DART' ? 'DART(전자공시시스템) 사업보고서 원본 데이터' : 'yfinance 공개 데이터'} 기반의 객관적 사실입니다. 향후 실적이나 주가 수익률을 보장하지 않습니다.

@@ -171,82 +171,101 @@ const CACHE_DURATION = 60 * 1000; // 1 minute cache for fast re-navigation
 
 // Helper for parsing change rate and applying standard KOR formatting (Red = Up, Blue = Down, with ▲/▼)
 const formatChangeDisplay = (val: any) => {
-    if (!val || val === 'N/A' || val === '-') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: val };
+    // [Fix] Handle undefined/null specifically to prevent 'undefined%' string
+    if (val === undefined || val === null || val === 'N/A' || val === '-') {
+        return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
+    }
     const str = String(val).trim();
-    if (str === '0' || str === '0.00%' || str === '0.0') return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+    if (str === '0' || str === '0.00%' || str === '0.0' || !str) {
+        return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
+    }
     
     // Improved Parsing: Check markers OR numerical value
     const isNegExplicit = str.includes('-') || str.includes('▼') || str.includes('하락');
     const isPosExplicit = str.includes('+') || str.includes('▲') || str.includes('상승');
     
     const num = parseFloat(str.replace(/[^\d.-]/g, ''));
-    if (isNaN(num)) return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
-    if (num === 0) return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: str };
+    if (isNaN(num)) return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: str };
+    if (num === 0) return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
 
     const isPos = isPosExplicit || (!isNegExplicit && num > 0);
     const isNeg = isNegExplicit || (!isPosExplicit && num < 0);
     
     // Remove existing signs for clean formatting
     let cleanText = str.replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
+    if (!cleanText.includes('%')) cleanText = `${cleanText}%`;
     
-    if (isPos) return { colorText: 'text-red-400', colorBg: 'bg-red-400/20', text: `▲ ${cleanText}` };
-    if (isNeg) return { colorText: 'text-blue-400', colorBg: 'bg-blue-400/20', text: `▼ ${cleanText}` };
+    // [Updated] Standard KOR Colors: Red-500 (Up), Blue-500 (Down)
+    if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `▲ ${cleanText}` };
+    if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: `▼ ${cleanText}` };
     
-    return { colorText: 'text-gray-400', colorBg: 'bg-gray-400/20', text: cleanText };
+    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: cleanText };
 };
 
+// Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
 // Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
 const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, prevClose: any, explicitChangeVal?: any, currency: string = 'KRW') => {
     const baseFormat = formatChangeDisplay(changePctStr);
     
     let amtStr = "";
+    let calculatedDiff = 0;
     const pVal = parseFloat(String(currentPrice || "0").replace(/,/g, ''));
     const isKRW = currency === 'KRW' || !currency || currency === 'null';
     
     if (explicitChangeVal !== undefined && explicitChangeVal !== null) {
-        const diff = parseFloat(String(explicitChangeVal).replace(/,/g, ''));
-        if (!isNaN(diff) && diff !== 0) {
-            const prefix = !isKRW ? '$' : '';
-            const decimals = isKRW ? 0 : 2;
-            amtStr = `${prefix}${Math.abs(diff).toLocaleString(undefined, {maximumFractionDigits: decimals})} `;
-        }
+        calculatedDiff = parseFloat(String(explicitChangeVal).replace(/,/g, ''));
     } else if (!isNaN(pVal) && pVal !== 0) {
-        let diff = 0;
         if (prevClose !== undefined && prevClose !== null) {
             const prev = parseFloat(String(prevClose).replace(/,/g, ''));
-            if (!isNaN(prev)) diff = pVal - prev;
+            if (!isNaN(prev)) calculatedDiff = pVal - prev;
         } else if (changePctStr && String(changePctStr).includes('%')) {
-            // Reverse calculate from percentage
             const pct = parseFloat(String(changePctStr).replace(/[^\d.-]/g, ''));
             if (!isNaN(pct) && pct !== 0) {
-                // Rate = (P - Prev) / Prev * 100 -> Prev = P / (1 + Rate/100)
                 const prev = pVal / (1 + (pct / 100));
-                diff = pVal - prev;
+                calculatedDiff = pVal - prev;
             }
         }
-        
-        if (diff !== 0) {
-           const prefix = !isKRW ? '$' : '';
-           const decimals = isKRW ? 0 : 2;
-           // If it's a very small difference in USD, use more decimals
-           const optDecimals = !isKRW && Math.abs(diff) < 0.1 ? 4 : decimals;
-           amtStr = `${prefix}${Math.abs(diff).toLocaleString(undefined, {maximumFractionDigits: optDecimals})} `;
+    }
+
+    if (calculatedDiff !== 0) {
+        const prefix = !isKRW ? '$' : '';
+        const decimals = isKRW ? 0 : 2;
+        const optDecimals = !isKRW && Math.abs(calculatedDiff) < 0.1 ? 4 : decimals;
+        amtStr = `${prefix}${Math.abs(calculatedDiff).toLocaleString(undefined, {maximumFractionDigits: optDecimals})} `;
+    }
+    
+    // [Updated] Enhanced Color Detection: If percentage is missing, use calculatedDiff's sign
+    let finalFormat = { ...baseFormat };
+    if (baseFormat.colorText === 'text-slate-400' && calculatedDiff !== 0) {
+        if (calculatedDiff > 0) {
+            finalFormat.colorText = 'text-red-500';
+            finalFormat.colorBg = 'bg-red-500/10';
+        } else {
+            finalFormat.colorText = 'text-blue-500';
+            finalFormat.colorBg = 'bg-blue-500/10';
         }
     }
     
-    const textStr = String(baseFormat.text || "");
-    if (amtStr && textStr.includes('%')) {
-       const iconMatch = textStr.match(/^[▲▼]/);
-       const icon = iconMatch ? iconMatch[0] + ' ' : '';
-       const pct = textStr.replace(/^[▲▼]\s*/, '');
-       return { ...baseFormat, text: `${icon}${amtStr}(${pct})` };
+    const textStr = String(finalFormat.text || "");
+    const icon = calculatedDiff > 0 ? '▲ ' : calculatedDiff < 0 ? '▼ ' : '';
+    
+    // [Fix] Ensure we never output 'undefined%' or '(undefined%)'
+    let pct = textStr.replace(/^[▲▼]\s*/, '').trim();
+    if (!pct || pct === 'undefined' || pct === 'null' || pct === '0.00%') {
+        if (calculatedDiff !== 0 && pVal > 0) {
+            // Manually calculate pct if it's missing or undefined
+            const prevVal = pVal - calculatedDiff;
+            if (prevVal > 0) {
+                pct = `${(Math.abs(calculatedDiff) / prevVal * 100).toFixed(2)}%`;
+            }
+        }
     }
-    if (amtStr && !textStr.includes('%')) {
-       const iconMatch = textStr.match(/^[▲▼]/);
-       const icon = iconMatch ? iconMatch[0] + ' ' : '';
-       return { ...baseFormat, text: `${icon}${amtStr}` };
+    if (!pct || pct === 'undefined') pct = '0.00%';
+
+    if (amtStr) {
+       return { ...finalFormat, text: `${icon}${amtStr}(${pct})` };
     }
-    return baseFormat;
+    return { ...finalFormat, text: `${icon}${pct}` };
 };
 
 export default function DiscoveryPage() {
