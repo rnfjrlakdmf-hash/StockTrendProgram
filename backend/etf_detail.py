@@ -22,6 +22,41 @@ def safe_to_float(val):
     except:
         return 0.0
 
+def calculate_performance(hist):
+    """
+    주가 히스토리(DataFrame)를 기반으로 1개월, 3개월, 6개월, 1년 수익률을 직접 산출합니다.
+    """
+    perf_data = {}
+    if hist.empty or len(hist) < 2:
+        return perf_data
+        
+    try:
+        current_close = hist['Close'].iloc[-1]
+        last_date = hist.index[-1]
+        
+        periods = [
+            ("1개월", 1),
+            ("3개월", 3),
+            ("6개월", 6),
+            ("1년", 12)
+        ]
+        
+        for label, months in periods:
+            target_date = last_date - pd.DateOffset(months=months)
+            # 가장 가까운 과거 날짜의 인덱스를 찾음
+            # get_indexer는 일치하는 항목이 없을 때 가장 가까운 항목(nearest)을 찾도록 설정 가능
+            past_idx = hist.index.get_indexer([target_date], method='nearest')[0]
+            
+            if past_idx >= 0:
+                past_close = hist['Close'].iloc[past_idx]
+                if past_close > 0:
+                    diff_pct = ((current_close - past_close) / past_close) * 100
+                    perf_data[label] = f"{diff_pct:+.2f}%"
+    except Exception as e:
+        print(f"Performance calculation error: {e}")
+        
+    return perf_data
+
 def get_etf_detail(symbol: str):
     if not symbol:
         return {"status": "error", "message": "Symbol is required"}
@@ -180,6 +215,10 @@ def get_etf_detail(symbol: str):
                     "ma120": float(row['ma120']) if pd.notna(row['ma120']) else None
                 } for idx, row in hist.iterrows()
             ]
+            
+            # [Fix] Calculate performance for US ETFs
+            data["performance"] = calculate_performance(hist)
+            
             return {"status": "success", "data": data}
         except Exception as e:
             return {"status": "error", "message": str(e)}
@@ -258,6 +297,18 @@ def get_etf_detail(symbol: str):
                         if k in ind:
                             f_val = safe_to_float(ind[k])
                             data["performance"][v] = f"{'+' if f_val > 0 else ''}{f_val:.2f}%"
+                    
+                    # [Backup] If some performance data is missing from Naver, use calculated data from yfinance history
+                    if len(data["performance"]) < 4 and "chart_data" in data and len(data["chart_data"]) > 0:
+                        try:
+                            # Use yfinance data fetched earlier if available
+                            # 'hist' for KR is defined around line 199
+                            if 'hist' in locals() and not hist.empty:
+                                calc_perf = calculate_performance(hist)
+                                for k, v in calc_perf.items():
+                                    if k not in data["performance"]:
+                                        data["performance"][k] = v
+                        except: pass
 
                 # Additional Info (Index, Listing Date)
                 for info in api_json.get("totalInfos", []):
