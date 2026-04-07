@@ -1234,10 +1234,10 @@ function DiscoveryContent() {
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                                     <td className="py-3 px-2 text-gray-300 font-mono text-sm">{toKoreanDate(day.date)}</td>
                                                                     <td className="py-3 px-2 font-mono font-bold">
-                                                                        {stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}
+                                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span>
                                                                     </td>
                                                                     <td className={`py-3 px-2 font-mono font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                        {day.change > 0 ? '+' : ''}{day.change.toFixed(2)}%
+                                                                        <span>{day.change > 0 ? '+' : null}</span><span>{day.change.toFixed(2)}%</span>
                                                                     </td>
                                                                     <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
                                                                         {day.volume.toLocaleString()}
@@ -1938,7 +1938,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         {isDaily ? (isToday ? '외국인 오늘 합계' : '외국인 당일 합계') : '외국인 잠정 합계'}
                     </div>
                     <div className={`text-2xl font-bold font-mono ${totalForeigner > 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                        {totalForeigner > 0 ? '+' : ''}{totalForeigner.toLocaleString()}주
+                        <span>{totalForeigner > 0 ? '+' : null}</span><span>{totalForeigner.toLocaleString()}주</span>
                     </div>
                 </div>
                 <div className={`p-4 rounded-xl border ${totalInst > 0 ? 'bg-red-900/20 border-red-500/30' : 'bg-blue-900/20 border-blue-500/30'}`}>
@@ -1946,7 +1946,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         {isDaily ? (isToday ? '기관 오늘 합계' : '기관 당일 합계') : '기관 잠정 합계'}
                     </div>
                     <div className={`text-lg md:text-2xl font-bold font-mono ${totalInst > 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                        {totalInst > 0 ? '+' : ''}{totalInst.toLocaleString()}주
+                        <span>{totalInst > 0 ? '+' : null}</span><span>{totalInst.toLocaleString()}주</span>
                     </div>
                 </div>
             </div>
@@ -2257,7 +2257,7 @@ function DividendHealthTab({
                         <div className={`border rounded-xl p-4 text-center ${summary.yoy_growth_pct >= 0 ? "bg-green-500/5 border-green-500/15" : "bg-red-500/5 border-red-500/15"}`}>
                             <p className="text-[10px] text-gray-500 mb-1">전년대비 배당 변화</p>
                             <p className={`text-lg font-black ${summary.yoy_growth_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                {summary.yoy_growth_pct >= 0 ? "+" : ""}{summary.yoy_growth_pct}%
+                                <span>{summary.yoy_growth_pct >= 0 ? "+" : null}</span><span>{summary.yoy_growth_pct}%</span>
                             </p>
                         </div>
                     )}
