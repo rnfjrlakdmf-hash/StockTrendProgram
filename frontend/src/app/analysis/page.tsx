@@ -266,7 +266,7 @@ function AnalysisContent() {
                                             <div className={`flex items-center gap-1 font-bold ${parseFloat(stockInfo.change_rate) > 0 ? "text-red-400" : parseFloat(stockInfo.change_rate) < 0 ? "text-blue-400" : "text-gray-400"}`}>
                                                 {parseFloat(stockInfo.change_rate) > 0 ? <TrendingUp className="w-4 h-4" /> : parseFloat(stockInfo.change_rate) < 0 ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4 flex items-center justify-center">-</span>}
                                                 <span className="text-lg">{stockInfo.change?.toLocaleString()}</span>
-                                                <span className="text-sm">({parseFloat(stockInfo.change_rate) > 0 ? "+" : ""}{stockInfo.change_rate}%)</span>
+                                                <span className="text-sm">{`(${parseFloat(stockInfo.change_rate) > 0 ? "+" : ""}${stockInfo.change_rate}%)`}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -297,7 +297,7 @@ function AnalysisContent() {
                         <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : ""}`} />
                         <div className="text-left leading-none">
                             <p className="text-[10px] uppercase tracking-widest mb-1 opacity-70">Guide Mode</p>
-                            <p className="text-xs">{showEasy ? "가이드 끄기" : "가이드 켜기"}</p>
+                            <p className="text-xs">{showEasy ? <span>가이드 끄기</span> : <span>가이드 켜기</span>}</p>
                         </div>
                     </button>
                 </div>
@@ -444,8 +444,8 @@ function AnalysisContent() {
                                             <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                                        🏋️ Piotroski F-Score
-                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span>}
+                                                        <span>🏋️ Piotroski F-Score</span>
+                                                        {showEasy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span> : null}
                                                     </h4>
                                                 </div>
                                                 {showEasy && (
@@ -582,9 +582,9 @@ function AnalysisContent() {
                                                             key={idx}
                                                             onClick={() => setActiveSectorTab(idx)}
                                                             className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSectorTab === idx ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-transparent text-gray-400 hover:bg-white/10 hover:text-white'}`}
-                                                    >
-                                                        {sec.group.split(' (')[1].replace(')', '')} 
-                                                    </button>
+                                                        >
+                                                            <span>{sec.group.split(' (')[1].replace(')', '')}</span>
+                                                        </button>
                                                 ))}
                                             </div>
                                             
@@ -592,7 +592,7 @@ function AnalysisContent() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
                                                     <h3 className="text-sm font-black text-white uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                                                        {sectorSections[activeSectorTab].group}
+                                                        <span>{sectorSections[activeSectorTab].group}</span>
                                                     </h3>
                                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
                                                 </div>
@@ -706,8 +706,8 @@ function AnalysisContent() {
                                                                 const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
                                                                 return (
                                                                     <td key={s.symbol} className={`py-3 px-2 text-center font-mono ${isBest ? "text-green-400 font-black" : "text-gray-300"}`}>
-                                                                        {val ?? "N/A"}
-                                                                        {isBest && <span className="ml-1 text-[8px]">👑</span>}
+                                                                        <span>{val ?? "N/A"}</span>
+                                                                        {isBest ? <span className="ml-1 text-[8px]">👑</span> : null}
                                                                     </td>
                                                                 );
                                                             })}
