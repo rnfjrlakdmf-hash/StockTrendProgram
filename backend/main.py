@@ -128,6 +128,58 @@ def read_etf_rank(market: str = "KR", category: Optional[str] = None):
     """실시간 ETF 통계 데이터 반환 (참고용)"""
     data = get_etf_ranking(market, category)
     return {"status": "success", "data": data}
+@app.get("/api/stock/{symbol}/daily-history")
+@turbo_cache(ttl_seconds=300)
+def stock_daily_history(symbol: str, range: str = Query("1mo")):
+    """
+    Get historical daily prices from Yahoo Finance.
+    Supported ranges: 1mo, 3mo, 6mo, 1y.
+    """
+    import yfinance as yf
+    import pandas as pd
+    import re
+    
+    try:
+        t_symbol = symbol
+        if re.match(r'^\d{6}$', symbol):
+            try:
+                ticker = yf.Ticker(f"{symbol}.KS")
+                hist = ticker.history(period=range)
+                if hist.empty:
+                    ticker = yf.Ticker(f"{symbol}.KQ")
+                    hist = ticker.history(period=range)
+            except:
+                pass
+        else:
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period=range)
+            
+        if hist.empty:
+            return {"status": "success", "data": []}
+            
+        # Calculate daily change percent
+        hist['PrevClose'] = hist['Close'].shift(1)
+        hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
+        
+        hist_desc = hist.sort_index(ascending=False)
+        
+        res = []
+        for date, row in hist_desc.iterrows():
+            if pd.isna(row['Close']): continue
+            res.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "close": float(row['Close']),
+                "change": float(row['ChangePct']) if pd.notna(row['ChangePct']) else 0.0,
+                "volume": int(row['Volume']) if pd.notna(row['Volume']) else 0,
+                "open": float(row['Open']) if 'Open' in row and pd.notna(row['Open']) else 0.0,
+                "high": float(row['High']) if 'High' in row and pd.notna(row['High']) else 0.0,
+                "low": float(row['Low']) if 'Low' in row and pd.notna(row['Low']) else 0.0
+            })
+            
+        return {"status": "success", "data": res}
+    except Exception as e:
+        print(f"[DailyHistoryError] {e}")
+        return {"status": "error", "message": "Failed to fetch history"}
 
 @app.get("/api/peer/{symbol}")
 @turbo_cache(ttl_seconds=3600)

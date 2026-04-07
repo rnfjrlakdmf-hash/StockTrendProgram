@@ -287,6 +287,40 @@ function DiscoveryContent() {
     const [periodNews, setPeriodNews] = useState<any[]>([]);
     const [newsLoading, setNewsLoading] = useState(false);
 
+    // [New] Daily Prices State
+    const [dailyRange, setDailyRange] = useState('1mo');
+    const [dailyPricesData, setDailyPricesData] = useState<any[]>([]);
+    const [dailyLoading, setDailyLoading] = useState(false);
+
+    // Initialize dailyPricesData when stock changes
+    useEffect(() => {
+        if (stock) {
+            setDailyPricesData(stock.daily_prices || []);
+            setDailyRange('1mo');
+        }
+    }, [stock?.symbol]);
+
+    // Fetch daily prices when tab is active and range changes
+    useEffect(() => {
+        const fetchDailyPrices = async () => {
+            if (!stock?.symbol) return;
+            setDailyLoading(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}`);
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    setDailyPricesData(json.data);
+                }
+            } catch (err) {
+                console.error("Daily price fetch error:", err);
+            } finally {
+                setDailyLoading(false);
+            }
+        };
+
+        if (activeTab === 'daily') fetchDailyPrices();
+    }, [dailyRange, stock?.symbol, activeTab]);
+
     // [New] Effect to fetch period-based news
     useEffect(() => {
         const fetchPeriodNews = async () => {
@@ -1157,12 +1191,36 @@ function DiscoveryContent() {
                                         </div>
                                     ) : activeTab === 'daily' && stock.symbol ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <h4 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
-                                                📅 최근 일일 시세
-                                            </h4>
-                                            <div className="overflow-x-auto bg-white/5 rounded-xl border border-white/10">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead>
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                <h4 className="text-xl font-bold flex items-center gap-2 text-white">
+                                                    📅 일일 시세
+                                                    {dailyLoading && <span className="ml-2 w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>}
+                                                </h4>
+                                                
+                                                <div className="flex gap-2">
+                                                    {[
+                                                        { id: '1mo', label: '1개월' },
+                                                        { id: '3mo', label: '3개월' },
+                                                        { id: '6mo', label: '6개월' },
+                                                        { id: '1y', label: '1년' }
+                                                    ].map(period => (
+                                                        <button
+                                                            key={period.id}
+                                                            onClick={() => setDailyRange(period.id)}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${dailyRange === period.id
+                                                                ? 'bg-primary text-white shadow-md'
+                                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                                                }`}
+                                                        >
+                                                            {period.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="overflow-x-auto bg-white/5 rounded-xl border border-white/10 max-h-[600px] overflow-y-auto">
+                                                <table className="w-full text-left border-collapse relative">
+                                                    <thead className="sticky top-0 bg-[#0f172a] shadow-sm z-10">
                                                         <tr className="border-b border-white/10 text-gray-400 text-sm">
                                                             <th className="py-3 px-2">날짜</th>
                                                             <th className="py-3 px-2">종가</th>
@@ -1171,8 +1229,8 @@ function DiscoveryContent() {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
-                                                        {stock.daily_prices && Array.isArray(stock.daily_prices) && stock.daily_prices.length > 0 ? (
-                                                            stock.daily_prices.map((day, idx) => (
+                                                        {dailyPricesData && Array.isArray(dailyPricesData) && dailyPricesData.length > 0 ? (
+                                                            dailyPricesData.map((day, idx) => (
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                                     <td className="py-3 px-2 text-gray-300 font-mono text-sm">{toKoreanDate(day.date)}</td>
                                                                     <td className="py-3 px-2 font-mono font-bold">
