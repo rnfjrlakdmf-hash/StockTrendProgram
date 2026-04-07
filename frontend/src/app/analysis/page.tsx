@@ -381,10 +381,34 @@ function AnalysisContent() {
                                     건강도 측정
                                 </button>
                             </div>
+                            
+                            {/* Toggle Easy Mode */}
+                            <div className="flex justify-end">
+                                <button 
+                                    onClick={() => setShowEasy(!showEasy)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${showEasy ? "bg-emerald-600/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-gray-400 hover:text-white"}`}
+                                >
+                                    {showEasy ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                    초보자를 위한 쉬운 설명 {showEasy ? "끄기" : "켜기"}
+                                </button>
+                            </div>
                             {financialLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                             ) : financialData ? (
-                                <div className="space-y-6">
+                                <div className="space-y-6 animate-in fade-in duration-300">
+                                    {showEasy && (
+                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                            <div className="bg-emerald-500/20 p-2 rounded-lg h-fit">
+                                                <HelpCircle className="w-5 h-5 text-emerald-400" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
+                                                <p className="text-xs text-gray-300 leading-relaxed">
+                                                    어려운 재무 용어들을 알기 쉽게 기업의 '건강 상태'에 비유하여 설명해 드릴게요.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
                                         <div className="flex items-center justify-between mb-6">
                                             <div><h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2><p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p></div>
@@ -409,8 +433,85 @@ function AnalysisContent() {
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10"> <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">📐 Altman Z-Score</h4> <div className="flex items-end gap-3"><span className="text-3xl font-black">{financialData.z_score?.value}</span><span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : "text-red-400"}`}>{financialData.z_score?.zone} ZONE</span></div> </div>
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10"> <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">🏋️ Piotroski F-Score</h4> <div className="flex items-end gap-3"><span className="text-3xl font-black">{financialData.f_score?.value}</span><span className="text-sm text-gray-500 pb-1">/ 9</span></div> </div>
+                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                                        📐 Altman Z-Score
+                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험률</span>}
+                                                    </h4>
+                                                </div>
+                                                {showEasy && (
+                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                        당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 체력'</span>을 가진 아주 튼튼한 상태예요!
+                                                    </p>
+                                                )}
+                                                <div className="flex items-end gap-3">
+                                                    <span className="text-3xl font-black">{financialData.z_score?.value}</span>
+                                                    <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
+                                                        {financialData.z_score?.zone} ZONE
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                                        🏋️ Piotroski F-Score
+                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span>}
+                                                    </h4>
+                                                </div>
+                                                {showEasy && (
+                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                        회사의 <span className="text-emerald-400 font-bold">'근육과 체지방'</span>을 봅니다. 이익은 늘고 빚은 줄었는지 9단계를 엄격히 검진한 기초체력 점수예요. 7점 이상이면 우수해요.
+                                                    </p>
+                                                )}
+                                                <div className="flex items-end gap-3">
+                                                    <span className="text-3xl font-black">{financialData.f_score?.value}</span>
+                                                    <span className="text-sm text-gray-500 pb-1">/ 9</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* F-Score Details */}
+                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                        <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            {(financialData.f_score?.details || []).map((d: string, i: number) => (
+                                                <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
+                                                    <span className="text-emerald-500">✓</span> {d}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Key Ratios */}
+                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                        <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
+                                                const getExplanation = (key: string) => {
+                                                    if (key === "PER") return "버는 능력 대비 '현재 가격표'";
+                                                    if (key === "PBR") return "가진 자산 대비 '현재 가격표'";
+                                                    if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
+                                                    if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
+                                                    if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
+                                                    if (key === "영업이익률") return "1만원어치 팔아 얼마를 남기나";
+                                                    if (key === "매출총이익률") return "물건 떼와서 남긴 순수 마진";
+                                                    if (key === "자산회전율") return "자산을 얼마나 부지런히 굴리나";
+                                                    return "";
+                                                };
+                                                return (
+                                                    <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
+                                                        <p className="text-[10px] text-gray-500 font-bold mb-0.5">{k}</p>
+                                                        <p className="text-lg font-black text-white">{v}</p>
+                                                        {showEasy && (
+                                                            <p className="text-[10px] text-emerald-400/70 mt-1 font-medium leading-tight">
+                                                                {getExplanation(k)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
