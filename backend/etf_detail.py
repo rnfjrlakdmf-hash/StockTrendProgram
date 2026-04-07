@@ -294,7 +294,6 @@ def get_etf_detail(symbol: str):
                     
                     # 4.1 Search for Launch Date via Regex in soup
                     if data["basic_info"]["launch_date"] == "알 수 없음":
-                        import re
                         dates = re.findall(r"20\d{2}[.-]\d{2}[.-]\d{2}", soup_text)
                         if dates:
                             # Usually the 1st or 2nd date in the info section is the listing date
