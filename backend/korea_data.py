@@ -854,6 +854,20 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
     news_list = []
     limit_date = datetime.now() - timedelta(days=days if days > 0 else 365)
     
+    # Scale max_items by days
+    if days <= 1:
+        max_items = 20
+        max_pages = 5
+    elif days <= 30:
+        max_items = 50
+        max_pages = 10
+    elif days <= 180:
+        max_items = 100
+        max_pages = 20
+    else:
+        max_items = 150
+        max_pages = 30
+    
     code = ""
     if symbol:
         code = symbol.split('.')[0]
@@ -867,7 +881,7 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
     if code:
         try:
             print(f"[NEWS DEBUG] Scraping Naver Finance News for {code} (Period: {days} days)")
-            for page in range(1, 10): # Fetch up to 10 pages for historical periods
+            for page in range(1, max_pages + 1): # Fetch historical periods based on days
                 url = f"https://finance.naver.com/item/news_list.naver?code={code}&page={page}"
                 res = requests.get(url, headers=HEADER, timeout=5)
                 soup = BeautifulSoup(decode_safe(res), 'html.parser')
@@ -902,10 +916,10 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
                         "published": date_str.split()[0].replace('.', '-') # YYYY-MM-DD
                     })
                     
-                    if len(news_list) >= 30:
+                    if len(news_list) >= max_items:
                         break
                         
-                if page_all_older or len(news_list) >= 30:
+                if page_all_older or len(news_list) >= max_items:
                     break
                     
             if news_list:
@@ -925,12 +939,12 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
         try:
             url = "https://openapi.naver.com/v1/search/news.json"
             headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
-            params = {"query": search_query, "display": 50, "sort": "date"}
+            params = {"query": search_query, "display": min(max_items, 100), "sort": "date"}
             response = requests.get(url, headers=headers, params=params, timeout=5)
             if response.status_code == 200:
                 items = response.json().get('items', [])
                 for item in items:
-                    if len(news_list) >= 20: break
+                    if len(news_list) >= max_items: break
                     news_list.append({
                         "title": html.unescape(re.sub('<.*?>', '', item.get('title', ''))),
                         "description": html.unescape(re.sub('<.*?>', '', item.get('description', ''))),
@@ -950,7 +964,7 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
         with urllib.request.urlopen(req, timeout=5) as response:
             root = ET.fromstring(response.read())
             items = root.find('channel').findall('item')
-            for item in items[:20]:
+            for item in items[:max_items]:
                 news_list.append({
                     "title": item.find('title').text if item.find('title') is not None else "",
                     "link": item.find('link').text if item.find('link') is not None else "",

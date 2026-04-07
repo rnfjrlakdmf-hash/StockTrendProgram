@@ -1164,7 +1164,7 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                                                 {newsLoading ? (
                                                     <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                                         <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
