@@ -181,6 +181,15 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 fy0_idx = len(rtn_yymm) - 2 if is_est and len(rtn_yymm) > 1 else len(rtn_yymm) - 1
                 if fy0_idx < 0: fy0_idx = 0
 
+                detailed_yymm = []
+                for i, h in enumerate(rtn_yymm):
+                    base_year = h.replace('(E)', '').replace('(A)', '')
+                    suffix = '(E)' if '(E)' in h else '(A)' if '(A)' in h else ''
+                    m_h = master_headers[i] if i < len(master_headers) else f"{base_year}.12"
+                    month = m_h.split('.')[-1] if '.' in m_h else "12"
+                    last_day = "28" if month == "02" else "30" if month in ["04", "06", "09", "11"] else "31"
+                    detailed_yymm.append(f"{base_year}/{month}/{last_day}{suffix}")
+
                 for item in rtn_items:
                     gubn = str(item.get("GUBN"))
                     if gubn not in ["1", "2", "3"]: continue
@@ -190,15 +199,16 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     for idx, h in enumerate(rtn_yymm):
                         off = idx - fy0_idx
                         key = f"FY{off}" if off >= 0 else f"FY_{abs(off)}"
-                        row[h] = item.get(key)
+                        row[detailed_yymm[idx]] = item.get(key)
                     rtn_rows.append(row)
                 
                 c_data = []
-                for h in rtn_yymm:
-                    ent = {"period": h}
-                    for r in rtn_rows: ent[r["name"]] = r.get(h) or 0.0
+                for idx, h in enumerate(rtn_yymm):
+                    dh = detailed_yymm[idx]
+                    ent = {"period": dh}
+                    for r in rtn_rows: ent[r["name"]] = r.get(dh) or 0.0
                     c_data.append(ent)
-                charts["주가수익률"] = {"headers": rtn_yymm, "rows": rtn_rows, "chart_data": c_data}
+                charts["주가수익률"] = {"headers": detailed_yymm, "rows": rtn_rows, "chart_data": c_data}
         except Exception as e:
             logging.error(f"Error fetching Price Returns: {e}")
 
