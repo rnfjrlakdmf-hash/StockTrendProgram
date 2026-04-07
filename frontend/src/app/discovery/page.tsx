@@ -1005,8 +1005,7 @@ function DiscoveryContent() {
 
                                     {activeTab === 'analysis' ? (
                                         <>
-                                            {/* Chart Section */}
-                                            <FinancialHighlights data={financialHighlights} loading={financialsLoading} />
+                                            {/* Chart Section Hidden */}
 
                                             {/* AI Opinion */}
                                             {/* AI Opinion */}
