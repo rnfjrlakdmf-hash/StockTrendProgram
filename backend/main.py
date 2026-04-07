@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] v2.6.9-Chromium-Fix - 2026-04-06
+# [Deployment Trigger] v2.8.0-Stability-Shield - 2026-04-07
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -103,8 +103,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v4.6.9 (Victory-Unified-Final)",
-        "build_id": "2026-04-06-deploy-v15-final",
+        "version": "v4.7.0 (Stability-Shield-Unified)",
+        "build_id": "2026-04-07-deploy-v2.8.0",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -709,7 +709,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend is running.",
-        "version": "2.7.8"
+        "version": "2.8.0"
     }
 
 class PortfolioItem(BaseModel):
