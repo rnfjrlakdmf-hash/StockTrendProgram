@@ -1992,9 +1992,18 @@ def get_detailed_risk_report(symbol: str):
 from risk_analyzer import calculate_analysis_score
 
 @app.get("/api/health/{symbol}")
+def get_company_analysis_score_legacy(symbol: str):
+    """(Legacy) 회사 데이터 분석 점수 조회"""
+    result = calculate_analysis_score(symbol)
+    if not result.get("success"):
+        return {"status": "error", "message": result.get("error", "분석 실패")}
+    return {"status": "success", "data": result}
+
+@app.get("/api/stock/{symbol}/health")
+@turbo_cache(ttl_seconds=3600)
 def get_company_analysis_score(symbol: str):
     """
-    회사 데이터 분석 점수 조회 (0-100)
+    회사 데이터 분석 점수 조회 (0-100) - 프론트엔드 호환용
     재무제표를 단일 점수와 캐릭터로 시각화
     """
     result = calculate_analysis_score(symbol)
