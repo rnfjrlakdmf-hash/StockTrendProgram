@@ -265,10 +265,11 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
                 </div>
             )}
 
-            <div className="mt-2 p-3 bg-blue-900/10 rounded-xl border border-blue-500/20">
+            <div className="mt-2 p-3 bg-blue-900/10 rounded-xl border border-blue-500/20 flex items-center justify-between">
                 <p className="text-[11px] text-gray-400 leading-relaxed">
-                    실적 데이터는 네이버 금융 정보를 바탕으로 제공됩니다. 예상(E) 수치는 증권사 컨센서스 자료이며 실제 결과와 다를 수 있으므로 투자 시 유의해 주시기 바랍니다.
+                    실적 데이터는 네이버 금융 정보를 바탕으로 제공됩니다. 예상(E) 수치는 증권사 컨센서스 자료이며 실제 결과와 다를 수 있습니다.
                 </p>
+                <span className="text-[10px] text-blue-500/50 font-mono">v2.8.9</span>
             </div>
         </div>
     );
