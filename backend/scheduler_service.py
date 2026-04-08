@@ -71,7 +71,11 @@ def send_closing_notification(market: str):
             
             market_name = "국내" if market == "KR" else "미국"
             title = f"[{market_name} 장마감] 오늘의 비서 리포트 📊"
-            body = f"오늘 {market_name} 주식 수익률은 {yield_pct:+.2f}%입니다. 총 {profit:+,.0f}원의 자산 변동이 있었습니다."
+            
+            # 수익금 콤마 포맷팅
+            profit_str = f"{profit:+,.0f}원" if market == "KR" else f"${profit:+,.2f} (약 {profit*1350:+,.0f}원)"
+            
+            body = f"오늘 {market_name} 주식 수익은 {profit_str}입니다. (수익률 {yield_pct:+.2f}%) 주인님, 정말 수고 많으셨습니다! 💰"
             
             # 실제 FCM 발송 로직 (추후 연동)
             print(f"[Push Notification to {user_id}]: {title} - {body}")
