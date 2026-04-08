@@ -477,7 +477,7 @@ function EtfAnalysisContent() {
                                                             format: 'yyyy년 MM월 dd일'
                                                         },
                                                         y: {
-                                                            formatter: (val: number) => isUs ? `$${val.toLocaleString()}` : `${val.toLocaleString()}원`
+                                                            formatter: (val: number) => isUs ? `$${Math.round(val).toLocaleString()}` : `${Math.round(val).toLocaleString()}원`
                                                         }
                                                     },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
