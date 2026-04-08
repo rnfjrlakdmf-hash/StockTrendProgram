@@ -60,7 +60,8 @@ export default function Sidebar() {
 
                 const data = await res.json();
                 if (data.status === "success" && data.data.details?.usd) {
-                    const rate = parseFloat(data.data.details.usd.replace(/,/g, ''));
+                    const usdRaw = data.data.details.usd;
+                    const rate = parseFloat(String(usdRaw).replace(/,/g, ''));
                     if (!isNaN(rate)) setExchangeRate(rate);
                 }
             } catch (err) {

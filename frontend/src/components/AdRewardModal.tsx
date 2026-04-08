@@ -64,7 +64,8 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "success" && data.data.details?.usd) {
-                        const rate = parseFloat(data.data.details.usd.replace(/,/g, ''));
+                        const usdRaw = data.data.details.usd;
+                        const rate = parseFloat(String(usdRaw).replace(/,/g, ''));
                         if (!isNaN(rate)) setExchangeRate(rate);
                     }
                 })
