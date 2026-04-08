@@ -1655,8 +1655,15 @@ def read_earnings_whisper(symbol: str):
         
     return {"status": "success", "data": result}
 
+
+@app.get("/api/supply-chain/{symbol}")
+def read_supply_chain(symbol: str):
+    """글로벌 공급망 (Value Chain) 지도 데이터 반환"""
+    data = analyze_supply_chain(symbol)
+    if not data:
+        return {"status": "error", "message": "Failed to analyze supply chain"}
     return {"status": "success", "data": data}
-    
+
 @app.get("/api/supply-chain/detail/{symbol}")
 def read_supply_chain_detail(symbol: str, name: str = None):
     """특정 노드(기업)의 상세 분석 정보 반환"""
