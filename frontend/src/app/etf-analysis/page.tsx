@@ -471,8 +471,13 @@ function EtfAnalysisContent() {
                                                         } 
                                                     },
                                                     tooltip: {
+                                                        shared: true,
+                                                        intersect: false,
                                                         x: {
                                                             format: 'yyyy년 MM월 dd일'
+                                                        },
+                                                        y: {
+                                                            formatter: (val: number) => isUs ? `$${val.toLocaleString()}` : `${val.toLocaleString()}원`
                                                         }
                                                     },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
