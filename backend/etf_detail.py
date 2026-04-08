@@ -216,6 +216,14 @@ def get_etf_detail(symbol: str):
                 } for idx, row in hist.iterrows()
             ]
             
+            # [환율 추가] Fetch USD/KRW Exchange Rate
+            try:
+                rate_ticker = yf.Ticker("USDKRW=X")
+                # fast_info is preferred for quick metrics
+                data["exchange_rate"] = rate_ticker.fast_info.get('last_price', 1350.0)
+            except:
+                data["exchange_rate"] = 1350.0
+
             # [Fix] Calculate performance for US ETFs
             data["performance"] = calculate_performance(hist)
             

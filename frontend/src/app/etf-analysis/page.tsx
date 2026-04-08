@@ -477,7 +477,14 @@ function EtfAnalysisContent() {
                                                             format: 'yyyy년 MM월 dd일'
                                                         },
                                                         y: {
-                                                            formatter: (val: number) => isUs ? `$${Math.round(val).toLocaleString()}` : `${Math.round(val).toLocaleString()}원`
+                                                            formatter: (val: number) => {
+                                                                const rounded = Math.round(val);
+                                                                if (isUs && etfData?.exchange_rate) {
+                                                                    const krw = Math.round(val * etfData.exchange_rate);
+                                                                    return `$${rounded.toLocaleString()} (${krw.toLocaleString()}원)`;
+                                                                }
+                                                                return isUs ? `$${rounded.toLocaleString()}` : `${rounded.toLocaleString()}원`;
+                                                            }
                                                         }
                                                     },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
