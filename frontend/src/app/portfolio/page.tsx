@@ -27,30 +27,75 @@ export default function PortfolioPage() {
     const [error, setError] = useState("");
     const [analysisResult, setAnalysisResult] = useState<any>(null);
 
-    const addHolding = () => {
+    const [showAdModal, setShowAdModal] = useState(false);
+    const [hasPaid, setHasPaid] = useState(false);
+
+    // [New] Fetch Portfolio on Load
+    useEffect(() => {
+        const userId = localStorage.getItem("stock_user_id");
+        if (userId) {
+            fetch(`${API_BASE_URL}/api/portfolio`, {
+                headers: { "X-User-ID": userId }
+            })
+            .then(res => res.json())
+            .then(json => {
+                if (json.status === "success" && json.data) {
+                    setHoldings(json.data);
+                }
+            })
+            .catch(console.error);
+        }
+    }, [API_BASE_URL]);
+
+    const addHolding = async () => {
         if (!inputSymbol || !inputPrice || !inputQuantity) {
             alert("종목, 단가, 수량을 모두 입력해주세요.");
             return;
         }
         const sym = inputSymbol.toUpperCase().trim();
         const newHolding = { symbol: sym, price: inputPrice, quantity: inputQuantity };
-        setHoldings([...holdings, newHolding]);
+        
+        // Optimistic UI Update
+        const updatedHoldings = [...holdings, newHolding];
+        setHoldings(updatedHoldings);
+        
+        const userId = localStorage.getItem("stock_user_id");
+        if (userId) {
+            try {
+                await fetch(`${API_BASE_URL}/api/portfolio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+                    body: JSON.stringify(newHolding)
+                });
+            } catch (e) {
+                console.error("Save error:", e);
+            }
+        }
         
         setInputSymbol("");
         setInputPrice("");
         setInputQuantity("");
     };
 
-    const removeHolding = (sym: string) => {
+    const removeHolding = async (sym: string) => {
         setHoldings(holdings.filter(h => h.symbol !== sym));
+
+        const userId = localStorage.getItem("stock_user_id");
+        if (userId) {
+            try {
+                await fetch(`${API_BASE_URL}/api/portfolio/${sym}`, {
+                    method: 'DELETE',
+                    headers: { 'X-User-ID': userId }
+                });
+            } catch (e) {
+                console.error("Delete error:", e);
+            }
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') addHolding();
     };
-
-    const [showAdModal, setShowAdModal] = useState(false);
-    const [hasPaid, setHasPaid] = useState(false);
 
     // KIS/Account connection logic removed for compliance (v5.1.0)
 

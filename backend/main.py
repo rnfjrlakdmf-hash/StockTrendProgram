@@ -1271,6 +1271,36 @@ def create_portfolio_optimization(req: PortfolioRequest):
     
     return result
 
+class UserPortfolioEntry(BaseModel):
+    symbol: str
+    price: str
+    quantity: str
+
+@app.get("/api/portfolio")
+def read_user_portfolio(x_user_id: str = Header(None)):
+    """사용자의 저장된 포트폴리오 조회"""
+    user_id = x_user_id if x_user_id else "guest"
+    from db_manager import get_user_portfolio
+    portfolio = get_user_portfolio(user_id)
+    return {"status": "success", "data": portfolio}
+
+@app.post("/api/portfolio")
+def create_portfolio_entry(req: UserPortfolioEntry, x_user_id: str = Header(None)):
+    """포트폴리오 종목 추가/수정"""
+    user_id = x_user_id if x_user_id else "guest"
+    from db_manager import save_user_portfolio
+    success = save_user_portfolio(user_id, req.symbol, float(req.price), float(req.quantity))
+    return {"status": "success" if success else "error"}
+
+@app.delete("/api/portfolio/{symbol}")
+def remove_portfolio_entry(symbol: str, x_user_id: str = Header(None)):
+    """포트폴리오 종목 삭제"""
+    user_id = x_user_id if x_user_id else "guest"
+    from db_manager import delete_user_portfolio
+    success = delete_user_portfolio(user_id, symbol)
+    return {"status": "success" if success else "error"}
+
+
 class AlertRequest(BaseModel):
     symbol: str
     target_price: float

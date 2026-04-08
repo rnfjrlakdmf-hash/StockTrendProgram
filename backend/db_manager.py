@@ -111,6 +111,18 @@ def init_db():
         )
     """)
 
+    # [NEW] User Portfolio Table (Manual Entry)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_portfolio (
+            user_id TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            avg_price REAL DEFAULT 0,
+            quantity REAL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, symbol)
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -434,6 +446,57 @@ def clear_watchlist(user_id):
     try:
         cursor.execute("DELETE FROM watchlist WHERE user_id = ?", (user_id,))
         conn.commit()
+    finally:
+        conn.close()
+
+def save_user_portfolio(user_id, symbol, price, quantity):
+    """사용자 포트폴리오 종목 저장/수정"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO user_portfolio (user_id, symbol, avg_price, quantity)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id, symbol) DO UPDATE SET
+                avg_price = excluded.avg_price,
+                quantity = excluded.quantity
+        """, (user_id, symbol, price, quantity))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Save Portfolio Error: {e}")
+        return False
+    finally:
+        conn.close()
+
+def delete_user_portfolio(user_id, symbol):
+    """사용자 포트폴리오 종목 삭제"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM user_portfolio WHERE user_id = ? AND symbol = ?", (user_id, symbol))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Delete Portfolio Error: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_user_portfolio(user_id):
+    """사용자의 전체 포트폴리오 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT symbol, avg_price, quantity FROM user_portfolio WHERE user_id = ?", (user_id,))
+        rows = cursor.fetchall()
+        return [
+            {"symbol": row[0], "price": str(row[1]), "quantity": str(row[2])}
+            for row in rows
+        ]
+    except Exception as e:
+        print(f"Get Portfolio Error: {e}")
+        return []
     finally:
         conn.close()
 
