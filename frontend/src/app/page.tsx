@@ -93,7 +93,10 @@ export default function Home() {
               </div>
               <div className="text-right">
                 <p className="text-5xl font-bold text-white mb-1">{stockData.price}</p>
-                <p className={`text-xl font-bold ${stockData.change.includes('+') ? 'text-red-400' : 'text-blue-400'}`}>{stockData.change}</p>
+                <div className={`flex items-center justify-end gap-2 text-xl font-bold ${stockData.change.includes('+') ? 'text-red-400' : 'text-blue-400'}`}>
+                  <span>{stockData.change.includes('+') ? "▲" : stockData.change.includes('-') ? "▼" : ""}</span>
+                  <span>{stockData.change}</span>
+                </div>
               </div>
             </div>
 

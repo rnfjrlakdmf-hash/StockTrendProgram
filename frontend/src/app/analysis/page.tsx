@@ -283,7 +283,12 @@ function AnalysisContent() {
                                                 <span className="text-lg">{stockInfo.change?.toLocaleString() || "0"}</span>
                                                 {/* [Fix] Prevent (undefined%) display */}
                                                 <span className="text-sm">
-                                                    {`(${stockInfo.change_rate === undefined || stockInfo.change_rate === null ? "0.00" : (parseFloat(String(stockInfo.change_rate)) > 0 ? "+" : "") + stockInfo.change_rate}%)`}
+                                                    {(() => {
+                                                        const rate = parseFloat(String(stockInfo.change_rate || "0"));
+                                                        const sign = rate > 0 ? "▲" : rate < 0 ? "▼" : "";
+                                                        const plus = rate > 0 ? "+" : "";
+                                                        return `${sign} ${plus}${stockInfo.change_rate || "0.00"}%`;
+                                                    })()}
                                                 </span>
                                             </div>
                                         </div>
@@ -741,7 +746,15 @@ function AnalysisContent() {
                                                                 const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
                                                                 return (
                                                                     <td key={s.symbol} className={`py-3 px-2 text-center font-mono ${isBest ? "text-green-400 font-black" : "text-gray-300"}`}>
-                                                                        <span>{val ?? "N/A"}</span>
+                                                                        {(() => {
+                                                                            if (metric.key === "change_3m" || metric.key === "revenue_growth" || metric.key === "roe" || metric.key === "operating_margin") {
+                                                                                const nVal = parseFloat(String(val || "0"));
+                                                                                const color = nVal > 0 ? "text-red-400" : nVal < 0 ? "text-blue-400" : "text-gray-300";
+                                                                                const sign = nVal > 0 ? "▲" : nVal < 0 ? "▼" : "";
+                                                                                return <span className={`${color} font-bold`}>{sign} {val ?? "N/A"}</span>;
+                                                                            }
+                                                                            return <span>{val ?? "N/A"}</span>;
+                                                                        })()}
                                                                         {isBest ? <span className="ml-1 text-[8px]">👑</span> : null}
                                                                     </td>
                                                                 );
