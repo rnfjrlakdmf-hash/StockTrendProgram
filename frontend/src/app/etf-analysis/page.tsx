@@ -43,6 +43,20 @@ function EtfAnalysisContent() {
         return isUs ? `$${cleanVal}` : `${cleanVal}원`;
     };
 
+    const formatToKoreanDate = (dateStr: string) => {
+        if (!dateStr || dateStr === 'N/A') return 'N/A';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}년 ${mm}월 ${dd}일`;
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     const formatRichAUM = (val: string) => {
         if (!val || val === 'N/A') return 'N/A';
         // Case: "177471억원"
@@ -255,7 +269,7 @@ function EtfAnalysisContent() {
                                     </div>
                                     <p className="text-lg font-bold text-gray-300">
                                         {etfData.basic_info?.launch_date && etfData.basic_info.launch_date !== "N/A" 
-                                            ? etfData.basic_info.launch_date 
+                                            ? formatToKoreanDate(etfData.basic_info.launch_date) 
                                             : "상당히 높음"}
                                     </p>
                                 </div>
@@ -442,14 +456,25 @@ function EtfAnalysisContent() {
                                                             style: { colors: '#9ca3af' },
                                                             datetimeFormatter: {
                                                                 year: 'yyyy년',
-                                                                month: 'MM월',
-                                                                day: 'dd일'
+                                                                month: 'yyyy.MM',
+                                                                day: 'MM.dd'
                                                             }
                                                         }, 
                                                         axisBorder: { show: false }, 
                                                         axisTicks: { show: false } 
                                                     },
-                                                    yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#9ca3af' }, formatter: (val: number) => val.toLocaleString() + '원' } },
+                                                    yaxis: { 
+                                                        tooltip: { enabled: true }, 
+                                                        labels: { 
+                                                            style: { colors: '#9ca3af' }, 
+                                                            formatter: (val: number) => isUs ? `$${val.toLocaleString()}` : `${val.toLocaleString()}원` 
+                                                        } 
+                                                    },
+                                                    tooltip: {
+                                                        x: {
+                                                            format: 'yyyy년 MM월 dd일'
+                                                        }
+                                                    },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
                                                     theme: { mode: 'dark' },
                                                     legend: { show: true, position: 'top', horizontalAlign: 'left' }
