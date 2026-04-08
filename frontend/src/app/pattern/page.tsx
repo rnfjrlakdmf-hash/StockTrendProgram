@@ -290,13 +290,12 @@ export default function PatternPage() {
             shared: true,
             x: { format: ['1m','5m','30m','60m'].includes(candleInterval) ? 'yyyy년 MM월 dd일 HH:mm' : 'yyyy년 MM월 dd일' },
             y: { formatter: (val: number) => Math.round(val || 0).toLocaleString() },
-            custom: chartType === 'candle' ? function({ seriesIndex, dataPointIndex, w }: any) {
-                const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
-                const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
-                const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex];
-                const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex];
-                
-                const rawDate = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+            custom: function({ seriesIndex, dataPointIndex, w }: any) {
+                const history = result?.history || [];
+                const item = history[dataPointIndex];
+                if (!item) return "";
+
+                const rawDate = new Date(item.date);
                 const yyyy = rawDate.getFullYear();
                 const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
                 const dd = String(rawDate.getDate()).padStart(2, '0');
@@ -304,22 +303,48 @@ export default function PatternPage() {
                 const mins = String(rawDate.getMinutes()).padStart(2, '0');
 
                 const isIntraday = ['1m','5m','30m','60m'].includes(candleInterval);
-                const d = isIntraday 
+                const dateHeader = isIntraday 
                     ? `${yyyy}. ${mm}. ${dd}. ${hh}:${mins}`
                     : `${yyyy}. ${mm}. ${dd}.`;
 
+                const ma5 = movingAverages.ma5[dataPointIndex];
+                const ma20 = movingAverages.ma20[dataPointIndex];
+                const ma60 = movingAverages.ma60[dataPointIndex];
+                const ma120 = movingAverages.ma120[dataPointIndex];
+
+                const volumeStr = item.volume?.toLocaleString() || "0";
+                
+                let priceSection = "";
+                if (chartType === 'candle') {
+                    priceSection = `
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${Math.round(item.open || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${Math.round(item.high || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${Math.round(item.low || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-10 justify-between mb-2 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${Math.round(item.close || 0).toLocaleString()}</span></div>
+                    `;
+                } else {
+                    priceSection = `
+                        <div class="flex gap-10 justify-between mb-2 text-sm font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-emerald-400">${Math.round(item.close || 0).toLocaleString()}</span></div>
+                    `;
+                }
+
                 return `
-                    <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 p-3 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] text-white whitespace-nowrap z-50 pointer-events-none">
-                        <div class="text-sm font-black text-emerald-400 border-b border-gray-700/50 pb-2 mb-2">
-                            ${d}
+                    <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 p-3 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.6)] text-white whitespace-nowrap z-50 pointer-events-none min-w-[200px]">
+                        <div class="text-[11px] font-black text-gray-400 border-b border-gray-700/50 pb-2 mb-2 tracking-tighter">
+                            📅 ${dateHeader}
                         </div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${Math.round(o || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${Math.round(h || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mb-1.5 text-xs"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${Math.round(l || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-8 justify-between mt-2 pt-2 border-t border-gray-700/50 text-sm"><span class="text-gray-400">종가</span> <span class="font-mono font-black text-white">${Math.round(c || 0).toLocaleString()}</span></div>
+                        ${priceSection}
+                        <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
+                        
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
+                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">MA5</span> <span class="font-mono text-gray-300">${ma5 ? Math.round(ma5).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">MA20</span> <span class="font-mono text-gray-300">${ma20 ? Math.round(ma20).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">MA60</span> <span class="font-mono text-gray-300">${ma60 ? Math.round(ma60).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">MA120</span> <span class="font-mono text-gray-300">${ma120 ? Math.round(ma120).toLocaleString() : '-'}</span></div>
+                        </div>
                     </div>
                 `;
-            } : undefined
+            }
         },
         annotations: {
             points: [
