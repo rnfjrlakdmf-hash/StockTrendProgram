@@ -2487,17 +2487,23 @@ def read_closing_summary():
 @app.on_event("startup")
 def startup_event():
     """서버 시작 시 백그라운드 작업 실행"""
-    def run_scheduler():
+    # 1. 기존 가격 알림 체크 스케줄러 (30초 주기)
+    def run_legacy_scheduler():
         while True:
             try:
-                # 30초마다 알림 체크
                 check_alerts()
             except Exception as e:
-                print(f"Scheduler Error: {e}")
+                print(f"Legacy Scheduler Error: {e}")
             time.sleep(30)
 
-    thread = threading.Thread(target=run_scheduler, daemon=True)
-    thread.start()
+    # 2. 신규 시장별 마감 알림 스케줄러 (시간 기반)
+    try:
+        from scheduler_service import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        print(f"Smart Scheduler Import Error: {e}")
+
+    threading.Thread(target=run_legacy_scheduler, daemon=True).start()
 
 # ============================================================
 # WebSocket Real-time Price Updates
