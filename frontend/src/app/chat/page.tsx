@@ -7,6 +7,7 @@ import { API_BASE_URL } from "@/lib/config";
 import Typewriter from "@/components/Typewriter";
 import ProModal from "@/components/ProModal";
 import AdRewardModal from "@/components/AdRewardModal";
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
@@ -202,6 +203,7 @@ export default function ChatPage() {
 
                 {/* Chat Area */}
                 <div className="flex-1 bg-black/40 border border-white/20 rounded-3xl p-4 md:p-6 mb-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/10" ref={scrollRef}>
+                    <AIDisclaimer isCompact={true} className="mt-0 mb-6 bg-purple-500/5 border-purple-500/20" />
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`flex max-w-[80%] md:max-w-[70%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} gap-3`}>

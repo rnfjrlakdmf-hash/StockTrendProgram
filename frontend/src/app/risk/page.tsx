@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
 import { ShieldAlert, AlertOctagon, TrendingDown, Bell, Loader2 } from "lucide-react";
+import AIDisclaimer from "@/components/AIDisclaimer";
 import { API_BASE_URL } from "@/lib/config";
 
 interface AlertItem {
@@ -155,6 +156,7 @@ export default function RiskPage() {
                                 <span className="text-green-400">포트폴리오가 매우 안정적입니다.</span>
                             )}
                         </div>
+                        <AIDisclaimer isCompact={true} className="mt-8" />
                     </div>
                 </div>
 

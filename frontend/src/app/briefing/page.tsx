@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { BookOpen, Globe, TrendingUp, Loader2, ExternalLink } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Typewriter from "@/components/Typewriter";
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 interface BriefingData {
     title: string;
@@ -75,6 +76,7 @@ export default function BriefingPage() {
                 <div className="flex-1 flex items-center justify-center">
                     <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
                 </div>
+                <AIDisclaimer className="opacity-80" />
             </div>
         );
     }

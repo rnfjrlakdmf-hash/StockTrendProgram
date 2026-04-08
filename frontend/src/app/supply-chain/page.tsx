@@ -3,23 +3,23 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
-import { Search, Network, Loader2, ArrowRight } from "lucide-react";
+import { Search, Network, Loader2, ArrowRight, X, ExternalLink, Activity } from "lucide-react";
 import AdRewardModal from "@/components/AdRewardModal";
 
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
 export default function SupplyChainPage() {
-    const [scenarioInput, setScenarioInput] = useState("");
-    const [scenarioTarget, setScenarioTarget] = useState(""); // New state for target company
-    const [scenarioData, setScenarioData] = useState<any>(null);
-    const [scenarioLoading, setScenarioLoading] = useState(false);
-
     // [Restored] State for Supply Chain Map
     const [searchInput, setSearchInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<any>(null);
     const [showAdModal, setShowAdModal] = useState(false);
     const [hasPaid, setHasPaid] = useState(false);
+    
+    // [New] Node Detail Modal State
+    const [selectedNode, setSelectedNode] = useState<any>(null);
+    const [nodeDetail, setNodeDetail] = useState<any>(null);
+    const [nodeLoading, setNodeLoading] = useState(false);
 
     const handleSearch = async () => {
         if (!searchInput) return;
@@ -47,42 +47,27 @@ export default function SupplyChainPage() {
         }
     };
 
-    const handleScenarioSearch = async () => {
-        if (!scenarioInput) return;
-
-        // Pro check for Scenario too? Let's keep it free for now or same logic
-        const isPro = localStorage.getItem("isPro") === "true";
-        if (!isPro && !isFreeModeEnabled() && !hasPaid) {
-            setShowAdModal(true);
-            return;
-        }
-
-        setScenarioLoading(true);
-        setScenarioData(null);
-        // setData(null); // Do not clear main map when simulating scenario
-        try {
-            let url = `${API_BASE_URL}/api/supply-chain/scenario/${encodeURIComponent(scenarioInput)}`;
-            // Use specific scenarioTarget instead of searchInput
-            if (scenarioTarget) {
-                url += `?symbol=${encodeURIComponent(scenarioTarget)}`;
-            }
-            const res = await fetch(url);
-            const json = await res.json();
-            if (json.status === "success" && json.data) {
-                setScenarioData(json.data);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setScenarioLoading(false);
-        }
-    };
-
     const handleAdReward = () => {
         setHasPaid(true);
         setShowAdModal(false);
         if (searchInput) setTimeout(handleSearch, 100);
-        else if (scenarioInput) setTimeout(handleScenarioSearch, 100);
+    };
+
+    const handleNodeClick = async (node: any) => {
+        setSelectedNode(node);
+        setNodeLoading(true);
+        setNodeDetail(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/supply-chain/detail/${encodeURIComponent(node.ticker || node.id)}?name=${encodeURIComponent(node.label)}`);
+            const json = await res.json();
+            if (json.status === "success") {
+                setNodeDetail(json.data);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setNodeLoading(false);
+        }
     };
 
     return (
@@ -98,74 +83,34 @@ export default function SupplyChainPage() {
 
             <div className="p-6 max-w-7xl mx-auto space-y-8">
 
-                {/* Search Section (Dual Mode) */}
-                <div className="grid md:grid-cols-2 gap-6">
-                    {/* Standard Supply Chain Search */}
+                {/* Search Section */}
+                <div className="max-w-2xl mx-auto relative">
+                    <label className="block text-sm text-gray-400 mb-2 ml-1">🏢 기업 공급망 분석</label>
                     <div className="relative">
-                        <label className="block text-sm text-gray-400 mb-2 ml-1">🏢 기업 공급망 분석</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="티커 입력 (예: TSLA, AAPL)..."
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                            />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-                            <button
-                                onClick={handleSearch}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors"
-                            >
-                                Map It
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Butterfly Effect Search */}
-                    <div className="relative">
-                        <label className="block text-sm text-gray-400 mb-2 ml-1">🌪️ 나비효과 시뮬레이터 (What If?)</label>
-                        <div className="flex gap-2">
-                            <div className="relative flex-grow">
-                                <input
-                                    type="text"
-                                    value={scenarioInput}
-                                    onChange={(e) => setScenarioInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleScenarioSearch()}
-                                    placeholder="사건 입력 (예: 금리인상, 전쟁)..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
-                                />
-                                <Network className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-                            </div>
-
-                            {/* Optional Target Company Input */}
-                            <div className="relative w-1/3">
-                                <input
-                                    type="text"
-                                    value={scenarioTarget}
-                                    onChange={(e) => setScenarioTarget(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleScenarioSearch()}
-                                    placeholder="타겟 기업 (선택)..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-3 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors text-sm"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleScenarioSearch}
-                                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap"
-                            >
-                                Simulate
-                            </button>
-                        </div>
+                        <input
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="티커 입력 (예: TSLA, AAPL)..."
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                        />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                        <button
+                            onClick={handleSearch}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+                        >
+                            Map It
+                        </button>
                     </div>
                 </div>
 
                 {/* Loading State */}
-                {(loading || scenarioLoading) && (
+                {loading && (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader2 className="w-12 h-12 animate-spin mb-4 text-cyan-500" />
                         <p className="animate-pulse text-lg text-cyan-500">
-                            {loading ? "AI가 전 세계 공급망 데이터를 연결 중입니다..." : "AI가 인과관계의 나비효과를 추적 중입니다..."}
+                            AI가 전 세계 공급망 데이터를 연결 중입니다...
                         </p>
                     </div>
                 )}
@@ -262,7 +207,12 @@ export default function SupplyChainPage() {
                                                         <div className={`rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-green-300' : 'w-2 h-2'}`}></div>
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-center">
-                                                                <span className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer">{node.label}</span>
+                                                                <span 
+                                                                    onClick={() => handleNodeClick(node)}
+                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer hover:underline decoration-green-500/50 underline-offset-4"
+                                                                >
+                                                                    {node.label}
+                                                                </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
                                                                     <span className={`text-xs font-mono ml-2 ${node.change_value > 0 ? "text-red-400" : "text-blue-400"}`}>
@@ -275,6 +225,16 @@ export default function SupplyChainPage() {
                                                                 <span>{link?.value}</span>
                                                                 {isArtery && <span className="text-[10px] bg-green-900/50 px-1 rounded">High Dep.</span>}
                                                             </div>
+                                                            {/* [NEW] Themes */}
+                                                            {node.themes && (
+                                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                                    {node.themes.map((t: string, i: number) => (
+                                                                        <span key={i} className="text-[9px] bg-green-500/10 text-green-400/80 px-1.5 py-0.5 rounded-full border border-green-500/20">
+                                                                            {t}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     {/* Event Flag */}
@@ -302,10 +262,27 @@ export default function SupplyChainPage() {
                             <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-8 lg:py-0">
                                 <div className="relative">
                                     {/* Target Node */}
-                                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_60px_rgba(6,182,212,0.4)] border-4 border-white transform hover:scale-105 transition-transform cursor-pointer group z-10 relative">
-                                        <span className="text-2xl md:text-3xl font-black text-white text-center px-4 break-keep leading-tight">
+                                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative overflow-hidden">
+                                        {/* Animated Polish effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                        
+                                        <span 
+                                            onClick={() => handleNodeClick(data.nodes.find((n: any) => n.group === 'target'))}
+                                            className="text-2xl md:text-3xl font-black text-white text-center px-4 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all"
+                                        >
                                             {data.nodes.find((n: any) => n.group === 'target')?.label}
                                         </span>
+                                        
+                                        {/* [NEW] Target Themes */}
+                                        {data.nodes.find((n: any) => n.group === 'target')?.themes && (
+                                            <div className="flex flex-wrap justify-center gap-1 mt-3 px-4">
+                                                {data.nodes.find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
+                                                    <span key={i} className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-md border border-white/30 font-bold">
+                                                        {t}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                         {/* Price */}
                                         {data.nodes.find((n: any) => n.group === 'target')?.price_display && (
                                             <div className="mt-2 bg-black/40 px-3 py-1 rounded-full text-sm font-mono border border-white/20 backdrop-blur-md">
@@ -344,7 +321,12 @@ export default function SupplyChainPage() {
                                         {data.nodes.filter((n: any) => n.group === 'competitor').map((node: any) => (
                                             <div key={node.id} className="flex flex-col items-end gap-1 group relative">
                                                 <div className="flex items-center justify-end gap-3">
-                                                    <span className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base">{node.label}</span>
+                                                    <span 
+                                                        onClick={() => handleNodeClick(node)}
+                                                        className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base hover:underline decoration-red-500/50 underline-offset-4"
+                                                    >
+                                                        {node.label}
+                                                    </span>
                                                     <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
                                                 </div>
                                                 <div className="text-xs text-gray-500">{data.links.find((l: any) => l.target === node.id)?.value}</div>
@@ -355,6 +337,16 @@ export default function SupplyChainPage() {
                                                         <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                             {node.change_display}
                                                         </span>
+                                                    </div>
+                                                )}
+                                                {/* [NEW] Themes */}
+                                                {node.themes && (
+                                                    <div className="flex flex-wrap justify-end gap-1 mt-1">
+                                                        {node.themes.map((t: string, i: number) => (
+                                                            <span key={i} className="text-[9px] bg-red-500/10 text-red-400/80 px-1.5 py-0.5 rounded-full border border-red-500/20">
+                                                                {t}
+                                                            </span>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
@@ -373,7 +365,12 @@ export default function SupplyChainPage() {
                                                 <div key={node.id} className="relative group">
                                                     <div className="flex items-center justify-end gap-3">
                                                         <div className="flex-1 flex flex-col items-end">
-                                                            <span className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base">{node.label}</span>
+                                                            <span 
+                                                                onClick={() => handleNodeClick(node)}
+                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
+                                                            >
+                                                                {node.label}
+                                                            </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
                                                                 <span className={`text-xs font-mono mr-2 ${node.change_value > 0 ? "text-red-400" : "text-blue-400"}`}>
@@ -384,6 +381,16 @@ export default function SupplyChainPage() {
                                                                 {isArtery && <span className="text-[10px] bg-blue-900/50 px-1 rounded">Major Deal</span>}
                                                                 <span>{link?.value}</span>
                                                             </div>
+                                                            {/* [NEW] Themes */}
+                                                            {node.themes && (
+                                                                <div className="flex flex-wrap justify-end gap-1 mt-2">
+                                                                    {node.themes.map((t: string, i: number) => (
+                                                                        <span key={i} className="text-[9px] bg-blue-500/10 text-blue-400/80 px-1.5 py-0.5 rounded-full border border-blue-500/20">
+                                                                            {t}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className={`rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'}`}></div>
                                                     </div>
@@ -411,57 +418,111 @@ export default function SupplyChainPage() {
                     </div>
                 )}
 
-                {/* [VIEW 2] Butterfly Effect Simulator */}
-                {scenarioData && (
-                    <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 bg-black/40 border border-purple-500/30 rounded-3xl p-8 shadow-[0_0_60px_rgba(168,85,247,0.1)]">
-                        <div className="text-center mb-10">
-                            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center gap-2">
-                                🌪️ 나비효과 시뮬레이션
-                            </h2>
-                            <p className="text-gray-400 mt-2">"{scenarioInput}"(으)로 시작된 거대한 변화</p>
-                            <div className="mt-4 p-3 bg-purple-900/20 text-purple-200 rounded-xl inline-block border border-purple-500/20">
-                                {scenarioData.summary}
+                {/* [NEW] Node Detail Modal */}
+                {selectedNode && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="relative w-full max-w-2xl bg-[#0f172a] border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[90vh]">
+                            {/* Modal Header */}
+                            <div className={`p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r ${
+                                selectedNode.group === 'supplier' ? 'from-green-900/40 to-transparent' :
+                                selectedNode.group === 'customer' ? 'from-blue-900/40 to-transparent' :
+                                selectedNode.group === 'competitor' ? 'from-red-900/40 to-transparent' :
+                                'from-cyan-900/40 to-transparent'
+                            }`}>
+                                <div>
+                                    <div className="flex items-center gap-3">
+                                        <h2 className="text-2xl font-black text-white">{selectedNode.label}</h2>
+                                        <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-gray-400 font-mono">
+                                            {selectedNode.ticker || selectedNode.id}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-400 mt-1">AI 공급망 상세 분석 리포트</p>
+                                </div>
+                                <button 
+                                    onClick={() => setSelectedNode(null)}
+                                    className="p-2 hover:bg-white/5 rounded-full transition-colors group"
+                                >
+                                    <X className="w-6 h-6 text-gray-400 group-hover:text-white" />
+                                </button>
                             </div>
-                        </div>
 
-                        {/* Valid Path Visualization (Wrapped Layout) */}
-                        <div className="w-full px-4">
-                            <div className="flex flex-wrap items-center justify-center gap-4">
-                                {/* Steps */}
-                                {scenarioData.paths.map((step: any, idx: number) => (
-                                    <div key={idx} className="flex items-center gap-2">
-                                        <div className="w-40 md:w-48 bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                                            <div className="text-xl mb-2">{idx === 0 ? '🌪️' : idx % 2 === 0 ? '📉' : '📈'}</div>
-                                            <div className="font-bold text-white mb-1 text-sm break-keep leading-tight">{step.step}</div>
-                                            <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${step.impact?.includes('UP') || step.impact?.includes('Positive') ? 'bg-green-500/20 text-green-400' :
-                                                step.impact?.includes('DOWN') || step.impact?.includes('Negative') ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'
-                                                }`}>
-                                                {step.impact}
+                            {/* Modal Content */}
+                            <div className="p-6 overflow-y-auto space-y-8 flex-1 custom-scrollbar">
+                                {nodeLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                        <Loader2 className="w-10 h-10 animate-spin text-cyan-500" />
+                                        <p className="text-gray-400 animate-pulse">상세 분석 데이터를 가져오는 중...</p>
+                                    </div>
+                                ) : nodeDetail ? (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        {/* 1. Summary */}
+                                        <section>
+                                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-cyan-500" /> 전략 요약
+                                            </h3>
+                                            <p className="text-white text-lg leading-relaxed font-bold break-keep">
+                                                {nodeDetail.summary}
+                                            </p>
+                                        </section>
+
+                                        {/* 2. News Analysis */}
+                                        <section className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">최신 이슈 분석</h3>
+                                            <div className="space-y-3">
+                                                {nodeDetail.news_analysis.map((point: string, i: number) => (
+                                                    <div key={i} className="flex gap-3 text-gray-200">
+                                                        <span className="text-cyan-500 font-bold">Q{i+1}.</span>
+                                                        <p className="text-sm leading-relaxed">{point}</p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                        {/* Arrow (Hidden on last step) */}
-                                        <ArrowRight className="text-gray-600 w-5 h-5" />
-                                    </div>
-                                ))}
+                                        </section>
 
-                                {/* Final Arrow (Pulse) */}
-                                <ArrowRight className="text-purple-500 w-8 h-8 animate-pulse" />
-
-                                {/* Final Stocks */}
-                                {scenarioData.final_stocks.map((stock: any, idx: number) => (
-                                    <div key={idx} className="w-56 bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/50 p-6 rounded-2xl flex flex-col items-center text-center shadow-[0_0_30px_rgba(168,85,247,0.3)] transform hover:scale-105 transition-transform cursor-pointer">
-                                        <div className="text-xs text-purple-300 mb-1">최종 수혜주</div>
-                                        <div className="text-2xl font-black text-white mb-2">{stock.name}</div>
-                                        <div className="text-xs text-gray-300 bg-black/40 px-2 py-1 rounded mb-2">{stock.symbol}</div>
-                                        <div className="text-xs text-gray-400 leading-tight line-clamp-2">
-                                            "{stock.reason}"
+                                        {/* 3. Themes & Tip */}
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <section>
+                                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">핵심 테마</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {nodeDetail.themes.map((theme: string, i: number) => (
+                                                        <span key={i} className="bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-xl text-sm font-bold border border-cyan-500/20">
+                                                            {theme}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </section>
+                                            <section>
+                                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">전략적 데이터 인사이트</h3>
+                                                <div className="bg-slate-500/10 border border-slate-500/20 p-3 rounded-xl">
+                                                    <p className="text-slate-300 text-sm font-bold break-keep">
+                                                        🔍 {nodeDetail.analysis_point}
+                                                    </p>
+                                                </div>
+                                            </section>
                                         </div>
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="text-center py-20 text-gray-500">
+                                        데이터를 불러올 수 없습니다. 다시 시도해 주세요.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-white/5 bg-black/20 flex justify-between items-center">
+                                <div className="text-xs text-gray-500">
+                                    * AI 분석은 참고용이며 투자 판단의 책임은 본인에게 있습니다.
+                                </div>
+                                <a 
+                                    href={`/stock-analysis?symbol=${selectedNode.ticker || selectedNode.id}`}
+                                    className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm font-bold transition-colors"
+                                >
+                                    종목 상세 페이지 <ExternalLink className="w-4 h-4" />
+                                </a>
                             </div>
                         </div>
                     </div>
                 )}
+
 
             </div>
         </div>

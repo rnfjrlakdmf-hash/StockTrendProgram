@@ -10,6 +10,7 @@ import {
     Eye, EyeOff, LayoutDashboard, History, PieChart, LineChart as LineIcon,
     Coins, ArrowUpRight, AlertCircle
 } from "lucide-react";
+import AIDisclaimer from "@/components/AIDisclaimer";
 import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend
@@ -789,8 +790,8 @@ function AnalysisContent() {
                     )}
                 </div>
 
-                <p className="text-center text-[10px] text-gray-600 mt-16 font-bold tracking-tight opacity-50">
-                    * 본 정보는 투자 참고용이며, 최종 투자 판단의 책임은 본인에게 있습니다.<br />
+                <AIDisclaimer className="mt-12 opacity-60" />
+                <p className="text-center text-[10px] text-gray-700 mt-6 font-bold tracking-tight opacity-40">
                     v4.9.5 PRECISION-SYNC (Deep-Sector-Matrix)
                 </p>
             </div>

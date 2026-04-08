@@ -9,6 +9,7 @@ import {
     Calendar, DollarSign, RefreshCw, BarChart2, ShieldAlert, AlertTriangle, Info
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false }) as any;
 
@@ -37,10 +38,14 @@ function EtfAnalysisContent() {
 
     const renderCurrency = (val: string | number | undefined) => {
         if (!val || val === 'N/A' || val === '0') return val || '0';
-        const strVal = String(val).replace(/[+-]/g, '');
-        // Remove trailing '원' if backend accidentally sent it
-        const cleanVal = strVal.replace('원', '');
-        return isUs ? `$${cleanVal}` : `${cleanVal}원`;
+        const strVal = String(val).replace(/[+-]/g, '').replace(/원/g, '').replace(/,/g, '');
+        const numVal = parseFloat(strVal);
+        
+        if (isUs && etfData?.exchange_rate) {
+            const krwVal = Math.round(numVal * etfData.exchange_rate);
+            return `$${numVal.toLocaleString()} (${krwVal.toLocaleString()}원)`;
+        }
+        return isUs ? `$${numVal.toLocaleString()}` : `${numVal.toLocaleString()}원`;
     };
 
     const formatToKoreanDate = (dateStr: string) => {
@@ -59,7 +64,38 @@ function EtfAnalysisContent() {
 
     const formatRichAUM = (val: string) => {
         if (!val || val === 'N/A') return 'N/A';
-        // Case: "177471억원"
+        
+        if (isUs && etfData?.exchange_rate) {
+            // Case: "$450,231.50M" or "$450B"
+            const numStr = val.replace(/[^0-9.]/g, '');
+            let baseNum = parseFloat(numStr);
+            if (isNaN(baseNum)) return val;
+
+            let displayStr = val;
+            let krwLabel = "";
+
+            // Simple conversion for US AUM (heuristic)
+            if (val.includes('B')) {
+                // Billion USD to KRW Jo/Uk
+                const totalInUk = Math.round(baseNum * etfData.exchange_rate * 0.01); // 1B USD is ~1.35T KRW
+                const jo = Math.floor(totalInUk / 10000);
+                const uk = totalInUk % 10000;
+                krwLabel = jo > 0 ? `약 ${jo}조 ${uk.toLocaleString()}억 원` : `약 ${uk.toLocaleString()}억 원`;
+            } else if (val.includes('M')) {
+                const totalInUk = Math.round((baseNum / 1000) * etfData.exchange_rate * 0.01);
+                krwLabel = `약 ${totalInUk.toLocaleString()}억 원`;
+            } else {
+                // Direct USD
+                const totalKrw = baseNum * etfData.exchange_rate;
+                if (totalKrw >= 100000000) {
+                    const uk = Math.round(totalKrw / 100000000);
+                    krwLabel = `약 ${uk.toLocaleString()}억 원`;
+                }
+            }
+            return krwLabel ? `${val} (${krwLabel})` : val;
+        }
+
+        // KR ETF Case: "177471억원"
         const numStr = val.replace(/[^0-9]/g, '');
         if (!numStr) return val;
         const num = parseInt(numStr);
@@ -367,6 +403,7 @@ function EtfAnalysisContent() {
                                                     <div className="p-4 rounded-xl border border-dashed border-gray-700 text-gray-500 text-[11px] leading-relaxed italic">
                                                         * 해외 추종 상품 등 일부 ETF는 실시간 구성종목 노출이 제한되어 AI 전략 가이드로 대체됩니다.
                                                     </div>
+                                                    <AIDisclaimer isCompact={true} className="mt-4" />
                                                 </div>
                                             </div>
                                         )}

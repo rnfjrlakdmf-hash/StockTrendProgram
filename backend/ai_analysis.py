@@ -543,46 +543,37 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     4. **Commodities**: Identify 1-2 key raw materials (Benefit/Risk).
        - **Name**: Must be in Korean logic (e.g., "국제 유가", "구리", "리튬").
        - **Reason**: Brief context in Korean (e.g., "원자재 비용 상승", "판매가 인상 수혜").
-    5. **[New] Upcoming Events (D-Day) for ALL Nodes**: 
-       - Identify 1 pivotal upcoming event for **EACH** company (Target, Supplier, Customer, Competitor).
+    5. **[New] Themes & Risks per Node**:
+       - For EACH company (Target, Supplier, Customer, Competitor), identify 1-2 key **themes** they belong to (e.g., "#AI칩", "#2차전지", "#자율주행").
+       - These should be short, hashtag-style Korean labels.
+    6. **[New] Risk Score**:
+       - Calculate an overall 'risk_score' (0-100) for this supply chain based on dependencies, geopolitical factors, and commodity trends.
+    7. **Upcoming Events (D-Day) for ALL Nodes**: 
+       - Identify 1 pivotal upcoming event for **EACH** company.
        - e.g. "Earnings", "New Model Launch", "Litigation".
        - **Date**: Provide the specific date (YYYY-MM-DD) if known.
        - **Label**: 'd_day' (e.g. D-14, D-30) relative to {today}.
        - If exact date unknown, use "D-??" and date="Unknown".
-    6. Provide a 'Supply Chain Summary' in Korean.
-       - **Format as 3 distinct bullet points**:
-         1. **Positions**: Market dominance/role.
-         2. **Partners**: Key dependency (Supplier/Client).
-         3. **Risks/Opps**: Main risk or opportunity factor.
-       - Keep it short and impactful.
-    7. Translate node labels to sensible Korean/English (e.g., "Apple (애플)").
-    8. **CRITICAL**: Provide the Stock Ticker for each company if public.
+    8. Provide a 'Supply Chain Summary' in Korean (3 bullet points).
+    9. Translate node labels to sensible Korean/English.
+    10. **CRITICAL**: Provide the Stock Ticker for each company if public.
 
     Response Format (JSON):
     {{
         "symbol": "{symbol}",
+        "risk_score": <0-100>,
         "commodities": [
-            {{"name": "국제 유가", "type": "Risk", "ticker": "CL=F", "reason": "운송 및 제조 원가 상승 부담"}},
-            {{"name": "구리", "type": "Benefit", "ticker": "HG=F", "reason": "전선 수요 증가로 판가 전가 가능"}}
+            {{"name": "국제 유가", "type": "Risk", "ticker": "CL=F", "reason": "운송 및 제조 원가 상승 부담"}}
         ],
         "nodes": [
             {{
                 "id": "{symbol}", "group": "target", "label": "{symbol} (Kor Name)", "ticker": "{symbol}",
-                "event": {{"name": "신제품 발표 (New Product)", "d_day": "D-30", "date": "2024-06-15"}} 
-            }},
-            {{
-                "id": "TSMC", "group": "supplier", "label": "TSMC (대만)", "ticker": "TSM",
-                "event": {{"name": "실적 발표 (Earnings)", "d_day": "D-14", "date": "2024-05-30"}}
-            }},
-            {{
-                "id": "Apple", "group": "customer", "label": "Apple (미국)", "ticker": "AAPL",
-                "event": {{"name": "WWDC 2024", "d_day": "D-60", "date": "2024-07-15"}}
+                "themes": ["#AI가속기", "#HBM"],
+                "event": {{"name": "신제품 발표", "d_day": "D-30", "date": "2024-06-15"}} 
             }}
         ],
         "links": [
-            {{"source": "TSMC", "target": "{symbol}", "value": "AP Supply", "weight": 0.8, "width_type": "artery"}},
-            {{"source": "{symbol}", "target": "Apple", "value": "Camera Module", "weight": 0.9, "width_type": "artery"}},
-            {{"source": "{symbol}", "target": "AMD", "value": "Competition", "weight": 0.5, "width_type": "capillary"}}
+            {{"source": "S1", "target": "{symbol}", "value": "Supply", "weight": 0.8, "width_type": "artery"}}
         ],
         "summary": "Korean summary..."
     }}
@@ -1354,10 +1345,65 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
         
         return result
     except Exception as e:
-        print(f"Portfolio Analysis Error: {e}")
         return {
             "score": 0,
             "analysis": "분석 실패",
             "report": "오류가 발생했습니다.",
             "details": {}
+        }
+
+def analyze_node_detail(symbol: str, name: str = None) -> Dict[str, Any]:
+    """
+    공급망 맵의 특정 노드(기업) 클릭 시 상세 분석 리포트를 생성합니다.
+    최신 뉴스 해석과 기업의 핵심 테마/리스크를 요약합니다.
+    """
+    if not API_KEY:
+        return {
+            "summary": "AI 분석 연결이 필요합니다. (API 키 미설정)",
+            "news_analysis": ["뉴스 분석을 제공할 수 없습니다."],
+            "investment_tip": "안정적인 투자를 위해 기업의 재무 상태를 먼저 확인하세요.",
+            "themes": ["#데이터부족"]
+        }
+
+    # 뉴스 데이터 가져오기 (기존 로직 활용)
+    from stock_data import get_stock_info
+    stock_info = get_stock_info(symbol, skip_ai=False)
+    
+    news_titles = [n['title'] for n in stock_info.get('news', [])[:5]]
+    news_context = "\n".join(news_titles) if news_titles else "최근 관련 뉴스 없음"
+    
+    node_name = name or stock_info.get('name', symbol)
+
+    model = get_json_model()
+    
+    prompt = f"""
+    Analyze the stock '{node_name} ({symbol})' in the context of the supply chain.
+    Recent News: 
+    {news_context}
+
+    Instructions:
+    1. **Summary**: Provide a 2-sentence strategic summary of this company's current position in Korean.
+    2. **News Analysis**: Briefly interpret why the recent news headlines are significant for this company (Korean).
+    3. **Strategic Analysis Context**: Provide one neutral strategic point derived from the data for this stock (Korean).
+    4. **Themes**: Identify 3 key hashtags representing this company (e.g., #AI, #Energy).
+
+    Response Format (JSON):
+    {{
+        "summary": "...",
+        "news_analysis": ["Point 1", "Point 2"],
+        "analysis_point": "...",
+        "themes": ["#Theme1", "#Theme2", "#Theme3"]
+    }}
+    """
+    
+    try:
+        response = generate_with_retry(prompt, json_mode=True)
+        return json.loads(response.text)
+    except Exception as e:
+        print(f"Node Detail Analysis Error: {e}")
+        return {
+            "summary": f"{node_name}에 대한 AI 분석 중 오류가 발생했습니다.",
+            "news_analysis": ["현재 뉴스 데이터를 분석할 수 없습니다."],
+            "investment_tip": "재시도하거나 다른 기업을 조회해 보세요.",
+            "themes": ["#오류"]
         }

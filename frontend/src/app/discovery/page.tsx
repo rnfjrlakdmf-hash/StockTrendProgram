@@ -11,6 +11,7 @@ import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 import StoryChart from "@/components/StoryChart";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
@@ -1114,9 +1115,7 @@ function DiscoveryContent() {
                                                 ) : (
                                                     <span>{stock.summary || "분석 내용이 없습니다."}</span>
                                                 )}
-                                                <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-[11px] text-gray-400 leading-relaxed">
-                                                    ⚠️ **주의**: 본 분석 결과는 객관적 재무 지표와 공시 정보를 바탕으로 알고리즘이 생성한 '참고용' 요약입니다. 어떠한 경우에도 투자 권유나 수익 보장을 의미하지 않으며, 모든 투자 결정에 대한 책임은 투자자 본인에게 있습니다.
-                                                </div>
+                                                <AIDisclaimer isCompact={true} className="mt-4" />
                                             </div>
 
                                             {/* [New] Healthcare Analysis Integration - Hidden by user request 
@@ -1151,12 +1150,7 @@ function DiscoveryContent() {
 
 
 
-                                            <div className="mt-6 p-4 bg-blue-900/20 rounded-xl border border-blue-500/30">
-                                                <p className="text-blue-200 text-sm flex items-center gap-2">
-                                                    <ShieldCheck className="h-4 w-4" />
-                                                    <strong>Guide:</strong> 이 분석은 AI가 실시간 데이터를 바탕으로 생성했으며, 투자 참고용입니다.
-                                                </p>
-                                            </div>
+                                            <AIDisclaimer className="mt-6" />
                                         </>
                                     ) : activeTab === 'news' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">

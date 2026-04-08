@@ -12,6 +12,7 @@ import {
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
 } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
+import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
 
 // ============ Shared Types ============
@@ -62,9 +63,7 @@ function SignalsPageContent() {
                 {activeTab === "calendar" && <CalendarTab router={router} />}
                 {activeTab === "vote" && <VoteTab />}
 
-                <p className="text-center text-[10px] text-gray-600 mt-4">
-                    * 본 정보는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다.
-                </p>
+                <AIDisclaimer className="mt-8 opacity-80" />
             </div>
         </div>
     );

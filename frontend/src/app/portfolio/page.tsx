@@ -11,6 +11,7 @@ import { API_BASE_URL } from "@/lib/config";
 import AdRewardModal from "@/components/AdRewardModal";
 import { checkReward } from "@/lib/reward";
 import CleanStockList from "@/components/CleanStockList";
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
@@ -319,6 +320,7 @@ export default function PortfolioPage() {
                                         <p className="text-sm text-gray-300 bg-black/20 p-3 rounded-xl border border-white/5 leading-relaxed">
                                             "{analysisResult?.prescription || "결과를 기다려주세요."}"
                                         </p>
+                                        <AIDisclaimer isCompact={true} className="mt-4 bg-transparent border-0 p-0" />
                                     </div>
                                 </div>
 
@@ -488,9 +490,7 @@ export default function PortfolioPage() {
                                     외부 계좌 API 연결 (선택)
                                 </button>
                             </div>
-                            <p className="mt-6 text-xs opacity-40 max-w-xs text-center">
-                                * 포트폴리오 분석 시스템은 사용자의 자산 현황을 기술적으로 분석하는 도구이며, 어떠한 투자 권유나 종목 추천을 수행하지 않습니다.
-                            </p>
+                            <AIDisclaimer isCompact={true} className="mt-6 max-w-xs" />
                         </div>
                     )}
                 </div>

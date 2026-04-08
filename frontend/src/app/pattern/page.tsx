@@ -13,6 +13,7 @@ import dynamic from "next/dynamic";
 
 // ApexCharts is heavy and needs window, so load it dynamically
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import AIDisclaimer from "@/components/AIDisclaimer";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 import { isPremiumUnlocked } from "@/lib/adminMode";
@@ -702,6 +703,7 @@ export default function PatternPage() {
                                 </div>
                             </div>
                         )}
+                        <AIDisclaimer className="mt-8" />
                     </div>
                 )}
             </div>
