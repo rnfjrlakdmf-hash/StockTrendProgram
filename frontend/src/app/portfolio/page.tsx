@@ -6,7 +6,7 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { Star, Plus, Trash2, Zap, Loader2, PieChart as PieChartIcon, Calendar, Activity, Info, ChevronRight, X, Link, Key } from "lucide-react";
+import { Star, Plus, Trash2, Zap, Loader2, PieChart as PieChartIcon, Calendar, Activity, Info, ChevronRight, X, Link, Key, AlertTriangle } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import AdRewardModal from "@/components/AdRewardModal";
 import { checkReward } from "@/lib/reward";
@@ -19,81 +19,44 @@ const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#dc2626', '#8b5cf6', '#ec4899'
 
 export default function PortfolioPage() {
     const [inputSymbol, setInputSymbol] = useState("");
-    const [symbols, setSymbols] = useState<string[]>([]);
+    const [holdings, setHoldings] = useState<{ symbol: string, price: string, quantity: string }[]>([]);
+    const [inputPrice, setInputPrice] = useState("");
+    const [inputQuantity, setInputQuantity] = useState("");
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [analysisResult, setAnalysisResult] = useState<any>(null);
 
-    // KIS State
-    const [showKisModal, setShowKisModal] = useState(false);
-    const [kisKeys, setKisKeys] = useState({ appKey: "", appSecret: "", account: "" });
-    const [isKisConnected, setIsKisConnected] = useState(false);
-
-    const addSymbol = () => {
-        if (!inputSymbol) return;
-        const sym = inputSymbol.toUpperCase().trim();
-        if (!symbols.includes(sym)) {
-            setSymbols([...symbols, sym]);
+    const addHolding = () => {
+        if (!inputSymbol || !inputPrice || !inputQuantity) {
+            alert("종목, 단가, 수량을 모두 입력해주세요.");
+            return;
         }
+        const sym = inputSymbol.toUpperCase().trim();
+        const newHolding = { symbol: sym, price: inputPrice, quantity: inputQuantity };
+        setHoldings([...holdings, newHolding]);
+        
         setInputSymbol("");
+        setInputPrice("");
+        setInputQuantity("");
     };
 
-    const removeSymbol = (sym: string) => {
-        setSymbols(symbols.filter(s => s !== sym));
-        setIsKisConnected(false); // Manually modified so not fully synced
+    const removeHolding = (sym: string) => {
+        setHoldings(holdings.filter(h => h.symbol !== sym));
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') addSymbol();
+        if (e.key === 'Enter') addHolding();
     };
 
     const [showAdModal, setShowAdModal] = useState(false);
     const [hasPaid, setHasPaid] = useState(false);
 
-    const handleKisConnect = async () => {
-        if (!kisKeys.appKey || !kisKeys.appSecret || !kisKeys.account) {
-            setError("API Key, Secret, 계좌번호를 모두 입력해주세요."); // Reuse error state for modal?
-            alert("정보를 모두 입력해주세요.");
-            return;
-        }
+    // KIS/Account connection logic removed for compliance (v5.1.0)
 
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/kis/balance`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    app_key: kisKeys.appKey,
-                    app_secret: kisKeys.appSecret,
-                    account: kisKeys.account
-                })
-            });
-            const json = await res.json();
-
-            if (json.status === "success" && json.data?.holdings) {
-                const holdings = json.data.holdings;
-                const formattedSymbols = holdings.map((h: any) => h.symbol);
-
-                setSymbols(formattedSymbols);
-                setIsKisConnected(true);
-                setShowKisModal(false);
-
-                // Auto-run analysis
-                setTimeout(() => runOptimization(formattedSymbols), 500);
-            } else {
-                alert("계좌 연결 실패: " + (json.message || "Unknown error"));
-            }
-        } catch (e) {
-            alert("연결 중 오류가 발생했습니다.");
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const runOptimization = async (overrideSymbols?: string[]) => {
-        const targetSymbols = overrideSymbols || symbols;
+    const runOptimization = async (overrideHoldings?: any[]) => {
+        const targetHoldings = overrideHoldings || holdings;
+        const targetSymbols = targetHoldings.map(h => h.symbol);
 
         if (targetSymbols.length < 1) {
             setError("최소 1개 이상의 종목이 필요합니다.");
@@ -163,10 +126,13 @@ export default function PortfolioPage() {
             });
             const json = await res.json();
             if (json.status === "success" && json.data.length > 0) {
-                const favSymbols = json.data.map((s: any) => s.symbol);
-                setSymbols(favSymbols);
-                alert(`${favSymbols.length}개의 관심종목을 포트폴리오 분석기로 가져왔습니다.`);
-                runOptimization(favSymbols);
+                const favHoldings = json.data.map((s: any) => ({
+                    symbol: s.symbol,
+                    price: "0",
+                    quantity: "0"
+                }));
+                setHoldings(favHoldings);
+                alert(`${favHoldings.length}개의 관심종목을 수동 포트폴리오로 가져왔습니다. 단가와 수량을 입력해 주세요.`);
             } else {
                 alert("가져올 관심종목이 없습니다. 먼저 관심종목을 등록해 주세요.");
             }
@@ -186,49 +152,14 @@ export default function PortfolioPage() {
 
     return (
         <div className="h-screen flex flex-col bg-[#121212] text-white overflow-hidden relative">
-            {/* Modal for KIS */}
-            {showKisModal && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold flex items-center gap-2">
-                                <Key className="w-5 h-5 text-yellow-400" /> KIS 자산 연동
-                            </h3>
-                            <button onClick={() => setShowKisModal(false)} className="text-gray-400 hover:text-white">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="space-y-3 mb-6">
-                            <input
-                                type="text" placeholder="App Key"
-                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-yellow-400 outline-none"
-                                value={kisKeys.appKey}
-                                onChange={e => setKisKeys({ ...kisKeys, appKey: e.target.value })}
-                            />
-                            <input
-                                type="password" placeholder="App Secret"
-                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-yellow-400 outline-none"
-                                value={kisKeys.appSecret}
-                                onChange={e => setKisKeys({ ...kisKeys, appSecret: e.target.value })}
-                            />
-                            <input
-                                type="text" placeholder="계좌번호 (8자리, 하이픈 제외)"
-                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-yellow-400 outline-none"
-                                value={kisKeys.account}
-                                onChange={e => setKisKeys({ ...kisKeys, account: e.target.value })}
-                            />
-                            <p className="text-xs text-gray-400 pt-1">* 정보는 서버에 저장되지 않고 일회성으로 사용됩니다.</p>
-                        </div>
-                        <button
-                            onClick={handleKisConnect}
-                            disabled={loading}
-                            className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl disabled:opacity-50"
-                        >
-                            {loading ? "연결 중..." : "내 계좌 분석하기"}
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Legal Disclaimer Banner (Critical for Compliance) */}
+            <div className="bg-red-900/30 border-b border-red-500/30 px-4 py-2 flex items-center gap-3 text-[11px] text-red-200">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <p>
+                    <strong>법적 고지:</strong> 본 포트폴리오 분석 시스템은 사용자가 직접 입력한 데이터를 바탕으로 한 <strong>통계적 정보 제공</strong>만을 목적으로 합니다. 
+                    시스템은 특정 주식의 매수/매도를 권유하지 않으며, 투자자문업 또는 일임업에 해당하지 않는 범용 도구입니다. 모든 투자 판단은 본인의 책임입니다.
+                </p>
+            </div>
 
             {/* Compact Header */}
             <div className="shrink-0">
@@ -256,44 +187,56 @@ export default function PortfolioPage() {
                                 <Star className="w-4 h-4" />
                                 관심종목 불러오기
                             </button>
-                            <button
-                                onClick={() => setShowKisModal(true)}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border transition-all ${isKisConnected ? 'bg-green-900/20 text-green-400 border-green-500/50' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10'}`}
-                            >
-                                <Link className="w-4 h-4" />
-                                {isKisConnected ? "API 연동됨" : "개인 계좌 연동 (외부)"}
-                            </button>
                         </div>
 
-                        <div className="flex-1 w-full flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
-                            {symbols.map(sym => (
-                                <div key={sym} className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full text-sm border border-white/10 shrink-0">
-                                    <span className="font-mono font-bold">{sym}</span>
-                                    <button onClick={() => removeSymbol(sym)} className="text-gray-400 hover:text-red-400">
-                                        <X className="w-3 h-3" />
+                        <div className="flex-1 w-full flex items-center gap-4 overflow-x-auto custom-scrollbar pb-1 md:pb-0 font-bold">
+                            {holdings.map(h => (
+                                <div key={h.symbol} className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl text-xs border border-white/10 shrink-0">
+                                    <div className="flex flex-col">
+                                        <span className="font-mono font-black text-blue-400">{h.symbol}</span>
+                                        <span className="text-[10px] text-gray-500">{Number(h.price).toLocaleString()}원 / {h.quantity}주</span>
+                                    </div>
+                                    <button onClick={() => removeHolding(h.symbol)} className="text-gray-400 hover:text-red-400 ml-1">
+                                        <X className="w-4 h-4" />
                                     </button>
                                 </div>
                             ))}
-                            <div className="flex items-center gap-2 min-w-[200px]">
+                            <div className="grid grid-cols-3 gap-2 min-w-[400px]">
                                 <input
                                     type="text"
-                                    placeholder="종목 추가 (ex: 삼성전자)"
-                                    className="w-full bg-transparent border-b border-white/20 px-2 py-1 outline-none focus:border-blue-500 uppercase font-mono text-sm"
+                                    placeholder="종목 (ex: 005930)"
+                                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500 uppercase font-mono text-xs"
                                     value={inputSymbol}
                                     onChange={(e) => setInputSymbol(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                 />
-                                <button onClick={addSymbol} className="bg-white/10 p-1.5 rounded-lg hover:bg-white/20">
-                                    <Plus className="w-4 h-4" />
-                                </button>
+                                <input
+                                    type="number"
+                                    placeholder="평균단가"
+                                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500 text-xs"
+                                    value={inputPrice}
+                                    onChange={(e) => setInputPrice(e.target.value)}
+                                />
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="number"
+                                        placeholder="수량"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500 text-xs"
+                                        value={inputQuantity}
+                                        onChange={(e) => setInputQuantity(e.target.value)}
+                                    />
+                                    <button onClick={addHolding} className="bg-blue-600 p-1.5 rounded-lg hover:bg-blue-500 shrink-0">
+                                        <Plus className="w-4 h-4 text-white" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <button
                             onClick={() => runOptimization()}
-                            disabled={loading || symbols.length < 1}
+                            disabled={loading || holdings.length < 1}
                             className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap transition-all"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> 분석 실행</>}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> 포트폴리오 진단</>}
                         </button>
                     </div>
 
@@ -482,12 +425,6 @@ export default function PortfolioPage() {
                                     className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2"
                                 >
                                     내 관심종목 분석하기 ⭐
-                                </button>
-                                <button
-                                    onClick={() => setShowKisModal(true)}
-                                    className="bg-white/10 hover:bg-white/20 text-gray-400 px-8 py-2 rounded-full font-bold text-sm"
-                                >
-                                    외부 계좌 API 연결 (선택)
                                 </button>
                             </div>
                             <AIDisclaimer isCompact={true} className="mt-6 max-w-xs" />
