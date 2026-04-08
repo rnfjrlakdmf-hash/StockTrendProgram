@@ -1987,7 +1987,8 @@ def get_market_insights():
             "status": "success",
             "data": {
                 "search_top": search_top,
-                "value_top": val_kospi + val_kosdaq # ?⑹퀜??20媛?            }
+                "value_top": val_kospi + val_kosdaq  # 합쳐서 20개
+            }
         }
 
     except Exception as e:
