@@ -5,8 +5,8 @@ import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { Search, Network, Loader2, ArrowRight, X, ExternalLink, Activity } from "lucide-react";
 import AdRewardModal from "@/components/AdRewardModal";
-
 import { isFreeModeEnabled } from "@/lib/adminMode";
+import { checkReward } from "@/lib/reward";
 
 export default function SupplyChainPage() {
     // [Restored] State for Supply Chain Map
@@ -24,9 +24,9 @@ export default function SupplyChainPage() {
     const handleSearch = async () => {
         if (!searchInput) return;
 
-        // Check for Pro Mode
+        // Check for Pro Mode or Active Reward
         const isPro = localStorage.getItem("isPro") === "true";
-        if (!isPro && !isFreeModeEnabled() && !hasPaid) {
+        if (!isPro && !isFreeModeEnabled() && !checkReward()) {
             setShowAdModal(true);
             return;
         }
@@ -164,7 +164,7 @@ export default function SupplyChainPage() {
                                 <span className="text-xl">📊</span> Supply Chain Insight
                             </h3>
                             <ul className="space-y-2 text-cyan-100/90 text-sm leading-relaxed">
-                                {data.summary.split('\n').map((line: string, i: number) => {
+                                {String(data.summary || "").split('\n').map((line: string, i: number) => {
                                     const cleanLine = line.replace(/^[\-\*•\d\.]+\s*/, '').trim();
                                     if (!cleanLine) return null;
                                     return (
@@ -461,7 +461,7 @@ export default function SupplyChainPage() {
                                                 <Activity className="w-4 h-4 text-cyan-500" /> 전략 요약
                                             </h3>
                                             <p className="text-white text-lg leading-relaxed font-bold break-keep">
-                                                {nodeDetail.summary}
+                                                {typeof nodeDetail.summary === 'string' ? nodeDetail.summary : JSON.stringify(nodeDetail.summary)}
                                             </p>
                                         </section>
 

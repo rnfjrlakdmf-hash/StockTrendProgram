@@ -623,6 +623,13 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                         comm["change_value"] = change
                 except: pass
 
+        # [Fix] Ensure summary is always a string to prevent frontend split errors
+        summary_raw = data.get("summary", "")
+        if isinstance(summary_raw, list):
+            data["summary"] = "\n".join(str(s) for s in summary_raw)
+        elif not isinstance(summary_raw, str):
+            data["summary"] = str(summary_raw)
+
         return data
 
     except Exception as e:
