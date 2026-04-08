@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
@@ -91,6 +91,7 @@ app.add_middleware(
         "http://127.0.0.1:3001",
         "https://stock-trend-program.vercel.app",
         "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
+        "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
         "https://stocktrendprogram-production.up.railway.app"
     ],
     allow_credentials=True,
@@ -1990,6 +1991,11 @@ def get_market_insights():
         }
 
     except Exception as e:
+        print(f"Market insights error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+# ============================================================
 # Risk Alert System (지뢰 탐지기)
 # ============================================================
 
