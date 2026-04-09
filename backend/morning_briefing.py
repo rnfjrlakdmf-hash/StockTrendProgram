@@ -33,6 +33,13 @@ async def generate_user_morning_briefing(user_id: str):
     log_debug(f"Found watchlist for '{user_id}': {watchlist}")
     print(f"[DEBUG] Found watchlist for '{user_id}': {watchlist}")
     
+    # [Fix] 만약 로그인 사용자의 관심종목이 없고 guest 데이터가 있다면 안내 또는 로직 점검
+    if not watchlist and user_id != "guest":
+        guest_watchlist = get_watchlist("guest")
+        if guest_watchlist:
+            log_debug(f"User '{user_id}' has empty watchlist, but 'guest' has items. Migration may be needed.")
+            print(f"[DEBUG] User '{user_id}' has empty watchlist, but 'guest' has items. Migration may be needed.")
+    
     watchlist_details = []
     
     target_symbols = watchlist[:5] if watchlist else []

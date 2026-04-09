@@ -115,6 +115,33 @@ def health_check():
 # Register Auth Router
 app.include_router(auth_router, prefix="/api")
 
+# [ADD] Market Status Endpoint (Resolved 404)
+@app.get("/api/market/status")
+async def market_status():
+    """실시간 시장 지수 및 환율 데이터 반환"""
+    try:
+        from stock_data import get_market_status
+        data = get_market_status()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        print(f"[Market Status API] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+# [ADD] Alerts GET Endpoint (Resolved 405)
+@app.get("/api/alerts")
+async def fetch_alerts(x_user_id: Optional[str] = Header(None)):
+    """특정 사용자의 가격 알림 목록 조회"""
+    try:
+        uid = x_user_id or "guest"
+        from alerts import get_alerts
+        all_alerts = get_alerts()
+        # 필터링: 해당 사용자의 알림만 반환
+        user_alerts = [a for a in all_alerts if a.get("user_id") == uid]
+        return {"status": "success", "data": user_alerts}
+    except Exception as e:
+        print(f"[Alerts List API] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.post("/api/admin/clear-cache")
 def clear_cache():
     """[Admin] Force clear all server-side cache"""
