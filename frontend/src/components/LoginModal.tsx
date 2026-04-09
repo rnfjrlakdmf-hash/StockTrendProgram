@@ -94,33 +94,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <p className="text-red-400 text-xs mt-4">{errorMsg}</p>
                 )}
 
-                <div className="mt-8 pt-6 border-t border-white/5 text-left">
-                    <h3 className="text-white text-xs font-bold mb-3 flex items-center gap-2">
-                        <span className="w-1 h-3 bg-blue-500 rounded-full"></span>
-                        구글 로그인 설정 확인 (복사용)
-                    </h3>
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">승인된 리디렉션 URI</p>
-                            <div className="flex items-center gap-2">
-                                <code className="flex-grow p-2 bg-black/40 rounded-lg text-[10px] text-blue-400 font-mono break-all border border-blue-500/20">
-                                    {window.location.origin.endsWith('/') ? window.location.origin.slice(0, -1) : window.location.origin}
-                                </code>
-                            </div>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">클라이언트 ID (프로젝트 일치 필요)</p>
-                            <code className="block p-2 bg-black/40 rounded-lg text-[10px] text-gray-400 font-mono break-all border border-white/5">
-                                385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com
-                            </code>
-                        </div>
-                    </div>
-                    <p className="mt-4 text-[10px] text-gray-500 leading-relaxed">
-                        ⚠️ 구글 콘솔에 등록된 **클라이언트 ID**가 위 번호와 정확히 같은지 확인해 주세요. 다를 경우 로그인이 차단됩니다.
-                    </p>
-                </div>
-
-                <div className="text-[10px] text-gray-600 mt-6 italic">
+                <div className="text-[10px] text-gray-600 mt-8 italic">
                     * 구글 계정으로 안전하게 로그인됩니다.<br />
                     별도의 회원가입 절차가 없습니다.
                 </div>
