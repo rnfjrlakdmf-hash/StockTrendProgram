@@ -88,7 +88,19 @@ GLOBAL_KOREAN_NAMES = {
     "PG": "P&G",
     "V": "비자",
     "MA": "마스터카드",
+    "PANW": "팔로알토 네트웍스",
+    "SNOW": "스노우플레이크",
+    "ARM": "ARM 홀딩스",
+    "SMCI": "슈퍼마이크로컴퓨터",
+    "MSTR": "마이크로스트래티지",
 }
+
+import unicodedata
+
+def normalize_text(text: str) -> str:
+    """NFC 정규화 및 공백 제거"""
+    if not text: return ""
+    return unicodedata.normalize('NFC', text.strip())
 
 @turbo_cache(ttl_seconds=3600)
 def search_yahoo_finance(keyword: str) -> str | None:
@@ -319,8 +331,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "name": naver_info.get('name', symbol),
                     "description": naver_info.get('description', ''),
                     "symbol": t_symbol,
-                    "price": f"{naver_info['price']:,}",
-                    "price_krw": f"{naver_info['price']:,}",
+                    "price": f"{float(str(naver_info['price']).replace(',', '')):,.0f}" if isinstance(naver_info['price'], (int, float, str)) and str(naver_info['price']).replace(',','').replace('.','').isdigit() else str(naver_info['price']),
+                    "price_krw": f"{float(str(naver_info['price']).replace(',', '')):,.0f}" if isinstance(naver_info['price'], (int, float, str)) and str(naver_info['price']).replace(',','').replace('.','').isdigit() else str(naver_info['price']),
                     "currency": "KRW",
                     "change": naver_info.get('change_percent', '0.00%'),
                     "summary": generate_stock_summary(naver_info, news_data),
@@ -441,14 +453,17 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             return None  # Give up
 
         # 2. Winner Found! Launch Details Fetch
-        # winner_data has: symbol, price, prev_close, currency, market_cap,
-        # ticker
+        # winner_data has: symbol, price, prev_close, currency, market_cap
         target_symbol = winner_data['symbol']
-        ticker = winner_data['ticker']
+        
+        # [Fix] Ensure 'ticker' object exists (yf.Ticker)
+        ticker_obj = winner_data.get('ticker')
+        if not ticker_obj:
+            ticker_obj = yf.Ticker(target_symbol)
 
         # Sub-tasks
-        f_info = executor.submit(fetch_full_info, ticker)  # Slowest
-        f_hist = executor.submit(get_daily_prices_data, ticker)  # Medium
+        f_info = executor.submit(fetch_full_info, ticker_obj)  # Slowest
+        f_hist = executor.submit(get_daily_prices_data, ticker_obj)  # Medium
 
         f_name = None
         if target_symbol.endswith('.KS') or target_symbol.endswith('.KQ'):
@@ -540,9 +555,18 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             change_str = "0.00%"
 
         if currency == 'KRW':
-            price_str = f"{current_price:,.0f}"
+            try:
+                # Always convert to float for safe formatting with commas
+                f_price = float(str(current_price).replace(',', ''))
+                price_str = f"{f_price:,.0f}"
+            except:
+                price_str = str(current_price)
         else:
-            price_str = f"{current_price:,.2f}"
+            try:
+                f_price = float(str(current_price).replace(',', ''))
+                price_str = f"{f_price:,.2f}"
+            except:
+                price_str = str(current_price)
 
         # Fetch Exchange Rate for Foreign Stocks
         exchange_rate = 1.0
@@ -580,7 +604,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "publisher": n.get('content', {}).get('provider', {}).get('displayName', 'Yahoo'),
                     "link": n.get('content', {}).get('clickThroughUrl', {}).get('url', ''),
                     "published": n.get('content', {}).get('pubDate', '')
-                } for n in ticker.news if n.get('content')]
+                } for n in ticker_obj.news if n.get('content')]
             except BaseException:
                 pass
 

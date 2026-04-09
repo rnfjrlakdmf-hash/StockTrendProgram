@@ -71,6 +71,13 @@ from auth import router as auth_router
 from morning_briefing import generate_user_morning_briefing
 from utils.briefing_store import init_briefing_table, get_latest_briefing, should_generate_new_briefing
 
+# [Global Scaling] Mapping for Stocks (Korean Names)
+GLOBAL_KOREAN_NAMES = {
+    "AAPL": "애플", "TSLA": "테슬라", "MSFT": "마이크로소프트", "NVDA": "엔비디아",
+    "GOOGL": "구글", "AMZN": "아마존", "META": "메타", "NFLX": "넷플릭스",
+    "BRK-B": "버크셔해서웨이", "TSM": "TSMC", "ASML": "ASML", "AMD": "AMD"
+}
+
 app = FastAPI(title="AI Stock Analyst", version="2.8.0")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
@@ -1186,10 +1193,10 @@ def search_stock_api(q: str):
     if not q:
         return {"status": "error", "message": "Query parameter 'q' is required"}
     
-    # Unicode Normalization (NFC) for robust matching
-    q_norm = unicodedata.normalize('NFC', q.strip())
+    # [v3.1.0-Enhanced] Unicode Normalization (NFC) for robust matching
+    q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
     
-    print(f"\n[Search v3.0.2] Query: '{q}' -> Normalized: '{q_norm}'")
+    print(f"\n[Search v3.1.0] Query: '{q}' -> Normalized: '{q_norm}'")
 
     # 1. If already 6-digit code, return immediately
     if q_norm.isdigit() and len(q_norm) == 6:

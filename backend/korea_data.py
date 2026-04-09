@@ -66,8 +66,9 @@ get_korean_stock_name = get_korean_name  # Alias
 @turbo_cache(ttl_seconds=86400) # Mapping is stable, cache longer
 def search_stock_code(keyword: str):
     """
-    [v3.0.1-Fixed] Mission-Critical Multi-layer Search Engine
+    [v3.1.0-Enhanced] Mission-Critical Multi-layer Search Engine
     Goal: 100% resolution for Korean stocks with Unicode Normalization (NFC).
+    Adds dedicated Naver Finance Search List fallback.
     """
     if not keyword:
         return None
@@ -110,22 +111,53 @@ def search_stock_code(keyword: str):
                         if keyword_clean in found_name or found_name in keyword_clean:
                             print(f" -> Found via AC API: {found_code} ({found_name})")
                             return found_code
-    except requests.exceptions.RequestException as e:
-        print(f"  !! AC API Network/DNS failed: {e}. Moving to Tier 3.")
-    except Exception as acre:
-        print(f"  !! AC API Stage failed: {acre}")
+    except Exception as e:
+        print(f"  !! AC API Stage failed: {e}. Moving to Tier 3.")
 
-    # 3. Yahoo Finance Global Lookup (Surprisingly good at mapping KR names to tickers)
-    # Useful if Naver subdomains are blocked or DNS failing.
+    # 3. Naver Finance Search List (Powerful Fallback for exact/partial name matches)
     try:
-        print(f"[Search Tier 3] Trying Yahoo Finance Fallback for '{keyword_clean}'...")
+        print(f"[Search Tier 3] Trying Naver Finance Search List for '{keyword_clean}'...")
+        try:
+            euc_query = urllib.parse.quote(keyword_clean.encode('euc-kr'))
+        except:
+            euc_query = urllib.parse.quote(keyword_clean)
+            
+        search_url = f"https://finance.naver.com/search/searchList.naver?query={euc_query}"
+        res_s = requests.get(search_url, headers=headers, timeout=5)
+        
+        # Decoding: Naver Search List is EUC-KR
+        try:
+            s_html = res_s.content.decode('euc-kr')
+        except:
+            s_html = res_s.text
+            
+        s_soup = BeautifulSoup(s_html, 'html.parser')
+        result_rows = s_soup.select(".tbl_search tbody tr")
+        if result_rows:
+            for row in result_rows:
+                # Naver Finance search table structure
+                a_tag = row.select_one("td.tit a")
+                if a_tag:
+                    name = a_tag.text.strip()
+                    href = a_tag.get('href', '')
+                    code_match = re.search(r'code=(\d{6})', href)
+                    if code_match:
+                        found_code = code_match.group(1)
+                        if keyword_clean in name or name in keyword_clean:
+                            print(f" -> Found via Finance Search List: {found_code} ({name})")
+                            return found_code
+    except Exception as se:
+        print(f"  !! Finance Search List Stage failed: {se}")
+
+    # 4. Yahoo Finance Global Lookup
+    try:
+        print(f"[Search Tier 4] Trying Yahoo Finance Fallback for '{keyword_clean}'...")
         yurl = f"https://query2.finance.yahoo.com/v1/finance/search?q={urllib.parse.quote(keyword_clean)}&lang=ko-KR"
         res_y = requests.get(yurl, headers=headers, timeout=5)
         ydata = res_y.json()
         if ydata.get('quotes'):
             for q in ydata['quotes']:
                 symbol = q.get('symbol', '')
-                # Korea symbols usually end in .KS (KOSPI) or .KQ (KOSDAQ)
                 if symbol.endswith('.KS') or symbol.endswith('.KQ'):
                     ycode = symbol.split('.')[0]
                     if len(ycode) == 6 and ycode.isdigit():
@@ -134,15 +166,15 @@ def search_stock_code(keyword: str):
     except Exception as ye:
         print(f"  !! Yahoo Stage failed: {ye}")
 
-    # 4. Final Fallback: Naver Integration Search (Best for news-relevant stocks)
+    # 5. Final Fallback: Naver Integration Search
     try:
-        print(f"[Search Tier 4] Trying Naver Integration Search Fallback...")
+        print(f"[Search Tier 5] Trying Naver Integration Search Fallback...")
         query = f"{keyword_clean} 주가"
         encoded = urllib.parse.quote(query)
         url = f"https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={encoded}"
         res = requests.get(url, headers=headers, timeout=5)
-        html = res.text
-        # We look for ANY code in a finance.naver link context
+        # Integration search is UTF-8
+        html = res.content.decode('utf-8', 'ignore')
         matches = re.findall(r'finance\.naver\.com/item/main\.(?:naver|nhn)\?code=(\d{6})', html)
         if matches:
             print(f" -> Found via Integration Search: {matches[0]}")
@@ -176,12 +208,16 @@ def gather_naver_stock_data(symbol: str):
         # So we MUST try UTF-8 first.
         content = res.content
         try:
-            html = content.decode('euc-kr') # Naver Finance is predominantly EUC-KR
+            # Try CP949 first for Naver Finance (more common for Korean text)
+            html = content.decode('cp949')
         except UnicodeDecodeError:
             try:
-                html = content.decode('utf-8')
+                html = content.decode('euc-kr')
             except UnicodeDecodeError:
-                html = content.decode('cp949', 'ignore')
+                try:
+                    html = content.decode('utf-8')
+                except UnicodeDecodeError:
+                    html = content.decode('cp949', 'ignore')
              
         soup = BeautifulSoup(html, 'html.parser')
         

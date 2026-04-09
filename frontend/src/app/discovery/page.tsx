@@ -501,8 +501,9 @@ function DiscoveryContent() {
                     .catch(() => { })
                     .finally(() => setFinancialsLoading(false));
 
-            } else {
+            } else if (!term) {
                 // [Fallback] Search via Backend API (Global/Dynamic Map)
+                // Only try fallback if this isn't already a fallback call (term is undefined)
                 try {
                     const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeTicker}`);
                     const searchJson = await searchRes.json();
@@ -510,7 +511,8 @@ function DiscoveryContent() {
                     if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
                         // Found a better match! Retry with this symbol
                         const foundSymbol = searchJson.data[0].symbol;
-                        if (foundSymbol && foundSymbol !== ticker) {
+                        if (foundSymbol && foundSymbol.toUpperCase() !== ticker.toUpperCase()) {
+                            console.log(`[Search] Found better match: ${ticker} -> ${foundSymbol}. Retrying...`);
                             handleSearch(foundSymbol);
                             return;
                         }
@@ -521,7 +523,11 @@ function DiscoveryContent() {
 
                 setStock(null);
                 setLoading(false);
-                setError("검색된 종목이 없습니다. 정확한 종목명이나 티커를 입력해주세요.");
+                setError(`'${query}'에 대한 검색 결과가 없습니다. 종목명이나 코드가 정확한지 확인해주세요.`);
+            } else {
+                setStock(null);
+                setLoading(false);
+                setError(`종목 데이터를 불러올 수 없습니다 (${ticker}).`);
             }
         } catch (err) {
             setStock(null);
