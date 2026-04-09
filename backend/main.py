@@ -3149,13 +3149,13 @@ def read_financial_health(symbol: str):
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/ai/morning-brief")
-async def get_morning_brief(x_user_id: Optional[str] = Header(None)):
-    """[VIP] 맞춤형 모닝 브리핑 조회 및 생성"""
+async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
+    """[VIP] 맞춤형 모닝 브리핑 조회 및 생성 (force=true 시 강제 재생성)"""
     if not x_user_id:
         return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
     
-    # 1. 오늘 이미 생성된 데이터가 있는지 확인
-    if not should_generate_new_briefing(x_user_id):
+    # 1. 오늘 이미 생성된 데이터가 있는지 확인 (force가 아닐 때만 캐시 사용)
+    if not force and not should_generate_new_briefing(x_user_id):
         latest = get_latest_briefing(x_user_id)
         if latest:
             return {"status": "success", "data": latest, "cached": True}

@@ -26,11 +26,14 @@ export default function MorningBriefWidget() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchBrief = async () => {
+    const fetchBrief = async (force: boolean = false) => {
         if (!user) return;
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
+            const url = new URL(`${API_BASE_URL}/api/ai/morning-brief`);
+            if (force) url.searchParams.append("force", "true");
+            
+            const res = await fetch(url.toString(), {
                 headers: { "X-User-ID": user.id }
             });
             const json = await res.json();
@@ -177,7 +180,7 @@ export default function MorningBriefWidget() {
                     <div className="flex items-center gap-4 text-[9px] text-gray-600 font-black tracking-tighter">
                         <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500/40"></div> DATA SOURCE: REAL-TIME INDICES & PUBLIC NEWS</span>
                     </div>
-                    <button onClick={fetchBrief} className="text-[9px] text-blue-500/50 hover:text-blue-400 font-black uppercase tracking-widest transition-colors">REFRESH DATA</button>
+                    <button onClick={() => fetchBrief(true)} className="text-[9px] text-blue-500/50 hover:text-blue-400 font-black uppercase tracking-widest transition-colors">REFRESH DATA</button>
                 </div>
             </div>
         </div>
