@@ -262,20 +262,22 @@ export default function SupplyChainPage() {
                             <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-8 lg:py-0">
                                 <div className="relative">
                                     {/* Target Node */}
-                                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative overflow-hidden">
-                                        {/* Animated Polish effect */}
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative">
+                                        {/* Animated Polish effect moved inside a sub-div to keep border/shape if needed, but removed overflow-hidden from parent to show flag */}
+                                        <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                        </div>
                                         
                                         <span 
                                             onClick={() => handleNodeClick(data.nodes.find((n: any) => n.group === 'target'))}
-                                            className="text-lg md:text-2xl font-black text-white text-center px-6 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all"
+                                            className="text-lg md:text-2xl font-black text-white text-center px-6 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all relative z-10"
                                         >
                                             {data.nodes.find((n: any) => n.group === 'target')?.label}
                                         </span>
                                         
                                         {/* [NEW] Target Themes */}
                                         {data.nodes.find((n: any) => n.group === 'target')?.themes && (
-                                            <div className="flex flex-wrap justify-center gap-1 mt-3 px-4">
+                                            <div className="flex flex-wrap justify-center gap-1 mt-3 px-4 relative z-10">
                                                 {data.nodes.find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
                                                     <span key={i} className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-md border border-white/30 font-bold">
                                                         {t}
@@ -285,26 +287,30 @@ export default function SupplyChainPage() {
                                         )}
                                         {/* Price */}
                                         {data.nodes.find((n: any) => n.group === 'target')?.price_display && (
-                                            <div className="mt-2 bg-black/40 px-3 py-1 rounded-full text-sm font-mono border border-white/20 backdrop-blur-md">
+                                            <div className="mt-2 bg-black/40 px-3 py-1 rounded-full text-sm font-mono border border-white/20 backdrop-blur-md relative z-10">
                                                 <span className="text-white mr-2">{data.nodes.find((n: any) => n.group === 'target')?.price_display}</span>
                                                 <span className={data.nodes.find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                    {data.nodes.find((n: any) => n.group === 'target')?.change_display}
+                                                    {data.nodes.find((n: any) => n.change_display)}
                                                 </span>
                                             </div>
                                         )}
-                                        {/* Event Flag (Target) */}
-                                        {data.nodes.find((n: any) => n.group === 'target')?.event && (
-                                            <div className="absolute -top-4 right-10 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce shadow-xl border border-white/20">
-                                                🚩 {data.nodes.find((n: any) => n.group === 'target')?.event.d_day}
-                                                <div className="text-[9px] font-normal opacity-80">{data.nodes.find((n: any) => n.group === 'target')?.event.name}</div>
-                                                {data.nodes.find((n: any) => n.group === 'target')?.event.date && data.nodes.find((n: any) => n.group === 'target')?.event.date !== 'Unknown' && (
-                                                    <div className="text-[8px] text-red-100 mt-0.5 border-t border-white/20 pt-0.5">
-                                                        {data.nodes.find((n: any) => n.group === 'target')?.event.date}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
+
+                                    {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
+                                    {data.nodes.find((n: any) => n.group === 'target')?.event && (
+                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <span className="text-sm">🚩</span>
+                                                <span>{data.nodes.find((n: any) => n.group === 'target')?.event.d_day}</span>
+                                            </div>
+                                            <div className="text-[10px] font-extrabold mt-0.5">{data.nodes.find((n: any) => n.group === 'target')?.event.name}</div>
+                                            {data.nodes.find((n: any) => n.group === 'target')?.event.date && data.nodes.find((n: any) => n.group === 'target')?.event.date !== 'Unknown' && (
+                                                <div className="text-[9px] text-red-100 mt-1 border-t border-white/20 pt-1">
+                                                    {data.nodes.find((n: any) => n.group === 'target')?.event.date}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Orbit Rings (Visual) */}
                                     <div className="absolute inset-0 -m-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite]" />
