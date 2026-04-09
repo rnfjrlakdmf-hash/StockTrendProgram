@@ -872,6 +872,11 @@ def get_naver_global_stock_data(symbol: str):
             continue
             
     return None
+
+def get_naver_disclosures(symbol: str):
+    """
+    네이버 금융에서 종목별 최신 공시 정보를 스크래핑합니다.
+    """
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
@@ -887,8 +892,11 @@ def get_naver_global_stock_data(symbol: str):
             cols = row.select("td")
             if len(cols) < 3: continue
             
-            title = cols[0].text.strip()
-            link = "https://finance.naver.com" + cols[0].select_one("a")['href']
+            title_node = cols[0].select_one("a")
+            if not title_node: continue
+            
+            title = title_node.text.strip()
+            link = "https://finance.naver.com" + title_node['href']
             info = cols[1].text.strip()
             date = cols[2].text.strip()
             
@@ -906,6 +914,10 @@ def get_naver_global_stock_data(symbol: str):
     except Exception as e:
         print(f"Disclosure Error: {e}")
         return []
+
+# 실시간 공시용 에일리어스 (main.py에서 사용)
+def get_live_disclosures(symbol: str):
+    return get_naver_disclosures(symbol)
 
 @turbo_cache(ttl_seconds=120)
 def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "", days: int = 1):
