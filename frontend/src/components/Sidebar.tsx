@@ -30,6 +30,13 @@ const navigation = [
 export default function Sidebar() {
     const { user, logout } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // [New] Global Login Modal Trigger Listener
+    useEffect(() => {
+        const handleOpenLogin = () => setShowLoginModal(true);
+        window.addEventListener('open-login-modal', handleOpenLogin);
+        return () => window.removeEventListener('open-login-modal', handleOpenLogin);
+    }, []);
     const [showProModal, setShowProModal] = useState(false);
     const [showAdRewardModal, setShowAdRewardModal] = useState(false); // [New] Modal State
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default fallback

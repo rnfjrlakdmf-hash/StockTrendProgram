@@ -69,7 +69,12 @@ export default function MorningBriefWidget() {
                 <Sparkles className="w-10 h-10 text-yellow-500 mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">마켓 브리핑 서비스 안내</h3>
                 <p className="text-gray-400 mb-6 max-w-md text-sm">로그인하시면 관심종목과 연관된 주요 뉴스 및 시장 데이터를 매일 아침 요약하여 확인하실 수 있습니다.</p>
-                <Link href="/" className="px-6 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors">로그인하고 시작하기</Link>
+                <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+                    className="px-6 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-xl shadow-white/5 active:scale-95 transition-transform"
+                >
+                    로그인하고 시작하기
+                </button>
             </div>
         );
     }
