@@ -3162,12 +3162,20 @@ async def get_morning_brief(x_user_id: Optional[str] = Header(None)):
     
     # 2. 없거나 갱신이 필요하면 생성 (비동기)
     try:
-        # 이 시점에서 생성은 약간의 시간이 걸릴 수 있음 (Gemini 호출)
         data = await generate_user_morning_briefing(x_user_id)
+        
+        # 내부 상태 체크 (상태 딕셔너리가 반환된 경우 대비)
+        if isinstance(data, dict) and data.get("status") == "error":
+            return data
+            
         return {"status": "success", "data": data, "cached": False}
     except Exception as e:
         print(f"[API MorningBrief] Error: {e}")
-        return {"status": "error", "message": str(e)}
+        # KeyError 등 개발자 용어가 아닌 일반적인 에러 메시지 전달
+        error_msg = str(e)
+        if "'price'" in error_msg:
+            error_msg = "시장 데이터를 가져오는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+        return {"status": "error", "message": error_msg or "브리핑 생성 중 오류가 발생했습니다."}
 
 @app.get("/api/peer-compare")
 def read_peer_comparison(symbols: str = Query(..., description="쉼표 구분 종목코드")):

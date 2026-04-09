@@ -49,8 +49,16 @@ async def generate_user_morning_briefing(user_id: str):
         }
 
     # 지수 요약 텍스트 생성
-    indices = market_data.get('indices', [])
-    index_summary = ", ".join([f"{idx['label']}: {idx['price']} ({idx['change']})" for idx in indices[:3]])
+    indices_raw = market_data.get('Indices', []) # Case-sensitive fix
+    index_list = []
+    for idx in indices_raw[:4]:
+        name = idx.get('name', '시장 지수')
+        price = idx.get('price')
+        change = idx.get('change', '0.00%')
+        if price:
+            index_list.append(f"{name}: {price} ({change})")
+    
+    index_summary = ", ".join(index_list) if index_list else "안정적인 흐름을 보이고 있습니다."
 
     # 프롬프트 구성
     prompt = f"""
@@ -113,7 +121,4 @@ async def generate_user_morning_briefing(user_id: str):
         return briefing_result
     except Exception as e:
         print(f"[MorningBrief] Generation error: {e}")
-        return {
-            "status": "error",
-            "message": "브리핑 생성 중 오류가 발생했습니다."
-        }
+        raise # 상위 layer (main.py)로 에러 전달
