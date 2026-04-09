@@ -39,7 +39,7 @@ from db_manager import (
     create_signals_table, create_votes_table,
     save_signal, get_recent_signals, get_signals_by_symbol,
     save_vote, get_vote_results, get_user_vote, get_yesterday_vote_results,
-    get_all_users, toggle_user_pro_status
+    get_all_users, toggle_user_pro_status, migrate_watchlist
 )
 from user_session import session_manager
 from ai_analysis import (
@@ -1500,6 +1500,10 @@ app.include_router(auth_router, prefix="/api")
 class WatchlistRequest(BaseModel):
     symbol: str
 
+class MigrationRequest(BaseModel):
+    from_user_id: str
+    to_user_id: str
+
 
 
 @app.get("/api/watchlist")
@@ -1533,6 +1537,12 @@ def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
     """관심 종목 추가"""
     user_id = x_user_id if x_user_id else "guest"
     success = add_watchlist(user_id, req.symbol)
+    return {"status": "success" if success else "error"}
+
+@app.post("/api/watchlist/migrate")
+def migrate_watchlist_api(req: MigrationRequest):
+    """관심종목 데이터 이전 API (guest -> login_user)"""
+    success = migrate_watchlist(req.from_user_id, req.to_user_id)
     return {"status": "success" if success else "error"}
 
 @app.delete("/api/watchlist/{symbol}")

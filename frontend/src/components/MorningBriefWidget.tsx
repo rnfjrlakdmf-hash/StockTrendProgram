@@ -87,7 +87,34 @@ export default function MorningBriefWidget() {
             <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
                 <AlertCircle className="w-8 h-8 text-gray-600 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm">{error || "아직 생성된 브리핑이 없습니다. 관심종목을 먼저 추가해보세요!"}</p>
-                <Link href="/discovery" className="inline-block mt-4 text-blue-400 font-bold text-sm">관심종목 추가하러 가기 <ChevronRight className="inline w-4 h-4" /></Link>
+                
+                <div className="flex flex-col items-center gap-3 mt-6">
+                    <Link href="/discovery" className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform flex items-center gap-2">
+                        관심종목 추가하러 가기 <ChevronRight className="w-4 h-4" />
+                    </Link>
+                    
+                    <button 
+                        onClick={() => {
+                            const storedUser = localStorage.getItem("stock_user");
+                            if (storedUser) {
+                                const parsed = JSON.parse(storedUser);
+                                fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ from_user_id: "guest", to_user_id: parsed.id })
+                                }).then(() => {
+                                    alert("이전 관심종목을 모두 가져왔습니다! 페이지를 새로고침합니다.");
+                                    window.location.reload();
+                                });
+                            } else {
+                                alert("로그인 또는 '고정 계정 활성화'를 먼저 해주세요.");
+                            }
+                        }}
+                        className="text-xs text-gray-500 hover:text-white underline underline-offset-4 transition-colors"
+                    >
+                        이미 추가했는데 안 보이시나요? (데이터 가져오기)
+                    </button>
+                </div>
             </div>
         );
     }

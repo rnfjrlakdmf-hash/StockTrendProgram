@@ -16,6 +16,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     login: (googleUser: any) => Promise<boolean>;
+    demoLogin: () => void;
     logout: () => void;
     isLoading: boolean;
 }
@@ -83,6 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (data.status === "success") {
                 const newUser = data.user;
                 console.log("Setting user state:", newUser);
+                
+                // [Migration] Migrate items from guest to real user
+                await migrateGuestWatchlist(newUser.id);
+                
                 setUser(newUser);
                 localStorage.setItem("stock_user", JSON.stringify(newUser));
                 // Set Token if needed (data.token)
@@ -90,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     localStorage.setItem("stock_token", data.token);
                 }
 
-                alert("3단계: 서버 로그인 성공! 사용자 정보를 저장했습니다.");
+                alert("3단계: 서버 로그인 성공! 보관 중인 관심종목을 모두 동기화했습니다.");
                 return true;
             } else {
                 console.error("Login API returned error status:", data);
@@ -102,6 +107,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             alert("통신 오류: " + e.message);
             return false;
         }
+    };
+
+    const migrateGuestWatchlist = async (toUserId: string) => {
+        try {
+            console.log(`[Migration] Moving items from guest to ${toUserId}...`);
+            await fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    from_user_id: "guest",
+                    to_user_id: toUserId
+                })
+            });
+        } catch (e) {
+            console.error("Watchlist migration error", e);
+        }
+    };
+
+    const demoLogin = async () => {
+        // [Unique Persistent Demo ID] Use a stable ID if possible or just dev_
+        let demoId = localStorage.getItem("demo_id");
+        if (!demoId) {
+            demoId = "demo_" + Math.random().toString(36).substring(7);
+            localStorage.setItem("demo_id", demoId);
+        }
+
+        const demoUser: User = {
+            id: demoId,
+            email: "demo@stocktrend.ai",
+            name: "데모 사용자",
+            picture: "",
+            is_pro: true
+        };
+
+        // Migrate guest items to this demo user too for seamless experience
+        await migrateGuestWatchlist(demoId);
+
+        setUser(demoUser);
+        localStorage.setItem("stock_user", JSON.stringify(demoUser));
+        window.location.reload();
     };
 
     // Handle Google Redirect Login (Implicit Flow)
@@ -160,8 +205,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <GoogleOAuthProvider clientId="385839147502-p66mmuojl8g3vmclmvdqj54a3hk677nr.apps.googleusercontent.com">
-            <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+        <GoogleOAuthProvider clientId="385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com">
+            <AuthContext.Provider value={{ user, login, demoLogin, logout, isLoading }}>
                 {children}
             </AuthContext.Provider>
         </GoogleOAuthProvider>

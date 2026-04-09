@@ -12,14 +12,17 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-    const { login } = useAuth();
+    const { login, demoLogin } = useAuth();
     const [errorMsg, setErrorMsg] = useState("");
 
     const handleGoogleLogin = () => {
         // Direct Redirect to Google OAuth 2.0
-        const client_id = "385839147502-p66mmuojl8g3vmclmvdqj54a3hk677nr.apps.googleusercontent.com";
-        const redirect_uri = window.location.origin; // e.g. http://localhost:3000
-        // Implicit Flow: response_type=token
+        const client_id = "385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com";
+        
+        // [Fix] Standardize: Remove trailing slash if exists to match Google Console config precisely
+        const origin = window.location.origin;
+        const redirect_uri = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+        
         const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=token&scope=email%20profile%20openid&include_granted_scopes=true&enable_serial_consent=true`;
 
         window.location.href = url;
@@ -78,20 +81,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         </div>
 
                         <button
-                            onClick={async () => {
-                                const devUser = {
-                                    id: "dev_" + Math.random().toString(36).substring(7),
-                                    email: "demo@stocktrend.ai",
-                                    name: "DemoUser",
-                                    picture: "",
-                                    token: "demo_token"
-                                };
-                                const success = await login(devUser);
-                                if (success) window.location.reload();
-                            }}
-                            className="w-full py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium transition-all border border-white/10 flex items-center justify-center gap-2"
+                            onClick={demoLogin}
+                            className="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all shadow-lg shadow-blue-500/20 flex flex-col items-center justify-center"
                         >
-                            🚀 체험용 계정으로 로그인 (빠른실행)
+                            <span>나만의 고정 계정 활성화</span>
+                            <span className="text-[10px] opacity-70 font-normal">로그인 없이 즉시 시작</span>
                         </button>
                     </div>
                 </div>
@@ -100,7 +94,33 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <p className="text-red-400 text-xs mt-4">{errorMsg}</p>
                 )}
 
-                <div className="text-xs text-gray-500 mt-6">
+                <div className="mt-8 pt-6 border-t border-white/5 text-left">
+                    <h3 className="text-white text-xs font-bold mb-3 flex items-center gap-2">
+                        <span className="w-1 h-3 bg-blue-500 rounded-full"></span>
+                        구글 로그인 설정 확인 (복사용)
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">승인된 리디렉션 URI</p>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-grow p-2 bg-black/40 rounded-lg text-[10px] text-blue-400 font-mono break-all border border-blue-500/20">
+                                    {window.location.origin.endsWith('/') ? window.location.origin.slice(0, -1) : window.location.origin}
+                                </code>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">클라이언트 ID (프로젝트 일치 필요)</p>
+                            <code className="block p-2 bg-black/40 rounded-lg text-[10px] text-gray-400 font-mono break-all border border-white/5">
+                                385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com
+                            </code>
+                        </div>
+                    </div>
+                    <p className="mt-4 text-[10px] text-gray-500 leading-relaxed">
+                        ⚠️ 구글 콘솔에 등록된 **클라이언트 ID**가 위 번호와 정확히 같은지 확인해 주세요. 다를 경우 로그인이 차단됩니다.
+                    </p>
+                </div>
+
+                <div className="text-[10px] text-gray-600 mt-6 italic">
                     * 구글 계정으로 안전하게 로그인됩니다.<br />
                     별도의 회원가입 절차가 없습니다.
                 </div>

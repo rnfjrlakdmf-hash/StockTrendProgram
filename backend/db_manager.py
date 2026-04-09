@@ -560,6 +560,31 @@ def get_watchlist(user_id):
     conn.close()
     return [row[0] for row in rows]
 
+def migrate_watchlist(from_id, to_id):
+    """guest 등의 임시 ID에서 실제 로그인 ID로 관심종목 이동"""
+    if not from_id or not to_id or from_id == to_id:
+        return False
+    
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    try:
+        # 1. from_id의 종목들을 to_id로 복사 (INSERT OR IGNORE)
+        cursor.execute("""
+            INSERT OR IGNORE INTO watchlist (user_id, symbol)
+            SELECT ?, symbol FROM watchlist WHERE user_id = ?
+        """, (to_id, from_id))
+        
+        # 2. 이동 완료 후 guest(from_id) 데이터 삭제
+        cursor.execute("DELETE FROM watchlist WHERE user_id = ?", (from_id,))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Migration Error: {e}")
+        return False
+    finally:
+        conn.close()
+
 # Initialize on module load (or call explicitly)
 # Initialize on module load (or call explicitly)
 init_db()
