@@ -49,8 +49,8 @@ async def generate_user_morning_briefing(user_id: str):
             print(f"[DEBUG] Fetching info for symbol: {symbol}")
             quote = get_simple_quote(symbol)
             if not quote:
-                print(f"[DEBUG] Failed to get quote for {symbol}")
-                return None
+                print(f"[DEBUG] Failed to get quote for {symbol}, using fallback data")
+                quote = {"symbol": symbol, "name": symbol, "price": "확인불가", "change": "0.00%"}
             
             news = fetch_google_news(symbol, max_results=2)
             return {
@@ -62,7 +62,13 @@ async def generate_user_morning_briefing(user_id: str):
             }
         except Exception as e:
             print(f"[DEBUG] Error fetching info for {symbol}: {e}")
-            return None
+            return {
+                "symbol": symbol,
+                "name": symbol,
+                "price": "N/A",
+                "change": "N/A",
+                "news": []
+            }
 
     if target_symbols:
         import concurrent.futures
