@@ -685,135 +685,50 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
 @turbo_cache(ttl_seconds=60)
 def get_simple_quote(symbol: str, broker_client=None, strict=False):
     """
-    관심 종목 표시를 위해 가격과 등락률만 빠르게 조회합니다.
-    뉴스 검색이나 AI 분석을 수행하지 않습니다.
-    [Simulated] 주말/시장 종료 시에도 사용자 경험을 위해 미세한 등락을 시뮬레이션합니다.
-    [Broker Integration] broker_client 제공 시 증권사 실시간/REST 시세를 우선 사용합니다.
-    [Real-time Fix] Use Naver Finance for Korean stocks to avoid Yahoo delay.
+    고객님이 요청한 '실시간 정보' 확보를 최우선으로 합니다.
+    야후 파이낸스 차단 상황을 대비하여 네이버 통합 API를 최우선으로 사용합니다.
     """
-    # 1. Try Broker API First (if available)
+    # 1. 네이버 통합 API 시도 (국내/해외 모두 지원)
+    try:
+        naver_info = get_naver_stock_info(symbol)
+        if naver_info and naver_info.get('price') and naver_info['price'] != "확인불가":
+            return naver_info
+    except Exception as e:
+        print(f"[StockData] Naver Primary Check Error for {symbol}: {e}")
+
+    # 2. 브로커 클라이언트 사용 시도
     if broker_client:
         try:
             broker_quote = broker_client.get_current_price(symbol)
             if broker_quote:
                 return broker_quote
-        except Exception as e:
-            print(f"[StockData] Broker Fallback: {e}")
-            
-    # [New] Naver Finance for Korean Stocks (Real-time)
-    if re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ')):
-        try:
-            naver_info = get_naver_stock_info(symbol)
-            if naver_info and naver_info.get('price'):
-                # Map to simple quote format
-                price = naver_info['price']
-                change_str = naver_info.get('change_percent', '0.00%')
-                
-                # Format price
-                price_str = f"{price:,}"
-                
-                return {
-                    "symbol": symbol,
-                    "price": price_str,
-                    "change": change_str,
-                    "name": naver_info.get('name', symbol),
-                    "details": {
-                        "market_status": naver_info.get('market_status'),
-                        "nxt_data": naver_info.get('nxt_data')
-                    }
-                }
-        except Exception as e:
-            print(f"[StockData] Naver Simple Quote Error: {e}")
-            # Fallback to yfinance
-            
+        except: pass
+
+    # 3. 최후의 수단: yfinance (차단 가능성 높음)
     try:
         ticker = yf.Ticker(symbol)
+        current_price = ticker.fast_info.last_price
+        prev_close = ticker.fast_info.previous_close
+        if current_price and current_price > 0:
+            change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close else 0
+            return {
+                "symbol": symbol,
+                "name": symbol,
+                "price": f"{current_price:,.2f}" if '.' in symbol else f"{current_price:,.0f}",
+                "change": f"{change_pct:+.2f}%",
+                "up": change_pct >= 0
+            }
+    except: pass
 
-        # fast_info 사용 (속도 최신화)
-        try:
-            current_price = ticker.fast_info.last_price
-            previous_close = ticker.fast_info.previous_close
-        except BaseException:
-            # fast_info 실패 시 info 사용 (느림)
-            info = ticker.info
-            current_price = info.get(
-                'currentPrice', info.get(
-                    'regularMarketPrice', 0))
-            previous_close = info.get(
-                'previousClose', info.get(
-                    'regularMarketPreviousClose', 0))
-
-        # 데이터가 없거나 0인 경우 처리
-        if not current_price:
-            if strict: return None  # Fast fail for validation
-
-            # [Fallback] If fetching fails, use simulated data
-            import hashlib
-            h = int(hashlib.sha256(symbol.encode()).hexdigest(), 16) % 100000
-            base_price = h + 10000 # Min 10000
-            
-            import random
-            noise = random.uniform(0.95, 1.05)
-            current_price = base_price * noise
-            previous_close = base_price
-            
-        if previous_close and previous_close != 0:
-            change_percent = (
-                (current_price - previous_close) / previous_close) * 100
-            change_str = f"{change_percent:+.2f}%"
-        else:
-            change_str = "0.00%"
-
-        # KRW formatting check
-        price_krw = None
-        if symbol.endswith('.KS') or symbol.endswith(
-                '.KQ') or symbol == 'KRW=X':
-            price_str = f"{current_price:,.0f}"
-        else:
-            price_str = f"{current_price:,.2f}"
-            # Fetch exchange rate for USD stocks
-            try:
-                rate = korea_data.get_exchange_rate()
-                if rate:
-                    price_krw = f"{current_price * rate:,.0f}"
-            except: pass
-
-        # Get volume
-        try:
-            volume = ticker.fast_info.last_volume
-        except:
-            volume = info.get('volume', 0) if 'info' in locals() else 0
-
-        return {
-            "symbol": symbol,
-            "price": price_str,
-            "price_krw": price_krw,
-            "change": change_str,
-            "name": symbol,
-            "ticker": ticker,
-            "raw_price": current_price,
-            "prev_close": previous_close,
-            "volume": int(volume) if volume else 0
-        }
-    except Exception as e:
-        if strict: return None  # Fast fail for validation
-        
-        # Fallback for ANY error
-        # Generate specific mock price for consistent testing
-        import hashlib
-        import random
-        seed_val = int(hashlib.sha256(symbol.encode()).hexdigest(), 16) % 1000000
-        base_price = (seed_val % 100000) + 10000
-        
-        noise = random.uniform(0.98, 1.02)
-        price = base_price * noise
-        
-        return {
-            "symbol": symbol,
-            "price": f"{price:,.0f}",
-            "change": f"{random.uniform(-2, 2):+.2f}%",
-            "name": symbol
-        }
+    if strict: return None
+    
+    return {
+        "symbol": symbol,
+        "name": symbol,
+        "price": "확인불가",
+        "change": "0.00%",
+        "up": True
+    }
 
 
 def fetch_google_news(query, lang='ko', region='KR', period='1d'):
@@ -895,60 +810,42 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
 
 
 def get_market_data():
-    """주요 지수 및 트렌딩 종목 데이터 수집 (Timeout 적용)"""
-    indices = [
-        {"symbol": "^GSPC", "label": "S&P 500"},
-        {"symbol": "^IXIC", "label": "NASDAQ"},
-        {"symbol": "^KS11", "label": "KOSPI"},
-    ]
-
-    results = []
+    """주요 지수 및 트렌딩 종목 데이터 수집 (네이버 우선 활용으로 차단 방지)"""
+    # [v3.0.0] korea_data의 네이버 모바일 API 기반 수집 우선 사용
+    results = get_naver_market_index_data()
     
-    def _fetch_index(idx):
-        try:
-            ticker = yf.Ticker(idx["symbol"])
-            # fast_info use
-            price = ticker.fast_info.last_price
-            prev_close = ticker.fast_info.previous_close
-            change = ((price - prev_close) / prev_close) * 100
-            return {
-                "label": idx["label"],
-                "value": f"{price:,.2f}",
-                "change": f"{change:+.2f}%",
-                "up": change >= 0
-            }
-        except Exception:
-            return {
-                "label": idx["label"],
-                "value": "Error",
-                "change": "0.00%",
-                "up": True
-            }
-
-    # Fetch Indices with Timeout
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_idx = {executor.submit(_fetch_index, idx): idx for idx in indices}
-        for future in concurrent.futures.as_completed(future_to_idx):
+    # 만약 결과가 없거나 모든 값이 N/A인 경우에만 yfinance 폴백 시도
+    if not results or all(r.get('value') == 'N/A' for r in results):
+        indices = [
+            {"symbol": "^GSPC", "label": "S&P 500"},
+            {"symbol": "^IXIC", "label": "NASDAQ"},
+            {"symbol": "^KS11", "label": "KOSPI"},
+        ]
+        results = []
+        def _fetch_index(idx):
             try:
-                # 3초 타임아웃
-                res = future.result(timeout=3)
-                results.append(res)
-            except concurrent.futures.TimeoutError:
-                idx = future_to_idx[future]
-                results.append({
+                ticker = yf.Ticker(idx["symbol"])
+                price = ticker.fast_info.last_price
+                prev_close = ticker.fast_info.previous_close
+                change = ((price - prev_close) / prev_close) * 100
+                return {
                     "label": idx["label"],
-                    "value": "Timeout",
-                    "change": "0.00%",
-                    "up": True
-                })
+                    "value": f"{price:,.2f}",
+                    "change": f"{change:+.2f}%",
+                    "up": change >= 0
+                }
             except Exception:
-                idx = future_to_idx[future]
-                results.append({
-                    "label": idx["label"],
-                    "value": "Error",
-                    "change": "0.00%",
-                    "up": True
-                })
+                return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True}
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_idx = {executor.submit(_fetch_index, idx): idx for idx in indices}
+            for future in concurrent.futures.as_completed(future_to_idx):
+                results.append(future.result())
+    
+    # 한국 지수 이름 통일 (Frontend 호환)
+    for r in results:
+        if r['label'] == 'KOSPI': r['label'] = 'KOSPI'
+        if r['label'] == 'KOSDAQ': r['label'] = 'KOSDAQ'
     
     # Sort results to match original order (optional but good for UI)
     # Map back by label if needed, or just trust the list order if we process differently

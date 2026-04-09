@@ -796,10 +796,82 @@ def get_naver_flash_news():
         return []
 
 def get_naver_market_index_data():
-    return []
+    """
+    네이버 모바일 API를 사용하여 코스피, 코스닥 및 글로벌 지수(S&P500, 나스닥, 다우)를 수집합니다.
+    야후 파이낸스 차단 문제를 해결하기 위한 실시간 데이터 보장책입니다.
+    """
+    indices_to_fetch = [
+        {"code": "KOSPI", "label": "KOSPI"},
+        {"code": "KOSDAQ", "label": "KOSDAQ"},
+        {"code": "SPI@SPX", "label": "S&P 500"},
+        {"code": "NAS@IXIC", "label": "NASDAQ"},
+        {"code": "DJI@DJI", "label": "DOW JONES"},
+        {"code": "NAS@NDX", "label": "NASDAQ 100"}
+    ]
+    
+    results = []
+    
+    for idx in indices_to_fetch:
+        try:
+            url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                price = data.get('closePrice', '0').replace(',', '')
+                change = data.get('compareToPreviousClosePrice', '0').replace(',', '')
+                pct = data.get('fluctuationsRatio', '0')
+                
+                results.append({
+                    "label": idx["label"],
+                    "value": f"{float(price):,.2f}",
+                    "change": f"{float(pct):+.2f}%",
+                    "up": float(pct) >= 0
+                })
+        except Exception as e:
+            print(f"Error fetching index {idx['label']}: {e}")
+            results.append({
+                "label": idx["label"],
+                "value": "N/A",
+                "change": "0.00%",
+                "up": True
+            })
+            
+    return results
 
-@turbo_cache(ttl_seconds=300)
-def get_naver_disclosures(symbol: str):
+def get_naver_global_stock_data(symbol: str):
+    """
+    네이버 모바일 API를 사용하여 해외 주식(미국 등)의 실시간 시세를 수집합니다.
+    야후 파이낸스 차단 상황을 대비한 고가용성 데이터 엔진입니다.
+    """
+    symbol = symbol.upper()
+    # 네이버 해외 주식 코드는 보통 'AAPL.O'(나스닥) 혹은 'AAPL.N'(뉴욕) 형식을 사용합니다.
+    # 안전하게 두 가지 모두 시도하거나 대표 거래소를 추측합니다.
+    suffixes = ['.O', '.N', '.A']
+    
+    for suffix in suffixes:
+        test_symbol = symbol + suffix
+        try:
+            url = f"https://m.stock.naver.com/api/stock/{test_symbol}/basic"
+            res = requests.get(url, headers=HEADER, timeout=3)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get('closePrice'):
+                    price = data.get('closePrice', '0').replace(',', '')
+                    change = data.get('compareToPreviousClosePrice', '0').replace(',', '')
+                    pct = data.get('fluctuationsRatio', '0')
+                    name = data.get('stockName', symbol)
+                    
+                    return {
+                        "symbol": symbol,
+                        "name": name,
+                        "price": f"{float(price):,.2f}",
+                        "change": f"{float(pct):+.2f}%",
+                        "up": float(pct) >= 0
+                    }
+        except:
+            continue
+            
+    return None
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
@@ -976,7 +1048,55 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
         return news_list
 
 def get_naver_stock_info(symbol: str):
-    """ Legacy Wrapper for basic stock info """
+    """
+    네이버 모바일 API를 사용하여 국내 및 해외 주식 시세를 통합 수집합니다.
+    야후 파이낸스 차단 상황을 완벽하게 보완합니다.
+    """
+    symbol = symbol.upper()
+    # 국내 주식 코드 처리 (005930.KS -> 005930)
+    clean_code = re.sub(r'[^0-9A-Z]', '', symbol.split('.')[0])
+    
+    # 1. 국내 주식 시도
+    if len(clean_code) == 6 and clean_code.isdigit():
+        try:
+            url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+            res = requests.get(url, headers=HEADER, timeout=3)
+            if res.status_code == 200:
+                data = res.json()
+                price = data.get('closePrice', '0').replace(',', '')
+                if price and float(price) > 0:
+                    pct = data.get('fluctuationsRatio', '0')
+                    return {
+                        "symbol": symbol,
+                        "name": data.get('stockName', symbol),
+                        "price": f"{float(price):,.0f}",
+                        "change": f"{float(pct):+.2f}%",
+                        "up": float(pct) >= 0
+                    }
+        except: pass
+
+    # 2. 해외 주식 시도 (기존 로직 활용 및 강화)
+    suffixes = ['', '.O', '.N', '.A']
+    for suffix in suffixes:
+        test_symbol = clean_code + suffix
+        try:
+            url = f"https://m.stock.naver.com/api/stock/{test_symbol}/basic"
+            res = requests.get(url, headers=HEADER, timeout=3)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get('closePrice'):
+                    price = data.get('closePrice', '0').replace(',', '')
+                    pct = data.get('fluctuationsRatio', '0')
+                    return {
+                        "symbol": symbol,
+                        "name": data.get('stockName', symbol),
+                        "price": f"{float(price):,.2f}",
+                        "change": f"{float(pct):+.2f}%",
+                        "up": float(pct) >= 0
+                    }
+        except: continue
+            
+    # 3. 최후의 수단: 기존 스크래핑 엔진 (비상용)
     return gather_naver_stock_data(symbol)
 
 # ============================================================
