@@ -55,7 +55,7 @@ from alerts import (
     add_alert, get_alerts, delete_alert, check_alerts,
     get_recent_telegram_users
 )
-from chatbot import chat_with_ai
+# [REMOVED] from chatbot import chat_with_ai
 from korea_data import (
     get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
     get_live_investor_estimates, get_indexing_status, search_stock_code,
@@ -1642,14 +1642,7 @@ def read_watchlist_cb_alerts(x_user_id: str = Header(None)):
     return {"status": "success", "data": results}
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-@app.post("/api/chat")
-def chat_endpoint(req: ChatRequest):
-    """AI 데이터 분석 챗봇"""
-    response = chat_with_ai(req.message)
-    return {"status": "success", "reply": response}
+# [REMOVED] AI Chat Endpoints for Compliance
 
 @app.get("/api/korea/disclosure/{symbol}")
 def read_korea_disclosure(symbol: str):
