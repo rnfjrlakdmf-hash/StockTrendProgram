@@ -101,7 +101,7 @@ export default function MorningBriefWidget() {
                                 fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ from_user_id: "guest", to_user_id: parsed.id })
+                                    body: JSON.stringify({ guest_id: "guest", target_id: parsed.id })
                                 }).then(() => {
                                     alert("이전 관심종목을 모두 가져왔습니다! 페이지를 새로고침합니다.");
                                     window.location.reload();
@@ -125,16 +125,25 @@ export default function MorningBriefWidget() {
             <div className="relative p-6 md:p-8 bg-gradient-to-r from-blue-600/10 via-purple-600/5 to-transparent border-b border-white/5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-yellow-500/20 rounded-2xl">
-                            <Coffee className="w-6 h-6 text-yellow-500" />
+                        <div className="p-3 bg-blue-500/20 rounded-2xl relative">
+                            <Coffee className="w-6 h-6 text-blue-400" />
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-black animate-pulse"></div>
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-black tracking-widest uppercase">MARKET DATA CURATION</span>
-                                <span className="text-[10px] bg-white/5 text-gray-500 px-2 py-0.5 rounded-full font-medium">{new Date(brief.generated_at).toLocaleDateString()}</span>
+                                {user ? (
+                                    <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full font-black tracking-widest uppercase flex items-center gap-1.5">
+                                        <Sparkles className="w-2.5 h-2.5" /> CERTIFIED MEMBER ONLY
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] bg-gray-500/20 text-gray-400 px-2.5 py-1 rounded-full font-black tracking-widest uppercase flex items-center gap-1.5">
+                                        GUEST ACCESS (LIMITED)
+                                    </span>
+                                )}
+                                <span className="text-[10px] bg-white/5 text-gray-500 px-2 py-1 rounded-full font-medium">{new Date(brief.generated_at).toLocaleDateString()}</span>
                             </div>
                             <h2 className="text-2xl font-black text-white leading-tight">
-                                {brief.market_title}
+                                {user ? `${user.name} 회원님` : "게스트 투자자님"}, {brief.market_title}
                             </h2>
                         </div>
                     </div>
@@ -146,10 +155,10 @@ export default function MorningBriefWidget() {
                 <div className="space-y-6">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-blue-400 text-sm font-bold">
-                            <Activity className="w-4 h-4" /> 주요 시장 지표 요약
+                            <Activity className="w-4 h-4" /> 글로벌 마켓 전략 가이드라인
                         </div>
-                        <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5">
-                            <p className="text-gray-300 leading-relaxed font-medium">
+                        <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-inner">
+                            <p className="text-gray-200 leading-relaxed font-medium text-base">
                                 <Typewriter text={brief.market_summary} speed={40} />
                             </p>
                         </div>
@@ -157,9 +166,9 @@ export default function MorningBriefWidget() {
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-purple-400 text-sm font-bold">
-                            <CalendarDays className="w-4 h-4" /> 오늘의 주요 데이터 포인트
+                            <CalendarDays className="w-4 h-4" /> 회원님을 위한 오늘의 핵심 체크포인트
                         </div>
-                        <div className="p-5 rounded-3xl bg-purple-500/5 border border-purple-500/10 shadow-inner">
+                        <div className="p-5 rounded-2xl bg-purple-500/5 border border-purple-500/10">
                             <p className="text-gray-300 text-sm leading-relaxed">
                                 {brief.market_focus}
                             </p>
@@ -171,46 +180,50 @@ export default function MorningBriefWidget() {
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-yellow-500 text-sm font-bold">
-                            <Newspaper className="w-4 h-4" /> 관심종목 정보 요약 ({brief.watchlist_briefs.length})
+                            <Newspaper className="w-4 h-4" /> 주시 종목 심층 분석 ({brief.watchlist_briefs.length})
                         </div>
-                        <Link href="/watchlist" className="text-xs text-gray-500 hover:text-white transition-colors">모두 보기</Link>
+                        <Link href="/watchlist" className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1">모두 보기 <ChevronRight className="w-3 h-3"/></Link>
                     </div>
 
                     <div className="space-y-3">
-                        {brief.watchlist_briefs.map((item, idx) => (
-                            <div key={idx} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/[0.07] transition-all cursor-pointer">
-                                <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500/40 group-hover:bg-blue-400 transition-colors"></div>
-                                        <span className="font-black text-white">{item.name}</span>
-                                        <span className="text-[10px] text-gray-500 font-mono">{item.symbol}</span>
+                        {brief.watchlist_briefs.length > 0 ? (
+                            brief.watchlist_briefs.map((item, idx) => (
+                                <div key={idx} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-pointer">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500/40 group-hover:bg-blue-400 transition-colors"></div>
+                                            <span className="font-bold text-white group-hover:text-blue-200 transition-colors">{item.name}</span>
+                                            <span className="text-[10px] text-gray-500 font-mono tracking-tighter">{item.symbol}</span>
+                                        </div>
                                     </div>
-                                    <div className="p-1.5 rounded-lg bg-gray-500/10 text-gray-500 group-hover:text-blue-400 transition-colors">
-                                        <Newspaper className="w-3.5 h-3.5" />
-                                    </div>
+                                    <p className="text-sm text-gray-400 group-hover:text-gray-300 leading-snug transition-colors">
+                                        {item.insight}
+                                    </p>
                                 </div>
-                                <p className="text-sm text-gray-400 leading-snug line-clamp-2">
-                                    {item.insight}
-                                </p>
+                            ))
+                        ) : (
+                            <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center">
+                                <p className="text-gray-500 text-xs mb-4">아직 주시 종목이 없습니다.<br/>관심 있는 종목을 추가하여 맞춤 분석을 받아보세요.</p>
+                                <Link href="/watchlist" className="inline-block px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg transition-colors">종목 추가하기</Link>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Footer: Disclaimer */}
             <div className="px-8 py-5 bg-black/60 flex flex-col gap-3 border-t border-white/5">
-                <p className="text-[10px] text-gray-500 leading-normal italic font-medium">
+                <p className="text-[9px] text-gray-600 leading-normal italic font-medium uppercase tracking-tighter">
                     {brief.disclaimer}
                 </p>
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-[9px] text-gray-600 font-black tracking-tighter">
-                        <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500/40"></div> DATA SOURCE: REAL-TIME INDICES & PUBLIC NEWS</span>
-                        <span className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-500/10 text-blue-500/70 rounded-md border border-blue-500/10">
-                            <Sparkles className="w-2 h-2" /> TURBO ENGINE ACTIVE
+                    <div className="flex items-center gap-4 text-[9px] text-gray-500 font-black tracking-tighter">
+                        <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> ENGINE STATUS: OPTIMIZED</span>
+                        <span className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded-md border border-blue-500/20">
+                            <Sparkles className="w-2 h-2" /> PREMIUM INTELLIGENCE
                         </span>
                     </div>
-                    <button onClick={() => fetchBrief(true)} className="text-[9px] text-blue-500/50 hover:text-blue-400 font-black uppercase tracking-widest transition-colors">REFRESH DATA</button>
+                    <button onClick={() => fetchBrief(true)} className="text-[10px] text-blue-500/70 hover:text-blue-400 font-black uppercase tracking-widest transition-all hover:tracking-[0.2em]">REFRESH DATA</button>
                 </div>
             </div>
         </div>

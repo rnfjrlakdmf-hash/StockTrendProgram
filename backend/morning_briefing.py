@@ -46,6 +46,11 @@ async def generate_user_morning_briefing(user_id: str):
             results = list(executor.map(fetch_symbol_info, target_symbols))
             watchlist_details = [r for r in results if r is not None]
 
+    # 1.3 사용자 정보 (개인화용)
+    from db_manager import get_user
+    user_info = get_user(user_id)
+    user_name = user_info.get('name', '투자자') if user_info else '투자자'
+
     # 2. AI 브리핑 생성
     if not API_KEY:
         return {
@@ -67,33 +72,36 @@ async def generate_user_morning_briefing(user_id: str):
 
     # 프롬프트 구성
     prompt = f"""
-    당신은 개인 투자자를 위한 'AI 전담 비서'입니다. 
-    오늘 아침({now.strftime('%Y-%m-%d %H:%M')}) 시장 상황과 사용자의 관심종목 리서치 결과를 요약해 전달하세요.
+    당신은 {user_name} 회원님만을 위한 전담 'AI 수석 투자 전략가'입니다. 
+    오늘 아침({now.strftime('%Y-%m-%d %H:%M')}) 시장 상황과 회원님의 핵심 관심종목 리서치 결과를 분석한 프라이빗 보고서를 작성하세요.
+
+    [회원 정보]
+    - 회원 성함: {user_name} 님
 
     [입력 데이터]
-    1. 시장 지수: {index_summary}
-    2. 관심종목 현황: {json.dumps(watchlist_details, ensure_ascii=False)}
+    1. 시장 지표: {index_summary}
+    2. 회원님 관심종목 리얼타임 데이터: {json.dumps(watchlist_details, ensure_ascii=False)}
 
     [작성 가이드라인 - 필독]
-    - 반드시 '객관적 사실'과 '데이터' 중심으로 서술하세요.
-    - **유사투자자문업 금지 원칙**: "사세요", "파세요", "목표가 얼마" 등 강력한 추천이나 매매 리딩 질문에 대한 답변은 절대 금지합니다.
-    - 대신 "데이터상 ~한 흐름이 관찰됩니다", "~한 재료가 시장의 관심을 받고 있습니다"와 같은 중립적 표현을 사용하세요.
-    - 격식 있으면서도 친절한 비서 말투(~입니다, ~보입니다)를 사용하세요.
+    - 말투: 매우 격식 있고 전문적이며 신뢰감을 주는 비서/전략가 말투를 사용하세요. (예: "~입니다", "~를 분석하였습니다", "관찰되고 있습니다")
+    - 내용: 일반적인 뉴스 요약을 넘어, 데이터 간의 연관성이나 시장의 함의를 짧고 강렬하게 짚어주세요.
+    - **중요**: {user_name} 님을 직접 언급하며 맞춤형 보고서라는 느낌을 강조하세요. (예: "{user_name} 님, 오늘 시장은...", "{user_name} 님이 주시하시는 종목들 중...")
+    - **투자 자문 금지**: 특정 가격대 제시, 매수/매도 추천은 절대 불가하며 데이터 기반 현황 보고 위주로 작성하세요.
 
     [출력 포맷 (JSON)]
     {{
-        "market_title": "오늘의 시장 주요 흐름 (이모지 포함)",
-        "market_summary": "글로벌 시장의 주요 지표 및 뉴스 데이터 요약 (3문장 이내)",
+        "market_title": "오늘의 전략적 시장 가이드라인",
+        "market_summary": "{user_name} 님을 위한 글로벌 마켓 핵심 요약 (전문적인 분석 톤)",
         "watchlist_briefs": [
             {{
                 "symbol": "종목코드",
                 "name": "종목명",
-                "insight": "해당 종목과 관련된 객관적 뉴스 또는 가격 데이터 요약 (1문장)"
+                "insight": "{user_name} 님이 주시하는 이 종목의 핵심 모멘텀 분석 (1문장)"
             }},
             ...
         ],
-        "market_focus": "오늘 확인해야 할 주요 공시, 실적 발표 또는 거시 지표 일정",
-        "disclaimer": "본 브리핑은 AI가 공개된 데이터를 기반으로 추출한 단순 정보 요약이며, 투자 권유나 특정 종목 추천을 절대 포함하지 않습니다. 모든 투자 결정은 본인의 판단하에 이루어져야 하며, 분석 결과의 정확성을 보장하지 않습니다."
+        "market_focus": "금일 반드시 모니터링해야 할 거시 경제 일정 및 공시",
+        "disclaimer": "본 보고서는 AI가 공개된 데이터를 정교하게 분석한 가이드이며, 최종 투자 결정은 {user_name} 님의 판단하에 이루어져야 합니다."
     }}
     """
 

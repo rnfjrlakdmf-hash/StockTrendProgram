@@ -116,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    from_user_id: "guest",
-                    to_user_id: toUserId
+                    guest_id: "guest",
+                    target_id: toUserId
                 })
             });
         } catch (e) {

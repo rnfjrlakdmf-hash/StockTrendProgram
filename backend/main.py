@@ -504,46 +504,88 @@ def read_stock_investor(symbol: str, period: int = 1):
 
 @app.on_event("startup")
 async def startup_event():
-    # Start Ranking Background Task
-    t_rank = threading.Thread(target=ranking_bg_looper, daemon=True)
-    t_rank.start()
-    # Start WS Broadcast Loop
+    print("[Startup] Initializing AI Stock Analyst Backend (v2.9.0)...")
+    
+    # 1. Database Table Initialization
+    try:
+        init_briefing_table()
+        create_signals_table()
+        create_votes_table()
+        from db_manager import create_fcm_tokens_table
+        create_fcm_tokens_table()
+        from price_alerts import create_price_alerts_tables
+        create_price_alerts_tables()
+        print("[Startup] Database tables initialized.")
+    except Exception as e:
+        print(f"[Startup] Database init error: {e}")
+
+    # 2. External Service Initialization (Firebase)
+    try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        print("[Startup] Firebase initialized.")
+    except Exception as e:
+        print(f"[Startup] Firebase init error: {e}")
+
+    # 3. Background Threads & Loops
+    # Ranking Background Task
+    threading.Thread(target=ranking_bg_looper, daemon=True).start()
+    
+    # WS Broadcast Loop
     asyncio.create_task(broadcast_stock_updates())
     
-    # [NEW] Start Disclosure Scheduler (KIND Scraper)
+    # Price Alert Monitor
+    from price_alerts import price_alert_monitor
+    asyncio.create_task(price_alert_monitor.start())
+    
+    # Disclosure Scheduler (KIND Scraper)
     try:
         from scheduler import disclosure_scheduler_loop
         asyncio.create_task(disclosure_scheduler_loop())
-        print("[Main] Disclosure Scheduler Started")
+        print("[Startup] Disclosure Scheduler Started")
     except Exception as e:
-        print(f"[Main] Failed to start Disclosure Scheduler: {e}")
-    
-    # [KIS WebSocket Init]
+        print(f"[Startup] Disclosure Scheduler error: {e}")
+
+    # Legacy Alert Scheduler
+    def run_legacy_scheduler():
+        while True:
+            try:
+                from db_manager import check_alerts
+                check_alerts()
+            except Exception as e:
+                print(f"Legacy Scheduler Error: {e}")
+            time.sleep(30)
+    threading.Thread(target=run_legacy_scheduler, daemon=True).start()
+
+    # Smart Scheduler (Market Closing Alerts)
+    try:
+        from scheduler_service import start_scheduler
+        start_scheduler()
+        print("[Startup] Smart Scheduler Started")
+    except Exception as e:
+        print(f"[Startup] Smart Scheduler error: {e}")
+
+    # 4. KIS WebSocket Init
     try:
         from kis_api import KisApi
         from kis_ws import KisWebSocket
-        import os
-        
         app_key = os.getenv("KIS_APP_KEY")
         secret = os.getenv("KIS_APP_SECRET")
         account = os.getenv("KIS_ACCOUNT")
         
         if app_key and secret:
-            # 1. Get Approval Key
             temp_api = KisApi(app_key, secret, account)
             approval_key = temp_api.get_approval_key()
-            
             if approval_key:
                 global kis_ws_client
                 kis_ws_client = KisWebSocket(approval_key)
                 kis_ws_client.set_callback(handle_kis_ws_message)
-                # Start connection in background so it doesn't block server startup
                 asyncio.create_task(kis_ws_client.connect())
-                print("[Main] KIS WebSocket Connection Initiated (Background)")
-            else:
-                print("[Main] Failed to get Approval Key for WS")
+                print("[Startup] KIS WebSocket Connection Initiated")
     except Exception as e:
-        print(f"[Main] WS Init Failed: {e}")
+        print(f"[Startup] KIS WS Init failed: {e}")
+
+    print("[Startup] AI Stock Analyst Backend Started Successfully")
 
 # Global WS Client
 kis_ws_client = None
@@ -1323,22 +1365,7 @@ def remove_portfolio_entry(symbol: str, x_user_id: str = Header(None)):
     return {"status": "success" if success else "error"}
 
 
-class AlertRequest(BaseModel):
-    symbol: str
-    target_price: float
-    condition: str = "above" # above or below
-    chat_id: str = None # [New] Optional Telegram Chat ID
-
-@app.get("/api/alerts")
-def read_alerts():
-    """저장된 모든 알림 반환"""
-    return {"status": "success", "data": get_alerts()}
-
-@app.delete("/api/alerts/{id}")
-def delete_alert_endpoint(id: int):
-    """알림 삭제"""
-    delete_alert(id)
-    return {"status": "success"}
+# (Duplicate alerts endpoints removed)
 
 @app.get("/api/market/scanner")
 def read_market_scanner():
@@ -1430,79 +1457,18 @@ async def read_theme(keyword: str = None, keyword_q: str = Query(None, alias="ke
             "message": f"테마 분석 중 오류가 발생했습니다: {str(e)}"
         }
 
-class VoteRequest(BaseModel):
-    symbol: str
-    vote_type: str # UP or DOWN
+# (Duplicate vote, alert, and telegram endpoints removed)
 
-@app.post("/api/vote")
-def create_vote(req: VoteRequest):
-    """사용자 투표 (Sentiment Battle)"""
-    cast_vote(req.symbol, req.vote_type)
-    return {"status": "success"}
+# (Duplicate FCM endpoints removed)
 
-@app.get("/api/vote/{symbol}")
-def read_vote_stats(symbol: str):
-    """투표 현황 조회"""
-    stats = get_vote_stats(symbol)
-    return {"status": "success", "data": stats}
-
-@app.delete("/api/alerts/{alert_id}")
-def remove_alert(alert_id: int):
-    """알림 삭제"""
-    delete_alert(alert_id)
-    return {"status": "success"}
-
-@app.get("/api/alerts/check")
-def trigger_check_alerts():
-    """알림 조건 확인 (트리거된 알림 반환)"""
-    triggered = check_alerts()
-    return {"status": "success", "data": triggered}
-
-@app.get("/api/telegram/recent-users")
-def read_recent_telegram_users():
-    """최근 봇과 대화한 사용자 목록 반환"""
-    users = get_recent_telegram_users()
-    return {"status": "success", "data": users}
-
-# ============================================================
-# FCM Token Management
-# ============================================================
-class FCMRegisterRequest(BaseModel):
-    token: str
-    device_type: str = "web"
-    device_name: str = None
-
-@app.post("/api/fcm/register")
-def register_fcm_token(req: FCMRegisterRequest, x_user_id: str = Header(None)):
-    """FCM 토큰 등록 (알림 수신용)"""
-    user_id = x_user_id if x_user_id else "guest"
-    
-    success = save_fcm_token(user_id, req.token, req.device_type, req.device_name)
-    
-    if success:
-        print(f"[FCM] Registered token for user {user_id}: {req.token[:10]}...")
-        return {"status": "success", "message": "FCM token registered"}
-    else:
-        return {"status": "error", "message": "Failed to register FCM token"}
-
-@app.post("/api/fcm/unregister")
-def unregister_fcm_token(req: FCMRegisterRequest):
-    """FCM 토큰 삭제 (로그아웃 시)"""
-    success = delete_fcm_token(req.token)
-    if success:
-        return {"status": "success", "message": "FCM token unregistered"}
-    else:
-        return {"status": "error", "message": "Failed to unregister FCM token"}
-
-from auth import router as auth_router
-app.include_router(auth_router, prefix="/api")
+# (Auth Router already included above)
 
 class WatchlistRequest(BaseModel):
     symbol: str
 
 class MigrationRequest(BaseModel):
-    from_user_id: str
-    to_user_id: str
+    guest_id: str
+    target_id: str
 
 
 
@@ -1537,12 +1503,18 @@ def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
     """관심 종목 추가"""
     user_id = x_user_id if x_user_id else "guest"
     success = add_watchlist(user_id, req.symbol)
+    if success:
+        from utils.briefing_store import invalidate_today_briefing
+        invalidate_today_briefing(user_id)
     return {"status": "success" if success else "error"}
 
 @app.post("/api/watchlist/migrate")
 def migrate_watchlist_api(req: MigrationRequest):
     """관심종목 데이터 이전 API (guest -> login_user)"""
-    success = migrate_watchlist(req.from_user_id, req.to_user_id)
+    success = migrate_watchlist(req.guest_id, req.target_id)
+    if success:
+        from utils.briefing_store import invalidate_today_briefing
+        invalidate_today_briefing(req.target_id)
     return {"status": "success" if success else "error"}
 
 @app.delete("/api/watchlist/{symbol}")
@@ -1552,6 +1524,10 @@ def delete_watchlist(symbol: str, x_user_id: str = Header(None)):
     # [Fix] Symbol might be URL encoded (e.g. .KS)
     decoded_symbol = urllib.parse.unquote(symbol)
     remove_watchlist(user_id, decoded_symbol)
+    
+    from utils.briefing_store import invalidate_today_briefing
+    invalidate_today_briefing(user_id)
+    
     return {"status": "success"}
 
 
@@ -1561,6 +1537,10 @@ def clear_all_watchlist(x_user_id: str = Header(None)):
     from db_manager import clear_watchlist
     user_id = x_user_id if x_user_id else "guest"
     clear_watchlist(user_id)
+    
+    from utils.briefing_store import invalidate_today_briefing
+    invalidate_today_briefing(user_id)
+    
     return {"status": "success"}
 
 @app.get("/api/watchlist/closing-summary")
@@ -1868,11 +1848,7 @@ def read_naver_ranking(market: str, rank_type: str):
 
 
 
-@app.get("/api/market/status")
-def read_market_status():
-    """시장 상태 분석 결과 반환"""
-    status = get_market_status()
-    return {"status": "success", "data": status}
+# (Duplicate market status removed)
 
 @app.get("/api/korea/ipo")
 def read_ipo_calendar():
@@ -2265,17 +2241,7 @@ from price_alerts import (
 )
 
 # 서버 시작 시 테이블 생성 및 모니터 시작
-@app.on_event("startup")
-async def startup_price_alerts():
-    """가격 알림 시스템 초기화"""
-    # Firebase 초기화
-    from firebase_config import initialize_firebase
-    from db_manager import create_fcm_tokens_table
-    
-    initialize_firebase()
-    create_fcm_tokens_table()
-    create_price_alerts_tables()
-    asyncio.create_task(price_alert_monitor.start())
+# (Price alerts startup moved to main startup_event)
 
 @app.on_event("shutdown")
 async def shutdown_price_alerts():
@@ -2462,73 +2428,12 @@ def create_new_alert(req: AlertRequest, x_user_id: str = Header(None)):
     alert = add_alert(req.symbol, req.target_price, req.condition, chat_id=req.chat_id, user_id=user_id)
     return {"status": "success", "data": alert}
 
-@app.get("/api/alerts")
-def read_alerts():
-    """알림 목록 조회"""
-    return {"status": "success", "data": get_alerts()}
-
-@app.delete("/api/alerts/{alert_id}")
-def remove_alert(alert_id: int):
-    """알림 삭제"""
-    delete_alert(alert_id)
-    return {"status": "success"}
-
-@app.get("/api/telegram/recent-users")
-def read_recent_telegram_users():
-    """텔레그램 봇 최근 사용자 조회 (ID 찾기용)"""
-    users = get_recent_telegram_users()
-    return {"status": "success", "data": users}
+# (Final duplicate alerts and telegram endpoints removed)
 
 
-@app.get("/api/watchlist/closing-summary")
-def read_closing_summary():
-    """장 마감 시황 및 관심종목 요약 (배너용)"""
-    try:
-        # Import needed for URL decoding
-        import urllib.parse
-        
-        # [Fixed] Missing user_id argument error. Defaulting to 'guest' for banner.
-        watchlist = get_watchlist("guest")
-        if not watchlist:
-            return {"status": "empty", "data": []}
-            
-        summary = []
-        for symbol in watchlist:
-            # urllib unquote might be needed if symbols stored with % encoded
-            symbol = urllib.parse.unquote(symbol)
-            q = get_simple_quote(symbol)
-            if q:
-                summary.append(q)
-                
-        return {
-            "status": "success",
-            "data": summary,
-            "timestamp": time.time()
-        }
-    except Exception as e:
-        print(f"[API] Closing Summary Error: {e}")
-        return {"status": "error", "message": "데이터를 불러올 수 없습니다."}
+# (Duplicate closing summary removed mapping to /api/watchlist/closing-summary)
 
-@app.on_event("startup")
-def startup_event():
-    """서버 시작 시 백그라운드 작업 실행"""
-    # 1. 기존 가격 알림 체크 스케줄러 (30초 주기)
-    def run_legacy_scheduler():
-        while True:
-            try:
-                check_alerts()
-            except Exception as e:
-                print(f"Legacy Scheduler Error: {e}")
-            time.sleep(30)
-
-    # 2. 신규 시장별 마감 알림 스케줄러 (시간 기반)
-    try:
-        from scheduler_service import start_scheduler
-        start_scheduler()
-    except Exception as e:
-        print(f"Smart Scheduler Import Error: {e}")
-
-    threading.Thread(target=run_legacy_scheduler, daemon=True).start()
+# (Legacy startup_event logic moved to main startup_event)
 
 # ============================================================
 # WebSocket Real-time Price Updates
@@ -3245,26 +3150,5 @@ def get_yesterday_vote_comparison(symbol: str):
         print(f"[Vote Yesterday] Error: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.on_event("startup")
-async def startup_event():
-    # [Briefing] Initialize Tables
-    try:
-        init_briefing_table()
-    except Exception as e:
-        print(f"[Startup] briefing_table init crash: {e}")
-    
-    # [Signals] Initialize Tables
-    try:
-        create_signals_table()
-        create_votes_table()
-    except Exception as e:
-        print(f"[Startup] signals/votes init crash: {e}")
-    
-    # [Scheduler] Start Background Tasks
-    try:
-        from scheduler_service import start_scheduler
-        start_scheduler()
-    except Exception as e:
-        print(f"[Startup] scheduler start crash: {e}")
-        
-    print("[Startup] AI Stock Analyst Backend (v2.8.5) Started")
+# (Final startup_event logic moved to main startup_event)
+print("[Startup] AI Stock Analyst Backend Registry Complete")

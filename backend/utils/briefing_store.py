@@ -82,3 +82,20 @@ def should_generate_new_briefing(user_id: str) -> bool:
         return cursor.fetchone() is None
     finally:
         conn.close()
+
+def invalidate_today_briefing(user_id: str):
+    """오늘 생성된 브리핑 캐시를 삭제하여 다음 요청 시 재생성되도록 함"""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        kst = pytz.timezone('Asia/Seoul')
+        today_str = datetime.now(kst).strftime("%Y-%m-%d")
+        cursor.execute(
+            "DELETE FROM morning_briefings WHERE user_id = ? AND DATE(created_at) = ?",
+            (user_id, today_str)
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"[BriefingStore] Invalidate error: {e}")
+    finally:
+        conn.close()
