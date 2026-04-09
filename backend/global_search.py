@@ -12,12 +12,9 @@ def search_global_ticker(query: str):
         q = query.strip().upper()
         if not q: return None
         
-        # [v3.0.1-Fixed] CRITICAL: Block Korean characters to prevent wrong global matches
-        # e.g., '삼성전자' must NOT be searched via Yahoo Finance
-        import re
-        if re.search(r'[가-힣ㄱ-ㅎㅏ-ㅣ]', query):
-            print(f"[GlobalSearch] Blocked Korean query: '{query}' - use korea_data instead.")
-            return None
+        # [v3.0.4] Allow all queries but warn if needed
+        # Yahoo Finance actually handles some local names poorly, so we lean on main.py mapping
+        # but we don't block it here anymore.
         
         # 2. Try Yahoo Finance Ticker Lookup API (Fast & Direct)
         # Yahoo Finance uses this for their own autocomplete

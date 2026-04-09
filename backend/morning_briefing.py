@@ -91,16 +91,26 @@ async def generate_user_morning_briefing(user_id: str):
         }
 
     # 지수 요약 텍스트 생성
-    indices_raw = market_data.get('Indices', []) # Case-sensitive fix
+    indices_raw = market_data.get('indices', []) # Case-sensitive fix: 'Indices' -> 'indices'
     index_list = []
-    for idx in indices_raw[:4]:
-        name = idx.get('name', '시장 지수')
-        price = idx.get('price')
+    for idx in indices_raw:
+        label = idx.get('label', '시장 지수')
+        value = idx.get('value')
         change = idx.get('change', '0.00%')
-        if price:
-            index_list.append(f"{name}: {price} ({change})")
+        if value and value != "N/A":
+            index_list.append(f"{label}: {value} ({change})")
     
-    index_summary = ", ".join(index_list) if index_list else "안정적인 흐름을 보이고 있습니다."
+    # 만약 index_list가 비어있으면 korea_data에서 직접 가져오기 시도
+    if not index_list:
+        try:
+            from korea_data import get_korean_market_indices
+            k_indices = get_korean_market_indices()
+            for k, v in k_indices.items():
+                index_list.append(f"{k.upper()}: {v.get('value')} ({v.get('percent')})")
+        except:
+            pass
+
+    index_summary = ", ".join(index_list) if index_list else "현재 시장 데이터를 수집 중입니다."
 
     # 프롬프트 구성
     prompt = f"""
@@ -116,6 +126,7 @@ async def generate_user_morning_briefing(user_id: str):
 
     [작성 가이드라인 - 필독 및 엄수]
     - **실시간 데이터 기반**: 제공된 [입력 데이터]에 명시된 숫자와 시장 상황에만 철저히 기초하여 분석하세요.
+    - **가변성 확보**: 매번 브리핑을 작성할 때마다 첫 문장과 분석의 초점을 다르게 하세요. (예: 어떤 날은 기술주 중심, 어떤 날은 금리나 환율 중심 등)
     - **추측 금지**: 데이터가 'N/A'이거나 불분명한 경우, 멋대로 주가나 지수를 추정한 분석을 내놓지 마세요. 대신 '데이터 수집 중' 혹은 '시장 확인 필요'라고 명시하세요.
     - 말투: 매우 격식 있고 전문적이며 신뢰감을 주는 비서/전략가 말투를 사용하세요. (예: "~입니다", "~를 분석하였습니다", "관찰되고 있습니다")
     - 내용: 일반적인 뉴스 요약을 넘어, 데이터 간의 연관성이나 시장의 함의를 짧고 강렬하게 짚어주세요.
@@ -124,13 +135,13 @@ async def generate_user_morning_briefing(user_id: str):
 
     [출력 포맷 (JSON)]
     {{
-        "market_title": "오늘의 전략적 시장 가이드라인",
-        "market_summary": "{user_name} 님을 위한 글로벌 마켓 핵심 요약 (전문적인 분석 톤)",
+        "market_title": "오늘의 전략적 시장 가이드라인 (매번 다르게 생성)",
+        "market_summary": "{user_name} 님을 위한 글로벌 마켓 핵심 요약 (구체적인 지수 숫자 포함)",
         "watchlist_briefs": [
             {{
                 "symbol": "종목코드",
                 "name": "종목명",
-                "insight": "{user_name} 님이 주시하는 이 종목의 핵심 모멘텀 분석 (1문장)"
+                "insight": "{user_name} 님이 주시하는 이 종목의 핵심 모멘텀 분석 (데이터 기반으로 매번 다르게)"
             }},
             ...
         ],

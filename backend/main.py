@@ -1198,6 +1198,16 @@ def search_stock_api(q: str):
             "status": "success", 
             "data": [{"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"}]
         }
+
+    # [v3.0.3] GLOBAL_KOREAN_NAMES Priority Mapping
+    # If the query is a Korean name for a global stock (e.g. '애플'), resolve it immediately.
+    for ticker, ko_name in GLOBAL_KOREAN_NAMES.items():
+        if q_norm == ko_name or q_norm in ko_name:
+            print(f" -> Found via Global Mapping: {ticker} ({ko_name})")
+            return {
+                "status": "success",
+                "data": [{"code": ticker, "symbol": ticker, "name": ko_name, "market": "Global"}]
+            }
     
     # 2. Try Korea (Internal Map -> Naver AC -> Yahoo KR -> Naver Search)
     kr_result = search_stock_code(q_norm)

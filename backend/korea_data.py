@@ -97,7 +97,7 @@ def search_stock_code(keyword: str):
     try:
         print(f"[Search Tier 2] Trying Naver AC API for '{keyword_clean}'...")
         ac_url = f"https://ac.finance.naver.com/ac?q={urllib.parse.quote(keyword_clean)}&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111"
-        res_ac = requests.get(ac_url, headers=headers, timeout=3)
+        res_ac = requests.get(ac_url, headers=headers, timeout=2) # Timeout shortened to 2s
         if res_ac.status_code == 200:
             data = res_ac.json()
             items = data.get("items", [])
@@ -110,6 +110,8 @@ def search_stock_code(keyword: str):
                         if keyword_clean in found_name or found_name in keyword_clean:
                             print(f" -> Found via AC API: {found_code} ({found_name})")
                             return found_code
+    except requests.exceptions.RequestException as e:
+        print(f"  !! AC API Network/DNS failed: {e}. Moving to Tier 3.")
     except Exception as acre:
         print(f"  !! AC API Stage failed: {acre}")
 
