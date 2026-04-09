@@ -553,12 +553,17 @@ def update_user_keys(user_id, app_key, secret, account):
         conn.close()
 
 def get_watchlist(user_id):
+    if not user_id:
+        return []
+    u_id = user_id.strip()
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT symbol FROM watchlist WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT symbol FROM watchlist WHERE user_id = ?", (u_id,))
     rows = cursor.fetchall()
     conn.close()
-    return [row[0] for row in rows]
+    res = [row[0] for row in rows]
+    print(f"[DB_WATCHLIST] user_id='{u_id}' found {len(res)} items")
+    return res
 
 def migrate_watchlist(from_id, to_id):
     """guest 등의 임시 ID에서 실제 로그인 ID로 관심종목 이동"""

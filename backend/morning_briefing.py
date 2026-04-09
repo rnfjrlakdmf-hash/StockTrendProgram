@@ -16,28 +16,45 @@ async def generate_user_morning_briefing(user_id: str):
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
+    def log_debug(msg):
+        with open("morning_brief_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now()}] {msg}\n")
+            
+    log_debug(f"Briefing for user_id: '{user_id}' at {now}")
+    
+    print(f"[DEBUG] Briefing for user_id: '{user_id}' at {now}")
+    
     # 1. 데이터 수집
     # 1.1 시장 지수 (미국 중심)
     market_data = get_market_data() # 지수, 환율 등 포함됨
     
     # 1.2 관심종목 데이터 (TurboQuant Parallel Processing)
     watchlist = get_watchlist(user_id)
+    log_debug(f"Found watchlist for '{user_id}': {watchlist}")
+    print(f"[DEBUG] Found watchlist for '{user_id}': {watchlist}")
+    
     watchlist_details = []
     
     target_symbols = watchlist[:5] if watchlist else []
     
     def fetch_symbol_info(symbol):
         try:
+            print(f"[DEBUG] Fetching info for symbol: {symbol}")
             quote = get_simple_quote(symbol)
+            if not quote:
+                print(f"[DEBUG] Failed to get quote for {symbol}")
+                return None
+            
             news = fetch_google_news(symbol, max_results=2)
             return {
                 "symbol": symbol,
-                "name": symbol,
+                "name": quote.get('name', symbol),
                 "price": quote.get('price', 'N/A'),
                 "change": quote.get('change', 'N/A'),
                 "news": [n.get('title', '') for n in (news or [])]
             }
-        except:
+        except Exception as e:
+            print(f"[DEBUG] Error fetching info for {symbol}: {e}")
             return None
 
     if target_symbols:
@@ -45,6 +62,8 @@ async def generate_user_morning_briefing(user_id: str):
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             results = list(executor.map(fetch_symbol_info, target_symbols))
             watchlist_details = [r for r in results if r is not None]
+    
+    print(f"[DEBUG] Final watchlist_details count: {len(watchlist_details)}")
 
     # 1.3 사용자 정보 (개인화용)
     from db_manager import get_user

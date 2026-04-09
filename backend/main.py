@@ -3059,6 +3059,7 @@ def read_financial_health(symbol: str):
 @app.get("/api/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
     """[VIP] 맞춤형 모닝 브리핑 조회 및 생성 (force=true 시 강제 재생성)"""
+    print(f"[DEBUG] get_morning_brief: x_user_id='{x_user_id}', force={force}")
     if not x_user_id:
         return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
     
