@@ -27,14 +27,13 @@ async def generate_user_morning_briefing(user_id: str):
     # 관심종목이 너무 많으면 상위 5개만 집중 분석 (토큰 및 시간 절약)
     target_symbols = watchlist[:5] if watchlist else []
     
-    for item in target_symbols:
-        symbol = item['symbol']
+    for symbol in target_symbols:
         try:
             quote = get_simple_quote(symbol)
             news = fetch_google_news(symbol, max_results=2)
             watchlist_details.append({
                 "symbol": symbol,
-                "name": item.get('name', symbol),
+                "name": symbol, # name 필드가 따로 없으므로 symbol 사용
                 "price": quote.get('price', 'N/A'),
                 "change": quote.get('change', 'N/A'),
                 "news": [n.get('title', '') for n in (news or [])]
@@ -88,8 +87,22 @@ async def generate_user_morning_briefing(user_id: str):
     try:
         # 비동기 실행을 위해 run_in_executor 사용 고려 가능하나 여기서는 단순 호출
         response = generate_with_retry(prompt, json_mode=True)
-        briefing_result = json.loads(response.text)
         
+        # 텍스트 추출 및 정제
+        text = response.text.strip()
+        
+        # 마크다운 코드 블록 제거용 정규표현식 (혹시 모를 경우대비)
+        if text.startswith("```json"):
+            text = text.replace("```json", "", 1).replace("```", "", 1).strip()
+        elif text.startswith("```"):
+            text = text.replace("```", "", 1).replace("```", "", 1).strip()
+            
+        briefing_result = json.loads(text)
+        
+        # [Critical Fix] 결과가 딕셔너리가 아닌 문자열일 경우 대응
+        if not isinstance(briefing_result, dict):
+            raise ValueError(f"AI returned unexpected format: {type(briefing_result)}")
+            
         # 메타데이터 추가
         briefing_result["user_id"] = user_id
         briefing_result["generated_at"] = now.isoformat()
