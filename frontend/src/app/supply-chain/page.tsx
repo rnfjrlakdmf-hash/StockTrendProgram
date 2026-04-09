@@ -132,7 +132,7 @@ export default function SupplyChainPage() {
                                             <span className={`text-xs font-bold mb-1 ${comm.type === 'Benefit' ? 'text-green-400' : 'text-red-400'}`}>
                                                 {comm.type === 'Benefit' ? '수혜 (Benefit)' : '리스크 (Risk)'}
                                             </span>
-                                            <span className="font-bold text-xl text-white text-center leading-tight px-2 break-keep">
+                                            <span className="font-bold text-lg text-white text-center leading-tight px-4 break-keep">
                                                 {comm.name}
                                             </span>
                                             <div className="mt-2 text-sm font-mono bg-black/40 px-2 py-0.5 rounded">
@@ -268,7 +268,7 @@ export default function SupplyChainPage() {
                                         
                                         <span 
                                             onClick={() => handleNodeClick(data.nodes.find((n: any) => n.group === 'target'))}
-                                            className="text-2xl md:text-3xl font-black text-white text-center px-4 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all"
+                                            className="text-lg md:text-2xl font-black text-white text-center px-6 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all"
                                         >
                                             {data.nodes.find((n: any) => n.group === 'target')?.label}
                                         </span>

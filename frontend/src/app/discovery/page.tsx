@@ -605,13 +605,7 @@ function DiscoveryContent() {
                     </div>
                 )}
 
-                {showAlertModal && stock && (
-                    <PriceAlertModal
-                        symbol={stock.symbol}
-                        currentPrice={parseFloat(String(stock.price || "0").replace(/,/g, ''))}
-                        onClose={() => setShowAlertModal(false)}
-                    />
-                )}
+
 
 
 
@@ -801,15 +795,7 @@ function DiscoveryContent() {
                                             </div>
                                             <div className="w-full md:w-auto mt-2 md:mt-2 flex items-center justify-end gap-2">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && <WatchlistButton symbol={stock.symbol} />}
-                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                                    <button
-                                                        onClick={() => setShowAlertModal(true)}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white border border-white/20 transition-all"
-                                                    >
-                                                        <Bell className="w-4 h-4" />
-                                                        <span className="hidden sm:inline">알림</span>
-                                                    </button>
-                                                )}
+
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <a
                                                         href={`/community?stock=${encodeURIComponent(stock.symbol)}`}

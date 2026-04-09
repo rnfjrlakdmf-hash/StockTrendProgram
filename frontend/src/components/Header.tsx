@@ -119,10 +119,12 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 {/* Search Bar Removed as per user request */}
 
                 <div className="flex items-center gap-2">
-                    <button className="relative rounded-xl bg-white/5 p-2.5 transition-colors hover:bg-white/10 hover:text-blue-400 border border-white/5">
-                        <Bell className="h-5 w-5 text-gray-400" />
-                        <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 animate-pulse ring-2 ring-black" />
-                    </button>
+
+                    <Link href="/admin" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
+                        <Users className="h-5 w-5" />
+                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">회원 관리</span>
+                    </Link>
+
                     <button className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors">
                         {user ? (
                             <>

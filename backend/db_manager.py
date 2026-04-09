@@ -201,6 +201,39 @@ def decrement_free_trial(user_id):
     finally:
         conn.close()
 
+def get_all_users():
+    """Admin: 모든 사용자 목록 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, created_at FROM users ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r[0], "email": r[1], "name": r[2], "picture": r[3],
+                "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6]
+            } for r in rows
+        ]
+    except Exception as e:
+        print(f"Get All Users Error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def toggle_user_pro_status(user_id: str, is_pro: bool):
+    """Admin: 사용자 Pro 상태 토글"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE users SET is_pro = ? WHERE id = ?", (1 if is_pro else 0, user_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Toggle Pro Error: {e}")
+        return False
+    finally:
+        conn.close()
+
 def save_analysis_result(data):
     """
     AI 분석 결과를 DB에 저장합니다.

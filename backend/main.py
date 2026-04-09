@@ -38,7 +38,8 @@ from db_manager import (
     save_fcm_token, delete_fcm_token, clear_watchlist,
     create_signals_table, create_votes_table,
     save_signal, get_recent_signals, get_signals_by_symbol,
-    save_vote, get_vote_results, get_user_vote, get_yesterday_vote_results
+    save_vote, get_vote_results, get_user_vote, get_yesterday_vote_results,
+    get_all_users, toggle_user_pro_status
 )
 from user_session import session_manager
 from ai_analysis import (
@@ -67,6 +68,8 @@ from global_search import search_global_ticker
 from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
+from morning_briefing import generate_user_morning_briefing
+from utils.briefing_store import init_briefing_table, get_latest_briefing, should_generate_new_briefing
 
 app = FastAPI(title="AI Stock Analyst", version="2.8.0")
 
@@ -104,8 +107,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v4.7.0 (Stability-Shield-Unified)",
-        "build_id": "2026-04-07-deploy-v2.8.0",
+        "version": "v5.0.0 (Member-Management-Unified)",
+        "build_id": "2026-04-09-deploy-v2.9.0",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -115,6 +118,25 @@ def clear_cache():
     from turbo_engine import turbo_engine
     turbo_engine.clear_cache()
     return {"status": "ok", "message": "Cache cleared successfully"}
+
+@app.get("/api/admin/users")
+def read_all_users():
+    """[Admin] 모든 회원 목록 조회"""
+    users = get_all_users()
+    return {"status": "success", "data": users}
+
+class ProToggleRequest(BaseModel):
+    user_id: str
+    is_pro: bool
+
+@app.post("/api/admin/users/pro")
+def update_user_pro(req: ProToggleRequest):
+    """[Admin] 회원 PRO 상태 변경"""
+    success = toggle_user_pro_status(req.user_id, req.is_pro)
+    if success:
+        return {"status": "success", "message": f"User {req.user_id} PRO status updated."}
+    else:
+        return {"status": "error", "message": "Failed to update status."}
 
 from fastapi import Request
 from rank_data import get_etf_ranking
@@ -3126,6 +3148,27 @@ def read_financial_health(symbol: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/ai/morning-brief")
+async def get_morning_brief(x_user_id: Optional[str] = Header(None)):
+    """[VIP] 맞춤형 모닝 브리핑 조회 및 생성"""
+    if not x_user_id:
+        return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
+    
+    # 1. 오늘 이미 생성된 데이터가 있는지 확인
+    if not should_generate_new_briefing(x_user_id):
+        latest = get_latest_briefing(x_user_id)
+        if latest:
+            return {"status": "success", "data": latest, "cached": True}
+    
+    # 2. 없거나 갱신이 필요하면 생성 (비동기)
+    try:
+        # 이 시점에서 생성은 약간의 시간이 걸릴 수 있음 (Gemini 호출)
+        data = await generate_user_morning_briefing(x_user_id)
+        return {"status": "success", "data": data, "cached": False}
+    except Exception as e:
+        print(f"[API MorningBrief] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/peer-compare")
 def read_peer_comparison(symbols: str = Query(..., description="쉼표 구분 종목코드")):
     """동종업계 비교 분석"""
@@ -3190,3 +3233,27 @@ def get_yesterday_vote_comparison(symbol: str):
     except Exception as e:
         print(f"[Vote Yesterday] Error: {e}")
         return {"status": "error", "message": str(e)}
+
+@app.on_event("startup")
+async def startup_event():
+    # [Briefing] Initialize Tables
+    try:
+        init_briefing_table()
+    except Exception as e:
+        print(f"[Startup] briefing_table init crash: {e}")
+    
+    # [Signals] Initialize Tables
+    try:
+        create_signals_table()
+        create_votes_table()
+    except Exception as e:
+        print(f"[Startup] signals/votes init crash: {e}")
+    
+    # [Scheduler] Start Background Tasks
+    try:
+        from scheduler_service import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        print(f"[Startup] scheduler start crash: {e}")
+        
+    print("[Startup] AI Stock Analyst Backend (v2.8.5) Started")

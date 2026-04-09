@@ -7,6 +7,7 @@ import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData } 
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import MarketIndicators from "@/components/MarketIndicators";
 import NaverTopWidget from "@/components/NaverTopWidget";
+import MorningBriefWidget from "@/components/MorningBriefWidget";
 
 import { TrendingUp, Zap, Activity, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
 
@@ -159,7 +160,10 @@ export default function Home() {
           </div>
         ) : !loading && !error && (
           // Default Dashboard Content
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-1000">
+            {/* Morning Brief Section */}
+            <MorningBriefWidget />
+
             {/* Real-time Top 10 Ranking */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TopRankingWidget market="KR" title="국내 증시 Top 10" />
