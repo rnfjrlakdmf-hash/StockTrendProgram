@@ -20,26 +20,31 @@ async def generate_user_morning_briefing(user_id: str):
     # 1.1 시장 지수 (미국 중심)
     market_data = get_market_data() # 지수, 환율 등 포함됨
     
-    # 1.2 관심종목 데이터
+    # 1.2 관심종목 데이터 (TurboQuant Parallel Processing)
     watchlist = get_watchlist(user_id)
     watchlist_details = []
     
-    # 관심종목이 너무 많으면 상위 5개만 집중 분석 (토큰 및 시간 절약)
     target_symbols = watchlist[:5] if watchlist else []
     
-    for symbol in target_symbols:
+    def fetch_symbol_info(symbol):
         try:
             quote = get_simple_quote(symbol)
             news = fetch_google_news(symbol, max_results=2)
-            watchlist_details.append({
+            return {
                 "symbol": symbol,
-                "name": symbol, # name 필드가 따로 없으므로 symbol 사용
+                "name": symbol,
                 "price": quote.get('price', 'N/A'),
                 "change": quote.get('change', 'N/A'),
                 "news": [n.get('title', '') for n in (news or [])]
-            })
+            }
         except:
-            continue
+            return None
+
+    if target_symbols:
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(fetch_symbol_info, target_symbols))
+            watchlist_details = [r for r in results if r is not None]
 
     # 2. AI 브리핑 생성
     if not API_KEY:

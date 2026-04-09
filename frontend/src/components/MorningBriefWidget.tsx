@@ -179,6 +179,9 @@ export default function MorningBriefWidget() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-[9px] text-gray-600 font-black tracking-tighter">
                         <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500/40"></div> DATA SOURCE: REAL-TIME INDICES & PUBLIC NEWS</span>
+                        <span className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-500/10 text-blue-500/70 rounded-md border border-blue-500/10">
+                            <Sparkles className="w-2 h-2" /> TURBO ENGINE ACTIVE
+                        </span>
                     </div>
                     <button onClick={() => fetchBrief(true)} className="text-[9px] text-blue-500/50 hover:text-blue-400 font-black uppercase tracking-widest transition-colors">REFRESH DATA</button>
                 </div>
