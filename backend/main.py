@@ -112,6 +112,9 @@ def health_check():
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
+# Register Auth Router
+app.include_router(auth_router, prefix="/api")
+
 @app.post("/api/admin/clear-cache")
 def clear_cache():
     """[Admin] Force clear all server-side cache"""
