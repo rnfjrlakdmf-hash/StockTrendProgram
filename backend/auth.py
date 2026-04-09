@@ -39,6 +39,10 @@ def google_login(req: GoogleLoginRequest):
     
     success = create_user_if_not_exists(user_data)
     
+    # [Fix] 자동 관심종목 이전: 게스트 상태에서 추가한 종목들을 로그인 계정으로 옮깁니다.
+    from db_manager import migrate_watchlist
+    migrate_watchlist("guest", req.id)
+    
     if not success:
         return {"status": "error", "message": "DB Error"}
         
