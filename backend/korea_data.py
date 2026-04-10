@@ -1096,12 +1096,18 @@ def get_naver_stock_info(symbol: str):
                 price = data.get('closePrice', '0').replace(',', '')
                 if price and float(price) > 0:
                     pct = data.get('fluctuationsRatio', '0')
+                    # [v5.7.0] Detailed fields for ranking enrichment
+                    change_val = str(data.get('compareToPreviousClosePrice', '0')).replace(',', '')
+                    rf_name = data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED')
+                    
                     return {
                         "symbol": symbol,
                         "name": data.get('stockName', symbol),
                         "price": f"{float(price):,.0f}",
                         "change": f"{float(pct):+.2f}%",
-                        "up": float(pct) >= 0
+                        "change_val": change_val,
+                        "risefall_name": rf_name,
+                        "up": float(pct) >= 0 or rf_name == 'RISING'
                     }
         except: pass
 

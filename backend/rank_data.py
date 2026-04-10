@@ -528,24 +528,31 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     if quote.get("price") and quote.get("price") not in ["확인불가", "0", "N/A"]:
                         p_item["price"] = quote["price"]
                     
-                    # 3. Change & Precision Enrichment
+                    # 3. Change & Precision Enrichment (v3: Direct API Mapping)
                     if quote.get("change"):
                         p_item["change_percent"] = quote["change"]
-                        try:
-                            q_price = float(str(quote["price"]).replace(",", ""))
-                            q_pct_str = str(quote["change"]).replace("%", "").replace("+", "").strip()
-                            q_pct = float(q_pct_str)
-                            
-                            r = q_pct / 100.0
-                            # c_val = P1 - P1/(1+r) = P1 * (r / (1+r))
-                            c_val = q_price * (r / (1 + r))
-                            
-                            # Precision fix
-                            if nation == "KOR":
-                                p_item["change_val"] = int(round(c_val))
-                            else:
-                                p_item["change_val"] = round(c_val, 3)
-                        except: pass
+                        if quote.get("change_val") and quote["change_val"] not in ["0", ""]:
+                            # Use official change value instead of calculation
+                            try:
+                                val = float(str(quote["change_val"]).replace(",", ""))
+                                if quote.get("risefall_name") == 'FALLING':
+                                    val = -abs(val)
+                                    if not str(p_item["change_percent"]).startswith("-"):
+                                        p_item["change_percent"] = "-" + str(p_item["change_percent"]).replace("+", "")
+                                
+                                p_item["change_val"] = int(val) if nation == "KOR" else val
+                                # Ensure risefall code for frontend
+                                p_item["risefall"] = 5 if quote.get("risefall_name") == 'FALLING' else 2
+                            except: pass
+                        else:
+                            # Fallback calculation if field missing
+                            try:
+                                q_price = float(str(quote["price"]).replace(",", ""))
+                                q_pct = float(str(quote["change"]).replace("%", "").replace("+", "").strip())
+                                r = q_pct / 100.0
+                                c_val = q_price * (r / (1 + r))
+                                p_item["change_val"] = int(round(c_val)) if nation == "KOR" else round(c_val, 3)
+                            except: pass
                         
                     # 4. KRW Conversion for foreign stocks
                     if currency != "KRW":

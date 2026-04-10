@@ -108,8 +108,16 @@ export default function GlobalRankingWidget() {
 
     const getRiseFallInfo = (item: RankItem) => {
         const { risefall, change_val, change_percent } = item;
-        const val = typeof change_percent === 'string' ? parseFloat(change_percent) : change_percent;
-        const abs_val = typeof change_val === 'string' ? parseFloat(change_val) : change_val;
+        
+        // Robust numeric parsing (removes commas before parseFloat)
+        const parseValue = (v: any) => {
+            if (v === undefined || v === null || v === '-') return NaN;
+            if (typeof v === 'number') return v;
+            return parseFloat(String(v).replace(/,/g, ''));
+        };
+
+        const val = parseValue(change_percent);
+        const abs_val = parseValue(change_val);
         
         let color = 'text-gray-400';
         let icon = '';
