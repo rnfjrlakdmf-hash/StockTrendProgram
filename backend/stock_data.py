@@ -285,8 +285,9 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             if re.match(r'^\d{6}$', t_symbol):
                 t_symbol += ".KS"  # Try KS first default
 
-            # Use Naver Crawler
-            naver_info = get_naver_stock_info(t_symbol)
+            # Use Comprehensive Naver Crawler (Gather all details at once)
+            from korea_data import gather_naver_stock_data
+            naver_info = gather_naver_stock_data(t_symbol)
             if naver_info:
                 # [Fix] Correct Symbol Suffix (KS vs KQ)
                 # Naver search works by code, so we trust its returned market type

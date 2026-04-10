@@ -28,28 +28,17 @@ def decode_safe(res: requests.Response) -> str:
     3. Fallback to CP949 (common for legacy Naver pages).
     """
     try:
-        # 1. Trust header if explicit
-        content_type = res.headers.get('Content-Type', '').lower()
-        if 'charset=utf-8' in content_type:
-            return res.content.decode('utf-8', 'replace')
-        if 'charset=euc-kr' in content_type:
-             return res.content.decode('cp949', 'ignore')
-             
-        # 2. Heuristic: Naver Finance is usually CP949
-        if "finance.naver.com" in res.url or "navercomp.wisereport.co.kr" in res.url:
-            try:
-                # WiseReport is usually UTF-8, Finance is CP949
-                if "wisereport.co.kr" in res.url:
-                    return res.content.decode('utf-8')
-                return res.content.decode('cp949')
-            except:
-                return res.content.decode('cp949', 'ignore')
-                pass
-
-        # 3. Try UTF-8 strict
-        return res.content.decode('utf-8')
-    except UnicodeDecodeError:
-        # 4. Fallback
+        content = res.content
+        # [Ultimate Strategy] Check for common Korean bytes to decide encoding
+        # EUC-KR 'Sam' = \xbb\xef, UTF-8 'Sam' = \xec\x82\xbc
+        if b'\xec\x82\xbc' in content or b'\xec\xa0\x84' in content:
+            return content.decode('utf-8', 'ignore')
+        if b'\xbb\xef' in content or b'\xbc\xba' in content:
+            return content.decode('cp949', 'ignore')
+        
+        # Fallback to header or apparent encoding
+        return res.text if res.encoding and res.encoding.lower() != 'iso-8859-1' else content.decode('cp949', 'ignore')
+    except Exception:
         return res.content.decode('cp949', 'ignore')
 
 def get_korean_name(symbol: str):
@@ -206,18 +195,12 @@ def gather_naver_stock_data(symbol: str):
         # EUC-KR bytes are often invalid UTF-8 (fail fast), 
         # whereas UTF-8 bytes can look like valid EUC-KR (garbage success).
         # So we MUST try UTF-8 first.
+        # [Fix] Smart Decoding v7: Explicitly handle Naver's hybrid encoding
         content = res.content
-        try:
-            # Try CP949 first for Naver Finance (more common for Korean text)
-            html = content.decode('cp949')
-        except UnicodeDecodeError:
-            try:
-                html = content.decode('euc-kr')
-            except UnicodeDecodeError:
-                try:
-                    html = content.decode('utf-8')
-                except UnicodeDecodeError:
-                    html = content.decode('cp949', 'ignore')
+        if b'charset=utf-8' in content.lower() or b'\xec\x82\xbc' in content: # UTF-8 signature OR meta
+            html = content.decode('utf-8', 'ignore')
+        else:
+            html = content.decode('cp949', 'ignore')
              
         soup = BeautifulSoup(html, 'html.parser')
         
@@ -311,32 +294,35 @@ def gather_naver_stock_data(symbol: str):
 
         # [New] Market Status (In-session, Closed, After-Market)
         market_status = "Unknown"
-        # Try multiple common selectors for market status on Naver Finance
-        status_selectors = ["#market_status", "#time", ".description span.blind", ".description"]
-        for selector in status_selectors:
-            status_tag = soup.select_one(selector)
-            if status_tag:
-                text = status_tag.text.strip()
-                # Use regex to find the actual status part (e.g., 장중, 장마감)
-                match = re.search(r'(장중|장마감|야간거래\(NXT\)|장외|정규장종료|거래정지)', text)
-                if match:
-                    market_status = match.group(1)
-                    break
-                elif any(word in text for word in ["장중", "장마감", "야간거래(NXT)"]):
-                    if "장중" in text: market_status = "장중"
-                    elif "야간거래(NXT)" in text: market_status = "야간거래(NXT)"
-                    elif "장마감" in text: market_status = "장마감"
-                    break
+        # 1. Look for text in description
+        status_tag = soup.select_one(".description")
+        if status_tag:
+            text = status_tag.get_text()
+            # Use raw bytes check if text is still messy, or just common keywords
+            if "장중" in text or "실시간" in text: market_status = "장중"
+            elif "장마감" in text or "정규장종료" in text: market_status = "장마감"
         
-        # 3. Fallback: Search for keywords in common status containers
+        # 2. Pattern Match via ICON alt text (Naver uses images for status)
         if market_status == "Unknown":
-            for tag in soup.select(".description, .date, .no_today, #time"):
-                text = tag.text.strip()
-                if "장중" in text: market_status = "장중"; break
-                if "장마감" in text: market_status = "장마감"; break
-                if "야간거래" in text: market_status = "야간거래(NXT)"; break
-                if "정규장종료" in text: market_status = "장마감"; break
-
+            st_img = soup.select_one("img[alt*='장중'], img[alt*='장마감'], img[alt*='실시간']")
+            if st_img:
+                alt = st_img.get('alt', '')
+                if "장중" in alt or "실시간" in alt: market_status = "장중"
+                elif "장마감" in alt: market_status = "장마감"
+        
+        # 3. Fallback via ID / time
+        if market_status == "Unknown":
+            st = soup.select_one("#time")
+            if st:
+                if "장중" in st.text: market_status = "장중"
+                elif "마감" in st.text: market_status = "장마감"
+        
+        # 4. If all fails but price exists, default to "장중" if hour is 9-16 (KST)
+        if market_status == "Unknown" and price > 0:
+            now_kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+            if now_kst.weekday() < 5 and 9 <= now_kst.hour < 16:
+                 market_status = "장중"
+        
         # 4. Ultimate Fallback: keyword scan in HTML
         if market_status == "Unknown":
             if "장중" in html[:10000]: market_status = "장중"
@@ -395,18 +381,12 @@ def gather_naver_stock_data(symbol: str):
                 # Remove commas and handle spaces
                 c1 = raw.replace(",", "").strip()
                 
-                # Intelligent Unit Parser
-                if "조" in c1 or "억" in c1:
-                    # e.g. "1조 102억원" -> "1조 102억원"
-                    # Just normalize spacing
-                    market_cap_str = re.sub(r'\s+', ' ', c1)
-                    if not market_cap_str.endswith("원"):
-                        market_cap_str += "원"
-                else:
-                    # Just numbers?
-                    cleaned = re.sub(r'[^0-9]', '', c1)
-                    if cleaned:
-                        market_cap_str = cleaned + " 억원"
+                # Intelligent Unit Parser (Handle strings like "1,102조 2,366억원")
+                # Remove commas but keep numbers and Jo/Uk/Won
+                raw_clean = raw.replace(",", "").strip()
+                market_cap_str = raw_clean
+                if not market_cap_str.endswith("원"):
+                    market_cap_str += "원"
         except Exception as sce:
             print(f"Market Cap Scraping Error: {sce}")
             market_cap_str = "N/A"
@@ -1696,37 +1676,58 @@ def get_live_investor_estimates(symbol: str):
     try:
         url = f"https://finance.naver.com/item/frgn.naver?code={clean_code}"
         res = requests.get(url, headers=HEADER, timeout=3)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
+        # frgn.naver is still strictly EUC-KR (CP949)
+        html = res.content.decode('cp949', 'ignore')
+        soup = BeautifulSoup(html, 'html.parser')
 
         # Find the table containing "잠정" (Provisional)
-        sections = soup.select(".sub_section")
-        for sec in sections:
-            if "잠정" in sec.text:
-                table = sec.select_one("table")
-                if table:
-                    rows = table.select("tr")
-                    for row in rows:
-                        cols = row.select("td")
-                        if len(cols) >= 3:
-                            time_txt = cols[0].text.strip()
-                            if ":" in time_txt: 
-                                try:
-                                    foreigner_val = int(cols[1].text.replace(',', ''))
-                                    institution_val = int(cols[2].text.replace(',', ''))
-                                    
-                                    all_points.append({
-                                        "institution": institution_val,
-                                        "foreigner": foreigner_val,
-                                        "program": 0,
-                                        "is_daily": False, 
-                                        "is_today": True,
-                                        "time": time_txt,
-                                        "date": today_str
-                                    })
-                                except:
-                                    continue
+        # Search for table by summary or content keywords
+        table = None
+        for tbl in soup.select("table"):
+            summary = tbl.get("summary", "")
+            if "잠정" in summary or "순매매" in summary:
+                table = tbl
+                break
+        
+        if not table:
+            # Fallback: look for the second sub_section table which is usually the one
+            tables = soup.select(".sub_section table")
+            if len(tables) >= 2:
+                table = tables[1]
+            elif tables:
+                table = tables[0]
+
+        if table:
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) >= 3:
+                    time_txt = cols[0].text.strip()
+                    # More flexible time check
+                    if time_txt and (":" in time_txt or "." in time_txt or any(d.isdigit() for d in time_txt)): 
+                        try:
+                            # Clean and convert numeric values
+                            def parse_naver_num(txt):
+                                clean = re.sub(r'[^0-9-]', '', txt.replace(',', ''))
+                                return int(clean) if clean else 0
+                                
+                            foreigner_val = parse_naver_num(cols[1].text)
+                            institution_val = parse_naver_num(cols[2].text)
+                            
+                            if foreigner_val != 0 or institution_val != 0:
+                                all_points.append({
+                                    "institution": institution_val,
+                                    "foreigner": foreigner_val,
+                                    "program": 0,
+                                    "is_daily": False, 
+                                    "is_today": True,
+                                    "time": time_txt,
+                                    "date": today_str
+                                })
+                        except:
+                            continue
         if all_points:
-            # Sort by time ascending (for table/chart logic if needed)
+            # Sort by time ascending
             all_points.sort(key=lambda x: x['time'])
             return all_points
             
