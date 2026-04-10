@@ -11,6 +11,7 @@ import {
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
 } from "lucide-react";
+import MarketIndicators from "@/components/MarketIndicators";
 import CleanStockList from "@/components/CleanStockList";
 import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
@@ -754,183 +755,19 @@ function CalendarTab({ router }: { router: any }) {
                         )}
                     </div>
 
-                    {/* 하단 통합 시장 모니터 센션 */}
-                    <div>
+                    {/* 하단 통합 시장 모니터 섹션 (Naver Major Indicators 연동) */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
                         <div className="flex items-center justify-between mb-2 px-1">
                             <h4 className="font-black text-sm px-1 text-white flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-blue-500" /> 통합 시장 모니터
+                                <Activity className="w-4 h-4 text-emerald-400" /> 프리미엄 글로벌 마켓 인덱스
                             </h4>
-                            <span className="text-[10px] text-gray-500">실시간 연동 (60s)</span>
+                            <span className="text-[10px] text-gray-500">Naver Finance 실시간 연동 (Sync-Turbo)</span>
                         </div>
-                        <>
-                            <p className="text-xs text-gray-500">💹 통합 시장 실시간 모니터 (KR & Global)</p>
-                            {(krLoading || globalAssetsLoading) && !krEvents.length && !globalAssets ? (
-                                <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-blue-500" /></div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {(() => {
-                                        // 1. 데이터 정규화 및 통합
-                                        const sections: Record<string, any[]> = {
-                                            "🏦 주가지수": [],
-                                            "📋 채권 / 금리": [],
-                                            "💱 주요 환율": [],
-                                            "⛽ 원자재": [],
-                                            "😨 시장심리": [],
-                                            "₿ 암호화폐": []
-                                        };
-
-                                        // 한국 데이터 매핑
-                                        krEvents.forEach(evt => {
-                                            const label = (evt.event_kr || evt.event || "").replace(/^\[한국\]\s*/, "").trim();
-                                            const chgVal = evt.change_val;
-                                            const isUp = chgVal !== null && chgVal !== undefined ? chgVal > 0 : evt.change?.startsWith("+");
-                                            const isDown = chgVal !== null && chgVal !== undefined ? chgVal < 0 : evt.change?.startsWith("-");
-
-                                            const item = {
-                                                name: label,
-                                                price: evt.actual || "-",
-                                                change: evt.change || "",
-                                                previous: evt.previous || "-",
-                                                isUp,
-                                                isDown,
-                                                isKr: true
-                                            };
-
-                                            if (evt.category?.includes("지수")) sections["🏦 주가지수"].push(item);
-                                            else if (evt.category?.includes("채권") || evt.category?.includes("금리")) sections["📋 채권 / 금리"].push(item);
-                                            else if (evt.category?.includes("심리")) sections["😨 시장심리"].push(item);
-                                        });
-
-                                        // 글로벌 데이터 매핑
-                                        if (globalAssets) {
-                                            const KOREAN_MAP: Record<string, string> = {
-                                                "S&P 500": "S&P 500", "Nasdaq": "나스닥", "Dow Jones": "다우존스", "Russell 2000": "러셀 2000",
-                                                "VIX": "VIX 공포지수", "Nikkei 225": "니케이 225", "Euro Stoxx 50": "유로스톡스 50",
-                                                "Shanghai Composite": "상해종합", "Hang Seng": "항셍",
-                                                "USD/KRW": "달러/원", "JPY/KRW": "엔/원", "EUR/KRW": "유로/원", "CNY/KRW": "위안/원",
-                                                "Gold": "금", "Silver": "은", "Crude Oil": "WTI 원유", "Brent Oil": "브렌트유",
-                                                "Natural Gas": "천연가스", "Copper": "구리",
-                                                "국제 금": "국제 금", "국제 은": "국제 은",
-                                                "US 10Y": "미국채 10년", "US 2Y": "미국채 2년", "US 30Y": "미국채 30년", "US 5Y": "미국채 5년", "US 13W": "미국채 3개월",
-                                                "Treasury 10Y": "미국채 10년", "Treasury 30Y": "미국채 30년", "Treasury 5Y": "미국채 5년", "Treasury 13W": "미국채 3개월",
-                                                "US 2Y Note": "미국채 2년",
-                                                "Bitcoin": "비트코인", "Ethereum": "이더리움", "Ripple": "리플", "Solana": "솔라나", "Dogecoin": "도지코인",
-                                            };
-
-                                            Object.entries(globalAssets).forEach(([key, items]: [string, any]) => {
-                                                if (!Array.isArray(items)) return;
-                                                items.forEach(item => {
-                                                    const chg = Number(item.change || 0);
-                                                    const p = Number(String(item.price).replace(/,/g, ""));
-
-                                                    // 한글화 매핑 적용
-                                                    let name = item.name?.replace(" Market", "") || "";
-                                                    if (KOREAN_MAP[name]) name = KOREAN_MAP[name];
-
-                                                    // 가격 표시 로직 (국내 원자재는 ₩ 표시)
-                                                    let priceStr = "";
-                                                    if (key === "Bonds" || key === "Interest") {
-                                                        priceStr = `${p.toFixed(2)}%`;
-                                                    } else if (key === "Crypto") {
-                                                        priceStr = `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                                                    } else if (key === "Forex" || name.includes("국내")) {
-                                                        priceStr = `₩${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                                                    } else if (key === "Commodity") {
-                                                        priceStr = `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                                                    } else {
-                                                        priceStr = p.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                                    }
-
-                                                    const normItem = {
-                                                        name,
-                                                        price: priceStr,
-                                                        change: `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`,
-                                                        previous: "",
-                                                        isUp: chg > 0,
-                                                        isDown: chg < 0,
-                                                        isKr: false
-                                                    };
-
-                                                    // [Fix] 심볼 기반 중복 제거 로직 강화 (한국 지표 중복 방지)
-                                                    const sym = item.symbol || "";
-                                                    const isKrIndex = sym === "^KS11" || sym === "^KQ11" || sym === "^KS200";
-                                                    const isKrRate = sym === "KORATE" || sym === "CD91" || sym === "CALL" || sym === "KO3Y" || sym === "KO10Y" || sym === "KR_BASE_RATE" || sym.includes("KR10YBT=X");
-
-                                                    if (key === "Indices") {
-                                                        if (!isKrIndex) sections["🏦 주가지수"].push(normItem);
-                                                    }
-                                                    else if (key === "Bonds" || key === "Interest") {
-                                                        if (!isKrRate && !name.includes("국고채") && !name.includes("기준금리")) {
-                                                            sections["📋 채권 / 금리"].push(normItem);
-                                                        }
-                                                    }
-                                                    else if (key === "Forex") sections["💱 주요 환율"].push(normItem);
-                                                    else if (key === "Commodity") sections["⛽ 원자재"].push(normItem);
-                                                    else if (key === "Crypto") sections["₿ 암호화폐"].push(normItem);
-                                                });
-                                            });
-                                        }
-
-                                        const CAT_STYLE: Record<string, { bg: string; border: string; text: string }> = {
-                                            "🏦 주가지수": { bg: "bg-blue-900/10", border: "border-blue-500/20", text: "text-blue-400" },
-                                            "📋 채권 / 금리": { bg: "bg-purple-900/10", border: "border-purple-500/20", text: "text-purple-400" },
-                                            "💱 주요 환율": { bg: "bg-green-900/10", border: "border-green-500/20", text: "text-green-400" },
-                                            "⛽ 원자재": { bg: "bg-orange-900/10", border: "border-orange-500/20", text: "text-orange-400" },
-                                            "😨 시장심리": { bg: "bg-red-900/10", border: "border-red-500/20", text: "text-red-400" },
-                                            "₿ 암호화폐": { bg: "bg-yellow-900/10", border: "border-yellow-500/20", text: "text-yellow-400" }
-                                        };
-
-                                        return Object.entries(sections).map(([title, items]) => {
-                                            if (items.length === 0) return null;
-                                            const style = CAT_STYLE[title] || { bg: "bg-white/5", border: "border-white/10", text: "text-gray-400" };
-                                            return (
-                                                <div key={title} className={`${style.bg} border ${style.border} rounded-2xl p-4 backdrop-blur-sm transition-all duration-300 hover:bg-opacity-20`}>
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <h4 className={`font-black text-sm ${style.text} flex items-center gap-2 uppercase tracking-tight`}>
-                                                            {title}
-                                                            <span className="w-1 h-1 rounded-full bg-current opacity-50" />
-                                                            <span className="text-[10px] font-bold opacity-60">{items.length} 항목</span>
-                                                        </h4>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                                                        {items.map((item, i) => (
-                                                            <div key={i} className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-1.5 hover:border-white/10 transition-colors group">
-                                                                <div className="flex items-center justify-between gap-1">
-                                                                    <span className="text-[10px] text-gray-400 font-bold leading-none truncate flex items-center gap-1">
-                                                                        {item.isKr && <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30">KR</span>}
-                                                                        {item.name}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-baseline justify-between">
-                                                                    <span className="text-sm font-black text-white font-mono leading-none tracking-tighter">
-                                                                        {item.price}
-                                                                    </span>
-                                                                    <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-md ${item.isUp ? "bg-red-500/15 text-red-500" : item.isDown ? "bg-blue-500/15 text-blue-500" : "bg-gray-500/15 text-gray-500"}`}>
-                                                                        {item.change}
-                                                                    </span>
-                                                                </div>
-                                                                {item.previous && item.previous !== "-" && (
-                                                                    <div className="flex justify-between items-center text-[8px] uppercase tracking-widest font-bold text-gray-600">
-                                                                        <span>PREV CLOSE</span>
-                                                                        <span className="font-mono">{item.previous}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            );
-                                        });
-                                    })()}
-                                    <div className="pt-2 text-center">
-                                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
-                                            Real-time Market Sync • Auto-refresh every 60s
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <MarketIndicators />
                     </div>
+                    </div>
+                </div>
+            )}
                 </div>
             )}
 

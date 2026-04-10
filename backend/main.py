@@ -1723,6 +1723,12 @@ def ranking_bg_looper():
                         get_global_ranking(m, c) # 내부적으로 서버 캐시 갱신
                         time.sleep(0.5) # 정밀 조율된 부하 제어
                     except: pass
+            
+            # 3. [New] 주요 시장지표 업데이트 (Major Indicators)
+            try:
+                from major_indicators import get_major_economic_indicators
+                get_major_economic_indicators(refresh=True)
+            except: pass
                 
         except Exception as e:
             print(f"Ranking Background Update Error: {e}")
@@ -1894,6 +1900,15 @@ def read_global_rank(market: str = "KOSPI", category: str = "trading_volume"):
     """
     from rank_data import get_global_ranking
     data = get_global_ranking(market, category)
+    return {"status": "success", "data": data}
+
+@app.get("/api/market/major")
+def read_major_indicators():
+    """
+    [v5.2.0] 네이버 전문 시장지표 (유가, 금, 국채, 금리 등) 보강 데이터
+    """
+    from major_indicators import get_normalized_major_indicators
+    data = get_normalized_major_indicators()
     return {"status": "success", "data": data}
 
 from rank_data import get_naver_ranking
