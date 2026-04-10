@@ -497,12 +497,9 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "rank": i + 1,
                 "symbol": symbol,
                 "name": name,
-                "price": price, # Keep as is (string or raw num)
-                "price_krw": price_krw,
-                "currency_symbol": symbol_prefix,
-                "change_val": change_val,
-                "change_percent": change_rate,
-                "risefall": risefall,
+                "price": "-", # [v5.8.0] Kill Shift: Ignore Ranking API's broken price
+                "change_val": 0,
+                "change_percent": "0.00%",
                 "volume": volume,
                 "amount": amount,
                 "market": market
@@ -562,9 +559,12 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         except: pass
                 return p_item
 
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=5) as executor:
                 processed = list(executor.map(enrich_item, processed))
 
+        # [v5.8.0] Clear cache to flush poisoned data
+        CACHE_GLOBAL_RANKING.clear() 
+        
         if processed:
             CACHE_GLOBAL_RANKING[cache_key] = {
                 "data": processed,
