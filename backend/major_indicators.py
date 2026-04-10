@@ -55,8 +55,8 @@ def get_major_economic_indicators(refresh=False):
     # 5.1 Domestic Market Interest Rates (CD, Call, COFIX, etc.)
     domestic_interest_data = fetch_naver_json(f"{base_url}/majors/domesticInterest")
 
-    # 6. Crypto
-    crypto_data = fetch_naver_json(f"{base_url}/crypto")
+    # 6. Crypto (Corrected Endpoint)
+    crypto_data = fetch_naver_json("https://stock.naver.com/api/coin/rank/UPBIT/majors")
 
     # Normalize Output
     combined = {
@@ -77,15 +77,27 @@ def get_major_economic_indicators(refresh=False):
     
     return combined
 
-@turbo_cache(ttl_seconds=300)
+@turbo_cache(ttl_seconds=60)
 def get_normalized_major_indicators():
     """
     Returns data in a format compatible with MarketIndicators.tsx UI
     """
     raw = get_major_economic_indicators()
     
-    def process_item(item):
+    def process_item(item, is_crypto=False):
         if not item: return None
+        
+        # Crypto API uses different field names (tradePrice, changeRate, etc.)
+        if is_crypto:
+            return {
+                "name": item.get("name") or "Unknown",
+                "symbol": item.get("symbolCode") or item.get("itemCode"),
+                "price": item.get("tradePrice"),
+                "change": item.get("changeRate") or "0.00",
+                "risefall": item.get("changeType"),
+                "unit": "USD"
+            }
+            
         return {
             "name": item.get("name") or "Unknown",
             "symbol": item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode"),
@@ -102,7 +114,7 @@ def get_normalized_major_indicators():
         "Bonds": [process_item(x) for x in raw.get("Bonds", [])],
         "Interest": [process_item(x) for x in raw.get("Interest", []) + raw.get("DomesticInterest", [])],
         "Indices": [process_item(x) for x in raw.get("RPC", []) if x.get("categoryType") == "index"],
-        "Crypto": [process_item(x) for x in raw.get("Crypto", [])[:10]] if raw.get("Crypto") else [],
+        "Crypto": [process_item(x, True) for x in raw.get("Crypto", [])[:10]] if raw.get("Crypto") else [],
         "updatedAt": raw.get("updatedAt")
     }
     

@@ -168,22 +168,25 @@ export default function Home() {
             {/* Global Real-time Ranking (New Premium Widget) */}
             <GlobalRankingWidget />
 
-            {/* Naver-style TOP Stocks Widget */}
-            <NaverTopWidget />
+        )}
 
-            {/* Premium Global Market Indicators (New) */}
-            <div className="pt-4 border-t border-white/5 mt-10">
-              <div className="flex items-center justify-between mb-6 px-1">
-                <h4 className="text-2xl font-black text-white flex items-center gap-3">
+        {/* Premium Global Market Indicators (New - Now Persistent at bottom) */}
+        {!loading && !error && (
+          <div className="pt-8 border-t border-white/5 mt-12 bg-gradient-to-b from-transparent to-emerald-900/5 rounded-t-[3rem] p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 px-1 gap-4">
+              <div>
+                <h4 className="text-3xl font-black text-white flex items-center gap-3">
                   <Activity className="w-8 h-8 text-emerald-400" /> 
                   Premium Global Market Index
                 </h4>
-                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                  <span className="text-[10px] font-bold text-emerald-400 animate-pulse uppercase tracking-tighter">Sync-Turbo Live</span>
-                </div>
+                <p className="text-gray-500 text-sm mt-1 ml-11 font-medium">네이버 금융 기반 실시간 전문 시장 지표</p>
               </div>
-              <MarketIndicators />
+              <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Sync-Turbo Live 60s</span>
+              </div>
             </div>
+            <MarketIndicators />
           </div>
         )}
       </div>
