@@ -92,7 +92,11 @@ export default function GlobalRankingWidget() {
         else if (market === 'JAPAN') decimals = 1;
         else if (market === 'VIETNAM') decimals = 0;
 
-        const formatted = Number(price).toLocaleString(undefined, {
+        const num = typeof price === 'string' ? parseFloat(price.replace(/,/g, '')) : Number(price);
+        
+        if (Number.isNaN(num)) return '-';
+
+        const formatted = num.toLocaleString(undefined, {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         });
