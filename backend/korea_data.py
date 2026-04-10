@@ -1946,7 +1946,7 @@ def get_korean_interest_rates():
     except Exception as e:
         print(f"Interest Rates Scrape Error: {e}")
         return [
-            {"name": "한국 기준금리", "price": 3.25, "change": 0.0, "symbol": "KORATE"},
+            {"name": "한국 기준금리", "price": 2.50, "change": 0.0, "symbol": "KORATE"},
             {"name": "CD금리 (91일)",  "price": 2.81, "change": 0.0, "symbol": "CD91"},
             {"name": "국고채 3년",     "price": 3.18, "change": 0.0, "symbol": "KO3Y"},
             {"name": "국고채 10년",    "price": 3.50, "change": 0.0, "symbol": "KO10Y"},
