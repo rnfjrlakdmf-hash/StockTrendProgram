@@ -15,6 +15,7 @@ import FCMWrapper from "@/components/FCMWrapper";
 {/* Global FCM Token Manager (Disabled for Debugging Crash) */ }
 {/* <FCMTokenManager /> */ }
 
+// [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
   title: "AI Stock Analyst - 실시간 주식 시세 분석",
   description: "AI 기반 실시간 주식 시장 데이터 분석 서비스. 본 정보는 투자 참고용이며 투자 권유가 아닙니다.",
