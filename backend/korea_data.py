@@ -1583,23 +1583,49 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         }
 
 
-def get_exchange_rate():
+def get_exchange_rate(currency="USD"):
     """
-    Fetch KRW/USD exchange rate from Naver
+    Fetch exchange rates from Naver Market Index
+    currency: USD, JPY, CNY, HKD, VND
     """
+    # Mapping to Naver symbol IDs
+    symbol_map = {
+        "USD": "FX_USDKRW",
+        "JPY": "FX_JPYKRW",
+        "CNY": "FX_CNYKRW",
+        "HKD": "FX_HKDKRW",
+        "VND": "FX_VNDKRW"
+    }
+    
+    symbol = symbol_map.get(currency.upper(), "FX_USDKRW")
+    
     try:
-        url = "https://finance.naver.com/marketindex/"
-        res = requests.get(url, headers=HEADER, timeout=3)
+        # We can use the mobile API for cleaner JSON response if possible, 
+        # or just scape the detail page which is very stable.
+        url = f"https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd={symbol}"
+        res = requests.get(url, headers=HEADER, timeout=5)
         soup = BeautifulSoup(decode_safe(res), 'html.parser')
         
-        # USD
-        usd_tag = soup.select_one("#exchangeList > li.on > a.head.usd > div > span.value")
-        if usd_tag:
-            return float(usd_tag.text.replace(',', ''))
+        # Current Value in detail page
+        val_tag = soup.select_one(".value")
+        if val_tag:
+            rate = float(val_tag.text.replace(',', ''))
             
-        return 1300.0 # Fallback
-    except:
-        return 1300.0
+            # Unit adjust: JPY and VND are usually quoted per 100 units in Naver
+            if "JPY" in symbol or "VND" in symbol:
+                # Check for "100" in the name or description if we want to be 100% sure
+                # Or just use the standard financial convention for KRW pairs
+                rate = rate / 100.0
+                
+            return rate
+            
+        # Fallbacks for safety
+        fallbacks = {"USD": 1380.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
+        return fallbacks.get(currency.upper(), 1300.0)
+    except Exception as e:
+        print(f"Exchange Rate Error ({currency}): {e}")
+        fallbacks = {"USD": 1380.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
+        return fallbacks.get(currency.upper(), 1300.0)
 
 @lru_cache(maxsize=1)
 def get_ipo_data():

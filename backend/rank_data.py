@@ -389,6 +389,21 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     nation = nation_map.get(market, "USA")
     order_type = cat_map.get(category, "quantTop")
 
+    # Currency/Rate Mapping
+    currency_map = {"KOR": "KRW", "USA": "USD", "CHN": "CNY", "HKG": "HKD", "JPN": "JPY", "VNM": "VND"}
+    symbol_map = {"KRW": "₩", "USD": "$", "CNY": "¥", "HKD": "$", "JPY": "¥", "VND": "₫"}
+    
+    currency = currency_map.get(nation, "USD")
+    symbol_prefix = symbol_map.get(currency, "$")
+    
+    rate = 1.0
+    if currency != "KRW":
+        try:
+            from korea_data import get_exchange_rate
+            rate = get_exchange_rate(currency)
+        except:
+            pass
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": "https://stock.naver.com/"
@@ -444,11 +459,25 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
                 amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
 
+            # Formatting & KRW Conversion
+            f_price = 0.0
+            try:
+                # Clean price string if it's a string
+                ps = str(price).replace(",", "").strip()
+                f_price = float(ps) if ps and ps != "-" else 0.0
+            except: pass
+            
+            price_krw = None
+            if currency != "KRW" and f_price > 0:
+                price_krw = f"{f_price * rate:,.0f}"
+
             processed.append({
                 "rank": i + 1,
                 "symbol": symbol,
                 "name": name,
                 "price": price,
+                "price_krw": price_krw,
+                "currency_symbol": symbol_prefix,
                 "change_percent": change_rate,
                 "volume": volume,
                 "amount": amount,

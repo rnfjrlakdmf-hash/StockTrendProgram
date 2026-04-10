@@ -11,6 +11,8 @@ interface RankItem {
     symbol: string;
     name: string;
     price: number | string;
+    price_krw?: string;
+    currency_symbol?: string;
     change_percent: number | string;
     volume?: number | string;
     amount?: number | string;
@@ -77,22 +79,28 @@ export default function GlobalRankingWidget() {
         };
     }, [market]);
 
-    const formatPrice = (price: any) => {
-        if (!price || price === 0) return '-';
-        return Number(price).toLocaleString(undefined, {
+    const formatPrice = (item: RankItem) => {
+        const { price, currency_symbol } = item;
+        if (!price || price === 0 || price === '-') return '-';
+        
+        const formatted = Number(price).toLocaleString(undefined, {
             maximumFractionDigits: market === 'KOSPI' ? 0 : 2
         });
+        
+        return `${currency_symbol || ''} ${formatted}`;
     };
 
     const formatChange = (change: any) => {
         if (!change) return '0.00%';
         const val = typeof change === 'string' ? parseFloat(change) : change;
+        if (isNaN(val)) return '0.00%';
         const prefix = val > 0 ? '+' : '';
         return `${prefix}${val.toFixed(2)}%`;
     };
 
     const getChangeColor = (change: any) => {
         const val = typeof change === 'string' ? parseFloat(change) : change;
+        if (isNaN(val)) return 'text-gray-400';
         if (val > 0) return 'text-red-500';
         if (val < 0) return 'text-blue-500';
         return 'text-gray-400';
@@ -175,10 +183,17 @@ export default function GlobalRankingWidget() {
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <div className="text-sm font-bold text-gray-100 font-mono">
-                                                    {formatPrice(item.price)}
+                                                    {formatPrice(item)}
                                                 </div>
-                                                <div className={`text-[11px] font-bold font-mono ${getChangeColor(item.change_percent)}`}>
-                                                    {formatChange(item.change_percent)}
+                                                <div className="flex flex-col items-end">
+                                                    <div className={`text-[11px] font-bold font-mono ${getChangeColor(item.change_percent)}`}>
+                                                        {formatChange(item.change_percent)}
+                                                    </div>
+                                                    {item.price_krw && market !== 'KOSPI' && (
+                                                        <div className="text-[9px] text-gray-500 mt-0.5 font-medium">
+                                                            약 {item.price_krw}원
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
