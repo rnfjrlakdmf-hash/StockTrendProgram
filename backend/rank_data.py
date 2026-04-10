@@ -453,7 +453,25 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             else:
                 # Foreign or SearchTop Schema
                 symbol = item.get("symbolCode") or item.get("reutersCode") or item.get("itemcode")
-                name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName") or symbol
+                
+                # [Fix] Popular Search items often miss names. Resolve them.
+                name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
+                
+                if not name or name == symbol:
+                    # Try resolving via STOCK_MAP for domestic
+                    if nation == "KOR":
+                        try:
+                            from stock_names import STOCK_MAP
+                            # Reverse lookup
+                            for k, v in STOCK_MAP.items():
+                                if v == symbol:
+                                    name = k
+                                    break
+                        except: pass
+                    
+                    # If still no name, use symbol
+                    if not name: name = symbol
+
                 price = item.get("currentPrice") or item.get("nowPrice")
                 change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
                 volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
