@@ -2001,84 +2001,6 @@ def calculate_optimal(req: OptimalRatioRequest):
 # ?쒖옣 ?몄궗?댄듃 APIs (援?怨듬ℓ???泥?
 # ============================================================
 
-@app.get("/api/market-insights")
-def get_market_insights():
-    """?ㅼ떆媛?寃???곸쐞 諛?嫄곕옒?湲??곸쐞 醫낅ぉ 議고쉶"""
-    try:
-        import requests
-        from bs4 import BeautifulSoup
-        from korea_data import decode_safe
-
-        headers = {"User-Agent": "Mozilla/5.0"}
-
-        def scrape_table(url: str, limit: int = 20, is_search: bool = False):
-            try:
-                res = requests.get(url, headers=headers, timeout=8)
-                soup = BeautifulSoup(decode_safe(res), "html.parser")
-                results = []
-                
-                # 寃???곸쐞??table.type_5, 嫄곕옒?湲덉? table.type_2
-                table = soup.select_one("table.type_5" if is_search else "table.type_2")
-                if not table:
-                    return results
-
-                rows = table.select("tr")
-                for row in rows:
-                    if len(results) >= limit:
-                        break
-                    cols = row.select("td")
-                    if len(cols) < 5:
-                        continue
-                    try:
-                        # ?대쫫 ?뚯떛
-                        name_idx = 1 if not is_search else 1
-                        name_tag = cols[name_idx].select_one("a")
-                        if not name_tag:
-                            continue
-                        name = name_tag.text.strip()
-                        symbol = name_tag.get("href", "").split("code=")[-1] if name_tag.get("href") else ""
-                        
-                        price = cols[2 if not is_search else 3].text.strip()
-                        change = cols[4 if not is_search else 5].text.strip()
-                        
-                        # 嫄곕옒?湲?寃?됰퉬???뚯떛
-                        if is_search:
-                            amount_val = cols[2].text.strip() # 寃?됰퉬??                        else:
-                            # 嫄곕옒?湲덉쓽 寃쎌슦 ?⑥쐞媛 諛깅쭔 ?먮뒗 ??(sise_quant_high.naver)
-                            amount_val = cols[6].text.strip() + "諛깅쭔"
-
-                        results.append({
-                            "name": name,
-                            "symbol": symbol,
-                            "price": price,
-                            "change": change,
-                            "amount": amount_val
-                        })
-                    except:
-                        continue
-                return results
-            except Exception as e:
-                print(f"[Insights] scrape error {url}: {e}")
-                return []
-
-        # 1. ?ㅼ떆媛?寃???곸쐞 (20媛?
-        search_top = scrape_table("https://finance.naver.com/sise/lastsearch2.naver", limit=20, is_search=True)
-        
-        # 2. 嫄곕옒?湲??곸쐞 (KOSPI 10媛? KOSDAQ 10媛?
-        val_kospi = scrape_table("https://finance.naver.com/sise/sise_quant_high.naver?sosok=0", limit=10)
-        val_kosdaq = scrape_table("https://finance.naver.com/sise/sise_quant_high.naver?sosok=1", limit=10)
-
-        return {
-            "status": "success",
-            "data": {
-                "search_top": search_top,
-                "value_top": val_kospi + val_kosdaq  # 합쳐서 20개
-            }
-        }
-
-    except Exception as e:
-        print(f"Market insights error: {e}")
-        return {"status": "error", "message": str(e)}
 
 
 # ============================================================
@@ -2862,18 +2784,21 @@ def read_investor_top():
                         if not name_tag:
                             continue
                         name = name_tag.text.strip()
+                        symbol = name_tag.get("href", "").split("code=")[-1] if name_tag.get("href") else ""
                         
                         price = cols[2].text.strip()
-                        change = cols[4].text.strip() # 상승률의 경우
-                        volume = cols[5].text.strip() # 거래량의 경우
+                        change = cols[4].text.strip() 
                         
+                        # [Standardization] quant uses index 5 (Volume), rise uses index 4 (Pct)
                         if "quant" in url:
+                            volume = cols[5].text.strip()
                             amount_val = f"{volume}주"
                         else:
                             amount_val = change
                         
                         results.append({
                             "name": name,
+                            "symbol": symbol,
                             "price": price,
                             "amount": amount_val
                         })
@@ -2926,9 +2851,8 @@ def get_market_insights():
         def scrape_table(url: str, limit: int = 20, is_search: bool = False):
             try:
                 res = requests.get(url, headers=headers, timeout=10)
-                # Naver Finance uses EUC-KR
-                res.encoding = 'euc-kr'
-                soup = BeautifulSoup(res.text, "html.parser")
+                # [Fix] Use decode_safe for hybrid encoding support (v3.2.0 Engine)
+                soup = BeautifulSoup(decode_safe(res), "html.parser")
                 results = []
                 
                 # 검색 상위는 table.type_5, 거래대금은 table.type_2
@@ -2945,6 +2869,7 @@ def get_market_insights():
                         continue
                     try:
                         # 이름 파싱
+                        # 검색상위(type_5)는 Index 1, 거래대금상위(type_2)는 Index 2
                         name_idx = 1 if is_search else 2
                         name_tag = cols[name_idx].select_one("a")
                         if not name_tag:
@@ -2959,8 +2884,9 @@ def get_market_insights():
                         else:
                             price = cols[3].text.strip() if len(cols) > 3 else ""
                             change = cols[5].text.strip() if len(cols) > 5 else ""
-                            # 거래대금 상위 페이지의 경우 6번째 컬럼이 거래대금(단위: 백만)
-                            amount_val = cols[6].text.strip() + "백만" if len(cols) > 6 else ""
+                            # [Fix] Trading Value in sise_quant_high is Index 9
+                            raw_val = cols[9].text.strip() if len(cols) > 9 else "0"
+                            amount_val = f"{raw_val}백만"
 
                         results.append({
                             "name": name,
