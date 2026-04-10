@@ -1701,17 +1701,32 @@ CACHE_FILE_PATH = "dashboard_cache.json"
 
 
 def ranking_bg_looper():
-    """Background task to keep top 10 ranking cache warm"""
+    """Background task to keep top 10 and global rankings warm"""
     print("Starting ranking background updater...")
+    from rank_data import get_global_ranking
+    
     while True:
         try:
-            # KR, US 순차 업데이트
+            # 1. 기존 Top 10 업데이트
             get_realtime_top10("KR", refresh=True)
-            time.sleep(2) # API 부하 분산
+            time.sleep(1)
             get_realtime_top10("US", refresh=True)
+            time.sleep(1)
+            
+            # 2. [New] 글로벌 랭킹 업데이트 (주요 마켓/카테고리)
+            targets = [
+                ("KOSPI", "trading_volume"), ("KOSPI", "popular_search"),
+                ("USA", "trading_volume"), ("USA", "popular_search"),
+                ("JAPAN", "trading_volume"), ("CHINA", "trading_volume")
+            ]
+            
+            for m, c in targets:
+                get_global_ranking(m, c) # 내부적으로 캐시 갱신
+                time.sleep(1) # 부하 방지
+                
         except Exception as e:
             print(f"Ranking Background Update Error: {e}")
-        time.sleep(20) # 20초마다 갱신
+        time.sleep(30) # 30초마다 갱신 (전술적 부하 조절)
 
 
 @app.get("/api/market")
@@ -1868,6 +1883,17 @@ def read_rank_top10(market: str):
     """실시간 시총 상위 10 (KR/US)"""
     market = market.upper()
     data = get_realtime_top10(market)
+    return {"status": "success", "data": data}
+
+@app.get("/api/rank/global")
+def read_global_rank(market: str = "KOSPI", category: str = "trading_volume"):
+    """
+    [v5.0.0] 실시간 글로벌 랭킹 (국내/해외 통합)
+    market: KOSPI, KOSDAQ, USA, CHINA, HONG_KONG, JAPAN, VIETNAM
+    category: trading_volume, trading_amount, popular_search
+    """
+    from rank_data import get_global_ranking
+    data = get_global_ranking(market, category)
     return {"status": "success", "data": data}
 
 from rank_data import get_naver_ranking

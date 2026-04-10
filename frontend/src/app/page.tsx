@@ -8,6 +8,7 @@ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import MarketIndicators from "@/components/MarketIndicators";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
+import GlobalRankingWidget from "@/components/GlobalRankingWidget";
 
 import { TrendingUp, Zap, Activity, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
 
@@ -164,11 +165,8 @@ export default function Home() {
             {/* Morning Brief Section */}
             <MorningBriefWidget />
 
-            {/* Real-time Top 10 Ranking */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TopRankingWidget market="KR" title="국내 증시 Top 10" />
-              <TopRankingWidget market="US" title="해외 증시 Top 10" />
-            </div>
+            {/* Global Real-time Ranking (New Premium Widget) */}
+            <GlobalRankingWidget />
 
             {/* Naver-style TOP Stocks Widget */}
             <NaverTopWidget />

@@ -11,6 +11,10 @@ CACHE_DURATION = 15  # 15초
 CACHE_US_ETFS = {"data": [], "timestamp": 0}
 CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 
+# [New] Global Ranking Cache
+CACHE_GLOBAL_RANKING = {}
+CACHE_GLOBAL_RANKING_DURATION = 60 # 1분
+
 def get_realtime_top10(market="KR", refresh=False):
     """
     KOSPI(국내) 및 S&P500(미국) 시가총액 상위 10개 실시간 시세 조회
@@ -350,6 +354,89 @@ def fetch_yahoo_movers():
         item['rank'] = i + 1
         
     return {"gainers": gainers, "losers": losers}
+
+def get_global_ranking(market="KOSPI", category="trading_volume"):
+    """
+    [v5.0.0] Global Dashboard Ranking Engine
+    market: KOSPI, KOSDAQ, USA, CHINA, HONG_KONG, JAPAN, VIETNAM
+    category: trading_volume, trading_amount, popular_search
+    """
+    import requests
+    import time
+    
+    cache_key = f"{market}_{category}"
+    now = time.time()
+    
+    if cache_key in CACHE_GLOBAL_RANKING:
+        cached = CACHE_GLOBAL_RANKING[cache_key]
+        if now - cached['timestamp'] < CACHE_GLOBAL_RANKING_DURATION:
+            return cached['data']
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1",
+        "Referer": "https://m.stock.naver.com/"
+    }
+    
+    try:
+        # Determine API source (Domestic vs Global)
+        is_domestic = market in ["KOSPI", "KOSDAQ"]
+        
+        if is_domestic:
+            url = f"https://m.stock.naver.com/api/stock/ranking?category={category}&market={market}&page=1&pageSize=10"
+        else:
+            url = f"https://m.stock.naver.com/api/worldStock/ranking?category={category}&market={market}&page=1&pageSize=10"
+            
+        res = requests.get(url, headers=headers, timeout=5)
+        raw_data = res.json()
+        
+        # Parse based on API structure
+        # Domestic usually returns a flat list at top level or under 'items'
+        # Global usually returns under 'items'
+        items = []
+        if isinstance(raw_data, list):
+            items = raw_data
+        elif isinstance(raw_data, dict):
+            items = raw_data.get("items", raw_data.get("stocks", []))
+            
+        processed = []
+        for i, item in enumerate(items[:10]):
+            # Unified format for frontend
+            symbol = item.get("itemCode") or item.get("symbolCode") or item.get("symbol")
+            name = item.get("itemName") or item.get("stockName")
+            
+            # Price handling
+            price = item.get("closePrice") or item.get("nowPrice") or item.get("price")
+            if isinstance(price, str): price = price.replace(",", "")
+            
+            # Change percentage
+            change_rate = item.get("fluctuationRate") or item.get("changeRate") or item.get("compareToPreviousClosePrice")
+            
+            # Additional metrics
+            volume = item.get("accumulatedTradingVolume") or item.get("volume")
+            amount = item.get("accumulatedTradingValue") or item.get("tradeValue")
+
+            processed.append({
+                "rank": i + 1,
+                "symbol": symbol,
+                "name": name,
+                "price": price,
+                "change_percent": change_rate,
+                "volume": volume,
+                "amount": amount,
+                "market": market
+            })
+            
+        if processed:
+            CACHE_GLOBAL_RANKING[cache_key] = {
+                "data": processed,
+                "timestamp": now
+            }
+            
+        return processed
+        
+    except Exception as e:
+        print(f"Global Ranking API Error ({market}/{category}): {e}")
+        return []
 
 def get_naver_ranking(market="krx", rank_type="quant"):
     """
