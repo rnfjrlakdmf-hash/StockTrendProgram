@@ -84,7 +84,7 @@ export default function GlobalRankingWidget() {
     // [TurboQuant Precision Formatter]
     const formatPrice = (item: RankItem) => {
         const { price, currency_symbol } = item;
-        if (!price || price === 0 || price === '-') return '-';
+        if (price === undefined || price === null || price === '-' || String(price).toLowerCase() === 'nan') return '-';
         
         let decimals = 2; // Default (USA)
         if (market === 'KOSPI') decimals = 0;
@@ -92,9 +92,14 @@ export default function GlobalRankingWidget() {
         else if (market === 'JAPAN') decimals = 1;
         else if (market === 'VIETNAM') decimals = 0;
 
-        const num = typeof price === 'string' ? parseFloat(price.replace(/,/g, '')) : Number(price);
+        let num = 0;
+        if (typeof price === 'string') {
+            num = parseFloat(price.replace(/,/g, ''));
+        } else {
+            num = Number(price);
+        }
         
-        if (Number.isNaN(num)) return '-';
+        if (isNaN(num) || num === 0) return '-';
 
         const formatted = num.toLocaleString(undefined, {
             minimumFractionDigits: decimals,
@@ -256,7 +261,7 @@ export default function GlobalRankingWidget() {
             <div className="flex justify-between items-center px-2">
                  <div className="flex items-center gap-2">
                      <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10">
-                         <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Global Ranking V2.8</span>
+                         <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Global Ranking V3.5</span>
                      </div>
                  </div>
                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">

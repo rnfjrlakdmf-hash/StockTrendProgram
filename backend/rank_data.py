@@ -364,7 +364,8 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     import requests
     import time
     
-    cache_key = f"{market}_{category}"
+    # [v5.8.5] Cache key prefix V3.5 to flush old poisoned data
+    cache_key = f"v3.5_{market}_{category}"
     now = time.time()
     
     if cache_key in CACHE_GLOBAL_RANKING:
@@ -562,9 +563,6 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             with ThreadPoolExecutor(max_workers=5) as executor:
                 processed = list(executor.map(enrich_item, processed))
 
-        # [v5.8.0] Clear cache to flush poisoned data
-        CACHE_GLOBAL_RANKING.clear() 
-        
         if processed:
             CACHE_GLOBAL_RANKING[cache_key] = {
                 "data": processed,
