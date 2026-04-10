@@ -357,9 +357,9 @@ def fetch_yahoo_movers():
 
 def get_global_ranking(market="KOSPI", category="trading_volume"):
     """
-    [v5.0.0] Global Dashboard Ranking Engine
-    market: KOSPI, KOSDAQ, USA, CHINA, HONG_KONG, JAPAN, VIETNAM
-    category: trading_volume, trading_amount, popular_search
+    [v5.1.0-Fixed] Global Dashboard Ranking Engine (Using stock.naver.com API)
+    market: KOSPI, KOSI, KOSDAQ, USA, CHINA (CHN), HONG_KONG (HKG), JAPAN (JPN), VIETNAM (VNM)
+    category: trading_volume (quantTop), trading_amount (priceTop), popular_search (searchTop)
     """
     import requests
     import time
@@ -372,48 +372,77 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         if now - cached['timestamp'] < CACHE_GLOBAL_RANKING_DURATION:
             return cached['data']
 
+    # Nation/Category Mapping
+    nation_map = {
+        "KOSPI": "KOR", "KOSDAQ": "KOR", "KOR": "KOR", "KOSI": "KOR",
+        "USA": "USA", "CHINA": "CHN", "CHN": "CHN",
+        "HONG_KONG": "HKG", "HKG": "HKG",
+        "JAPAN": "JPN", "JPN": "JPN",
+        "VIETNAM": "VNM", "VNM": "VNM"
+    }
+    cat_map = {
+        "trading_volume": "quantTop",
+        "trading_amount": "priceTop",
+        "popular_search": "searchTop"
+    }
+    
+    nation = nation_map.get(market, "USA")
+    order_type = cat_map.get(category, "quantTop")
+
     headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1",
-        "Referer": "https://m.stock.naver.com/"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://stock.naver.com/"
     }
     
     try:
-        # Determine API source (Domestic vs Global)
-        is_domestic = market in ["KOSPI", "KOSDAQ"]
-        
-        if is_domestic:
-            url = f"https://m.stock.naver.com/api/stock/ranking?category={category}&market={market}&page=1&pageSize=10"
+        # 1. API URL 결정
+        if nation == "KOR":
+            if order_type == "searchTop":
+                url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=10"
+            else:
+                url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
         else:
-            url = f"https://m.stock.naver.com/api/worldStock/ranking?category={category}&market={market}&page=1&pageSize=10"
+            if order_type == "searchTop" and nation == "USA":
+                 url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=USA&startIdx=0&pageSize=10"
+            else:
+                 url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
             
         res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code != 200:
+            return []
+            
         raw_data = res.json()
-        
-        # Parse based on API structure
-        # Domestic usually returns a flat list at top level or under 'items'
-        # Global usually returns under 'items'
         items = []
         if isinstance(raw_data, list):
             items = raw_data
         elif isinstance(raw_data, dict):
-            items = raw_data.get("items", raw_data.get("stocks", []))
+            items = raw_data.get("items") or raw_data.get("stocks") or raw_data.get("result")
+            if items is None and "result" in raw_data:
+                items = raw_data["result"].get("items") or raw_data["result"].get("stocks")
+            
+        if not items:
+            return []
             
         processed = []
         for i, item in enumerate(items[:10]):
             # Unified format for frontend
-            symbol = item.get("itemCode") or item.get("symbolCode") or item.get("symbol")
-            name = item.get("itemName") or item.get("stockName")
-            
-            # Price handling
-            price = item.get("closePrice") or item.get("nowPrice") or item.get("price")
-            if isinstance(price, str): price = price.replace(",", "")
-            
-            # Change percentage
-            change_rate = item.get("fluctuationRate") or item.get("changeRate") or item.get("compareToPreviousClosePrice")
-            
-            # Additional metrics
-            volume = item.get("accumulatedTradingVolume") or item.get("volume")
-            amount = item.get("accumulatedTradingValue") or item.get("tradeValue")
+            # Handle Domestic vs Foreign key differences
+            if nation == "KOR" and order_type != "searchTop":
+                # Domestic Schema
+                symbol = item.get("itemcode")
+                name = item.get("itemname")
+                price = item.get("nowPrice")
+                change_rate = item.get("prevChangeRate")
+                volume = item.get("tradeVolume")
+                amount = item.get("tradeAmount")
+            else:
+                # Foreign or SearchTop Schema
+                symbol = item.get("symbolCode") or item.get("reutersCode") or item.get("itemcode")
+                name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName") or symbol
+                price = item.get("currentPrice") or item.get("nowPrice")
+                change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
+                volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
+                amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
 
             processed.append({
                 "rank": i + 1,
