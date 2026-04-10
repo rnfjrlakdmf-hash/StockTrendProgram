@@ -765,9 +765,6 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                         <MarketIndicators />
                     </div>
-                    </div>
-                </div>
-            )}
                 </div>
             )}
 
