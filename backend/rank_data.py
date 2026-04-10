@@ -442,12 +442,15 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         for i, item in enumerate(items[:10]):
             # Unified format for frontend
             # Handle Domestic vs Foreign key differences
+            # [TurboQuant Precision V2] Preserve original strings to avoid rounding errors
             if nation == "KOR" and order_type != "searchTop":
                 # Domestic Schema
                 symbol = item.get("itemcode")
                 name = item.get("itemname")
                 price = item.get("nowPrice")
                 change_rate = item.get("prevChangeRate")
+                change_val = item.get("prevChangePrice")
+                risefall = item.get("upDownGb") # 2:Up, 5:Down
                 volume = item.get("tradeVolume")
                 amount = item.get("tradeAmount")
             else:
@@ -474,13 +477,14 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
                 price = item.get("currentPrice") or item.get("nowPrice")
                 change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
+                change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
+                risefall = item.get("risefall") or item.get("upDownGb")
                 volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
                 amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
 
-            # Formatting & KRW Conversion
+            # [TurboQuant KRW Conversion]
             f_price = 0.0
             try:
-                # Clean price string if it's a string
                 ps = str(price).replace(",", "").strip()
                 f_price = float(ps) if ps and ps != "-" else 0.0
             except: pass
@@ -493,10 +497,12 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "rank": i + 1,
                 "symbol": symbol,
                 "name": name,
-                "price": price,
+                "price": price, # Keep as is (string or raw num)
                 "price_krw": price_krw,
                 "currency_symbol": symbol_prefix,
+                "change_val": change_val,
                 "change_percent": change_rate,
+                "risefall": risefall,
                 "volume": volume,
                 "amount": amount,
                 "market": market

@@ -1713,16 +1713,16 @@ def ranking_bg_looper():
             get_realtime_top10("US", refresh=True)
             time.sleep(1)
             
-            # 2. [New] 글로벌 랭킹 업데이트 (주요 마켓/카테고리)
-            targets = [
-                ("KOSPI", "trading_volume"), ("KOSPI", "popular_search"),
-                ("USA", "trading_volume"), ("USA", "popular_search"),
-                ("JAPAN", "trading_volume"), ("CHINA", "trading_volume")
-            ]
+            # 2. [New] 글로벌 랭킹 업데이트 (모든 국가/카테고리 - TurboQuant 기술 적용)
+            markets = ["KOSPI", "USA", "CHINA", "HONG_KONG", "JAPAN", "VIETNAM"]
+            categories = ["trading_volume", "trading_amount", "popular_search"]
             
-            for m, c in targets:
-                get_global_ranking(m, c) # 내부적으로 캐시 갱신
-                time.sleep(1) # 부하 방지
+            for m in markets:
+                for c in categories:
+                    try:
+                        get_global_ranking(m, c) # 내부적으로 서버 캐시 갱신
+                        time.sleep(0.5) # 정밀 조율된 부하 제어
+                    except: pass
                 
         except Exception as e:
             print(f"Ranking Background Update Error: {e}")

@@ -13,7 +13,9 @@ interface RankItem {
     price: number | string;
     price_krw?: string;
     currency_symbol?: string;
+    change_val?: number | string;
     change_percent: number | string;
+    risefall?: string | number;
     volume?: number | string;
     amount?: number | string;
 }
@@ -79,31 +81,52 @@ export default function GlobalRankingWidget() {
         };
     }, [market]);
 
+    // [TurboQuant Precision Formatter]
     const formatPrice = (item: RankItem) => {
         const { price, currency_symbol } = item;
         if (!price || price === 0 || price === '-') return '-';
         
+        let decimals = 2; // Default (USA)
+        if (market === 'KOSPI') decimals = 0;
+        else if (market === 'CHINA' || market === 'HONG_KONG') decimals = 3;
+        else if (market === 'JAPAN') decimals = 1;
+        else if (market === 'VIETNAM') decimals = 0;
+
         const formatted = Number(price).toLocaleString(undefined, {
-            maximumFractionDigits: market === 'KOSPI' ? 0 : 2
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
         });
         
-        return `${currency_symbol || ''} ${formatted}`;
+        // Match screenshot prefix (HK$ uses concatenated style, others space)
+        const prefix = market === 'HONG_KONG' ? 'HK$' : (currency_symbol || '');
+        return `${prefix}${formatted}`;
     };
 
-    const formatChange = (change: any) => {
-        if (!change) return '0.00%';
-        const val = typeof change === 'string' ? parseFloat(change) : change;
-        if (isNaN(val)) return '0.00%';
-        const prefix = val > 0 ? '+' : '';
-        return `${prefix}${val.toFixed(2)}%`;
-    };
+    const getRiseFallInfo = (item: RankItem) => {
+        const { risefall, change_val, change_percent } = item;
+        const val = typeof change_percent === 'string' ? parseFloat(change_percent) : change_percent;
+        const abs_val = typeof change_val === 'string' ? parseFloat(change_val) : change_val;
+        
+        let color = 'text-gray-400';
+        let icon = '';
+        
+        // Naver use specific codes if available
+        const rfCode = String(risefall);
+        if (rfCode === '2' || rfCode === '3' || val > 0) {
+            color = 'text-[#f23c3c]'; // Naver Red
+            icon = '▲';
+        } else if (rfCode === '5' || rfCode === '6' || val < 0) {
+            color = 'text-[#3c78f2]'; // Naver Blue
+            icon = '▼';
+        }
 
-    const getChangeColor = (change: any) => {
-        const val = typeof change === 'string' ? parseFloat(change) : change;
-        if (isNaN(val)) return 'text-gray-400';
-        if (val > 0) return 'text-red-500';
-        if (val < 0) return 'text-blue-500';
-        return 'text-gray-400';
+        const abs_str = abs_val ? Math.abs(Number(abs_val)).toLocaleString(undefined, { 
+            minimumFractionDigits: (market === 'KOSPI' || market === 'VIETNAM') ? 0 : (market === 'CHINA' || market === 'HONG_KONG' ? 3 : 1) 
+        }) : '';
+        
+        const pct_str = isNaN(val) ? '0.00' : Math.abs(val).toFixed(2);
+        
+        return { color, icon, abs_str, pct_str };
     };
 
     const handleItemClick = (symbol: string, name: string) => {
@@ -120,20 +143,20 @@ export default function GlobalRankingWidget() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white tracking-tight">글로벌 실시간 랭킹</h2>
-                        <p className="text-xs text-gray-500 mt-0.5">실시간 시장 인기 및 거래 현황</p>
+                        <p className="text-xs text-gray-400/60 mt-0.5">실계좌 기반 최신 시장 트렌드 동기화</p>
                     </div>
                 </div>
 
                 {/* Market Selector */}
-                <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 overflow-x-auto hide-scrollbar">
+                <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 overflow-x-auto hide-scrollbar">
                     {MARKET_CONFIG.map((m) => (
                         <button
                             key={m.id}
                             onClick={() => setMarket(m.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
                                 market === m.id 
                                 ? 'bg-blue-600 text-white shadow-lg' 
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                : 'text-gray-500 hover:text-white hover:bg-white/5'
                             }`}
                         >
                             <span className="text-base">{m.icon}</span>
@@ -149,60 +172,67 @@ export default function GlobalRankingWidget() {
                     <div key={cat.id} className="space-y-4">
                         <div className="flex items-center justify-between px-1">
                             <div className="flex items-center gap-2">
-                                <cat.icon className="w-4 h-4 text-blue-400" />
+                                <span className="bg-blue-500/10 p-1.5 rounded-lg">
+                                    <cat.icon className="w-4 h-4 text-blue-400" />
+                                </span>
                                 <h3 className="text-sm font-bold text-gray-300">{cat.label}</h3>
                             </div>
                             {loading && (
-                                <RefreshCw className="w-3 h-3 text-gray-500 animate-spin" />
+                                <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />
                             )}
                         </div>
 
                         <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
                             {rankData[cat.id].length > 0 ? (
                                 <div className="divide-y divide-white/5">
-                                    {rankData[cat.id].map((item, idx) => (
-                                        <div
-                                            key={`${item.symbol}-${idx}`}
-                                            onClick={() => handleItemClick(item.symbol, item.name)}
-                                            className="flex items-center justify-between p-4 hover:bg-white/5 transition-all cursor-pointer group"
-                                        >
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                <span className={`w-6 text-center font-black italic ${
-                                                    idx < 3 ? 'text-blue-500' : 'text-gray-600'
-                                                }`}>
-                                                    {idx + 1}
-                                                </span>
-                                                <div className="overflow-hidden">
-                                                    <div className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors truncate">
-                                                        {item.name}
-                                                    </div>
-                                                    <div className="text-[10px] text-gray-500 font-mono">
-                                                        {item.symbol}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <div className="text-sm font-bold text-gray-100 font-mono">
-                                                    {formatPrice(item)}
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    <div className={`text-[11px] font-bold font-mono ${getChangeColor(item.change_percent)}`}>
-                                                        {formatChange(item.change_percent)}
-                                                    </div>
-                                                    {item.price_krw && market !== 'KOSPI' && (
-                                                        <div className="text-[9px] text-gray-500 mt-0.5 font-medium">
-                                                            약 {item.price_krw}원
+                                    {rankData[cat.id].map((item, idx) => {
+                                        const rf = getRiseFallInfo(item);
+                                        return (
+                                            <div
+                                                key={`${item.symbol}-${idx}`}
+                                                onClick={() => handleItemClick(item.symbol, item.name)}
+                                                className="flex items-center justify-between p-4 hover:bg-white/10 active:bg-white/5 transition-all cursor-pointer group"
+                                            >
+                                                <div className="flex items-center gap-4 overflow-hidden">
+                                                    <span className={`w-6 text-center text-lg font-black italic tracking-tighter ${
+                                                        idx < 3 ? 'text-blue-500' : 'text-gray-700'
+                                                    }`}>
+                                                        {idx + 1}
+                                                    </span>
+                                                    <div className="overflow-hidden">
+                                                        <div className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors truncate">
+                                                            {item.name}
                                                         </div>
-                                                    )}
+                                                        <div className="text-[10px] text-gray-500 font-medium font-mono">
+                                                            {item.symbol}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <div className="text-sm font-bold text-gray-100 font-mono tracking-tight">
+                                                        {formatPrice(item)}
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <div className={`text-[11px] font-bold font-mono ${rf.color}`}>
+                                                            {rf.icon} {rf.abs_str} ({rf.pct_str}%)
+                                                        </div>
+                                                        {item.price_krw && market !== 'KOSPI' && (
+                                                            <div className="text-[9px] text-gray-500 mt-0.5 font-medium bg-black/40 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                약 <span className="text-gray-400">{item.price_krw}</span>원
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-12 space-y-3 opacity-40">
-                                    <Activity className="w-8 h-8 text-gray-600" />
-                                    <p className="text-xs text-gray-500">데이터가 없거나 장 휴장일 수 있습니다.</p>
+                                <div className="flex flex-col items-center justify-center py-16 space-y-3 opacity-30">
+                                    <div className="p-4 rounded-full bg-white/5">
+                                        <Activity className="w-8 h-8 text-gray-600" />
+                                    </div>
+                                    <p className="text-xs text-gray-500 font-medium">실시간 데이터 동기화 중...</p>
                                 </div>
                             )}
                         </div>
@@ -210,11 +240,16 @@ export default function GlobalRankingWidget() {
                 ))}
             </div>
 
-            {/* Footer indicator */}
-            <div className="flex justify-center md:justify-end">
-                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+            {/* Footer indicator - TurboQuant tech Badge */}
+            <div className="flex justify-between items-center px-2">
+                 <div className="flex items-center gap-2">
+                     <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10">
+                         <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Global Ranking V2.8</span>
+                     </div>
+                 </div>
+                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                     <span className="text-[10px] font-bold text-blue-400">네이버 금융 라이브 파싱 가동 중</span>
+                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">TurboQuant™ High-Speed Sync Active</span>
                  </div>
             </div>
         </div>
