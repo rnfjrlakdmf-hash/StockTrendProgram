@@ -508,6 +508,48 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "market": market
             })
             
+        # [v5.5.0] Enrichment for items with missing data (e.g. Popular Search)
+        if category == "popular_search" and processed:
+            from stock_data import get_simple_quote
+            from concurrent.futures import ThreadPoolExecutor
+            
+            def enrich_item(p_item):
+                sym = p_item["symbol"]
+                if not sym: return p_item
+                
+                # If price is missing or name is just a symbol
+                if p_item.get("price") in [None, "-", "0", 0, "确认不可"] or p_item.get("name") == sym:
+                    # Enrich via get_simple_quote (which uses Naver Mobile API)
+                    quote = get_simple_quote(sym)
+                    if quote:
+                        # Update name if it was just a symbol or missing
+                        if (p_item.get("name") == sym or not p_item.get("name")) and quote.get("name"):
+                            p_item["name"] = quote["name"]
+                        
+                        # Update price and change
+                        if quote.get("price") and quote.get("price") not in ["확인불가", "0"]:
+                            p_item["price"] = quote["price"]
+                        
+                        if quote.get("change"):
+                            p_item["change_percent"] = quote["change"]
+                            # Try to estimate/parse change_val
+                            try:
+                                q_price = float(str(quote["price"]).replace(",", ""))
+                                q_pct = float(str(quote["change"]).replace("%", "").replace("+", ""))
+                                p_item["change_val"] = q_price * (q_pct / (100 + q_pct)) # Rough estimate or parse if possible
+                            except: pass
+                        
+                        # Update KRW conversion for foreign stocks
+                        if currency != "KRW":
+                            try:
+                                f_p = float(str(quote["price"]).replace(",", ""))
+                                p_item["price_krw"] = f"{f_p * rate:,.0f}"
+                            except: pass
+                return p_item
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                processed = list(executor.map(enrich_item, processed))
+
         if processed:
             CACHE_GLOBAL_RANKING[cache_key] = {
                 "data": processed,
