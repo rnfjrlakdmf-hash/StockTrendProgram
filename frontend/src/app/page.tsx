@@ -170,6 +170,20 @@ export default function Home() {
 
             {/* Naver-style TOP Stocks Widget */}
             <NaverTopWidget />
+
+            {/* Premium Global Market Indicators (New) */}
+            <div className="pt-4 border-t border-white/5 mt-10">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <h4 className="text-2xl font-black text-white flex items-center gap-3">
+                  <Activity className="w-8 h-8 text-emerald-400" /> 
+                  Premium Global Market Index
+                </h4>
+                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                  <span className="text-[10px] font-bold text-emerald-400 animate-pulse uppercase tracking-tighter">Sync-Turbo Live</span>
+                </div>
+              </div>
+              <MarketIndicators />
+            </div>
           </div>
         )}
       </div>
