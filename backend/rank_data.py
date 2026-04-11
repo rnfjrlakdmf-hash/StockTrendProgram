@@ -1,6 +1,6 @@
 import yfinance as yf
-
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 # 캐싱을 위한 전역 변수 (간단한 인메모리 캐시)
@@ -18,33 +18,35 @@ CACHE_GLOBAL_RANKING_DURATION = 30 # 30초 (사용자 요청 반영)
 
 def fix_mojibake(text):
     """
-    [v3.7.2] Robustly fix Korean Mojibake (Encoding issues) commonly found in Naver Global APIs.
-    Some fields are CP949 bytes inside a UTF-8 container.
+    [v3.8.0] State-of-the-Art Mojibake Recovery Engine.
+    Handles legacy CP949 strings erroneously embedded in UTF-8 JSON.
     """
     if not text or not isinstance(text, str): return text
     
-    # 1. Check if it's already clean
-    if any(ord(c) > 0x1100 and ord(c) < 0x7FFF for c in text): # Has CJK but not weird range
-        # Check for weird replacement/control chars
-        if "\ufffd" not in text and "\u00c0" not in text:
-            return text
+    # Check if the string already contains valid Korean characters (Hangul Syllables)
+    has_hangul = any(0xAC00 <= ord(c) <= 0xD7A3 for c in text)
+    has_garbage = any(ord(c) == 65533 or (0x0080 <= ord(c) <= 0x00FF) for c in text) or "\ufffd" in text or "\u00c0" in s if 's' in locals() else False # s was used in previous version
+    
+    # Fix potential variable name error from previous version's logic
+    if "\ufffd" in text or "\u00c0" in text: has_garbage = True
 
-    # 2. Try Round-trip repair: UTF-8 -> Latin-1 -> CP949
-    # This recovers CP949 bytes that were mis-decoded as UTF-8 or Latin-1
-    try:
-        # If it contains typical 'mojibake' chars
-        candidate = text.encode('iso-8859-1').decode('cp949')
-        if any(ord(c) >= 0xAC00 and ord(c) <= 0xD7A3 for c in candidate): # Has valid Korean
-            return candidate
-    except: pass
-    
-    # 3. Try UTF-8 -> CP949 (another common mis-map)
-    try:
-        candidate = text.encode('utf-8').decode('cp949', 'ignore')
-        if any(ord(c) >= 0xAC00 and ord(c) <= 0xD7A3 for c in candidate):
-            return candidate
-    except: pass
-    
+    # If it has garbage chars but No Hangul, OR just looks suspicious
+    if has_garbage or not has_hangul:
+        try:
+            # Round-trip: Reinterpret as bytes from latin-1 (common fallback for CP949 in UTF-8 env)
+            repaired = text.encode('iso-8859-1').decode('cp949')
+            # If repair yields valid Korean, success!
+            if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                return repaired
+        except: pass
+        
+        try:
+            # Alternative: It might have been already decoded as UTF-8 but contained CP949 bytes
+            repaired = text.encode('utf-8', 'ignore').decode('cp949', 'ignore')
+            if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                return repaired
+        except: pass
+
     return text.replace("\ufffd", "")
 
 def get_realtime_top10(market="KR", refresh=False):
@@ -459,10 +461,15 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         if res.status_code != 200:
             return []
             
-        # [v3.7.1] Smart Multi-Layer Decoding to fix Mojibake (Encoding issues)
-        from korea_data import decode_safe
-        decoded_content = decode_safe(res)
-        raw_data = json.loads(decoded_content)
+        # [v3.8.2] Precision Byte-Preserving Decoding
+        # We decode as ISO-8859-1 (latin-1) to preserve all raw bytes for selective field-level repair.
+        try:
+            raw_data = json.loads(res.content.decode('iso-8859-1'))
+        except:
+            try:
+                raw_data = res.json()
+            except:
+                return []
         
         items = []
         if isinstance(raw_data, list):
@@ -477,13 +484,23 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             
         processed = []
         for i, item in enumerate(items[:10]):
-            # Unified format for frontend
-            # Handle Domestic vs Foreign key differences
-            # [TurboQuant Precision V2] Preserve original strings to avoid rounding errors
+            # Helper to repair fields that were preserved in latin-1
+            def repair(s):
+                if not s or not isinstance(s, str): return s
+                try:
+                    # Some fields are CP949 buried in the byte stream
+                    return s.encode('iso-8859-1').decode('cp949')
+                except:
+                    try:
+                        # Others might be UTF-8 buried
+                        return s.encode('iso-8859-1').decode('utf-8')
+                    except:
+                        return s
+
             if nation == "KOR" and order_type != "searchTop":
                 # Domestic Schema
                 symbol = item.get("itemcode")
-                name = item.get("itemname")
+                name = repair(item.get("itemname"))
                 price = item.get("nowPrice")
                 change_rate = item.get("prevChangeRate")
                 change_val = item.get("prevChangePrice")
@@ -492,51 +509,39 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 amount = item.get("tradeAmount")
             else:
                 # Foreign or SearchTop Schema
-                # [v5.8.5] Prioritize reutersCode (.T, .HK) for reliable enrichment
                 symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode")
                 
-                # [Fix] Popular Search items often miss names. Resolve them.
-                k_name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
-                e_name = item.get("englishCodeName")
+                # [v3.8.2] Precision Field Recovery
+                k_name = repair(item.get("koreanCodeName") or item.get("itemname") or item.get("stockName"))
+                e_name = repair(item.get("englishCodeName"))
                 
-                # [v3.7.5] Ultimate Whitelist Filter: Overseas names must be perfectly clean.
-                import re
-                def is_garbled(s):
+                # Priority: Valid Korean Name > Valid English Name > Symbol
+                def is_v_garbled(s):
                     if not s or not isinstance(s, str): return True
                     if "\ufffd" in s or "\u00c0" in s: return True
-                    if len(s.strip()) <= 1 and not s.strip().isalnum(): return True
+                    if not s.strip(): return True
                     
-                    # Whitelist: Korean, English, Numbers, Space and standard Punctuation only.
-                    # Anything else (Arabic, weird symbols, control chars) is treated as garbled.
+                    # Pattern for clean stock names: Korean, English, Numbers, standard symbols
                     clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
-                    if clean_pattern.search(s):
-                        return True
+                    if clean_pattern.search(s): return True
                     return False
 
-                if is_garbled(k_name) and e_name and not is_garbled(e_name):
+                if not is_v_garbled(k_name):
+                    name = k_name
+                elif not is_v_garbled(e_name):
                     name = e_name
                 else:
-                    # Final attempt to repair or use best available
-                    repaired = fix_mojibake(k_name) if k_name else None
-                    if is_garbled(repaired):
-                        name = e_name or k_name or symbol
-                    else:
-                        name = repaired or e_name or symbol
+                    name = symbol
                 
-                if not name or name == symbol:
-                    # Try resolving via STOCK_MAP for domestic
-                    if nation == "KOR":
-                        try:
-                            from stock_names import STOCK_MAP
-                            # Reverse lookup
-                            for k, v in STOCK_MAP.items():
-                                if v == symbol:
-                                    name = k
-                                    break
-                        except: pass
-                    
-                    # If still no name, use symbol
-                    if not name: name = symbol
+                # Final fallback for SearchTop items that might need STOCK_MAP
+                if (not name or name == symbol) and nation == "KOR":
+                    try:
+                        from stock_names import STOCK_MAP
+                        for k, v in STOCK_MAP.items():
+                            if v == symbol:
+                                name = k
+                                break
+                    except: pass
 
                 if order_type == "searchTop":
                     # SearchTop often lacks real price/change fields, but sumCount is present.
