@@ -110,8 +110,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.3 (Emergency Recovery)",
-        "build_id": "2026-04-11-recovery-v3.6.3",
+        "version": "v3.6.4 (Final Stabilized)",
+        "build_id": "2026-04-11-final-v3.6.4",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -807,7 +807,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend is running.",
-        "version": "v3.6.3"
+        "version": "v3.6.4"
     }
 
 class PortfolioItem(BaseModel):
