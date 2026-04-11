@@ -761,7 +761,12 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         except: pass
 
     try:
-        ticker = yf.Ticker(symbol)
+        # [v3.7.1] Normalize symbols for yfinance (Strip Naver-specific US suffixes)
+        yf_symbol = symbol
+        if symbol.endswith(('.O', '.N', '.A')):
+            yf_symbol = symbol.split('.')[0]
+            
+        ticker = yf.Ticker(yf_symbol)
         current_price = ticker.fast_info.last_price
         prev_close = ticker.fast_info.previous_close
         

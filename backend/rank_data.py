@@ -1,5 +1,6 @@
 import yfinance as yf
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 # 캐싱을 위한 전역 변수 (간단한 인메모리 캐시)
@@ -14,6 +15,37 @@ CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 # [New] Global Ranking Cache
 CACHE_GLOBAL_RANKING = {}
 CACHE_GLOBAL_RANKING_DURATION = 30 # 30초 (사용자 요청 반영)
+
+def fix_mojibake(text):
+    """
+    [v3.7.2] Robustly fix Korean Mojibake (Encoding issues) commonly found in Naver Global APIs.
+    Some fields are CP949 bytes inside a UTF-8 container.
+    """
+    if not text or not isinstance(text, str): return text
+    
+    # 1. Check if it's already clean
+    if any(ord(c) > 0x1100 and ord(c) < 0x7FFF for c in text): # Has CJK but not weird range
+        # Check for weird replacement/control chars
+        if "\ufffd" not in text and "\u00c0" not in text:
+            return text
+
+    # 2. Try Round-trip repair: UTF-8 -> Latin-1 -> CP949
+    # This recovers CP949 bytes that were mis-decoded as UTF-8 or Latin-1
+    try:
+        # If it contains typical 'mojibake' chars
+        candidate = text.encode('iso-8859-1').decode('cp949')
+        if any(ord(c) >= 0xAC00 and ord(c) <= 0xD7A3 for c in candidate): # Has valid Korean
+            return candidate
+    except: pass
+    
+    # 3. Try UTF-8 -> CP949 (another common mis-map)
+    try:
+        candidate = text.encode('utf-8').decode('cp949', 'ignore')
+        if any(ord(c) >= 0xAC00 and ord(c) <= 0xD7A3 for c in candidate):
+            return candidate
+    except: pass
+    
+    return text.replace("\ufffd", "")
 
 def get_realtime_top10(market="KR", refresh=False):
     """
@@ -427,7 +459,11 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         if res.status_code != 200:
             return []
             
-        raw_data = res.json()
+        # [v3.7.1] Smart Multi-Layer Decoding to fix Mojibake (Encoding issues)
+        from korea_data import decode_safe
+        decoded_content = decode_safe(res)
+        raw_data = json.loads(decoded_content)
+        
         items = []
         if isinstance(raw_data, list):
             items = raw_data
@@ -460,7 +496,23 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode")
                 
                 # [Fix] Popular Search items often miss names. Resolve them.
-                name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
+                k_name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
+                e_name = item.get("englishCodeName")
+                
+                # [v3.7.3] Accuracy Priority: Intelligent Fallback to English Name if Korean is garbled
+                # Many global stock names in Naver's ranking API use legacy CP949 bytes inside UTF-8 strings.
+                def is_garbled(s):
+                    if not s: return True
+                    if "\ufffd" in s or "\u00c0" in s: return True
+                    # If it contains many weird block characters from mis-decoding
+                    if any(ord(c) == 65533 for c in s): return True
+                    return False
+
+                if is_garbled(k_name) and e_name and not is_garbled(e_name):
+                    name = e_name
+                else:
+                    # Try to fix it if it's not totally broken, or just use k_name
+                    name = fix_mojibake(k_name) if k_name else (e_name or symbol)
                 
                 if not name or name == symbol:
                     # Try resolving via STOCK_MAP for domestic
@@ -531,46 +583,37 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 # Fetch real-time data from mobile API to override unreliable list API
                 quote = get_simple_quote(sym)
                 if quote:
-                    # 1. Name Enrichment
-                    if (not p_item.get("name") or p_item.get("name") == sym) and quote.get("name"):
-                        p_item["name"] = quote["name"]
+                    # 1. Name Enrichment (Only if new name is valid and better)
+                    new_name = quote.get("name")
+                    if new_name and new_name != sym and len(str(new_name)) > 1:
+                        # Baseline names from list API are often garbled, so we prefer quote name if it looks like real Kr/En
+                        p_item["name"] = new_name
                     
-                    # 2. Price Enrichment (Fixes the Shift bug)
-                    if quote.get("price") and quote.get("price") not in ["확인불가", "0", "N/A"]:
-                        p_item["price"] = quote["price"]
+                    # 2. Price Enrichment (Only if positive and valid)
+                    q_price_str = str(quote.get("price", "0")).replace(",", "")
+                    try:
+                        q_price = float(q_price_str)
+                        if q_price > 0:
+                            p_item["price"] = quote["price"]
+                            
+                            # Update KRW if possible
+                            if currency != "KRW":
+                                p_item["price_krw"] = f"{q_price * rate:,.0f}"
+                    except: pass
                     
-                    # 3. Change & Precision Enrichment (v3: Direct API Mapping)
-                    if quote.get("change"):
-                        p_item["change_percent"] = quote["change"]
-                        if quote.get("change_val") and quote["change_val"] not in ["0", ""]:
-                            # Use official change value instead of calculation
-                            try:
-                                val = float(str(quote["change_val"]).replace(",", ""))
-                                if quote.get("risefall_name") == 'FALLING':
-                                    val = -abs(val)
-                                    if not str(p_item["change_percent"]).startswith("-"):
-                                        p_item["change_percent"] = "-" + str(p_item["change_percent"]).replace("+", "")
-                                
-                                p_item["change_val"] = int(val) if nation == "KOR" else val
-                                # Ensure risefall code for frontend
-                                p_item["risefall"] = 5 if quote.get("risefall_name") == 'FALLING' else 2
-                            except: pass
-                        else:
-                            # Fallback calculation if field missing
-                            try:
-                                q_price = float(str(quote["price"]).replace(",", ""))
-                                q_pct = float(str(quote["change"]).replace("%", "").replace("+", "").strip())
-                                r = q_pct / 100.0
-                                c_val = q_price * (r / (1 + r))
-                                p_item["change_val"] = int(round(c_val)) if nation == "KOR" else round(c_val, 3)
-                            except: pass
-                        
-                    # 4. KRW Conversion for foreign stocks
-                    if currency != "KRW":
-                        try:
-                            f_p = float(str(p_item["price"]).replace(",", ""))
-                            p_item["price_krw"] = f"{f_p * rate:,.0f}"
-                        except: pass
+                    # 3. Change & Precision Enrichment (Selective)
+                    # Only overwrite if quote.change is definitely valid (not "0.00%" for a non-zero change_val)
+                    q_change = quote.get("change")
+                    if q_change and q_change not in ["0.00%", "0.0%"]:
+                         p_item["change_percent"] = q_change
+                         
+                         if quote.get("change_val") and quote["change_val"] not in ["0", "", 0]:
+                             try:
+                                 val = float(str(quote["change_val"]).replace(",", ""))
+                                 if quote.get("risefall_name") == 'FALLING': val = -abs(val)
+                                 p_item["change_val"] = int(val) if nation == "KOR" else val
+                                 p_item["risefall"] = 5 if quote.get("risefall_name") == 'FALLING' else 2
+                             except: pass
                 return p_item
 
             with ThreadPoolExecutor(max_workers=5) as executor:
