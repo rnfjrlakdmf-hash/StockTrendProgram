@@ -544,6 +544,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     price = None
                     change_rate = None
                     change_val = None
+                    risefall = 3 # Default to stable for search items before enrichment
                     volume = None
                     amount = item.get("sumCount") # Map sumCount to amount for display context if needed
                 else:
