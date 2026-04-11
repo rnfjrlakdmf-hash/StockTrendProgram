@@ -1,0 +1,2 @@
+Force Redeploy Trigger v3.6.1 - 2026-04-11 13:56
+The previous build seems stuck on V2.8. This file is added to force Vercel to see a meaningful change in the frontend subdirectory.
