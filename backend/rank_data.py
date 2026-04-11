@@ -3,6 +3,20 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+def is_v_garbled(s):
+    """
+    [v3.9.3] Centralized Whitelist Validator.
+    Checks for replacement characters, garbage Latin-1, or invalid non-alphanumeric chars.
+    """
+    if not s or not isinstance(s, str): return True
+    if "\ufffd" in s or "\u00c0" in s: return True
+    if not s.strip(): return True
+    
+    # Pattern for clean stock names: Korean, English, Numbers, standard symbols
+    clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
+    if clean_pattern.search(s): return True
+    return False
+
 # 캐싱을 위한 전역 변수 (간단한 인메모리 캐시)
 CACHE_TOP10 = {
     "KR": {"data": [], "timestamp": 0},
@@ -25,7 +39,7 @@ def fix_mojibake(text):
     
     # Check if the string already contains valid Korean characters (Hangul Syllables)
     has_hangul = any(0xAC00 <= ord(c) <= 0xD7A3 for c in text)
-    has_garbage = any(ord(c) == 65533 or (0x0080 <= ord(c) <= 0x00FF) for c in text) or "\ufffd" in text or "\u00c0" in s if 's' in locals() else False # s was used in previous version
+    has_garbage = any(ord(c) == 65533 or (0x0080 <= ord(c) <= 0x00FF) for c in text) or "\ufffd" in text or "\u00c0" in text
     
     # Fix potential variable name error from previous version's logic
     if "\ufffd" in text or "\u00c0" in text: has_garbage = True
@@ -33,15 +47,21 @@ def fix_mojibake(text):
     # If it has garbage chars but No Hangul, OR just looks suspicious
     if has_garbage or not has_hangul:
         try:
-            # Round-trip: Reinterpret as bytes from latin-1 (common fallback for CP949 in UTF-8 env)
+            # [v3.9.2] Strategy: Try UTF-8 first for clean domestic data, then fallback to CP949 for legacy global data
+            # UTF-8 is much more structured and less likely to false-positive than CP949.
+            repaired = text.encode('iso-8859-1').decode('utf-8')
+            if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                return repaired
+        except: pass
+
+        try:
             repaired = text.encode('iso-8859-1').decode('cp949')
-            # If repair yields valid Korean, success!
             if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
                 return repaired
         except: pass
         
         try:
-            # Alternative: It might have been already decoded as UTF-8 but contained CP949 bytes
+            # Final alternative for complex nested cases
             repaired = text.encode('utf-8', 'ignore').decode('cp949', 'ignore')
             if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
                 return repaired
@@ -425,7 +445,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     order_type = cat_map.get(category, "quantTop")
 
     # Currency/Rate Mapping
-    currency_map = {"KOR": "KRW", "USA": "USD", "CHN": "CNY", "HKG": "HKD", "JPN": "JPY", "VNM": "VND"}
+    currency_map = {"KOR": "KRW", "USA": "USD", "CHN": "CNY", "HKG": "HKD", "JPN": "JPY", "VND": "VND"}
     symbol_map = {"KRW": "₩", "USD": "$", "CNY": "¥", "HKD": "$", "JPY": "¥", "VND": "₫"}
     
     currency = currency_map.get(nation, "USD")
@@ -439,34 +459,41 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         except:
             pass
 
+    # Standard Browser Headers
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://stock.naver.com/"
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://finance.naver.com/',
+        'Accept': 'application/json, text/plain, */*'
     }
     
-    try:
-        # 1. API URL 결정
+    # [v3.9.4] Unified Mirroring Source
+    if order_type == "searchTop":
         if nation == "KOR":
-            if order_type == "searchTop":
-                url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=10"
-            else:
-                url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
+            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=10"
+        elif nation == "USA":
+            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=USA&startIdx=0&pageSize=10"
         else:
-            if order_type == "searchTop" and nation == "USA":
-                 url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=USA&startIdx=0&pageSize=10"
-            else:
-                 url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
+            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType={nation}&startIdx=0&pageSize=10"
+    else:
+        if nation == "KOR":
+            url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
+        else:
+            # For Volume/Amount top in Global markets
+            url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
             
+    try:
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code != 200:
             return []
             
-        # [v3.8.2] Precision Byte-Preserving Decoding
-        # We decode as ISO-8859-1 (latin-1) to preserve all raw bytes for selective field-level repair.
+        # [v3.9.3] Ultimate Hybrid Mirrored Decoding
         try:
-            raw_data = json.loads(res.content.decode('iso-8859-1'))
+            # We try standard UTF-8 first
+            decoded_content = res.content.decode('utf-8')
+            raw_data = json.loads(decoded_content)
         except:
             try:
+                res.encoding = 'cp949'
                 raw_data = res.json()
             except:
                 return []
@@ -484,18 +511,26 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             
         processed = []
         for i, item in enumerate(items[:10]):
-            # Helper to repair fields that were preserved in latin-1
+            # Improved repair: only try if the string looks like Mojibake
             def repair(s):
                 if not s or not isinstance(s, str): return s
+                # If it already has valid Korean, DON'T touch it!
+                if any(0xAC00 <= ord(c) <= 0xD7A3 for c in s): return s
+                
+                # Check for latin-1 preservation pattern
                 try:
-                    # Some fields are CP949 buried in the byte stream
-                    return s.encode('iso-8859-1').decode('cp949')
-                except:
-                    try:
-                        # Others might be UTF-8 buried
-                        return s.encode('iso-8859-1').decode('utf-8')
-                    except:
-                        return s
+                    repaired = s.encode('iso-8859-1').decode('cp949', 'ignore')
+                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                        return repaired
+                except: pass
+                
+                try:
+                    repaired = s.encode('iso-8859-1').decode('utf-8', 'ignore')
+                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                        return repaired
+                except: pass
+
+                return s.replace("\ufffd", "")
 
             if nation == "KOR" and order_type != "searchTop":
                 # Domestic Schema
@@ -516,16 +551,6 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 e_name = repair(item.get("englishCodeName"))
                 
                 # Priority: Valid Korean Name > Valid English Name > Symbol
-                def is_v_garbled(s):
-                    if not s or not isinstance(s, str): return True
-                    if "\ufffd" in s or "\u00c0" in s: return True
-                    if not s.strip(): return True
-                    
-                    # Pattern for clean stock names: Korean, English, Numbers, standard symbols
-                    clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
-                    if clean_pattern.search(s): return True
-                    return False
-
                 if not is_v_garbled(k_name):
                     name = k_name
                 elif not is_v_garbled(e_name):
