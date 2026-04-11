@@ -1119,12 +1119,13 @@ def get_naver_stock_info(symbol: str):
                     }
         except: pass
 
-    # 2. 해외 주식 시도 (기존 로직 활용 및 강화)
-    suffixes = ['', '.O', '.N', '.A']
-    for suffix in suffixes:
-        test_symbol = clean_code + suffix
+    # 2. 해외 주식 시도 (접미사 지원 확장: 일본 .T, 홍콩 .HK, 베트남 .VN 등)
+    suffixes = ['', '.O', '.N', '.A', '.T', '.HK', '.VN', '.SH', '.SZ']
+    
+    # 전달된 심볼에 이미 점이 포함되어 있다면 해당 심볼로 먼저 시도
+    if '.' in symbol:
         try:
-            url = f"https://m.stock.naver.com/api/stock/{test_symbol}/basic"
+            url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
             res = requests.get(url, headers=HEADER, timeout=3)
             if res.status_code == 200:
                 data = res.json()
@@ -1136,6 +1137,31 @@ def get_naver_stock_info(symbol: str):
                         "name": data.get('stockName', symbol),
                         "price": f"{float(price):,.2f}",
                         "change": f"{float(pct):+.2f}%",
+                        "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
+                        "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
+                        "up": float(pct) >= 0
+                    }
+        except: pass
+
+    # 접미사 프로빙 루프
+    for suffix in suffixes:
+        test_symbol = clean_code + suffix
+        if test_symbol == symbol: continue # 이미 시도함
+        try:
+            url = f"https://m.stock.naver.com/api/stock/{test_symbol}/basic"
+            res = requests.get(url, headers=HEADER, timeout=3)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get('closePrice'):
+                    price = data.get('closePrice', '0').replace(',', '')
+                    pct = data.get('fluctuationsRatio', '0')
+                    return {
+                        "symbol": test_symbol,
+                        "name": data.get('stockName', test_symbol),
+                        "price": f"{float(price):,.2f}",
+                        "change": f"{float(pct):+.2f}%",
+                        "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
+                        "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
                         "up": float(pct) >= 0
                     }
         except: continue

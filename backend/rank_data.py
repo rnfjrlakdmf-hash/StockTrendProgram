@@ -13,7 +13,7 @@ CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 
 # [New] Global Ranking Cache
 CACHE_GLOBAL_RANKING = {}
-CACHE_GLOBAL_RANKING_DURATION = 60 # 1분
+CACHE_GLOBAL_RANKING_DURATION = 30 # 30초 (사용자 요청 반영)
 
 def get_realtime_top10(market="KR", refresh=False):
     """
@@ -456,7 +456,8 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 amount = item.get("tradeAmount")
             else:
                 # Foreign or SearchTop Schema
-                symbol = item.get("symbolCode") or item.get("reutersCode") or item.get("itemcode")
+                # [v5.8.5] Prioritize reutersCode (.T, .HK) for reliable enrichment
+                symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode")
                 
                 # [Fix] Popular Search items often miss names. Resolve them.
                 name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
@@ -503,13 +504,16 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             if currency != "KRW" and f_price > 0:
                 price_krw = f"{f_price * rate:,.0f}"
 
+            # [v5.9.0] Baseline Data Preservation: Don't wipe data before enrichment
+            # If enrichment fails, these values from the ranking API will be used.
             processed.append({
                 "rank": i + 1,
                 "symbol": symbol,
                 "name": name,
-                "price": "-", # [v5.8.0] Kill Shift: Ignore Ranking API's broken price
-                "change_val": 0,
-                "change_percent": "0.00%",
+                "price": price if price and price != "-" else "0", 
+                "change_val": change_val or 0,
+                "change_percent": f"{float(change_rate):+.2f}%" if change_rate and str(change_rate).replace('.','').replace('-','').isdigit() else "0.00%",
+                "risefall": risefall,
                 "volume": volume,
                 "amount": amount,
                 "market": market
