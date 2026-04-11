@@ -729,13 +729,15 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 return broker_quote
         except: pass
 
-    # 3. 최후의 수단: yfinance (차단 가능성 높음)
     try:
         ticker = yf.Ticker(symbol)
         current_price = ticker.fast_info.last_price
         prev_close = ticker.fast_info.previous_close
-        if current_price and current_price > 0:
-            change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close else 0
+        
+        # [Fix] Handle NaN from yfinance
+        import math
+        if current_price and current_price > 0 and not math.isnan(current_price):
+            change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close and not math.isnan(prev_close) else 0
             return {
                 "symbol": symbol,
                 "name": symbol,

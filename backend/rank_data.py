@@ -364,8 +364,8 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     import requests
     import time
     
-    # [v5.8.5] Cache key prefix V3.5 to flush old poisoned data
-    cache_key = f"v3.5_{market}_{category}"
+    # [v3.5.5] Cache key prefix to flush old poisoned or shifted data
+    cache_key = f"v3.5.5_{market}_{category}"
     now = time.time()
     
     if cache_key in CACHE_GLOBAL_RANKING:
@@ -476,12 +476,21 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     # If still no name, use symbol
                     if not name: name = symbol
 
-                price = item.get("currentPrice") or item.get("nowPrice")
-                change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
-                change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
-                risefall = item.get("risefall") or item.get("upDownGb")
-                volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
-                amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
+                if order_type == "searchTop":
+                    # SearchTop often lacks real price/change fields, but sumCount is present.
+                    # We EXPLICITLY set them to None here to force enrichment later.
+                    price = None
+                    change_rate = None
+                    change_val = None
+                    volume = None
+                    amount = item.get("sumCount") # Map sumCount to amount for display context if needed
+                else:
+                    price = item.get("currentPrice") or item.get("nowPrice")
+                    change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
+                    change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
+                    risefall = item.get("risefall") or item.get("upDownGb")
+                    volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
+                    amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
 
             # [TurboQuant KRW Conversion]
             f_price = 0.0

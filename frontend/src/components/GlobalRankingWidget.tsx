@@ -84,7 +84,8 @@ export default function GlobalRankingWidget() {
     // [TurboQuant Precision Formatter]
     const formatPrice = (item: RankItem) => {
         const { price, currency_symbol } = item;
-        if (price === undefined || price === null || price === '-' || String(price).toLowerCase() === 'nan') return '-';
+        if (price === undefined || price === null || price === '-' || 
+            String(price).toLowerCase() === 'nan' || String(price) === '확인불가') return '-';
         
         let decimals = 2; // Default (USA)
         if (market === 'KOSPI') decimals = 0;
