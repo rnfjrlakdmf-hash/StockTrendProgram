@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] v3.6.0-Unified-Core - 2026-04-11
+# [Deployment Trigger] v3.6.1-Unified-Core - 2026-04-11
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -78,7 +78,7 @@ GLOBAL_KOREAN_NAMES = {
     "BRK-B": "버크셔해서웨이", "TSM": "TSMC", "ASML": "ASML", "AMD": "AMD"
 }
 
-app = FastAPI(title="AI Stock Analyst", version="3.6.0")
+app = FastAPI(title="AI Stock Analyst", version="3.6.1")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
@@ -114,8 +114,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.0 (Unified Core)",
-        "build_id": "2026-04-11-deploy-v3.6.0",
+        "version": "v3.6.1 (Unified Core)",
+        "build_id": "2026-04-11-deploy-v3.6.1",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -541,7 +541,7 @@ def read_stock_investor(symbol: str, period: int = 1):
 
 @app.on_event("startup")
 async def startup_event():
-    print("[Startup] Initializing AI Stock Analyst Backend (v3.6.0)...")
+    print("[Startup] Initializing AI Stock Analyst Backend (v3.6.1)...")
     
     # 1. Database Table Initialization
     try:
