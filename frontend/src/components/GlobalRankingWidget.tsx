@@ -262,7 +262,7 @@ export default function GlobalRankingWidget() {
             <div className="flex justify-between items-center px-2">
                  <div className="flex items-center gap-2">
                      <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10">
-                         <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Global Ranking V3.6.6</span>
+                         <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Global Ranking V3.6.7</span>
                      </div>
                  </div>
                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
