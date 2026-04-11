@@ -5,12 +5,11 @@ import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
 import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData } from "@/lib/api";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
-import MarketIndicators from "@/components/MarketIndicators";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
 import GlobalRankingWidget from "@/components/GlobalRankingWidget";
 
-import { TrendingUp, Zap, Activity, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
@@ -170,25 +169,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Premium Global Market Indicators (New - Now Persistent at bottom) */}
-        {!loading && !error && (
-          <div className="pt-8 border-t border-white/5 mt-12 bg-gradient-to-b from-transparent to-emerald-900/5 rounded-t-[3rem] p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 px-1 gap-4">
-              <div>
-                <h4 className="text-3xl font-black text-white flex items-center gap-3">
-                  <Activity className="w-8 h-8 text-emerald-400" /> 
-                  Premium Global Market Index
-                </h4>
-                <p className="text-gray-500 text-sm mt-1 ml-11 font-medium">네이버 금융 기반 실시간 전문 시장 지표</p>
-              </div>
-              <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Sync-Turbo Live 60s</span>
-              </div>
-            </div>
-            <MarketIndicators />
-          </div>
-        )}
       </div>
     </div>
   );
