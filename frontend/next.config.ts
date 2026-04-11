@@ -18,9 +18,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  /* eslint: {
+  eslint: {
     ignoreDuringBuilds: true,
-  }, */
+  },
   // Headers work on Vercel (Serverless) but are ignored in static export
   async headers() {
     return [
