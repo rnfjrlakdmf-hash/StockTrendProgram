@@ -499,20 +499,29 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 k_name = item.get("koreanCodeName") or item.get("itemname") or item.get("stockName")
                 e_name = item.get("englishCodeName")
                 
-                # [v3.7.3] Accuracy Priority: Intelligent Fallback to English Name if Korean is garbled
-                # Many global stock names in Naver's ranking API use legacy CP949 bytes inside UTF-8 strings.
+                # [v3.7.5] Ultimate Whitelist Filter: Overseas names must be perfectly clean.
+                import re
                 def is_garbled(s):
-                    if not s: return True
+                    if not s or not isinstance(s, str): return True
                     if "\ufffd" in s or "\u00c0" in s: return True
-                    # If it contains many weird block characters from mis-decoding
-                    if any(ord(c) == 65533 for c in s): return True
+                    if len(s.strip()) <= 1 and not s.strip().isalnum(): return True
+                    
+                    # Whitelist: Korean, English, Numbers, Space and standard Punctuation only.
+                    # Anything else (Arabic, weird symbols, control chars) is treated as garbled.
+                    clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
+                    if clean_pattern.search(s):
+                        return True
                     return False
 
                 if is_garbled(k_name) and e_name and not is_garbled(e_name):
                     name = e_name
                 else:
-                    # Try to fix it if it's not totally broken, or just use k_name
-                    name = fix_mojibake(k_name) if k_name else (e_name or symbol)
+                    # Final attempt to repair or use best available
+                    repaired = fix_mojibake(k_name) if k_name else None
+                    if is_garbled(repaired):
+                        name = e_name or k_name or symbol
+                    else:
+                        name = repaired or e_name or symbol
                 
                 if not name or name == symbol:
                     # Try resolving via STOCK_MAP for domestic
