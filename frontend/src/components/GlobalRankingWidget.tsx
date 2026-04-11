@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { RefreshCw, TrendingUp, Search, DollarSign, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type MarketType = 'KOSPI' | 'KOSDAQ' | 'USA' | 'CHINA' | 'HONG_KONG' | 'JAPAN' | 'VIETNAM';
+type MarketType = 'KOSPI' | 'USA';
 type CategoryType = 'trading_volume' | 'trading_amount' | 'popular_search';
 
 interface RankItem {
@@ -23,10 +23,6 @@ interface RankItem {
 const MARKET_CONFIG: { id: MarketType; label: string; icon: string }[] = [
     { id: 'KOSPI', label: '국내', icon: '🇰🇷' },
     { id: 'USA', label: '미국', icon: '🇺🇸' },
-    { id: 'CHINA', label: '중국', icon: '🇨🇳' },
-    { id: 'HONG_KONG', label: '홍콩', icon: '🇭🇰' },
-    { id: 'JAPAN', label: '일본', icon: '🇯🇵' },
-    { id: 'VIETNAM', label: '베트남', icon: '🇻🇳' },
 ];
 
 const CATEGORY_CONFIG: { id: CategoryType; label: string; icon: any }[] = [
