@@ -167,7 +167,7 @@ export default function Home() {
 
             {/* Global Real-time Ranking (New Premium Widget) */}
             <GlobalRankingWidget />
-
+          </div>
         )}
 
         {/* Premium Global Market Indicators (New - Now Persistent at bottom) */}
