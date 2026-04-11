@@ -600,9 +600,22 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 if quote:
                     # 1. Name Enrichment (Only if new name is valid and better)
                     new_name = quote.get("name")
-                    if new_name and new_name != sym and len(str(new_name)) > 1:
+                    if new_name and not is_v_garbled(new_name) and new_name != sym and len(str(new_name)) > 1:
                         # Baseline names from list API are often garbled, so we prefer quote name if it looks like real Kr/En
                         p_item["name"] = new_name
+                    
+                    # [v3.8.3] US SearchTop Specialized Translation Fallback
+                    # If name is still just a ticker and it's a popular US stock, use a pre-mapped clean Korean name.
+                    if is_v_garbled(p_item["name"]) or p_item["name"] == sym or ".O" in p_item["name"]:
+                        us_name_map = {
+                            "NVDA.O": "엔비디아", "TSLA.O": "테슬라", "AAPL.O": "애플", 
+                            "MSFT.O": "마이크로소프트", "AMZN.O": "아마존", "GOOGL.O": "알파벳A",
+                            "PLTR.O": "팔란티어", "META.O": "메타", "AVGO.O": "브로드컴",
+                            "MSTR.O": "마이크로스트래티지", "SMCI.O": "슈퍼마이크로컴퓨터",
+                            "SOXL.O": "디렉시온 세배 반도체", "SQQQ.O": "프로셰어즈 울트라프로 쇼트"
+                        }
+                        if sym in us_name_map:
+                            p_item["name"] = us_name_map[sym]
                     
                     # 2. Price Enrichment (Only if positive and valid)
                     q_price_str = str(quote.get("price", "0")).replace(",", "")
