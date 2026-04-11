@@ -29,15 +29,23 @@ def decode_safe(res: requests.Response) -> str:
     """
     try:
         content = res.content
-        # [Ultimate Strategy] Check for common Korean bytes to decide encoding
-        # EUC-KR 'Sam' = \xbb\xef, UTF-8 'Sam' = \xec\x82\xbc
+        # [Strategy 1] Check for BOM
+        if content.startswith(b'\xef\xbb\xbf'):
+            return content.decode('utf-8-sig', 'ignore')
+            
+        # [Strategy 2] Use apparent_encoding for Naver legacy pages (EUC-KR/CP949)
+        encoding = res.encoding if res.encoding and res.encoding.lower() != 'iso-8859-1' else res.apparent_encoding
+        if not encoding or encoding.lower() == 'iso-8859-1':
+            # Force CP949 for Naver if undecided
+            encoding = 'cp949'
+            
+        # [Strategy 3] Specific Korean byte detection
         if b'\xec\x82\xbc' in content or b'\xec\xa0\x84' in content:
-            return content.decode('utf-8', 'ignore')
-        if b'\xbb\xef' in content or b'\xbc\xba' in content:
-            return content.decode('cp949', 'ignore')
-        
-        # Fallback to header or apparent encoding
-        return res.text if res.encoding and res.encoding.lower() != 'iso-8859-1' else content.decode('cp949', 'ignore')
+            encoding = 'utf-8'
+        elif b'\xbb\xef' in content or b'\xbc\xba' in content:
+            encoding = 'cp949'
+            
+        return content.decode(encoding, 'ignore')
     except Exception:
         return res.content.decode('cp949', 'ignore')
 
@@ -1452,15 +1460,20 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         broker_table = None
         trend_table = None
         
-        for tbl in soup.select("table.type2"):
+        # Select all tables and find by column count
+        # This is robust against encoding issues that might break class selection
+        all_tables = soup.select("table")
+        for tbl in all_tables:
             rows = tbl.select("tr")
             if len(rows) < 3: continue
             
-            # Check rows 3 and 4 for definitive column counts
-            for i in range(min(len(rows), 6)):
+            # Check a few rows for definitive column counts
+            for i in range(min(len(rows), 8)):
                 c_data = rows[i].select("td")
+                # Brokerage table (usually 4 or 8 columns)
                 if len(c_data) == 4 and not broker_table:
                     broker_table = tbl
+                # Trend table (usually 9 columns in PC view)
                 elif len(c_data) == 9 and not trend_table:
                     trend_table = tbl
             

@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] v3.6.1-Unified-Core - 2026-04-11
+# [Deployment Trigger] v3.6.2-Unified-Core - 2026-04-11
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -72,13 +72,9 @@ from morning_briefing import generate_user_morning_briefing
 from utils.briefing_store import init_briefing_table, get_latest_briefing, should_generate_new_briefing
 
 # [Global Scaling] Mapping for Stocks (Korean Names)
-GLOBAL_KOREAN_NAMES = {
-    "AAPL": "애플", "TSLA": "테슬라", "MSFT": "마이크로소프트", "NVDA": "엔비디아",
-    "GOOGL": "구글", "AMZN": "아마존", "META": "메타", "NFLX": "넷플릭스",
-    "BRK-B": "버크셔해서웨이", "TSM": "TSMC", "ASML": "ASML", "AMD": "AMD"
-}
+# [v3.6.2] Redundant definition removed. Imported from stock_data.py instead.
 
-app = FastAPI(title="AI Stock Analyst", version="3.6.1")
+app = FastAPI(title="AI Stock Analyst", version="3.6.2")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
@@ -114,8 +110,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.1 (Unified Core)",
-        "build_id": "2026-04-11-deploy-v3.6.1",
+        "version": "v3.6.3 (Emergency Recovery)",
+        "build_id": "2026-04-11-recovery-v3.6.3",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 
@@ -541,7 +537,7 @@ def read_stock_investor(symbol: str, period: int = 1):
 
 @app.on_event("startup")
 async def startup_event():
-    print("[Startup] Initializing AI Stock Analyst Backend (v3.6.1)...")
+    print("[Startup] Initializing AI Stock Analyst Backend (v3.6.2)...")
     
     # 1. Database Table Initialization
     try:
@@ -811,7 +807,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend is running.",
-        "version": "2.8.0"
+        "version": "v3.6.3"
     }
 
 class PortfolioItem(BaseModel):

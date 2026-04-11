@@ -273,6 +273,6 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

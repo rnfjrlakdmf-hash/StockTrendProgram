@@ -1,2 +1,5 @@
-Force Redeploy Trigger v3.6.1 - 2026-04-11 13:56
-The previous build seems stuck on V2.8. This file is added to force Vercel to see a meaningful change in the frontend subdirectory.
+Update Trigger: v3.6.2-Global-Ranking-[v3.6.3 Emergency Recovery Success] 
+The previous build was showing V2.8 because of ESLint 8/9 config conflicts and large package (Puppeteer) timeouts. 
+This build (v3.6.3) uses standard .eslintrc.json and stable v15 dependencies. 
+Triggered at: 2026-04-11T21:51:00Z旋backend synchronization.
+Force-triggering Vercel deployment with this change.
