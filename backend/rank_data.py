@@ -1,6 +1,6 @@
-import yfinance as yf
 import json
 import re
+import requests
 from concurrent.futures import ThreadPoolExecutor
 
 def is_v_garbled(s):
@@ -16,6 +16,36 @@ def is_v_garbled(s):
     clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
     if clean_pattern.search(s): return True
     return False
+
+def get_world_stock_polling(reuters_codes):
+    """
+    [v5.2.0] Naver World Stock Polling API for Real-time Detail Sync
+    reuters_codes: List of strings (e.g. ['PLTR.O', 'CRCL.K'])
+    """
+    if not reuters_codes:
+        return {}
+        
+    codes_str = ",".join(reuters_codes)
+    url = f"https://stock.naver.com/api/polling/worldstock/stock?reutersCodes={codes_str}"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://stock.naver.com/',
+        'Accept': 'application/json'
+    }
+    
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            result = {}
+            for item in data.get("result", []):
+                code = item.get("reutersCode")
+                if code:
+                    result[code] = item
+            return result
+    except Exception as e:
+        print(f"World Stock Polling API Error: {e}")
+    return {}
 
 # 캐싱을 위한 전역 변수 (간단한 인메모리 캐시)
 CACHE_TOP10 = {
@@ -466,13 +496,13 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         'Accept': 'application/json, text/plain, */*'
     }
     
-    # [v3.9.4] Unified Mirroring Source
+    # [v5.0.0] Precision Mirroring Source
     if order_type == "searchTop":
         if nation == "KOR":
-            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=10"
-        elif nation == "USA":
-            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType=USA&startIdx=0&pageSize=10"
+            # [v3.9.5] Domestic SearchTop widget uses the 'default' API with orderType=searchTop
+            url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType=searchTop&startIdx=0&pageSize=10"
         else:
+            # Foreign SearchTop still uses searchTop API
             url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType={nation}&startIdx=0&pageSize=10"
     else:
         if nation == "KOR":
@@ -532,23 +562,24 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
                 return s.replace("\ufffd", "")
 
-            if nation == "KOR" and order_type != "searchTop":
-                # Domestic Schema
+            if nation == "KOR":
+                # Domestic Schema (Integrated SearchTop in default API uses same schema)
                 symbol = item.get("itemcode")
-                name = repair(item.get("itemname"))
-                price = item.get("nowPrice")
-                change_rate = item.get("prevChangeRate")
-                change_val = item.get("prevChangePrice")
-                risefall = item.get("upDownGb") # 2:Up, 5:Down
-                volume = item.get("tradeVolume")
-                amount = item.get("tradeAmount")
+                name = repair(item.get("itemname") or item.get("stockName"))
+                price = item.get("nowPrice") or item.get("currentPrice")
+                change_rate = item.get("prevChangeRate") or item.get("fluctuationsRatio") or item.get("changeRate")
+                change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice")
+                risefall = item.get("upDownGb") or item.get("risefall") # 2:Up, 5:Down
+                volume = item.get("tradeVolume") or item.get("accumulatedTradingVolume")
+                amount = item.get("tradeAmount") or item.get("accumulatedTradingValue")
             else:
-                # Foreign or SearchTop Schema
+                # Foreign or SearchTop (USA) Schema
                 symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode")
                 
                 # [v3.8.2] Precision Field Recovery
-                k_name = repair(item.get("koreanCodeName") or item.get("itemname") or item.get("stockName"))
-                e_name = repair(item.get("englishCodeName"))
+                # searchTop API uses koreanCodeName, global API uses stockName/itemname
+                k_name = repair(item.get("koreanCodeName") or item.get("itemname") or item.get("stockName") or item.get("itemName"))
+                e_name = repair(item.get("englishCodeName") or item.get("englishName"))
                 
                 # Priority: Valid Korean Name > Valid English Name > Symbol
                 if not is_v_garbled(k_name):
@@ -568,15 +599,14 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                                 break
                     except: pass
 
-                if order_type == "searchTop":
-                    # SearchTop often lacks real price/change fields, but sumCount is present.
-                    # We EXPLICITLY set them to None here to force enrichment later.
-                    price = None
-                    change_rate = None
-                    change_val = None
-                    risefall = 3 # Default to stable for search items before enrichment
-                    volume = None
-                    amount = item.get("sumCount") # Map sumCount to amount for display context if needed
+                if order_type == "searchTop" and nation != "KOR":
+                    # USA SearchTop API lacks real-time price fields in the list view response often.
+                    price = item.get("currentPrice") or item.get("nowPrice") or item.get("closePrice")
+                    change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
+                    change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
+                    risefall = item.get("risefall") or item.get("upDownGb") or 3
+                    volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
+                    amount = item.get("sumCount") # Map sumCount for SearchTop
                 else:
                     price = item.get("currentPrice") or item.get("nowPrice")
                     change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
@@ -596,13 +626,13 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             if currency != "KRW" and f_price > 0:
                 price_krw = f"{f_price * rate:,.0f}"
 
-            # [v5.9.0] Baseline Data Preservation: Don't wipe data before enrichment
-            # If enrichment fails, these values from the ranking API will be used.
+            # Baseline Data Preservation
             processed.append({
                 "rank": i + 1,
                 "symbol": symbol,
                 "name": name,
                 "price": price if price and price != "-" else "0", 
+                "price_krw": price_krw,
                 "change_val": change_val or 0,
                 "change_percent": f"{float(change_rate):+.2f}%" if change_rate and str(change_rate).replace('.','').replace('-','').isdigit() else "0.00%",
                 "risefall": risefall,
@@ -610,6 +640,33 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "amount": amount,
                 "market": market
             })
+
+        # [v5.2.0] High-Precision Polling Sync for Foreign Stocks (Especially SearchTop)
+        if nation != "KOR" and processed:
+            symbols_to_poll = [p["symbol"] for p in processed if p.get("symbol")]
+            polling_data = get_world_stock_polling(symbols_to_poll)
+            
+            if polling_data:
+                for p in processed:
+                    sym = p["symbol"]
+                    if sym in polling_data:
+                        info = polling_data[sym]
+                        # Prioritize Polling API for Name/Price/Change
+                        p["name"] = info.get("koreanCodeName") or info.get("itemname") or p["name"]
+                        p["price"] = info.get("closePrice") or p["price"]
+                        
+                        f_rate = info.get("fluctuationsRatio")
+                        if f_rate is not None:
+                            p["change_percent"] = f"{float(f_rate):+.2f}%"
+                        
+                        p["change_val"] = info.get("compareToPreviousClosePrice") or p["change_val"]
+                        
+                        # Update KRW if price changed
+                        try:
+                            f_p = float(str(p["price"]).replace(",", ""))
+                            if f_p > 0 and currency != "KRW":
+                                p["price_krw"] = f"{f_p * rate:,.0f}"
+                        except: pass
             
         # [v5.6.0] Universal Enrichment to fix Naver API Shift/NaN/Precision bugs
         if processed:
