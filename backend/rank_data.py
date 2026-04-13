@@ -108,7 +108,7 @@ CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 
 # [New] Global Ranking Cache
 CACHE_GLOBAL_RANKING = {}
-CACHE_GLOBAL_RANKING_DURATION = 30 # 30초 (사용자 요청 반영)
+CACHE_GLOBAL_RANKING_DURATION = 10 # 10초 (실시간성 강화)
 
 def fix_mojibake(text):
     """
@@ -569,7 +569,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 if symbols_to_poll:
                     polling_data = get_world_stock_integration(symbols_to_poll)
                     if polling_data:
-                        rate = get_usd_krw_rate()
+                        rate = get_exchange_rate("USD")
                         for p in processed:
                             info = polling_data.get(p["symbol"])
                             if info:
@@ -584,7 +584,22 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                                 except:
                                     p["change_percent"] = "0.00%"
                                 
-                                p["change_val"] = info.get("fluctuations") or 0
+                                # [v6.1.4] Accurate Change Mapping (Prioritize raw fluctuations from API)
+                                raw_fluct = info.get("fluctuations") or info.get("compareToPreviousClosePrice")
+                                if raw_fluct is not None and str(raw_fluct) not in ["0", ""]:
+                                    p["change_val"] = raw_fluct
+                                else:
+                                    # Backup calculation if raw fluctuations are missing
+                                    try:
+                                        pct = float(info.get('fluctuationsRatio', 0))
+                                        curr_p = float(str(price_val).replace(',', ''))
+                                        if curr_p > 0 and pct != 0:
+                                            # Correct formula for net change from current price and ratio
+                                            # change = current_price * (ratio / (100 + ratio))
+                                            p["change_val"] = curr_p * (pct / (100.0 + pct))
+                                    except:
+                                        p["change_val"] = 0
+
                                 p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
                                 
                                 # [v6.1.2] Advanced KRW Conversion & Mirroring
@@ -859,13 +874,22 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                          if not p_item.get("change_percent") or p_item["change_percent"] in ["0.00%", "0.0%", "0%"]:
                              p_item["change_percent"] = q_change
                          
-                         # Calculate/Update change_val if possible
-                         try:
-                             pct_val = float(str(p_item["change_percent"]).replace("%", "").replace("+", "").strip())
-                             price_val = float(str(p_item["price"]).replace(",", ""))
-                             if price_val > 0:
-                                 p_item["change_val"] = round(price_val * (pct_val / 100.0), 4)
-                         except: pass
+                         # [v6.1.4] Corrected Change Value logic (Prioritize raw metadata)
+                         raw_fluct = quote.get("change_val") or quote.get("fluctuations")
+                         if raw_fluct and str(raw_fluct) not in ["0", ""]:
+                             try:
+                                 val = float(str(raw_fluct).replace(",", ""))
+                                 if quote.get("risefall_name") == 'FALLING': val = -abs(val)
+                                 p_item["change_val"] = int(val) if nation == "KOR" else val
+                             except: pass
+                         else:
+                             # Calculation fallback if raw data missing
+                             try:
+                                 pct_val = float(str(p_item["change_percent"]).replace("%", "").replace("+", "").strip())
+                                 price_val = float(str(p_item["price"]).replace(",", ""))
+                                 if price_val > 0 and pct_val != 0:
+                                     p_item["change_val"] = round(price_val * (pct_val / (100.0 + pct_val)), 4)
+                             except: pass
                          
                          # Parse risefall from quote if available
                          if quote.get("risefall_name"):

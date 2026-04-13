@@ -1632,6 +1632,7 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         }
 
 
+@turbo_cache(ttl_seconds=3600)
 def get_exchange_rate(currency="USD"):
     """
     Fetch exchange rates from Naver Market Index
@@ -1668,13 +1669,13 @@ def get_exchange_rate(currency="USD"):
                 
             return rate
             
-        # Fallbacks for safety
-        fallbacks = {"USD": 1380.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
-        return fallbacks.get(currency.upper(), 1300.0)
+        # Fallbacks for safety (Updated for 2024-2025 levels)
+        fallbacks = {"USD": 1485.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
+        return fallbacks.get(currency.upper(), 1450.0)
     except Exception as e:
         print(f"Exchange Rate Error ({currency}): {e}")
-        fallbacks = {"USD": 1380.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
-        return fallbacks.get(currency.upper(), 1300.0)
+        fallbacks = {"USD": 1485.0, "JPY": 9.2, "CNY": 195.0, "HKD": 178.0, "VND": 0.055}
+        return fallbacks.get(currency.upper(), 1450.0)
 
 @lru_cache(maxsize=1)
 def get_ipo_data():
