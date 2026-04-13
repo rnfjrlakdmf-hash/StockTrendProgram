@@ -120,6 +120,11 @@ GLOBAL_KOREAN_NAMES = {
     "TMF": "미국채 20년+ 3배 ETF",
     "NVDL": "엔비디아 2배 레버리지",
     "TSLL": "테슬라 2배 레버리지",
+    "MU": "마이크론",
+    "SNDK": "샌디스크",
+    "AIXI": "아이엑시스",
+    "CRCL": "써클",
+    "ARM": "ARM 홀딩스",
     "USD": "달러/원 환율",
     "KRW": "원화",
     "BTC": "비트코인",
@@ -761,10 +766,16 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         except: pass
 
     try:
-        # [v3.7.1] Normalize symbols for yfinance (Strip Naver-specific US suffixes)
+        # [v3.7.2] Robust Universal Ticker Normalization (Strip all suffixes for US equities)
         yf_symbol = symbol
-        if symbol.endswith(('.O', '.N', '.A')):
-            yf_symbol = symbol.split('.')[0]
+        is_us_stock = False
+        
+        # Determine if it's a US stock: Contains letters or explicitly US suffix
+        if re.search(r'[A-Z]', symbol.split('.')[0]) or symbol.endswith(('.O', '.N', '.A', '.K')):
+            is_us_stock = True
+            # Strip Naver/Reuters suffixes for yfinance compatibility
+            if '.' in symbol:
+                yf_symbol = symbol.split('.')[0]
             
         ticker = yf.Ticker(yf_symbol)
         current_price = ticker.fast_info.last_price
@@ -774,10 +785,17 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         import math
         if current_price and current_price > 0 and not math.isnan(current_price):
             change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close and not math.isnan(prev_close) else 0
+            
+            # Format price: 2 decimals for US stocks, 0 for Korean stocks (digits)
+            if is_us_stock:
+                price_str = f"{current_price:,.2f}"
+            else:
+                price_str = f"{current_price:,.0f}"
+
             return {
                 "symbol": symbol,
                 "name": symbol,
-                "price": f"{current_price:,.2f}" if '.' in symbol else f"{current_price:,.0f}",
+                "price": price_str,
                 "change": f"{change_pct:+.2f}%",
                 "up": change_pct >= 0
             }

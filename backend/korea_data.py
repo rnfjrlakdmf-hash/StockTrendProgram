@@ -1132,10 +1132,14 @@ def get_naver_stock_info(symbol: str):
                 if data.get('closePrice'):
                     price = data.get('closePrice', '0').replace(',', '')
                     pct = data.get('fluctuationsRatio', '0')
+                    
+                    # Format: 2 decimals for symbols with dots (Foreign) or letters
+                    is_foreign = '.' in symbol or any(c.isalpha() for c in symbol)
+                    
                     return {
                         "symbol": symbol,
                         "name": data.get('stockName', symbol),
-                        "price": f"{float(price):,.2f}",
+                        "price": f"{float(price):,.2f}" if is_foreign else f"{float(price):,.0f}",
                         "change": f"{float(pct):+.2f}%",
                         "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
                         "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),

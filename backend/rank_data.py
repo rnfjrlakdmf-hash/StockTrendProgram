@@ -38,7 +38,9 @@ def get_world_stock_polling(reuters_codes):
         if res.status_code == 200:
             data = res.json()
             result = {}
-            for item in data.get("result", []):
+            # [v5.9.3] Naver World Polling API uses "datas" for foreign stocks
+            items = data.get("datas", []) or data.get("result", [])
+            for item in items:
                 code = item.get("reutersCode")
                 if code:
                     result[code] = item
@@ -46,6 +48,51 @@ def get_world_stock_polling(reuters_codes):
     except Exception as e:
         print(f"World Stock Polling API Error: {e}")
     return {}
+
+def fetch_naver_search_top_api(market="USA"):
+    """
+    [v5.9.0] Naver Finance Real-time SearchTop API
+    Directly calls the API used by Naver Finance's Global Real-time Ranking widget.
+    market: 'USA' or 'KOR'
+    """
+    nation_type = "USA" if market == "USA" else "KOR"
+    url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType={nation_type}&startIdx=0&pageSize=10"
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://stock.naver.com/',
+        'Accept': 'application/json'
+    }
+    
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            # New stock.naver.com API returns either a list or a dict with "result"
+            items = data if isinstance(data, list) else data.get("result", [])
+            
+            # Standardize output for internal ranking engine
+            processed_items = []
+            for item in items:
+                # [v5.9.2] Preserve both original and internal keys for compatibility
+                processed_items.append({
+                    "symbol": item.get("reutersCode"),
+                    "reutersCode": item.get("reutersCode"),
+                    "name": item.get("stockName") or item.get("reutersCode"),
+                    "stockName": item.get("stockName") or item.get("reutersCode"),
+                    "itemname": item.get("stockName") or item.get("reutersCode"),
+                    "ranking": item.get("ranking")
+                })
+            return processed_items
+    except Exception as e:
+        print(f"SearchTop API Error for {market}: {e}")
+    return None
+
+def get_naver_homepage_popular_search(market="USA"):
+    """
+    [v5.9.1] Wrapper to maintain backward compatibility but use the better API.
+    """
+    return fetch_naver_search_top_api(market)
 
 # 캐싱을 위한 전역 변수 (간단한 인메모리 캐시)
 CACHE_TOP10 = {
@@ -136,17 +183,18 @@ def get_realtime_top10(market="KR", refresh=False):
         
     elif market == "US":
         # 미국 대형 기술주 위주 (S&P 500 Top)
+        # 네이버 금융 엔진과의 호환성을 위해 접미사(.O, .N) 포함하여 정의
         symbols = [
-            {"ticker": "AAPL", "name": "Apple"},
-            {"ticker": "MSFT", "name": "Microsoft"},
-            {"ticker": "NVDA", "name": "NVIDIA"},
-            {"ticker": "GOOGL", "name": "Alphabet (Google)"},
-            {"ticker": "AMZN", "name": "Amazon"},
-            {"ticker": "META", "name": "Meta"},
-            {"ticker": "TSLA", "name": "Tesla"},
-            {"ticker": "BRK-B", "name": "Berkshire Hathaway"},
-            {"ticker": "LLY", "name": "Eli Lilly"},
-            {"ticker": "AVGO", "name": "Broadcom"}
+            {"ticker": "AAPL.O", "name": "Apple"},
+            {"ticker": "MSFT.O", "name": "Microsoft"},
+            {"ticker": "NVDA.O", "name": "NVIDIA"},
+            {"ticker": "GOOGL.O", "name": "Alphabet (Google)"},
+            {"ticker": "AMZN.O", "name": "Amazon"},
+            {"ticker": "META.O", "name": "Meta"},
+            {"ticker": "TSLA.O", "name": "Tesla"},
+            {"ticker": "BRK-B.N", "name": "Berkshire Hathaway"},
+            {"ticker": "LLY.N", "name": "Eli Lilly"},
+            {"ticker": "AVGO.O", "name": "Broadcom"}
         ]
     
     # 2. 병렬로 데이터 가져오기 (속도 개선)
@@ -496,7 +544,47 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         'Accept': 'application/json, text/plain, */*'
     }
     
-    # [v5.0.0] Precision Mirroring Source
+    # [v5.7.0] Homepage Visual Parity Mode (Crucial for 1:1 Mirroring)
+    # If the user wants 1:1 match with Naver Main Home screen widget, we use the scraper EXCLUSIVELY first.
+    if order_type == "searchTop":
+        home_items = get_naver_homepage_popular_search(nation)
+        if home_items:
+            processed = []
+            symbols_to_poll = []
+            for i, item in enumerate(home_items[:10]):
+                sym = item.get("reutersCode") or item.get("itemcode")
+                name = item.get("stockName") or item.get("itemname")
+                processed.append({
+                    "rank": i + 1,
+                    "symbol": sym,
+                    "name": name,
+                    "price": "0",
+                    "change_val": 0,
+                    "change_percent": "0.00%",
+                    "risefall": 3,
+                    "market": market
+                })
+                if sym: symbols_to_poll.append(sym)
+                
+            # Batch enrichment for accurate pricing even on homepage rank
+            if nation != "KOR" and symbols_to_poll:
+                polling_data = get_world_stock_polling(symbols_to_poll)
+                if polling_data:
+                    for p in processed:
+                        info = polling_data.get(p["symbol"])
+                        if info:
+                            p["name"] = info.get("koreanCodeName") or info.get("itemname") or p["name"]
+                            p["price"] = info.get("closePrice") or p["price"]
+                            p["change_percent"] = f"{float(info.get('fluctuationsRatio', 0)):+.2f}%"
+                            p["change_val"] = info.get("compareToPreviousClosePrice") or 0
+                            p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
+            
+            # Cache and return (Visual match takes priority)
+            if processed:
+                CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
+                return processed
+
+    # [v5.0.0] Precision Mirroring Source (Fallback/Other categories)
     if order_type == "searchTop":
         if nation == "KOR":
             # [v3.9.5] Domestic SearchTop widget uses the 'default' API with orderType=searchTop
@@ -547,20 +635,29 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 # If it already has valid Korean, DON'T touch it!
                 if any(0xAC00 <= ord(c) <= 0xD7A3 for c in s): return s
                 
-                # Check for latin-1 preservation pattern
+                # [v3.9.6] Advanced Mojibake Recovery
                 try:
-                    repaired = s.encode('iso-8859-1').decode('cp949', 'ignore')
-                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
-                        return repaired
-                except: pass
-                
-                try:
+                    # Strategy 1: Latin-1 -> UTF-8
                     repaired = s.encode('iso-8859-1').decode('utf-8', 'ignore')
                     if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
                         return repaired
                 except: pass
 
-                return s.replace("\ufffd", "")
+                try:
+                    # Strategy 2: Latin-1 -> CP949
+                    repaired = s.encode('iso-8859-1').decode('cp949', 'ignore')
+                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                        return repaired
+                except: pass
+                
+                # [v5.7.0] Fallback to manual map if still garbled
+                clean_sym = item.get("itemcode") or item.get("reutersCode") or ""
+                if clean_sym:
+                    clean_sym = clean_sym.split('.')[0]
+                    # us_name_map is defined later in enrich_item, so we might need a global or local access
+                    # For now, we rely on the later enrichment pass which is more robust.
+                
+                return s
 
             if nation == "KOR":
                 # Domestic Schema (Integrated SearchTop in default API uses same schema)
@@ -683,20 +780,29 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     # 1. Name Enrichment (Only if new name is valid and better)
                     new_name = quote.get("name")
                     if new_name and not is_v_garbled(new_name) and new_name != sym and len(str(new_name)) > 1:
-                        # Baseline names from list API are often garbled, so we prefer quote name if it looks like real Kr/En
                         p_item["name"] = new_name
                     
-                    # [v3.8.3] US SearchTop Specialized Translation Fallback
-                    # If name is still just a ticker and it's a popular US stock, use a pre-mapped clean Korean name.
-                    if is_v_garbled(p_item["name"]) or p_item["name"] == sym or ".O" in p_item["name"]:
-                        us_name_map = {
-                            "NVDA.O": "엔비디아", "TSLA.O": "테슬라", "AAPL.O": "애플", 
-                            "MSFT.O": "마이크로소프트", "AMZN.O": "아마존", "GOOGL.O": "알파벳A",
-                            "PLTR.O": "팔란티어", "META.O": "메타", "AVGO.O": "브로드컴",
-                            "MSTR.O": "마이크로스트래티지", "SMCI.O": "슈퍼마이크로컴퓨터",
-                            "SOXL.O": "디렉시온 세배 반도체", "SQQQ.O": "프로셰어즈 울트라프로 쇼트"
-                        }
-                        if sym in us_name_map:
+                    # [v3.8.5] Expanded US/Global Name Translation Map
+                    # Fixes cases where Naver API returns Reuters codes or garbage for popular assets.
+                    clean_sym = sym.split('.')[0] if '.' in sym else sym
+                    us_name_map = {
+                        "NVDA": "엔비디아", "TSLA": "테슬라", "AAPL": "애플", 
+                        "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A",
+                        "PLTR": "팔란티어", "META": "메타", "AVGO": "브로드컴",
+                        "MSTR": "마이크로스트래티지", "SMCI": "슈퍼마이크로컴퓨터",
+                        "IONQ": "아이온큐", "SOXL": "세배 반도체 레버리지", "TQQQ": "세배 나스닥 레버리지",
+                        "SQQQ": "세배 나스닥 인버스", "TSLL": "테슬라 2배 레버리지", "NVDL": "엔비디아 2배",
+                        "SMR": "뉴스케일 파워", "OKLO": "오클로", "VIX": "공포지수", 
+                        "CONL": "코인베이스 2배", "MSTX": "마이크로스트래티지 1.75배",
+                        "SCHD": "슈왑 배당주 ETF", "JEPI": "제이피모건 커버드콜",
+                        "MU": "마이크론", "SNDK": "샌디스크", "AIXI": "아이엑시스", 
+                        "CRCL": "써클", "ARM": "ARM 홀딩스"
+                    }
+                    
+                    if is_v_garbled(p_item["name"]) or p_item["name"] == sym or ".O" in p_item["name"] or ".N" in p_item["name"]:
+                        if clean_sym in us_name_map:
+                            p_item["name"] = us_name_map[clean_sym]
+                        elif sym in us_name_map:
                             p_item["name"] = us_name_map[sym]
                     
                     # 2. Price Enrichment (Only if positive and valid)
@@ -706,23 +812,30 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         if q_price > 0:
                             p_item["price"] = quote["price"]
                             
-                            # Update KRW if possible
+                            # Update KRW (Robust Conversion)
                             if currency != "KRW":
                                 p_item["price_krw"] = f"{q_price * rate:,.0f}"
                     except: pass
                     
                     # 3. Change & Precision Enrichment (Selective)
-                    # Only overwrite if quote.change is definitely valid (not "0.00%" for a non-zero change_val)
                     q_change = quote.get("change")
-                    if q_change and q_change not in ["0.00%", "0.0%"]:
+                    if q_change and q_change not in ["0.00%", "0.0%"] and ("+" in q_change or "-" in q_change):
                          p_item["change_percent"] = q_change
+                         # Calculate/Update change_val if possible
+                         try:
+                             pct_val = float(q_change.replace("%", "").strip())
+                             price_val = float(str(p_item["price"]).replace(",", ""))
+                             if price_val > 0:
+                                 p_item["change_val"] = round(price_val * (pct_val / 100.0), 4)
+                         except: pass
                          
+                         # Parse change_val if available
                          if quote.get("change_val") and quote["change_val"] not in ["0", "", 0]:
                              try:
                                  val = float(str(quote["change_val"]).replace(",", ""))
                                  if quote.get("risefall_name") == 'FALLING': val = -abs(val)
                                  p_item["change_val"] = int(val) if nation == "KOR" else val
-                                 p_item["risefall"] = 5 if quote.get("risefall_name") == 'FALLING' else 2
+                                 p_item["risefall"] = 5 if (quote.get("risefall_name") == 'FALLING' or "-" in q_change) else 2
                              except: pass
                 return p_item
 
