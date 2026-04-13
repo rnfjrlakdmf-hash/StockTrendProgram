@@ -546,71 +546,44 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         'Accept': 'application/json, text/plain, */*'
     }
     
-    # [v6.1.0] Homepage Visual Parity Mode (Crucial for 1:1 Mirroring)
+    # [v6.1.1] Homepage Visual Parity Mode
     if order_type == "searchTop":
-        # Domestic KR SearchTop is best handled by realtime/ranking API for names/accuracy
-        if nation == "KOR":
-            url = "https://stock.naver.com/api/domestic/market/realtime/ranking"
-            try:
-                res = requests.get(url, headers=headers, timeout=5)
-                if res.status_code == 200:
-                    res.encoding = 'utf-8'
-                    raw_data = res.json()
-                    datas = raw_data.get("datas", [])
-                    for cat in datas:
-                        if cat.get("rankingType") == "SEARCH":
-                            items = cat.get("stocks", [])
-                            # Processed domestic items
-                            processed = []
-                            for i, item in enumerate(items[:10]):
-                                sym = item.get("itemCode") or item.get("itemcode")
-                                name = item.get("stockName") or item.get("itemname")
-                                processed.append({
-                                    "rank": i + 1, "symbol": sym, "name": name,
-                                    "price": item.get("closePrice") or item.get("nowPrice"),
-                                    "change_percent": f"{float(item.get('fluctuationsRatio',0)):+.2f}%",
-                                    "market": market
-                                })
-                            if processed:
-                                CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
-                                return processed
-            except Exception as e: print(f"Domestic Search Parity Error: {e}")
-
-        # USA or Fallback SearchTop
-        home_items = fetch_naver_search_top_api(nation)
-        if home_items:
-            processed = []
-            symbols_to_poll = []
-            for i, item in enumerate(home_items[:10]):
-                sym = item.get("reutersCode") or item.get("symbolCode") or item.get("symbol")
-                name = item.get("stockName") or item.get("name")
-                processed.append({
-                    "rank": i + 1, "symbol": sym, "name": name,
-                    "price": "0", "change_val": 0, "change_percent": "0.00%",
-                    "risefall": 3, "market": market
-                })
-                if sym: symbols_to_poll.append(sym)
+        # USA or Fallback SearchTop (Domestic KR will fall through to precision logic below)
+        if nation != "KOR":
+            home_items = fetch_naver_search_top_api(nation)
+            if home_items:
+                processed = []
+                symbols_to_poll = []
+                for i, item in enumerate(home_items[:10]):
+                    sym = item.get("reutersCode") or item.get("symbolCode") or item.get("symbol")
+                    name = item.get("stockName") or item.get("name")
+                    processed.append({
+                        "rank": i + 1, "symbol": sym, "name": name,
+                        "price": "0", "change_val": 0, "change_percent": "0.00%",
+                        "risefall": 3, "market": market
+                    })
+                    if sym: symbols_to_poll.append(sym)
+                    
+                # Batch enrichment for accurate pricing
+                if symbols_to_poll:
+                    polling_data = get_world_stock_integration(symbols_to_poll)
+                    if polling_data:
+                        for p in processed:
+                            info = polling_data.get(p["symbol"])
+                            if info:
+                                p["name"] = info.get("stockName") or p["name"]
+                                p["price"] = info.get("currentPrice") or info.get("closePrice") or p["price"]
+                                p["change_percent"] = f"{float(info.get('fluctuationsRatio', 0)):+.2f}%"
+                                p["change_val"] = info.get("fluctuations") or 0
+                                p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
                 
-            # Batch enrichment for accurate pricing
-            if symbols_to_poll:
-                polling_data = get_world_stock_integration(symbols_to_poll) if nation != "KOR" else {}
-                if polling_data:
-                    for p in processed:
-                        info = polling_data.get(p["symbol"])
-                        if info:
-                            p["name"] = info.get("stockName") or p["name"]
-                            p["price"] = info.get("currentPrice") or info.get("closePrice") or p["price"]
-                            p["change_percent"] = f"{float(info.get('fluctuationsRatio', 0)):+.2f}%"
-                            p["change_val"] = info.get("fluctuations") or 0
-                            p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
-            
-            if processed:
-                CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
-                return processed
+                if processed:
+                    CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
+                    return processed
 
-    # [v6.0.0] Integrated Realtime Ranking API for Domestic (KR)
+    # [v6.1.1] Precision Mirroring Source (Reverted to stable default API for KR)
     if nation == "KOR":
-        url = "https://stock.naver.com/api/domestic/market/realtime/ranking"
+        url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
     else:
         if order_type == "searchTop":
             # [v6.0.1] US SearchTop with category parameters for 1:1 match
@@ -637,27 +610,14 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 return []
         
         items = []
-        if nation == "KOR":
-            # Parse Domestic Realtime Ranking API (Special Schema)
-            # data has "datas" which is a list of categories
-            datas = raw_data.get("datas", [])
-            type_map = {
-                "searchTop": "SEARCH",
-                "quantTop": "VOLUME",
-                "priceTop": "AMOUNT"
-            }
-            target_type = type_map.get(order_type, "SEARCH")
-            for cat in datas:
-                if cat.get("rankingType") == target_type:
-                    items = cat.get("stocks", [])
-                    break
-        else:
-            if isinstance(raw_data, list):
-                items = raw_data
-            elif isinstance(raw_data, dict):
-                items = raw_data.get("items") or raw_data.get("stocks") or raw_data.get("result")
-                if items is None and "result" in raw_data:
-                    items = raw_data["result"].get("items") or raw_data["result"].get("stocks")
+        if isinstance(raw_data, list):
+            items = raw_data
+        elif isinstance(raw_data, dict):
+            items = raw_data.get("items") or raw_data.get("stocks") or raw_data.get("result")
+            if items is None and "result" in raw_data:
+                items = raw_data["result"].get("items") or raw_data["result"].get("stocks")
+                if isinstance(items, dict): # Handle result.items
+                     items = items.get("items") or items.get("stocks")
             
         if not items:
             return []
@@ -695,19 +655,17 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 return s
 
             if nation == "KOR":
-                # Domestic Schema (New realtime/ranking API)
-                symbol = item.get("itemCode") or item.get("itemcode")
-                name = repair(item.get("stockName") or item.get("itemname"))
-                price = item.get("closePrice") or item.get("nowPrice")
-                change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
-                change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
+                # Domestic Schema (Stable default API)
+                symbol = item.get("itemcode") or item.get("itemCode")
+                name = repair(item.get("itemname") or item.get("stockName"))
+                price = item.get("nowPrice") or item.get("closePrice")
+                change_rate = item.get("prevChangeRate") or item.get("fluctuationsRatio")
+                change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice")
                 
-                # risefall mapping (realtime/ranking returns a dict for fluctuationsType)
-                rf_obj = item.get("fluctuationsType")
-                if isinstance(rf_obj, dict):
-                    risefall = int(rf_obj.get("code", 3))
-                else:
-                    risefall = item.get("upDownGb") or item.get("risefall") or 3
+                # risefall mapping
+                risefall = item.get("upDownGb") or 3
+                if isinstance(risefall, dict):
+                    risefall = int(risefall.get("code", 3))
                     
                 volume = item.get("tradeVolume") or item.get("accumulatedTradingVolume")
                 amount = item.get("tradeAmount") or item.get("accumulatedTradingValue")
