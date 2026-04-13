@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] v3.6.11-Unified-Core - 2026-04-14
+# [Deployment Trigger] v3.6.12-Unified-Core - 2026-04-14
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -110,8 +110,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.11 (Emergency-Sync)",
-        "build_id": "2026-04-14-emergency-fix-v3.6.11",
+        "version": "v3.6.12 (Precision-Sync)",
+        "build_id": "2026-04-14-precision-fix-v3.6.12",
         "service": "AI Stock Analyst Backend - Production Stable"
     }
 

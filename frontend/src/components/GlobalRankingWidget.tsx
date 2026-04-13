@@ -226,14 +226,16 @@ export default function GlobalRankingWidget() {
                                                     <div className="text-sm font-bold text-gray-100 font-mono tracking-tight">
                                                         {formatPrice(item)}
                                                     </div>
-                                                    <div className="flex flex-col items-end">
+                                                    <div className="flex flex-col items-end min-h-[32px] justify-center">
                                                         <div className={`text-[11px] font-bold font-mono ${rf.color}`}>
                                                             {rf.icon} {rf.abs_str} ({rf.pct_str}%)
                                                         </div>
-                                                        {item.price_krw && market !== 'KOSPI' && (
-                                                            <div className="text-[9px] text-gray-500 mt-0.5 font-medium bg-black/40 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                약 <span className="text-gray-400">{item.price_krw}</span>원
+                                                        {market !== 'KOSPI' ? (
+                                                            <div className={`text-[9px] text-gray-500 mt-0.5 font-medium bg-black/40 px-1.5 py-0.5 rounded-md border border-white/5 transition-opacity ${item.price_krw ? 'opacity-100' : 'opacity-0'}`}>
+                                                                약 <span className="text-gray-400">{item.price_krw || '0'}</span>원
                                                             </div>
+                                                        ) : (
+                                                            <div className="h-[18px]" /> /* Spacer to match height across all cards if needed, but KOSPI cards are uniform without it */
                                                         )}
                                                     </div>
                                                 </div>

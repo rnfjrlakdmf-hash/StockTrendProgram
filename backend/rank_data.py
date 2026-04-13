@@ -568,14 +568,22 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 if symbols_to_poll:
                     polling_data = get_world_stock_integration(symbols_to_poll)
                     if polling_data:
+                        rate = get_usd_krw_rate()
                         for p in processed:
                             info = polling_data.get(p["symbol"])
                             if info:
                                 p["name"] = info.get("stockName") or p["name"]
-                                p["price"] = info.get("currentPrice") or info.get("closePrice") or p["price"]
+                                price_val = info.get("currentPrice") or info.get("closePrice") or p["price"]
+                                p["price"] = price_val
                                 p["change_percent"] = f"{float(info.get('fluctuationsRatio', 0)):+.2f}%"
                                 p["change_val"] = info.get("fluctuations") or 0
                                 p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
+                                
+                                # Add price_krw for UI alignment
+                                try:
+                                    f_p = float(str(price_val).replace(',', ''))
+                                    if f_p > 0: p["price_krw"] = f"{f_p * rate:,.0f}"
+                                except: pass
                 
                 if processed:
                     CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
@@ -720,7 +728,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             except: pass
             
             price_krw = None
-            if currency != "KRW" and f_price > 0:
+            if nation != "KOR" and f_price > 0:
                 price_krw = f"{f_price * rate:,.0f}"
 
             # Baseline Data Preservation
