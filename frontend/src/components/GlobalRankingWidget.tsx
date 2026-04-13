@@ -106,7 +106,9 @@ export default function GlobalRankingWidget() {
         // Match screenshot prefix (HK$ uses concatenated style, USA uses $, others space)
         const prefix = market === 'HONG_KONG' ? 'HK$' : 
                       (market === 'USA' ? '$' : (currency_symbol || ''));
-        return `${prefix}${formatted}`;
+        const suffix = market === 'KOSPI' ? '원' : '';
+        
+        return `${prefix}${formatted}${suffix}`;
     };
 
     const getRiseFallInfo = (item: RankItem) => {
