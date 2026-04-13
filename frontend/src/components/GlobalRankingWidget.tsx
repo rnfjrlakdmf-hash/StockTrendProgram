@@ -181,9 +181,9 @@ export default function GlobalRankingWidget() {
             </div>
 
             {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 {CATEGORY_CONFIG.map((cat) => (
-                    <div key={cat.id} className="space-y-4">
+                    <div key={cat.id} className="flex flex-col space-y-4">
                         <div className="flex items-center justify-between px-1">
                             <div className="flex items-center gap-2">
                                 <span className="bg-blue-500/10 p-1.5 rounded-lg">
@@ -196,9 +196,9 @@ export default function GlobalRankingWidget() {
                             )}
                         </div>
 
-                        <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
+                        <div className="flex-1 bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
                             {rankData[cat.id].length > 0 ? (
-                                <div className="divide-y divide-white/5">
+                                <div className="h-full divide-y divide-white/5">
                                     {rankData[cat.id].map((item, idx) => {
                                         const rf = getRiseFallInfo(item);
                                         return (
@@ -242,7 +242,7 @@ export default function GlobalRankingWidget() {
                                     })}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-16 space-y-3 opacity-30">
+                                <div className="h-full flex flex-col items-center justify-center py-16 space-y-3 opacity-30">
                                     <div className="p-4 rounded-full bg-white/5">
                                         <Activity className="w-8 h-8 text-gray-600" />
                                     </div>
