@@ -141,7 +141,8 @@ export default function GlobalRankingWidget() {
             minimumFractionDigits: (market === 'KOSPI' || market === 'VIETNAM') ? 0 : (market === 'CHINA' || market === 'HONG_KONG' ? 3 : 1) 
         }) : '';
         
-        const pct_str = isNaN(val) ? '0.00' : Math.abs(val).toFixed(2);
+        const sign = val > 0 ? '+' : (val < 0 ? '-' : '');
+        const pct_str = isNaN(val) ? '0.00' : `${sign}${Math.abs(val).toFixed(2)}`;
         
         return { color, icon, abs_str, pct_str };
     };
