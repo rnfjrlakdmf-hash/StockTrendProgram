@@ -103,8 +103,9 @@ export default function GlobalRankingWidget() {
             maximumFractionDigits: decimals
         });
         
-        // Match screenshot prefix (HK$ uses concatenated style, others space)
-        const prefix = market === 'HONG_KONG' ? 'HK$' : (currency_symbol || '');
+        // Match screenshot prefix (HK$ uses concatenated style, USA uses $, others space)
+        const prefix = market === 'HONG_KONG' ? 'HK$' : 
+                      (market === 'USA' ? '$' : (currency_symbol || ''));
         return `${prefix}${formatted}`;
     };
 
