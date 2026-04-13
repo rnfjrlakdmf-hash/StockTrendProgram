@@ -53,9 +53,10 @@ def get_world_stock_polling(reuters_codes):
 
 def fetch_naver_search_top_api(market="USA"):
     """
-    [v6.1.0] Naver Finance Real-time SearchTop API (Mobile front-api for 1:1 Parity)
+    [v6.1.3] Naver Finance Real-time SearchTop API (Mobile front-api for 1:1 Parity)
+    Corrects nationType mapping: overseas (USA/Global), domestic (KOR)
     """
-    nation_type = "USA" if market == "USA" else "KOR"
+    nation_type = "overseas" if market in ["USA", "Global"] else "domestic"
     # Mobile popularStock API is more accurate for search trends
     url = f"https://m.stock.naver.com/front-api/market/popularStock?nationType={nation_type}"
     
@@ -575,17 +576,35 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                                 p["name"] = info.get("stockName") or p["name"]
                                 price_val = info.get("currentPrice") or info.get("closePrice") or p["price"]
                                 p["price"] = price_val
-                                p["change_percent"] = f"{float(info.get('fluctuationsRatio', 0)):+.2f}%"
+                                # [v6.1.3] Precision Percentage Calculation Sync
+                                try:
+                                    f_rate = float(info.get('fluctuationsRatio', 0))
+                                    # Handle cases where ratio mapping might be shifted or absolute
+                                    p["change_percent"] = f"{f_rate:+.2f}%"
+                                except:
+                                    p["change_percent"] = "0.00%"
+                                
                                 p["change_val"] = info.get("fluctuations") or 0
                                 p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
                                 
-                                # Add price_krw for UI alignment
+                                # [v6.1.2] Advanced KRW Conversion & Mirroring
                                 try:
                                     f_p = float(str(price_val).replace(',', ''))
-                                    if f_p > 0: p["price_krw"] = f"{f_p * rate:,.0f}"
-                                except: pass
+                                    if f_p > 0:
+                                        p["price_krw"] = f"{f_p * rate:,.0f}"
+                                    else:
+                                        p["price_krw"] = "0"
+                                except:
+                                    p["price_krw"] = "0"
                 
                 if processed:
+                    # [v6.1.2] Force 10 items padding for UI stability
+                    while len(processed) < 10:
+                        processed.append({
+                            "rank": len(processed) + 1, "symbol": "-", "name": "-",
+                            "price": "0", "change_val": 0, "change_percent": "0.00%",
+                            "risefall": 3, "market": market, "price_krw": "0"
+                        })
                     CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
                     return processed
 
@@ -743,7 +762,8 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "risefall": risefall,
                 "volume": volume,
                 "amount": amount,
-                "market": market
+                "market": market,
+                "price_krw": price_krw or "0" # Ensure field exists
             })
 
         # [v6.0.0] High-Precision Integration Sync for Foreign Stocks (Especially SearchTop)
@@ -786,7 +806,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             
             def enrich_item(p_item):
                 sym = p_item["symbol"]
-                if not sym: return p_item
+                if not sym or sym == "-": return p_item
                 
                 # Fetch real-time data from mobile API to override unreliable list API
                 quote = get_simple_quote(sym)
@@ -797,7 +817,6 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         p_item["name"] = new_name
                     
                     # [v3.8.5] Expanded US/Global Name Translation Map
-                    # Fixes cases where Naver API returns Reuters codes or garbage for popular assets.
                     clean_sym = sym.split('.')[0] if '.' in sym else sym
                     us_name_map = {
                         "NVDA": "엔비디아", "TSLA": "테슬라", "AAPL": "애플", 
@@ -825,36 +844,47 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         q_price = float(q_price_str)
                         if q_price > 0:
                             p_item["price"] = quote["price"]
-                            
                             # Update KRW (Robust Conversion)
                             if currency != "KRW":
                                 p_item["price_krw"] = f"{q_price * rate:,.0f}"
-                    except: pass
+                            else:
+                                p_item["price_krw"] = "0"
+                    except:
+                        p_item["price_krw"] = p_item.get("price_krw") or "0"
                     
                     # 3. Change & Precision Enrichment (Selective)
                     q_change = quote.get("change")
                     if q_change and q_change not in ["0.00%", "0.0%"] and ("+" in q_change or "-" in q_change):
-                         p_item["change_percent"] = q_change
+                         # [v6.1.2] Favor existing (widget) change_percent if it looks valid
+                         if not p_item.get("change_percent") or p_item["change_percent"] in ["0.00%", "0.0%", "0%"]:
+                             p_item["change_percent"] = q_change
+                         
                          # Calculate/Update change_val if possible
                          try:
-                             pct_val = float(q_change.replace("%", "").strip())
+                             pct_val = float(str(p_item["change_percent"]).replace("%", "").replace("+", "").strip())
                              price_val = float(str(p_item["price"]).replace(",", ""))
                              if price_val > 0:
                                  p_item["change_val"] = round(price_val * (pct_val / 100.0), 4)
                          except: pass
                          
-                         # Parse change_val if available
-                         if quote.get("change_val") and quote["change_val"] not in ["0", "", 0]:
-                             try:
-                                 val = float(str(quote["change_val"]).replace(",", ""))
-                                 if quote.get("risefall_name") == 'FALLING': val = -abs(val)
-                                 p_item["change_val"] = int(val) if nation == "KOR" else val
-                                 p_item["risefall"] = 5 if (quote.get("risefall_name") == 'FALLING' or "-" in q_change) else 2
-                             except: pass
+                         # Parse risefall from quote if available
+                         if quote.get("risefall_name"):
+                             p_item["risefall"] = 2 if quote.get("risefall_name") == 'RISING' else (5 if quote.get("risefall_name") == 'FALLING' else 3)
                 return p_item
 
             with ThreadPoolExecutor(max_workers=5) as executor:
                 processed = list(executor.map(enrich_item, processed))
+
+        # [v6.1.2] Final Safeguard: Always ensure exactly 10 items for visual parity
+        if processed:
+            while len(processed) < 10:
+                processed.append({
+                    "rank": len(processed) + 1, "symbol": "-", "name": "-",
+                    "price": "0", "change_val": 0, "change_percent": "0.00%",
+                    "risefall": 3, "market": market, "price_krw": "0"
+                })
+            # Trim if somehow more (unlikely)
+            processed = processed[:10]
 
         if processed:
             CACHE_GLOBAL_RANKING[cache_key] = {
