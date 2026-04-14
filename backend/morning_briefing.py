@@ -56,7 +56,8 @@ async def generate_user_morning_briefing(user_id: str):
                 print(f"[DEBUG] Failed to get quote for {symbol}, using fallback data")
                 quote = {"symbol": symbol, "name": symbol, "price": "확인불가", "change": "0.00%"}
             
-            news = fetch_google_news(symbol, max_results=2)
+            news_raw = fetch_google_news(symbol)
+            news = news_raw[:2] if news_raw else []
             return {
                 "symbol": symbol,
                 "name": quote.get('name', symbol),
@@ -123,7 +124,7 @@ async def generate_user_morning_briefing(user_id: str):
         }
 
     # 지수 요약 텍스트 생성
-    indices_raw = market_data.get('indices', []) # Case-sensitive fix: 'Indices' -> 'indices'
+    indices_raw = market_data if isinstance(market_data, list) else market_data.get('indices', [])
     index_list = []
     for idx in indices_raw:
         label = idx.get('label', '시장 지수')
@@ -165,7 +166,8 @@ async def generate_user_morning_briefing(user_id: str):
     - **중복 배제**: 각 항목 간 내용이 겹치지 않게 정보를 효율적으로 배치하세요.
     - **모드별 최적화**: 전문가 버전(격식)과 초보자 버전(비유/쉬운 용어)을 각각 생성하세요.
     - **가독성 극대화**: 줄글은 3~4줄 내외로 제한하고 가독성이 좋은 어조를 사용하세요.
-    - **투자 자문 금지**: 가격 제시, 매도/매수 추천은 절대 불가합니다.
+    - **관심종목 맞춤 분석 필수**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 **모든 개별 종목**에 대해 반드시 `watchlist_briefs` 배열에 하나씩 분석(insight)을 생성해야 합니다. 생략되는 종목이 없어야 하며, 목록이 비어있다면 빈 배열을 반환하세요.
+    - **투자 자문 금지**: 가격 예측, 수익률 보장, 명시적인 매도/매수 추천 단어는 절대 금지하되, 당일의 객관적인 사실, 차트 동향, 뉴스, 실적, 수급 기반의 실용적인 인사이트만을 제공하세요.
 
     [출력 포맷 (JSON)]
     {{
