@@ -92,6 +92,15 @@ export default function MorningBriefWidget() {
                 setMarketIndices(indexJson.data);
             }
 
+            // 1.5. 맞춤 분석 브리핑 유무 확인 및 누락 시 자동 생성 (관심종목 변경 시 무효화됨에 따라)
+            try {
+                await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
+                    headers: { "X-User-ID": user.id }
+                });
+            } catch (e) {
+                console.error("Auto brief generation error", e);
+            }
+
             // 2. 브리핑 타임라인
             const url = new URL(`${API_BASE_URL}/api/ai/briefing-timeline`);
             const res = await fetch(url.toString(), {
@@ -141,7 +150,10 @@ export default function MorningBriefWidget() {
         return (
             <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[500px] animate-pulse">
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                <p className="text-gray-400 font-medium">네이버 금융 데이터 동기화 중...</p>
+                <p className="text-gray-400 font-medium text-center">
+                    AI 맞춤 분석 보고서 준비 및 동기화 중...<br />
+                    <span className="text-xs text-gray-500 mt-2 block">(관심종목 변경 시 최초 1회 10초 내외 소요)</span>
+                </p>
             </div>
         );
     }
@@ -259,8 +271,8 @@ export default function MorningBriefWidget() {
                         ) : (
                             <div className="flex flex-col items-center justify-center py-20 bg-white/[0.02] rounded-[3rem] border border-dashed border-white/10">
                                 <Zap className="w-12 h-12 text-gray-700 mb-4 animate-pulse" />
-                                <h4 className="text-xl font-bold text-gray-500">맞춤 분석 데이터가 부족합니다.</h4>
-                                <button onClick={generateNow} className="mt-8 px-10 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20">분석 시작하기</button>
+                                <h4 className="text-xl font-bold text-gray-500">맞춤 분석 리포트를 생성할 수 없습니다.</h4>
+                                <button onClick={generateNow} className="mt-8 px-10 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20">수동 생성 시도하기</button>
                             </div>
                         )}
                         
