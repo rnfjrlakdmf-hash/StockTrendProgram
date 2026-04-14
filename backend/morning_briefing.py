@@ -297,9 +297,11 @@ def generate_user_morning_briefing(user_id: str):
         briefing_result["user_id"] = user_id
         briefing_result["generated_at"] = now.isoformat()
         
-        # DB 저장
+        # 최종 완료 및 저장
+        from utils.briefing_store import save_morning_briefing
         save_morning_briefing(user_id, briefing_result)
         
+        print(f"[TurboBrief] Fully generated and saved deep briefing for {user_id}")
         return briefing_result
     except Exception as e:
         print(f"[MorningBrief] Generation error: {e}")

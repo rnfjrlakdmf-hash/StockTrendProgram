@@ -3154,6 +3154,17 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
     
     # 4. 갱신이 필요하고 현재 진행 중인 작업이 없다면 배경 작업 가동
     if needs_update and not is_updating:
+        # [Zero-Wait] 즉시 요약본을 먼저 생성하여 DB에 기록 (사용자가 즉시 볼 수 있게 함)
+        try:
+            from morning_briefing import generate_instant_briefing
+            from utils.briefing_store import save_morning_briefing
+            instant_data = generate_instant_briefing(x_user_id)
+            save_morning_briefing(x_user_id, instant_data)
+            # 저장 후 최신 데이터를 다시 가져옴
+            latest = instant_data 
+        except Exception as e:
+            print(f"[TurboBrief] Pre-save failed: {e}")
+            
         asyncio.create_task(run_background_briefing(x_user_id))
         is_updating = True
     

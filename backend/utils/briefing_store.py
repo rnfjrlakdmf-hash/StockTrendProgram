@@ -29,20 +29,23 @@ def init_briefing_table():
     conn.commit()
     conn.close()
 
-def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any]):
-    """생성된 브리핑을 DB에 저장 (최신 1건 유지 또는 히스토리)"""
+def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any]) -> bool:
+    """생성된 브리핑을 DB에 저장 (성공 여부 반환)"""
     conn = get_db()
     cursor = conn.cursor()
     try:
-        # 기존 오늘 데이터가 있다면 삭제 (하루에 하나만 기록하는 정책일 경우)
-        # 여기서는 단순 추가 후 최신순 조회를 사용
+        # SQLite 특성상 쓰기 시 타임아웃 발생 가능하므로 명시적으로 처리
+        cursor.execute("PRAGMA busy_timeout = 5000") 
         cursor.execute(
             "INSERT INTO morning_briefings (user_id, briefing_json) VALUES (?, ?)",
             (user_id, json.dumps(briefing_data, ensure_ascii=False))
         )
         conn.commit()
+        print(f"[BriefingStore] Successfully saved briefing for user: {user_id}")
+        return True
     except Exception as e:
-        print(f"[BriefingStore] Save error: {e}")
+        print(f"[BriefingStore] Save error for {user_id}: {e}")
+        return False
     finally:
         conn.close()
 
