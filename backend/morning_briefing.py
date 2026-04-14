@@ -158,6 +158,9 @@ async def generate_user_morning_briefing(user_id: str):
     3. 회원님 관심종목 리얼타임 데이터: {json.dumps(watchlist_details, ensure_ascii=False)}
 
     [작성 가이드라인 - 필독 및 엄수]
+    - **중복 배제**: `market_summary`(상황 요약)와 `market_focus`(체크포인트)의 내용이 겹치지 않게 하세요.
+        - `market_summary`: 지수 움직임, 주요 사건의 흐름, 전반적인 시장 분위기 위주로 서술하세요. (일정 목록은 제외)
+        - `market_focus`: 오늘 하루 동안 회원님이 **실제로 확인해야 할 '일정'과 '공시' 목록**만 간결하게 핵심 위주로 작성하세요. (지수 요약 제외)
     - **전문가 버전 vs 초보자 버전**: 모든 주요 항목에 대해 전문가용 전문 분석(`market_summary`, `market_focus`, `insight`)과 초보자용 쉬운 설명(`simple_summary`, `simple_focus`, `simple_insight`)을 **함께** 작성하세요.
     - **쉬운 설명 기준**: 어려운 경제 용어를 제거하거나 비유(예: 지수는 '시장 온도', 물가는 '물건값 성적표' 등)를 사용하여 중학생도 이해할 수 있도록 쉽게 설명하세요.
     - **실시간 데이터 기반**: 제공된 [입력 데이터]에 명시된 숫자와 시장 상황에만 철저히 기초하여 분석하세요.
