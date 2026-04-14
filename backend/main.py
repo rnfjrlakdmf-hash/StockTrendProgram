@@ -3066,6 +3066,32 @@ def read_financial_health(symbol: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/stock/quotes/multi")
+def get_multi_quotes(symbols: str = Query(...)):
+    """콤마(,)로 구분된 심볼 리스트의 시세를 한꺼번에 조회합니다."""
+    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
+    results = {}
+    
+    # 병렬 처리를 위한 ThreadPool 사용
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(symbol_list) or 1) as executor:
+        future_to_symbol = {executor.submit(get_simple_quote, sym): sym for sym in symbol_list}
+        for future in concurrent.futures.as_completed(future_to_symbol):
+            sym = future_to_symbol[future]
+            try:
+                data = future.result()
+                if data:
+                    results[sym] = {
+                        "price": data.get("price", "확인불가"),
+                        "change": data.get("change", "0.00%"),
+                        "up": data.get("up", True)
+                    }
+            except Exception as e:
+                print(f"[API] Error in multi-quote for {sym}: {e}")
+                results[sym] = {"price": "확인불가", "change": "0.00%", "up": True}
+                
+    return {"status": "success", "data": results}
+
 @app.get("/api/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
     """[VIP] 맞춤형 모닝 브리핑 조회 및 생성 (force=true 시 강제 재생성)"""

@@ -5,9 +5,13 @@ import pytz
 from typing import Dict, Any, List
 
 from ai_analysis import generate_with_retry, API_KEY
-from stock_data import get_market_data, fetch_google_news, get_simple_quote
+from stock_data import (
+    get_market_data, fetch_google_news, get_simple_quote, 
+    get_market_news, get_macro_calendar, get_dart_risk_alerts
+)
 from db_manager import get_watchlist
 from utils.briefing_store import save_morning_briefing
+from korea_data import get_ipo_data, get_live_disclosures
 
 async def generate_user_morning_briefing(user_id: str):
     """
@@ -73,10 +77,38 @@ async def generate_user_morning_briefing(user_id: str):
     if target_symbols:
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # 병렬로 시세 및 뉴스 수집
             results = list(executor.map(fetch_symbol_info, target_symbols))
             watchlist_details = [r for r in results if r is not None]
+            
+            # [Added] 국내 종목의 경우 최근 공시도 체크하여 전문성 강화
+            for detail in watchlist_details:
+                sym = detail['symbol']
+                if sym.isdigit() and len(sym) == 6 or sym.endswith(('.KS', '.KQ')):
+                    try:
+                        disclosures = get_live_disclosures(sym)
+                        if disclosures:
+                            detail['recent_disclosures'] = [d.get('title') for d in disclosures[:2]]
+                    except: pass
     
     print(f"[DEBUG] Final watchlist_details count: {len(watchlist_details)}")
+
+    # 1.4 추가 시장 컨텍스트 (뉴스, 일정 등)
+    try:
+        m_news = get_market_news()[:3] # 주요 뉴스 3건
+        macro = get_macro_calendar()[:3] # 주요 일정 3건
+        ipo = get_ipo_data()[:2] # 최근 IPO 2건
+        risk_alerts = get_dart_risk_alerts()[:2] # 주요 리스크 공시 2건
+        
+        market_context = {
+            "top_news": [n.get('title') for n in m_news],
+            "macro_schedule": [f"{m.get('event')} ({m.get('date')})" for m in macro],
+            "ipo_schedule": [f"{i.get('name')} ({i.get('date')})" for i in ipo if isinstance(i, dict)] if ipo else [],
+            "risk_alerts": [r.get('title') for r in risk_alerts]
+        }
+    except Exception as e:
+        print(f"[MorningBrief] Context fetch error: {e}")
+        market_context = {}
 
     # 1.3 사용자 정보 (개인화용)
     from db_manager import get_user
@@ -122,16 +154,18 @@ async def generate_user_morning_briefing(user_id: str):
 
     [입력 데이터]
     1. 시장 지표: {index_summary}
-    2. 회원님 관심종목 리얼타임 데이터: {json.dumps(watchlist_details, ensure_ascii=False)}
+    2. 시장 컨텍스트(뉴스/일정): {json.dumps(market_context, ensure_ascii=False)}
+    3. 회원님 관심종목 리얼타임 데이터: {json.dumps(watchlist_details, ensure_ascii=False)}
 
     [작성 가이드라인 - 필독 및 엄수]
     - **실시간 데이터 기반**: 제공된 [입력 데이터]에 명시된 숫자와 시장 상황에만 철저히 기초하여 분석하세요.
-    - **가변성 확보**: 매번 브리핑을 작성할 때마다 첫 문장과 분석의 초점을 다르게 하세요. (예: 어떤 날은 기술주 중심, 어떤 날은 금리나 환율 중심 등)
-    - **추측 금지**: 데이터가 'N/A'이거나 불분명한 경우, 멋대로 주가나 지수를 추정한 분석을 내놓지 마세요. 대신 '데이터 수집 중' 혹은 '시장 확인 필요'라고 명시하세요.
-    - 말투: 매우 격식 있고 전문적이며 신뢰감을 주는 비서/전략가 말투를 사용하세요. (예: "~입니다", "~를 분석하였습니다", "관찰되고 있습니다")
-    - 내용: 일반적인 뉴스 요약을 넘어, 데이터 간의 연관성이나 시장의 함의를 짧고 강렬하게 짚어주세요.
+    - **국내/해외 통합 대응**: 종목이 국내 종목(숫자 코드)인지 해외 종목인지 구분하여 시장 상황을 해석하세요.
+    - **가변성 확보**: 매번 브리핑을 작성할 때마다 첫 문장과 분석의 초점을 다르게 하세요.
+    - **추측 금지**: 데이터가 'N/A'이거나 불분명한 경우, '데이터 수집 중' 혹은 '시장 확인 필요'라고 명시하세요.
+    - 말투: 매우 격식 있고 전문적이며 신뢰감을 주는 비서/전략가 말투를 사용하세요.
+    - **내용**: 일반적인 뉴스 요약을 넘어, 데이터 간의 연관성이나 시장의 함의를 짧고 강렬하게 짚어주세요. 특히 [시장 컨텍스트]를 활용해 오늘의 '핵심 체크포인트'를 구체적으로 작성하세요.
     - **중요**: {user_name} 님을 직접 언급하며 맞춤형 보고서라는 느낌을 강조하세요.
-    - **투자 자문 금지**: 특정 가격대 제시, 매수/매도 추천은 절대 불가하며 데이터 기반 현황 보고 위주로 작성하세요.
+    - **투자 자문 금지**: 특정 가격대 제시, 매수/매도 추천은 절대 불가합니다.
 
     [출력 포맷 (JSON)]
     {{

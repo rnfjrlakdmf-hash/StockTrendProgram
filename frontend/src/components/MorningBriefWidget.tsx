@@ -25,6 +25,7 @@ export default function MorningBriefWidget() {
     const [brief, setBrief] = useState<MorningBriefData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [livePrices, setLivePrices] = useState<Record<string, { price: string, change: string, up: boolean }>>({});
 
     const fetchBrief = async (force: boolean = false) => {
         if (!user) return;
@@ -49,6 +50,20 @@ export default function MorningBriefWidget() {
         }
     };
 
+    const fetchLivePrices = async () => {
+        if (!brief || !brief.watchlist_briefs.length) return;
+        const symbols = brief.watchlist_briefs.map(b => b.symbol).join(",");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/stock/quotes/multi?symbols=${symbols}`);
+            const json = await res.json();
+            if (json.status === "success") {
+                setLivePrices(json.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch live prices", err);
+        }
+    };
+
     useEffect(() => {
         if (!authLoading && user) {
             fetchBrief();
@@ -56,6 +71,15 @@ export default function MorningBriefWidget() {
             setLoading(false);
         }
     }, [user, authLoading]);
+
+    // 실시간 시세 폴링 (1분마다)
+    useEffect(() => {
+        if (brief && brief.watchlist_briefs.length > 0) {
+            fetchLivePrices(); // Initial fetch
+            const interval = setInterval(fetchLivePrices, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [brief]);
 
     if (authLoading || loading) {
         return (
@@ -187,20 +211,31 @@ export default function MorningBriefWidget() {
 
                     <div className="space-y-3">
                         {brief.watchlist_briefs.length > 0 ? (
-                            brief.watchlist_briefs.map((item, idx) => (
-                                <div key={idx} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-pointer">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500/40 group-hover:bg-blue-400 transition-colors"></div>
-                                            <span className="font-bold text-white group-hover:text-blue-200 transition-colors">{item.name}</span>
-                                            <span className="text-[10px] text-gray-500 font-mono tracking-tighter">{item.symbol}</span>
+                            brief.watchlist_briefs.map((item, idx) => {
+                                const live = livePrices[item.symbol];
+                                return (
+                                    <div key={idx} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-pointer">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500/40 group-hover:bg-blue-400 transition-colors"></div>
+                                                <span className="font-bold text-white group-hover:text-blue-200 transition-colors">{item.name}</span>
+                                                <span className="text-[10px] text-gray-500 font-mono tracking-tighter">{item.symbol}</span>
+                                            </div>
+                                            {live && (
+                                                <div className="text-right">
+                                                    <div className="text-[11px] font-black text-white">{live.price}</div>
+                                                    <div className={`text-[10px] font-bold ${live.up ? 'text-red-400' : 'text-blue-400'}`}>
+                                                        {live.change}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
+                                        <p className="text-sm text-gray-400 group-hover:text-gray-300 leading-snug transition-colors">
+                                            {item.insight}
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-gray-400 group-hover:text-gray-300 leading-snug transition-colors">
-                                        {item.insight}
-                                    </p>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center">
                                 <p className="text-gray-500 text-xs mb-4">아직 주시 종목이 없습니다.<br/>관심 있는 종목을 추가하여 맞춤 분석을 받아보세요.</p>
