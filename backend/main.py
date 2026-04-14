@@ -121,10 +121,22 @@ def health_check():
 # Register Auth Router
 app.include_router(auth_router, prefix="/api")
 
+# [ADD] Market Indices Endpoint (For Sparklines & Rich Data)
+@app.get("/api/market/indices")
+async def market_indices():
+    """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
+    try:
+        from stock_data import get_market_data
+        data = get_market_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        print(f"[Market Indices API] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 # [ADD] Market Status Endpoint (Resolved 404)
 @app.get("/api/market/status")
 async def market_status():
-    """실시간 시장 지수 및 환율 데이터 반환"""
+    """실시간 시장 지수 및 환율 데이터 반환 (요약 형태)"""
     try:
         from stock_data import get_market_status
         data = get_market_status()

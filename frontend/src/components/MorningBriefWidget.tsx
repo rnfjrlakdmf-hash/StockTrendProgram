@@ -85,11 +85,10 @@ export default function MorningBriefWidget() {
         if (!user) return;
         setLoading(true);
         try {
-            // 1. 지수 데이터 및 스파크라인
-            const indexRes = await fetch(`${API_BASE_URL}/api/market/status`);
+            // 1. 지수 데이터 및 스파크라인 (배열 반환하는 전용 API 사용)
+            const indexRes = await fetch(`${API_BASE_URL}/api/market/indices`);
             const indexJson = await indexRes.json();
             if (indexJson.status === "success" && indexJson.data) {
-                // indexJson.data가 results 리스트임
                 setMarketIndices(indexJson.data);
             }
 
