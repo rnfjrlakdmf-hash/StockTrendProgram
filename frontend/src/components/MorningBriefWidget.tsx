@@ -266,12 +266,22 @@ export default function MorningBriefWidget() {
                 </div>
             </div>
 
-            {/* Footer: Disclaimer */}
-            <div className="px-8 py-5 bg-black/60 flex flex-col gap-3 border-t border-white/5">
-                <p className="text-[9px] text-gray-600 leading-normal italic font-medium uppercase tracking-tighter">
-                    {brief.disclaimer}
-                </p>
-                <div className="flex items-center justify-between">
+            {/* Footer: Detailed Legal Disclaimer for Regulatory Compliance */}
+            <div className="px-8 py-6 bg-black/80 border-t border-white/5 space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                        <p className="text-[11px] font-black text-red-500 uppercase tracking-wider">Investment Disclaimer & Compliance Notice</p>
+                        <p className="text-[10px] text-gray-400 leading-relaxed">
+                            본 서비스는 유료 또는 무료로 제공되는 인공지능 기반 데이터 분석 보조 도구로, 최종적인 투자 결정에 대한 조언을 제공하지 않습니다. 
+                            AI가 생성한 모든 브리핑과 종목 분석은 공개된 시장 데이터를 바탕으로 도출된 참고용 정보일 뿐이며, 특정 종목의 매수·매도 가격이나 
+                            거래 시점을 권유하는 유사투자자문 행위에 해당하지 않습니다. 과거의 성과가 미래의 수익을 보장하지 않으며, 모든 투자에 따른 
+                            손실 책임은 투자자 본인에게 귀속됩니다.
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-4 text-[9px] text-gray-500 font-black tracking-tighter">
                         <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> ENGINE STATUS: OPTIMIZED</span>
                         <span className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded-md border border-blue-500/20">
