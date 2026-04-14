@@ -10,12 +10,15 @@ import Typewriter from "./Typewriter";
 interface MorningBriefData {
     market_title: string;
     market_summary: string;
+    simple_summary?: string;
     watchlist_briefs: {
         symbol: string;
         name: string;
         insight: string;
+        simple_insight?: string;
     }[];
     market_focus: string;
+    simple_focus?: string;
     disclaimer: string;
     generated_at: string;
 }
@@ -26,6 +29,7 @@ export default function MorningBriefWidget() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [livePrices, setLivePrices] = useState<Record<string, { price: string, change: string, up: boolean }>>({});
+    const [isSimpleMode, setIsSimpleMode] = useState(false);
 
     const fetchBrief = async (force: boolean = false) => {
         if (!user) return;
@@ -171,6 +175,22 @@ export default function MorningBriefWidget() {
                             </h2>
                         </div>
                     </div>
+
+                    {/* Beginner Mode Toggle */}
+                    <div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/5">
+                        <button 
+                            onClick={() => setIsSimpleMode(false)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isSimpleMode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                            전문가 모드
+                        </button>
+                        <button 
+                            onClick={() => setIsSimpleMode(true)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isSimpleMode ? 'bg-emerald-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                            초보자 모드
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -182,9 +202,9 @@ export default function MorningBriefWidget() {
                             <Activity className="w-4 h-4" /> 글로벌 마켓 전략 가이드라인
                         </div>
                         <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-inner">
-                            <p className="text-gray-200 leading-relaxed font-medium text-base">
-                                <Typewriter text={brief.market_summary} speed={40} />
-                            </p>
+                            <div className="text-gray-200 leading-relaxed font-medium text-base">
+                                <Typewriter key={isSimpleMode ? 'simple' : 'pro'} text={isSimpleMode && brief.simple_summary ? brief.simple_summary : brief.market_summary} speed={40} />
+                            </div>
                         </div>
                     </div>
 
@@ -192,9 +212,9 @@ export default function MorningBriefWidget() {
                         <div className="flex items-center gap-2 text-purple-400 text-sm font-bold">
                             <CalendarDays className="w-4 h-4" /> 회원님을 위한 오늘의 핵심 체크포인트
                         </div>
-                        <div className="p-5 rounded-2xl bg-purple-500/5 border border-purple-500/10">
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                                {brief.market_focus}
+                        <div className={`p-5 rounded-2xl border transition-colors ${isSimpleMode ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-purple-500/5 border-purple-500/10'}`}>
+                            <p className={`text-sm leading-relaxed ${isSimpleMode ? 'text-emerald-200' : 'text-gray-300'}`}>
+                                {isSimpleMode && brief.simple_focus ? brief.simple_focus : brief.market_focus}
                             </p>
                         </div>
                     </div>
@@ -230,8 +250,8 @@ export default function MorningBriefWidget() {
                                                 </div>
                                             )}
                                         </div>
-                                        <p className="text-sm text-gray-400 group-hover:text-gray-300 leading-snug transition-colors">
-                                            {item.insight}
+                                        <p className={`text-sm leading-snug transition-colors ${isSimpleMode ? 'text-emerald-400/80 group-hover:text-emerald-300' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                                            {isSimpleMode && item.simple_insight ? item.simple_insight : item.insight}
                                         </p>
                                     </div>
                                 );
