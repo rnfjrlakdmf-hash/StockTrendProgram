@@ -222,7 +222,12 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const latestPersonal = (timeline || []).find(b => b.user_id !== 'SYSTEM');
+    const latestPersonal = (timeline || []).find(b => b.user_id !== 'SYSTEM') || {
+        market_title: "시장 상황을 실시간으로 분석 중입니다...",
+        summary_bullets: ["데이터를 불러오는 중입니다...", "잠시만 기다려 주세요."],
+        sections: [],
+        watchlist_briefs: []
+    } as Partial<MorningBriefData>;
 
     const BriefingSkeleton = () => (
         <div className="w-full space-y-6 animate-pulse">
@@ -287,7 +292,7 @@ export default function MorningBriefWidget() {
         return <BriefingSkeleton />;
     }
 
-    if (!user) return null;
+
 
     return (
         <div className="w-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700 relative">
@@ -342,6 +347,9 @@ export default function MorningBriefWidget() {
                                 <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-black tracking-widest uppercase">
                                     NAVER STYLE AI INSIGHT
                                 </span>
+                                <span className="text-[10px] bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-black tracking-widest uppercase border border-purple-500/20">
+                                    v3.6.14-Patch
+                                </span>
                                 {latestPersonal?.is_instant && (
                                     <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
                                         INSTANT DATA (AI ANALYZING...)
@@ -383,7 +391,7 @@ export default function MorningBriefWidget() {
                             </div>
                         </div>
 
-                        {latestPersonal ? (
+                        {latestPersonal && latestPersonal.market_title !== "시장 상황을 실시간으로 분석 중입니다..." ? (
                             <div className="space-y-10 animate-in fade-in slide-in-from-left duration-700">
                                 {/* Naver Style Summary Box */}
                                 <div className="bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
