@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { 
     Coffee, ChevronRight, Newspaper, Activity, Sparkles, Loader2, 
     AlertCircle, CalendarDays, Clock, ChevronDown, ChevronUp, Bot,
-    UserCircle2, Globe, TrendingUp, Zap, Info
+    UserCircle2, Globe, TrendingUp, Zap, Info, RotateCcw
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
@@ -40,6 +40,7 @@ interface MorningBriefData {
     disclaimer: string;
     generated_at: string;
     user_id?: string;
+    is_instant?: boolean;
 }
 
 const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
@@ -77,66 +78,142 @@ export default function MorningBriefWidget() {
     const { user, isLoading: authLoading } = useAuth();
     const [timeline, setTimeline] = useState<MorningBriefData[]>([]);
     const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [isSimpleMode, setIsSimpleMode] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+    const [updateStep, setUpdateStep] = useState(0); // 0: Idle, 1: Scanning, 2: Analyzing, 3: Finalizing
+    const [loadingTimer, setLoadingTimer] = useState(0); // [Emergency] 로딩 타이머 추가
+    const [showTimeoutError, setShowTimeoutError] = useState(false); // [Emergency] 타임아웃 에러 상태
 
-    const fetchData = async () => {
+    const fetchData = async (isInitial = false) => {
         if (!user) return;
-        setLoading(true);
+        if (isInitial && timeline.length === 0) setIsInitialLoading(true);
+        
         try {
-            // 1. 지수 데이터 및 스파크라인 (배열 반환하는 전용 API 사용)
-            const indexRes = await fetch(`${API_BASE_URL}/api/market/indices`);
+            // [Zero-Wait Step 1] 지표 및 기존 타임라인 즉시 로드 (1초 내 완료)
+            const [indexRes, timelineRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/market/indices`),
+                fetch(`${API_BASE_URL}/api/ai/briefing-timeline`, {
+                    headers: { "X-User-ID": user.id }
+                })
+            ]);
+
             const indexJson = await indexRes.json();
             if (indexJson.status === "success" && indexJson.data) {
                 setMarketIndices(indexJson.data);
             }
 
-            // 1.5. 맞춤 분석 브리핑 유무 확인 및 누락 시 자동 생성 (관심종목 변경 시 무효화됨에 따라)
-            try {
-                await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
-                    headers: { "X-User-ID": user.id }
-                });
-            } catch (e) {
-                console.error("Auto brief generation error", e);
+            const timelineJson = await timelineRes.json();
+            if (timelineJson.status === "success" && timelineJson.data) {
+                setTimeline(timelineJson.data);
+                if (timelineJson.data.length > 0 && Object.keys(expandedIds).length === 0) {
+                    setExpandedIds({ [timelineJson.data[0].generated_at]: true });
+                }
             }
+        } catch (err) {
+            console.error("Initial fetch error", err);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
 
-            // 2. 브리핑 타임라인
-            const url = new URL(`${API_BASE_URL}/api/ai/briefing-timeline`);
-            const res = await fetch(url.toString(), {
+    // [Zero-Wait Step 2] 백그라운드에서 조용히 최신 브리핑 동기화 (비차단 폴링 방식)
+    const syncBriefing = async (isRetry = false) => {
+        if (!user) return;
+        
+        // 폴링 중이 아닐 때만 초기 상태 설정
+        if (!isRetry) {
+            setIsUpdating(true);
+            setUpdateStep(1);
+        }
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
                 headers: { "X-User-ID": user.id }
             });
             const json = await res.json();
             
-            if (json.status === "success" && json.data) {
-                setTimeline(json.data);
-                if (json.data.length > 0) {
-                    setExpandedIds({ [json.data[0].generated_at]: true });
+            if (json.status === "success") {
+                // [Hybrid-Fast] 만약 즉시 리포트(is_instant)가 왔다면, 타임라인에 즉시 반영
+                if (json.is_instant && json.data) {
+                    setTimeline(prev => {
+                        // 기존 타임라인에서 동일한 id(generated_at)가 있으면 교체, 없으면 맨 앞에 추가
+                        const exists = prev.find(b => b.generated_at === json.data.generated_at);
+                        if (exists) return prev.map(b => b.generated_at === json.data.generated_at ? json.data : b);
+                        return [json.data, ...prev];
+                    });
+                }
+
+                if (json.updating) {
+                    setIsUpdating(true);
+                    setUpdateStep(prev => (prev % 3) + 1);
+                    setTimeout(() => syncBriefing(true), 5000);
+                } else {
+                    setIsUpdating(false);
+                    setUpdateStep(0);
+                    await fetchData();
                 }
             }
         } catch (err) {
-            console.error("Fetch error", err);
-        } finally {
-            setLoading(false);
+            console.error("Briefing sync error", err);
+            setIsUpdating(false);
+            setUpdateStep(0);
         }
     };
 
     const generateNow = async () => {
         if (!user) return;
-        setLoading(true);
+        setIsUpdating(true);
+        setUpdateStep(1); 
+        
         try {
-            await fetch(`${API_BASE_URL}/api/ai/morning-brief?force=true`, {
+            // 강제 재생성 요청 (비차단)
+            const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief?force=true`, {
                 headers: { "X-User-ID": user.id }
             });
-            await fetchData();
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                // 즉시 폴링 시작
+                syncBriefing(true);
+            }
         } catch (err) {
-            setLoading(false);
+            console.error("Generate now error", err);
+            setIsUpdating(false);
+            setUpdateStep(0);
+        }
+    };
+
+    const rollback = async () => {
+        if (!user) return;
+        if (!confirm("가장 최근 브리핑을 삭제하고 이전 단계로 되돌리시겠습니까?")) return;
+        
+        setIsUpdating(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/ai/briefing/rollback`, {
+                method: "POST",
+                headers: { "X-User-ID": user.id }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                await fetchData();
+            } else {
+                alert(json.message || "되돌릴 수 없습니다.");
+                setIsUpdating(false);
+            }
+        } catch (err) {
+            setIsUpdating(false);
         }
     };
 
     useEffect(() => {
         if (!authLoading && user) {
-            fetchData();
+            const init = async () => {
+                await fetchData(true); // 데이터 즉시 로드 (Blocking minimal)
+                syncBriefing();        // 최신화는 배경에서 (Non-blocking)
+            };
+            init();
         }
     }, [user, authLoading]);
 
@@ -146,23 +223,92 @@ export default function MorningBriefWidget() {
 
     const latestPersonal = timeline.find(b => b.user_id !== 'SYSTEM');
 
-    if (authLoading || loading) {
-        return (
-            <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[500px] animate-pulse">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                <p className="text-gray-400 font-medium text-center">
-                    AI 맞춤 분석 보고서 준비 및 동기화 중...<br />
-                    <span className="text-xs text-gray-500 mt-2 block">(관심종목 변경 시 최초 1회 10초 내외 소요)</span>
-                </p>
+    const BriefingSkeleton = () => (
+        <div className="w-full space-y-6 animate-pulse">
+            <div className="h-16 bg-white/5 rounded-3xl w-full" />
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="xl:col-span-2 space-y-6">
+                    <div className="h-64 bg-white/5 rounded-[3rem]" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="h-32 bg-white/5 rounded-3xl" />
+                        <div className="h-32 bg-white/5 rounded-3xl" />
+                    </div>
+                </div>
+                <div className="h-96 bg-white/5 rounded-[3rem]" />
             </div>
-        );
+        </div>
+    );
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isInitialLoading) {
+            interval = setInterval(() => {
+                setLoadingTimer(prev => {
+                    if (prev >= 20) { // 20초 초과 시 타임아웃 에러 노출
+                        setShowTimeoutError(true);
+                        return prev;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isInitialLoading]);
+
+    const handleEmergencyReset = () => {
+        setIsInitialLoading(false);
+        setIsUpdating(false);
+        setLoadingTimer(0);
+        setShowTimeoutError(false);
+        fetchData();
+    };
+
+    if (authLoading || (isInitialLoading && timeline.length === 0)) {
+        if (showTimeoutError) {
+            return (
+                <div className="flex flex-col items-center justify-center p-20 bg-red-500/5 rounded-[3.5rem] border border-red-500/10">
+                    <Zap className="w-16 h-16 text-red-500 mb-6 animate-pulse" />
+                    <h4 className="text-2xl font-black text-white mb-2">분석이 너무 오래 걸리고 있습니다</h4>
+                    <p className="text-white/40 mb-10 text-center">서버 연결이 불안정하거나 데이터 수집에 지연이 발생했습니다.</p>
+                    <div className="flex gap-4">
+                        <button onClick={handleEmergencyReset} className="px-8 py-4 bg-red-600 text-white font-black rounded-2xl shadow-xl shadow-red-600/30 active:scale-95 transition-transform">
+                            화면 강제 복구하기
+                        </button>
+                        <button onClick={() => window.location.reload()} className="px-8 py-4 bg-white/10 text-white font-black rounded-2xl active:scale-95 transition-transform">
+                            새로고침
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return <BriefingSkeleton />;
     }
 
     if (!user) return null;
 
     return (
-        <div className="w-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="w-full bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden flex flex-col">
+        <div className="w-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700 relative">
+            {/* Turbo Progress Overlay (Non-blocking) */}
+            {isUpdating && (
+                <div className="absolute top-0 left-0 right-0 z-50 bg-blue-600/90 backdrop-blur-md text-white px-6 py-2 flex items-center justify-between rounded-t-[3rem] animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center gap-3">
+                        <Zap className="w-4 h-4 animate-pulse" />
+                        <span className="text-[11px] font-black uppercase tracking-widest">
+                            {updateStep === 1 ? "Turbo Scanning Market Data..." : 
+                             updateStep === 2 ? "Quant Intelligence Analyzing..." : 
+                             updateStep === 3 ? "AI Finalizing Your Report..." : "Syncing Intelligence..."}
+                        </span>
+                    </div>
+                    <div className="flex gap-1">
+                        <div className={`w-8 h-1 rounded-full ${updateStep >= 1 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
+                        <div className={`w-8 h-1 rounded-full ${updateStep >= 2 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
+                        <div className={`w-8 h-1 rounded-full ${updateStep >= 3 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
+                    </div>
+                </div>
+            )}
+            <div className={`w-full bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden flex flex-col transition-all duration-700 ${isUpdating ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                 
                 {/* 1. Market Index Bar (Naver Style with Sparklines) */}
                 <div className="px-10 py-6 bg-white/[0.02] border-b border-white/5 flex items-center gap-10 overflow-x-auto no-scrollbar">
@@ -179,7 +325,8 @@ export default function MorningBriefWidget() {
                         </div>
                     ))}
                     <div className="ml-auto flex items-center gap-2 text-[10px] bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full font-black border border-emerald-500/20">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> 실시간 데이터 동기화
+                        <div className={`w-1.5 h-1.5 rounded-full ${isUpdating ? 'bg-blue-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`} /> 
+                        {isUpdating ? '실시간 브리핑 동기화 중(Turbo)' : '실시간 데이터 동기화 완료'}
                     </div>
                 </div>
 
@@ -194,6 +341,11 @@ export default function MorningBriefWidget() {
                                 <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-black tracking-widest uppercase">
                                     NAVER STYLE AI INSIGHT
                                 </span>
+                                {latestPersonal?.is_instant && (
+                                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
+                                        INSTANT DATA (AI ANALYZING...)
+                                    </span>
+                                )}
                             </div>
                             <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none">AI 마켓 인텔리전스 리포트</h2>
                         </div>
@@ -214,9 +366,20 @@ export default function MorningBriefWidget() {
                                 <div className="p-2 bg-blue-500/10 rounded-lg">
                                     <Clock className="w-5 h-5 text-blue-400" />
                                 </div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">나의 관심종목 실시간 분석</h3>
                             </div>
-                            <button onClick={generateNow} className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-500/20 transition-all">맞춤 분석 재생성</button>
+                            <div className="flex items-center gap-2">
+                                {timeline.filter(b => b.user_id !== 'SYSTEM').length > 1 && (
+                                    <button 
+                                        onClick={rollback}
+                                        title="이전 단계로 되돌리기"
+                                        className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl border border-white/5 transition-all flex items-center gap-2"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-tight hidden md:inline">이전단계</span>
+                                    </button>
+                                )}
+                                <button onClick={generateNow} className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-500/20 transition-all">맞춤 분석 재생성</button>
+                            </div>
                         </div>
 
                         {latestPersonal ? (

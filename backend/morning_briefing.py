@@ -12,109 +12,177 @@ from stock_data import (
 from db_manager import get_watchlist
 from utils.briefing_store import save_morning_briefing
 from korea_data import get_ipo_data, get_live_disclosures
+from turbo_engine import turbo_engine
+import pandas as pd
 
-async def generate_user_morning_briefing(user_id: str):
-    """
-    특정 사용자의 관심종목과 시장 데이터를 결합하여 맞춤형 모닝 브리핑 생성
-    """
+def _collect_raw_data(user_id: str):
+    """지표, 뉴스, 관심종목 시세 등 원천 데이터를 병렬로 수집 (AI 없는 순수 데이터)"""
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
+    # 1. 데이터 수집 (Turbo Parallel Mode)
+    from concurrent.futures import ThreadPoolExecutor
+    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        # 1.1 시장 데이터 수집 (지수, 환율 등)
+        f_market = executor.submit(get_market_data)
+        
+        # 1.2 시장 컨텍스트 수집 (뉴스, 일정, 리스크 등)
+        def fetch_market_context():
+            try:
+                m_news = get_market_news()[:3]
+                macro = get_macro_calendar()[:3]
+                ipo = get_ipo_data()[:2]
+                risk_alerts = get_dart_risk_alerts()[:2]
+                return {
+                    "top_news": [n.get('title') for n in m_news],
+                    "macro_schedule": [f"{m.get('event')} ({m.get('date')})" for m in macro],
+                    "ipo_schedule": [f"{i.get('name')} ({i.get('date')})" for i in ipo if isinstance(i, dict)] if ipo else [],
+                    "risk_alerts": [r.get('title') for r in risk_alerts]
+                }
+            except: return {}
+        f_context = executor.submit(fetch_market_context)
+
+        # 1.3 관심종목 목록 및 상세 정보
+        watchlist = get_watchlist(user_id)
+        target_symbols = watchlist[:5] if watchlist else []
+        
+        def fetch_symbol_info_parallel(symbol):
+            try:
+                # 시세, 뉴스, 공시를 동시에 가져오기 위해 내부 실행
+                quote = get_simple_quote(symbol)
+                news_raw = fetch_google_news(symbol)
+                
+                res = {
+                    "symbol": symbol,
+                    "name": quote.get('name', symbol) if quote else symbol,
+                    "price": quote.get('price', 'N/A') if quote else 'N/A',
+                    "change": quote.get('change', 'N/A') if quote else 'N/A',
+                    "news": [n.get('title', '') for n in (news_raw[:2] if news_raw else [])]
+                }
+                
+                # [TurboQuant] 모멘텀 점수 계산을 위한 과거 데이터 수집
+                try:
+                    from korea_data import get_naver_daily_prices
+                    history = get_naver_daily_prices(symbol)
+                    if history:
+                        prices = [h['close'] for h in reversed(history)]
+                        score = turbo_engine.calculate_momentum_score(pd.Series(prices))
+                        res['turbo_score'] = score
+                except: pass
+
+                # 국내 종목 공시 추가
+                if symbol.isdigit() and len(symbol) == 6 or symbol.endswith(('.KS', '.KQ')):
+                    try:
+                        disclosures = get_live_disclosures(symbol)
+                        if disclosures:
+                            res['recent_disclosures'] = [d.get('title') for d in disclosures[:2]]
+                    except: pass
+                
+                return res
+            except Exception as e:
+                print(f"[Turbo] Error info for {symbol}: {e}")
+                return None
+
+        # 종목별 상세 정보 수집 시작
+        f_watchlist = [executor.submit(fetch_symbol_info_parallel, s) for s in target_symbols]
+        
+        # 결과 기다리기 (안전한 타임아웃 적용 - 15초)
+        market_data = {}
+        try:
+            market_data = f_market.result(timeout=10) # 10초로 단축
+        except Exception as e:
+            print(f"[TurboBrief] Market Data Fetch Timeout: {e}")
+            market_data = {"indices": []}
+
+        market_context = {}
+        try:
+            # 시장 컨텍스트는 부가 정보이므로 짧은 타임아웃(7초)
+            market_context = f_context.result(timeout=7)
+        except Exception as e:
+            print(f"[TurboBrief] Market Context Timeout: {e}")
+            market_context = {}
+            print(f"[TurboBrief] Context Data Fetch Timeout/Error: {e}")
+
+        watchlist_details = []
+        for f in f_watchlist:
+            try:
+                res = f.result(timeout=15)
+                if res: watchlist_details.append(res)
+            except Exception as e:
+                print(f"[TurboBrief] Symbol Data Fetch Timeout/Error: {e}")
+
+    from db_manager import get_user
+    user_info = get_user(user_id)
+    user_name = user_info.get('name', '투자자') if user_info else '투자자'
+    
+    return {
+        "market_data": market_data,
+        "market_context": market_context,
+        "watchlist_details": watchlist_details,
+        "user_name": user_name,
+        "now": now
+    }
+
+def generate_instant_briefing(user_id: str):
+    """AI를 사용하지 않고 수집된 데이터를 바탕으로 즉시 하이브리드 리포트 생성"""
+    raw = _collect_raw_data(user_id)
+    market_data = raw["market_data"]
+    watchlist_details = raw["watchlist_details"]
+    user_name = raw["user_name"]
+    now = raw["now"]
+
+    # 지수 정보 요약
+    indices = market_data if isinstance(market_data, list) else market_data.get('indices', [])
+    main_idx = indices[0] if indices else {"label": "시장", "value": "-", "change": "0%"}
+    
+    # 관심종목 요약
+    watchlist_briefs = []
+    for item in watchlist_details:
+        watchlist_briefs.append({
+            "symbol": item["symbol"],
+            "name": item["name"],
+            "insight": f"현재 {item['price']}원에 거래 중이며 최신 소식을 확인하고 있습니다.",
+            "simple_insight": f"지금 {item['price']}원이에요. 곧 AI가 분석해드릴게요!"
+        })
+
+    briefing = {
+        "market_title": f"[{main_idx['label']}] 현재 {main_idx['value']} ({main_idx['change']}) 기록 중",
+        "summary_bullets": [
+            "사용자님, 시장 데이터를 즉시 수집했습니다.",
+            "현재 관심종목들의 시세를 확인 중이며, AI가 심층 분석 보고서를 작성하고 있습니다.",
+            "로딩이 길어지는 경우 '전문가 모드'를 해제하거나 잠시 후 다시 확인해 주세요."
+        ],
+        "sections": [
+            {
+                "emoji": "⚡",
+                "title": "실시간 데이터 속보",
+                "content": "AI 인텔리전스가 가동 중입니다. 먼저 실시간 지표와 종목 시세를 확인하세요."
+            }
+        ],
+        "watchlist_briefs": watchlist_briefs,
+        "market_focus": "AI 분석이 완료되면 오늘 정밀 전략이 공개됩니다.",
+        "disclaimer": "본 데이터는 실시간 시세 정보를 바탕으로 한 즉시 리포트이며, 정밀 분석은 잠시 후 제공됩니다.",
+        "user_id": user_id,
+        "generated_at": now.isoformat(),
+        "is_instant": True
+    }
+    return briefing
+
+def generate_user_morning_briefing(user_id: str):
+    """전체 AI 모닝 브리핑 생성 (심층 분석 모드)"""
+    raw = _collect_raw_data(user_id)
+    market_data = raw["market_data"]
+    market_context = raw["market_context"]
+    watchlist_details = raw["watchlist_details"]
+    user_name = raw["user_name"]
+    now = raw["now"]
+
     def log_debug(msg):
         with open("morning_brief_debug.log", "a", encoding="utf-8") as f:
             f.write(f"[{datetime.now()}] {msg}\n")
             
-    log_debug(f"Briefing for user_id: '{user_id}' at {now}")
-    
-    print(f"[DEBUG] Briefing for user_id: '{user_id}' at {now}")
-    
-    # 1. 데이터 수집
-    # 1.1 시장 지수 (미국 중심)
-    market_data = get_market_data() # 지수, 환율 등 포함됨
-    
-    # 1.2 관심종목 데이터 (TurboQuant Parallel Processing)
-    watchlist = get_watchlist(user_id)
-    log_debug(f"Found watchlist for '{user_id}': {watchlist}")
-    print(f"[DEBUG] Found watchlist for '{user_id}': {watchlist}")
-    
-    # [Fix] 만약 로그인 사용자의 관심종목이 없고 guest 데이터가 있다면 안내 또는 로직 점검
-    if not watchlist and user_id != "guest":
-        guest_watchlist = get_watchlist("guest")
-        if guest_watchlist:
-            log_debug(f"User '{user_id}' has empty watchlist, but 'guest' has items. Migration may be needed.")
-            print(f"[DEBUG] User '{user_id}' has empty watchlist, but 'guest' has items. Migration may be needed.")
-    
-    watchlist_details = []
-    
-    target_symbols = watchlist[:5] if watchlist else []
-    
-    def fetch_symbol_info(symbol):
-        try:
-            print(f"[DEBUG] Fetching info for symbol: {symbol}")
-            quote = get_simple_quote(symbol)
-            if not quote:
-                print(f"[DEBUG] Failed to get quote for {symbol}, using fallback data")
-                quote = {"symbol": symbol, "name": symbol, "price": "확인불가", "change": "0.00%"}
-            
-            news_raw = fetch_google_news(symbol)
-            news = news_raw[:2] if news_raw else []
-            return {
-                "symbol": symbol,
-                "name": quote.get('name', symbol),
-                "price": quote.get('price', 'N/A'),
-                "change": quote.get('change', 'N/A'),
-                "news": [n.get('title', '') for n in (news or [])]
-            }
-        except Exception as e:
-            print(f"[DEBUG] Error fetching info for {symbol}: {e}")
-            return {
-                "symbol": symbol,
-                "name": symbol,
-                "price": "N/A",
-                "change": "N/A",
-                "news": []
-            }
-
-    if target_symbols:
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            # 병렬로 시세 및 뉴스 수집
-            results = list(executor.map(fetch_symbol_info, target_symbols))
-            watchlist_details = [r for r in results if r is not None]
-            
-            # [Added] 국내 종목의 경우 최근 공시도 체크하여 전문성 강화
-            for detail in watchlist_details:
-                sym = detail['symbol']
-                if sym.isdigit() and len(sym) == 6 or sym.endswith(('.KS', '.KQ')):
-                    try:
-                        disclosures = get_live_disclosures(sym)
-                        if disclosures:
-                            detail['recent_disclosures'] = [d.get('title') for d in disclosures[:2]]
-                    except: pass
-    
-    print(f"[DEBUG] Final watchlist_details count: {len(watchlist_details)}")
-
-    # 1.4 추가 시장 컨텍스트 (뉴스, 일정 등)
-    try:
-        m_news = get_market_news()[:3] # 주요 뉴스 3건
-        macro = get_macro_calendar()[:3] # 주요 일정 3건
-        ipo = get_ipo_data()[:2] # 최근 IPO 2건
-        risk_alerts = get_dart_risk_alerts()[:2] # 주요 리스크 공시 2건
-        
-        market_context = {
-            "top_news": [n.get('title') for n in m_news],
-            "macro_schedule": [f"{m.get('event')} ({m.get('date')})" for m in macro],
-            "ipo_schedule": [f"{i.get('name')} ({i.get('date')})" for i in ipo if isinstance(i, dict)] if ipo else [],
-            "risk_alerts": [r.get('title') for r in risk_alerts]
-        }
-    except Exception as e:
-        print(f"[MorningBrief] Context fetch error: {e}")
-        market_context = {}
-
-    # 1.3 사용자 정보 (개인화용)
-    from db_manager import get_user
-    user_info = get_user(user_id)
-    user_name = user_info.get('name', '투자자') if user_info else '투자자'
+    log_debug(f"Turbo-Parallel data fetch completed. Watchlist count: {len(watchlist_details)}")
 
     # 2. AI 브리핑 생성
     if not API_KEY:
@@ -166,7 +234,7 @@ async def generate_user_morning_briefing(user_id: str):
     - **중복 배제**: 각 항목 간 내용이 겹치지 않게 정보를 효율적으로 배치하세요.
     - **모드별 최적화**: 전문가 버전(격식)과 초보자 버전(비유/쉬운 용어)을 각각 생성하세요.
     - **가독성 극대화**: 줄글은 3~4줄 내외로 제한하고 가독성이 좋은 어조를 사용하세요.
-    - **관심종목 맞춤 분석 필수**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 **모든 개별 종목**에 대해 반드시 `watchlist_briefs` 배열에 하나씩 분석(insight)을 생성해야 합니다. 생략되는 종목이 없어야 하며, 목록이 비어있다면 빈 배열을 반환하세요.
+    - **관심종목 맞춤 분석 필수**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 모든 개별 종목에 대해 반드시 `watchlist_briefs` 배열에 분석(insight)을 생성해야 합니다. 특히 종목별로 제공되는 **`turbo_score` (퀀트 모멘텀 점수)**를 활용하여 수치 기반의 신뢰도 높은 인사이트를 제공하세요.
     - **투자 자문 금지**: 가격 예측, 수익률 보장, 명시적인 매도/매수 추천 단어는 절대 금지하되, 당일의 객관적인 사실, 차트 동향, 뉴스, 실적, 수급 기반의 실용적인 인사이트만을 제공하세요.
 
     [출력 포맷 (JSON)]

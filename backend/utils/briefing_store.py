@@ -129,3 +129,26 @@ def invalidate_today_briefing(user_id: str):
         print(f"[BriefingStore] Invalidate error: {e}")
     finally:
         conn.close()
+
+def rollback_morning_briefing(user_id: str) -> bool:
+    """해당 사용자의 가장 최근 브리핑 1건을 삭제 (한 단계 되돌리기)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # 가장 최근의 브리핑 ID 찾기
+        cursor.execute(
+            "SELECT id FROM morning_briefings WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+            (user_id,)
+        )
+        row = cursor.fetchone()
+        if row:
+            latest_id = row[0]
+            cursor.execute("DELETE FROM morning_briefings WHERE id = ?", (latest_id,))
+            conn.commit()
+            return True
+        return False
+    except Exception as e:
+        print(f"[BriefingStore] Rollback error: {e}")
+        return False
+    finally:
+        conn.close()

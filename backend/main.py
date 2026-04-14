@@ -71,7 +71,8 @@ from auth import router as auth_router
 from morning_briefing import generate_user_morning_briefing
 from utils.briefing_store import (
     init_briefing_table, get_latest_briefing, 
-    should_generate_new_briefing, get_today_briefing_timeline
+    should_generate_new_briefing, get_today_briefing_timeline,
+    rollback_morning_briefing
 )
 
 # [Global Scaling] Mapping for Stocks (Korean Names)
@@ -3108,35 +3109,88 @@ def get_multi_quotes(symbols: str = Query(...)):
                 
     return {"status": "success", "data": results}
 
+# [Performance] Non-blocking Briefing Task Tracker
+# [Performance] Global Briefing Task Tracker (Non-blocking)
+# {user_id: start_time} 구조로 변경하여 워치독(Watchdog) 기능 구현
+briefing_tasks: Dict[str, float] = {}
+
+async def run_background_briefing(user_id: str):
+    """Background worker to generate briefing without blocking the API response"""
+    try:
+        # 시작 시간 기록
+        briefing_tasks[user_id] = time.time()
+        # Import inside to avoid circular dependencies if any
+        from morning_briefing import generate_user_morning_briefing
+        # [Fix] 동기 함수인 브리핑 생성을 별도 스레드에서 실행하여 이벤트 루프 차단 방지
+        await asyncio.to_thread(generate_user_morning_briefing, user_id)
+    except Exception as e:
+        print(f"[TurboBrief] Background generation failed for {user_id}: {e}")
+    finally:
+        if user_id in briefing_tasks:
+            del briefing_tasks[user_id]
+
 @app.get("/api/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
-    """[VIP] 맞춤형 모닝 브리핑 조회 및 생성 (force=true 시 강제 재생성)"""
-    print(f"[DEBUG] get_morning_brief: x_user_id='{x_user_id}', force={force}")
+    """[TurboQuant VIP] 맞춤형 모닝 브리핑 조회 (비차단 비동기 모드)"""
     if not x_user_id:
         return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
     
-    # 1. 오늘 이미 생성된 데이터가 있는지 확인 (force가 아닐 때만 캐시 사용)
-    if not force and not should_generate_new_briefing(x_user_id):
-        latest = get_latest_briefing(x_user_id)
-        if latest:
-            return {"status": "success", "data": latest, "cached": True}
+    # 1. 현재 진행 중인 배경 작업 확인
+    # [Watchdog] 5분 이상 종료되지 않은 비정상 태스크 강제 제거
+    stale_threshold = 300  # 5 minutes
+    current_time = time.time()
+    for uid, start_time in list(briefing_tasks.items()):
+        if current_time - start_time > stale_threshold:
+            print(f"[Watchdog] Removing stale briefing task for {uid}")
+            del briefing_tasks[uid]
+
+    is_updating = x_user_id in briefing_tasks
     
-    # 2. 없거나 갱신이 필요하면 생성 (비동기)
+    # 2. 캐시된 최신 데이터 가져오기
+    latest = get_latest_briefing(x_user_id)
+    
+    # 3. 갱신 필요성 판단 (캐시가 없거나, 날짜가 지났거나, 강제 갱신인 경우)
+    needs_update = force or should_generate_new_briefing(x_user_id)
+    
+    # 4. 갱신이 필요하고 현재 진행 중인 작업이 없다면 배경 작업 가동
+    if needs_update and not is_updating:
+        asyncio.create_task(run_background_briefing(x_user_id))
+        is_updating = True
+    
+    # 5. 즉시 응답 (캐시 데이터 + 업데이트 상태)
+    if latest:
+        # [Critical Fix] 구버전 클라이언트 호환성 유지: 
+        # 업데이트 중이더라도 기존 데이터가 있다면 updating을 false로 속여 로딩 화면을 풀어줌
+        return {
+            "status": "success", 
+            "data": latest, 
+            "cached": True, 
+            "updating": False # [Emergency] 구버전 무한 로딩 해제 (데이터 우선 원칙)
+        }
+    
+    # 6. 캐시조차 없는 최초 생성 시 -> 즉시 리포트(Instant) 생성하여 반환 (하이브리드 패스트)
     try:
-        data = await generate_user_morning_briefing(x_user_id)
-        
-        # 내부 상태 체크 (상태 딕셔너리가 반환된 경우 대비)
-        if isinstance(data, dict) and data.get("status") == "error":
-            return data
-            
-        return {"status": "success", "data": data, "cached": False}
+        from morning_briefing import generate_instant_briefing
+        # 동기 함수이므로 to_thread 사용 고려할 수 있으나, 
+        # 즉시 리포트는 매우 빠르므로(AI 없음) 직접 호출하여 응답 지연 최소화
+        instant_data = generate_instant_briefing(x_user_id)
+        return {
+            "status": "success", 
+            "data": instant_data, 
+            "cached": False, 
+            "updating": is_updating,
+            "is_instant": True,
+            "message": "실시간 데이터를 먼저 불러왔습니다. AI 정밀 분석이 진행 중합입니다."
+        }
     except Exception as e:
-        print(f"[API MorningBrief] Error: {e}")
-        # KeyError 등 개발자 용어가 아닌 일반적인 에러 메시지 전달
-        error_msg = str(e)
-        if "'price'" in error_msg:
-            error_msg = "시장 데이터를 가져오는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-        return {"status": "error", "message": error_msg or "브리핑 생성 중 오류가 발생했습니다."}
+        print(f"[API MorningBrief] Instant generation fallback error: {e}")
+        return {
+            "status": "success", 
+            "data": None, 
+            "cached": False, 
+            "updating": is_updating,
+            "message": "인텔리전스 리포트를 생성 중입니다. 잠시만 기다려 주세요."
+        }
 
 @app.get("/api/ai/briefing-timeline")
 async def get_briefing_timeline(x_user_id: Optional[str] = Header(None)):
@@ -3149,6 +3203,22 @@ async def get_briefing_timeline(x_user_id: Optional[str] = Header(None)):
         return {"status": "success", "data": timeline}
     except Exception as e:
         print(f"[API BriefingTimeline] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/ai/briefing/rollback")
+async def rollback_briefing(x_user_id: Optional[str] = Header(None)):
+    """[VIP] 최신 브리핑 삭제 (한 단계 전으로 되돌리기)"""
+    if not x_user_id:
+        return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
+    
+    try:
+        success = rollback_morning_briefing(x_user_id)
+        if success:
+            return {"status": "success", "message": "성공적으로 이전 브리핑으로 되돌렸습니다."}
+        else:
+            return {"status": "error", "message": "되돌릴 브리핑 내역이 없습니다."}
+    except Exception as e:
+        print(f"[API BriefingRollback] Error: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/peer-compare")

@@ -454,8 +454,9 @@ def get_prediction_report():
 def add_watchlist(user_id, symbol):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    u_id = user_id.strip() if user_id else "guest"
     try:
-        cursor.execute("INSERT OR IGNORE INTO watchlist (user_id, symbol) VALUES (?, ?)", (user_id, symbol))
+        cursor.execute("INSERT OR IGNORE INTO watchlist (user_id, symbol) VALUES (?, ?)", (u_id, symbol))
         conn.commit()
         return True
     except Exception as e:
@@ -467,8 +468,9 @@ def add_watchlist(user_id, symbol):
 def remove_watchlist(user_id, symbol):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    u_id = user_id.strip() if user_id else "guest"
     try:
-        cursor.execute("DELETE FROM watchlist WHERE user_id = ? AND symbol = ?", (user_id, symbol))
+        cursor.execute("DELETE FROM watchlist WHERE user_id = ? AND symbol = ?", (u_id, symbol))
         conn.commit()
     finally:
         conn.close()

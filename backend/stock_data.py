@@ -988,7 +988,7 @@ def get_market_data():
 
     # Fetch Movers with Timeout
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_sym = {executor.submit(_fetch_mover, sym): sym for sym in movers_tickers}
+        future_to_sym = {executor.submit(_fetch_mover, sym): sym for sym in movers_list}
         for future in concurrent.futures.as_completed(future_to_sym):
             try:
                 res = future.result(timeout=3)
@@ -997,10 +997,7 @@ def get_market_data():
             except:
                 pass
 
-    return {
-        "indices": results,
-        "movers": movers
-    }
+    return results
 
 def get_all_market_assets():
     """
