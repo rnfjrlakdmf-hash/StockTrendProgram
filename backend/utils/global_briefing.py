@@ -48,10 +48,9 @@ async def generate_market_wide_briefing():
         print("[SYSTEM-Briefing] API Key missing")
         return
 
-    # 지수 요약 텍스트
-    indices_raw = market_data.get('indices', [])
+    # 지수 요약 텍스트 (market_data가 이제 직접 리스트를 반환함)
     index_list = []
-    for idx in indices_raw:
+    for idx in market_data:
         label = idx.get('label', '시장 지수')
         value = idx.get('value')
         change = idx.get('change', '0.00%')
@@ -60,40 +59,45 @@ async def generate_market_wide_briefing():
     
     index_summary = ", ".join(index_list) if index_list else "현재 시장 데이터를 수집 중입니다."
 
-    # 프롬프트 구성 (네이버 타임라인 스타일)
+    # 프롬프트 구성 (네이버 금융 AI 브리핑 스타일 1:1 벤치마킹)
     prompt = f"""
-    당신은 대한민국 최고의 'AI 금융 뉴스 앵커'입니다. 
-    지금 이 시간({now.strftime('%H:00')}시)의 주식 시장 상황을 요약하여 이용자들에게 브리핑하세요.
+당신은 대한민국 최고의 금융 데이터 분석가이자 AI 앵커입니다. 
+네이버 금융(stock.naver.com)의 'AI 브리핑' 수준의 전문적이고 통찰력 있는 리포트를 작성하세요.
 
-    [입력 데이터]
-    1. 시장 지표: {index_summary}
-    2. 주요 뉴스 및 일정: {json.dumps(market_context, ensure_ascii=False)}
+[현재 시장 지표]
+{index_summary}
 
-    [작성 가이드라인]
-    - **네이버 AI 브리핑 스타일**: 시간대별로 변하는 시장의 활기를 담아내세요.
-    - **Headline**: 현 시점의 시장 분위기를 가장 잘 나타내는 헤드라인 (15자 내외).
-    - **Summary Bullets**: 지금 가장 중요한 포인트 3가지를 아주 간결하게.
-    - **Sections**: 시장 흐름, 특징주/테마, 앞으로의 전망 등 3개 내외의 섹션.
-    - **어조**: 신뢰감 있고 친절한 앵커 톤.
-    - 전문가 버전과 초보자 버전을 모두 포함하세요.
+[주요 마켓 컨텍스트]
+{json.dumps(market_context, ensure_ascii=False)}
 
-    [출력 포맷 (JSON)]
-    {{
-        "market_title": "메인 헤드라인",
-        "summary_bullets": ["전문가용 포인트 1", "2", "3"],
-        "simple_summary_bullets": ["초보자용 요약 1", "2", "3"],
-        "sections": [
-            {{ "emoji": "📉", "title": "시장 총평", "content": "..." }},
-            {{ "emoji": "🔥", "title": "특징 테마", "content": "..." }}
-        ],
-        "simple_sections": [
-            {{ "emoji": "📉", "title": "지금 시장은?", "content": "..." }}
-        ],
-        "watchlist_briefs": [],
-        "market_focus": "다음 정각까지 주목할 점",
-        "disclaimer": "본 서비스는 참고용이며 투자 추천이 아닙니다."
-    }}
-    """
+[작성 지침 - 중요]
+1. **Headline (market_title)**: 시장의 핵심을 꿰뚫는 강력한 한 줄 헤드라인으로 작성하세요.
+2. **Short Summary (summary_bullets)**: 현재 시장에서 가장 중요한 변곡점 3가지를 '·' 기호로 시작하여 작성하세요.
+3. **Sections (상세 분석)**:
+   - 각 섹션의 'title'은 반드시 **굵은 소제목**(예: ****금리 인하 기대감에 미 증시 반등****) 형태로 작성하세요.
+   - 분석 본문에서 주요 종목 언급 시 반드시 **'종목명 현재가(등락률)'** 형식을 지키세요. (예: 삼성전자 74,500원(+1.2%)).
+   - 전문가 버전(sections)은 논리적이고 깊이 있게, 초보자 버전(simple_sections)은 이해하기 쉬운 비유를 섞어 작성하세요.
+4. **Theme Focus**: 최근 가장 뜨거운 테마와 섹터 흐름을 구체적으로 언급하세요.
+
+[출력 포맷 (JSON)]
+{{
+  "market_title": "헤드라인",
+  "summary_bullets": ["· 포인트 1", "· 포인트 2", "· 포인트 3"],
+  "simple_summary_bullets": ["· 쉬운 요약 1", ...],
+  "sections": [
+    {{ "emoji": "📈", "title": "**섹션 소제목**", "content": "종목명 00원(0%)을 포함한 심층 분석..." }},
+    ...
+  ],
+  "simple_sections": [
+    {{ "emoji": "💡", "title": "**오늘의 핵심!**", "content": "..." }}
+  ],
+  "watchlist_briefs": [
+    {{ "symbol": "NVDA", "name": "엔비디아", "insight": "엔비디아 130.4$(+1.5%)는 AI 반도체 수요 폭발로 인해..." }}
+  ],
+  "market_focus": "투자자가 지금 바로 체크해야 할 포인트",
+  "disclaimer": "본 정보는 투자 판단의 참고용이며 최종 결과에 대한 책임을 지지 않습니다."
+}}
+"""
 
     try:
         response = generate_with_retry(prompt, json_mode=True)

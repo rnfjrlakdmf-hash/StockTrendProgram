@@ -891,51 +891,80 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
 
 
 def get_market_data():
-    """주요 지수 및 트렌딩 종목 데이터 수집 (네이버 우선 활용으로 차단 방지)"""
-    # [v3.0.0] korea_data의 네이버 모바일 API 기반 수집 우선 사용
-    results = get_naver_market_index_data()
+    """주요 지수 및 트렌딩 종목 데이터 수집 (스파크라인 데이터 포함)"""
+    indices = [
+        {"symbol": "^KS11", "label": "KOSPI", "naver_code": "KOSPI"},
+        {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ"},
+        {"symbol": "^IXIC", "label": "NASDAQ", "naver_code": "NAS@IXIC"},
+        {"symbol": "^GSPC", "label": "S&P 500", "naver_code": "SPI@SPX"},
+        {"symbol": "USDKRW=X", "label": "USD/KRW", "naver_code": "FX_USDKRW"},
+    ]
     
-    # 만약 결과가 없거나 모든 값이 N/A인 경우에만 yfinance 폴백 시도
-    if not results or all(r.get('value') == 'N/A' for r in results):
-        indices = [
-            {"symbol": "^GSPC", "label": "S&P 500"},
-            {"symbol": "^IXIC", "label": "NASDAQ"},
-            {"symbol": "^KS11", "label": "KOSPI"},
-        ]
-        results = []
-        def _fetch_index(idx):
-            try:
-                ticker = yf.Ticker(idx["symbol"])
-                price = ticker.fast_info.last_price
-                prev_close = ticker.fast_info.previous_close
-                change = ((price - prev_close) / prev_close) * 100
+    results = []
+    
+    def _fetch_index_info(idx):
+        try:
+            # 1. 기본 시세 (네이버 모바일 API 우선)
+            url = f"https://m.stock.naver.com/api/index/{idx['naver_code']}/basic"
+            if "FX_" in idx['naver_code']:
+                 url = f"https://m.stock.naver.com/api/exchange/{idx['naver_code']}/basic"
+            
+            res = requests.get(url, timeout=3)
+            sparkline = []
+            
+            if res.status_code == 200:
+                data = res.json()
+                price = data.get('closePrice', '0').replace(',', '')
+                pct = data.get('fluctuationsRatio', '0')
+                
+                # 2. 스파크라인 데이터 (yfinance 활용 - 더 풍부한 데이터)
+                try:
+                    ticker = yf.Ticker(idx["symbol"])
+                    hist = ticker.history(period="1d", interval="15m")
+                    if not hist.empty:
+                        sparkline = hist['Close'].tolist()
+                except:
+                    pass
+                
                 return {
                     "label": idx["label"],
-                    "value": f"{price:,.2f}",
-                    "change": f"{change:+.2f}%",
-                    "up": change >= 0
+                    "value": f"{float(price):,.2f}",
+                    "change": f"{float(pct):+.2f}%",
+                    "up": float(pct) >= 0,
+                    "sparkline": sparkline
                 }
-            except Exception:
-                return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True}
+        except Exception:
+            pass
+            
+        # Fallback to pure yfinance
+        try:
+            ticker = yf.Ticker(idx["symbol"])
+            fast = ticker.fast_info
+            p = fast.last_price
+            pc = fast.previous_close
+            chg = ((p - pc) / pc) * 100
+            hist = ticker.history(period="1d", interval="15m")
+            return {
+                "label": idx["label"],
+                "value": f"{p:,.2f}",
+                "change": f"{chg:+.2f}%",
+                "up": chg >= 0,
+                "sparkline": hist['Close'].tolist() if not hist.empty else []
+            }
+        except:
+            return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True, "sparkline": []}
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_idx = {executor.submit(_fetch_index, idx): idx for idx in indices}
-            for future in concurrent.futures.as_completed(future_to_idx):
-                results.append(future.result())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(_fetch_index_info, idx) for idx in indices]
+        for f in concurrent.futures.as_completed(futures):
+            results.append(f.result())
     
-    # 한국 지수 이름 통일 (Frontend 호환)
-    for r in results:
-        if r['label'] == 'KOSPI': r['label'] = 'KOSPI'
-        if r['label'] == 'KOSDAQ': r['label'] = 'KOSDAQ'
-    
-    # Sort results to match original order (optional but good for UI)
-    # Map back by label if needed, or just trust the list order if we process differently
-    # Parallel execution shuffles order, so let's re-sort by label if strict order needed. 
-    # For now, UI handles label mapping usually.
-    
-    # 인기 종목 (예시로 고정된 몇 개를 실시간 조회)
-    movers_tickers = ["NVDA", "TSLA", "AAPL"]
+    # Sorting to maintain consistent order
+    results.sort(key=lambda x: [idx['label'] for idx in indices].index(x['label']))
+
+    # movers... (stay similar but use yfinance for sparklines if needed later)
     movers = []
+    movers_list = ["NVDA", "TSLA", "AAPL"]
     descriptions = {
         "NVDA": "AI 대장주 수요 지속",
         "TSLA": "전기차 시장 변동성",
