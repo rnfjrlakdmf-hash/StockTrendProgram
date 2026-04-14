@@ -23,6 +23,7 @@ if (process.env.NEXT_PUBLIC_API_URL) {
             apiBase = "http://localhost:8000";
         } else {
             // [Fix] Production Backend URL (Railway - Specific App)
+            // Always prioritize the official production backend to avoid Vercel 404/HTML issue
             apiBase = "https://stocktrendprogram-production.up.railway.app";
         }
     }
