@@ -723,7 +723,7 @@ function CalendarTab({ router }: { router: any }) {
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-400" /> 오늘 글로벌 일정
                             </h4>
-                            <div className="text-[10px] text-gray-500">Yahoo Finance</div>
+                            <div className="text-[10px] text-gray-500">Naver Finance</div>
                         </div>
 
                         {macroLoading ? (
@@ -733,22 +733,26 @@ function CalendarTab({ router }: { router: any }) {
                                 <p>오늘 예정된 주요 일정이 없습니다.</p>
                             </div>
                         ) : (
-                            <div className="space-y-1.5 max-h-[180px] overflow-y-auto hide-scrollbar">
+                            <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
                                 {macroEvents.map((evt, i) => (
-                                    <div key={i} className="flex items-start gap-3 p-2 bg-black/20 hover:bg-black/40 rounded-lg transition-colors border border-white/5">
-                                        <div className="flex flex-col items-center min-w-[50px]">
-                                            <span className={`text-[10px] font-mono font-bold ${evt.impact === "high" ? "text-red-400" : "text-gray-400"}`}>{evt.time}</span>
+                                    <div key={i} className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 rounded-xl transition-all border border-white/5 group">
+                                        <div className="flex flex-col items-center min-w-[45px]">
+                                            <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-1">
+                                            {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className={`font-bold text-xs break-words ${evt.impact === "high" ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
-                                            {(evt.forecast !== "-" || evt.actual !== "-") && (
-                                                <div className="flex gap-2 mt-0.5 text-[10px] text-gray-400">
-                                                    {evt.forecast !== "-" && <span>예상 <span className="text-yellow-400 font-mono">{evt.forecast}</span></span>}
-                                                    {evt.actual !== "-" && <span>실제 <span className="text-green-400 font-mono font-bold">{evt.actual}</span></span>}
-                                                </div>
-                                            )}
+                                            <div className={`font-bold text-xs truncate ${evt.importance >= 3 ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
+                                            <div className="flex gap-3 mt-1 text-[10px] font-bold">
+                                                {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
+                                                {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
+                                                {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
+                                            </div>
                                         </div>
-                                        {evt.impact === "high" && <span className="text-[8px] bg-red-900/40 text-red-400 border border-red-500/30 px-1 py-0.5 rounded font-bold flex-shrink-0">HIGH</span>}
+                                        <div className="flex items-center gap-1">
+                                            <Zap className={`w-3.5 h-3.5 ${evt.importance >= 3 ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
+                                        </div>
                                     </div>
                                 ))}
                             </div>

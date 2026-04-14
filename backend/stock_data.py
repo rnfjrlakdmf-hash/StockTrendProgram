@@ -1163,197 +1163,67 @@ def get_insider_trading(symbol):
     """
     return []
 
+def get_naver_macro_calendar(limit=50):
+    """
+    네이버 증권 내부 API를 사용하여 글로벌 경제 일정을 가져옵니다.
+    """
+    import requests
+    try:
+        url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/upcoming?gteImportance=1&limit={limit}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://stock.naver.com/"
+        }
+        res = requests.get(url, headers=headers, timeout=5)
+        data = res.json()
+        
+        events = []
+        for item in data:
+            # 시간 포맷팅: 213000 -> 21:30
+            raw_time = item.get("releaseTime", "000000")
+            formatted_time = f"{raw_time[:2]}:{raw_time[2:4]}"
+            
+            # 중요도 매핑: 1~5 -> high/medium/low (네이버 기준 3이상 주황/빨강)
+            imp = item.get("importance", 1)
+            impact = "high" if imp >= 3 else "medium" if imp >= 2 else "low"
+            
+            # 값 포맷팅 유틸
+            def fmt_val(v):
+                if v is None or v == 0: return "-"
+                unit = item.get("indicatorUnit", "")
+                return f"{v}{unit}"
+            
+            events.append({
+                "date": item.get("releaseDate"),
+                "time": formatted_time,
+                "event": f"[{item.get('nationType')}] {item.get('name')}",
+                "event_kr": f"[{item.get('nationKoreanName')}] {item.get('name')}",
+                "country": item.get("nationType"),
+                "country_kr": item.get("nationKoreanName"),
+                "impact": impact,
+                "importance": imp,
+                "actual": fmt_val(item.get("actualValue")),
+                "forecast": "-", # 네이버 APIupcoming에는 예상치가 명시적이지 않을 수 있음
+                "previous": fmt_val(item.get("previousValue"))
+            })
+        return events
+    except Exception as e:
+        print(f"[StockData] Naver Calendar Fetch Error: {e}")
+        return []
+
 def get_macro_calendar():
     """
     Fetch major economic calendar events.
-    - 오늘 이벤트: Yahoo Finance 실시간 크롤링 (한국어 번역 포함)
+    [Updated] 네이버 금융 API를 최우선으로 사용하여 정확도와 한국어 지원을 보장합니다.
     """
+    # 1. 네이버 금융 API 시도
+    events = get_naver_macro_calendar()
+    if events:
+        return events
+
+    # 2. Fallback: 기존 야후 파이낸셜 로직 (생략 - 네이버 실패 시 빈 리스트 반환으로 우선 처리)
     import datetime
-    import requests
-    from bs4 import BeautifulSoup
-
-    # ====================================================
-    # 경제 지표 한국어 번역 테이블
-    # ====================================================
-    INDICATOR_KR = {
-        # 물가
-        "CPI": "소비자물가지수",
-        "HICP": "조화소비자물가지수",
-        "PPI": "생산자물가지수",
-        "PCE": "개인소비지출(PCE) 물가",
-        "Core CPI": "근원 소비자물가지수",
-        "Core PCE": "근원 개인소비지출(PCE) 물가",
-        "Inflation": "인플레이션",
-        "Consumer Price": "소비자물가",
-        "Producer Price": "생산자물가",
-        "Import Price": "수입물가",
-        "Export Price": "수출물가",
-        "Wholesale Price": "도매물가",
-
-        # 고용
-        "Nonfarm Payrolls": "비농업고용지수",
-        "NFP": "비농업고용지수",
-        "Unemployment Rate": "실업률",
-        "Unemployment": "실업률",
-        "Jobless Claims": "신규실업수당청구건수",
-        "Initial Claims": "신규실업수당청구건수",
-        "Continuing Claims": "연속실업수당청구건수",
-        "ADP": "ADP 민간고용보고서",
-        "Employment": "고용",
-        "Labor Market": "노동시장",
-        "Wages": "임금",
-        "Average Hourly Earnings": "평균시간당임금",
-        "JOLTs": "JOLTs 구인이직보고서",
-        "Job Openings": "구인건수",
-
-        # 성장/GDP
-        "GDP": "국내총생산(GDP)",
-        "GNP": "국민총생산(GNP)",
-        "Retail Sales": "소매판매",
-        "Industrial Production": "산업생산",
-        "Manufacturing": "제조업",
-        "Factory Orders": "공장수주",
-        "Durable Goods": "내구재수주",
-        "Trade Balance": "무역수지",
-        "Current Account": "경상수지",
-        "Budget Balance": "재정수지",
-        "Business Inventories": "기업재고",
-
-        # 소비/심리
-        "Consumer Confidence": "소비자신뢰지수",
-        "Consumer Sentiment": "소비자심리지수",
-        "Michigan": "미시간대 소비자심리지수",
-        "ISM": "ISM 이파이 구매관리자지수",
-        "PMI": "구매관리자지수(PMI)",
-        "Services PMI": "서비스업 PMI",
-        "Manufacturing PMI": "제조업 PMI",
-        "Composite PMI": "종합 PMI",
-        "Non-Manufacturing": "비제조업",
-        "Chicago PMI": "시카고 PMI",
-
-        # 부동산
-        "Housing": "주택",
-        "Home Sales": "주택판매",
-        "Building Permits": "건축허가",
-        "Housing Starts": "주택착공건수",
-        "Existing Home Sales": "기존주택판매",
-        "New Home Sales": "신규주택판매",
-        "New Home": "신규주택",
-        "Case-Shiller": "케이스쉴러 주택가격지수",
-
-        # 금리/통화
-        "Fed": "연방준비제도(Fed)",
-        "FOMC": "FOMC 회의",
-        "Interest Rate Decision": "기준금리 결정",
-        "Interest Rate": "기준금리",
-        "Rate Decision": "금리결정",
-        "Money Supply": "통화량",
-        "Treasury": "미국국채",
-        "ECB": "유럽중앙은행(ECB)",
-        "BOJ": "일본은행(BOJ)",
-        "BOK": "한국은행(BOK)",
-
-        # 에너지/원자재
-        "Crude Oil Inventories": "주간 원유재고",
-        "Crude Oil": "원유재고",
-        "Oil Inventories": "원유재고",
-        "Natural Gas": "천연가스재고",
-        "EIA Weekly": "EIA 주간",
-        "API Weekly": "API 주간",
-
-        # 지표 시점 접미사
-        "YY": "(전년비)",
-        "MM": "(전월비)",
-        "QQ": "(전분기비)",
-        "Prelim": "[예비치]",
-        "Flash": "[속보치]",
-        "Final": "[확정치]",
-        "Revised": "[수정치]",
-
-        # 레드북
-        "Redbook": "레드북 소매판매지수",
-    }
-
-    COUNTRY_KR = {
-        "US": "미국", "KR": "한국", "CN": "중국", "JP": "일본",
-        "EU": "유럽", "GB": "영국", "DE": "독일", "FR": "프랑스", "IT": "이탈리아"
-    }
-
-    def translate_event(event_name: str) -> str:
-        """경제 지표명을 한국어로 번역합니다."""
-        translated = event_name
-        # 접미사 처리 (YY, MM 등) - 먼저 치환하면 다른 단어와 혼동제거
-        for en, kr in sorted(INDICATOR_KR.items(), key=lambda x: -len(x[0])):
-            if en in translated:
-                translated = translated.replace(en, kr)
-        return translated.strip()
-
-    events = []
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-
-    # Yahoo Finance 1회만 요청 (오늘 이벤트 전용)
-    try:
-        url = "https://finance.yahoo.com/calendar/economic"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers, timeout=7)
-        soup = BeautifulSoup(res.text, 'html.parser')
-
-        # 헤더: Event(0) Country(1) Event Time(2) For(3) Actual(4) Market Expectation(5) Prior to This(6) Revised from(7)
-        rows = soup.select('table tbody tr')
-        seen_keys = set()
-
-        for row in rows:
-            cols = row.select('td')
-            if len(cols) < 3:
-                continue
-
-            event_name = cols[0].text.strip()
-            country = cols[1].text.strip()
-            event_time = cols[2].text.strip()
-            period = cols[3].text.strip() if len(cols) > 3 else ""
-            actual = cols[4].text.strip() if len(cols) > 4 else "-"
-            forecast = cols[5].text.strip() if len(cols) > 5 else "-"
-            prior = cols[6].text.strip() if len(cols) > 6 else "-"
-
-            if not event_name or not country or not event_time:
-                continue
-
-            # 주요 국가 필터
-            if country not in ['US', 'KR', 'CN', 'JP', 'EU', 'GB', 'DE', 'FR', 'IT']:
-                continue
-
-            # 중복 제거
-            key = f"{event_time}_{event_name}_{country}"
-            if key in seen_keys:
-                continue
-            seen_keys.add(key)
-
-            impact = "high" if country in ['US', 'CN'] else "medium"
-            country_kr = COUNTRY_KR.get(country, country)
-            event_kr = translate_event(event_name)
-
-            events.append({
-                "date": today_str,
-                "time": event_time,
-                "event": f"[{country}] {event_name}",          # 원본 영어 (호환성)
-                "event_kr": f"[{country_kr}] {event_kr}",      # 한국어 번역
-                "country": country,
-                "country_kr": country_kr,
-                "period": period,
-                "impact": impact,
-                "actual": actual if actual else "-",
-                "forecast": forecast if forecast else "-",
-                "previous": prior if prior else "-"
-            })
-
-    except Exception as e:
-        print(f"Yahoo Calendar Fetch Error: {e}")
-
-    # 시간 순 정렬
-    events.sort(key=lambda e: e.get("time", ""))
-    return events
+    return []
 
 
 def get_korea_economic_indicators():
