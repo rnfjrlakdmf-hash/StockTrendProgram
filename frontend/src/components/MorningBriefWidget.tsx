@@ -108,7 +108,8 @@ export default function MorningBriefWidget() {
             if (timelineJson.status === "success" && timelineJson.data) {
                 setTimeline(timelineJson.data);
                 if (timelineJson.data.length > 0 && Object.keys(expandedIds).length === 0) {
-                    setExpandedIds({ [timelineJson.data[0].generated_at]: true });
+                    const firstId = timelineJson.data[0]?.generated_at;
+                    if (firstId) setExpandedIds({ [firstId]: true });
                 }
             }
         } catch (err) {
@@ -139,8 +140,8 @@ export default function MorningBriefWidget() {
                 if (json.is_instant && json.data) {
                     setTimeline(prev => {
                         // 기존 타임라인에서 동일한 id(generated_at)가 있으면 교체, 없으면 맨 앞에 추가
-                        const exists = prev.find(b => b.generated_at === json.data.generated_at);
-                        if (exists) return prev.map(b => b.generated_at === json.data.generated_at ? json.data : b);
+                        const exists = prev.find(b => b.generated_at === json.data?.generated_at);
+                        if (exists) return prev.map(b => b.generated_at === json.data?.generated_at ? json.data : b);
                         return [json.data, ...prev];
                     });
                 }
@@ -221,7 +222,7 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const latestPersonal = timeline.find(b => b.user_id !== 'SYSTEM');
+    const latestPersonal = (timeline || []).find(b => b.user_id !== 'SYSTEM');
 
     const BriefingSkeleton = () => (
         <div className="w-full space-y-6 animate-pulse">
@@ -386,13 +387,13 @@ export default function MorningBriefWidget() {
                             <div className="space-y-10 animate-in fade-in slide-in-from-left duration-700">
                                 {/* Naver Style Summary Box */}
                                 <div className="bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
-                                    <h4 className="text-2xl md:text-3xl font-black text-white leading-tight mb-8">
-                                        {latestPersonal.market_title}
+                                     <h4 className="text-2xl md:text-3xl font-black text-white leading-tight mb-8">
+                                        {latestPersonal?.market_title || "시장 상황을 분석 중입니다..."}
                                     </h4>
 
                                     <div className="bg-black/40 rounded-3xl p-8 border border-white/5 space-y-5 mb-10">
                                         <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-2">TODAY'S CORE SUMMARY</div>
-                                        {(isSimpleMode && latestPersonal.simple_summary_bullets ? latestPersonal.simple_summary_bullets : latestPersonal.summary_bullets).map((b, i) => (
+                                        {(isSimpleMode && latestPersonal?.simple_summary_bullets ? latestPersonal.simple_summary_bullets : (latestPersonal?.summary_bullets || [])).map((b, i) => (
                                             <div key={i} className="flex items-start gap-3">
                                                 <span className="text-blue-500 font-black mt-1">·</span>
                                                 <p className="text-gray-200 font-bold text-lg leading-relaxed">{b}</p>
@@ -402,29 +403,29 @@ export default function MorningBriefWidget() {
 
                                     {/* Sections with Bold Headers */}
                                     <div className="grid md:grid-cols-2 gap-10">
-                                        {(isSimpleMode && latestPersonal.simple_sections ? latestPersonal.simple_sections : latestPersonal.sections).map((sec, i) => (
+                                        {(isSimpleMode && latestPersonal?.simple_sections ? latestPersonal.simple_sections : (latestPersonal?.sections || [])).map((sec, i) => (
                                             <div key={i} className="space-y-4">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-2xl">{sec.emoji}</span>
-                                                    <h5 className="font-black text-white text-base tracking-tight">{sec.title}</h5>
+                                                    <span className="text-2xl">{sec?.emoji || "🔍"}</span>
+                                                    <h5 className="font-black text-white text-base tracking-tight">{sec?.title || "데이터 탐색 중"}</h5>
                                                 </div>
-                                                <p className="text-gray-400 text-sm leading-relaxed font-medium pl-10 border-l border-white/10">{sec.content}</p>
+                                                <p className="text-gray-400 text-sm leading-relaxed font-medium pl-10 border-l border-white/10">{sec?.content || "분석 결과를 기다려 주세요."}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Watchlist Insight Cards */}
-                                {latestPersonal.watchlist_briefs && (
+                                {latestPersonal?.watchlist_briefs && (
                                     <div className="grid sm:grid-cols-2 gap-5">
                                         {latestPersonal.watchlist_briefs.map((item, i) => (
                                             <div key={i} className="group p-6 bg-white/5 border border-white/10 rounded-3xl hover:border-blue-500/30 transition-all">
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <span className="font-black text-white text-lg tracking-tight group-hover:text-blue-200">{item.name}</span>
+                                                    <span className="font-black text-white text-lg tracking-tight group-hover:text-blue-200">{item?.name || "종목명 확인 중"}</span>
                                                     <TrendingUp className="w-4 h-4 text-gray-700 group-hover:text-blue-500 transition-colors" />
                                                 </div>
                                                 <p className="text-sm text-gray-400 leading-relaxed font-medium">
-                                                    {isSimpleMode && item.simple_insight ? item.simple_insight : item.insight}
+                                                    {isSimpleMode && item?.simple_insight ? item.simple_insight : (item?.insight || "데이터 분석 중입니다.")}
                                                 </p>
                                             </div>
                                         ))}
@@ -443,7 +444,7 @@ export default function MorningBriefWidget() {
                         {latestPersonal && (
                              <div className="pt-8 border-t border-white/5 opacity-50 flex items-start gap-4">
                                 <Info className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
-                                <p className="text-[10px] text-gray-600 leading-relaxed italic">{latestPersonal.disclaimer}</p>
+                                <p className="text-[10px] text-gray-600 leading-relaxed italic">{latestPersonal?.disclaimer || "AI 분석 결과는 투자 참고용이며 최종 책임은 투자자 본인에게 있습니다."}</p>
                             </div>
                         )}
                     </div>
@@ -458,11 +459,11 @@ export default function MorningBriefWidget() {
                         <div className="relative space-y-10 pl-6 md:pl-10">
                             <div className="absolute left-1 md:left-2 top-3 bottom-0 w-[2px] bg-gradient-to-b from-blue-500/40 via-purple-500/20 to-transparent"></div>
 
-                            {timeline.map((brief, idx) => {
-                                const date = new Date(brief.generated_at);
-                                const timeLabel = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-                                const isExpanded = expandedIds[brief.generated_at];
-                                const isSystem = brief.user_id === 'SYSTEM';
+                             {(timeline || []).map((brief, idx) => {
+                                 const date = brief?.generated_at ? new Date(brief.generated_at) : new Date();
+                                 const timeLabel = brief?.generated_at ? `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}` : "00:00";
+                                 const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : false;
+                                 const isSystem = brief?.user_id === 'SYSTEM';
 
                                 return (
                                     <div key={idx} className="relative group animate-in fade-in slide-in-from-right duration-500">
