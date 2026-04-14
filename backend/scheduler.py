@@ -136,6 +136,38 @@ async def check_and_notify_disclosures():
     finally:
         scraper._close_driver()
 
+async def hourly_briefing_scheduler_loop():
+    """
+    KST 기준 00:00 ~ 15:00 사이 매시간 정각에 공통 시장 브리징(SYSTEM)을 생성합니다.
+    """
+    logger.info("Hourly Briefing Scheduler Started.")
+    import pytz
+    from utils.global_briefing import generate_market_wide_briefing
+    
+    last_run_hour = -1
+    
+    while True:
+        try:
+            kst = pytz.timezone('Asia/Seoul')
+            now = datetime.now(kst)
+            current_hour = now.hour
+            
+            # 00시부터 15시까지만 작동
+            if 0 <= current_hour <= 15:
+                # 정각 부근(0~5분 사이)이고, 이번 시간에 아직 실행하지 않았다면 실행
+                if current_hour != last_run_hour and now.minute <= 5:
+                    logger.info(f"[HourlyBrief] Triggering SYSTEM briefing for {current_hour}:00")
+                    await generate_market_wide_briefing()
+                    last_run_hour = current_hour
+            
+            # 1분마다 체크
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Hourly Briefing Scheduler Crash: {e}")
+            await asyncio.sleep(60)
+
 async def disclosure_scheduler_loop():
     """
     Background loop to run the check every X minutes.

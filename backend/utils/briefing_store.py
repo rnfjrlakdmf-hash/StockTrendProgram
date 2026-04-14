@@ -83,6 +83,36 @@ def should_generate_new_briefing(user_id: str) -> bool:
     finally:
         conn.close()
 
+def get_today_briefing_timeline(user_id: str) -> list:
+    """오늘(KST) 생성된 모든 브리핑(개인 + SYSTEM)을 최신순으로 조회"""
+    kst = pytz.timezone('Asia/Seoul')
+    today_str = datetime.now(kst).strftime("%Y-%m-%d")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # 본인 데이터와 SYSTEM 데이터를 합쳐서 가져옴
+        cursor.execute(
+            """
+            SELECT user_id, briefing_json, created_at 
+            FROM morning_briefings 
+            WHERE (user_id = ? OR user_id = 'SYSTEM') 
+            AND DATE(created_at) = ? 
+            ORDER BY created_at DESC
+            """,
+            (user_id, today_str)
+        )
+        rows = cursor.fetchall()
+        results = []
+        for row in rows:
+            data = json.loads(row[1])
+            data["user_id"] = row[0]
+            data["created_at"] = row[2]
+            results.append(data)
+        return results
+    finally:
+        conn.close()
+
 def invalidate_today_briefing(user_id: str):
     """오늘 생성된 브리핑 캐시를 삭제하여 다음 요청 시 재생성되도록 함"""
     conn = get_db()

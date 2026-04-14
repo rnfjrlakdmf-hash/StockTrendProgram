@@ -69,7 +69,10 @@ from pydantic import BaseModel, Field
 from portfolio_analysis import analyze_portfolio_risk
 from auth import router as auth_router
 from morning_briefing import generate_user_morning_briefing
-from utils.briefing_store import init_briefing_table, get_latest_briefing, should_generate_new_briefing
+from utils.briefing_store import (
+    init_briefing_table, get_latest_briefing, 
+    should_generate_new_briefing, get_today_briefing_timeline
+)
 
 # [Global Scaling] Mapping for Stocks (Korean Names)
 # [v3.6.2] Redundant definition removed. Imported from stock_data.py instead.
@@ -571,13 +574,14 @@ async def startup_event():
     from price_alerts import price_alert_monitor
     asyncio.create_task(price_alert_monitor.start())
     
-    # Disclosure Scheduler (KIND Scraper)
+    # Disclosure & Hourly Briefing Schedulers
     try:
-        from scheduler import disclosure_scheduler_loop
+        from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop
         asyncio.create_task(disclosure_scheduler_loop())
-        print("[Startup] Disclosure Scheduler Started")
+        asyncio.create_task(hourly_briefing_scheduler_loop())
+        print("[Startup] Disclosure & Hourly Briefing Schedulers Started")
     except Exception as e:
-        print(f"[Startup] Disclosure Scheduler error: {e}")
+        print(f"[Startup] Scheduler Init error: {e}")
 
     # Legacy Alert Scheduler
     def run_legacy_scheduler():
@@ -3121,6 +3125,19 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
         if "'price'" in error_msg:
             error_msg = "시장 데이터를 가져오는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         return {"status": "error", "message": error_msg or "브리핑 생성 중 오류가 발생했습니다."}
+
+@app.get("/api/ai/briefing-timeline")
+async def get_briefing_timeline(x_user_id: Optional[str] = Header(None)):
+    """[VIP] 오늘 생성된 전체 브리핑 타임라인 조회 (개인 + 공통)"""
+    if not x_user_id:
+        return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
+    
+    try:
+        timeline = get_today_briefing_timeline(x_user_id)
+        return {"status": "success", "data": timeline}
+    except Exception as e:
+        print(f"[API BriefingTimeline] Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/peer-compare")
 def read_peer_comparison(symbols: str = Query(..., description="쉼표 구분 종목코드")):
