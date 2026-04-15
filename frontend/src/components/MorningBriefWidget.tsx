@@ -316,7 +316,9 @@ export default function MorningBriefWidget() {
         fetchData();
     };
 
-    if (authLoading || (isInitialLoading && timeline.length === 0)) {
+    // [UX Optimization] 만약 로컬 캐시 데이터(timeline)가 이미 있다면, 
+    // 인증(authLoading) 중이라도 스켈레톤 대신 기존 데이터를 즉시 보여주어 '버퍼링'을 최소화합니다.
+    if ((authLoading || isInitialLoading) && timeline.length === 0) {
         return <BriefingSkeleton />;
     }
 
