@@ -30,18 +30,40 @@ def init_briefing_table():
     conn.close()
 
 def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any]) -> bool:
-    """생성된 브리핑을 DB에 저장 (성공 여부 반환)"""
+    """생성된 브리핑을 DB에 저장하거나 기존 인스턴트 레코드를 업데이트함 (중복 방지)"""
     conn = get_db()
     cursor = conn.cursor()
     try:
-        # SQLite 특성상 쓰기 시 타임아웃 발생 가능하므로 명시적으로 처리
-        cursor.execute("PRAGMA busy_timeout = 5000") 
+        cursor.execute("PRAGMA busy_timeout = 5000")
+        
+        # 1. 최근 5분 이내에 생성된 인스턴트 브리핑이 있는지 확인 (업데이트 대상)
         cursor.execute(
-            "INSERT INTO morning_briefings (user_id, briefing_json) VALUES (?, ?)",
-            (user_id, json.dumps(briefing_data, ensure_ascii=False))
+            """
+            SELECT id FROM morning_briefings 
+            WHERE user_id = ? 
+            AND created_at >= datetime('now', '-5 minutes')
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            (user_id,)
         )
+        row = cursor.fetchone()
+        
+        if row and briefing_data.get('is_instant') is not True:
+            # AI 분석이 완료된 것이라면 기존 레코드를 업데이트 (덮어쓰기)
+            cursor.execute(
+                "UPDATE morning_briefings SET briefing_json = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (json.dumps(briefing_data, ensure_ascii=False), row[0])
+            )
+            print(f"[BriefingStore] Updated existing record for user: {user_id}")
+        else:
+            # 새로운 요청이거나 아직 업데이트할 레코드가 없으면 신규 삽입
+            cursor.execute(
+                "INSERT INTO morning_briefings (user_id, briefing_json) VALUES (?, ?)",
+                (user_id, json.dumps(briefing_data, ensure_ascii=False))
+            )
+            print(f"[BriefingStore] Inserted new record for user: {user_id}")
+            
         conn.commit()
-        print(f"[BriefingStore] Successfully saved briefing for user: {user_id}")
         return True
     except Exception as e:
         print(f"[BriefingStore] Save error for {user_id}: {e}")

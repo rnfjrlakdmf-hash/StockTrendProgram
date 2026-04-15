@@ -185,10 +185,7 @@ def generate_instant_briefing(user_id: str):
         "generated_at": now.isoformat(),
         "is_instant": True
     }
-    # [Zero-Wait] 즉시 리포트 결과를 DB에 보관하여 다음 요청 시 즉시 반환 가능하게 함
-    from utils.briefing_store import save_morning_briefing
-    save_morning_briefing(user_id, briefing)
-    
+    # [Zero-Wait] 즉시 리포트 결과 반환 (저장은 호출측인 main.py에서 담당하도록 일원화)
     return briefing
 
 def generate_user_morning_briefing(user_id: str):
@@ -330,11 +327,14 @@ def generate_user_morning_briefing(user_id: str):
         briefing_result["generated_at"] = now.isoformat()
         
         # 최종 완료 및 저장
-        from utils.briefing_store import save_morning_briefing
-        save_morning_briefing(user_id, briefing_result)
-        
-        print(f"[TurboBrief] Fully generated and saved deep briefing for {user_id}")
-        return briefing_result
+        try:
+            from utils.briefing_store import save_morning_briefing
+            # [Update Logic] 새로운 줄이 아니라 기존 기록을 덮어씀 (히스토리 중복 방지)
+            save_morning_briefing(user_id, briefing_result)
+            return briefing_result
+        except Exception as e:
+            print(f"[TurboBrief] Final save failed: {e}")
+            return briefing_result
     except Exception as e:
         print(f"[MorningBrief] Generation error: {e}")
         raise # 상위 layer (main.py)로 에러 전달
