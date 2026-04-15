@@ -112,7 +112,7 @@ export default function MorningBriefWidget() {
             const [indexRes, timelineRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/market/indices`),
                 fetch(`${API_BASE_URL}/api/ai/briefing-timeline`, {
-                    headers: { "X-User-ID": user.id }
+                    headers: { "X-User-ID": user.id || (user as any).uid }
                 })
             ]);
 
@@ -151,7 +151,7 @@ export default function MorningBriefWidget() {
         
         try {
             const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
             
@@ -191,7 +191,7 @@ export default function MorningBriefWidget() {
         try {
             // 강제 재생성 요청 (비차단)
             const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief?force=true`, {
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
             
@@ -214,7 +214,7 @@ export default function MorningBriefWidget() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/ai/briefing/rollback`, {
                 method: "POST",
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
             if (json.status === "success" && json.data) {
