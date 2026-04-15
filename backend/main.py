@@ -3135,6 +3135,9 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
     if not x_user_id:
         return {"status": "error", "message": "로그인이 필요한 서비스입니다."}
     
+    # [Fix] 사용자 ID 공백 제거 (매칭 정확도 향상)
+    x_user_id = x_user_id.strip()
+    
     # 1. 현재 진행 중인 배경 작업 확인
     # [Watchdog] 5분 이상 종료되지 않은 비정상 태스크 강제 제거
     stale_threshold = 300  # 5 minutes

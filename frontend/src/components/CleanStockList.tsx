@@ -8,6 +8,8 @@ export interface CleanStockItem {
     price: string;
     change: string; // "+1.5%" or "-0.2%" or "0%"
     change_price?: string; // Optional absolute change value
+    isRealtime?: boolean;
+    unit?: string;
     // [New] Verification Badge
     badge?: {
         label: string;

@@ -55,7 +55,7 @@ def get_latest_briefing(user_id: str) -> Dict[str, Any]:
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "SELECT briefing_json, created_at FROM morning_briefings WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+            "SELECT briefing_json, datetime(created_at, '+9 hours') as created_at_kst FROM morning_briefings WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
             (user_id,)
         )
         row = cursor.fetchone()
@@ -87,31 +87,38 @@ def should_generate_new_briefing(user_id: str) -> bool:
         conn.close()
 
 def get_today_briefing_timeline(user_id: str) -> list:
-    """오늘(KST) 생성된 모든 브리핑(개인 + SYSTEM)을 최신순으로 조회"""
+    """최근 7일간(KST) 생성된 모든 브리핑(개인 + SYSTEM)을 최신순으로 조회"""
     kst = pytz.timezone('Asia/Seoul')
-    today_str = datetime.now(kst).strftime("%Y-%m-%d")
+    now = datetime.now(kst)
     
     conn = get_db()
     cursor = conn.cursor()
     try:
-        # 본인 데이터와 SYSTEM 데이터를 합쳐서 가져옴
+        from datetime import timedelta
+        # KST 기준 7일 전 날짜 계산
+        seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+        
+        # [Turbo] UTC 데이터를 KST(+9시간)로 보정하여 조회 (시차 문제 해결)
         cursor.execute(
             """
-            SELECT user_id, briefing_json, created_at 
+            SELECT user_id, briefing_json, datetime(created_at, '+9 hours') as created_at_kst
             FROM morning_briefings 
             WHERE (user_id = ? OR user_id = 'SYSTEM') 
-            AND DATE(created_at) = ? 
+            AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
             ORDER BY created_at DESC
             """,
-            (user_id, today_str)
+            (user_id, seven_days_ago)
         )
         rows = cursor.fetchall()
         results = []
         for row in rows:
-            data = json.loads(row[1])
-            data["user_id"] = row[0]
-            data["created_at"] = row[2]
-            results.append(data)
+            try:
+                data = json.loads(row[1])
+                data["user_id"] = row[0]
+                # 날짜 포맷 정규화 (YYYY-MM-DD HH:MM:SS)
+                data["created_at"] = row[2]
+                results.append(data)
+            except: continue
         return results
     finally:
         conn.close()

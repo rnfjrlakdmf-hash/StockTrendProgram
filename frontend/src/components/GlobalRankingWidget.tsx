@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { RefreshCw, TrendingUp, Search, DollarSign, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type MarketType = 'KOSPI' | 'USA';
+type MarketType = 'KOSPI' | 'USA' | 'CHINA' | 'HONG_KONG' | 'JAPAN' | 'VIETNAM';
 type CategoryType = 'trading_volume' | 'trading_amount' | 'popular_search';
 
 interface RankItem {

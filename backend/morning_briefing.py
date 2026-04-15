@@ -167,6 +167,10 @@ def generate_instant_briefing(user_id: str):
         "generated_at": now.isoformat(),
         "is_instant": True
     }
+    # [Zero-Wait] 즉시 리포트 결과를 DB에 보관하여 다음 요청 시 즉시 반환 가능하게 함
+    from utils.briefing_store import save_morning_briefing
+    save_morning_briefing(user_id, briefing)
+    
     return briefing
 
 def generate_user_morning_briefing(user_id: str):
@@ -234,7 +238,7 @@ def generate_user_morning_briefing(user_id: str):
     - **중복 배제**: 각 항목 간 내용이 겹치지 않게 정보를 효율적으로 배치하세요.
     - **모드별 최적화**: 전문가 버전(격식)과 초보자 버전(비유/쉬운 용어)을 각각 생성하세요.
     - **가독성 극대화**: 줄글은 3~4줄 내외로 제한하고 가독성이 좋은 어조를 사용하세요.
-    - **관심종목 맞춤 분석 필수**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 모든 개별 종목에 대해 반드시 `watchlist_briefs` 배열에 분석(insight)을 생성해야 합니다. 특히 종목별로 제공되는 **`turbo_score` (퀀트 모멘텀 점수)**를 활용하여 수치 기반의 신뢰도 높은 인사이트를 제공하세요.
+    - **관심종목 맞춤 분석 [초강력 필수]**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 모든 개별 종목({len(watchlist_details)}개)에 대해 반드시 `watchlist_briefs` 배열에 분석(insight)을 생성해야 합니다. **데이터가 있는데 이 섹션을 비우거나 누락하는 것은 절대로 허용되지 않습니다.** 특히 종목별로 제공되는 **`turbo_score` (퀀트 모멘텀 점수)**를 활용하여 수치 기반의 신뢰도 높은 인사이트를 제공하세요.
     - **투자 자문 금지**: 가격 예측, 수익률 보장, 명시적인 매도/매수 추천 단어는 절대 금지하되, 당일의 객관적인 사실, 차트 동향, 뉴스, 실적, 수급 기반의 실용적인 인사이트만을 제공하세요.
 
     [출력 포맷 (JSON)]
@@ -275,13 +279,10 @@ def generate_user_morning_briefing(user_id: str):
     """
 
     try:
-        # 비동기 실행을 위해 run_in_executor 사용 고려 가능하나 여기서는 단순 호출
         response = generate_with_retry(prompt, json_mode=True)
-        
-        # 텍스트 추출 및 정제
         text = response.text.strip()
         
-        # 마크다운 코드 블록 제거용 정규표현식 (혹시 모를 경우대비)
+        # 마크다운 코드 블록 제거
         if text.startswith("```json"):
             text = text.replace("```json", "", 1).replace("```", "", 1).strip()
         elif text.startswith("```"):
@@ -289,9 +290,22 @@ def generate_user_morning_briefing(user_id: str):
             
         briefing_result = json.loads(text)
         
-        # [Critical Fix] 결과가 딕셔너리가 아닌 문자열일 경우 대응
         if not isinstance(briefing_result, dict):
             raise ValueError(f"AI returned unexpected format: {type(briefing_result)}")
+
+        # [Fallback] 만약 AI가 관심종목 분석을 누락했거나 빈 배열을 반환한 경우, 수동으로 채워 넣음
+        if watchlist_details and (not briefing_result.get("watchlist_briefs") or len(briefing_result.get("watchlist_briefs", [])) == 0):
+            log_debug(f"AI omitted watchlist_briefs. Applying automatic fallback for {len(watchlist_details)} stocks.")
+            briefing_result["watchlist_briefs"] = []
+            for item in watchlist_details:
+                price = item.get('price', '-')
+                name = item.get('name', item.get('symbol', '알 수 없는 종목'))
+                briefing_result["watchlist_briefs"].append({
+                    "symbol": item.get('symbol'),
+                    "name": name,
+                    "insight": f"현재 {price}원 부근에서 흐름을 보이고 있으며, AI가 실시간 기술적 분석을 수집 중입니다.",
+                    "simple_insight": f"지금 {price}원이에요. 자세한 내용은 곧 요약해 드릴게요!"
+                })
             
         # 메타데이터 추가
         briefing_result["user_id"] = user_id

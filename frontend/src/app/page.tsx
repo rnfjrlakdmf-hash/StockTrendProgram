@@ -9,7 +9,7 @@ import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
 import GlobalRankingWidget from "@/components/GlobalRankingWidget";
 
-import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';

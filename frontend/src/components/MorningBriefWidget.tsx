@@ -41,6 +41,7 @@ interface MorningBriefData {
     generated_at: string;
     user_id?: string;
     is_instant?: boolean;
+    created_at?: string;
 }
 
 const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
@@ -76,15 +77,31 @@ const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
 
 export default function MorningBriefWidget() {
     const { user, isLoading: authLoading } = useAuth();
-    const [timeline, setTimeline] = useState<MorningBriefData[]>([]);
+    
+    // [Zero-Wait] 로컬 스토리지에서 이전 타임라인 데이터 즉시 로드
+    const [timeline, setTimeline] = useState<MorningBriefData[]>(() => {
+        if (typeof window !== 'undefined') {
+            const cached = localStorage.getItem('morning_brief_timeline');
+            if (cached) {
+                try { return JSON.parse(cached); } catch { return []; }
+            }
+        }
+        return [];
+    });
+
     const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    
+    // [Zero-Wait] 로컬 데이터가 있으면 스켈레톤을 생략하고 즉시 렌더링
+    const [isInitialLoading, setIsInitialLoading] = useState(() => {
+        return timeline.length === 0;
+    });
+
     const [isUpdating, setIsUpdating] = useState(false);
     const [isSimpleMode, setIsSimpleMode] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
-    const [updateStep, setUpdateStep] = useState(0); // 0: Idle, 1: Scanning, 2: Analyzing, 3: Finalizing
-    const [loadingTimer, setLoadingTimer] = useState(0); // [Emergency] 로딩 타이머 추가
-    const [showTimeoutError, setShowTimeoutError] = useState(false); // [Emergency] 타임아웃 에러 상태
+    const [updateStep, setUpdateStep] = useState(0); 
+    const [loadingTimer, setLoadingTimer] = useState(0); 
+    const [selectedDate, setSelectedDate] = useState<string>(""); // [History] 선택된 날짜 (YYYY-MM-DD)
 
     const fetchData = async (isInitial = false) => {
         if (!user) return;
@@ -107,6 +124,9 @@ export default function MorningBriefWidget() {
             const timelineJson = await timelineRes.json();
             if (timelineJson.status === "success" && timelineJson.data) {
                 setTimeline(timelineJson.data);
+                // [Zero-Wait] 로컬 스토리지에 최신 데이터 백업
+                localStorage.setItem('morning_brief_timeline', JSON.stringify(timelineJson.data));
+                
                 if (timelineJson.data.length > 0 && Object.keys(expandedIds).length === 0) {
                     const firstId = timelineJson.data[0]?.generated_at;
                     if (firstId) setExpandedIds({ [firstId]: true });
@@ -197,8 +217,13 @@ export default function MorningBriefWidget() {
                 headers: { "X-User-ID": user.id }
             });
             const json = await res.json();
-            if (json.status === "success") {
-                await fetchData();
+            if (json.status === "success" && json.data) {
+                setTimeline(prev => {
+                    // [Zero-Wait] 배경 동기화 성공 시 로컬 스토리지와 상태를 모두 업데이트
+                    localStorage.setItem('morning_brief_timeline', JSON.stringify(json.data));
+                    return json.data;
+                });
+                setIsUpdating(false);
             } else {
                 alert(json.message || "되돌릴 수 없습니다.");
                 setIsUpdating(false);
@@ -222,8 +247,28 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const latestPersonal = (timeline || []).find(b => b.user_id !== 'SYSTEM') || {
-        market_title: "시장 상황을 실시간으로 분석 중입니다...",
+    // [History] 타임라인 데이터를 날짜별로 그룹화하고 사용 가능한 날짜 목록 추출
+    const availableDates = (Array.from(new Set(
+        (timeline || []).map(b => b.created_at?.split(' ')[0] || b.created_at?.split('T')[0])
+    )).filter(Boolean) as string[]).sort().reverse();
+
+    // 초기 로드 시 가장 최신 날짜 자동 선택
+    useEffect(() => {
+        if (!selectedDate && availableDates.length > 0) {
+            setSelectedDate(availableDates[0]);
+        }
+    }, [availableDates]);
+
+    // 선택된 날짜에 해당하는 데이터만 필터링
+    const filteredTimeline = (timeline || []).filter(b => {
+        const itemDate = b.created_at?.split(' ')[0] || b.created_at?.split('T')[0];
+        return itemDate === selectedDate;
+    });
+
+    const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') || {
+        market_title: selectedDate === new Date().toISOString().split('T')[0] 
+            ? "시장 상황을 실시간으로 분석 중입니다..." 
+            : `${selectedDate} 데이터가 없습니다.`,
         summary_bullets: ["데이터를 불러오는 중입니다...", "잠시만 기다려 주세요."],
         sections: [],
         watchlist_briefs: []
@@ -250,9 +295,10 @@ export default function MorningBriefWidget() {
         if (isInitialLoading) {
             interval = setInterval(() => {
                 setLoadingTimer(prev => {
-                    if (prev >= 20) { // 20초 초과 시 타임아웃 에러 노출
-                        setShowTimeoutError(true);
-                        return prev;
+                    if (prev >= 20) { 
+                        // [Auto-Recovery] 20초 경과 시 사용자가 버튼을 누르지 않아도 자동으로 강제 복구 로직 실행
+                        handleEmergencyReset();
+                        return 0;
                     }
                     return prev + 1;
                 });
@@ -267,28 +313,10 @@ export default function MorningBriefWidget() {
         setIsInitialLoading(false);
         setIsUpdating(false);
         setLoadingTimer(0);
-        setShowTimeoutError(false);
         fetchData();
     };
 
     if (authLoading || (isInitialLoading && timeline.length === 0)) {
-        if (showTimeoutError) {
-            return (
-                <div className="flex flex-col items-center justify-center p-20 bg-red-500/5 rounded-[3.5rem] border border-red-500/10">
-                    <Zap className="w-16 h-16 text-red-500 mb-6 animate-pulse" />
-                    <h4 className="text-2xl font-black text-white mb-2">분석이 너무 오래 걸리고 있습니다</h4>
-                    <p className="text-white/40 mb-10 text-center">서버 연결이 불안정하거나 데이터 수집에 지연이 발생했습니다.</p>
-                    <div className="flex gap-4">
-                        <button onClick={handleEmergencyReset} className="px-8 py-4 bg-red-600 text-white font-black rounded-2xl shadow-xl shadow-red-600/30 active:scale-95 transition-transform">
-                            화면 강제 복구하기
-                        </button>
-                        <button onClick={() => window.location.reload()} className="px-8 py-4 bg-white/10 text-white font-black rounded-2xl active:scale-95 transition-transform">
-                            새로고침
-                        </button>
-                    </div>
-                </div>
-            );
-        }
         return <BriefingSkeleton />;
     }
 
@@ -344,6 +372,29 @@ export default function MorningBriefWidget() {
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
+                                {/* [History] 날짜 선택 드롭다운 */}
+                                {availableDates.length > 0 && (
+                                    <div className="relative">
+                                        <select 
+                                            value={selectedDate}
+                                            onChange={(e) => {
+                                                setSelectedDate(e.target.value);
+                                                // 날짜 변경 시 첫 번째 항목 펼치기 초기화
+                                                setExpandedIds({});
+                                            }}
+                                            className="appearance-none bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-bold pl-4 pr-10 py-2.5 rounded-2xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                        >
+                                            {availableDates.map(date => {
+                                                const d = new Date(date);
+                                                const formatted = `${d.getMonth() + 1}월 ${d.getDate()}일 (${['일','월','화','수','목','금','토'][d.getDay()]})`;
+                                                return <option key={date} value={date} className="bg-slate-900">{formatted}</option>;
+                                            })}
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                )}
                                 <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-black tracking-widest uppercase">
                                     NAVER STYLE AI INSIGHT
                                 </span>
@@ -459,49 +510,51 @@ export default function MorningBriefWidget() {
 
                     {/* RIGHT COLUMN: MARKET LOG TIMELINE */}
                     <div className="w-full xl:w-[35%] bg-black/30 p-7 md:p-10 flex flex-col gap-10">
-                        <div className="flex items-center gap-3">
-                            <Globe className="w-5 h-5 text-gray-500" />
-                            <h3 className="text-lg font-black text-gray-400 uppercase tracking-tighter">실시간 시장 히스토리</h3>
+                        <div className="flex items-center gap-3 shrink-0">
+                            <Globe className="w-5 h-5 text-gray-400" />
+                            <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter">실시간 시장 히스토리</h3>
                         </div>
 
-                        <div className="relative space-y-10 pl-6 md:pl-10">
-                            <div className="absolute left-1 md:left-2 top-3 bottom-0 w-[2px] bg-gradient-to-b from-blue-500/40 via-purple-500/20 to-transparent"></div>
+                        {/* [UI Fix] 히스토리 영역 스크롤 및 컴팩트 레이아웃 적용 */}
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-3 custom-scrollbar max-h-[600px]">
+                            <div className="relative space-y-4 pl-7 md:pl-9">
+                                <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1.5px] bg-gradient-to-b from-blue-500/40 via-purple-500/10 to-transparent"></div>
 
-                             {(timeline || []).map((brief, idx) => {
-                                 const date = brief?.generated_at ? new Date(brief.generated_at) : new Date();
-                                 const timeLabel = brief?.generated_at ? `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}` : "00:00";
-                                 const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : false;
+                             {(filteredTimeline && filteredTimeline.length > 0) ? filteredTimeline.map((brief, idx) => {
+                                 const date = brief?.created_at ? new Date(brief.created_at) : new Date();
+                                 const timeLabel = brief?.created_at ? `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}` : "00:00";
+                                 const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : (idx === 0);
                                  const isSystem = brief?.user_id === 'SYSTEM';
 
                                 return (
                                     <div key={idx} className="relative group animate-in fade-in slide-in-from-right duration-500">
-                                        <div className={`absolute -left-[1.45rem] md:-left-[1.7rem] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-black z-10 ${idx === 0 ? 'bg-blue-400 scale-125' : 'bg-gray-700 group-hover:bg-gray-500'}`}></div>
+                                        <div className={`absolute -left-[1.55rem] md:-left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-black z-10 ${idx === 0 ? 'bg-blue-400 ring-4 ring-blue-500/20' : 'bg-gray-700 group-hover:bg-gray-500'}`}></div>
                                         
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-xs font-black ${idx === 0 ? 'text-blue-400' : 'text-gray-500'}`}>{timeLabel}</span>
-                                                    <span className={`text-[9px] px-2 py-0.5 rounded border border-white/5 font-black uppercase tracking-tighter ${isSystem ? 'bg-gray-500/10 text-gray-500' : 'bg-blue-500/10 text-blue-400'}`}>
+                                                    <span className={`text-[10px] font-black ${idx === 0 ? 'text-blue-400' : 'text-gray-500'}`}>{timeLabel}</span>
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded border border-white/5 font-black uppercase tracking-tighter ${isSystem ? 'bg-gray-500/10 text-gray-500' : 'bg-blue-500/10 text-blue-400'}`}>
                                                         {isSystem ? 'Global' : 'My'}
                                                     </span>
                                                 </div>
-                                                <button onClick={() => toggleExpand(brief.generated_at)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-500">
-                                                    {isExpanded ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+                                                <button onClick={() => brief.generated_at && toggleExpand(brief.generated_at)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-gray-500">
+                                                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
                                                 </button>
                                             </div>
 
                                             <div 
-                                                className={`p-5 rounded-[1.5rem] border transition-all ${isExpanded ? 'bg-white/5 border-white/10 shadow-xl' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] cursor-pointer'}`}
-                                                onClick={() => !isExpanded && toggleExpand(brief.generated_at)}
+                                                className={`p-4 rounded-[1.25rem] border transition-all ${isExpanded ? 'bg-white/5 border-white/10 shadow-xl' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] cursor-pointer'}`}
+                                                onClick={() => !isExpanded && brief.generated_at && toggleExpand(brief.generated_at)}
                                             >
-                                                <h5 className={`text-sm md:text-base font-bold text-gray-200 leading-snug tracking-tight ${!isExpanded ? 'line-clamp-2' : ''}`}>{brief.market_title}</h5>
+                                                <h5 className={`text-[13px] md:text-sm font-bold text-gray-200 leading-snug tracking-tight ${!isExpanded ? 'line-clamp-2' : ''}`}>{brief.market_title}</h5>
                                                 
                                                 {isExpanded && (
-                                                    <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                    <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
                                                         {(isSimpleMode && brief.simple_summary_bullets ? brief.simple_summary_bullets : brief.summary_bullets).slice(0, 3).map((b, i) => (
-                                                            <div key={i} className="flex items-start gap-3">
-                                                                <div className="w-1 h-1 rounded-full bg-blue-500/60 mt-2 shrink-0"></div>
-                                                                <p className="text-[11px] text-gray-400 leading-relaxed font-medium">{b}</p>
+                                                            <div key={i} className="flex items-start gap-2.5">
+                                                                <div className="w-1 h-1 rounded-full bg-blue-500/60 mt-1.5 shrink-0"></div>
+                                                                <p className="text-[10px] text-gray-400 leading-relaxed font-medium">{b}</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -510,11 +563,32 @@ export default function MorningBriefWidget() {
                                         </div>
                                     </div>
                                 );
-                            })}
+                            }) : (
+                                <div className="py-20 text-center">
+                                    <p className="text-gray-500 text-sm italic">기록이 없습니다.</p>
+                                </div>
+                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {/* Custom Scrollbar Styles */}
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+            `}</style>
         </div>
     );
 }
