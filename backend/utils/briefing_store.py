@@ -101,7 +101,9 @@ def get_today_briefing_timeline(user_id: str) -> list:
         # [Turbo] UTC 데이터를 KST(+9시간)로 보정하여 조회 (시차 문제 해결)
         cursor.execute(
             """
-            SELECT user_id, briefing_json, datetime(created_at, '+9 hours') as created_at_kst
+            SELECT user_id, briefing_json, 
+                   datetime(created_at, '+9 hours') as created_at_kst,
+                   strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
             FROM morning_briefings 
             WHERE (user_id = ? OR user_id = 'SYSTEM') 
             AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
@@ -117,6 +119,7 @@ def get_today_briefing_timeline(user_id: str) -> list:
                 data["user_id"] = row[0]
                 # 날짜 포맷 정규화 (YYYY-MM-DD HH:MM:SS)
                 data["created_at"] = row[2]
+                data["kst_date"] = row[3]
                 results.append(data)
             except: continue
         return results

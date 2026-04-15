@@ -249,7 +249,7 @@ export default function MorningBriefWidget() {
 
     // [History] 타임라인 데이터를 날짜별로 그룹화하고 사용 가능한 날짜 목록 추출
     const availableDates = (Array.from(new Set(
-        (timeline || []).map(b => b.created_at?.split(' ')[0] || b.created_at?.split('T')[0])
+        (timeline || []).map(b => b.kst_date || b.created_at?.split(' ')[0] || b.created_at?.split('T')[0])
     )).filter(Boolean) as string[]).sort().reverse();
 
     // 초기 로드 시 가장 최신 날짜 자동 선택
@@ -261,7 +261,7 @@ export default function MorningBriefWidget() {
 
     // 선택된 날짜에 해당하는 데이터만 필터링
     const filteredTimeline = (timeline || []).filter(b => {
-        const itemDate = b.created_at?.split(' ')[0] || b.created_at?.split('T')[0];
+        const itemDate = b.kst_date || b.created_at?.split(' ')[0] || b.created_at?.split('T')[0];
         return itemDate === selectedDate;
     });
 
