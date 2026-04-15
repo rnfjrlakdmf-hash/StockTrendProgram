@@ -530,16 +530,17 @@ export default function MorningBriefWidget() {
                                                 
                                                 <div className="space-y-3">
                                                     {/* AI가 분류한 뉴스 데이터 렌더링 (분석 배제) */}
-                                                    {(item?.insight || "").split('\n').filter(line => line.trim()).map((line, li) => {
-                                                        const isGood = line.includes('[호재');
-                                                        const isBad = line.includes('[주의') || line.includes('[악재');
+                                                    {(item?.insight || "").split('\n').filter(line => line && line.trim()).map((line, li) => {
+                                                        const cleanLine = line.trim();
+                                                        const isGood = cleanLine.includes('[호재');
+                                                        const isBad = cleanLine.includes('[주의') || cleanLine.includes('[악재');
                                                         
                                                         return (
-                                                            <div key={li} className="flex gap-2.5 items-start animate-in fade-in slide-in-from-right duration-500" style={{ animationDelay: `${li * 100}ms` }}>
+                                                            <div key={`${item.symbol}-${li}`} className="flex gap-2.5 items-start animate-in fade-in slide-in-from-right duration-500" style={{ animationDelay: `${li * 50}ms` }}>
                                                                 {isGood && <span className="shrink-0 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[9px] font-black border border-blue-500/20">호재</span>}
                                                                 {isBad && <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 text-[9px] font-black border border-rose-500/20">주의</span>}
-                                                                <p className={`text-[12px] leading-relaxed font-medium ${isGood || isBad ? 'text-gray-300' : 'text-gray-500 italic'}`}>
-                                                                    {line.replace(/\[호재성 소식\]|\[주의\/악재성 소식\]|\[호재\]|\[주의\]|\[악재\]/g, '').trim()}
+                                                                <p className={`text-[12px] leading-relaxed font-medium ${isGood || isBad ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                                    {cleanLine.replace(/\[호재성 소식\]|\[주의\/악재성 소식\]|\[호재\]|\[주의\]|\[악재\]/g, '').trim()}
                                                                 </p>
                                                             </div>
                                                         );
