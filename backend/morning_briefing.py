@@ -183,7 +183,8 @@ def generate_instant_briefing(user_id: str):
         "disclaimer": "본 데이터는 실시간 시세 정보를 바탕으로 한 즉시 리포트이며, 정밀 분석은 잠시 후 제공됩니다.",
         "user_id": user_id,
         "generated_at": now.isoformat(),
-        "is_instant": True
+        "is_instant": True,
+        "category": "MARKET" # 즉시 리포트는 기본적으로 시장 요약
     }
     # [Zero-Wait] 즉시 리포트 결과 반환 (저장은 호출측인 main.py에서 담당하도록 일원화)
     return briefing
@@ -234,8 +235,8 @@ def generate_user_morning_briefing(user_id: str):
 
     # 프롬프트 구성
     prompt = f"""
-    당신은 {user_name} 회원님만을 위한 전담 'AI 수석 투자 전략가'입니다. 
-    오늘 아침({now.strftime('%Y-%m-%d %H:%M')}) 시장 상황과 회원님의 핵심 관심종목 리서치 결과를 분석한 프라이빗 보고서를 작성하세요.
+    당신은 {user_name} 회원님만을 위한 'AI 뉴스 데이터 큐레이터'입니다. 
+    오늘({now.strftime('%Y-%m-%d %H:%M')}) 시장 데이터와 관심종목의 뉴스를 [호재성]과 [주의/악재성] 팩트로 분류하여 제공하세요.
 
     [회원 정보]
     - 회원 성함: {user_name} 님
@@ -245,16 +246,14 @@ def generate_user_morning_briefing(user_id: str):
     2. 시장 컨텍스트(뉴스/일정): {json.dumps(market_context, ensure_ascii=False)}
     3. 회원님 관심종목 리얼타임 데이터: {json.dumps(watchlist_details, ensure_ascii=False)}
 
-    [작성 가이드라인 - 필독 및 엄수]
-    - **네이버 AI 브리핑 스타일**: 이용자들이 '편하게' 볼 수 있도록 구조화하세요.
-        - **Headline**: 전체 시장의 핵심을 관통하는 하나의 파워풀한 헤드라인을 작성하세요.
-        - **Summary Bullets**: 상단 '요약' 박스에 들어갈 핵심 포인트 3가지를 아주 간결하게 작성하세요.
-        - **Sections**: 시장 분석, 수급 동향, 핵심 테마/업종 이슈 등 주제별로 섹션을 나누세요. 각 섹션은 이모지와 제목으로 시작합니다.
-    - **중복 배제**: 각 항목 간 내용이 겹치지 않게 정보를 효율적으로 배치하세요.
-    - **모드별 최적화**: 전문가 버전(격식)과 초보자 버전(비유/쉬운 용어)을 각각 생성하세요.
-    - **가독성 극대화**: 줄글은 3~4줄 내외로 제한하고 가독성이 좋은 어조를 사용하세요.
-    - **관심종목 맞춤 분석 [초강력 필수]**: 입력 데이터 3번에 제공된 '회원님 관심종목 리얼타임 데이터'에 나열된 모든 개별 종목({len(watchlist_details)}개)에 대해 반드시 `watchlist_briefs` 배열에 분석(insight)을 생성해야 합니다. **데이터가 있는데 이 섹션을 비우거나 누락하는 것은 절대로 허용되지 않습니다.** 특히 종목별로 제공되는 **`turbo_score` (퀀트 모멘텀 점수)**를 활용하여 수치 기반의 신뢰도 높은 인사이트를 제공하세요.
-    - **투자 자문 금지**: 가격 예측, 수익률 보장, 명시적인 매도/매수 추천 단어는 절대 금지하되, 당일의 객관적인 사실, 차트 동향, 뉴스, 실적, 수급 기반의 실용적인 인사이트만을 제공하세요.
+    [준수 사항]
+    1. 주관적 분석 금지: 당신의 의견이나 투자 전략을 절대 작성하지 마세요.
+    2. 판단은 이용자가: 당신은 오직 뉴스를 [호재성]과 [주의/악재성]으로 기계적으로 분류(Tagging)만 하세요.
+    3. 투자 권유 단어 차단: "매수", "매도", "추천" 등의 단어는 절대 금지됩니다.
+
+    [가이드 요약]
+    - Headline: 시장 팩트 중심 한 줄 요약.
+    - 내 종목 뉴스 분류: {len(watchlist_details)}개의 관심종목별 뉴스를 [호재성 소식]과 [주의/악재성 소식]으로 나누어 나열.
 
     [출력 포맷 (JSON)]
     {{
@@ -322,7 +321,21 @@ def generate_user_morning_briefing(user_id: str):
                     "simple_insight": f"지금 {price}원이에요. 자세한 내용은 곧 요약해 드릴게요!"
                 })
             
-        # 메타데이터 추가
+        # 4. 카테고리 결정 (Naver Style)
+        category = "MARKET"
+        if watchlist_details:
+            # 주요 종목 변동성이 크거나 뉴스가 많으면 WATCHLIST
+            category = "WATCHLIST"
+        
+        # [Special] 공시 정보가 우세하거나 제목에 공시가 있으면 DISCLOSURE
+        if "공시" in briefing_result.get("market_title", ""):
+            category = "DISCLOSURE"
+        
+        # 시스템 자동 생성인 경우 PERIODIC (1시간 주기) 강조
+        if user_id == 'SYSTEM':
+            category = "PERIODIC"
+
+        briefing_result["category"] = category
         briefing_result["user_id"] = user_id
         briefing_result["generated_at"] = now.isoformat()
         

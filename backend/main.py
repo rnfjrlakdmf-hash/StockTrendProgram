@@ -2,7 +2,50 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Header
 from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, TypeVar, Generic
 import unicodedata
-# [Deployment Trigger] v3.6.13-Unified-Core - 2026-04-14
+from datetime import datetime, timedelta
+
+def run_periodic_briefing_bg():
+    """매 시 정각마다 SYSTEM(공용) 및 활성 유저 브리핑을 자동 생성하는 백그라운드 워커"""
+    print("[PeriodicBrief] Starting Hourly Market Briefing Worker...")
+    while True:
+        try:
+            now = datetime.now()
+            # 정각(00분 00초)으로 설정 (서버 부하 분산을 위해 10초 정도 여유)
+            next_hour = (now + timedelta(hours=1)).replace(minute=0, second=10, microsecond=0)
+            wait_seconds = (next_hour - now).total_seconds()
+            
+            if wait_seconds > 0:
+                print(f"[PeriodicBrief] Waiting {int(wait_seconds/60)}m until next briefing at {next_hour}")
+                time.sleep(wait_seconds)
+            
+            print("[PeriodicBrief] Triggering periodic market briefing (SYSTEM)...")
+            from morning_briefing import generate_user_morning_briefing
+            
+            # 1. SYSTEM 브리핑 (공통 시장 요약)
+            try:
+                generate_user_morning_briefing('SYSTEM')
+                print("[PeriodicBrief] SYSTEM briefing saved successfully.")
+            except Exception as e:
+                print(f"[PeriodicBrief] SYSTEM Generation error: {e}")
+
+            # 2. [Active User Warmer] 활성 유저 예열 (예: 최근 24시간 내 접속 유저)
+            try:
+                from db_manager import get_all_users
+                all_users = get_all_users()
+                print(f"[PeriodicBrief] Warming up {len(all_users)} potential active users...")
+                for u in all_users:
+                    uid = u.get('id')
+                    if uid and uid != 'SYSTEM':
+                        generate_user_morning_briefing(uid)
+                        time.sleep(3) # API Rate Limit 및 부하 방지
+            except Exception as e:
+                print(f"[PeriodicBrief] User Warmer error: {e}")
+                
+        except Exception as e:
+            print(f"[PeriodicBrief] Loop error: {e}")
+            time.sleep(60)
+
+# [Deployment Trigger] v3.6.14-PA-Periodic - 2026-04-14
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { 
     Coffee, ChevronRight, Newspaper, Activity, Sparkles, Loader2, 
     AlertCircle, CalendarDays, Clock, ChevronDown, ChevronUp, Bot,
-    UserCircle2, Globe, TrendingUp, Zap, Info, RotateCcw
+    UserCircle2, Globe, TrendingUp, Zap, Info, RotateCcw,
+    Star, FileText
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
@@ -50,8 +51,8 @@ const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
     const min = Math.min(...data);
     const max = Math.max(...data);
     const range = max - min || 1;
-    const width = 60;
-    const height = 24;
+    const width = 80; // 크기 확대 (60 -> 80)
+    const height = 32; // 크기 확대 (24 -> 32)
     
     const points = data.map((d, i) => ({
         x: (i / (data.length - 1)) * width,
@@ -62,14 +63,21 @@ const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
     
     return (
         <svg width={width} height={height} className="overflow-visible">
+            <defs>
+                <filter id={`glow-${up ? 'red' : 'blue'}`} x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
             <path 
                 d={path} 
                 fill="none" 
                 stroke={up ? "#f87171" : "#60a5fa"} 
-                strokeWidth="2" 
+                strokeWidth="2.5" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
-                className="drop-shadow-[0_0_4px_rgba(248,113,113,0.3)]"
+                filter={`url(#glow-${up ? 'red' : 'blue'})`}
+                className={`transition-all duration-1000 ${up ? 'drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]'}`}
             />
         </svg>
     );
@@ -346,23 +354,52 @@ export default function MorningBriefWidget() {
             )}
             <div className={`w-full bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden flex flex-col transition-all duration-700 ${isUpdating ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                 
-                {/* 1. Market Index Bar (Naver Style with Sparklines) */}
-                <div className="px-10 py-6 bg-white/[0.02] border-b border-white/5 flex items-center gap-10 overflow-x-auto no-scrollbar">
-                    {marketIndices.map((idx, i) => (
-                        <div key={i} className="flex items-center gap-4 shrink-0 group">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">{idx.label}</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg font-black text-white tabular-nums">{idx.value}</span>
-                                    <span className={`text-[11px] font-bold ${idx.up ? 'text-red-400' : 'text-blue-400'}`}>{idx.change}</span>
+                {/* 1. Market Index Ticker (Premium Naver Style) */}
+                <div className="relative w-full bg-white/[0.02] border-b border-white/5 overflow-hidden group">
+                    <style jsx>{`
+                        @keyframes ticker {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-50%); }
+                        }
+                        .ticker-content {
+                            display: flex;
+                            width: max-content;
+                            animation: ticker 60s linear infinite;
+                        }
+                        .ticker-content:hover {
+                            animation-play-state: paused;
+                        }
+                    `}</style>
+                    
+                    <div className="ticker-content py-6 flex items-center gap-10">
+                        {/* 무한 루프를 위해 리스트를 두 번 반복하여 렌더링 */}
+                        {[...marketIndices, ...marketIndices].map((idx, i) => (
+                            <div key={i} className="flex items-center gap-6 px-10 border-r border-white/5 last:border-none group/item">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 group-hover/item:text-emerald-500 transition-colors">{idx.label}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xl font-black text-white tabular-nums tracking-tighter">{idx.value}</span>
+                                        <div className={`flex items-center gap-1 text-[12px] font-black ${idx.up ? 'text-red-400' : 'text-blue-400'}`}>
+                                            <span>{idx.up ? '▲' : '▼'}</span>
+                                            <span>{idx.change}</span>
+                                        </div>
+                                    </div>
                                 </div>
+                                {idx.sparkline && (
+                                    <div className={`opacity-50 group-hover/item:opacity-100 transition-opacity ${idx.up ? 'drop-shadow-[0_0_8px_rgba(248,113,113,0.2)]' : 'drop-shadow-[0_0_8px_rgba(96,165,250,0.2)]'}`}>
+                                        <Sparkline data={idx.sparkline} up={idx.up} />
+                                    </div>
+                                )}
                             </div>
-                            {idx.sparkline && <Sparkline data={idx.sparkline} up={idx.up} />}
+                        ))}
+                    </div>
+
+                    {/* Status Badge Overlaid on Ticker */}
+                    <div className="absolute right-0 top-0 bottom-0 flex items-center pr-10 bg-gradient-to-l from-black/80 via-black/40 to-transparent pointer-events-none">
+                        <div className="flex items-center gap-2 text-[9px] bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-full font-black border border-emerald-500/20 backdrop-blur-sm">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isUpdating ? 'bg-blue-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`} /> 
+                            {isUpdating ? 'LIVE SYNC' : 'ACTIVE'}
                         </div>
-                    ))}
-                    <div className="ml-auto flex items-center gap-2 text-[10px] bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full font-black border border-emerald-500/20">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isUpdating ? 'bg-blue-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`} /> 
-                        {isUpdating ? '실시간 브리핑 동기화 중(Turbo)' : '실시간 데이터 동기화 완료'}
                     </div>
                 </div>
 
@@ -476,100 +513,155 @@ export default function MorningBriefWidget() {
                                     </div>
                                 </div>
 
-                                {/* Watchlist Insight Cards */}
+                                {/* Watchlist News Intelligence Cards */}
                                 {latestPersonal?.watchlist_briefs && (
-                                    <div className="grid sm:grid-cols-2 gap-5">
+                                    <div className="grid sm:grid-cols-2 gap-6">
                                         {latestPersonal.watchlist_briefs.map((item, i) => (
-                                            <div key={i} className="group p-6 bg-white/5 border border-white/10 rounded-3xl hover:border-blue-500/30 transition-all">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="font-black text-white text-lg tracking-tight group-hover:text-blue-200">{item?.name || "종목명 확인 중"}</span>
-                                                    <TrendingUp className="w-4 h-4 text-gray-700 group-hover:text-blue-500 transition-colors" />
+                                            <div key={i} className="group p-7 bg-white/5 border border-white/10 rounded-[2rem] hover:border-emerald-500/30 transition-all shadow-xl">
+                                                <div className="flex items-center justify-between mb-5">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-white text-xl tracking-tight group-hover:text-emerald-200">{item?.name || "종목명 확인 중"}</span>
+                                                        <span className="text-[10px] text-gray-500 font-mono tracking-widest">{item?.symbol}</span>
+                                                    </div>
+                                                    <div className="p-2.5 bg-emerald-500/10 rounded-2xl">
+                                                        <TrendingUp className="w-5 h-5 text-emerald-500/50 group-hover:text-emerald-400 transition-colors" />
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm text-gray-400 leading-relaxed font-medium">
-                                                    {isSimpleMode && item?.simple_insight ? item.simple_insight : (item?.insight || "데이터 분석 중입니다.")}
-                                                </p>
+                                                
+                                                <div className="space-y-3">
+                                                    {/* AI가 분류한 뉴스 데이터 렌더링 (분석 배제) */}
+                                                    {(item?.insight || "").split('\n').filter(line => line.trim()).map((line, li) => {
+                                                        const isGood = line.includes('[호재');
+                                                        const isBad = line.includes('[주의') || line.includes('[악재');
+                                                        
+                                                        return (
+                                                            <div key={li} className="flex gap-2.5 items-start animate-in fade-in slide-in-from-right duration-500" style={{ animationDelay: `${li * 100}ms` }}>
+                                                                {isGood && <span className="shrink-0 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[9px] font-black border border-blue-500/20">호재</span>}
+                                                                {isBad && <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 text-[9px] font-black border border-rose-500/20">주의</span>}
+                                                                <p className={`text-[12px] leading-relaxed font-medium ${isGood || isBad ? 'text-gray-300' : 'text-gray-500 italic'}`}>
+                                                                    {line.replace(/\[호재성 소식\]|\[주의\/악재성 소식\]|\[호재\]|\[주의\]|\[악재\]/g, '').trim()}
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-20 bg-white/[0.02] rounded-[3rem] border border-dashed border-white/10">
-                                <Zap className="w-12 h-12 text-gray-700 mb-4 animate-pulse" />
-                                <h4 className="text-xl font-bold text-gray-500">맞춤 분석 리포트를 생성할 수 없습니다.</h4>
-                                <button onClick={generateNow} className="mt-8 px-10 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20">수동 생성 시도하기</button>
+                            <div className="flex flex-col items-center justify-center py-24 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10">
+                                <Bot className="w-14 h-14 text-white/5 mb-6 animate-pulse" />
+                                <h4 className="text-xl font-bold text-gray-600">개인 맞춤 인텔리전스를 수집 중입니다.</h4>
+                                <p className="text-xs text-gray-700 mt-2">잠시만 기다려 주시거나 아래 버튼을 클릭하세요.</p>
+                                <button onClick={generateNow} className="mt-8 px-12 py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-black rounded-[2rem] border border-emerald-500/30 transition-all shadow-2xl">즉시 데이터 수집하기</button>
                             </div>
                         )}
                         
-                        {/* Legal */}
+                        {/* Advisory Compliance Disclaimer */}
                         {latestPersonal && (
-                             <div className="pt-8 border-t border-white/5 opacity-50 flex items-start gap-4">
-                                <Info className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
-                                <p className="text-[10px] text-gray-600 leading-relaxed italic">{latestPersonal?.disclaimer || "AI 분석 결과는 투자 참고용이며 최종 책임은 투자자 본인에게 있습니다."}</p>
+                             <div className="pt-10 border-t border-white/5 flex items-start gap-4">
+                                <AlertCircle className="w-4 h-4 text-rose-500/40 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-600 font-bold leading-relaxed">준법 고지 및 면책 조항 (Investment Advisory Compliance)</p>
+                                    <p className="text-[9px] text-gray-700 leading-relaxed italic">본 리포트는 AI 큐레이션 엔진이 수집된 다량의 뉴스 데이터를 기계적으로 분류한 결과입니다. 서비스 제공자는 특정 종목의 매칭 결과에 대해 주관적인 투자 전략이나 수익률 보장을 제공하지 않으며, 모든 투자 판단의 최종 책임은 사용자 본인에게 있습니다.</p>
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* RIGHT COLUMN: MARKET LOG TIMELINE */}
+                    {/* RIGHT COLUMN: MARKET LOG TIMELINE (Naver Style) */}
                     <div className="w-full xl:w-[35%] bg-black/30 p-7 md:p-10 flex flex-col gap-10">
                         <div className="flex items-center gap-3 shrink-0">
                             <Globe className="w-5 h-5 text-gray-400" />
                             <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter">실시간 시장 히스토리</h3>
                         </div>
 
-                        {/* [UI Fix] 히스토리 영역 스크롤 및 컴팩트 레이아웃 적용 */}
                         <div className="flex-1 min-h-0 overflow-y-auto pr-3 custom-scrollbar max-h-[600px]">
-                            <div className="relative space-y-4 pl-7 md:pl-9">
-                                <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1.5px] bg-gradient-to-b from-blue-500/40 via-purple-500/10 to-transparent"></div>
+                            <div className="relative space-y-2 pl-7 md:pl-9">
+                                {/* Vertical Timeline Line */}
+                                <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1px] bg-gradient-to-b from-emerald-500/40 via-white/5 to-transparent"></div>
 
-                             {(filteredTimeline && filteredTimeline.length > 0) ? filteredTimeline.map((brief, idx) => {
-                                 const date = brief?.created_at ? new Date(brief.created_at) : new Date();
-                                 const timeLabel = brief?.created_at ? `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}` : "00:00";
-                                 const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : (idx === 0);
-                                 const isSystem = brief?.user_id === 'SYSTEM';
-
-                                return (
-                                    <div key={idx} className="relative group animate-in fade-in slide-in-from-right duration-500">
-                                        <div className={`absolute -left-[1.55rem] md:-left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-black z-10 ${idx === 0 ? 'bg-blue-400 ring-4 ring-blue-500/20' : 'bg-gray-700 group-hover:bg-gray-500'}`}></div>
-                                        
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-[10px] font-black ${idx === 0 ? 'text-blue-400' : 'text-gray-500'}`}>{timeLabel}</span>
-                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded border border-white/5 font-black uppercase tracking-tighter ${isSystem ? 'bg-gray-500/10 text-gray-500' : 'bg-blue-500/10 text-blue-400'}`}>
-                                                        {isSystem ? 'Global' : 'My'}
-                                                    </span>
-                                                </div>
-                                                <button onClick={() => brief.generated_at && toggleExpand(brief.generated_at)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-gray-500">
-                                                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
-                                                </button>
+                                {(filteredTimeline && filteredTimeline.length > 0) ? filteredTimeline.map((brief, idx) => {
+                                    const date = brief?.created_at ? new Date(brief.created_at) : new Date();
+                                    // 정기 브리핑(PERIODIC)은 정각 단위로 표시 (분 생략)
+                                    const timeLabel = brief.category === 'PERIODIC' 
+                                        ? `${date.getHours()}:00` 
+                                        : `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                                    const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : (idx === 0);
+                                    
+                                    return (
+                                        <div key={idx} className="relative group animate-in fade-in slide-in-from-right duration-500">
+                                            {/* Naver Style Dot */}
+                                            <div className={`absolute -left-[1.65rem] md:-left-[2.05rem] top-2.5 w-2.5 h-2.5 rounded-full border-2 border-black z-10 transition-colors
+                                                ${idx === 0 ? 'bg-emerald-400 ring-4 ring-emerald-400/10' : 'bg-gray-700 group-hover:bg-gray-500'}`}>
                                             </div>
-
-                                            <div 
-                                                className={`p-4 rounded-[1.25rem] border transition-all ${isExpanded ? 'bg-white/5 border-white/10 shadow-xl' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] cursor-pointer'}`}
-                                                onClick={() => !isExpanded && brief.generated_at && toggleExpand(brief.generated_at)}
-                                            >
-                                                <h5 className={`text-[13px] md:text-sm font-bold text-gray-200 leading-snug tracking-tight ${!isExpanded ? 'line-clamp-2' : ''}`}>{brief.market_title}</h5>
-                                                
-                                                {isExpanded && (
-                                                    <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                                                        {(isSimpleMode && brief.simple_summary_bullets ? brief.simple_summary_bullets : brief.summary_bullets).slice(0, 3).map((b, i) => (
-                                                            <div key={i} className="flex items-start gap-2.5">
-                                                                <div className="w-1 h-1 rounded-full bg-blue-500/60 mt-1.5 shrink-0"></div>
-                                                                <p className="text-[10px] text-gray-400 leading-relaxed font-medium">{b}</p>
-                                                            </div>
-                                                        ))}
+                                            
+                                            <div className="space-y-2 pb-6">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[11px] font-bold font-mono ${idx === 0 ? 'text-emerald-400' : 'text-gray-500'}`}>{timeLabel}</span>
+                                                        
+                                                        {/* [Naver Badge System] */}
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-black tracking-tight
+                                                            ${brief.category === 'PERIODIC' ? 'bg-gray-800 text-gray-400 border border-gray-700' :
+                                                              brief.category === 'WATCHLIST' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                                              brief.category === 'DISCLOSURE' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                                              'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                                            {brief.category === 'PERIODIC' ? '정기 브리핑' :
+                                                             brief.category === 'WATCHLIST' ? '관심종목' :
+                                                             brief.category === 'DISCLOSURE' ? '주요공시' : '시장요약'}
+                                                        </span>
                                                     </div>
-                                                )}
+                                                    <button onClick={() => brief.generated_at && toggleExpand(brief.generated_at)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors text-gray-600 hover:text-gray-400">
+                                                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
+                                                    </button>
+                                                </div>
+
+                                                <div 
+                                                    className={`p-4 rounded-xl border transition-all duration-300
+                                                        ${isExpanded ? 'bg-white/[0.04] border-white/10 shadow-2xl' : 'bg-white/[0.01] border-white/5 hover:border-white/10 cursor-pointer'}`}
+                                                    onClick={() => !isExpanded && brief.generated_at && toggleExpand(brief.generated_at)}
+                                                >
+                                                    <div className="flex gap-3">
+                                                        {/* Category Specific Icons */}
+                                                        <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border
+                                                            ${brief.category === 'PERIODIC' ? 'bg-gray-800/50 border-gray-700 text-gray-400' :
+                                                              brief.category === 'WATCHLIST' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                                              brief.category === 'DISCLOSURE' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                                                              'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                                                            {brief.category === 'PERIODIC' ? <Clock className="w-4 h-4" /> :
+                                                             brief.category === 'WATCHLIST' ? <Star className="w-4 h-4" /> :
+                                                             brief.category === 'DISCLOSURE' ? <FileText className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h5 className={`text-[13px] font-bold text-gray-200 leading-snug tracking-tight ${!isExpanded ? 'line-clamp-1' : ''}`}>
+                                                                {brief.market_title}
+                                                            </h5>
+                                                            
+                                                            {isExpanded && (
+                                                                <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                                                                    {(isSimpleMode && brief.simple_summary_bullets ? brief.simple_summary_bullets : brief.summary_bullets).map((b, i) => (
+                                                                        <div key={i} className="flex items-start gap-2.5 group/item">
+                                                                            <div className="w-1 h-1 rounded-full bg-blue-500/40 mt-1.5 shrink-0 group-hover/item:bg-blue-400 transition-colors"></div>
+                                                                            <p className="text-[11px] text-gray-400 leading-relaxed font-medium group-hover/item:text-gray-300 transition-colors">{b}</p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+                                    );
+                                }) : (
+                                    <div className="py-20 text-center">
+                                        <p className="text-gray-500 text-sm italic">기록이 없습니다.</p>
                                     </div>
-                                );
-                            }) : (
-                                <div className="py-20 text-center">
-                                    <p className="text-gray-500 text-sm italic">기록이 없습니다.</p>
-                                </div>
-                            )}
+                                )}
                             </div>
                         </div>
                     </div>

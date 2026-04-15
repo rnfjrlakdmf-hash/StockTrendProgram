@@ -910,6 +910,7 @@ def get_market_data():
                  url = f"https://m.stock.naver.com/api/exchange/{idx['naver_code']}/basic"
             
             res = requests.get(url, timeout=3)
+            res.encoding = 'utf-8' # 인코딩 명시적 설정
             sparkline = []
             
             if res.status_code == 200:
