@@ -44,7 +44,7 @@ export default function WatchlistPage() {
         if (!user) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
             if (json.status === "success" && json.data.length > 0) {
@@ -105,7 +105,7 @@ export default function WatchlistPage() {
         setCbLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/watchlist/cb-alerts`, {
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
             if (json.status === "success") {
@@ -178,7 +178,7 @@ export default function WatchlistPage() {
         try {
             await fetch(`${API_BASE_URL}/api/watchlist/${symbol}`, {
                 method: "DELETE",
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid }
             });
             setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
         } catch (e) {
@@ -269,7 +269,7 @@ export default function WatchlistPage() {
                                         if (token) {
                                             await fetch(`${API_BASE_URL}/api/fcm/register`, {
                                                 method: 'POST',
-                                                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id },
+                                                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id || (user as any).uid },
                                                 body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
                                             });
                                             alert("✅ 설정 완료!");

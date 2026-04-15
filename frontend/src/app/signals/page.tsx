@@ -913,7 +913,7 @@ function VoteTab() {
         if (!user) return;
         setVoting(true);
         try {
-            const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-Id": user.id }, body: JSON.stringify({ direction: dir }) });
+            const r = await fetch(`${API_BASE_URL}/api/votes/${sym}`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-Id": user.id || (user as any).uid }, body: JSON.stringify({ direction: dir }) });
             const j = await r.json();
             if (j.status === "success") { setVoteResults(j.results); setUserVote(dir); }
         } catch { } finally { setVoting(false); }

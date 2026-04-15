@@ -1475,7 +1475,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             }
             try {
                 const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                    headers: { "X-User-ID": user.id }
+                    headers: { "X-User-ID": user.id || (user as any).uid }
                 });
 
                 // [Fix] Check response status

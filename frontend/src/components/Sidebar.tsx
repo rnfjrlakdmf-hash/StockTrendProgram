@@ -162,7 +162,7 @@ export default function Sidebar() {
             }
             try {
                 const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                    headers: { "X-User-ID": user.id }
+                    headers: { "X-User-ID": user.id || (user as any).uid }
                 });
                 const json = await res.json();
                 if (json.status === "success") {
