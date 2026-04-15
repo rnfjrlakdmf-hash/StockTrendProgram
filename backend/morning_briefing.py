@@ -49,35 +49,53 @@ def _collect_raw_data(user_id: str):
         
         def fetch_symbol_info_parallel(symbol):
             try:
-                # 시세, 뉴스, 공시를 동시에 가져오기 위해 내부 실행
-                quote = get_simple_quote(symbol)
-                news_raw = fetch_google_news(symbol)
+                # [Optimization] 내부 서브 태스크들을 병렬로 처리하여 전체 수집 시간을 최적화
+                from concurrent.futures import ThreadPoolExecutor
+                with ThreadPoolExecutor(max_workers=4) as sub_executor:
+                    f_quote = sub_executor.submit(get_simple_quote, symbol)
+                    f_news = sub_executor.submit(fetch_google_news, symbol)
+                    
+                    def fetch_history_and_score():
+                        try:
+                            from korea_data import get_naver_daily_prices
+                            history = get_naver_daily_prices(symbol)
+                            if history:
+                                prices = [h['close'] for h in reversed(history)]
+                                return turbo_engine.calculate_momentum_score(pd.Series(prices))
+                        except: return None
+                    f_score = sub_executor.submit(fetch_history_and_score)
+                    
+                    f_disclosures = None
+                    if symbol.isdigit() and len(symbol) == 6 or symbol.endswith(('.KS', '.KQ')):
+                        f_disclosures = sub_executor.submit(get_live_disclosures, symbol)
+                    
+                    # 결과 취합 (최대 6초)
+                    quote = None
+                    try: quote = f_quote.result(timeout=5)
+                    except: pass
+                    
+                    news_raw = []
+                    try: news_raw = f_news.result(timeout=5)
+                    except: pass
+                    
+                    score = None
+                    try: score = f_score.result(timeout=4)
+                    except: pass
+                    
+                    disclosures = []
+                    if f_disclosures:
+                        try: disclosures = f_disclosures.result(timeout=4)
+                        except: pass
                 
                 res = {
                     "symbol": symbol,
                     "name": quote.get('name', symbol) if quote else symbol,
                     "price": quote.get('price', 'N/A') if quote else 'N/A',
                     "change": quote.get('change', 'N/A') if quote else 'N/A',
-                    "news": [n.get('title', '') for n in (news_raw[:2] if news_raw else [])]
+                    "news": [n.get('title', '') for n in (news_raw[:2] if news_raw else [])],
+                    "turbo_score": score,
+                    "recent_disclosures": [d.get('title') for d in disclosures[:2]] if disclosures else []
                 }
-                
-                # [TurboQuant] 모멘텀 점수 계산을 위한 과거 데이터 수집
-                try:
-                    from korea_data import get_naver_daily_prices
-                    history = get_naver_daily_prices(symbol)
-                    if history:
-                        prices = [h['close'] for h in reversed(history)]
-                        score = turbo_engine.calculate_momentum_score(pd.Series(prices))
-                        res['turbo_score'] = score
-                except: pass
-
-                # 국내 종목 공시 추가
-                if symbol.isdigit() and len(symbol) == 6 or symbol.endswith(('.KS', '.KQ')):
-                    try:
-                        disclosures = get_live_disclosures(symbol)
-                        if disclosures:
-                            res['recent_disclosures'] = [d.get('title') for d in disclosures[:2]]
-                    except: pass
                 
                 return res
             except Exception as e:

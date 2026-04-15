@@ -1051,49 +1051,65 @@ def get_lounge_sentiment(symbol: str):
     return {"status": "success", "data": {"score": score, "summary": summary}}
 
 @app.get("/api/market/indices")
-@turbo_cache(ttl_seconds=60)
 def read_global_market_indices():
     """
-    [FLIP TICKER] 국내 및 글로벌 주요 지수(KOSPI, KOSDAQ, S&P500, NASDAQ, 환율) 통합 반환
+    [Turbo-Speed] 국내 및 글로벌 주요 지수 통합 반환 (백그라운드 캐시 우선)
     """
+    # 1. 태생적으로 빠른 전역 캐시 확인
+    with market_cache_lock:
+        if GLOBAL_MARKET_CACHE["data"] and (time.time() - GLOBAL_MARKET_CACHE["timestamp"] < 90):
+            return {"status": "success", "data": GLOBAL_MARKET_CACHE["data"], "cached": True}
+
+    # 2. 캐시가 없거나 만료된 경우 (Fallback - 병렬 수집)
     results = []
+    import concurrent.futures
     
-    # 1. 국내 지수 (Scraped from Naver)
-    kr_indices = get_korean_market_indices()
-    if kr_indices:
-        results.append({"name": "KOSPI", "value": kr_indices["kospi"]["value"], "change": kr_indices["kospi"]["change"], "percent": kr_indices["kospi"]["percent"], "direction": kr_indices["kospi"]["direction"]})
-        results.append({"name": "KOSDAQ", "value": kr_indices["kosdaq"]["value"], "change": kr_indices["kosdaq"]["change"], "percent": kr_indices["kosdaq"]["percent"], "direction": kr_indices["kosdaq"]["direction"]})
-        
-    # 2. 글로벌 지수 (YFinance - optimized background check)
-    global_symbols = {
-        "S&P 500": "^GSPC",
-        "NASDAQ": "^IXIC",
-        "USD/KRW": "KRW=X"
-    }
-    
-    import yfinance as yf
-    for name, sym in global_symbols.items():
+    def fetch_global_yf(name, sym):
         try:
+            import yfinance as yf
             ticker = yf.Ticker(sym)
             info = ticker.fast_info
             curr = info.last_price
             prev = info.previous_close
             diff = curr - prev
             pct = (diff / prev * 100) if prev else 0
-            
             direction = "Up" if diff > 0 else "Down" if diff < 0 else "Equal"
-            
-            results.append({
+            return {
                 "name": name,
                 "value": f"{curr:,.2f}" if "KRW" not in name else f"{curr:,.1f}",
                 "change": f"{diff:+,.2f}" if "KRW" not in name else f"{diff:+,.1f}",
                 "percent": f"{pct:+.2f}%",
                 "direction": direction
-            })
-        except:
-            continue
+            }
+        except: return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        # 국내 지수 & 해외 지수 병렬 시작
+        f_kr = executor.submit(get_korean_market_indices)
+        global_symbols = {"S&P 500": "^GSPC", "NASDAQ": "^IXIC", "USD/KRW": "KRW=X"}
+        f_globals = [executor.submit(fetch_global_yf, name, sym) for name, sym in global_symbols.items()]
+        
+        # 결과 취합 (최대 3초 대기)
+        try:
+            kr_indices = f_kr.result(timeout=3)
+            if kr_indices:
+                results.append({"name": "KOSPI", "value": kr_indices["kospi"]["value"], "change": kr_indices["kospi"]["change"], "percent": kr_indices["kospi"]["percent"], "direction": kr_indices["kospi"]["direction"]})
+                results.append({"name": "KOSDAQ", "value": kr_indices["kosdaq"]["value"], "change": kr_indices["kosdaq"]["change"], "percent": kr_indices["kosdaq"]["percent"], "direction": kr_indices["kosdaq"]["direction"]})
+        except: pass
+        
+        for f in f_globals:
+            try:
+                res = f.result(timeout=3)
+                if res: results.append(res)
+            except: pass
             
-    return {"status": "success", "data": results}
+    # 업데이트된 결과 캐시에 저장
+    if results:
+        with market_cache_lock:
+            GLOBAL_MARKET_CACHE["data"] = results
+            GLOBAL_MARKET_CACHE["timestamp"] = time.time()
+            
+    return {"status": "success", "data": results, "cached": False}
 
 @app.get("/api/korea/indices")
 def read_korea_indices():
@@ -1704,13 +1720,21 @@ def read_korea_disclosure(symbol: str):
 import json
 import os
 
-# Dashboard Cache
+# Dashboard & Global Market Cache
 dashboard_cache = {
     "data": None,
     "timestamp": 0
 }
 CACHE_DURATION = 5 # seconds
 CACHE_FILE_PATH = "dashboard_cache.json"
+
+# [Turbo-Speed] Global Market Index Cache (Thread-safe)
+GLOBAL_MARKET_CACHE = {
+    "data": None,
+    "timestamp": 0
+}
+import threading
+market_cache_lock = threading.Lock()
 
 
 def ranking_bg_looper():
@@ -1742,6 +1766,14 @@ def ranking_bg_looper():
                 from major_indicators import get_major_economic_indicators
                 get_major_economic_indicators(refresh=True)
             except: pass
+                
+            # 4. [New] 글로벌 시장 지수 백그라운드 캐싱 (Warmer)
+            try:
+                # API 함수를 직접 호출하여 캐시 갱신
+                read_global_market_indices()
+                print("[Warmer] Global Market Indices Updated in background.")
+            except Exception as e:
+                print(f"[Warmer] Error: {e}")
                 
         except Exception as e:
             print(f"Ranking Background Update Error: {e}")
