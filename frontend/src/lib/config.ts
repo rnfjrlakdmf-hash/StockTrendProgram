@@ -22,8 +22,8 @@ if (process.env.NEXT_PUBLIC_API_URL) {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             apiBase = "http://localhost:8000";
         } else {
-            // [Fix] Production Backend URL (Railway - Specific App)
-            // Always prioritize the official production backend to avoid Vercel 404/HTML issue
+            // [Fix] Production Backend URL (Railway)
+            // 브라우저에서 Vercel 도메인으로 API를 요청하여 404가 발생하는 현상 수정
             apiBase = "https://stocktrendprogram-production.up.railway.app";
         }
     }
