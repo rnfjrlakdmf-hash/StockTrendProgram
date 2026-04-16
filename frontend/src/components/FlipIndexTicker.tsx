@@ -63,7 +63,7 @@ export default function FlipIndexTicker() {
 
     useEffect(() => {
         fetchIndices();
-        const interval = setInterval(fetchIndices, 30000); 
+        const interval = setInterval(fetchIndices, 10000); 
         return () => clearInterval(interval);
     }, []);
 
