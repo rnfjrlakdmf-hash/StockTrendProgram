@@ -208,14 +208,18 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // [History] 최근 7일간의 날짜 목록 자동 생성 (지정된 일주일 달력 활성화)
+    // [History] 최근 7일간의 날짜 목록 자동 생성 (KST 로컬 시간 기준)
     const availableDates = (() => {
         const dates = [];
         const kstNow = new Date();
         for (let i = 0; i < 7; i++) {
             const d = new Date(kstNow);
             d.setDate(d.getDate() - i);
-            dates.push(d.toISOString().split('T')[0]);
+            // toISOString()은 UTC 기준이므로 자정 근처에서 날짜가 어긋남. 로컬 포맷 사용.
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dates.push(`${year}-${month}-${day}`);
         }
         return dates;
     })();
