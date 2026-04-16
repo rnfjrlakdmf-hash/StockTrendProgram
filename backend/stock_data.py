@@ -947,22 +947,16 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
 def get_market_data():
     """주요 지수, 매크로 지표 및 주도주 데이터 수집 (장중 고가/저가 및 스파크라인 포함)"""
     indices = [
-        # 주요 지표 (상단 티커 및 리포트 공통)
-        {"symbol": "^KS11", "label": "KOSPI", "naver_code": "KOSPI"},
-        {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ"},
-        {"symbol": "^IXIC", "label": "NASDAQ", "naver_code": "NAS@IXIC"},
-        {"symbol": "^GSPC", "label": "S&P 500", "naver_code": "SPI@SPX"},
-        {"symbol": "^DJI", "label": "DOW JONES", "naver_code": "DJI@DJI"},
-        {"symbol": "USDKRW=X", "label": "USD/KRW", "naver_code": "FX_USDKRW"},
-        
-        # 매크로 및 글로벌 (리포트용 심층 데이터)
-        {"symbol": "^TNX", "label": "US 10Y Yield", "naver_code": "US10Y"}, 
-        {"symbol": "^VIX", "label": "VIX Index", "naver_code": "VIX"},
-        {"symbol": "DX-Y.NYB", "label": "DXY Index", "naver_code": "DXY"},
-        {"symbol": "CL=F", "label": "WTI Oil", "naver_code": "OIL_WTI"},
-        {"symbol": "GC=F", "label": "Gold", "naver_code": "GOLD"},
-        {"symbol": "^GDAXI", "label": "DAX (Ger)", "naver_code": "DAX"},
-        {"symbol": "^FCHI", "label": "CAC40 (Fra)", "naver_code": "CAC40"},
+        {"symbol": "^KS11", "label": "KOSPI", "naver_code": "KOSPI", "icon": "🇰🇷"},
+        {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ", "icon": "🇰🇷"},
+        {"symbol": "^IXIC", "label": "NASDAQ", "naver_code": "NAS@IXIC", "icon": "🇺🇸"},
+        {"symbol": "^GSPC", "label": "S&P 500", "naver_code": "SPI@SPX", "icon": "🇺🇸"},
+        {"symbol": "USDKRW=X", "label": "USD/KRW", "naver_code": "FX_USDKRW", "icon": "💵"},
+        {"symbol": "^TNX", "label": "미 10년 국채금리", "naver_code": "US10Y", "icon": "📉"}, 
+        {"symbol": "CL=F", "label": "WTI 유가", "naver_code": "OIL_WTI", "icon": "🛢️"},
+        {"symbol": "GC=F", "label": "금 시세", "naver_code": "GOLD", "icon": "💰"},
+        {"symbol": "^VIX", "label": "VIX Index", "naver_code": "VIX", "icon": "⚠️"},
+        {"symbol": "DX-Y.NYB", "label": "달러인덱스", "naver_code": "DXY", "icon": "🌐"},
     ]
     
     results = []
@@ -1003,6 +997,7 @@ def get_market_data():
                 
                 return {
                     "label": idx["label"],
+                    "icon": idx.get("icon", ""),
                     "value": f"{float(price):,.2f}",
                     "change": f"{float(pct):+.2f}%",
                     "up": float(pct) >= 0,
@@ -1024,6 +1019,7 @@ def get_market_data():
             
             return {
                 "label": idx["label"],
+                "icon": idx.get("icon", ""),
                 "value": f"{p:,.2f}",
                 "change": f"{chg:+.2f}%",
                 "up": chg >= 0,

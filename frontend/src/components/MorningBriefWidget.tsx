@@ -349,7 +349,8 @@ export default function MorningBriefWidget() {
                         .ticker-content {
                             display: flex;
                             width: max-content;
-                            animation: ticker 60s linear infinite;
+                            animation: ticker 50s linear infinite;
+                            will-change: transform;
                         }
                         .ticker-content:hover {
                             animation-play-state: paused;
@@ -359,9 +360,12 @@ export default function MorningBriefWidget() {
                     <div className="ticker-content py-6 flex items-center gap-10">
                         {/* 무한 루프를 위해 리스트를 두 번 반복하여 렌더링 */}
                         {[...marketIndices, ...marketIndices].map((idx, i) => (
-                            <div key={i} className="flex items-center gap-6 px-10 border-r border-white/5 last:border-none group/item">
+                            <div key={i} className="flex items-center gap-6 px-12 border-r border-white/5 last:border-none group/item">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 group-hover/item:text-emerald-500 transition-colors">{idx.label}</span>
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <span className="text-[14px] leading-none">{idx.icon}</span>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/item:text-emerald-500 transition-colors">{idx.label}</span>
+                                    </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xl font-black text-white tabular-nums tracking-tighter">{idx.value}</span>
                                         <div className={`flex items-center gap-1 text-[12px] font-black ${idx.up ? 'text-red-400' : 'text-blue-400'}`}>
