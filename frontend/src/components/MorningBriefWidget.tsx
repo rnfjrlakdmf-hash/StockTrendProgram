@@ -68,7 +68,7 @@ export default function MorningBriefWidget() {
     const [loadingTimer, setLoadingTimer] = useState(0); 
     const [selectedDate, setSelectedDate] = useState<string>(""); // [History] 선택된 날짜 (YYYY-MM-DD)
 
-    const fetchData = async (isInitial = false) => {
+    const fetchTimeline = async (isInitial = false) => {
         if (!user) return;
         if (isInitial && timeline.length === 0) setIsInitialLoading(true);
         
@@ -133,7 +133,7 @@ export default function MorningBriefWidget() {
                 } else {
                     setIsUpdating(false);
                     setUpdateStep(0);
-                    await fetchData();
+                    await fetchTimeline();
                 }
             }
         } catch (err) {
@@ -196,7 +196,7 @@ export default function MorningBriefWidget() {
     useEffect(() => {
         if (!authLoading && user) {
             const init = async () => {
-                await fetchData(true); // 데이터 즉시 로드 (Blocking minimal)
+                await fetchTimeline(true); // 데이터 즉시 로드 (Blocking minimal)
                 syncBriefing();        // 최신화는 배경에서 (Non-blocking)
             };
             init();
@@ -273,7 +273,7 @@ export default function MorningBriefWidget() {
         setIsInitialLoading(false);
         setIsUpdating(false);
         setLoadingTimer(0);
-        fetchData();
+        fetchTimeline();
     };
 
     // [UX Optimization] 만약 로컬 캐시 데이터(timeline)가 이미 있다면, 
