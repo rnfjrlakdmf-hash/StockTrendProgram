@@ -120,15 +120,15 @@ def get_today_briefing_timeline(user_id: str) -> list:
         # KST 기준 7일 전 날짜 계산
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # [Turbo] UTC 데이터를 KST(+9시간)로 보정하여 조회 (시차 문제 해결)
+        # [Fix] 데이터가 이미 KST로 저장되므로 +9 hours 보정 제거
         cursor.execute(
             """
             SELECT user_id, briefing_json, 
-                   datetime(created_at, '+9 hours') as created_at_kst,
-                   strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
+                   created_at as created_at_kst,
+                   strftime('%Y-%m-%d', created_at) as kst_date
             FROM morning_briefings 
             WHERE (user_id = ? OR user_id = 'SYSTEM') 
-            AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
+            AND strftime('%Y-%m-%d', created_at) >= ? 
             ORDER BY created_at DESC
             """,
             (user_id, seven_days_ago)

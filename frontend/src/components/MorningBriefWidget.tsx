@@ -230,10 +230,20 @@ export default function MorningBriefWidget() {
         
         // 2. 스마트 뷰: 선택된 날짜가 가장 최신 날짜이고, 해당 항목이 선택된 날짜 바로 직전(24시간 내)이라면 포함
         if (availableDates.length > 0 && selectedDate === availableDates[0]) {
-            const now = new Date();
-            const itemTime = new Date(b.created_at || "");
-            const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
-            return diffHours <= 24; // 최근 24시간 이내 기록은 날짜 상관없이 포함
+            try {
+                const now = new Date();
+                // "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DDTHH:MM:SS" (ISO 호환)
+                const isoStr = (b.created_at || "").replace(" ", "T");
+                const itemTime = new Date(isoStr);
+                
+                // 유효한 날짜인 경우에만 계산
+                if (!isNaN(itemTime.getTime())) {
+                    const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
+                    return diffHours <= 24;
+                }
+            } catch (e) {
+                console.error("Date parsing error:", e);
+            }
         }
         
         return false;
