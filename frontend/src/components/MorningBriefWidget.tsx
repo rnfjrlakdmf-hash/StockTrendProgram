@@ -17,13 +17,6 @@ interface BriefingSection {
     content: string;
 }
 
-interface MarketIndex {
-    label: string;
-    value: string;
-    change: string;
-    up: boolean;
-    sparkline?: number[];
-}
 
 interface MorningBriefData {
     market_title: string;
@@ -45,43 +38,6 @@ interface MorningBriefData {
     created_at?: string;
 }
 
-const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
-    if (!data || data.length < 2) return <div className="w-12 h-6 bg-white/5 rounded" />;
-    
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const width = 80; // 크기 확대 (60 -> 80)
-    const height = 32; // 크기 확대 (24 -> 32)
-    
-    const points = data.map((d, i) => ({
-        x: (i / (data.length - 1)) * width,
-        y: height - ((d - min) / range) * height
-    }));
-    
-    const path = `M ${points.map(p => `${p.x},${p.y}`).join(" L ")}`;
-    
-    return (
-        <svg width={width} height={height} className="overflow-visible">
-            <defs>
-                <filter id={`glow-${up ? 'red' : 'blue'}`} x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="2" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-            </defs>
-            <path 
-                d={path} 
-                fill="none" 
-                stroke={up ? "#f87171" : "#60a5fa"} 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                filter={`url(#glow-${up ? 'red' : 'blue'})`}
-                className={`transition-all duration-1000 ${up ? 'drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]'}`}
-            />
-        </svg>
-    );
-};
 
 export default function MorningBriefWidget() {
     const { user, isLoading: authLoading } = useAuth();
@@ -97,7 +53,7 @@ export default function MorningBriefWidget() {
         return [];
     });
 
-    const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([]);
+
     const [marketStatus, setMarketStatus] = useState<any>(null);
     
     // [Zero-Wait] 로컬 데이터가 있으면 스켈레톤을 생략하고 즉시 렌더링
@@ -117,18 +73,12 @@ export default function MorningBriefWidget() {
         if (isInitial && timeline.length === 0) setIsInitialLoading(true);
         
         try {
-            // [Zero-Wait Step 1] 지표 및 기존 타임라인 즉시 로드 (1초 내 완료)
-            const [indexRes, timelineRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/market/indices`),
+            // [Zero-Wait Step 1] 기존 타임라인 즉시 로드 (1초 내 완료)
+            const [timelineRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/ai/briefing-timeline`, {
                     headers: { "X-User-ID": user.id || (user as any).uid }
                 })
             ]);
-
-            const indexJson = await indexRes.json();
-            if (indexJson.status === "success" && indexJson.data) {
-                setMarketIndices(indexJson.data);
-            }
 
             const timelineJson = await timelineRes.json();
             if (timelineJson.status === "success" && timelineJson.data) {
@@ -339,58 +289,7 @@ export default function MorningBriefWidget() {
             {/* Turbo Progress Overlay (Removed per user request) */}
             <div className={`w-full bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden flex flex-col transition-all duration-700 ${isUpdating ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                 
-                {/* 1. Market Index Ticker (Premium Naver Style) */}
-                <div className="relative w-full bg-white/[0.02] border-b border-white/5 overflow-hidden group">
-                    <style jsx>{`
-                        @keyframes ticker {
-                            0% { transform: translateX(0); }
-                            100% { transform: translateX(-50%); }
-                        }
-                        .ticker-content {
-                            display: flex;
-                            width: max-content;
-                            animation: ticker 50s linear infinite;
-                            will-change: transform;
-                        }
-                        .ticker-content:hover {
-                            animation-play-state: paused;
-                        }
-                    `}</style>
-                    
-                    <div className="ticker-content py-6 flex items-center gap-10">
-                        {/* 무한 루프를 위해 리스트를 두 번 반복하여 렌더링 */}
-                        {[...marketIndices, ...marketIndices].map((idx, i) => (
-                            <div key={i} className="flex items-center gap-6 px-12 border-r border-white/5 last:border-none group/item">
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                        <span className="text-[14px] leading-none">{idx.icon}</span>
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/item:text-emerald-500 transition-colors">{idx.label}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xl font-black text-white tabular-nums tracking-tighter">{idx.value}</span>
-                                        <div className={`flex items-center gap-1 text-[12px] font-black ${idx.up ? 'text-red-400' : 'text-blue-400'}`}>
-                                            <span>{idx.up ? '▲' : '▼'}</span>
-                                            <span>{idx.change}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {idx.sparkline && (
-                                    <div className={`opacity-50 group-hover/item:opacity-100 transition-opacity ${idx.up ? 'drop-shadow-[0_0_8px_rgba(248,113,113,0.2)]' : 'drop-shadow-[0_0_8px_rgba(96,165,250,0.2)]'}`}>
-                                        <Sparkline data={idx.sparkline} up={idx.up} />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
 
-                    {/* Status Badge Overlaid on Ticker */}
-                    <div className="absolute right-0 top-0 bottom-0 flex items-center pr-10 bg-gradient-to-l from-black/80 via-black/40 to-transparent pointer-events-none">
-                        <div className="flex items-center gap-2 text-[9px] bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-full font-black border border-emerald-500/20 backdrop-blur-sm">
-                            <div className={`w-1.5 h-1.5 rounded-full ${isUpdating ? 'bg-blue-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`} /> 
-                            {isUpdating ? 'LIVE SYNC' : 'ACTIVE'}
-                        </div>
-                    </div>
-                </div>
 
                 {/* 2. Header Area */}
                 <div className="relative p-7 md:p-10 bg-gradient-to-r from-blue-600/10 via-purple-600/5 to-transparent border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">

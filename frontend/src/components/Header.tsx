@@ -6,6 +6,7 @@ import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCh
 import { useEffect, useRef } from 'react';
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import FlipIndexTicker from "@/components/FlipIndexTicker";
 
 
 
@@ -108,6 +109,11 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
 
                 {/* Navigation moved to Sidebar */}
+                
+                {/* [New] Re-activated Premium Scrolling Ticker (Yellow Circle Area) */}
+                <div className="hidden lg:flex flex-1 items-center justify-center max-w-4xl mx-8">
+                    <FlipIndexTicker />
+                </div>
             </div>
 
 
