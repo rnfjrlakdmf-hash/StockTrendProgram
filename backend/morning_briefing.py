@@ -231,12 +231,21 @@ def generate_user_morning_briefing(user_id: str):
         except:
             pass
 
-    index_summary = ", ".join(index_list) if index_list else "현재 시장 데이터를 수집 중입니다."
+    from stock_data import get_market_status_info
+    
+    # [Market Status Check] 고도화된 시간 판별 로직 적용
+    ms_info = get_market_status_info()
+    market_status_text = f"{ms_info['text']} (KST {ms_info['current_time_kst']})"
+    avoid_words = "마감, 마쳤습니다, 종가, 끝났습니다" if ms_info['can_trade_regular'] else ""
 
     # 프롬프트 구성
     prompt = f"""
     당신은 {user_name} 회원님만을 위한 'AI 뉴스 데이터 큐레이터'입니다. 
     오늘({now.strftime('%Y-%m-%d %H:%M')}) 시장 데이터와 관심종목의 뉴스를 [호재성]과 [주의/악재성] 팩트로 분류하여 제공하세요.
+
+    [현재 시장 정보]
+    - 시간 상태: {market_status_text}
+    - 정규장 운영 여부: {'거래 중' if ms_info['can_trade_regular'] else '종료/대기'}
 
     [회원 정보]
     - 회원 성함: {user_name} 님
@@ -250,10 +259,12 @@ def generate_user_morning_briefing(user_id: str):
     1. 주관적 분석 금지: 당신의 의견이나 투자 전략을 절대 작성하지 마세요.
     2. 판단은 이용자가: 당신은 오직 뉴스를 [호재성]과 [주의/악재성]으로 기계적으로 분류(Tagging)만 하세요.
     3. 투자 권유 단어 차단: "매수", "매도", "추천" 등의 단어는 절대 금지됩니다.
+    4. 매크로 인사이트 강화: 시장 지표(금리, 유가, VIX 등)의 변화가 회원님의 관심종목이나 전체 시장에 미치는 영향을 전문 용어("위험선호", "헤지 수요", "밸류에이션 부담" 등)를 사용하여 설명하세요.
+    5. 표현 주의: 현재 시장 상태가 '{market_status_text}'임을 인지하세요. {"만약 장중이라면 '" + avoid_words + "'와 같은 '종료'를 의미하는 단어를 절대 사용하지 마세요. 대신 '상승세', '기록 중', '거래 중' 등의 표현을 사용하세요." if avoid_words else ""}
 
     [가이드 요약]
-    - Headline: 시장 팩트 중심 한 줄 요약.
-    - 내 종목 뉴스 분류: {len(watchlist_details)}개의 관심종목별 뉴스를 [호재성 소식]과 [주의/악재성 소식]으로 나누어 나열.
+    - Headline: 시장 팩트 및 주요 매크로 흐름 중심 한 줄 요약.
+    - 내 종목 뉴스 분류: {len(watchlist_details)}개의 관심종목별 뉴스를 [호재성 소식]과 [주의/악재성 소식]으로 나누어 나열. 지표 변화(금리 등)와의 연관성 포함.
 
     [출력 포맷 (JSON)]
     {{

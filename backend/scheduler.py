@@ -152,13 +152,11 @@ async def hourly_briefing_scheduler_loop():
             now = datetime.now(kst)
             current_hour = now.hour
             
-            # 00시부터 15시까지만 작동
-            if 0 <= current_hour <= 15:
-                # 정각 부근(0~5분 사이)이고, 이번 시간에 아직 실행하지 않았다면 실행
-                if current_hour != last_run_hour and now.minute <= 5:
-                    logger.info(f"[HourlyBrief] Triggering SYSTEM briefing for {current_hour}:00")
-                    await generate_market_wide_briefing()
-                    last_run_hour = current_hour
+            # [24/7 Monitoring] 매 정각(0~5분 사이)마다 SYSTEM 브리핑 생성
+            if current_hour != last_run_hour and now.minute <= 5:
+                logger.info(f"[HourlyBrief] Triggering SYSTEM briefing for {current_hour}:00 KST")
+                await generate_market_wide_briefing()
+                last_run_hour = current_hour
             
             # 1분마다 체크
             await asyncio.sleep(60)

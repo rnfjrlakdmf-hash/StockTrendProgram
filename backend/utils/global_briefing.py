@@ -57,12 +57,25 @@ async def generate_market_wide_briefing():
         if value and value != "N/A":
             index_list.append(f"{label}: {value} ({change})")
     
-    index_summary = ", ".join(index_list) if index_list else "현재 시장 데이터를 수집 중입니다."
+    from stock_data import (
+        get_market_data, get_market_news, get_macro_calendar, 
+        get_dart_risk_alerts, get_market_status_info
+    )
+    
+    # [Market Status Check] 고도화된 시간 판별 로직 적용
+    ms_info = get_market_status_info()
+    market_status_text = f"{ms_info['text']} (KST {ms_info['current_time_kst']})"
+    avoid_words = "마감, 마쳤습니다, 종가, 끝났습니다" if ms_info['can_trade_regular'] else ""
 
     # 프롬프트 구성 (네이버 금융 AI 브리핑 스타일 1:1 벤치마킹)
     prompt = f"""
 당신은 대한민국 최고의 금융 데이터 분석가이자 AI 앵커입니다. 
 네이버 금융(stock.naver.com)의 'AI 브리핑' 수준의 전문적이고 통찰력 있는 리포트를 작성하세요.
+특히 국내 증시(KOSPI, KOSDAQ)뿐만 아니라 해외 증시(나스닥, S&P500 등)의 흐름을 균형 있게 분석하여 투자자에게 유용한 정보를 제공하세요.
+
+[현재 시장 정보]
+- 시간 상태: {market_status_text}
+- 정규장 운영 여부: {'거래 중' if ms_info['can_trade_regular'] else '종료/대기'}
 
 [현재 시장 지표]
 {index_summary}
@@ -71,13 +84,16 @@ async def generate_market_wide_briefing():
 {json.dumps(market_context, ensure_ascii=False)}
 
 [작성 지침 - 중요]
-1. **Headline (market_title)**: 시장의 핵심을 꿰뚫는 강력한 한 줄 헤드라인으로 작성하세요.
-2. **Short Summary (summary_bullets)**: 현재 시장에서 가장 중요한 변곡점 3가지를 '·' 기호로 시작하여 작성하세요.
+1. **Headline (market_title)**: 시장의 핵심(국내외 통합 & 매크로 흐름 반영)을 꿰뚫는 강력한 한 줄 헤드라인으로 작성하세요.
+2. **Short Summary (summary_bullets)**: 현재 국내외 시장에서 가장 중요한 변곡점 3가지를 '·' 기호로 시작하여 작성하세요. (지수 등락뿐만 아니라 금리, 유가 등 거시 경제 지표의 영향력을 우선 포함하세요.)
 3. **Sections (상세 분석)**:
-   - 각 섹션의 'title'은 반드시 **굵은 소제목**(예: ****금리 인하 기대감에 미 증시 반등****) 형태로 작성하세요.
+   - **첫 번째 섹션은 반드시 '글로벌 매크로 인사이트'** 테마로 작성하세요. (예: 미 국채금리 변화와 밸류에이션 영향, 유가/금 변동과 인플레이션/헤지 수요 등)
+   - 각 섹션의 'title'은 반드시 **굵은 소제목**(예: ****미 국채금리 하락에 기술주 밸류에이션 부담 완화****) 형태로 작성하세요.
    - 분석 본문에서 주요 종목 언급 시 반드시 **'종목명 현재가(등락률)'** 형식을 지키세요. (예: 삼성전자 74,500원(+1.2%)).
-   - 전문가 버전(sections)은 논리적이고 깊이 있게, 초보자 버전(simple_sections)은 이해하기 쉬운 비유를 섞어 작성하세요.
-4. **Theme Focus**: 최근 가장 뜨거운 테마와 섹터 흐름을 구체적으로 언급하세요.
+   - 국내 테마와 해외 연관 테마(예: 엔비디아와 국내 반도체 등)를 연결하여 통찰을 제시하세요.
+4. **전문성 강화**: "위험선호(Risk-on)", "헤지 수요", "밸류에이션 부담", "인플레이션 재료" 등 전문 금융 리포트 수준의 용어를 사용하세요.
+5. **Theme Focus**: 최근 가장 뜨거운 테마와 섹터 흐름을 구체적으로 언급하세요.
+5. **표현 주의**: 현재 시장 상태가 '{market_status_text}'임을 인지하세요. {"만약 장중이라면 '" + avoid_words + "'와 같은 '종료'를 의미하는 단어를 절대 사용하지 마세요. 대신 '상승세', '기록 중', '전망' 등의 표현을 사용하세요." if avoid_words else ""}
 
 [출력 포맷 (JSON)]
 {{
@@ -114,6 +130,7 @@ async def generate_market_wide_briefing():
         # 메타데이터 추가
         briefing_result["user_id"] = user_id
         briefing_result["generated_at"] = now.isoformat()
+        briefing_result["category"] = "PERIODIC" # [Naver-Style] 정기 브리핑 태그 부여
         
         # DB 저장
         save_morning_briefing(user_id, briefing_result)

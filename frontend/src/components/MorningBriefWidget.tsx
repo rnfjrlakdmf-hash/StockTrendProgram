@@ -5,7 +5,7 @@ import {
     Coffee, ChevronRight, Newspaper, Activity, Sparkles, Loader2, 
     AlertCircle, CalendarDays, Clock, ChevronDown, ChevronUp, Bot,
     UserCircle2, Globe, TrendingUp, Zap, Info, RotateCcw,
-    Star, FileText
+    Star, FileText, RefreshCw
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
@@ -98,6 +98,7 @@ export default function MorningBriefWidget() {
     });
 
     const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([]);
+    const [marketStatus, setMarketStatus] = useState<any>(null);
     
     // [Zero-Wait] 로컬 데이터가 있으면 스켈레톤을 생략하고 즉시 렌더링
     const [isInitialLoading, setIsInitialLoading] = useState(() => {
@@ -164,6 +165,7 @@ export default function MorningBriefWidget() {
             const json = await res.json();
             
             if (json.status === "success") {
+                if (json.market_status) setMarketStatus(json.market_status);
                 // [Hybrid-Fast] 만약 즉시 리포트(is_instant)가 왔다면, 타임라인에 즉시 반영
                 if (json.is_instant && json.data) {
                     setTimeline(prev => {
@@ -411,29 +413,6 @@ export default function MorningBriefWidget() {
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                {/* [History] 날짜 선택 드롭다운 */}
-                                {availableDates.length > 0 && (
-                                    <div className="relative">
-                                        <select 
-                                            value={selectedDate}
-                                            onChange={(e) => {
-                                                setSelectedDate(e.target.value);
-                                                // 날짜 변경 시 첫 번째 항목 펼치기 초기화
-                                                setExpandedIds({});
-                                            }}
-                                            className="appearance-none bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-bold pl-4 pr-10 py-2.5 rounded-2xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                        >
-                                            {availableDates.map(date => {
-                                                const d = new Date(date);
-                                                const formatted = `${d.getMonth() + 1}월 ${d.getDate()}일 (${['일','월','화','수','목','금','토'][d.getDay()]})`;
-                                                return <option key={date} value={date} className="bg-slate-900">{formatted}</option>;
-                                            })}
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </div>
-                                    </div>
-                                )}
                                 <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-black tracking-widest uppercase">
                                     NAVER STYLE AI INSIGHT
                                 </span>
@@ -572,11 +551,53 @@ export default function MorningBriefWidget() {
                         )}
                     </div>
 
-                    {/* RIGHT COLUMN: MARKET LOG TIMELINE (Naver Style) */}
+                    {/* RIGHT COLUMN: MARKET LOG LOG (Naver Style) */}
                     <div className="w-full xl:w-[35%] bg-black/30 p-7 md:p-10 flex flex-col gap-10">
-                        <div className="flex items-center gap-3 shrink-0">
-                            <Globe className="w-5 h-5 text-gray-400" />
-                            <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter">실시간 시장 히스토리</h3>
+                        <div className="flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <Globe className="w-5 h-5 text-gray-400" />
+                                <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter shadow-sm">실시간 시장 히스토리</h3>
+                                {marketStatus && (
+                                    <div className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-all animate-in fade-in zoom-in duration-500
+                                        ${marketStatus.status === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                                          marketStatus.status === 'CLOSED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 
+                                          'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></div>
+                                        {marketStatus.text}
+                                    </div>
+                                )}
+                            </div>
+                            <button 
+                                onClick={fetchTimeline} 
+                                className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
+                                title="새로고침"
+                            >
+                                <RefreshCw className={`w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+
+                            {/* [History] 날짜 선택 달력 드롭다운 */}
+                            {availableDates.length > 0 && (
+                                <div className="relative ml-2">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all cursor-pointer group/cal">
+                                        <CalendarDays className="w-4 h-4 text-emerald-400" />
+                                        <select 
+                                            value={selectedDate}
+                                            onChange={(e) => {
+                                                setSelectedDate(e.target.value);
+                                                setExpandedIds({});
+                                            }}
+                                            className="appearance-none bg-transparent text-xs font-black text-gray-300 cursor-pointer focus:outline-none pr-4"
+                                        >
+                                            {availableDates.map(date => {
+                                                const d = new Date(date);
+                                                const formatted = `${d.getMonth() + 1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`;
+                                                return <option key={date} value={date} className="bg-slate-900 text-white">{formatted}</option>;
+                                            })}
+                                        </select>
+                                        <ChevronDown className="w-3 h-3 text-gray-500 group-hover/cal:text-white transition-colors absolute right-2 pointer-events-none" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex-1 min-h-0 overflow-y-auto pr-3 custom-scrollbar max-h-[600px]">

@@ -30,6 +30,60 @@ import korea_data
 from risk_analyzer import calculate_analysis_score
 from turbo_engine import turbo_cache
 
+# [Market Status] 한국 증시 운영 시간 및 현재상태 판별 (v1.0)
+def get_market_status_info():
+    """
+    KST 기준 현재 시장 운영 상태를 상세히 판별합니다.
+    - 장전 시간외: 08:30 ~ 09:00
+    - 정규장(장중): 09:00 ~ 15:30
+    - 장후 시간외/단일가: 15:30 ~ 18:00
+    - 장마감: 18:00 ~ 다음날 08:30 및 주말
+    """
+    # KST 기준 시간 설정
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+    current_time = now.hour * 100 + now.minute
+    weekday = now.weekday() # 0:월, 4:금, 5:토, 6:일
+
+    # 기본값
+    status_code = "CLOSED" 
+    status_text = "장마감"
+    is_open = False
+    
+    # 주말 처리
+    if weekday >= 5:
+        return {
+            "status": "CLOSED",
+            "text": "장마감 (주말)",
+            "is_open": False,
+            "can_trade_regular": False
+        }
+
+    # 시간대별 상세 판별
+    if 830 <= current_time < 900:
+        status_code = "PRE_MARKET"
+        status_text = "장전 시간외"
+        is_open = True # 거래 가능 범위 포함
+    elif 900 <= current_time < 1530:
+        status_code = "OPEN"
+        status_text = "장중 (정규장)"
+        is_open = True
+    elif 1530 <= current_time < 1800:
+        status_code = "AFTER_MARKET"
+        status_text = "장후 시간외/단일가"
+        is_open = True
+    else:
+        status_code = "CLOSED"
+        status_text = "정규장 종료"
+        is_open = False
+
+    return {
+        "status": status_code,
+        "text": status_text,
+        "is_open": is_open,
+        "can_trade_regular": (status_code == "OPEN"),
+        "current_time_kst": now.strftime("%H:%M")
+    }
+
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
 STOCK_DATA_CACHE = {}  # {symbol: (data, timestamp)}
@@ -891,13 +945,24 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
 
 
 def get_market_data():
-    """주요 지수 및 트렌딩 종목 데이터 수집 (스파크라인 데이터 포함)"""
+    """주요 지수, 매크로 지표 및 주도주 데이터 수집 (장중 고가/저가 및 스파크라인 포함)"""
     indices = [
+        # 주요 지표 (상단 티커 및 리포트 공통)
         {"symbol": "^KS11", "label": "KOSPI", "naver_code": "KOSPI"},
         {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ"},
         {"symbol": "^IXIC", "label": "NASDAQ", "naver_code": "NAS@IXIC"},
         {"symbol": "^GSPC", "label": "S&P 500", "naver_code": "SPI@SPX"},
+        {"symbol": "^DJI", "label": "DOW JONES", "naver_code": "DJI@DJI"},
         {"symbol": "USDKRW=X", "label": "USD/KRW", "naver_code": "FX_USDKRW"},
+        
+        # 매크로 및 글로벌 (리포트용 심층 데이터)
+        {"symbol": "^TNX", "label": "US 10Y Yield", "naver_code": "US10Y"}, 
+        {"symbol": "^VIX", "label": "VIX Index", "naver_code": "VIX"},
+        {"symbol": "DX-Y.NYB", "label": "DXY Index", "naver_code": "DXY"},
+        {"symbol": "CL=F", "label": "WTI Oil", "naver_code": "OIL_WTI"},
+        {"symbol": "GC=F", "label": "Gold", "naver_code": "GOLD"},
+        {"symbol": "^GDAXI", "label": "DAX (Ger)", "naver_code": "DAX"},
+        {"symbol": "^FCHI", "label": "CAC40 (Fra)", "naver_code": "CAC40"},
     ]
     
     results = []
@@ -910,20 +975,29 @@ def get_market_data():
                  url = f"https://m.stock.naver.com/api/exchange/{idx['naver_code']}/basic"
             
             res = requests.get(url, timeout=3)
-            res.encoding = 'utf-8' # 인코딩 명시적 설정
+            res.encoding = 'utf-8'
+            
+            high, low = None, None
             sparkline = []
             
             if res.status_code == 200:
                 data = res.json()
                 price = data.get('closePrice', '0').replace(',', '')
                 pct = data.get('fluctuationsRatio', '0')
+                high = data.get('highPrice', price).replace(',', '')
+                low = data.get('lowPrice', price).replace(',', '')
                 
-                # 2. 스파크라인 데이터 (yfinance 활용 - 더 풍부한 데이터)
+                # 2. 스파크라인 및 변동성 데이터 (yfinance 보강)
                 try:
                     ticker = yf.Ticker(idx["symbol"])
                     hist = ticker.history(period="1d", interval="15m")
                     if not hist.empty:
                         sparkline = hist['Close'].tolist()
+                        # 네이버 데이터가 부실할 경우 yfinance 데이터로 보정
+                        if not high or high == price:
+                            high = str(hist['High'].max())
+                        if not low or low == price:
+                            low = str(hist['Low'].min())
                 except:
                     pass
                 
@@ -932,6 +1006,8 @@ def get_market_data():
                     "value": f"{float(price):,.2f}",
                     "change": f"{float(pct):+.2f}%",
                     "up": float(pct) >= 0,
+                    "high": f"{float(high):,.2f}" if high else "N/A",
+                    "low": f"{float(low):,.2f}" if low else "N/A",
                     "sparkline": sparkline
                 }
         except Exception:
@@ -940,27 +1016,30 @@ def get_market_data():
         # Fallback to pure yfinance
         try:
             ticker = yf.Ticker(idx["symbol"])
+            hist = ticker.history(period="1d", interval="15m")
             fast = ticker.fast_info
             p = fast.last_price
             pc = fast.previous_close
             chg = ((p - pc) / pc) * 100
-            hist = ticker.history(period="1d", interval="15m")
+            
             return {
                 "label": idx["label"],
                 "value": f"{p:,.2f}",
                 "change": f"{chg:+.2f}%",
                 "up": chg >= 0,
+                "high": f"{hist['High'].max():,.2f}" if not hist.empty else "N/A",
+                "low": f"{hist['Low'].min():,.2f}" if not hist.empty else "N/A",
                 "sparkline": hist['Close'].tolist() if not hist.empty else []
             }
         except:
-            return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True, "sparkline": []}
+            return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True, "sparkline": [], "high": "N/A", "low": "N/A"}
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
         futures = [executor.submit(_fetch_index_info, idx) for idx in indices]
         for f in concurrent.futures.as_completed(futures):
             results.append(f.result())
     
-    # Sorting to maintain consistent order
+    # Sorting
     results.sort(key=lambda x: [idx['label'] for idx in indices].index(x['label']))
 
     # movers... (stay similar but use yfinance for sparklines if needed later)
