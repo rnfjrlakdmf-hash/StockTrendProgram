@@ -120,15 +120,16 @@ def get_today_briefing_timeline(user_id: str) -> list:
         # KST 기준 7일 전 날짜 계산
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # [Fix] 데이터가 이미 KST로 저장되므로 +9 hours 보정 제거
+        # [Fix] 서버(UTC) 시간을 KST로 정확히 계산하여 7일치 필터링
+        # 단, 원본 시간은 ISO 8601 (Z) 형식을 사용하여 프론트엔드에서 자동 보정되게 함
         cursor.execute(
             """
             SELECT user_id, briefing_json, 
-                   created_at as created_at_kst,
-                   strftime('%Y-%m-%d', created_at) as kst_date
+                   strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as created_at_utc,
+                   strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
             FROM morning_briefings 
             WHERE (user_id = ? OR user_id = 'SYSTEM') 
-            AND strftime('%Y-%m-%d', created_at) >= ? 
+            AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
             ORDER BY created_at DESC
             """,
             (user_id, seven_days_ago)
@@ -139,8 +140,8 @@ def get_today_briefing_timeline(user_id: str) -> list:
             try:
                 data = json.loads(row[1])
                 data["user_id"] = row[0]
-                # 날짜 포맷 정규화 (YYYY-MM-DD HH:MM:SS)
-                data["created_at"] = row[2]
+                # 프론트엔드에서 'new Date()'로 즉시 한국 시간 변환 가능한 형식
+                data["created_at"] = row[2] 
                 data["kst_date"] = row[3]
                 results.append(data)
             except: continue
