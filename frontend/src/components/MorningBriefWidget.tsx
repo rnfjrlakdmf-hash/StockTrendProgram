@@ -336,24 +336,7 @@ export default function MorningBriefWidget() {
 
     return (
         <div className="w-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700 relative">
-            {/* Turbo Progress Overlay (Non-blocking) */}
-            {isUpdating && (
-                <div className="absolute top-0 left-0 right-0 z-50 bg-blue-600/90 backdrop-blur-md text-white px-6 py-2 flex items-center justify-between rounded-t-[3rem] animate-in slide-in-from-top duration-300">
-                    <div className="flex items-center gap-3">
-                        <Zap className="w-4 h-4 animate-pulse" />
-                        <span className="text-[11px] font-black uppercase tracking-widest">
-                            {updateStep === 1 ? "Turbo Scanning Market Data..." : 
-                             updateStep === 2 ? "Quant Intelligence Analyzing..." : 
-                             updateStep === 3 ? "AI Finalizing Your Report..." : "Syncing Intelligence..."}
-                        </span>
-                    </div>
-                    <div className="flex gap-1">
-                        <div className={`w-8 h-1 rounded-full ${updateStep >= 1 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
-                        <div className={`w-8 h-1 rounded-full ${updateStep >= 2 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
-                        <div className={`w-8 h-1 rounded-full ${updateStep >= 3 ? 'bg-white' : 'bg-white/30'} transition-all duration-500`} />
-                    </div>
-                </div>
-            )}
+            {/* Turbo Progress Overlay (Removed per user request) */}
             <div className={`w-full bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden flex flex-col transition-all duration-700 ${isUpdating ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                 
                 {/* 1. Market Index Ticker (Premium Naver Style) */}
