@@ -208,10 +208,17 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // [History] 타임라인 데이터를 날짜별로 그룹화하고 사용 가능한 날짜 목록 추출
-    const availableDates = (Array.from(new Set(
-        (timeline || []).map(b => b.kst_date || b.created_at?.split(' ')[0] || b.created_at?.split('T')[0])
-    )).filter(Boolean) as string[]).sort().reverse();
+    // [History] 최근 7일간의 날짜 목록 자동 생성 (지정된 일주일 달력 활성화)
+    const availableDates = (() => {
+        const dates = [];
+        const kstNow = new Date();
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(kstNow);
+            d.setDate(d.getDate() - i);
+            dates.push(d.toISOString().split('T')[0]);
+        }
+        return dates;
+    })();
 
     // 초기 로드 시 가장 최신 날짜 자동 선택
     useEffect(() => {
