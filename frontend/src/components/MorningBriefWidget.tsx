@@ -36,6 +36,7 @@ interface MorningBriefData {
     user_id?: string;
     is_instant?: boolean;
     created_at?: string;
+    kst_date?: string;
 }
 
 
@@ -219,10 +220,23 @@ export default function MorningBriefWidget() {
         }
     }, [availableDates]);
 
-    // 선택된 날짜에 해당하는 데이터만 필터링
+    // [History] 선택된 날짜에 해당하는 데이터 필터링
+    // 만약 가장 최신 날짜(오늘)를 선택했다면, 최근 24시간 이내의 데이터(어제 밤 포함)를 우선적으로 보여줌
     const filteredTimeline = (timeline || []).filter(b => {
         const itemDate = b.kst_date || b.created_at?.split(' ')[0] || b.created_at?.split('T')[0];
-        return itemDate === selectedDate;
+        
+        // 1. 선택된 날짜와 정확히 일치하는 경우
+        if (itemDate === selectedDate) return true;
+        
+        // 2. 스마트 뷰: 선택된 날짜가 가장 최신 날짜이고, 해당 항목이 선택된 날짜 바로 직전(24시간 내)이라면 포함
+        if (availableDates.length > 0 && selectedDate === availableDates[0]) {
+            const now = new Date();
+            const itemTime = new Date(b.created_at || "");
+            const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
+            return diffHours <= 24; // 최근 24시간 이내 기록은 날짜 상관없이 포함
+        }
+        
+        return false;
     });
 
     const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') || {
@@ -499,8 +513,23 @@ export default function MorningBriefWidget() {
                                         : `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
                                     const isExpanded = brief?.generated_at ? expandedIds[brief.generated_at] : (idx === 0);
                                     
+                                    // 날짜 헤더 표시 조건 (이전 항목과 날짜가 다른 경우)
+                                    const currentDate = brief.kst_date || brief.created_at?.split(' ')[0] || brief.created_at?.split('T')[0];
+                                    const prevDate = idx > 0 ? (filteredTimeline[idx-1].kst_date || filteredTimeline[idx-1].created_at?.split(' ')[0] || filteredTimeline[idx-1].created_at?.split('T')[0]) : null;
+                                    const showDateSeparator = currentDate !== prevDate;
+                                    
                                     return (
-                                        <div key={idx} className="relative group animate-in fade-in slide-in-from-right duration-500">
+                                        <div key={idx} className="space-y-4">
+                                            {showDateSeparator && (
+                                                <div className="flex items-center gap-3 py-4 sticky top-0 z-20 bg-transparent backdrop-blur-sm">
+                                                    <div className="h-[1px] flex-1 bg-white/5"></div>
+                                                    <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/10 uppercase tracking-tighter">
+                                                        {currentDate?.split('-')[1]}월 {currentDate?.split('-')[2]}일
+                                                    </span>
+                                                    <div className="h-[1px] flex-1 bg-white/5"></div>
+                                                </div>
+                                            )}
+                                            <div className="relative group animate-in fade-in slide-in-from-right duration-500">
                                             {/* Naver Style Dot */}
                                             <div className={`absolute -left-[1.65rem] md:-left-[2.05rem] top-2.5 w-2.5 h-2.5 rounded-full border-2 border-black z-10 transition-colors
                                                 ${idx === 0 ? 'bg-emerald-400 ring-4 ring-emerald-400/10' : 'bg-gray-700 group-hover:bg-gray-500'}`}>
@@ -562,6 +591,7 @@ export default function MorningBriefWidget() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
                                             </div>
                                         </div>
                                     );
