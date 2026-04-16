@@ -145,18 +145,30 @@ async def hourly_briefing_scheduler_loop():
     from utils.global_briefing import generate_market_wide_briefing
     
     last_run_hour = -1
+    last_cleanup_date = ""
     
     while True:
         try:
             kst = pytz.timezone('Asia/Seoul')
             now = datetime.now(kst)
             current_hour = now.hour
+            current_date = now.strftime("%Y-%m-%d")
             
             # [24/7 Monitoring] 매 정각(0~5분 사이)마다 SYSTEM 브리핑 생성
             if current_hour != last_run_hour and now.minute <= 5:
                 logger.info(f"[HourlyBrief] Triggering SYSTEM briefing for {current_hour}:00 KST")
                 await generate_market_wide_briefing()
                 last_run_hour = current_hour
+
+            # [Daily Cleanup] 매일 새벽 4시경 8일 이상 된 데이터 정리
+            if current_hour == 4 and current_date != last_cleanup_date:
+                try:
+                    from utils.briefing_store import cleanup_old_briefings
+                    deleted_count = cleanup_old_briefings()
+                    logger.info(f"[Cleanup] Daily DB maintenance complete. Deleted {deleted_count} old records.")
+                except Exception as eval_e:
+                    logger.error(f"[Cleanup] Failed: {eval_e}")
+                last_cleanup_date = current_date
             
             # 1분마다 체크
             await asyncio.sleep(60)

@@ -187,3 +187,30 @@ def rollback_morning_briefing(user_id: str) -> bool:
         return False
     finally:
         conn.close()
+def cleanup_old_briefings():
+    """
+    8일 이상 된 오래된 브리핑 데이터를 영구 삭제하여 DB 용량을 관리합니다.
+    (최근 7일 데이터만 유지)
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # KST 기준 8일 전 날짜 계산
+        import datetime
+        kst = pytz.timezone('Asia/Seoul')
+        eight_days_ago = (datetime.datetime.now(kst) - datetime.timedelta(days=8)).strftime("%Y-%m-%d")
+        
+        # 8일 전(포함) 이전 데이터 삭제
+        # 데이터베이스의 created_at은 UTC이므로, KST 보정 후 날짜 비교
+        cursor.execute(
+            "DELETE FROM morning_briefings WHERE strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) <= ?",
+            (eight_days_ago,)
+        )
+        deleted_count = cursor.rowcount
+        conn.commit()
+        return deleted_count
+    except Exception as e:
+        print(f"[Cleanup] 데이터 정리 중 오류 발생: {e}")
+        return 0
+    finally:
+        conn.close()
