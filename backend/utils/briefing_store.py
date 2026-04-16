@@ -215,3 +215,26 @@ def cleanup_old_briefings():
         return 0
     finally:
         conn.close()
+
+def has_system_briefing_for_hour(date_str: str, hour: int) -> bool:
+    """특정 날짜와 시간에 SYSTEM 브리핑이 이미 존재하는지 확인"""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # created_at (UTC)을 KST(+9)로 보정한 뒤 날짜와 시간이 일치하는지 확인
+        cursor.execute(
+            """
+            SELECT id FROM morning_briefings 
+            WHERE user_id = 'SYSTEM' 
+            AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) = ?
+            AND CAST(strftime('%H', datetime(created_at, '+9 hours')) AS INTEGER) = ?
+            LIMIT 1
+            """,
+            (date_str, hour)
+        )
+        return cursor.fetchone() is not None
+    except Exception as e:
+        print(f"[BriefingStore] Check error for {date_str} {hour}:00: {e}")
+        return False
+    finally:
+        conn.close()

@@ -1,0 +1,30 @@
+import sqlite3
+import os
+
+db_path = os.path.join(os.getcwd(), 'backend', 'stock_app.db')
+conn = sqlite3.connect(db_path)
+cursor = conn.cursor()
+
+print(f"Inspecting records for 2026-04-16 18:00 KST...")
+query = """
+    SELECT id, user_id, created_at, 
+           strftime('%Y-%m-%d %H:%M:%S', datetime(created_at, '+9 hours')) as kst_time
+    FROM morning_briefings 
+    WHERE kst_time LIKE '2026-04-16 18:%'
+    LIMIT 10
+"""
+cursor.execute(query)
+rows = cursor.fetchall()
+
+if not rows:
+    print("No records found for that hour.")
+    # 전체 최근 기록 5개 확인
+    print("\nRecent 5 records:")
+    cursor.execute("SELECT id, user_id, created_at, strftime('%Y-%m-%d %H:%M:%S', datetime(created_at, '+9 hours')) FROM morning_briefings ORDER BY created_at DESC LIMIT 5")
+    for r in cursor.fetchall():
+        print(r)
+else:
+    for r in rows:
+        print(r)
+
+conn.close()

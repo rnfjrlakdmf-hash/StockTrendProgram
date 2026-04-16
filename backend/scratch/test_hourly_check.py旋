@@ -1,0 +1,29 @@
+import sys
+import os
+import pytz
+from datetime import datetime
+
+# backend 경로 추가
+sys.path.append(os.path.join(os.getcwd(), 'backend'))
+
+from utils.briefing_store import has_system_briefing_for_hour
+
+def test_check():
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    current_date = now.strftime("%Y-%m-%d")
+    current_hour = now.hour
+    
+    print(f"Current KST: {now}")
+    print(f"Checking for {current_date} {current_hour}:00...")
+    
+    exists = has_system_briefing_for_hour(current_date, current_hour)
+    print(f"Result: {'Exists' if exists else 'Missing'}")
+    
+    # 만약 오늘 오전 2시(스크린샷에 있던 시간)를 체크한다면?
+    test_hour = 2
+    exists_2am = has_system_briefing_for_hour(current_date, test_hour)
+    print(f"Check 02:00: {'Exists' if exists_2am else 'Missing'}")
+
+if __name__ == "__main__":
+    test_check()

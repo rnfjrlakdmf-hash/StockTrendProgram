@@ -154,11 +154,18 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
             
-            # [24/7 Monitoring] 매 정각(0~5분 사이)마다 SYSTEM 브리핑 생성
-            if current_hour != last_run_hour and now.minute <= 5:
-                logger.info(f"[HourlyBrief] Triggering SYSTEM briefing for {current_hour}:00 KST")
+            # [24/7 Strict Check] 현재 시간대의 SYSTEM 브리핑이 DB에 있는지 확인
+            from utils.briefing_store import has_system_briefing_for_hour
+            if not has_system_briefing_for_hour(current_date, current_hour):
+                # 정시에 생성되지 않았거나, 서버 재시작 등으로 누락된 경우 즉시 생성
+                logger.info(f"[HourlyBrief] Missing briefing for {current_date} {current_hour}:00 KST. Triggering self-healing generation.")
                 await generate_market_wide_briefing()
                 last_run_hour = current_hour
+            else:
+                # 이미 생성된 경우 로그만 남기고 대기 (중복 생성 방지)
+                if current_hour != last_run_hour:
+                    logger.info(f"[HourlyBrief] Briefing for {current_hour}:00 KST already exists. Skipping.")
+                    last_run_hour = current_hour
 
             # [Daily Cleanup] 매일 새벽 4시경 8일 이상 된 데이터 정리
             if current_hour == 4 and current_date != last_cleanup_date:
