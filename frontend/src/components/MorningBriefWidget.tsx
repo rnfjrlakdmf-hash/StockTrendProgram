@@ -458,7 +458,7 @@ export default function MorningBriefWidget() {
                                 className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
                                 title="새로고침"
                             >
-                                <RefreshCw className={`w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors ${loading ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors ${isUpdating ? 'animate-spin' : ''}`} />
                             </button>
 
                             {/* [History] 날짜 선택 달력 드롭다운 */}
