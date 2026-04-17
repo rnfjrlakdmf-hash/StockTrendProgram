@@ -243,17 +243,18 @@ export default function MorningBriefWidget() {
         }
     }, [availableDates]);
 
-    // [History] 선택된 날짜에 해당하는 데이터 필터링
+    // [History Fix] 선택된 날짜에 해당하는 데이터 필터링 (개인 맞춤 + SYSTEM 공용 모두 포함)
     const filteredTimeline = (timeline || []).filter(b => {
         if (!selectedDate) return false;
         
         // 날짜 데이터 추출 및 정규화 (KST 기준)
+        // b.kst_date는 백엔드에서 '+9 hours' 처리된 YYYY-MM-DD 형식임
         const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
         
         // 1. 선택된 날짜와 정확히 일치하는 경우 (Strict Match)
         if (datePart === selectedDate) return true;
         
-        // 2. 스마트 뷰: 선택된 날짜가 가장 최신(오늘)이고, 항목이 24시간 이내의 기록인 경우 (어제 밤 기록 포함)
+        // 2. 스마트 뷰: 선택된 날짜가 가장 최신(오늘)인 경우, 24시간 이내의 기록도 허용
         if (availableDates.length > 0 && selectedDate === availableDates[0]) {
             try {
                 const now = new Date();
@@ -262,25 +263,24 @@ export default function MorningBriefWidget() {
                 
                 if (!isNaN(itemTime.getTime())) {
                     const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
-                    // 24시간 이내 기록이라면 "오늘의 흐름"으로 함께 보여줌
                     return diffHours <= 24;
                 }
-            } catch (e) {
-                console.error("Date parsing error:", e);
-            }
+            } catch (e) { }
         }
-        
         return false;
     });
 
-    const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') || {
-        market_title: selectedDate === new Date().toISOString().split('T')[0] 
-            ? "시장 상황을 실시간으로 분석 중입니다..." 
-            : `${selectedDate} 데이터가 없습니다.`,
-        summary_bullets: ["데이터를 불러오는 중입니다...", "잠시만 기다려 주세요."],
-        sections: [],
-        watchlist_briefs: []
-    } as Partial<MorningBriefData>;
+    // [Improvement] 개인 맞춤 브리핑(user_id !== 'SYSTEM')이 없으면 최신 시스템 브리핑을 대신 보여줌
+    const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') 
+        || filteredTimeline.find(b => b.user_id === 'SYSTEM')
+        || ({
+            market_title: selectedDate === new Date().toISOString().split('T')[0] 
+                ? "오늘 자 시스템 분석을 생성 중입니다..." 
+                : `${selectedDate} 데이터가 없습니다.`,
+            summary_bullets: ["데이터를 불러오는 중입니다...", "잠시만 기다려 주세요."],
+            sections: [],
+            watchlist_briefs: []
+        } as Partial<MorningBriefData>);
 
     const BriefingSkeleton = () => (
         <div className="w-full space-y-6 animate-pulse">
