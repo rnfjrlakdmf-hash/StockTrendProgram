@@ -1323,7 +1323,7 @@ def get_global_assets_data():
 
 def get_market_data():
     """
-    [Integrated Engine] 글로벌 원자재, 지수, 환율 및 국내 증시 데이터를 통합 수집합니다.
+    [Integrated Engine] 글로벌 원자재, 지수, 환율, 국내 수급, 등락 종목 수 및 대형주 시세를 통합 수집합니다.
     """
     indicators = []
     today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -1335,9 +1335,47 @@ def get_market_data():
     except Exception as e:
         print(f"[Global Assets] Error: {e}")
 
-    # 2. 국내 지수 데이터 수집 (KOSPI, KOSDAQ 등)
+    # 2. 국내 증시 디테일 데이터 수집 (수급, 등락 종목 수, 상위 종목)
     try:
-        from korea_data import get_korean_market_indices, get_korean_interest_rates
+        from korea_data import (
+            get_korean_market_indices, get_korean_interest_rates, 
+            get_naver_market_details, get_top_market_cap_stocks
+        )
+        
+        # 2.1 투자자별 수급 및 등락 종목 수
+        m_details = get_naver_market_details()
+        for m_id, detail in m_details.items():
+            flow = detail['investor_flow']
+            counts = detail['stock_counts']
+            m_name = "코스피" if m_id == "KOSPI" else "코스닥"
+            
+            # 수급 데이터를 인디케이터에 추가
+            indicators.append({
+                "date": today, "time": "실시간",
+                "event_kr": f"[수급] 🧾 {m_name} 투자자 (외국인/기관)",
+                "actual": f"외인:{flow['외국인']}억 / 기관:{flow['기관']}억",
+                "category": "⚖️ 수급 동향", "impact": "high", "change": f"개인:{flow['개인']}억", "change_val": 0
+            })
+            
+            # 등락 종목 수 통계를 인디케이터에 추가
+            indicators.append({
+                "date": today, "time": "실시간",
+                "event_kr": f"[통계] 📉 {m_name} 등락 종목",
+                "actual": f"상승:{counts['상승']}(상한:{counts['상한가']}) / 하락:{counts['하락']}(하한:{counts['하한가']})",
+                "category": "📊 시장 통계", "impact": "high", "change": f"보합:{counts['보합']}", "change_val": 0
+            })
+
+        # 2.2 시가총액 상위 종목 시세 (TOP 10)
+        top_stocks = get_top_market_cap_stocks(limit=10)
+        for s in top_stocks:
+            indicators.append({
+                "date": today, "time": "실시간",
+                "event_kr": f"[대형주] 💾 {s['name']} ({s['market']})",
+                "actual": s['price'],
+                "category": "💾 주요 대형주", "impact": "medium", "change": s['change'], "change_val": 0
+            })
+
+        # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등)
         indices = get_korean_market_indices()
         for key, info in indices.items():
             name_kr = "코스피" if key == "kospi" else "코스닥" if key == "kosdaq" else "코스피200"
@@ -1346,23 +1384,13 @@ def get_market_data():
             
             try:
                 cv = float(re.sub(r'[^0-9.-]', '', chg_pct_str))
-            except:
-                cv = 0.0
+            except: cv = 0.0
 
             indicators.append({
-                "date": today,
-                "time": "실시간",
-                "event": f"[KR] {name_kr}",
+                "date": today, "time": "실시간",
                 "event_kr": f"[한국] 🏦 {name_kr} 지수",
-                "country": "KR",
-                "country_kr": "한국",
                 "actual": actual_str,
-                "forecast": "-",
-                "previous": "-",
-                "impact": "high",
-                "category": "🏦 주가지수",
-                "change": chg_pct_str,
-                "change_val": cv,
+                "category": "🏦 주가지수", "impact": "high", "change": chg_pct_str, "change_val": cv,
             })
             
         # 3. 채권/금리 데이터 수집
@@ -1375,22 +1403,13 @@ def get_market_data():
             change_str = f"{chg_val:+.2f}%p" if chg_val != 0 else "0.00%p"
             
             indicators.append({
-                "date": today,
-                "time": "실시간",
-                "event": f"[KR] {name}",
+                "date": today, "time": "실시간",
                 "event_kr": f"[한국] 📋 {name}",
-                "country": "KR",
-                "country_kr": "한국",
                 "actual": actual_str,
-                "forecast": "-",
-                "previous": "-",
-                "impact": "high" if "기준금리" in name or "3년" in name else "medium",
-                "category": "📋 채권 / 금리",
-                "change": change_str,
-                "change_val": chg_val,
+                "category": "📋 채권 / 금리", "impact": "medium", "change": change_str, "change_val": chg_val,
             })
     except Exception as e:
-        print(f"[Market Data Engine] Database/Fetch Error: {e}")
+        print(f"[Market Data Engine] Detail Sync Error: {e}")
 
     # 4. 필터링 및 정규화
     filtered = []
@@ -1398,8 +1417,6 @@ def get_market_data():
     for item in indicators:
         key = item.get("event_kr", "")
         actual = item.get("actual", "-")
-        
-        # 유효하지 않은 데이터 제외
         if actual != "-" and key not in seen:
             seen.add(key)
             filtered.append(item)

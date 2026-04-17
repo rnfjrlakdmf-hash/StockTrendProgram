@@ -945,6 +945,105 @@ def get_naver_disclosures(symbol: str):
 def get_live_disclosures(symbol: str):
     return get_naver_disclosures(symbol)
 
+def get_naver_market_details():
+    """
+    네이버 금융에서 코스피/코스닥의 투자자별 매매동향 및 등락 종목 수 통계를 수집합니다.
+    """
+    results = {}
+    markets = {"KOSPI": "KOSPI", "KOSDAQ": "KOSDAQ"}
+    
+    for m_id, m_name in markets.items():
+        try:
+            url = f"https://finance.naver.com/sise/sise_index.naver?code={m_id}"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), 'html.parser')
+            
+            # 1. 투자자별 매매동향 (수급)
+            trading_box = soup.select_one(".dd_box")
+            flow = {"개인": "0", "외국인": "0", "기관": "0"}
+            if trading_box:
+                dls = trading_box.select("dl")
+                for dl in dls:
+                    label = dl.select_one("dt").text.strip()
+                    value = dl.select_one("dd").text.strip()
+                    # 억 원 단위 숫자만 추출
+                    clean_val = re.sub(r'[^0-9-]', '', value)
+                    if label in flow:
+                        flow[label] = clean_val
+            
+            # 2. 등락 종목 수 통계
+            stat_box = soup.select_one(".sub_sum")
+            counts = {"상승": "0", "하락": "0", "보합": "0", "상한가": "0", "하한가": "0"}
+            if stat_box:
+                lis = stat_box.select("li")
+                for li in lis:
+                    text = li.text.strip()
+                    # 예: "상승 639" -> "상승", "639"
+                    match = re.search(r'([가-힣]+)\s*(\d+)', text)
+                    if match:
+                        l = match.group(1)
+                        v = match.group(2)
+                        if l in counts: counts[l] = v
+                    if "상한가" in text:
+                        m_up = re.search(r'상한가\s*(\d+)', text)
+                        if m_up: counts["상한가"] = m_up.group(1)
+                    if "하한가" in text:
+                        m_down = re.search(r'하한가\s*(\d+)', text)
+                        if m_down: counts["하한가"] = m_down.group(1)
+
+            results[m_id] = {
+                "investor_flow": flow,
+                "stock_counts": counts
+            }
+        except Exception as e:
+            print(f"[MarketDetails] Error for {m_id}: {e}")
+            
+    return results
+
+def get_top_market_cap_stocks(limit=10):
+    """
+    네이버 금융 시가총액 상위 종목들의 실시간 시세를 수집합니다.
+    sosok=0 (KOSPI), sosok=1 (KOSDAQ)
+    """
+    results = []
+    market_types = {"KOSPI": 0, "KOSDAQ": 1}
+    
+    for m_name, sosok in market_types.items():
+        try:
+            url = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok={sosok}"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), 'html.parser')
+            
+            rows = soup.select("table.type_2 tbody tr")
+            count = 0
+            for row in rows:
+                if count >= limit: break
+                
+                a_tag = row.select_one("a.tltle")
+                if not a_tag: continue
+                
+                name = a_tag.text.strip()
+                link = a_tag['href']
+                code = re.search(r'code=(\d{6})', link).group(1)
+                
+                tds = row.select("td")
+                # 네이버 시총 페이지 구조: N(0), 종목명(1), 현재가(2), 전일비(3), 등락률(4) ...
+                price = tds[2].text.strip().replace(',', '')
+                change_pct = tds[4].text.strip().replace('%', '')
+                
+                results.append({
+                    "market": m_name,
+                    "name": name,
+                    "code": code,
+                    "price": f"{float(price):,.0f}원",
+                    "change": f"{float(change_pct):+.2f}%"
+                })
+                count += 1
+        except Exception as e:
+            print(f"[TopStocks] Error for {m_name}: {e}")
+            
+    return results
+
 @turbo_cache(ttl_seconds=120)
 def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "", days: int = 1):
     """
