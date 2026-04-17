@@ -32,7 +32,7 @@ else:
 from sockets import manager
 from stock_data import (
     get_simple_quote, get_all_market_assets, get_stock_info, get_market_data, 
-    get_market_news, calculate_technical_sentiment, get_insider_trading, 
+    get_market_news, calculate_technical_sentiment, 
     get_macro_calendar, fetch_google_news, get_korean_stock_name, 
     GLOBAL_KOREAN_NAMES
 )
