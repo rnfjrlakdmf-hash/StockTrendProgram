@@ -6,70 +6,8 @@ from datetime import datetime, timedelta
 
 import threading
 
-# [Periodic Worker Starter] v3.6.15-Global - Startup Event Handler
-@app.on_event("startup")
-async def startup_event():
-    """서버 시작 시 백그라운드 워커들을 가동함"""
-    print("[Startup] Initializing background services...")
-    
-    # 1. 히스토리 수집 스케줄러 시작
-    thread = threading.Thread(target=run_periodic_briefing_bg, daemon=True)
-    thread.start()
-    print("[Startup] Periodic market briefing worker started in background.")
 
-    # 2. 브리핑 테이블 초기화
-    try:
-        from utils.briefing_store import init_briefing_table
-        init_briefing_table()
-        print("[Startup] Briefing table initialized.")
-    except Exception as e:
-        print(f"[Startup] Init error: {e}")
-
-# [Periodic Worker Update] Use Global Engine for SYSTEM
-def run_periodic_briefing_bg():
-    """매 시 정각마다 SYSTEM(공용) 및 활성 유저 브리핑을 자동 생성하는 백그라운드 워커"""
-    print("[PeriodicBrief] Starting Hourly Market Briefing Worker...")
-    while True:
-        try:
-            now = datetime.now()
-            # 정각(00분 10초)으로 설정
-            next_hour = (now + timedelta(hours=1)).replace(minute=0, second=10, microsecond=0)
-            wait_seconds = (next_hour - now).total_seconds()
-            
-            if wait_seconds > 0:
-                print(f"[PeriodicBrief] Waiting {int(wait_seconds/60)}m until next briefing at {next_hour}")
-                time.sleep(wait_seconds)
-            
-            print("[PeriodicBrief] Triggering periodic market briefing (SYSTEM)...")
-            
-            # 1. SYSTEM 브리핑 (최신 글로벌-국내 연동 엔진 사용)
-            try:
-                # 동기 환경에서 비동기 함수 실행 (백그라운드 스레드이므로 가능)
-                from utils.global_briefing import generate_market_wide_briefing
-                asyncio.run(generate_market_wide_briefing())
-                print("[PeriodicBrief] Upgraded Global SYSTEM briefing saved successfully.")
-            except Exception as e:
-                print(f"[PeriodicBrief] SYSTEM Generation error: {e}")
-
-            # 2. 유저별 관심종목 브리핑 (기존 엔진 유지)
-            try:
-                from morning_briefing import generate_user_morning_briefing
-                from db_manager import get_all_users
-                all_users = get_all_users()
-                print(f"[PeriodicBrief] Warming up {len(all_users)} potential active users...")
-                for u in all_users:
-                    uid = u.get('id')
-                    if uid and uid != 'SYSTEM':
-                        generate_user_morning_briefing(uid)
-                        time.sleep(2)
-            except Exception as e:
-                print(f"[PeriodicBrief] User Warmer error: {e}")
-                
-        except Exception as e:
-            print(f"[PeriodicBrief] Loop error: {e}")
-            time.sleep(60)
-
-# [Deployment Trigger] v3.6.14-PA-Periodic - 2026-04-14
+# [Deployment Trigger] v3.6.15-HOTFIX-NameError - 2026-04-17
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -146,6 +84,28 @@ from utils.briefing_store import (
 # [v3.6.2] Redundant definition removed. Imported from stock_data.py instead.
 
 app = FastAPI(title="AI Stock Analyst", version="3.6.2")
+
+@app.on_event("startup")
+async def startup_event():
+    """서버 시작 시 통합 스케줄러와 기초 테이블을 가동함"""
+    print("[Startup] Initializing consolidated background services...")
+    
+    # 1. 브리핑 테이블 초기화
+    try:
+        from utils.briefing_store import init_briefing_table
+        init_briefing_table()
+        print("[Startup] Briefing table initialized.")
+    except Exception as e:
+        print(f"[Startup] Table init error: {e}")
+
+    # 2. 통합 스케줄러 루프 가동 (정각 수집 + 개별 브리핑 + 공시 알림)
+    try:
+        from scheduler import hourly_briefing_scheduler_loop, disclosure_scheduler_loop
+        asyncio.create_task(hourly_briefing_scheduler_loop())
+        asyncio.create_task(disclosure_scheduler_loop())
+        print("[Startup] All consolidated workers (Hourly Briefing & Disclosure) started successfully.")
+    except Exception as e:
+        print(f"[Startup] Scheduler start error: {e}")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
 # CORS 설정 (Vercel 및 Local 개발 환경 허용)
