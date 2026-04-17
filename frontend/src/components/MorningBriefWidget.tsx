@@ -270,17 +270,28 @@ export default function MorningBriefWidget() {
         return false;
     });
 
-    // [Improvement] 개인 맞춤 브리핑(user_id !== 'SYSTEM')이 없으면 최신 시스템 브리핑을 대신 보여줌
-    const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') 
-        || filteredTimeline.find(b => b.user_id === 'SYSTEM')
-        || ({
-            market_title: selectedDate === new Date().toISOString().split('T')[0] 
-                ? "오늘 자 시스템 분석을 생성 중입니다..." 
-                : `${selectedDate} 데이터가 없습니다.`,
-            summary_bullets: ["데이터를 불러오는 중입니다...", "잠시만 기다려 주세요."],
-            sections: [],
-            watchlist_briefs: []
-        } as Partial<MorningBriefData>);
+    // [분리] 왼쪽: 개인 맞춤 브리핑(관심종목 뉴스)만 표시 — SYSTEM 브리핑 절대 폴백 금지
+    const latestPersonal = filteredTimeline.find(b => b.user_id !== 'SYSTEM') || null;
+
+    // [분리] 오른쪽 타임라인: SYSTEM 브리핑(시장 히스토리)만 표시 — 개인 데이터 제외
+    const systemTimeline = (timeline || []).filter(b => {
+        if (b.user_id !== 'SYSTEM') return false;
+        if (!selectedDate) return false;
+        const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
+        if (datePart === selectedDate) return true;
+        if (availableDates.length > 0 && selectedDate === availableDates[0]) {
+            try {
+                const now = new Date();
+                const isoStr = (b.created_at || "").replace(" ", "T");
+                const itemTime = new Date(isoStr);
+                if (!isNaN(itemTime.getTime())) {
+                    const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
+                    return diffHours <= 24;
+                }
+            } catch (e) { }
+        }
+        return false;
+    });
 
     const BriefingSkeleton = () => (
         <div className="w-full space-y-6 animate-pulse">
@@ -539,7 +550,7 @@ export default function MorningBriefWidget() {
                                 {/* Vertical Timeline Line */}
                                 <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1px] bg-gradient-to-b from-emerald-500/40 via-white/5 to-transparent"></div>
 
-                                {(filteredTimeline && filteredTimeline.length > 0) ? filteredTimeline.map((brief, idx) => {
+                                {(systemTimeline && systemTimeline.length > 0) ? systemTimeline.map((brief, idx) => {
                                     const date = brief?.created_at ? new Date(brief.created_at) : new Date();
                                     // 정기 브리핑(PERIODIC)은 정각 단위로 표시 (분 생략)
                                     const timeLabel = brief.category === 'PERIODIC' 

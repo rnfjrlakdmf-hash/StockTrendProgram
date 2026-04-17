@@ -119,7 +119,7 @@ def should_generate_new_briefing(user_id: str) -> bool:
         conn.close()
 
 def get_today_briefing_timeline(user_id: str) -> list:
-    """최근 7일간(KST) 생성된 모든 브리핑(개인 + SYSTEM)을 최신순으로 조회"""
+    """최근 7일간(KST) 생성된 SYSTEM 브리핑만 최신순으로 조회 (시장 히스토리 전용)"""
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
@@ -127,22 +127,21 @@ def get_today_briefing_timeline(user_id: str) -> list:
     cursor = conn.cursor()
     try:
         from datetime import timedelta
-        # KST 기준 7일 전 날짜 계산
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # [Fix] 서버(UTC) 시간을 KST로 정확히 계산하여 7일치 필터링
-        # 단, 원본 시간은 ISO 8601 (Z) 형식을 사용하여 프론트엔드에서 자동 보정되게 함
+        # [분리] SYSTEM 브리핑만 조회 — 개인 데이터는 morning-brief API에서 별도 제공
+        # 이렇게 분리하면 타임라인 API 응답 크기가 줄어들어 로딩 속도 향상
         cursor.execute(
             """
             SELECT user_id, briefing_json, 
                    strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as created_at_utc,
                    strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
             FROM morning_briefings 
-            WHERE (user_id = ? OR user_id = 'SYSTEM') 
+            WHERE user_id = 'SYSTEM'
             AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
             ORDER BY created_at DESC
             """,
-            (user_id, seven_days_ago)
+            (seven_days_ago,)
         )
         rows = cursor.fetchall()
         results = []
@@ -150,7 +149,6 @@ def get_today_briefing_timeline(user_id: str) -> list:
             try:
                 data = json.loads(row[1])
                 data["user_id"] = row[0]
-                # 프론트엔드에서 'new Date()'로 즉시 한국 시간 변환 가능한 형식
                 data["created_at"] = row[2] 
                 data["kst_date"] = row[3]
                 results.append(data)
@@ -158,6 +156,7 @@ def get_today_briefing_timeline(user_id: str) -> list:
         return results
     finally:
         conn.close()
+
 
 def invalidate_today_briefing(user_id: str):
     """오늘 생성된 브리핑 캐시를 삭제하여 다음 요청 시 재생성되도록 함"""
@@ -232,6 +231,7 @@ def has_system_briefing_for_hour(date_str: str, hour: int) -> bool:
     cursor = conn.cursor()
     try:
         # created_at (UTC)을 KST(+9)로 보정한 뒤 날짜와 시간이 일치하는지 확인
+        # hour가 한 자리 수일 경우를 대비하여 %H 포맷 유지
         cursor.execute(
             """
             SELECT id FROM morning_briefings 
