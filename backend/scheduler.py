@@ -154,27 +154,31 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
             
-            # [24/7 High-Performance Check] 최근 6시간 동안 누락된 브리핑이 있는지 즉시 조사하여 병렬 보충
+            # [24/7 Ultra-Persistent Check] 최근 24시간 동안 누락된 브리핑이 있는지 전후 조사하여 병렬 보충
             from utils.briefing_store import has_system_briefing_for_hour
             
             check_tasks = []
-            for h_offset in range(6):
+            # 최근 24시간의 빈틈을 모두 채움
+            for h_offset in range(24):
                 target_time = now - timedelta(hours=h_offset)
                 t_date = target_time.strftime("%Y-%m-%d")
                 t_hour = target_time.hour
                 
+                # DB는 UTC 기준이므로 저장용 타임스탬프는 UTC로 변환 (KST-9h)
+                target_time_utc = (target_time - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                
                 if not has_system_briefing_for_hour(t_date, t_hour):
-                    # 누락 발견 시 즉시 생성 태스크 추가
-                    logger.info(f"[HourlyBrief] Queueing missing briefing for {t_date} {t_hour}:00 KST.")
-                    check_tasks.append(generate_market_wide_briefing())
+                    # 누락 발견 시 해당 과거 시점의 타임스탬프를 포함하여 생성 지시
+                    logger.info(f"[HourlyBrief] Found GAP at {t_date} {t_hour}:00 KST. Queueing backfill for {target_time_utc} UTC.")
+                    check_tasks.append(generate_market_wide_briefing(target_time=target_time_utc))
                 else:
                     if h_offset == 0 and t_hour != last_run_hour:
                         logger.info(f"[HourlyBrief] Current hour check ok: {t_hour}:00 KST.")
                         last_run_hour = t_hour
             
             if check_tasks:
-                logger.info(f"[HourlyBrief] Triggering {len(check_tasks)} missing briefings in parallel...")
-                # 한꺼번에 실행하여 빠르게 공백을 메움
+                logger.info(f"[HourlyBrief] Backfilling {len(check_tasks)} missing historical slots in parallel...")
+                # 병렬로 실행하여 빠르게 24시간 타임라인을 완성함
                 await asyncio.gather(*check_tasks)
 
             # [Daily Cleanup] 매일 새벽 4시경 8일 이상 된 데이터 정리

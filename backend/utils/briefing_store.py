@@ -29,14 +29,24 @@ def init_briefing_table():
     conn.commit()
     conn.close()
 
-def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any]) -> bool:
+def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any], created_at: str = None) -> bool:
     """생성된 브리핑을 DB에 저장하거나 기존 인스턴트 레코드를 업데이트함 (중복 방지)"""
     conn = get_db()
     cursor = conn.cursor()
     try:
         cursor.execute("PRAGMA busy_timeout = 5000")
         
-        # 1. 최근 5분 이내에 생성된 인스턴트 브리핑이 있는지 확인 (업데이트 대상)
+        # 1. 소급 생성(Backfill)인 경우: 명시된 시간을 사용하여 저장 (중복 체크 건너뜀)
+        if created_at:
+            cursor.execute(
+                "INSERT INTO morning_briefings (user_id, briefing_json, created_at) VALUES (?, ?, ?)",
+                (user_id, json.dumps(briefing_data, ensure_ascii=False), created_at)
+            )
+            print(f"[BriefingStore] Saved historical backfill for {user_id} at {created_at}")
+            conn.commit()
+            return True
+
+        # 2. 실시간 생성인 경우: 최근 5분 이내에 생성된 인스턴트 브리핑이 있는지 확인 (업데이트 대상)
         cursor.execute(
             """
             SELECT id FROM morning_briefings 

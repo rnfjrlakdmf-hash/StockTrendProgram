@@ -12,15 +12,18 @@ from stock_data import (
 from utils.briefing_store import save_morning_briefing
 from korea_data import get_ipo_data
 
-async def generate_market_wide_briefing():
+async def generate_market_wide_briefing(target_time: str = None):
     """
     시장 전체의 지수와 섹터 흐름을 요약한 '공통 브리핑'을 생성 (user_id = 'SYSTEM')
+    소급 생성(Backfill) 시 target_time(ISO형식)을 전달받아 해당 시점으로 저장함.
     """
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     user_id = "SYSTEM"
     
-    print(f"[SYSTEM-Briefing] Generating global market briefing at {now}")
+    # 소급 생성인 경우 로그 출력 차별화
+    log_msg = f"at {target_time} (Backfill)" if target_time else f"at {now}"
+    print(f"[SYSTEM-Briefing] Generating global market briefing {log_msg}")
     
     # 1. 데이터 수집
     # 1.1 시장 지수
@@ -129,12 +132,15 @@ async def generate_market_wide_briefing():
         
         # 메타데이터 추가
         briefing_result["user_id"] = user_id
-        briefing_result["generated_at"] = now.isoformat()
+        # 소급 생성인 경우 해당 타겟 시간을 generated_at으로 설정하여 타임라인 정렬 보장
+        briefing_result["generated_at"] = target_time if target_time else now.isoformat()
         briefing_result["category"] = "PERIODIC" # [Naver-Style] 정기 브리핑 태그 부여
         
-        # DB 저장
-        save_morning_briefing(user_id, briefing_result)
-        print(f"[SYSTEM-Briefing] Successfully saved hourly briefing for {now.strftime('%H:00')}")
+        # DB 저장 (target_time을 created_at으로 전달)
+        save_morning_briefing(user_id, briefing_result, created_at=target_time)
+        
+        save_msg = f"for historical slot {target_time}" if target_time else f"for {now.strftime('%H:00')}"
+        print(f"[SYSTEM-Briefing] Successfully saved hourly briefing {save_msg}")
         
         return briefing_result
     except Exception as e:
