@@ -15,18 +15,47 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const { login, demoLogin } = useAuth();
     const [errorMsg, setErrorMsg] = useState("");
 
-    const handleGoogleLogin = () => {
-        // Direct Redirect to Google OAuth 2.0
-        const client_id = "385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com";
-        
-        // [Fix] Standardize: Remove trailing slash if exists to match Google Console config precisely
-        const origin = window.location.origin;
-        const redirect_uri = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-        
-        const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=token&scope=email%20profile%20openid&include_granted_scopes=true&enable_serial_consent=true`;
+    // [Hybrid Auth] 모바일 환경 감지 로직
+    const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent);
 
-        window.location.href = url;
+    const googleLoginTrigger = useGoogleLogin({
+        flow: 'implicit',
+        ux_mode: isMobile ? 'redirect' : 'popup', // [Fix] 모바일은 리다이렉트, PC는 팝업
+        onSuccess: async (tokenResponse) => {
+            console.log("Google Login Success (Popup/Direct):", tokenResponse);
+            if (tokenResponse.access_token) {
+                // Fetch User Info using the token
+                const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                if (res.ok) {
+                    const userInfo = await res.json();
+                    const googleUser = {
+                        id: userInfo.sub,
+                        email: userInfo.email,
+                        name: userInfo.name,
+                        picture: userInfo.picture,
+                        token: tokenResponse.access_token
+                    };
+                    const success = await login(googleUser);
+                    if (success) {
+                        onClose();
+                        window.location.reload();
+                    }
+                }
+            }
+        },
+        onError: (error) => {
+            console.error("Google Login Error:", error);
+            setErrorMsg("구글 로그인에 실패했습니다.");
+        }
+    });
+
+    const handleGoogleLogin = () => {
+        setErrorMsg("");
+        googleLoginTrigger();
     };
+
 
     if (!isOpen) return null;
 
