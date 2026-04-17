@@ -804,17 +804,17 @@ async def broadcast_stock_updates():
                 active_users = manager.get_connected_user_ids()
                 for user_id in active_users:
                     if user_id in session_manager.user_websockets:
-                    user_subs = manager.get_user_subscriptions(user_id)
-                    for sym in user_subs:
-                        # Clean symbol logic
-                        target_code = None
-                        if sym.isdigit() and len(sym) == 6:
-                            target_code = sym
-                        elif sym.endswith('.KS') or sym.endswith('.KQ'):
-                            target_code = sym.split('.')[0]
-                        
-                        if target_code:
-                            await session_manager.subscribe_user_symbol(user_id, target_code)
+                        user_subs = manager.get_user_subscriptions(user_id)
+                        for sym in user_subs:
+                            # Clean symbol logic
+                            target_code = None
+                            if sym.isdigit() and len(sym) == 6:
+                                target_code = sym
+                            elif sym.endswith('.KS') or sym.endswith('.KQ'):
+                                target_code = sym.split('.')[0]
+                            
+                            if target_code:
+                                await session_manager.subscribe_user_symbol(user_id, target_code)
             except Exception as e:
                 print(f"[WS] User subscription sync error: {e}")
 
