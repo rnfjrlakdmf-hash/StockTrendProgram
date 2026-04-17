@@ -208,18 +208,30 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // [History] 최근 7일간의 날짜 목록 자동 생성 (KST 로컬 시간 기준)
+    // [History] 최근 영업일(평일) 기준 10일간의 날짜 목록 생성 (주말 제외)
     const availableDates = (() => {
         const dates = [];
-        const kstNow = new Date();
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(kstNow);
-            d.setDate(d.getDate() - i);
-            // toISOString()은 UTC 기준이므로 자정 근처에서 날짜가 어긋남. 로컬 포맷 사용.
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            dates.push(`${year}-${month}-${day}`);
+        let checkDate = new Date();
+        let daysFound = 0;
+        const maxDays = 10; // 최근 10 영업일 표시
+        
+        while (daysFound < maxDays) {
+            const dayOfWeek = checkDate.getDay(); // 0: 일, 6: 토
+            
+            // 토요일(6)과 일요일(0)이 아닌 경우에만 목록에 추가
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                const year = checkDate.getFullYear();
+                const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+                const day = String(checkDate.getDate()).padStart(2, '0');
+                dates.push(`${year}-${month}-${day}`);
+                daysFound++;
+            }
+            
+            // 하루 전으로 이동
+            checkDate.setDate(checkDate.getDate() - 1);
+            
+            // 무한 루프 방지 (최대 30일까지만 탐색)
+            if (dates.length >= maxDays || dates.length + daysFound > 30) break;
         }
         return dates;
     })();
