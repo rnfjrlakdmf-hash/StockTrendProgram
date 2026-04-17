@@ -1328,12 +1328,38 @@ def get_market_data():
     indicators = []
     today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    # 1. 글로벌 및 원자재 데이터 수집 (WTI, 금, 구리, 나스닥 등)
+    # 1. 글로벌 및 매크로 지수 데이터 수집 (지수, 금리, VIX, 유럽 등)
     try:
+        from korea_data import get_naver_market_index_data, get_top_us_stocks_data
+        
+        # 1.1 주요 글로벌 지표 (VIX, 미 국채 금리, 유럽 지표 포함)
+        global_indices = get_naver_market_index_data()
+        for idx in global_indices:
+            label = idx['label']
+            cat = "📉 공포지수" if "VIX" in label else "📋 글로벌 금리" if "금리" in label else "🌍 글로벌 지수"
+            
+            indicators.append({
+                "date": today, "time": "실시간",
+                "event_kr": f"[글로벌] {label}",
+                "actual": idx['value'],
+                "category": cat, "impact": "high", "change": idx['change'], "change_val": 0
+            })
+
+        # 1.2 미국 핵심 테크주 시세 (Top 15)
+        us_stocks = get_top_us_stocks_data()
+        for s in us_stocks:
+            indicators.append({
+                "date": today, "time": "실시간",
+                "event_kr": f"[미국주] 🇺🇸 {s['name']} ({s['symbol']})",
+                "actual": f"${s['price']}",
+                "category": "🇺🇸 미국 핵심주", "impact": "medium", "change": s['change'], "change_val": 0
+            })
+
+        # 1.3 기존 원자재 데이터 (WTI, 금, 구리 등)
         global_assets = get_global_assets_data()
         indicators.extend(global_assets)
     except Exception as e:
-        print(f"[Global Assets] Error: {e}")
+        print(f"[Global Intelligence Sync] Error: {e}")
 
     # 2. 국내 증시 디테일 데이터 수집 (수급, 등락 종목 수, 상위 종목)
     try:

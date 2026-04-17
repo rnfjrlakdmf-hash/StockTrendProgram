@@ -823,8 +823,7 @@ def get_naver_flash_news():
 
 def get_naver_market_index_data():
     """
-    네이버 모바일 API를 사용하여 코스피, 코스닥 및 글로벌 지수(S&P500, 나스닥, 다우)를 수집합니다.
-    야후 파이낸스 차단 문제를 해결하기 위한 실시간 데이터 보장책입니다.
+    네이버 모바일 API를 사용하여 국내외 주요 지수 및 매크로 지표(금리, VIX, 환율 등)를 통합 수집합니다.
     """
     indices_to_fetch = [
         {"code": "KOSPI", "label": "KOSPI"},
@@ -832,11 +831,18 @@ def get_naver_market_index_data():
         {"code": "SPI@SPX", "label": "S&P 500"},
         {"code": "NAS@IXIC", "label": "NASDAQ"},
         {"code": "DJI@DJI", "label": "DOW JONES"},
-        {"code": "NAS@NDX", "label": "NASDAQ 100"}
+        {"code": "NAS@NDX", "label": "NASDAQ 100"},
+        # [Macro Intelligence]
+        {"code": "VIX@VIX", "label": "VIX(공포지수)"},
+        {"code": "CMTS@TY10", "label": "미 국채 10년물 금리"},
+        {"code": "FRX@DXY", "label": "달러인덱스(DXY)"},
+        # [European Indices]
+        {"code": "DAX@DAX", "label": "독일 DAX"},
+        {"code": "CAC@CAC40", "label": "프랑스 CAC 40"},
+        {"code": "UKX@FTSE100", "label": "영국 FTSE 100"}
     ]
     
     results = []
-    
     for idx in indices_to_fetch:
         try:
             url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
@@ -844,24 +850,41 @@ def get_naver_market_index_data():
             if res.status_code == 200:
                 data = res.json()
                 price = data.get('closePrice', '0').replace(',', '')
-                change = data.get('compareToPreviousClosePrice', '0').replace(',', '')
                 pct = data.get('fluctuationsRatio', '0')
+                
+                # 금리의 경우 f"{price}%" 형식으로, 지수의 경우 천단위 콤마 f"{price:,.2f}" 형식으로 유동적 처리
+                is_rate = "금리" in idx["label"] or "TY10" in idx["code"]
+                val_formatted = f"{float(price):.4f}%" if is_rate else f"{float(price):,.2f}"
                 
                 results.append({
                     "label": idx["label"],
-                    "value": f"{float(price):,.2f}",
+                    "value": val_formatted,
                     "change": f"{float(pct):+.2f}%",
                     "up": float(pct) >= 0
                 })
         except Exception as e:
             print(f"Error fetching index {idx['label']}: {e}")
             results.append({
-                "label": idx["label"],
-                "value": "N/A",
-                "change": "0.00%",
-                "up": True
+                "label": idx["label"], "value": "N/A", "change": "0.00%", "up": True
             })
             
+    return results
+
+def get_top_us_stocks_data():
+    """
+    미국 증시의 풍향계 역할을 하는 시총 상위 및 핵심 테크 15개 종목의 실시간 시세를 수집합니다.
+    """
+    tickers = [
+        "AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", # Mag 7
+        "AVGO", "AMD", "INTC", "ASML", "TSM", # 핵심 반도체
+        "ORCL", "NFLX", "QCOM" # 기타 주요 테크
+    ]
+    
+    results = []
+    for symbol in tickers:
+        data = get_naver_global_stock_data(symbol)
+        if data:
+            results.append(data)
     return results
 
 def get_naver_global_stock_data(symbol: str):
