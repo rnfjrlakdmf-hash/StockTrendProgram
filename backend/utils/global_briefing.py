@@ -51,19 +51,18 @@ async def generate_market_wide_briefing(target_time: str = None):
         print("[SYSTEM-Briefing] API Key missing")
         return
 
-    # 지수 요약 텍스트 (market_data가 이제 직접 리스트를 반환함)
+    # 지수 요약 텍스트
     index_list = []
     for idx in market_data:
-        label = idx.get('label', '시장 지수')
-        value = idx.get('value')
+        label = idx.get('event_kr', '시장 지표')
+        value = idx.get('actual', '-')
         change = idx.get('change', '0.00%')
-        if value and value != "N/A":
+        if value != "-":
             index_list.append(f"{label}: {value} ({change})")
     
-    from stock_data import (
-        get_market_data, get_market_news, get_macro_calendar, 
-        get_dart_risk_alerts, get_market_status_info
-    )
+    index_summary = "\n".join(index_list)
+    
+    from stock_data import get_market_status_info
     
     # [Market Status Check] 고도화된 시간 판별 로직 적용
     ms_info = get_market_status_info()
@@ -74,29 +73,31 @@ async def generate_market_wide_briefing(target_time: str = None):
     prompt = f"""
 당신은 대한민국 최고의 금융 데이터 분석가이자 AI 앵커입니다. 
 네이버 금융(stock.naver.com)의 'AI 브리핑' 수준의 전문적이고 통찰력 있는 리포트를 작성하세요.
-특히 국내 증시(KOSPI, KOSDAQ)뿐만 아니라 해외 증시(나스닥, S&P500 등)의 흐름을 균형 있게 분석하여 투자자에게 유용한 정보를 제공하세요.
+특히 국내 증시(KOSPI, KOSDAQ)뿐만 아니라 해외 증시(나스닥, S&P500 등)와 **원자재(유가, 금, 구리), 환율**의 흐름을 유기적으로 분석하여 투자자에게 유용한 정보를 제공하세요.
 
 [현재 시장 정보]
 - 시간 상태: {market_status_text}
 - 정규장 운영 여부: {'거래 중' if ms_info['can_trade_regular'] else '종료/대기'}
 
-[현재 시장 지표]
+[현재 주요 시장 지표]
 {index_summary}
 
 [주요 마켓 컨텍스트]
 {json.dumps(market_context, ensure_ascii=False)}
 
 [작성 지침 - 중요]
-1. **Headline (market_title)**: 시장의 핵심(국내외 통합 & 매크로 흐름 반영)을 꿰뚫는 강력한 한 줄 헤드라인으로 작성하세요.
-2. **Short Summary (summary_bullets)**: 현재 국내외 시장에서 가장 중요한 변곡점 3가지를 '·' 기호로 시작하여 작성하세요. (지수 등락뿐만 아니라 금리, 유가 등 거시 경제 지표의 영향력을 우선 포함하세요.)
-3. **Sections (상세 분석)**:
-   - **첫 번째 섹션은 반드시 '글로벌 매크로 인사이트'** 테마로 작성하세요. (예: 미 국채금리 변화와 밸류에이션 영향, 유가/금 변동과 인플레이션/헤지 수요 등)
-   - 각 섹션의 'title'은 반드시 **굵은 소제목**(예: ****미 국채금리 하락에 기술주 밸류에이션 부담 완화****) 형태로 작성하세요.
+1. **Headline (market_title)**: 시장의 핵심(국내외 통합 & 원자재/매크로 흐름 반영)을 꿰뚫는 강력한 한 줄 헤드라인으로 작성하세요.
+2. **Short Summary (summary_bullets)**: 현재 시장에서 가장 중요한 변곡점 3가지를 '·' 기호로 시작하여 작성하세요. (지표 등락뿐만 아니라 원자재 가격 변동이 산업에 미치는 영향을 우선 포함하세요.)
+3. **Macro & Commodity Analysis (중요)**:
+   - **첫 번째 섹션은 반드시 '글로벌 매크로 및 원자재 인사이트'** 테마로 작성하세요.
+   - 예: "🛢️ 유가 1.7% 하락에 에너지 비용 민감 업종 수혜 기대", "💰 금 가격 상승과 안전자산 선호 심리" 등.
+   - 단순히 가격을 나열하지 말고, **"유가 하락으로 인해 항공, 운수, 화학 업종의 비용 부담이 완화될 것으로 보입니다"**와 같이 실제 산업에 미치는 영향력을 구체적으로 서술하세요.
+4. **Sections (상세 분석)**:
+   - 각 섹션의 'title'은 반드시 **굵은 소제목** 형태로 작성하세요.
    - 분석 본문에서 주요 종목 언급 시 반드시 **'종목명 현재가(등락률)'** 형식을 지키세요. (예: 삼성전자 74,500원(+1.2%)).
    - 국내 테마와 해외 연관 테마(예: 엔비디아와 국내 반도체 등)를 연결하여 통찰을 제시하세요.
-4. **전문성 강화**: "위험선호(Risk-on)", "헤지 수요", "밸류에이션 부담", "인플레이션 재료" 등 전문 금융 리포트 수준의 용어를 사용하세요.
-5. **Theme Focus**: 최근 가장 뜨거운 테마와 섹터 흐름을 구체적으로 언급하세요.
-5. **표현 주의**: 현재 시장 상태가 '{market_status_text}'임을 인지하세요. {"만약 장중이라면 '" + avoid_words + "'와 같은 '종료'를 의미하는 단어를 절대 사용하지 마세요. 대신 '상승세', '기록 중', '전망' 등의 표현을 사용하세요." if avoid_words else ""}
+5. **전문성 강화**: "위험선호(Risk-on)", "비용 부담 완화", "밸류에이션 부담", "인플레이션 재료" 등 전문 금융 리포트 수준의 용어를 사용하세요.
+6. **표현 주의**: 현재 시장 상태가 '{market_status_text}'임을 인지하세요. {"만약 장중이라면 '" + avoid_words + "'와 같은 '종료'를 의미하는 단어를 절대 사용하지 마세요." if avoid_words else ""}
 
 [출력 포맷 (JSON)]
 {{
@@ -104,7 +105,7 @@ async def generate_market_wide_briefing(target_time: str = None):
   "summary_bullets": ["· 포인트 1", "· 포인트 2", "· 포인트 3"],
   "simple_summary_bullets": ["· 쉬운 요약 1", ...],
   "sections": [
-    {{ "emoji": "📈", "title": "**섹션 소제목**", "content": "종목명 00원(0%)을 포함한 심층 분석..." }},
+    {{ "emoji": "🛢️", "title": "**유가 변동에 따른 업종별 명암**", "content": "WTI 유가가 00달러로 하락하며 항공주(OO 00원(0%)) 등의 수익성 개선이..." }},
     ...
   ],
   "simple_sections": [

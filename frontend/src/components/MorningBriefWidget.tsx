@@ -208,14 +208,14 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // [History] 최근 영업일(평일) 기준 10일간의 날짜 목록 생성 (주말 제외)
+    // [History] 최근 영업일(평일) 기준 정확히 7일간의 날짜 목록 생성 (주말 제외)
     const availableDates = (() => {
         const dates = [];
         let checkDate = new Date();
         let daysFound = 0;
-        const maxDays = 10; // 최근 10 영업일 표시
+        const targetDays = 7; // [Update] 요청하신 대로 정확히 7 영업일 표시
         
-        while (daysFound < maxDays) {
+        while (daysFound < targetDays) {
             const dayOfWeek = checkDate.getDay(); // 0: 일, 6: 토
             
             // 토요일(6)과 일요일(0)이 아닌 경우에만 목록에 추가
@@ -231,7 +231,7 @@ export default function MorningBriefWidget() {
             checkDate.setDate(checkDate.getDate() - 1);
             
             // 무한 루프 방지 (최대 30일까지만 탐색)
-            if (dates.length >= maxDays || dates.length + daysFound > 30) break;
+            if (dates.length >= targetDays || dates.length + daysFound > 30) break;
         }
         return dates;
     })();

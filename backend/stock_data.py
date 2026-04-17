@@ -1241,9 +1241,6 @@ def get_market_news():
         print(f"Market News Error: {e}")
         return get_naver_flash_news()
 
-
-# [Restored Functions]
-
 def calculate_technical_sentiment(symbol):
     """
     Calculate a simple technical sentiment score (0-100) based on moving averages.
@@ -1259,96 +1256,94 @@ def calculate_technical_sentiment(symbol):
     except:
         return {"score": 50, "label": "Neutral", "signal": "HOLD"}
 
-def get_insider_trading(symbol):
+def get_global_assets_data():
     """
-    Fetch mock insider trading data.
+    yfinance를 활용하여 원유(WTI), 금(Gold), 구리(Copper), 나스닥, S&P500, 환율 데이터를 수집합니다.
     """
-    return []
+    assets = {
+        "WTI 원유": "CL=F",
+        "국제 금": "GC=F",
+        "국제 구리": "HG=F",
+        "나스닥 지수": "^IXIC",
+        "S&P 500": "^GSPC",
+        "달러/원 환율": "KRW=X"
+    }
+    
+    mapping_kr = {
+        "WTI 원유": "🛢️ WTI 원유 (선물)",
+        "국제 금": "💰 국제 금 가격",
+        "국제 구리": "🏗️ 국제 구리 가격",
+        "나스닥 지수": "🇺🇸 나스닥 종합 지수",
+        "S&P 500": "🇺🇸 S&P 500 지수",
+        "달러/원 환율": "💵 달러/원 환율"
+    }
 
-def get_naver_macro_calendar(limit=50):
-    """
-    네이버 증권 내부 API를 사용하여 글로벌 경제 일정을 가져옵니다.
-    """
-    import requests
-    try:
-        url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/upcoming?gteImportance=1&limit={limit}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://stock.naver.com/"
-        }
-        res = requests.get(url, headers=headers, timeout=5)
-        data = res.json()
+    results = []
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    # 병렬 수집으로 속도 극대화
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(assets)) as executor:
+        future_to_asset = {executor.submit(yf.Ticker, sym): (name, sym) for name, sym in assets.items()}
         
-        events = []
-        for item in data:
-            # 시간 포맷팅: 213000 -> 21:30
-            raw_time = item.get("releaseTime", "000000")
-            formatted_time = f"{raw_time[:2]}:{raw_time[2:4]}"
-            
-            # 중요도 매핑: 1~5 -> high/medium/low (네이버 기준 3이상 주황/빨강)
-            imp = item.get("importance", 1)
-            impact = "high" if imp >= 3 else "medium" if imp >= 2 else "low"
-            
-            # 값 포맷팅 유틸
-            def fmt_val(v):
-                if v is None or v == 0: return "-"
-                unit = item.get("indicatorUnit", "")
-                return f"{v}{unit}"
-            
-            events.append({
-                "date": item.get("releaseDate"),
-                "time": formatted_time,
-                "event": f"[{item.get('nationType')}] {item.get('name')}",
-                "event_kr": f"[{item.get('nationKoreanName')}] {item.get('name')}",
-                "country": item.get("nationType"),
-                "country_kr": item.get("nationKoreanName"),
-                "impact": impact,
-                "importance": imp,
-                "actual": fmt_val(item.get("actualValue")),
-                "forecast": "-", # 네이버 APIupcoming에는 예상치가 명시적이지 않을 수 있음
-                "previous": fmt_val(item.get("previousValue"))
-            })
-        return events
-    except Exception as e:
-        print(f"[StockData] Naver Calendar Fetch Error: {e}")
-        return []
+        for future in concurrent.futures.as_completed(future_to_asset):
+            name, sym = future_to_asset[future]
+            try:
+                ticker = future.result()
+                # 최신 5일치 데이터를 가져와 변동률 계산
+                hist = ticker.history(period="5d")
+                if not hist.empty:
+                    current_price = hist['Close'].iloc[-1]
+                    prev_price = hist['Close'].iloc[-2] if len(hist) > 1 else current_price
+                    change = current_price - prev_price
+                    change_pct = (change / prev_price) * 100 if prev_price != 0 else 0
+                    
+                    # 카테고리 분류
+                    category = "💰 원자재" if "원유" in name or "금" in name or "구리" in name else \
+                               "🏦 글로벌 지수" if "지수" in name or "500" in name else "💵 외환"
+                    
+                    results.append({
+                        "date": today,
+                        "time": "실시간",
+                        "event": name,
+                        "event_kr": mapping_kr.get(name, name),
+                        "country": "US" if "지수" in name else "Global",
+                        "country_kr": "미국" if "지수" in name else "글로벌",
+                        "actual": f"{current_price:,.2f}",
+                        "forecast": "-",
+                        "previous": f"{prev_price:,.2f}",
+                        "impact": "high",
+                        "category": category,
+                        "change": f"{change_pct:+.2f}%",
+                        "change_val": change_pct
+                    })
+            except Exception as e:
+                print(f"[GlobalAssets] Error fetching {name}: {e}")
+                
+    return results
 
-def get_macro_calendar():
+def get_market_data():
     """
-    Fetch major economic calendar events.
-    [Updated] 네이버 금융 API를 최우선으로 사용하여 정확도와 한국어 지원을 보장합니다.
+    [Integrated Engine] 글로벌 원자재, 지수, 환율 및 국내 증시 데이터를 통합 수집합니다.
     """
-    # 1. 네이버 금융 API 시도
-    events = get_naver_macro_calendar()
-    if events:
-        return events
-
-    # 2. Fallback: 기존 야후 파이낸셜 로직 (생략 - 네이버 실패 시 빈 리스트 반환으로 우선 처리)
-    import datetime
-    return []
-
-
-def get_korea_economic_indicators():
-    """
-    한국 주요 경제지표 현황 수집 (대폭 확장 버전)
-    - 주가지수, 환율, 채권금리, 원자재, 공포지수 등 20개 이상
-    """
-    import datetime
-    from korea_data import get_korean_interest_rates, get_korean_market_indices
-
     indicators = []
     today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    # 1. 지수 데이터 수집 (KOSPI, KOSDAQ 등)
+    # 1. 글로벌 및 원자재 데이터 수집 (WTI, 금, 구리, 나스닥 등)
     try:
+        global_assets = get_global_assets_data()
+        indicators.extend(global_assets)
+    except Exception as e:
+        print(f"[Global Assets] Error: {e}")
+
+    # 2. 국내 지수 데이터 수집 (KOSPI, KOSDAQ 등)
+    try:
+        from korea_data import get_korean_market_indices, get_korean_interest_rates
         indices = get_korean_market_indices()
         for key, info in indices.items():
             name_kr = "코스피" if key == "kospi" else "코스닥" if key == "kosdaq" else "코스피200"
-            # korea_data.py의 get_korean_market_indices는 'value' 필드에 가격 텍스트를 담음
             actual_str = info.get('value', '-')
             chg_pct_str = info.get('percent', '0.00%')
             
-            # change_val 계산 (숫자형)
             try:
                 cv = float(re.sub(r'[^0-9.-]', '', chg_pct_str))
             except:
@@ -1369,19 +1364,13 @@ def get_korea_economic_indicators():
                 "change": chg_pct_str,
                 "change_val": cv,
             })
-    except Exception as e:
-        print(f"[KR Indicators] 지수 수집 오류: {e}")
-
-    # 2. 채권/금리 데이터 수집 (korea_data의 최신 로직 사용)
-    try:
+            
+        # 3. 채권/금리 데이터 수집
         kr_rates = get_korean_interest_rates()
         for r in kr_rates:
-            # 반환 필드: name, price, change, symbol
             name = r['name']
             price = r['price']
             chg_val = r['change']
-            
-            # 표시용 포맷팅
             actual_str = f"{price:.2f}%"
             change_str = f"{chg_val:+.2f}%p" if chg_val != 0 else "0.00%p"
             
@@ -1401,32 +1390,21 @@ def get_korea_economic_indicators():
                 "change_val": chg_val,
             })
     except Exception as e:
-        print(f"[KR Indicators] 금리 수집 오류: {e}")
+        print(f"[Market Data Engine] Database/Fetch Error: {e}")
 
-    # [Filter] 값이 0이거나 누락된 데이터 제외 (사용자 요청)
+    # 4. 필터링 및 정규화
     filtered = []
+    seen = set()
     for item in indicators:
+        key = item.get("event_kr", "")
         actual = item.get("actual", "-")
-        # 0, 0.00, -, 0.00% 등 다양한 형태의 0 체크
-        clean_actual = re.sub(r'[^0-9.]', '', str(actual))
-        try:
-            val = float(clean_actual) if clean_actual else 0
-        except:
-            val = 0
-            
-        if val > 0 and actual != "-":
+        
+        # 유효하지 않은 데이터 제외
+        if actual != "-" and key not in seen:
+            seen.add(key)
             filtered.append(item)
 
-    # 중복 제거 및 정렬 (이미 unique하지만 안전장치)
-    seen = set()
-    unique = []
-    for item in filtered:
-        key = item.get("event_kr", "")
-        if key not in seen:
-            seen.add(key)
-            unique.append(item)
-
-    return unique
+    return filtered
 
 
 _events_cache = {"data": None, "time": 0}
