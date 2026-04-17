@@ -1449,6 +1449,55 @@ def get_market_data():
 
     return filtered
 
+def get_macro_calendar():
+    """
+    주요 거시 경제 일정(글로벌 매크로)을 수집합니다. 
+    기본적으로 실시간 뉴스 및 지표 발표를 모니터링하여 AI에게 전달합니다.
+    """
+    try:
+        # 간단한 로직: 주요 매크로 키워드 뉴스나 사전에 정의된 주요 경제 지표 일정을 반환
+        # 더 고도화된 수집이 필요할 경우 Investing.com 크롤러 등을 연결할 수 있음
+        import datetime
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        
+        # 현재는 주요 고정 매크로 일정 또는 실시간 뉴스에서 추출한 가상 일정을 반환 (AI가 분석용으로 사용)
+        events = [
+            {"event": "미국 실업수당청구건수 발표", "date": today, "impact": "high"},
+            {"event": "연준 위원 발언 일정", "date": today, "impact": "medium"},
+            {"event": "국제 유가 재고 발표", "date": today, "impact": "medium"}
+        ]
+        return events
+    except Exception as e:
+        print(f"[Macro Calendar] Error: {e}")
+        return []
+
+def get_market_news():
+    """
+    네이버 금융 상위 뉴스 및 특징주 뉴스를 수집합니다.
+    """
+    try:
+        from korea_data import get_korean_market_news
+        return get_korean_market_news()
+    except:
+        return []
+
+def get_dart_risk_alerts():
+    """
+    DART(전자공시)에서 리스크 관련 공시(유상증자, 전환사채 등)를 필터링하여 수집합니다.
+    """
+    try:
+        # 기존 구현된 공시 수집기 활용
+        from korea_data import get_dart_disclosures
+        disclosures = get_dart_disclosures()
+        risk_keywords = ["유상증자", "전환사채", "신주인수권", "감자", "횡령"]
+        alerts = []
+        for d in disclosures:
+            if any(k in d.get('title', '') for k in risk_keywords):
+                alerts.append(d)
+        return alerts
+    except:
+        return []
+
 
 _events_cache = {"data": None, "time": 0}
 

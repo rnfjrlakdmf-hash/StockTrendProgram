@@ -4,13 +4,35 @@ from typing import Optional, List, Dict, Any, Union, Mapping, Callable, Type, Ty
 import unicodedata
 from datetime import datetime, timedelta
 
+import threading
+
+# [Periodic Worker Starter] v3.6.15-Global - Startup Event Handler
+@app.on_event("startup")
+async def startup_event():
+    """서버 시작 시 백그라운드 워커들을 가동함"""
+    print("[Startup] Initializing background services...")
+    
+    # 1. 히스토리 수집 스케줄러 시작
+    thread = threading.Thread(target=run_periodic_briefing_bg, daemon=True)
+    thread.start()
+    print("[Startup] Periodic market briefing worker started in background.")
+
+    # 2. 브리핑 테이블 초기화
+    try:
+        from utils.briefing_store import init_briefing_table
+        init_briefing_table()
+        print("[Startup] Briefing table initialized.")
+    except Exception as e:
+        print(f"[Startup] Init error: {e}")
+
+# [Periodic Worker Update] Use Global Engine for SYSTEM
 def run_periodic_briefing_bg():
     """매 시 정각마다 SYSTEM(공용) 및 활성 유저 브리핑을 자동 생성하는 백그라운드 워커"""
     print("[PeriodicBrief] Starting Hourly Market Briefing Worker...")
     while True:
         try:
             now = datetime.now()
-            # 정각(00분 00초)으로 설정 (서버 부하 분산을 위해 10초 정도 여유)
+            # 정각(00분 10초)으로 설정
             next_hour = (now + timedelta(hours=1)).replace(minute=0, second=10, microsecond=0)
             wait_seconds = (next_hour - now).total_seconds()
             
@@ -19,17 +41,19 @@ def run_periodic_briefing_bg():
                 time.sleep(wait_seconds)
             
             print("[PeriodicBrief] Triggering periodic market briefing (SYSTEM)...")
-            from morning_briefing import generate_user_morning_briefing
             
-            # 1. SYSTEM 브리핑 (공통 시장 요약)
+            # 1. SYSTEM 브리핑 (최신 글로벌-국내 연동 엔진 사용)
             try:
-                generate_user_morning_briefing('SYSTEM')
-                print("[PeriodicBrief] SYSTEM briefing saved successfully.")
+                # 동기 환경에서 비동기 함수 실행 (백그라운드 스레드이므로 가능)
+                from utils.global_briefing import generate_market_wide_briefing
+                asyncio.run(generate_market_wide_briefing())
+                print("[PeriodicBrief] Upgraded Global SYSTEM briefing saved successfully.")
             except Exception as e:
                 print(f"[PeriodicBrief] SYSTEM Generation error: {e}")
 
-            # 2. [Active User Warmer] 활성 유저 예열 (예: 최근 24시간 내 접속 유저)
+            # 2. 유저별 관심종목 브리핑 (기존 엔진 유지)
             try:
+                from morning_briefing import generate_user_morning_briefing
                 from db_manager import get_all_users
                 all_users = get_all_users()
                 print(f"[PeriodicBrief] Warming up {len(all_users)} potential active users...")
@@ -37,7 +61,7 @@ def run_periodic_briefing_bg():
                     uid = u.get('id')
                     if uid and uid != 'SYSTEM':
                         generate_user_morning_briefing(uid)
-                        time.sleep(3) # API Rate Limit 및 부하 방지
+                        time.sleep(2)
             except Exception as e:
                 print(f"[PeriodicBrief] User Warmer error: {e}")
                 
