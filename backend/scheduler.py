@@ -154,26 +154,28 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
             
-            # [24/7 Proactive Check] 현재 시간 포함 최근 6시간 동안 누락된 브리핑이 있는지 전수 조사
+            # [24/7 High-Performance Check] 최근 6시간 동안 누락된 브리핑이 있는지 즉시 조사하여 병렬 보충
             from utils.briefing_store import has_system_briefing_for_hour
             
-            # 현재 시점부터 과거 6시간 전까지 루프
+            check_tasks = []
             for h_offset in range(6):
                 target_time = now - timedelta(hours=h_offset)
                 t_date = target_time.strftime("%Y-%m-%d")
                 t_hour = target_time.hour
                 
                 if not has_system_briefing_for_hour(t_date, t_hour):
-                    # 누락 발견! (과거 데이터 소급 생성 또는 현재 시간 보충)
-                    logger.info(f"[HourlyBrief] Found MISSING briefing for {t_date} {t_hour}:00 KST. Self-healing triggered.")
-                    # [Note] 과거 시간이더라도 현재 시장 데이터를 기반으로 브리핑을 생성하여 타임라인의 빈틈을 메움
-                    await generate_market_wide_briefing()
-                    # 하나를 생성했으면 다음 루프(1분 뒤)에서 나머지를 채우도록 중단 (서버 부하 방지)
-                    break
+                    # 누락 발견 시 즉시 생성 태스크 추가
+                    logger.info(f"[HourlyBrief] Queueing missing briefing for {t_date} {t_hour}:00 KST.")
+                    check_tasks.append(generate_market_wide_briefing())
                 else:
                     if h_offset == 0 and t_hour != last_run_hour:
-                        logger.info(f"[HourlyBrief] Current hour ({t_hour}:00 KST) data already exists.")
+                        logger.info(f"[HourlyBrief] Current hour check ok: {t_hour}:00 KST.")
                         last_run_hour = t_hour
+            
+            if check_tasks:
+                logger.info(f"[HourlyBrief] Triggering {len(check_tasks)} missing briefings in parallel...")
+                # 한꺼번에 실행하여 빠르게 공백을 메움
+                await asyncio.gather(*check_tasks)
 
             # [Daily Cleanup] 매일 새벽 4시경 8일 이상 된 데이터 정리
             if current_hour == 4 and current_date != last_cleanup_date:

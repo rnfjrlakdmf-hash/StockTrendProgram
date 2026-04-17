@@ -232,24 +232,25 @@ export default function MorningBriefWidget() {
     }, [availableDates]);
 
     // [History] 선택된 날짜에 해당하는 데이터 필터링
-    // 만약 가장 최신 날짜(오늘)를 선택했다면, 최근 24시간 이내의 데이터(어제 밤 포함)를 우선적으로 보여줌
     const filteredTimeline = (timeline || []).filter(b => {
-        const itemDate = b.kst_date || b.created_at?.split(' ')[0] || b.created_at?.split('T')[0];
+        if (!selectedDate) return false;
         
-        // 1. 선택된 날짜와 정확히 일치하는 경우
-        if (itemDate === selectedDate) return true;
+        // 날짜 데이터 추출 및 정규화 (KST 기준)
+        const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
         
-        // 2. 스마트 뷰: 선택된 날짜가 가장 최신 날짜이고, 해당 항목이 선택된 날짜 바로 직전(24시간 내)이라면 포함
+        // 1. 선택된 날짜와 정확히 일치하는 경우 (Strict Match)
+        if (datePart === selectedDate) return true;
+        
+        // 2. 스마트 뷰: 선택된 날짜가 가장 최신(오늘)이고, 항목이 24시간 이내의 기록인 경우 (어제 밤 기록 포함)
         if (availableDates.length > 0 && selectedDate === availableDates[0]) {
             try {
                 const now = new Date();
-                // "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DDTHH:MM:SS" (ISO 호환)
                 const isoStr = (b.created_at || "").replace(" ", "T");
                 const itemTime = new Date(isoStr);
                 
-                // 유효한 날짜인 경우에만 계산
                 if (!isNaN(itemTime.getTime())) {
                     const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
+                    // 24시간 이내 기록이라면 "오늘의 흐름"으로 함께 보여줌
                     return diffHours <= 24;
                 }
             } catch (e) {
