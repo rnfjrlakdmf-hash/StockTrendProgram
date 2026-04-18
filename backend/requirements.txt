@@ -1,4 +1,4 @@
-# Build Trigger: v2.6.5-global-sync-hotfix
+# Build Trigger: v3.6.17-NUCLEAR-STABLE
 fastapi
 uvicorn[standard]
 pandas
@@ -21,5 +21,6 @@ deep-translator
 pycryptodome
 firebase-admin
 scipy
-selenium
-webdriver-manager
+# [Nuclear-Fix] Selenium/Webdriver removed from main requirements to ensure fast build
+# selenium
+# webdriver-manager

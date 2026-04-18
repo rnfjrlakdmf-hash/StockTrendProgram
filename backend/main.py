@@ -29,60 +29,8 @@ if os.path.exists(STOCK_MAP_PATH):
 else:
     print(f"⚠️ [Startup] WARNING: STOCK_MAP (stock_names.py) NOT FOUND!")
 
-from sockets import manager
-from stock_data import (
-    get_simple_quote, get_all_market_assets, get_stock_info, get_market_data, 
-    get_market_news, calculate_technical_sentiment, 
-    get_macro_calendar, fetch_google_news, get_korean_stock_name, 
-    GLOBAL_KOREAN_NAMES
-)
-from kis_api import KisApi
-from db_manager import (
-    get_db_connection, save_analysis_result, get_score_history, add_watchlist, 
-    remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, 
-    save_fcm_token, delete_fcm_token, clear_watchlist,
-    create_signals_table,
-    save_signal, get_recent_signals, get_signals_by_symbol,
-    get_all_users, toggle_user_pro_status, migrate_watchlist
-)
-from user_session import session_manager
-from ai_analysis import (
-    analyze_stock, generate_market_briefing, analyze_portfolio, analyze_theme, 
-    analyze_earnings_impact, analyze_supply_chain, analyze_chart_patterns, 
-    analyze_trading_log
-)
-from rank_data import get_realtime_top10
-from risk_monitor import check_portfolio_risk
-from backtest import run_backtest
-from portfolio_opt import optimize_portfolio
-from alerts import (
-    add_alert, get_alerts, delete_alert, check_alerts,
-    get_recent_telegram_users
-)
-# [REMOVED] from chatbot import chat_with_ai
-from korea_data import (
-    get_naver_disclosures, get_naver_market_index_data, get_ipo_data, 
-    get_live_investor_estimates, get_indexing_status, search_stock_code,
-    get_korean_market_indices, get_top_sectors, get_theme_heatmap_data,
-    get_market_investors, get_index_chart_data, get_investor_history,
-    get_market_summary_stats, get_live_disclosures, get_integrated_stock_news,
-    get_korean_interest_rates
-)
-from global_search import search_global_ticker
-from pydantic import BaseModel, Field
-from portfolio_analysis import analyze_portfolio_risk
-from auth import router as auth_router
-from morning_briefing import generate_user_morning_briefing
-from utils.briefing_store import (
-    init_briefing_table, get_latest_briefing, 
-    should_generate_new_briefing, get_today_briefing_timeline,
-    rollback_morning_briefing
-)
-
-# [Global Scaling] Mapping for Stocks (Korean Names)
-# [v3.6.2] Redundant definition removed. Imported from stock_data.py instead.
-
-app = FastAPI(title="AI Stock Analyst", version="3.6.2")
+# [Nuclear Fix 3.0] Heavy imports are moved inside startup or route handlers for ultra-fast boot.
+app = FastAPI(title="AI Stock Analyst", version="3.6.17-NUCLEAR")
 
 # [Final Fix] CORS 설정을 가장 최상단에 배치하여 브라우저 검문을 0.1초 만에 통과하도록 함
 origins = [
@@ -211,6 +159,8 @@ def health_check():
     }
 
 # Register Auth Router
+# [Lazy Import] to prevent startup block during module resolution
+from auth import router as auth_router
 app.include_router(auth_router, prefix="/api")
 
 # [ADD] Market Indices Endpoint (For Sparklines & Rich Data)
@@ -262,6 +212,7 @@ def clear_cache():
 @app.get("/api/admin/users")
 def read_all_users():
     """[Admin] 모든 회원 목록 조회"""
+    from db_manager import get_all_users
     users = get_all_users()
     return {"status": "success", "data": users}
 
@@ -272,6 +223,7 @@ class ProToggleRequest(BaseModel):
 @app.post("/api/admin/users/pro")
 def update_user_pro(req: ProToggleRequest):
     """[Admin] 회원 PRO 상태 변경"""
+    from db_manager import toggle_user_pro_status
     success = toggle_user_pro_status(req.user_id, req.is_pro)
     if success:
         return {"status": "success", "message": f"User {req.user_id} PRO status updated."}
@@ -347,11 +299,13 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
 @app.get("/api/peer/{symbol}")
 @turbo_cache(ttl_seconds=3600)
 def peer_data(symbol: str):
+    from pro_analysis import get_peer_comparison
     return get_peer_comparison(symbol)
 
 @app.get("/api/sector-analysis-json/{symbol}")
 def sector_analysis_json_debug(symbol: str, sector_id: Optional[str] = Query(None)):
     """v4.6.0 JSON 디벨로퍼 디버그 API (Gold-Spec)"""
+    from sector_analysis import get_sector_analysis_data
     return get_sector_analysis_data(symbol, sector_id)
 
 @app.get("/api/etf-detail/{symbol}")

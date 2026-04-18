@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
-from db_manager import create_user_if_not_exists, decrement_free_trial, update_user_keys
 import time
 
 router = APIRouter()
@@ -28,6 +27,7 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     In a real app, we would verify the ID Token here using google-auth library.
     Since we don't have keys, we trust the client (for this demo/personal use).
     """
+    from db_manager import create_user_if_not_exists
     
     # 1. Create or Update User in DB (이 작업은 빠르므로 동기 처리)
     user_data = {
