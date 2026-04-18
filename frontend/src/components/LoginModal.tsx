@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { X, User as UserIcon } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -15,12 +15,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const { login, demoLogin } = useAuth();
     const [errorMsg, setErrorMsg] = useState("");
 
-    // [Hybrid Auth] 모바일 환경 감지 로직
-    const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    // [Hybrid Auth] 모바일 환경 감지 로직 강화 (UA + 화면 너비)
+    const [isMobile, setIsMobile] = useState(false);
+    
+    useEffect(() => {
+        const checkMobile = () => {
+             const userAgentCheck = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+             const screenWidthCheck = window.innerWidth <= 768; // 태블릿/폰 기준
+             setIsMobile(userAgentCheck || screenWidthCheck);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const googleLoginTrigger = useGoogleLogin({
         flow: 'implicit',
-        ux_mode: isMobile ? 'redirect' : 'popup', // [Fix] 모바일은 리다이렉트, PC는 팝업
+        ux_mode: isMobile ? 'redirect' : 'popup', 
+        redirect_uri: typeof window !== 'undefined' ? window.location.origin : undefined, // [Fix] 리다이렉트 주소 명시
         onSuccess: async (tokenResponse) => {
             console.log("Google Login Success (Popup/Direct):", tokenResponse);
             if (tokenResponse.access_token) {
