@@ -178,11 +178,26 @@ async def main_startup_service():
     # so the app can bind to the port IMMEDIATELY.
     asyncio.create_task(initialize_heavy_tasks())
 
-# CORS 설정 (전면 개방 패치 - 구글 로그인 차단 해결)
+# CORS 설정 (Vercel 및 Local 개발 환경 명시적 허용)
+# [Fix] allow_origins=["*"] 대신 명시적 origins 사용으로 보안 및 통신 안정성 확보
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://stock-trend-program.vercel.app",
+    "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stock-server-rnfjr.up.railway.app",
+    "https://stocktrendprogram-production.up.railway.app",
+    "https://railway.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # [Nuclear Fix] 모든 출처 허용
-    allow_credentials=False, # allow_origins=["*"] 일 때 필수 설정
+    allow_origins=origins,
+    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # Vercel 모든 프리뷰 주소 허용
+    allow_credentials=True, # 명시적 origins 사용 시 True 가능
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -192,8 +207,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.16-UNIFIED-ASYNC",
-        "service": "AI Stock Analyst Backend - Production Stable (Zero-Wait Recovery)"
+        "version": "v3.6.17-STABLE",
+        "service": "AI Stock Analyst Backend - Production Fixed (Weekend-Patch)"
     }
 
 # Register Auth Router

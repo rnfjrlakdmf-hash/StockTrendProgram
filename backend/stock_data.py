@@ -55,7 +55,8 @@ def get_market_status_info():
             "status": "CLOSED",
             "text": "장마감 (주말)",
             "is_open": False,
-            "can_trade_regular": False
+            "can_trade_regular": False,
+            "current_time_kst": now.strftime("%H:%M") # [Fix] 주말에도 시각 정보 포함
         }
 
     # 시간대별 상세 판별
