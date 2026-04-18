@@ -84,11 +84,34 @@ from utils.briefing_store import (
 
 app = FastAPI(title="AI Stock Analyst", version="3.6.2")
 
+# [Final Fix] CORS 설정을 가장 최상단에 배치하여 브라우저 검문을 0.1초 만에 통과하도록 함
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://stock-trend-program.vercel.app",
+    "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
+    "https://stock-server-rnfjr.up.railway.app",
+    "https://stocktrendprogram-production.up.railway.app",
+    "https://railway.app"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # Vercel 모든 프리뷰 주소 허용
+    allow_credentials=True, 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # [Integrated v3.6.16] Unified Startup Logic
 @app.on_event("startup")
 async def main_startup_service():
     """서버 시작 시 데이터베이스, 외부 서비스, 스케줄러를 통합 가동함 (비차단 방식)"""
-    print("[Startup] >>> Starting AI Stock Analyst Unified Service (v3.6.16) <<<")
+    print("[Startup] >>> Starting AI Stock Analyst Unified Service (v3.6.17) <<<")
     
     async def initialize_heavy_tasks():
         # 1. Database Table Initialization
@@ -162,6 +185,7 @@ async def main_startup_service():
             account = os.getenv("KIS_ACCOUNT")
             if app_key and secret:
                 temp_api = KisApi(app_key, secret, account)
+                # approval_key fetch has timeout=5 now
                 approval_key = await asyncio.to_thread(temp_api.get_approval_key)
                 if approval_key:
                     global kis_ws_client
@@ -178,37 +202,13 @@ async def main_startup_service():
     # so the app can bind to the port IMMEDIATELY.
     asyncio.create_task(initialize_heavy_tasks())
 
-# CORS 설정 (Vercel 및 Local 개발 환경 명시적 허용)
-# [Fix] allow_origins=["*"] 대신 명시적 origins 사용으로 보안 및 통신 안정성 확보
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "https://stock-trend-program.vercel.app",
-    "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stock-server-rnfjr.up.railway.app",
-    "https://stocktrendprogram-production.up.railway.app",
-    "https://railway.app"
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # Vercel 모든 프리뷰 주소 허용
-    allow_credentials=True, # 명시적 origins 사용 시 True 가능
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Health Check Endpoint
 @app.get("/api/health")
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.17-STABLE",
-        "service": "AI Stock Analyst Backend - Production Fixed (Weekend-Patch)"
+        "version": "v3.6.17-ULTRA-STABLE",
+        "service": "AI Stock Analyst Backend - Production Fixed (High-Availability Patch)"
     }
 
 # Register Auth Router

@@ -62,7 +62,7 @@ class KisApi:
         }
         
         try:
-            res = requests.get(url, headers=headers, params=params)
+            res = requests.get(url, headers=headers, params=params, timeout=5)
             data = res.json()
             
             if data['rt_cd'] == '0':
@@ -110,7 +110,7 @@ class KisApi:
         }
         
         try:
-            res = requests.post(url, headers=headers, data=json.dumps(body))
+            res = requests.post(url, headers=headers, data=json.dumps(body), timeout=5)
             data = res.json()
             if "approval_key" in data:
                 return data["approval_key"]
@@ -144,7 +144,7 @@ class KisApi:
         }
 
         try:
-            res = requests.post(url, headers=headers, data=json.dumps(body))
+            res = requests.post(url, headers=headers, data=json.dumps(body), timeout=5)
             data = res.json()
             if "access_token" in data:
                 KisApi._access_token = data["access_token"]
@@ -181,7 +181,7 @@ class KisApi:
         }
 
         try:
-            res = requests.get(url, headers=headers, params=params)
+            res = requests.get(url, headers=headers, params=params, timeout=5)
             data = res.json()
             
             if data['rt_cd'] == '0': # Success
@@ -246,7 +246,7 @@ class KisApi:
         }
 
         try:
-            res = requests.get(url, headers=headers, params=params)
+            res = requests.get(url, headers=headers, params=params, timeout=5)
             data = res.json()
             
             if data['rt_cd'] == '0':
@@ -314,7 +314,7 @@ class KisApi:
         }
         
         try:
-            res = requests.post(url, headers=headers, data=json.dumps(body))
+            res = requests.post(url, headers=headers, data=json.dumps(body), timeout=5)
             data = res.json()
             
             if data['rt_cd'] == '0':
