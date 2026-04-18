@@ -2,7 +2,7 @@ import asyncio
 import logging
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from kind_scraper import KindScraper
 from db_manager import get_all_fcm_tokens
 from firebase_config import send_multicast_notification
@@ -180,6 +180,25 @@ async def hourly_briefing_scheduler_loop():
                 logger.info(f"[HourlyBrief] Backfilling {len(check_tasks)} missing historical slots in parallel...")
                 # 병렬로 실행하여 빠르게 24시간 타임라인을 완성함
                 await asyncio.gather(*check_tasks)
+                last_run_hour = current_hour # 성공적으로 가동 후 현재 시각 업데이트
+
+            # [ADD] User-Specific Briefing Warmer (Para-engine)
+            # 매 시 정각에 활성 유저들의 개인 맞춤형 대시보드 데이터를 미리 생성해둠
+            if current_hour != last_run_hour:
+                try:
+                    from morning_briefing import generate_user_morning_briefing
+                    from db_manager import get_all_users
+                    all_users = get_all_users()
+                    logger.info(f"[HourlyBrief] Warming up {len(all_users)} potential active users...")
+                    for u in all_users:
+                        uid = u.get("id")
+                        if uid and uid != "SYSTEM":
+                            # 개인 브리핑은 리소스 소모가 크므로 비동기로 살짝 띄우거나 차례대로 처리
+                            generate_user_morning_briefing(uid)
+                            await asyncio.sleep(1) # 부하 방지를 위한 간격
+                    last_run_hour = current_hour
+                except Exception as user_e:
+                    logger.error(f"[HourlyBrief] User Warmer error: {user_e}")
 
             # [Daily Cleanup] 매일 새벽 4시경 8일 이상 된 데이터 정리
             if current_hour == 4 and current_date != last_cleanup_date:

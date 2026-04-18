@@ -41,9 +41,8 @@ from db_manager import (
     get_db_connection, save_analysis_result, get_score_history, add_watchlist, 
     remove_watchlist, get_watchlist, cast_vote, get_vote_stats, get_prediction_report, 
     save_fcm_token, delete_fcm_token, clear_watchlist,
-    create_signals_table, create_votes_table,
+    create_signals_table,
     save_signal, get_recent_signals, get_signals_by_symbol,
-    save_vote, get_vote_results, get_user_vote, get_yesterday_vote_results,
     get_all_users, toggle_user_pro_status, migrate_watchlist
 )
 from user_session import session_manager
