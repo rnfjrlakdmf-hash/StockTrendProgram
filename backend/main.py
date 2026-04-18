@@ -107,25 +107,11 @@ async def startup_event():
         print(f"[Startup] Scheduler start error: {e}")
 
 # Force Reload Trigger: v2.6.0-Final-CORS-Hardened
-# CORS 설정 (Vercel 및 Local 개발 환경 허용)
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "https://stock-trend-program.vercel.app",
-    "https://stock-trend-program.vercel.app/",
-    "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
-    "https://stock-server-rnfjr.up.railway.app",
-    "https://stocktrendprogram-production.up.railway.app"
-]
-
+# CORS 설정 (전면 개방 패치 - 구글 로그인 차단 해결)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # [Fix] Vercel 모든 서브도메인 포괄 허용
-    allow_credentials=True,
+    allow_origins=["*"], # [Nuclear Fix] 모든 출처 허용
+    allow_credentials=False, # allow_origins=["*"] 일 때 필수 설정
     allow_methods=["*"],
     allow_headers=["*"],
 )
