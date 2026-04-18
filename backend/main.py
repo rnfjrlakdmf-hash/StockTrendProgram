@@ -114,6 +114,7 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "https://stock-trend-program.vercel.app",
+    "https://stock-trend-program.vercel.app/",
     "https://stock-trend-program-rnfjrlakdmf-hashs-projects.vercel.app",
     "https://stock-trend-program-git-main-rnfjrlakdmf-hashs-projects.vercel.app",
     "https://stock-server-rnfjr.up.railway.app",
@@ -123,6 +124,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app", # [Fix] Vercel 모든 서브도메인 포괄 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
