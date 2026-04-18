@@ -87,69 +87,96 @@ app = FastAPI(title="AI Stock Analyst", version="3.6.2")
 # [Integrated v3.6.16] Unified Startup Logic
 @app.on_event("startup")
 async def main_startup_service():
-    """서버 시작 시 데이터베이스, 외부 서비스, 스케줄러를 통합 가동함"""
+    """서버 시작 시 데이터베이스, 외부 서비스, 스케줄러를 통합 가동함 (비차단 방식)"""
     print("[Startup] >>> Starting AI Stock Analyst Unified Service (v3.6.16) <<<")
     
-    # 1. Database Table Initialization
-    try:
-        from utils.briefing_store import init_briefing_table
-        from db_manager import (
-            create_signals_table, create_fcm_tokens_table
-        )
-        # Assuming these might be needed
-        init_briefing_table()
-        create_signals_table()
-        from price_alerts import create_price_alerts_tables
-        create_price_alerts_tables()
-        print("[Startup] Database tables verified.")
-    except Exception as e:
-        print(f"[Startup] DB Init error: {e}")
+    async def initialize_heavy_tasks():
+        # 1. Database Table Initialization
+        try:
+            from utils.briefing_store import init_briefing_table
+            from db_manager import (
+                create_signals_table, create_fcm_tokens_table
+            )
+            # Run blocking DB operations in a thread
+            await asyncio.to_thread(init_briefing_table)
+            await asyncio.to_thread(create_signals_table)
+            
+            from price_alerts import create_price_alerts_tables
+            await asyncio.to_thread(create_price_alerts_tables)
+            print("[Startup] Database tables verified.")
+        except Exception as e:
+            print(f"[Startup] DB Init error: {e}")
 
-    # 2. External Service Initialization (Firebase)
-    try:
-        from firebase_config import initialize_firebase
-        initialize_firebase()
-        print("[Startup] Firebase initialized.")
-    except Exception as e:
-        print(f"[Startup] Firebase init error: {e}")
+        # 2. External Service Initialization (Firebase)
+        try:
+            from firebase_config import initialize_firebase
+            await asyncio.to_thread(initialize_firebase)
+            print("[Startup] Firebase initialized.")
+        except Exception as e:
+            print(f"[Startup] Firebase init error: {e}")
 
-    # 3. Background Threads & Loops
-    import threading
-    # (A) Background Threads (Daemon)
-    try:
-        # Legacy Alert Scheduler
-        def run_legacy_scheduler():
-            import time
-            while True:
-                try:
-                    from db_manager import check_alerts
-                    check_alerts()
-                except Exception as e:
-                    print(f"Legacy Scheduler Error: {e}")
-                time.sleep(30)
-        threading.Thread(target=run_legacy_scheduler, daemon=True).start()
-        print("[Startup] Background legacy scheduler started.")
-    except Exception as e:
-        print(f"[Startup] Thread start error: {e}")
+        # 3. Background Threads & Loops
+        import threading
+        # (A) Background Threads (Daemon)
+        try:
+            # Legacy Alert Scheduler
+            def run_legacy_scheduler():
+                import time
+                while True:
+                    try:
+                        from db_manager import check_alerts
+                        check_alerts()
+                    except Exception as e:
+                        print(f"Legacy Scheduler Error: {e}")
+                    time.sleep(30)
+            threading.Thread(target=run_legacy_scheduler, daemon=True).start()
+            print("[Startup] Background legacy scheduler started.")
+        except Exception as e:
+            print(f"[Startup] Thread start error: {e}")
 
-    # (B) Async Schedulers & Loops
-    try:
-        from scheduler import hourly_briefing_scheduler_loop, disclosure_scheduler_loop
-        from scheduler_service import start_scheduler
-        
-        asyncio.create_task(hourly_briefing_scheduler_loop())
-        asyncio.create_task(disclosure_scheduler_loop())
-        asyncio.create_task(broadcast_stock_updates())
-        
-        from price_alerts import price_alert_monitor
-        asyncio.create_task(price_alert_monitor.start())
-        
-        start_scheduler() # Smart Scheduler (Market Closing Alerts)
-        print("[Startup] All Async Schedulers started.")
-    except Exception as e:
-        print(f"[Startup] Async logic error: {e}")
+        # (B) Async Schedulers & Loops
+        try:
+            from scheduler import hourly_briefing_scheduler_loop, disclosure_scheduler_loop
+            from scheduler_service import start_scheduler
+            
+            # Start schedulers as tasks
+            asyncio.create_task(hourly_briefing_scheduler_loop())
+            asyncio.create_task(disclosure_scheduler_loop())
+            asyncio.create_task(broadcast_stock_updates())
+            
+            from price_alerts import price_alert_monitor
+            asyncio.create_task(price_alert_monitor.start())
+            
+            # Smart Scheduler usually starts a thread
+            await asyncio.to_thread(start_scheduler)
+            print("[Startup] All Async Schedulers and Threads started.")
+        except Exception as e:
+            print(f"[Startup] Async logic error: {e}")
 
-    print("[Startup] >>> AI Stock Analyst Backend is now FULLY OPERATIONAL <<<")
+        # (C) KIS WebSocket Client
+        try:
+            from kis_api import KisApi
+            from kis_ws import KisWebSocket
+            app_key = os.getenv("KIS_APP_KEY")
+            secret = os.getenv("KIS_APP_SECRET")
+            account = os.getenv("KIS_ACCOUNT")
+            if app_key and secret:
+                temp_api = KisApi(app_key, secret, account)
+                approval_key = await asyncio.to_thread(temp_api.get_approval_key)
+                if approval_key:
+                    global kis_ws_client
+                    kis_ws_client = KisWebSocket(approval_key)
+                    kis_ws_client.set_callback(handle_kis_ws_message)
+                    asyncio.create_task(kis_ws_client.connect())
+                    print("[Startup] KIS WebSocket initialized.")
+        except Exception as e:
+            print(f"[Startup] KIS WS failure: {e}")
+
+        print("[Startup] >>> AI Stock Analyst Backend is now FULLY OPERATIONAL <<<")
+
+    # [CRITICAL] Heavy initialization is pushed to the background 
+    # so the app can bind to the port IMMEDIATELY.
+    asyncio.create_task(initialize_heavy_tasks())
 
 # CORS 설정 (전면 개방 패치 - 구글 로그인 차단 해결)
 app.add_middleware(
@@ -165,8 +192,8 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.16-UNIFIED",
-        "service": "AI Stock Analyst Backend - Production Stable (Auto-Recovery)"
+        "version": "v3.6.16-UNIFIED-ASYNC",
+        "service": "AI Stock Analyst Backend - Production Stable (Zero-Wait Recovery)"
     }
 
 # Register Auth Router
