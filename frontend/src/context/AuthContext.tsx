@@ -153,23 +153,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handleRedirect = async () => {
             const hash = window.location.hash;
+            const search = window.location.search;
+            const queryParams = new URLSearchParams(search);
+            const hashParams = new URLSearchParams(hash.substring(1));
+
+            // [Error Detection] Check for errors from Google in search or hash
+            const error = hashParams.get("error") || queryParams.get("error");
+            const errorDesc = hashParams.get("error_description") || queryParams.get("error_description");
+
+            if (error) {
+                console.error("Google Auth Error from Redirect:", error, errorDesc);
+                alert(`구글 로그인 오류: ${error}\n${errorDesc || ""}`);
+                window.history.replaceState(null, "", window.location.pathname);
+                return;
+            }
+
             if (hash && hash.includes("access_token")) {
                 console.log("Found access_token in hash, processing login...");
                 try {
-                    const params = new URLSearchParams(hash.substring(1));
-                    const accessToken = params.get("access_token");
+                    const accessToken = hashParams.get("access_token");
 
                     if (accessToken) {
-                        // Clean URL hash immediately
+                        // Clean URL hash immediately to avoid re-processing or leaking token
                         window.history.replaceState(null, "", window.location.pathname);
 
-                        alert("구글 인증 확인됨. 사용자 정보를 가져옵니다...");
+                        alert("인증 정보 수신 성공! 사용자 정보를 가져옵니다...");
                         // Fetch User Info
                         const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
                             headers: { Authorization: `Bearer ${accessToken}` },
                         });
 
-                        if (!res.ok) throw new Error("Failed to fetch Google User Info");
+                        if (!res.ok) throw new Error("Google 정보를 가져오는데 실패했습니다.");
 
                         const userInfo = await res.json();
                         console.log("Fetched Google User Info:", userInfo);

@@ -16,7 +16,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [errorMsg, setErrorMsg] = useState("");
 
     // [Hybrid Auth] 모바일 환경 감지 로직 강화 (UA + 화면 너비)
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return /Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        }
+        return false;
+    });
     
     useEffect(() => {
         const checkMobile = () => {
