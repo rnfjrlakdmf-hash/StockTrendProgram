@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 
 def get_db():
-    return sqlite3.connect(DB_FILE)
+    return sqlite3.connect(DB_FILE, timeout=30)
 
 def init_briefing_table():
     """모닝 브리핑 캐시 테이블 초기화"""

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
 from db_manager import create_user_if_not_exists, decrement_free_trial, update_user_keys
 import time
@@ -22,14 +22,14 @@ class UserSettingsRequest(BaseModel):
     kis_account: str
 
 @router.post("/auth/google")
-def google_login(req: GoogleLoginRequest):
+def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     """
     Handle Google Login (or Simulation).
     In a real app, we would verify the ID Token here using google-auth library.
     Since we don't have keys, we trust the client (for this demo/personal use).
     """
     
-    # 1. Create or Update User in DB
+    # 1. Create or Update User in DB (이 작업은 빠르므로 동기 처리)
     user_data = {
         "id": req.id,
         "email": req.email,
@@ -39,15 +39,17 @@ def google_login(req: GoogleLoginRequest):
     
     success = create_user_if_not_exists(user_data)
     
-    # [Fix] 자동 관심종목 이전 및 캐시 갱신
-    from db_manager import migrate_watchlist
-    from utils.briefing_store import invalidate_today_briefing
-    migrate_watchlist("guest", req.id)
-    invalidate_today_briefing(req.id)
-    
     if not success:
         return {"status": "error", "message": "DB Error"}
-        
+    
+    # [Optimize] 무거운 작업은 백그라운드(BackgroundTasks)로 돌려 즉시 응답 반환
+    from db_manager import migrate_watchlist
+    from utils.briefing_store import invalidate_today_briefing
+    
+    # 짐 싸기는 사용자 진입 후에 천천히 해도 됩니다!
+    bg_tasks.add_task(migrate_watchlist, "guest", req.id)
+    bg_tasks.add_task(invalidate_today_briefing, req.id)
+    
     from db_manager import get_user
     real_user = get_user(req.id)
     
