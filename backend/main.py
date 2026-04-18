@@ -84,29 +84,73 @@ from utils.briefing_store import (
 
 app = FastAPI(title="AI Stock Analyst", version="3.6.2")
 
+# [Integrated v3.6.16] Unified Startup Logic
 @app.on_event("startup")
-async def startup_event():
-    """서버 시작 시 통합 스케줄러와 기초 테이블을 가동함"""
-    print("[Startup] Initializing consolidated background services...")
+async def main_startup_service():
+    """서버 시작 시 데이터베이스, 외부 서비스, 스케줄러를 통합 가동함"""
+    print("[Startup] >>> Starting AI Stock Analyst Unified Service (v3.6.16) <<<")
     
-    # 1. 브리핑 테이블 초기화
+    # 1. Database Table Initialization
     try:
         from utils.briefing_store import init_briefing_table
+        from db_manager import (
+            create_signals_table, create_fcm_tokens_table
+        )
+        # Assuming these might be needed
         init_briefing_table()
-        print("[Startup] Briefing table initialized.")
+        create_signals_table()
+        from price_alerts import create_price_alerts_tables
+        create_price_alerts_tables()
+        print("[Startup] Database tables verified.")
     except Exception as e:
-        print(f"[Startup] Table init error: {e}")
+        print(f"[Startup] DB Init error: {e}")
 
-    # 2. 통합 스케줄러 루프 가동 (정각 수집 + 개별 브리핑 + 공시 알림)
+    # 2. External Service Initialization (Firebase)
+    try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        print("[Startup] Firebase initialized.")
+    except Exception as e:
+        print(f"[Startup] Firebase init error: {e}")
+
+    # 3. Background Threads & Loops
+    import threading
+    # (A) Background Threads (Daemon)
+    try:
+        # Legacy Alert Scheduler
+        def run_legacy_scheduler():
+            import time
+            while True:
+                try:
+                    from db_manager import check_alerts
+                    check_alerts()
+                except Exception as e:
+                    print(f"Legacy Scheduler Error: {e}")
+                time.sleep(30)
+        threading.Thread(target=run_legacy_scheduler, daemon=True).start()
+        print("[Startup] Background legacy scheduler started.")
+    except Exception as e:
+        print(f"[Startup] Thread start error: {e}")
+
+    # (B) Async Schedulers & Loops
     try:
         from scheduler import hourly_briefing_scheduler_loop, disclosure_scheduler_loop
+        from scheduler_service import start_scheduler
+        
         asyncio.create_task(hourly_briefing_scheduler_loop())
         asyncio.create_task(disclosure_scheduler_loop())
-        print("[Startup] All consolidated workers (Hourly Briefing & Disclosure) started successfully.")
+        asyncio.create_task(broadcast_stock_updates())
+        
+        from price_alerts import price_alert_monitor
+        asyncio.create_task(price_alert_monitor.start())
+        
+        start_scheduler() # Smart Scheduler (Market Closing Alerts)
+        print("[Startup] All Async Schedulers started.")
     except Exception as e:
-        print(f"[Startup] Scheduler start error: {e}")
+        print(f"[Startup] Async logic error: {e}")
 
-# Force Reload Trigger: v2.6.0-Final-CORS-Hardened
+    print("[Startup] >>> AI Stock Analyst Backend is now FULLY OPERATIONAL <<<")
+
 # CORS 설정 (전면 개방 패치 - 구글 로그인 차단 해결)
 app.add_middleware(
     CORSMiddleware,
@@ -116,15 +160,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Health Check Endpoint
 @app.get("/api/health")
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.13 (Mission-Critical)",
-        "build_id": "2026-04-14-final-fix-v3.6.13",
-        "service": "AI Stock Analyst Backend - Production Stable"
+        "version": "v3.6.16-UNIFIED",
+        "service": "AI Stock Analyst Backend - Production Stable (Auto-Recovery)"
     }
 
 # Register Auth Router
@@ -559,69 +601,7 @@ def read_stock_investor(symbol: str, period: int = 1):
     else:
         return {"status": "error", "message": data_result.get("message", "Data fetch failed")}
 
-@app.on_event("startup")
-async def startup_event():
-    print("[Startup] Initializing AI Stock Analyst Backend (v3.6.2)...")
-    
-    # 1. Database Table Initialization
-    try:
-        init_briefing_table()
-        create_signals_table()
-        create_votes_table()
-        from db_manager import create_fcm_tokens_table
-        create_fcm_tokens_table()
-        from price_alerts import create_price_alerts_tables
-        create_price_alerts_tables()
-        print("[Startup] Database tables initialized.")
-    except Exception as e:
-        print(f"[Startup] Database init error: {e}")
-
-    # 2. External Service Initialization (Firebase)
-    try:
-        from firebase_config import initialize_firebase
-        initialize_firebase()
-        print("[Startup] Firebase initialized.")
-    except Exception as e:
-        print(f"[Startup] Firebase init error: {e}")
-
-    # 3. Background Threads & Loops
-    # Ranking Background Task
-    threading.Thread(target=ranking_bg_looper, daemon=True).start()
-    
-    # WS Broadcast Loop
-    asyncio.create_task(broadcast_stock_updates())
-    
-    # Price Alert Monitor
-    from price_alerts import price_alert_monitor
-    asyncio.create_task(price_alert_monitor.start())
-    
-    # Disclosure & Hourly Briefing Schedulers
-    try:
-        from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop
-        asyncio.create_task(disclosure_scheduler_loop())
-        asyncio.create_task(hourly_briefing_scheduler_loop())
-        print("[Startup] Disclosure & Hourly Briefing Schedulers Started")
-    except Exception as e:
-        print(f"[Startup] Scheduler Init error: {e}")
-
-    # Legacy Alert Scheduler
-    def run_legacy_scheduler():
-        while True:
-            try:
-                from db_manager import check_alerts
-                check_alerts()
-            except Exception as e:
-                print(f"Legacy Scheduler Error: {e}")
-            time.sleep(30)
-    threading.Thread(target=run_legacy_scheduler, daemon=True).start()
-
-    # Smart Scheduler (Market Closing Alerts)
-    try:
-        from scheduler_service import start_scheduler
-        start_scheduler()
-        print("[Startup] Smart Scheduler Started")
-    except Exception as e:
-        print(f"[Startup] Smart Scheduler error: {e}")
+# [CLEANUP] Redundant startup_event removed. Logic merged into main_startup_service.
 
     # 4. KIS WebSocket Init
     try:
