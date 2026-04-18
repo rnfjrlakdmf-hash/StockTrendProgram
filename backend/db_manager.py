@@ -593,8 +593,8 @@ def migrate_watchlist(from_id, to_id):
         conn.close()
 
 # Initialize on module load (or call explicitly)
-# Initialize on module load (or call explicitly)
-init_db()
+# [Optimized] Moved to main.py startup event to prevent block during import
+# init_db() 
 
 def cast_vote(symbol, vote_type):
     conn = sqlite3.connect(DB_FILE)

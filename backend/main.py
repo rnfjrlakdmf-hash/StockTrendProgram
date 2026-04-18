@@ -114,19 +114,18 @@ async def main_startup_service():
     print("[Startup] >>> Starting AI Stock Analyst Unified Service (v3.6.17) <<<")
     
     async def initialize_heavy_tasks():
-        # 1. Database Table Initialization
+        # 1. Database Initialization (Full Table & Schema Setup)
         try:
+            from db_manager import init_db, create_signals_table, create_fcm_tokens_table
             from utils.briefing_store import init_briefing_table
-            from db_manager import (
-                create_signals_table, create_fcm_tokens_table
-            )
-            # Run blocking DB operations in a thread
+            from price_alerts import create_price_alerts_tables
+            
+            # Run all DB setup in a background thread to keep event loop responsive
+            await asyncio.to_thread(init_db)
             await asyncio.to_thread(init_briefing_table)
             await asyncio.to_thread(create_signals_table)
-            
-            from price_alerts import create_price_alerts_tables
             await asyncio.to_thread(create_price_alerts_tables)
-            print("[Startup] Database tables verified.")
+            print("[Startup] Database initialization and tables verified.")
         except Exception as e:
             print(f"[Startup] DB Init error: {e}")
 
