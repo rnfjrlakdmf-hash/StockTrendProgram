@@ -124,7 +124,7 @@ async def main_startup_service():
                 import time
                 while True:
                     try:
-                        from db_manager import check_alerts
+                        from alerts import check_alerts
                         check_alerts()
                     except Exception as e:
                         print(f"Legacy Scheduler Error: {e}")
