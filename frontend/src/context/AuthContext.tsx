@@ -17,7 +17,6 @@ interface AuthContextType {
     user: User | null;
     login: (googleUser: any) => Promise<boolean>;
     demoLogin: () => void;
-    manualLogin: (userId: string) => void;
     logout: () => void;
     isLoading: boolean;
 }
@@ -51,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const migrateGuestWatchlist = async (toUserId: string) => {
         try {
             console.log(`[Migration] Moving items from guest to ${toUserId}...`);
-            // Don't await this inside the login main flow to avoid hangs
+            // Fire-and-forget migration to prevent blocking login flow
             fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -59,14 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     guest_id: "guest",
                     target_id: toUserId
                 })
-            }).catch(err => console.error("Migration fire-and-forget failed", err));
+            }).catch(err => console.error("Migration failed quietly", err));
         } catch (e) {
             console.error("Watchlist migration error", e);
         }
     };
 
     const login = async (googleUser: any) => {
-        console.log("AuthContext: login called");
+        console.log("AuthContext: Starting backend login for", googleUser.email);
         try {
             const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
                 method: "POST",
@@ -75,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (!res.ok) {
-                alert("서버 오류: " + res.status);
+                console.error("Backend login failed with status:", res.status);
                 return false;
             }
 
@@ -92,29 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 return true;
             } else {
-                alert("서버 응답 실패: " + JSON.stringify(data));
+                console.error("Backend returned error:", data);
                 return false;
             }
         } catch (e: any) {
-            alert("통신 오류: " + e.message);
+            console.error("Login Exception:", e);
             return false;
         }
-    };
-
-    const manualLogin = (userId: string) => {
-        const id = userId.trim() || "user_" + Math.random().toString(36).substring(7);
-        const mUser: User = {
-            id,
-            email: `${id}@stocktrend.user`,
-            name: id,
-            picture: "",
-            is_pro: true
-        };
-
-        migrateGuestWatchlist(id);
-        setUser(mUser);
-        localStorage.setItem("stock_user", JSON.stringify(mUser));
-        window.location.reload();
     };
 
     const demoLogin = () => {
@@ -135,10 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         migrateGuestWatchlist(demoId);
         setUser(demoUser);
         localStorage.setItem("stock_user", JSON.stringify(demoUser));
-        window.location.reload();
+        // Hard redirect to clear UI state
+        window.location.assign("/");
     };
 
-    // Handle Google Redirect Login
+    // Handle Google Redirect Login (Mobile UX)
     useEffect(() => {
         const handleRedirect = async () => {
             const hash = window.location.hash;
@@ -160,9 +144,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 picture: userInfo.picture,
                                 token: accessToken
                             });
-                            if (success) window.location.reload();
+                            if (success) {
+                                // Important: Hard redirect to dashboard
+                                window.location.assign("/");
+                            }
                         }
-                    } catch (e) { console.error("Redirect check error", e); }
+                    } catch (e) {
+                        console.error("Redirect flow failed", e);
+                    }
                 }
             }
         };
@@ -178,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <GoogleOAuthProvider clientId="385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com">
-            <AuthContext.Provider value={{ user, login, demoLogin, manualLogin, logout, isLoading }}>
+            <AuthContext.Provider value={{ user, login, demoLogin, logout, isLoading }}>
                 {children}
             </AuthContext.Provider>
         </GoogleOAuthProvider>
