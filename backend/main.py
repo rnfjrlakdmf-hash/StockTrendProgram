@@ -24,8 +24,12 @@ app = FastAPI(
 # [CORS Hardening]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to specific domains
-    allow_credentials=False, # [Fix] '*' origins cannot be used with allow_credentials=True
+    allow_origins=[
+        "https://stock-trend-program.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8000"
+    ],
+    allow_credentials=True, # Explicit origins allow credentials
     allow_methods=["*"],
     allow_headers=["*"],
 )
