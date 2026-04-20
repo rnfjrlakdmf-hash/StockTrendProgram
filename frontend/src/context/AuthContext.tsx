@@ -17,6 +17,7 @@ interface AuthContextType {
     user: User | null;
     login: (googleUser: any) => Promise<boolean>;
     demoLogin: () => void;
+    manualLogin: (userId: string) => void;
     logout: () => void;
     isLoading: boolean;
 }
@@ -30,12 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Init: Check localStorage
         const storedUser = localStorage.getItem("stock_user");
-        const adminFree = localStorage.getItem('admin_free_mode') === 'true'; // Direct check to avoid import cycle if lib uses context
+        const adminFree = localStorage.getItem('admin_free_mode') === 'true';
 
         if (storedUser) {
             try {
                 const parsedUser = JSON.parse(storedUser);
-                // [Admin Mode] Override Pro Status
                 if (adminFree) {
                     parsedUser.is_pro = true;
                     console.log("🎁 Admin Free Mode Active: User set to PRO");
@@ -44,89 +44,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } catch (e) {
                 console.error("User Parse Error", e);
             }
-        } else if (adminFree) {
-            // [Admin Mode] Create dummy user for guests to access Pro features that require login
-            const adminGuest = {
-                id: "admin_guest",
-                email: "guest@admin.mode",
-                name: "Admin Guest",
-                picture: "",
-                is_pro: true
-            };
-            setUser(adminGuest);
-            console.log("🎁 Admin Free Mode: Guest upgraded to Admin User");
         }
         setIsLoading(false);
     }, []);
 
-    const login = async (googleUser: any) => {
-        // Backend Login
-        console.log("AuthContext: login called with", googleUser);
-        alert(`2단계: 서버(${API_BASE_URL})로 로그인 정보 전송 중...`);
-        try {
-            console.log(`Sending POST request to ${API_BASE_URL}/api/auth/google`);
-            const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(googleUser)
-            });
-            console.log("Response status:", res.status);
-
-            if (!res.ok) {
-                console.error("Login API response not OK:", res.statusText);
-                alert("서버 오류: " + res.status);
-                return false;
-            }
-
-            const data = await res.json();
-            console.log("Login API data:", data);
-
-            if (data.status === "success") {
-                const newUser = data.user;
-                console.log("Setting user state:", newUser);
-                
-                // [Migration] Migrate items from guest to real user
-                await migrateGuestWatchlist(newUser.id);
-                
-                setUser(newUser);
-                localStorage.setItem("stock_user", JSON.stringify(newUser));
-                // Set Token if needed (data.token)
-                if (data.token) {
-                    localStorage.setItem("stock_token", data.token);
-                }
-
-                alert("3단계: 서버 로그인 성공! 보관 중인 관심종목을 모두 동기화했습니다.");
-                return true;
-            } else {
-                console.error("Login API returned error status:", data);
-                alert("서버 응답 실패: " + JSON.stringify(data));
-                return false;
-            }
-        } catch (e: any) {
-            console.error("Login API Exception", e);
-            alert("통신 오류: " + e.message);
-            return false;
-        }
-    };
-
     const migrateGuestWatchlist = async (toUserId: string) => {
         try {
             console.log(`[Migration] Moving items from guest to ${toUserId}...`);
-            await fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
+            // Don't await this inside the login main flow to avoid hangs
+            fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     guest_id: "guest",
                     target_id: toUserId
                 })
-            });
+            }).catch(err => console.error("Migration fire-and-forget failed", err));
         } catch (e) {
             console.error("Watchlist migration error", e);
         }
     };
 
-    const demoLogin = async () => {
-        // [Unique Persistent Demo ID] Use a stable ID if possible or just dev_
+    const login = async (googleUser: any) => {
+        console.log("AuthContext: login called");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(googleUser)
+            });
+
+            if (!res.ok) {
+                alert("서버 오류: " + res.status);
+                return false;
+            }
+
+            const data = await res.json();
+            if (data.status === "success") {
+                const newUser = data.user;
+                
+                // [Non-blocking Migration]
+                migrateGuestWatchlist(newUser.id);
+                
+                setUser(newUser);
+                localStorage.setItem("stock_user", JSON.stringify(newUser));
+                if (data.token) localStorage.setItem("stock_token", data.token);
+
+                return true;
+            } else {
+                alert("서버 응답 실패: " + JSON.stringify(data));
+                return false;
+            }
+        } catch (e: any) {
+            alert("통신 오류: " + e.message);
+            return false;
+        }
+    };
+
+    const manualLogin = (userId: string) => {
+        const id = userId.trim() || "user_" + Math.random().toString(36).substring(7);
+        const mUser: User = {
+            id,
+            email: `${id}@stocktrend.user`,
+            name: id,
+            picture: "",
+            is_pro: true
+        };
+
+        migrateGuestWatchlist(id);
+        setUser(mUser);
+        localStorage.setItem("stock_user", JSON.stringify(mUser));
+        window.location.reload();
+    };
+
+    const demoLogin = () => {
         let demoId = localStorage.getItem("demo_id");
         if (!demoId) {
             demoId = "demo_" + Math.random().toString(36).substring(7);
@@ -141,73 +132,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             is_pro: true
         };
 
-        // Migrate guest items to this demo user too for seamless experience
-        await migrateGuestWatchlist(demoId);
-
+        migrateGuestWatchlist(demoId);
         setUser(demoUser);
         localStorage.setItem("stock_user", JSON.stringify(demoUser));
         window.location.reload();
     };
 
-    // Handle Google Redirect Login (Implicit Flow)
+    // Handle Google Redirect Login
     useEffect(() => {
         const handleRedirect = async () => {
             const hash = window.location.hash;
-            const search = window.location.search;
-            const queryParams = new URLSearchParams(search);
-            const hashParams = new URLSearchParams(hash.substring(1));
-
-            // [Error Detection] Check for errors from Google in search or hash
-            const error = hashParams.get("error") || queryParams.get("error");
-            const errorDesc = hashParams.get("error_description") || queryParams.get("error_description");
-
-            if (error) {
-                console.error("Google Auth Error from Redirect:", error, errorDesc);
-                alert(`구글 로그인 오류: ${error}\n${errorDesc || ""}`);
-                window.history.replaceState(null, "", window.location.pathname);
-                return;
-            }
-
             if (hash && hash.includes("access_token")) {
-                console.log("Found access_token in hash, processing login...");
-                try {
-                    const accessToken = hashParams.get("access_token");
-
-                    if (accessToken) {
-                        // Clean URL hash immediately to avoid re-processing or leaking token
-                        window.history.replaceState(null, "", window.location.pathname);
-
-                        alert("인증 정보 수신 성공! 사용자 정보를 가져옵니다...");
-                        // Fetch User Info
+                const hashParams = new URLSearchParams(hash.substring(1));
+                const accessToken = hashParams.get("access_token");
+                if (accessToken) {
+                    window.history.replaceState(null, "", window.location.pathname);
+                    try {
                         const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
                             headers: { Authorization: `Bearer ${accessToken}` },
                         });
-
-                        if (!res.ok) throw new Error("Google 정보를 가져오는데 실패했습니다.");
-
-                        const userInfo = await res.json();
-                        console.log("Fetched Google User Info:", userInfo);
-
-                        const googleUser = {
-                            id: userInfo.sub,
-                            email: userInfo.email,
-                            name: userInfo.name,
-                            picture: userInfo.picture,
-                            token: accessToken
-                        };
-
-                        const success = await login(googleUser);
-                        if (success) {
-                            window.location.reload();
+                        if (res.ok) {
+                            const userInfo = await res.json();
+                            const success = await login({
+                                id: userInfo.sub,
+                                email: userInfo.email,
+                                name: userInfo.name,
+                                picture: userInfo.picture,
+                                token: accessToken
+                            });
+                            if (success) window.location.reload();
                         }
-                    }
-                } catch (e: any) {
-                    console.error("Redirect Login Error:", e);
-                    alert("로그인 처리 실패: " + e.message);
+                    } catch (e) { console.error("Redirect check error", e); }
                 }
             }
         };
-
         handleRedirect();
     }, []);
 
@@ -215,12 +173,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         localStorage.removeItem("stock_user");
         localStorage.removeItem("stock_token");
-        window.location.href = "/"; // Refresh logic
+        window.location.href = "/";
     };
 
     return (
         <GoogleOAuthProvider clientId="385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com">
-            <AuthContext.Provider value={{ user, login, demoLogin, logout, isLoading }}>
+            <AuthContext.Provider value={{ user, login, demoLogin, manualLogin, logout, isLoading }}>
                 {children}
             </AuthContext.Provider>
         </GoogleOAuthProvider>
@@ -229,8 +187,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
+    if (!context) throw new Error("useAuth must be used within an AuthProvider");
     return context;
 }
