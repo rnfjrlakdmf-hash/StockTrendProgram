@@ -21,7 +21,7 @@ app = FastAPI(
     description="모듈화 및 아키텍처 최적화가 완료된 차세대 인텔리전스 백엔드"
 )
 
-# [CORS Hardening] - Final Ultra Resilience
+# [CORS Hardening] - Final Ultra Stable
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -29,7 +29,6 @@ app.add_middleware(
         "https://stock-trend-program-git-main-rnfjrlakdmf-hash.vercel.app",
         "http://localhost:3000",
     ],
-    allow_origin_regex=r"https://stock-trend-program.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
