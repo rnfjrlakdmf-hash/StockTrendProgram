@@ -1,15 +1,13 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 import json
 import asyncio
-from sockets import manager
-from user_session import session_manager
-from stock_data import get_simple_quote
 
 router = APIRouter()
 
 # [KIS WS Helper]
 async def handle_user_ws_message(user_id: str, symbol: str, price: float, change: str):
     """Handle incoming real-time data from KIS WebSocket and route to user sockets"""
+    from sockets import manager
     # Create the data payload expected by the frontend
     quote = {
         "symbol": symbol,
@@ -23,6 +21,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
     """
     WebSocket endpoint for real-time stock price updates.
     """
+    # [Lazy Imports]
+    from sockets import manager
+    from user_session import session_manager
+    from stock_data import get_simple_quote
+    
     await manager.connect(websocket, user_id)
     
     try:
@@ -51,7 +54,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
                         await websocket.send_json({"type": "update", "data": initial})
             
             elif msg_type == 'unsubscribe':
-                # Logic to handle unsubscription if needed
                 pass
                 
     except WebSocketDisconnect:

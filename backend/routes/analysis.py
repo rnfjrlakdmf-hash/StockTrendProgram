@@ -14,9 +14,12 @@ def read_stock(symbol: str, skip_ai: bool = False):
     cache_key = f"stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
+    
+    # Lazy Imports
     from stock_data import get_stock_info
     from ai_analysis import analyze_stock
     from db_manager import save_analysis_result
+    
     data = get_stock_info(symbol)
     if data:
         if not skip_ai:
@@ -40,9 +43,12 @@ def read_pro_summary(symbol: str):
     cache_key = f"pro_summary_{symbol}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
+    
+    # Lazy Imports
     import concurrent.futures
     from pro_analysis import get_quant_scorecard, get_financial_health
     from korea_data import get_naver_investor_data, gather_naver_stock_data, get_korean_investment_indicators
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         f1 = executor.submit(get_quant_scorecard, symbol)
         f2 = executor.submit(get_financial_health, symbol)
@@ -50,6 +56,7 @@ def read_pro_summary(symbol: str):
         f4 = executor.submit(gather_naver_stock_data, symbol)
         f5 = executor.submit(get_korean_investment_indicators, symbol, "0", "IFRSL", "1")
         q_d, h_d, i_r, s_d, ind_r = f1.result(), f2.result(), f3.result(), f4.result(), f5.result()
+    
     fin_charts = []
     if ind_r and ind_r.get("status") == "success":
         for h in ind_r.get("headers", []):
@@ -59,6 +66,7 @@ def read_pro_summary(symbol: str):
             if rev_row: entry["매출액"] = rev_row["values"].get(h, 0)
             if op_row: entry["영업이익"] = op_row["values"].get(h, 0)
             fin_charts.append(entry)
+            
     combined = {"symbol": symbol, "stock_info": s_d, "quant": q_d, "health": h_d, "financial_indicators": fin_charts, "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")}
     turbo_engine.set_cache(cache_key, combined)
     return {"status": "success", "data": combined}
@@ -66,6 +74,8 @@ def read_pro_summary(symbol: str):
 @router.get("/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
     if not x_user_id: return {"status": "error", "message": "로그인 필요"}
+    
+    # Lazy Imports
     from utils.briefing_store import get_latest_briefing, should_generate_new_briefing
     from morning_briefing import generate_instant_briefing, generate_user_morning_briefing
     
@@ -99,8 +109,10 @@ def get_stock_risk(symbol: str):
 
 @router.get("/theme/{keyword:path}")
 async def read_theme(keyword: str):
+    # Lazy Imports
     from ai_analysis import analyze_theme
     from stock_data import get_simple_quote
+    
     result = await asyncio.to_thread(analyze_theme, keyword)
     if result:
         for s in result.get("leaders", []) + result.get("followers", []):

@@ -5,13 +5,13 @@ from turbo_engine import turbo_engine
 
 router = APIRouter()
 
-# Health Check Endpoint
+# Health Check Endpoint - ULTRA Fast
 @router.get("/health")
 def health_check():
     return {
         "status": "ok",
-        "version": "v3.6.17-ULTRA",
-        "service": "AI Stock Analyst Backend - Modular Optimized"
+        "version": "v3.6.17-ULTRA-STABLE",
+        "service": "AI Stock Analyst Backend - Zero-Wait Architecture"
     }
 
 @router.post("/admin/clear-cache")
@@ -66,8 +66,10 @@ class FCMTestRequest(BaseModel):
 @router.post("/fcm/test")
 def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
     """FCM 테스트 알림 발송"""
+    # Lazy Imports
     from firebase_config import send_push_notification, send_multicast_notification
     from db_manager import get_user_fcm_tokens
+    
     user_id = x_user_id if x_user_id else "guest"
     tokens = []
     if req.token:
@@ -75,10 +77,12 @@ def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
     else:
         user_tokens = get_user_fcm_tokens(user_id)
         tokens = [t['token'] for t in user_tokens]
+    
     if not tokens:
         return {"status": "error", "message": "등록된 기기가 없습니다."}
+        
     title = "🔔 [Test] Connection Verified"
-    body = "System is working perfectly!"
+    body = "System is working perfectly with Zero-Wait Architecture!"
     try:
         if len(tokens) == 1:
             result = send_push_notification(tokens[0], title, body)
