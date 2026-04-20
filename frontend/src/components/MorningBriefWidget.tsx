@@ -201,6 +201,15 @@ export default function MorningBriefWidget() {
                 syncBriefing();        // 최신화는 배경에서 (Non-blocking)
             };
             init();
+
+            // [Ultra-Stability] 5분마다 자동으로 데이터 동기화 (새로고침 없이 실시간 갱신)
+            const autoRefresh = setInterval(() => {
+                console.log("🔄 [Auto-Sync] Fetching latest market intelligence...");
+                fetchTimeline();
+                syncBriefing(true); // 폴링 방식으로 조용히 업데이트
+            }, 5 * 60 * 1000); // 5분
+
+            return () => clearInterval(autoRefresh);
         }
     }, [user, authLoading]);
 
