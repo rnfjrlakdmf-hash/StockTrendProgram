@@ -101,14 +101,14 @@ async def startup_event():
 
     # 지연 실행 태스크 시작
     asyncio.create_task(delayed_startup_sequence())
-    print("[Startup] Fast-Port-Binding enabled. v3.6.21-PREMIUM API is ready for requests.\n")
+    print("[Startup] Fast-Port-Binding enabled. v3.6.28-NUCLEAR-FIX API is ready for requests.\n")
 
 @app.get("/")
 def read_root():
     return {
         "status": "success",
-        "message": "AI Stock Analyst API (Premium v3.6.21) is running.",
-        "version": "v3.6.21-PREMIUM-STABLE"
+        "message": "AI Stock Analyst API (Premium v3.6.28-NUCLEAR-FIX) is running.",
+        "version": "v3.6.28-NUCLEAR-FIX"
     }
 
 if __name__ == "__main__":
