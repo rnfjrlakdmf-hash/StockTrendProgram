@@ -1,4 +1,4 @@
-# Build Trigger: v3.6.17-NUCLEAR-ULTRA-STABLE
+# Build Trigger: v3.6.19-ULTRA-STABLE
 fastapi
 uvicorn[standard]
 pandas
@@ -21,4 +21,9 @@ deep-translator
 pycryptodome
 firebase-admin
 scipy
+# [Scraper Dependencies]
+selenium
+webdriver-manager
+lxml
+html5lib
 # [Nuclear-Fix] Startup speed optimized

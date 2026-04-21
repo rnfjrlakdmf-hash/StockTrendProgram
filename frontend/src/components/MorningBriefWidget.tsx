@@ -454,7 +454,6 @@ export default function MorningBriefWidget() {
                                                 <div className="flex items-center justify-between mb-5">
                                                     <div className="flex flex-col">
                                                         <span className="font-black text-white text-xl tracking-tight group-hover:text-emerald-200">{item?.name || "종목명 확인 중"}</span>
-                                                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.19-ULTRA-STABLE</p>
                                                         <span className="text-[10px] text-gray-500 font-mono tracking-widest">{item?.symbol}</span>
                                                     </div>
                                                     <div className="p-2.5 bg-emerald-500/10 rounded-2xl">
