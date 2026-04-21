@@ -371,7 +371,7 @@ export default function MorningBriefWidget() {
                                     NAVER STYLE AI INSIGHT
                                 </span>
                                 <span className="text-[10px] bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-black tracking-widest uppercase border border-purple-500/20">
-                                    v3.6.14-Patch
+                                    v3.6.19-ULTRA-STABLE
                                 </span>
                                 {latestPersonal?.is_instant && (
                                     <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
@@ -454,6 +454,7 @@ export default function MorningBriefWidget() {
                                                 <div className="flex items-center justify-between mb-5">
                                                     <div className="flex flex-col">
                                                         <span className="font-black text-white text-xl tracking-tight group-hover:text-emerald-200">{item?.name || "종목명 확인 중"}</span>
+                                                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.19-ULTRA-STABLE</p>
                                                         <span className="text-[10px] text-gray-500 font-mono tracking-widest">{item?.symbol}</span>
                                                     </div>
                                                     <div className="p-2.5 bg-emerald-500/10 rounded-2xl">
