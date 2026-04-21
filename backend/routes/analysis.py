@@ -71,7 +71,7 @@ def read_pro_summary(symbol: str):
     turbo_engine.set_cache(cache_key, combined)
     return {"status": "success", "data": combined}
 
-@app.get("/ai/morning-brief")
+@router.get("/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
     # Lazy Imports
     from utils.briefing_store import get_latest_briefing, should_generate_new_briefing
@@ -94,7 +94,9 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
 @router.get("/ai/briefing-timeline")
 async def get_briefing_timeline(x_user_id: Optional[str] = Header(None)):
     from utils.briefing_store import get_today_briefing_timeline
-    return {"status": "success", "data": get_today_briefing_timeline(x_user_id)}
+    # [Mod] 게스트 사용자도 타임라인 조회가 가능하도록 'SYSTEM' 계정 활용
+    uid = x_user_id.strip() if x_user_id else "SYSTEM"
+    return {"status": "success", "data": get_today_briefing_timeline(uid)}
 
 @router.get("/quant/{symbol}")
 def read_quant_scorecard(symbol: str):

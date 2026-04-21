@@ -70,14 +70,15 @@ export default function MorningBriefWidget() {
     const [selectedDate, setSelectedDate] = useState<string>(""); // [History] 선택된 날짜 (YYYY-MM-DD)
 
     const fetchTimeline = async (isInitial = false) => {
-        if (!user) return;
+        // [Mod] 게스트 사용자도 SYSTEM 브리핑 조회를 위해 fetch 허용
+        const userId = user?.id || (user as any)?.uid || "SYSTEM";
         if (isInitial && timeline.length === 0) setIsInitialLoading(true);
         
         try {
             // [Zero-Wait Step 1] 기존 타임라인 즉시 로드 (1초 내 완료)
             const [timelineRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/ai/briefing-timeline`, {
-                    headers: { "X-User-ID": user.id || (user as any).uid }
+                    headers: { "X-User-ID": userId }
                 })
             ]);
 
@@ -101,7 +102,7 @@ export default function MorningBriefWidget() {
 
     // [Zero-Wait Step 2] 백그라운드에서 조용히 최신 브리핑 동기화 (비차단 폴링 방식)
     const syncBriefing = async (isRetry = false) => {
-        if (!user) return;
+        const userId = user?.id || (user as any)?.uid || "SYSTEM";
         
         // 폴링 중이 아닐 때만 초기 상태 설정
         if (!isRetry) {
@@ -111,7 +112,7 @@ export default function MorningBriefWidget() {
         
         try {
             const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
-                headers: { "X-User-ID": user.id || (user as any).uid }
+                headers: { "X-User-ID": userId }
             });
             const json = await res.json();
             
@@ -195,7 +196,7 @@ export default function MorningBriefWidget() {
     };
 
     useEffect(() => {
-        if (!authLoading && user) {
+        if (!authLoading) {
             const init = async () => {
                 await fetchTimeline(true); // 데이터 즉시 로드 (Blocking minimal)
                 syncBriefing();        // 최신화는 배경에서 (Non-blocking)
@@ -371,7 +372,7 @@ export default function MorningBriefWidget() {
                                     NAVER STYLE AI INSIGHT
                                 </span>
                                 <span className="text-[10px] bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-black tracking-widest uppercase border border-purple-500/20">
-                                    v3.6.19-ULTRA-STABLE
+                                    v3.6.21-PREMIUM-STABLE
                                 </span>
                                 {latestPersonal?.is_instant && (
                                     <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
@@ -651,7 +652,7 @@ export default function MorningBriefWidget() {
                                     );
                                 }) : (
                                     <div className="py-20 text-center">
-                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.20)</p>
+                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.21-PREMIUM-STABLE)</p>
                                     </div>
                                 )}
                             </div>

@@ -119,7 +119,7 @@ def should_generate_new_briefing(user_id: str) -> bool:
         conn.close()
 
 def get_today_briefing_timeline(user_id: str) -> list:
-    """최근 7일간(KST) 생성된 SYSTEM 브리핑만 최신순으로 조회 (시장 히스토리 전용)"""
+    """최근 7일간(KST) 생성된 SYSTEM 브리핑과 사용자 개인 브리핑을 최신순으로 조회"""
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
@@ -129,19 +129,18 @@ def get_today_briefing_timeline(user_id: str) -> list:
         from datetime import timedelta
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # [분리] SYSTEM 브리핑만 조회 — 개인 데이터는 morning-brief API에서 별도 제공
-        # 이렇게 분리하면 타임라인 API 응답 크기가 줄어들어 로딩 속도 향상
+        # [Mod] SYSTEM 데이터와 해당 사용자 데이터를 동시에 조회하여 타임라인 구성
         cursor.execute(
             """
             SELECT user_id, briefing_json, 
                    strftime('%Y-%m-%dT%H:%M:%SZ', created_at) as created_at_utc,
                    strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
             FROM morning_briefings 
-            WHERE user_id = 'SYSTEM'
+            WHERE user_id IN ('SYSTEM', ?)
             AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
             ORDER BY created_at DESC
             """,
-            (seven_days_ago,)
+            (user_id, seven_days_ago)
         )
         rows = cursor.fetchall()
         results = []
