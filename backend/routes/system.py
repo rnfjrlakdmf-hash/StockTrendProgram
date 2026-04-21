@@ -14,6 +14,20 @@ def health_check():
         "service": "AI Stock Analyst Backend - Zero-Wait Architecture"
     }
 
+@router.get("/admin/nuke-placeholders")
+def nuke_placeholders():
+    """[Admin] Force clear all stuck placeholders from SQLite"""
+    from utils.briefing_store import get_db
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
+        count = cursor.rowcount
+        conn.commit()
+        return {"status": "ok", "message": f"Nuked {count} placeholders!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.post("/admin/clear-cache")
 def clear_cache():
     """[Admin] Force clear all server-side cache"""
