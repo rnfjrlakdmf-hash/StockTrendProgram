@@ -17,8 +17,8 @@ from routes.sockets import router as sockets_router
 # Initialize FastAPI
 app = FastAPI(
     title="AI Stock Analyst API",
-    version="v3.6.19-ULTRA-STABLE",
-    description="지연 실행 로직이 적용된 초안정성 백엔드"
+    version="v3.6.21-PREMIUM-STABLE",
+    description="24/7 무인 가동 및 정밀 데이터 소급 로우가 탑재된 프리미엄 안정화 백엔드"
 )
 
 # [CORS Hardening]
@@ -45,8 +45,8 @@ app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")
 async def startup_event():
-    """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행합니다."""
-    print(f"\n[Startup] v3.6.19-ULTRA Engine active on PID: {os.getpid()}")
+    """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행하며, 24/7 생존 로직을 가동합니다."""
+    print(f"\n[Startup] v3.6.21-PREMIUM Engine active on PID: {os.getpid()}")
     
     async def delayed_startup_sequence():
         # 1. 서버가 외부에 먼저 응답할 수 있도록 20초 대기
@@ -78,16 +78,31 @@ async def startup_event():
         except Exception as e:
             print(f"[Startup Error] Scheduler: {e}")
 
+        # 1.4 [24/7 생존 로직] Self-Ping
+        async def run_self_ping():
+            import requests # Lazy Import
+            self_url = "https://stocktrendprogram-production.up.railway.app/api/health"
+            print(f"[Self-Ping] Survival monitoring started: {self_url}")
+            while True:
+                try:
+                    await asyncio.sleep(600)  # 10분마다 핑
+                    await asyncio.to_thread(requests.get, self_url, timeout=15)
+                    print("[Self-Ping] ❤️ Heartbeat sent (Server kept alive)")
+                except Exception as e:
+                    print(f"[Self-Ping] Warning: {e}")
+
+        asyncio.create_task(run_self_ping())
+
     # 지연 실행 태스크 시작
     asyncio.create_task(delayed_startup_sequence())
-    print("[Startup] Fast-Port-Binding enabled. API is ready for requests.\n")
+    print("[Startup] Fast-Port-Binding enabled. v3.6.21-PREMIUM API is ready for requests.\n")
 
 @app.get("/")
 def read_root():
     return {
         "status": "success",
-        "message": "AI Stock Analyst API (Ultra-Stable v3.6.19) is running.",
-        "version": "v3.6.19-ULTRA-STABLE"
+        "message": "AI Stock Analyst API (Premium v3.6.21) is running.",
+        "version": "v3.6.21-PREMIUM-STABLE"
     }
 
 if __name__ == "__main__":
