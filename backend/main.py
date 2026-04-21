@@ -83,6 +83,22 @@ async def startup_event():
             except Exception as e:
                 print(f"[Keep-Alive Error] {e}")
 
+    # 3. [Self-Keepalive] 서버 슬립 방지용 자체 핑 엔진
+    async def run_self_ping():
+        import requests
+        # 자신의 Railway 주소
+        self_url = "https://stocktrendprogram-production.up.railway.app/"
+        print(f"[Keep-Alive] Self-ping engine started for {self_url}")
+        while True:
+            try:
+                # 10분마다 본인에게 핑 (Railway 슬립 방지)
+                await asyncio.sleep(600) 
+                # [Fix] Blocking call을 별도 스레드에서 실행하여 서버 멈춤 방지
+                await asyncio.to_thread(requests.get, self_url, timeout=15)
+                print(f"[Keep-Alive] Ping sent at {time.strftime('%H:%M:%S')}")
+            except Exception as e:
+                print(f"[Keep-Alive Error] {e}")
+
     # 모든 무거운 작업을 비동기 태스크로 즉시 던짐 (Main Thread 해제)
     asyncio.create_task(run_indexing_warmer())
     asyncio.create_task(run_price_alerts())
@@ -95,7 +111,7 @@ def read_root():
     return {
         "status": "success",
         "message": "AI Stock Analyst API Backend (Modular v4.0) is running.",
-        "version": "v3.6.17-ULTRA"
+        "version": "v3.6.18-ULTRA"
     }
 
 if __name__ == "__main__":
