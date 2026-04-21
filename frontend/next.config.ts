@@ -11,7 +11,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // [Nuclear Fix 7.5] Removed COOP headers to allow Google Login popup communication
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://stocktrendprogram-production.up.railway.app/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -46,7 +46,7 @@ app.include_router(sockets_router, tags=["WebSocket"])
 @app.on_event("startup")
 async def startup_event():
     """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행하며, 24/7 생존 로직을 가동합니다."""
-    print(f"\n[Startup] v3.6.28-NUCLEAR-FIX Engine active on PID: {os.getpid()}")
+    print(f"\n[Startup] v3.6.31-ULTRA-STABLE-FINAL Engine active on PID: {os.getpid()}")
     
     async def delayed_startup_sequence():
         # 1. 서버가 외부에 먼저 응답할 수 있도록 20초 대기
@@ -80,7 +80,7 @@ async def startup_event():
 
         # 1.4 [24/7 생존 로직] Self-Ping
         async def self_ping_loop(url: str):
-            """서버가 잠들지 않도록 24시간 심장박동 신호를 보냅니다 (v3.6.28-NUCLEAR-FIX 무인 가동 보장)"""
+            """서버가 잠들지 않도록 24시간 심장박동 신호를 보냅니다 (v3.6.31-ULTRA-STABLE-FINAL 무인 가동 보장)"""
             import aiohttp
             import logging
             logger = logging.getLogger("uvicorn")
@@ -90,7 +90,7 @@ async def startup_event():
                     async with aiohttp.ClientSession() as session:
                         async with session.get(f"{url}/health") as resp:
                             if resp.status == 200:
-                                logger.info(f"[Self-Ping] 💓 Heartbeat OK — 24/7 Autonomous Market Tracker is ACTIVE (v3.6.28-NUCLEAR-FIX)")
+                                logger.info(f"[Self-Ping] 💓 Heartbeat OK — 24/7 Autonomous Market Tracker is ACTIVE (v3.6.31)")
                             else:
                                 logger.warning(f"[Self-Ping] ⚠️ Abnormal response: {resp.status}")
                 except Exception as e:
