@@ -4,12 +4,7 @@ from datetime import datetime
 import pytz
 from typing import Dict, Any, List, Optional
 
-
-async def generate_market_wide_briefing(target_time: str = None):
-    """
-    시장 전체의 지수와 섹터 흐름을 요약한 '공통 브리핑'을 생성 (user_id = 'SYSTEM')
-    소급 생성(Backfill) 시 target_time(UTC ISO형식)을 전달받아 해당 시점으로 저장함.
-    """
+def _generate_sync_impl(target_time: Optional[str] = None) -> Optional[Dict[str, Any]]:
     # [Lazy Imports] - 부팅 시 임포트 차단
     from ai_analysis import generate_with_retry, API_KEY
     from stock_data import get_market_data, get_market_news, get_macro_calendar
@@ -119,6 +114,13 @@ async def generate_market_wide_briefing(target_time: str = None):
         _save_placeholder(user_id, now, target_time)
         return None
 
+async def generate_market_wide_briefing(target_time: str = None):
+    """
+    시장 전체의 지수와 섹터 흐름을 요약한 '공통 브리핑'을 생성 (user_id = 'SYSTEM')
+    소급 생성(Backfill) 시 target_time(UTC ISO형식)을 전달받아 해당 시점으로 저장함.
+    동기적 통신으로 인한 FastAPI 이벤트 루프 멈춤 현상을 방지하기 위해 쓰레드로 오프로딩합니다.
+    """
+    return await asyncio.to_thread(_generate_sync_impl, target_time)
 
 def _save_placeholder(user_id: str, now: datetime, target_time: Optional[str]):
     """AI 실패 시 빈 슬롯을 채우기 위한 기본 브리핑 저장"""
