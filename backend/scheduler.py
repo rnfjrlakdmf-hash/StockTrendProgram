@@ -153,11 +153,15 @@ async def hourly_briefing_scheduler_loop():
 
             # ── 매 정각: 새 시간 감지 → 브리핑 생성 ──
             elif current_hour != last_run_hour:
-                logger.info(f"[HourlyBrief] 🕐 {current_hour:02d}:00 KST — Generating SYSTEM briefing...")
+                logger.info(f"[HourlyBrief] 🕐 {current_hour:02d}:00 KST — Generating PRECISE SYSTEM briefing...")
                 try:
-                    await generate_market_wide_briefing()
+                    # [Precision] 실시간 생성 시에도 분/초를 절삭한 정시 타임스탬프를 강제 지정
+                    target_kst = now.replace(minute=0, second=0, microsecond=0)
+                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                    
+                    await generate_market_wide_briefing(target_time=target_utc)
                     last_run_hour = current_hour
-                    logger.info(f"[HourlyBrief] ✅ {current_hour:02d}:00 saved successfully.")
+                    logger.info(f"[HourlyBrief] ✅ {current_hour:02d}:00 saved with precise timestamp.")
                 except Exception as e:
                     logger.error(f"[HourlyBrief] Failed: {e}")
 

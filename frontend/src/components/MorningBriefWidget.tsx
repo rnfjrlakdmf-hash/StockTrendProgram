@@ -539,7 +539,7 @@ export default function MorningBriefWidget() {
 
                                 {(systemTimeline && systemTimeline.length > 0) ? systemTimeline.map((brief, idx) => {
                                     const date = brief?.created_at ? new Date(brief.created_at) : new Date();
-                                    // 정기 브리핑(PERIODIC)은 정각 단위로 표시 (분 생략)
+                                    // [Precision] 정시 브리핑은 분 단위를 절삭하여 00으로 강제 표시 (히스토리 일관성 확보)
                                     const timeLabel = brief.category === 'PERIODIC' 
                                         ? `${date.getHours()}:00` 
                                         : `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;

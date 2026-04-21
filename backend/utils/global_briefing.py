@@ -60,6 +60,10 @@ async def generate_market_wide_briefing(target_time: str = None):
     prompt = f"""당신은 대한민국 최고의 금융 데이터 분석가입니다.
 네이버 금융 'AI 브리핑' 스타일로 간결하고 전문적인 시장 리포트를 작성하세요.
 
+[규칙]
+- 'summary_bullets'의 첫 번째 항목은 반드시 현재 코스피/코스닥 지수 수치와 등락 정보를 포함해야 합니다.
+- 모든 수치는 콤마(,)와 부호(+/-)를 정확히 사용하여 한눈에 들어오게 작성하세요.
+
 [현재 시간] {market_status_text}
 
 [주요 시장 지표]
@@ -68,10 +72,10 @@ async def generate_market_wide_briefing(target_time: str = None):
 [주요 뉴스 헤드라인]
 {chr(10).join(news_titles[:3])}
 
-다음 JSON 형식으로 출력하세요:
+[출력 형식 JSON]
 {{
   "market_title": "오늘의 핵심 헤드라인 (15자 내외)",
-  "summary_bullets": ["· 핵심 포인트 1", "· 핵심 포인트 2", "· 핵심 포인트 3"],
+  "summary_bullets": ["· 지수 수치(필수) 포함 핵심 포인트 1", "· 핵심 포인트 2", "· 핵심 포인트 3"],
   "simple_summary_bullets": ["· 쉬운 설명 1", "· 쉬운 설명 2", "· 쉬운 설명 3"],
   "sections": [
     {{"emoji": "📊", "title": "국내외 증시 동향", "content": "상세 분석 내용"}},
@@ -85,8 +89,7 @@ async def generate_market_wide_briefing(target_time: str = None):
   "market_focus": "지금 주목할 핵심 변수",
   "disclaimer": "본 정보는 투자 판단의 참고용이며 투자 권유가 아닙니다."
 }}
-
-중요: 투자 권유 표현 금지. 객관적 데이터 분석만 제공."""
+"""
 
     try:
         response = generate_with_retry(prompt, json_mode=True)
@@ -101,7 +104,9 @@ async def generate_market_wide_briefing(target_time: str = None):
 
         briefing_result = json.loads(text)
         briefing_result["user_id"] = user_id
-        briefing_result["generated_at"] = target_time if target_time else now.isoformat()
+        # [Precision] 정시 데이터의 일관성을 위해 분/초를 0으로 고정한 타임스탬프 생성
+        fixed_now = now.replace(minute=0, second=0, microsecond=0)
+        briefing_result["generated_at"] = target_time if target_time else fixed_now.isoformat()
         briefing_result["category"] = "PERIODIC"
 
         save_morning_briefing(user_id, briefing_result, created_at=target_time)
