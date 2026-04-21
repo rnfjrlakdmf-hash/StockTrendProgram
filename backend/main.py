@@ -3,9 +3,9 @@ import time
 import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict
+from typing import Dict, Optional
 
-# [Routers Import] - Modular v4.0
+# [Routers Import]
 from auth import router as auth_router
 from routes.market import router as market_router
 from routes.analysis import router as analysis_router
@@ -14,14 +14,14 @@ from routes.user import router as user_router
 from routes.system import router as system_router
 from routes.sockets import router as sockets_router
 
-# Initialize FastAPI with metadata
+# Initialize FastAPI
 app = FastAPI(
     title="AI Stock Analyst API",
-    version="v3.6.17-ULTRA",
-    description="모듈화 및 아키텍처 최적화가 완료된 차세대 인텔리전스 백엔드"
+    version="v3.6.19-ULTRA-STABLE",
+    description="지연 실행 로직이 적용된 초안정성 백엔드"
 )
 
-# [CORS Hardening] - Final Ultra Stable
+# [CORS Hardening]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -43,79 +43,54 @@ app.include_router(community_router, prefix="/api", tags=["Community"])
 app.include_router(user_router, prefix="/api", tags=["User"])
 app.include_router(sockets_router, tags=["WebSocket"])
 
-# [Background Services - Non-blocking]
 @app.on_event("startup")
 async def startup_event():
-    """서버 시작 시 무거운 초기화 작업을 백그라운드 태스크로 분리하여 즉각적인 포트 바인딩 보장"""
-    print(f"\n[Startup] Nuclear Fix 4.0 (ULTRA) Engine active on PID: {os.getpid()}")
+    """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행합니다."""
+    print(f"\n[Startup] v3.6.19-ULTRA Engine active on PID: {os.getpid()}")
     
-    # 1. 지연 로딩 및 백그라운드 인덱싱 시작
-    async def run_indexing_warmer():
+    async def delayed_startup_sequence():
+        # 1. 서버가 외부에 먼저 응답할 수 있도록 20초 대기
+        await asyncio.sleep(20)
+        print("[Delayed-Startup] Starting background services...")
+        
+        # 1.1 배경 인덱서 로드
         try:
             from background_indexer import background_indexer
-            print("[Startup] Starting background indexer in separate task...")
             asyncio.create_task(background_indexer.run_forever())
+            print("[Delayed-Startup] Background indexer active.")
         except Exception as e:
-            print(f"[Startup Error] Indexer failed: {e}")
+            print(f"[Startup Error] Indexer: {e}")
 
-    # 2. 가격 알림 모니터링 시작
-    async def run_price_alerts():
+        # 1.2 가격 알림 모니터링 로드
         try:
             from price_alerts import price_alert_monitor, create_price_alerts_tables
-            print("[Startup] Initializing price alert system...")
             create_price_alerts_tables()
             price_alert_monitor.start()
+            print("[Delayed-Startup] Price alert system active.")
         except Exception as e:
-            print(f"[Startup Error] Price alert init failed: {e}")
+            print(f"[Startup Error] Price Alerts: {e}")
+            
+        # 1.3 스케줄러 루프 활성화 (시장 히스토리 축적)
+        try:
+            from scheduler import hourly_briefing_scheduler_loop
+            asyncio.create_task(hourly_briefing_scheduler_loop())
+            print("[Delayed-Startup] Hourly scheduler active.")
+        except Exception as e:
+            print(f"[Startup Error] Scheduler: {e}")
 
-    # 3. [Self-Keepalive] 서버 슬립 방지용 자체 핑 엔진
-    async def run_self_ping():
-        import requests
-        # 자신의 Railway 주소 (이미 설정된 주소 활용)
-        self_url = "https://stocktrendprogram-production.up.railway.app/"
-        print(f"[Keep-Alive] Self-ping engine started for {self_url}")
-        while True:
-            try:
-                # 10분마다 본인에게 핑 (Railway 슬립 방지)
-                await asyncio.sleep(600) 
-                requests.get(self_url, timeout=10)
-                print(f"[Keep-Alive] Ping sent at {time.strftime('%H:%M:%S')}")
-            except Exception as e:
-                print(f"[Keep-Alive Error] {e}")
-
-    # 3. [Self-Keepalive] 서버 슬립 방지용 자체 핑 엔진
-    async def run_self_ping():
-        import requests
-        # 자신의 Railway 주소
-        self_url = "https://stocktrendprogram-production.up.railway.app/"
-        print(f"[Keep-Alive] Self-ping engine started for {self_url}")
-        while True:
-            try:
-                # 10분마다 본인에게 핑 (Railway 슬립 방지)
-                await asyncio.sleep(600) 
-                # [Fix] Blocking call을 별도 스레드에서 실행하여 서버 멈춤 방지
-                await asyncio.to_thread(requests.get, self_url, timeout=15)
-                print(f"[Keep-Alive] Ping sent at {time.strftime('%H:%M:%S')}")
-            except Exception as e:
-                print(f"[Keep-Alive Error] {e}")
-
-    # 모든 무거운 작업을 비동기 태스크로 즉시 던짐 (Main Thread 해제)
-    asyncio.create_task(run_indexing_warmer())
-    asyncio.create_task(run_price_alerts())
-    asyncio.create_task(run_self_ping())
-    
-    print("[Startup] Port mapping is now available. Zero-Wait response active.\n")
+    # 지연 실행 태스크 시작
+    asyncio.create_task(delayed_startup_sequence())
+    print("[Startup] Fast-Port-Binding enabled. API is ready for requests.\n")
 
 @app.get("/")
 def read_root():
     return {
         "status": "success",
-        "message": "AI Stock Analyst API Backend (Modular v4.0) is running.",
-        "version": "v3.6.18-ULTRA"
+        "message": "AI Stock Analyst API (Ultra-Stable v3.6.19) is running.",
+        "version": "v3.6.19-ULTRA-STABLE"
     }
 
 if __name__ == "__main__":
     import uvicorn
     # uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=False)
-    # Railway/Local environment will handle uvicorn execution.
     pass
