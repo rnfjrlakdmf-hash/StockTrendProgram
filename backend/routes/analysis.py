@@ -71,15 +71,14 @@ def read_pro_summary(symbol: str):
     turbo_engine.set_cache(cache_key, combined)
     return {"status": "success", "data": combined}
 
-@router.get("/ai/morning-brief")
+@app.get("/ai/morning-brief")
 async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str] = Header(None)):
-    if not x_user_id: return {"status": "error", "message": "로그인 필요"}
-    
     # Lazy Imports
     from utils.briefing_store import get_latest_briefing, should_generate_new_briefing
     from morning_briefing import generate_instant_briefing, generate_user_morning_briefing
     
-    uid = x_user_id.strip()
+    # [Mod] 게스트(비로그인) 사용자 배려: x_user_id가 없으면 'SYSTEM' 리포트를 보여줌
+    uid = x_user_id.strip() if x_user_id else "SYSTEM"
     latest = get_latest_briefing(uid)
     if force or should_generate_new_briefing(uid):
         # [Zero-Wait] 즉시 브리핑 먼저 생성
