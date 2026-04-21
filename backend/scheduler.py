@@ -91,75 +91,70 @@ async def check_and_notify_disclosures():
         scraper._close_driver()
 
 
-async def hourly_briefing_scheduler_loop():
-    """
-    매 정각마다 SYSTEM 브리핑을 생성합니다. (네이버 AI 브리핑 스타일 히스토리 축적)
-    - 서버 시작 시: 누락된 슬롯 최대 3개 보충
-    - 매 정각: 새 브리핑 자동 생성
-    - 매일 새벽 4시: 오래된 데이터 정리
-    """
-    logger.info("📅 Hourly Briefing Scheduler Started.")
-    import pytz
+async def backfill_system_briefings(kst_timezone):
+    """과거 누락된 브리핑을 백그라운드에서 병렬로 복구합니다."""
+    from utils.global_briefing import generate_market_wide_briefing
+    from utils.briefing_store import has_system_briefing_for_hour
+    
+    now = datetime.now(kst_timezone)
+    logger.info(f"[Backfill-Engine] 🚀 Background recovery started at {now.strftime('%H:%M')} KST.")
+    
+    # [Phase 1] 최근 48시간 우선 복구
+    for h_offset in range(48):
+        current_now = datetime.now(kst_timezone)
+        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+        if target_kst.weekday() >= 5: continue
+        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+        
+        if not has_system_briefing_for_hour(t_date, t_hour):
+            try:
+                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                logger.info(f"[Backfill-P1] 🚀 Filling gap: {t_date} {t_hour:02d}:00")
+                await generate_market_wide_briefing(target_time=target_utc)
+                await asyncio.sleep(30) # Rate limit safety
+            except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
 
+    # [Phase 2] 나머지 일주일치 복구 (더 천천히)
+    for h_offset in range(48, 168):
+        current_now = datetime.now(kst_timezone)
+        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+        if target_kst.weekday() >= 5: continue
+        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+
+        if not has_system_briefing_for_hour(t_date, t_hour):
+            try:
+                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                logger.info(f"[Backfill-P2] 🐢 Trickling gap: {t_date} {t_hour:02d}:00")
+                await generate_market_wide_briefing(target_time=target_utc)
+                await asyncio.sleep(45) 
+            except Exception as e: logger.error(f"[Backfill-P2] Error: {e}")
+
+    logger.info("[Backfill-Engine] ✨ All history recovered or checked.")
+
+
+async def hourly_briefing_scheduler_loop():
+    """매 정각 정기 브리핑 생성 (실시간 우선 모드)"""
+    logger.info("📅 Real-time Hourly Scheduler Started.")
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
     last_run_hour = -1
     last_cleanup_date = ""
-    startup = True
+
+    # [Startup] 과거 데이터 복구를 백그라운드 태스크로 즉시 실행 (메인 루프 차단 없음)
+    asyncio.create_task(backfill_system_briefings(kst))
 
     while True:
         try:
-            # [Lazy Import] 루프마다 임포트하지 않고 최초 1회만 필요
             from utils.global_briefing import generate_market_wide_briefing
-            from utils.briefing_store import has_system_briefing_for_hour, cleanup_old_briefings
-
-            kst = pytz.timezone('Asia/Seoul')
+            from utils.briefing_store import cleanup_old_briefings
+            
             now = datetime.now(kst)
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-            # ── [Phase 1 & 2] 자가 치유(Self-Healing) 시스템 가동 ──
-            if startup:
-                startup = False
-                logger.info(f"[Startup] 🚀 Server started at {now.strftime('%Y-%m-%d %H:%M')} KST. Starting 2-Phase Recovery...")
-                
-                # [Phase 1] 최근 48시간 (최우선 복구)
-                logger.info("[Self-Healing] Phase 1: Restoring last 48 hours (Priority)...")
-                for h_offset in range(48):
-                    target_kst = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-                    t_date = target_kst.strftime("%Y-%m-%d")
-                    t_hour = target_kst.hour
-                    if target_kst.weekday() >= 5: continue # 주말 제외
-                    
-                    if not has_system_briefing_for_hour(t_date, t_hour):
-                        try:
-                            target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                            logger.info(f"[Self-Healing-P1] 🚀 Priority Backfilling: {t_date} {t_hour:02d}:00")
-                            await generate_market_wide_briefing(target_time=target_utc)
-                            await asyncio.sleep(8) # 숨구멍 확보
-                        except Exception as e:
-                            logger.error(f"[Self-Healing-P1] Failed for {t_date} {t_hour}: {e}")
-
-                # [Phase 2] 나머지 1주일 (백그라운드 저속 축적)
-                logger.info("[Self-Healing] Phase 2: Trickling balance of last 7 days (Background)...")
-                for h_offset in range(48, 168):
-                    target_kst = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-                    t_date = target_kst.strftime("%Y-%m-%d")
-                    t_hour = target_kst.hour
-                    if target_kst.weekday() >= 5: continue # 주말 제외
-
-                    if not has_system_briefing_for_hour(t_date, t_hour):
-                        try:
-                            target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                            logger.info(f"[Self-Healing-P2] 🐢 Background Backfilling: {t_date} {t_hour:02d}:00")
-                            await generate_market_wide_briefing(target_time=target_utc)
-                            await asyncio.sleep(15) # 부하 최소화
-                        except Exception as e: logger.error(f"[Self-Healing-P2] Failed for {t_date} {t_hour}: {e}")
-
-                last_run_hour = current_hour
-                logger.info("[Self-Healing] ✨ Priority recovery complete. Background trickle continues.")
-
-            # ── 매 정각: 새 시간 감지 → 브리핑 생성 ──
-            elif current_hour != last_run_hour:
-                logger.info(f"[HourlyBrief] 🕐 {current_hour:02d}:00 KST — Generating PRECISE SYSTEM briefing...")
+            # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (0순위 최우선 태스크) ──
+            if current_hour != last_run_hour:
+                logger.info(f"[RealTime-Brief] 🕐 {current_hour:02d}:00 KST 감지 — 실시간 리포트 최우선 생성을 시작합니다.")
                 try:
                     # [Precision] 실시간 생성 시에도 분/초를 절삭한 정시 타임스탬프를 강제 지정
                     target_kst = now.replace(minute=0, second=0, microsecond=0)
@@ -167,9 +162,9 @@ async def hourly_briefing_scheduler_loop():
                     
                     await generate_market_wide_briefing(target_time=target_utc)
                     last_run_hour = current_hour
-                    logger.info(f"[HourlyBrief] ✅ {current_hour:02d}:00 saved with precise timestamp.")
+                    logger.info(f"[RealTime-Brief] ✅ {current_hour:02d}:00 리포트 생성 및 저장 완료.")
                 except Exception as e:
-                    logger.error(f"[HourlyBrief] Failed: {e}")
+                    logger.error(f"[RealTime-Brief] ❌ 생성 실패: {e}")
 
             # ── 매일 새벽 4시: DB 정리 ──
             if current_hour == 4 and current_date != last_cleanup_date:

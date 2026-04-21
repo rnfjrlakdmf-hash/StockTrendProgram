@@ -79,19 +79,25 @@ async def startup_event():
             print(f"[Startup Error] Scheduler: {e}")
 
         # 1.4 [24/7 생존 로직] Self-Ping
-        async def run_self_ping():
-            import requests # Lazy Import
-            self_url = "https://stocktrendprogram-production.up.railway.app/api/health"
-            print(f"[Self-Ping] Survival monitoring started: {self_url}")
+        async def self_ping_loop(url: str):
+            """서버가 잠들지 않도록 24시간 심장박동 신호를 보냅니다 (v3.6.27-ULTRA-HYBRID 무인 가동 보장)"""
+            import aiohttp
+            import logging
+            logger = logging.getLogger("uvicorn")
+            logger.info(f"[Self-Ping] 💓 Heartbeat initializing for: {url}")
             while True:
                 try:
-                    await asyncio.sleep(600)  # 10분마다 핑
-                    await asyncio.to_thread(requests.get, self_url, timeout=15)
-                    print("[Self-Ping] ❤️ Heartbeat sent (Server kept alive)")
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f"{url}/health") as resp:
+                            if resp.status == 200:
+                                logger.info(f"[Self-Ping] 💓 Heartbeat OK — 24/7 Autonomous Market Tracker is ACTIVE (v3.6.27)")
+                            else:
+                                logger.warning(f"[Self-Ping] ⚠️ Abnormal response: {resp.status}")
                 except Exception as e:
-                    print(f"[Self-Ping] Warning: {e}")
+                    logger.error(f"[Self-Ping] ❌ Heartbeat missed: {e}")
+                await asyncio.sleep(600)  # 10분마다 생존 신호 전송
 
-        asyncio.create_task(run_self_ping())
+        asyncio.create_task(self_ping_loop("https://stocktrendprogram-production.up.railway.app/api"))
 
     # 지연 실행 태스크 시작
     asyncio.create_task(delayed_startup_sequence())
