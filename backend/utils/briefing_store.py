@@ -40,16 +40,26 @@ def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any], created_a
         if created_at:
             # [Cleanup] SYSTEM 사용자의 경우 동일 시간대 중복 저장 방지
             if user_id == "SYSTEM":
-                # kst_date와 hour를 분리하여 기존 데이터 확인
                 try:
-                    dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+                    # [Ultra-Ready] 다양한 날짜 형식(T 포함 여부 등)에 유연하게 대응
+                    clean_at = created_at.replace('T', ' ')
+                    if '.' in clean_at: clean_at = clean_at.split('.')[0] # 소수점 절삭
+                    
+                    try:
+                        dt = datetime.strptime(clean_at, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        # ISO 포맷 등 다른 형식 시도
+                        dt = datetime.fromisoformat(created_at.replace('Z', ''))
+                        
                     kst_dt = dt + timedelta(hours=9)
                     date_str = kst_dt.strftime("%Y-%m-%d")
                     hour_val = kst_dt.hour
                     if has_system_briefing_for_hour(date_str, hour_val):
                         print(f"[BriefingStore] ⚠️ Blocked duplicate for {user_id} at {created_at}")
-                        return True # 중복이면 성공 처리하고 종료
-                except: pass
+                        return True
+                except Exception as e:
+                    print(f"[BriefingStore] Date parse warning during dedupe: {e}")
+                    pass
 
             cursor.execute(
                 "INSERT INTO morning_briefings (user_id, briefing_json, created_at) VALUES (?, ?, ?)",
