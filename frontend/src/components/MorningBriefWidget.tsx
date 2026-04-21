@@ -264,20 +264,8 @@ export default function MorningBriefWidget() {
         // 1. 선택된 날짜와 정확히 일치하는 경우 (Strict Match)
         if (datePart === selectedDate) return true;
         
-        // 2. 스마트 뷰: 선택된 날짜가 가장 최신(오늘)인 경우, 24시간 이내의 기록도 허용
-        if (availableDates.length > 0 && selectedDate === availableDates[0]) {
-            try {
-                const now = new Date();
-                const isoStr = (b.created_at || "").replace(" ", "T");
-                const itemTime = new Date(isoStr);
-                
-                if (!isNaN(itemTime.getTime())) {
-                    const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
-                    return diffHours <= 24;
-                }
-            } catch (e) { }
-        }
-        return false;
+        // 1. 선택된 날짜와 정확히 일치하는 경우 (Strict Match Only)
+        return datePart === selectedDate;
     });
 
     // [분리] 왼쪽: 개인 맞춤 브리핑(관심종목 뉴스)만 표시 — SYSTEM 브리핑 절대 폴백 금지
@@ -288,19 +276,8 @@ export default function MorningBriefWidget() {
         if (b.user_id !== 'SYSTEM') return false;
         if (!selectedDate) return false;
         const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
-        if (datePart === selectedDate) return true;
-        if (availableDates.length > 0 && selectedDate === availableDates[0]) {
-            try {
-                const now = new Date();
-                const isoStr = (b.created_at || "").replace(" ", "T");
-                const itemTime = new Date(isoStr);
-                if (!isNaN(itemTime.getTime())) {
-                    const diffHours = (now.getTime() - itemTime.getTime()) / (1000 * 60 * 60);
-                    return diffHours <= 24;
-                }
-            } catch (e) { }
-        }
-        return false;
+        // [Strict Match Only] 사용자가 선택한 날짜의 기록만 정직하게 노출
+        return datePart === selectedDate;
     });
 
     const BriefingSkeleton = () => (
