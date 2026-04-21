@@ -116,40 +116,46 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-                # ── 서버 시작 시: 최근 7일 누락 슬롯 대량 보충 (최대 20개) ──
-                if startup:
-                    startup = False
-                    logger.info(f"[Startup] Server started at {now.strftime('%Y-%m-%d %H:%M')} KST. Scanning past 7 days for missing slots...")
-                    gaps_filled = 0
+            # ── [Phase 1 & 2] 자가 치유(Self-Healing) 시스템 가동 ──
+            if startup:
+                startup = False
+                logger.info(f"[Startup] 🚀 Server started at {now.strftime('%Y-%m-%d %H:%M')} KST. Starting 2-Phase Recovery...")
+                
+                # [Phase 1] 최근 48시간 (최우선 복구)
+                logger.info("[Self-Healing] Phase 1: Restoring last 48 hours (Priority)...")
+                for h_offset in range(48):
+                    target_kst = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+                    t_date = target_kst.strftime("%Y-%m-%d")
+                    t_hour = target_kst.hour
+                    if target_kst.weekday() >= 5: continue # 주말 제외
+                    
+                    if not has_system_briefing_for_hour(t_date, t_hour):
+                        try:
+                            target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                            logger.info(f"[Self-Healing-P1] 🚀 Priority Backfilling: {t_date} {t_hour:02d}:00")
+                            await generate_market_wide_briefing(target_time=target_utc)
+                            await asyncio.sleep(8) # 숨구멍 확보
+                        except Exception as e:
+                            logger.error(f"[Self-Healing-P1] Failed for {t_date} {t_hour}: {e}")
 
-                    # 최근 168시간(7일)을 역순(현재와 가장 가까운 시간부터)으로 탐색
-                    for h_offset in range(168):
-                        target_kst = now - timedelta(hours=h_offset)
-                        t_date = target_kst.strftime("%Y-%m-%d")
-                        t_hour = target_kst.hour
-                        
-                        # [Priority] 오늘과 어제(48시간 이내) 데이터를 최우선으로 복구
-                        is_priority = h_offset < 48
-                        tag = "[Priority]" if is_priority else "[Backfill]"
+                # [Phase 2] 나머지 1주일 (백그라운드 저속 축적)
+                logger.info("[Self-Healing] Phase 2: Trickling balance of last 7 days (Background)...")
+                for h_offset in range(48, 168):
+                    target_kst = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+                    t_date = target_kst.strftime("%Y-%m-%d")
+                    t_hour = target_kst.hour
+                    if target_kst.weekday() >= 5: continue # 주말 제외
 
-                        if not has_system_briefing_for_hour(t_date, t_hour):
-                            logger.info(f"{tag} 🔍 Missing slot found: {t_date} {t_hour:02d}:00 KST → Auto-healing...")
-                            try:
-                                # UTC 시간으로 변환하여 AI 분석 요청
-                                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
-                                await generate_market_wide_briefing(target_time=target_utc)
-                                gaps_filled += 1
-                                # 우선순위 데이터는 더 빠르게 생성 (3초 지연)
-                                await asyncio.sleep(3 if is_priority else 5) 
-                            except Exception as e:
-                                logger.error(f"{tag} Healing failed for {t_date} {t_hour}:00 - {e}")
+                    if not has_system_briefing_for_hour(t_date, t_hour):
+                        try:
+                            target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                            logger.info(f"[Self-Healing-P2] 🐢 Background Backfilling: {t_date} {t_hour:02d}:00")
+                            await generate_market_wide_briefing(target_time=target_utc)
+                            await asyncio.sleep(15) # 부하 최소화
+                        except Exception as e: logger.error(f"[Self-Healing-P2] Failed for {t_date} {t_hour}: {e}")
 
-                        if gaps_filled >= 20:
-                            logger.info("[Startup] 🛑 Recovery limit (20 slots) reached. Standing by.")
-                            break
-
-                    last_run_hour = current_hour
-                    logger.info(f"[Startup] ✨ Recovery complete. {gaps_filled} slot(s) restored to history.")
+                last_run_hour = current_hour
+                logger.info("[Self-Healing] ✨ Priority recovery complete. Background trickle continues.")
 
             # ── 매 정각: 새 시간 감지 → 브리핑 생성 ──
             elif current_hour != last_run_hour:

@@ -370,7 +370,7 @@ export default function Sidebar() {
 
                     <MarketClock />
                     <div className="px-2 pt-4 border-t border-white/5 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.25-ULTRA-READY</p>
+                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.26-TURBO-STABLE</p>
                     </div>
                 </div>
 

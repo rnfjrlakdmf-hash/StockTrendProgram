@@ -642,7 +642,7 @@ export default function MorningBriefWidget() {
                                     );
                                 }) : (
                                     <div className="py-20 text-center">
-                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.25-ULTRA-READY)</p>
+                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.26-TURBO-STABLE)</p>
                                     </div>
                                 )}
                             </div>
