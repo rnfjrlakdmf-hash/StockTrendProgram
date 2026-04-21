@@ -362,7 +362,7 @@ export default function MorningBriefWidget() {
                                     NAVER STYLE AI INSIGHT
                                 </span>
                                 <span className="text-[10px] bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-black tracking-widest uppercase border border-purple-500/20">
-                                    v3.6.21-PREMIUM-STABLE
+                                    v3.6.24-ULTRA-CLEAN
                                 </span>
                                 {latestPersonal?.is_instant && (
                                     <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
@@ -642,7 +642,7 @@ export default function MorningBriefWidget() {
                                     );
                                 }) : (
                                     <div className="py-20 text-center">
-                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.21-PREMIUM-STABLE)</p>
+                                        <p className="text-gray-500 text-sm italic">해당 날짜의 기록이 생성되지 않았거나 주말/공휴일입니다. (v3.6.24-ULTRA-CLEAN)</p>
                                     </div>
                                 )}
                             </div>
