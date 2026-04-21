@@ -9,15 +9,15 @@ const isAndroid = typeof window !== 'undefined' && (
     /Android/i.test(navigator.userAgent)
 );
 
-let apiBase = "/api";
+let apiBase = "";
 
 if (process.env.NEXT_PUBLIC_API_URL) {
   apiBase = process.env.NEXT_PUBLIC_API_URL;
 } else if (typeof window !== 'undefined') {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    apiBase = "http://localhost:8000/api";
+    apiBase = "http://localhost:8000";
   } else {
-    apiBase = "/api";
+    apiBase = "";
   }
 }
 
