@@ -1,7 +1,7 @@
 import os
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from typing import Dict, Any
 
@@ -36,8 +36,21 @@ def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any], created_a
     try:
         cursor.execute("PRAGMA busy_timeout = 5000")
         
-        # 1. 소급 생성(Backfill)인 경우: 명시된 시간을 사용하여 저장 (중복 체크 건너뜀)
+        # 1. 소급 생성(Backfill)인 경우: 명시된 시간을 사용하여 저장
         if created_at:
+            # [Cleanup] SYSTEM 사용자의 경우 동일 시간대 중복 저장 방지
+            if user_id == "SYSTEM":
+                # kst_date와 hour를 분리하여 기존 데이터 확인
+                try:
+                    dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+                    kst_dt = dt + timedelta(hours=9)
+                    date_str = kst_dt.strftime("%Y-%m-%d")
+                    hour_val = kst_dt.hour
+                    if has_system_briefing_for_hour(date_str, hour_val):
+                        print(f"[BriefingStore] ⚠️ Blocked duplicate for {user_id} at {created_at}")
+                        return True # 중복이면 성공 처리하고 종료
+                except: pass
+
             cursor.execute(
                 "INSERT INTO morning_briefings (user_id, briefing_json, created_at) VALUES (?, ?, ?)",
                 (user_id, json.dumps(briefing_data, ensure_ascii=False), created_at)

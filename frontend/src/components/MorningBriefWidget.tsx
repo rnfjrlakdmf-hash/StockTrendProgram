@@ -280,6 +280,19 @@ export default function MorningBriefWidget() {
         return datePart === selectedDate;
     });
 
+    // [Cleanup] 타임라인 내 중복 시간대 브리핑 제거 (Date + Hour 조합 활용)
+    const uniqueSystemTimeline = systemTimeline.reduce((acc, current) => {
+        const date = current?.created_at ? new Date(current.created_at) : new Date();
+        const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+        if (!acc.find(item => {
+            const d = item?.created_at ? new Date(item.created_at) : new Date();
+            return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}` === key;
+        })) {
+            acc.push(current);
+        }
+        return acc;
+    }, [] as any[]);
+
     const BriefingSkeleton = () => (
         <div className="w-full space-y-6 animate-pulse">
             <div className="h-16 bg-white/5 rounded-3xl w-full" />
@@ -537,7 +550,7 @@ export default function MorningBriefWidget() {
                                 {/* Vertical Timeline Line */}
                                 <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1px] bg-gradient-to-b from-emerald-500/40 via-white/5 to-transparent"></div>
 
-                                {(systemTimeline && systemTimeline.length > 0) ? systemTimeline.map((brief, idx) => {
+                                {(uniqueSystemTimeline && uniqueSystemTimeline.length > 0) ? uniqueSystemTimeline.map((brief, idx) => {
                                     const date = brief?.created_at ? new Date(brief.created_at) : new Date();
                                     // [Precision] 정시 브리핑은 분 단위를 절삭하여 00으로 강제 표시 (히스토리 일관성 확보)
                                     const timeLabel = brief.category === 'PERIODIC' 
