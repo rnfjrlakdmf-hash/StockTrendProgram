@@ -94,11 +94,23 @@ async def check_and_notify_disclosures():
 async def backfill_system_briefings(kst_timezone):
     """과거 누락된 브리핑을 백그라운드에서 병렬로 복구합니다."""
     from utils.global_briefing import generate_market_wide_briefing
-    from utils.briefing_store import has_system_briefing_for_hour
+    from utils.briefing_store import has_system_briefing_for_hour, get_db
     
     now = datetime.now(kst_timezone)
     logger.info(f"[Backfill-Engine] 🚀 Background recovery started at {now.strftime('%H:%M')} KST.")
     
+    # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
+        deleted_count = cursor.rowcount
+        conn.commit()
+        if deleted_count > 0:
+            logger.info(f"[Backfill-SelfHeal] 🧹 Cleared {deleted_count} failed placeholders for regeneration.")
+    except Exception as e:
+        logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
+
     # [Phase 1] 최근 48시간 우선 복구
     for h_offset in range(48):
         current_now = datetime.now(kst_timezone)
