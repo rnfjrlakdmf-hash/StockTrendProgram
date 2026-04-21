@@ -116,33 +116,36 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-            # ── 서버 시작 시: 오늘 누락 슬롯 최대 3개 보충 ──
-            if startup:
-                startup = False
-                logger.info(f"[Startup] Server started at {now.strftime('%H:%M')} KST. Checking missing slots...")
-                gaps_filled = 0
+                # ── 서버 시작 시: 최근 7일 누락 슬롯 대량 보충 (최대 20개) ──
+                if startup:
+                    startup = False
+                    logger.info(f"[Startup] Server started at {now.strftime('%Y-%m-%d %H:%M')} KST. Scanning past 7 days for missing slots...")
+                    gaps_filled = 0
 
-                for h_offset in range(min(current_hour + 1, 24)):
-                    target_kst = now - timedelta(hours=h_offset)
-                    t_date = target_kst.strftime("%Y-%m-%d")
-                    t_hour = target_kst.hour
-                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                    # 최근 168시간(7일)을 역순으로 탐색
+                    for h_offset in range(168):
+                        target_kst = now - timedelta(hours=h_offset)
+                        t_date = target_kst.strftime("%Y-%m-%d")
+                        t_hour = target_kst.hour
+                        # UTC 시간으로 변환하여 AI 분석 요청
+                        target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
 
-                    if not has_system_briefing_for_hour(t_date, t_hour):
-                        logger.info(f"[Startup] Missing slot: {t_date} {t_hour:02d}:00 KST → generating now...")
-                        try:
-                            await generate_market_wide_briefing(target_time=target_utc)
-                            gaps_filled += 1
-                            await asyncio.sleep(5)  # API 부하 방지
-                        except Exception as e:
-                            logger.error(f"[Startup] Failed for {t_date} {t_hour}:00 - {e}")
+                        if not has_system_briefing_for_hour(t_date, t_hour):
+                            logger.info(f"[Startup] 🔍 Missing slot found: {t_date} {t_hour:02d}:00 KST → Auto-healing...")
+                            try:
+                                await generate_market_wide_briefing(target_time=target_utc)
+                                gaps_filled += 1
+                                await asyncio.sleep(5)  # API 할당량 보호를 위한 지연
+                            except Exception as e:
+                                logger.error(f"[Startup] Healing failed for {t_date} {t_hour}:00 - {e}")
 
-                    if gaps_filled >= 3:
-                        logger.info("[Startup] Backfill limit (3) reached.")
-                        break
+                        # 한 번에 너무 많은 분석이 몰리지 않도록 7일 중 주요 20개 슬롯만 우선 복구
+                        if gaps_filled >= 20:
+                            logger.info("[Startup] 🛑 Recovery limit (20 slots) reached. Standing by for next hourly sync.")
+                            break
 
-                last_run_hour = current_hour
-                logger.info(f"[Startup] ✅ Done. {gaps_filled} slot(s) filled.")
+                    last_run_hour = current_hour
+                    logger.info(f"[Startup] ✨ Recovery complete. {gaps_filled} slot(s) restored to history.")
 
             # ── 매 정각: 새 시간 감지 → 브리핑 생성 ──
             elif current_hour != last_run_hour:
