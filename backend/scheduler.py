@@ -122,26 +122,30 @@ async def hourly_briefing_scheduler_loop():
                     logger.info(f"[Startup] Server started at {now.strftime('%Y-%m-%d %H:%M')} KST. Scanning past 7 days for missing slots...")
                     gaps_filled = 0
 
-                    # 최근 168시간(7일)을 역순으로 탐색
+                    # 최근 168시간(7일)을 역순(현재와 가장 가까운 시간부터)으로 탐색
                     for h_offset in range(168):
                         target_kst = now - timedelta(hours=h_offset)
                         t_date = target_kst.strftime("%Y-%m-%d")
                         t_hour = target_kst.hour
-                        # UTC 시간으로 변환하여 AI 분석 요청
-                        target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                        
+                        # [Priority] 오늘과 어제(48시간 이내) 데이터를 최우선으로 복구
+                        is_priority = h_offset < 48
+                        tag = "[Priority]" if is_priority else "[Backfill]"
 
                         if not has_system_briefing_for_hour(t_date, t_hour):
-                            logger.info(f"[Startup] 🔍 Missing slot found: {t_date} {t_hour:02d}:00 KST → Auto-healing...")
+                            logger.info(f"{tag} 🔍 Missing slot found: {t_date} {t_hour:02d}:00 KST → Auto-healing...")
                             try:
+                                # UTC 시간으로 변환하여 AI 분석 요청
+                                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
                                 await generate_market_wide_briefing(target_time=target_utc)
                                 gaps_filled += 1
-                                await asyncio.sleep(5)  # API 할당량 보호를 위한 지연
+                                # 우선순위 데이터는 더 빠르게 생성 (3초 지연)
+                                await asyncio.sleep(3 if is_priority else 5) 
                             except Exception as e:
-                                logger.error(f"[Startup] Healing failed for {t_date} {t_hour}:00 - {e}")
+                                logger.error(f"{tag} Healing failed for {t_date} {t_hour}:00 - {e}")
 
-                        # 한 번에 너무 많은 분석이 몰리지 않도록 7일 중 주요 20개 슬롯만 우선 복구
                         if gaps_filled >= 20:
-                            logger.info("[Startup] 🛑 Recovery limit (20 slots) reached. Standing by for next hourly sync.")
+                            logger.info("[Startup] 🛑 Recovery limit (20 slots) reached. Standing by.")
                             break
 
                     last_run_hour = current_hour
