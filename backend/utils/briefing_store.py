@@ -55,7 +55,7 @@ def save_morning_briefing(user_id: str, briefing_data: Dict[str, Any], created_a
                     date_str = kst_dt.strftime("%Y-%m-%d")
                     hour_val = kst_dt.hour
                     if has_system_briefing_for_hour(date_str, hour_val):
-                        print(f"[BriefingStore] ⚠️ Blocked duplicate for {user_id} at {created_at}")
+                        print(f"[BriefingStore] Blocked duplicate for {user_id} at {created_at}")
                         return True
                 except Exception as e:
                     print(f"[BriefingStore] Date parse warning during dedupe: {e}")

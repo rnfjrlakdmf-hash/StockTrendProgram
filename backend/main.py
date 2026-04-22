@@ -49,11 +49,12 @@ async def startup_event():
     print(f"\n[Startup] v3.6.32-DB-HOTFIX Engine active on PID: {os.getpid()}")
     
     # [Hotfix] Ensure DB schemas exist since we removed stock_app.db from git
+    # Using to_thread to prevent blocking the event loop during initial DB connection
     try:
         from db_manager import init_db
         from utils.briefing_store import init_briefing_table
-        init_db()
-        init_briefing_table()
+        await asyncio.to_thread(init_db)
+        await asyncio.to_thread(init_briefing_table)
         print("[Startup] Database schemas successfully initialized.")
     except Exception as e:
         print(f"[Startup Error] DB Init: {e}")
@@ -74,8 +75,8 @@ async def startup_event():
         # 1.2 가격 알림 모니터링 로드
         try:
             from price_alerts import price_alert_monitor, create_price_alerts_tables
-            create_price_alerts_tables()
-            price_alert_monitor.start()
+            create_price_alerts_tables() # Re-check tables
+            asyncio.create_task(price_alert_monitor.start())
             print("[Delayed-Startup] Price alert system active.")
         except Exception as e:
             print(f"[Startup Error] Price Alerts: {e}")
@@ -94,17 +95,17 @@ async def startup_event():
             import aiohttp
             import logging
             logger = logging.getLogger("uvicorn")
-            logger.info(f"[Self-Ping] 💓 Heartbeat initializing for: {url}")
+            logger.info(f"[Self-Ping] Heartbeat initializing for: {url}")
             while True:
                 try:
                     async with aiohttp.ClientSession() as session:
                         async with session.get(f"{url}/health") as resp:
                             if resp.status == 200:
-                                logger.info(f"[Self-Ping] 💓 Heartbeat OK — 24/7 Autonomous Market Tracker is ACTIVE (v3.6.31)")
+                                logger.info(f"[Self-Ping] Heartbeat OK - 24/7 Autonomous Market Tracker is ACTIVE (v3.6.31)")
                             else:
-                                logger.warning(f"[Self-Ping] ⚠️ Abnormal response: {resp.status}")
+                                logger.warning(f"[Self-Ping] Abnormal response: {resp.status}")
                 except Exception as e:
-                    logger.error(f"[Self-Ping] ❌ Heartbeat missed: {e}")
+                    logger.error(f"[Self-Ping] Heartbeat missed: {e}")
                 await asyncio.sleep(600)  # 10분마다 생존 신호 전송
 
         asyncio.create_task(self_ping_loop("https://stocktrendprogram-production.up.railway.app/api"))

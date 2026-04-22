@@ -73,12 +73,12 @@ def _generate_sync_impl(target_time: Optional[str] = None) -> Optional[Dict[str,
   "summary_bullets": ["· 지수 수치(필수) 포함 핵심 포인트 1", "· 핵심 포인트 2", "· 핵심 포인트 3"],
   "simple_summary_bullets": ["· 쉬운 설명 1", "· 쉬운 설명 2", "· 쉬운 설명 3"],
   "sections": [
-    {{"emoji": "📊", "title": "국내외 증시 동향", "content": "상세 분석 내용"}},
-    {{"emoji": "🌐", "title": "글로벌 매크로", "content": "상세 분석 내용"}},
-    {{"emoji": "💡", "title": "투자자 주목 포인트", "content": "상세 분석 내용"}}
+    {{"emoji": " ", "title": "국내외 증시 동향", "content": "상세 분석 내용"}},
+    {{"emoji": " ", "title": "글로벌 매크로", "content": "상세 분석 내용"}},
+    {{"emoji": " ", "title": "투자자 주목 포인트", "content": "상세 분석 내용"}}
   ],
   "simple_sections": [
-    {{"emoji": "💡", "title": "한 줄 요약", "content": "쉬운 설명"}}
+    {{"emoji": " ", "title": "한 줄 요약", "content": "쉬운 설명"}}
   ],
   "watchlist_briefs": [],
   "market_focus": "지금 주목할 핵심 변수",
@@ -105,7 +105,7 @@ def _generate_sync_impl(target_time: Optional[str] = None) -> Optional[Dict[str,
         briefing_result["category"] = "PERIODIC"
 
         save_morning_briefing(user_id, briefing_result, created_at=target_time)
-        print(f"[SYSTEM-Briefing] ✅ Saved successfully: {now.strftime('%H:%M')} KST")
+        print(f"[SYSTEM-Briefing] Saved successfully: {now.strftime('%H:%M')} KST")
         return briefing_result
 
     except Exception as e:
@@ -133,8 +133,8 @@ def _save_placeholder(user_id: str, now: datetime, target_time: Optional[str], e
         "market_title": f"{now.strftime('%H시')} 시장 데이터 수집 중",
         "summary_bullets": ["· 시장 데이터를 수집 중입니다.", "· 잠시 후 업데이트됩니다."],
         "simple_summary_bullets": ["· 잠시 후 업데이트됩니다."],
-        "sections": [{"emoji": "⏳", "title": "데이터 수집 중", "content": content_msg}],
-        "simple_sections": [{"emoji": "⏳", "title": "준비 중", "content": "잠시 후 업데이트됩니다."}],
+        "sections": [{"emoji": " ", "title": "데이터 수집 중", "content": content_msg}],
+        "simple_sections": [{"emoji": " ", "title": "준비 중", "content": "잠시 후 업데이트됩니다."}],
         "watchlist_briefs": [],
         "market_focus": "데이터 수집 중",
         "disclaimer": "본 정보는 투자 판단의 참고용이며 투자 권유가 아닙니다.",
@@ -142,4 +142,4 @@ def _save_placeholder(user_id: str, now: datetime, target_time: Optional[str], e
         "category": "PERIODIC",
     }
     save_morning_briefing(user_id, placeholder, created_at=target_time)
-    print(f"[SYSTEM-Briefing] ⚠️ Saved placeholder for {now.strftime('%H:%M')} KST")
+    print(f"[SYSTEM-Briefing] Saved placeholder for {now.strftime('%H:%M')} KST")

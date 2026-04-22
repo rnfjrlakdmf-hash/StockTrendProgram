@@ -109,7 +109,7 @@ def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
     if not tokens:
         return {"status": "error", "message": "등록된 기기가 없습니다."}
         
-    title = "🔔 [Test] Connection Verified"
+    title = "[Test] Connection Verified"
     body = "System is working perfectly with Zero-Wait Architecture!"
     try:
         if len(tokens) == 1:

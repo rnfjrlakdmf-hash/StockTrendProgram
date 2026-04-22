@@ -97,7 +97,7 @@ async def backfill_system_briefings(kst_timezone):
     from utils.briefing_store import has_system_briefing_for_hour, get_db
     
     now = datetime.now(kst_timezone)
-    logger.info(f"[Backfill-Engine] 🚀 Background recovery started at {now.strftime('%H:%M')} KST.")
+    logger.info(f"[Backfill-Engine] Background recovery started at {now.strftime('%H:%M')} KST.")
     
     # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
     try:
@@ -107,7 +107,7 @@ async def backfill_system_briefings(kst_timezone):
         deleted_count = cursor.rowcount
         conn.commit()
         if deleted_count > 0:
-            logger.info(f"[Backfill-SelfHeal] 🧹 Cleared {deleted_count} failed placeholders for regeneration.")
+            logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders for regeneration.")
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
 
@@ -121,7 +121,7 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-P1] 🚀 Filling gap: {t_date} {t_hour:02d}:00")
+                logger.info(f"[Backfill-P1] Filling gap: {t_date} {t_hour:02d}:00")
                 await generate_market_wide_briefing(target_time=target_utc)
                 await asyncio.sleep(30) # Rate limit safety
             except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
@@ -136,12 +136,12 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-P2] 🐢 Trickling gap: {t_date} {t_hour:02d}:00")
+                logger.info(f"[Backfill-P2] Trickling gap: {t_date} {t_hour:02d}:00")
                 await generate_market_wide_briefing(target_time=target_utc)
                 await asyncio.sleep(45) 
             except Exception as e: logger.error(f"[Backfill-P2] Error: {e}")
 
-    logger.info("[Backfill-Engine] ✨ All history recovered or checked.")
+    logger.info("[Backfill-Engine] All history recovered or checked.")
 
 
 async def hourly_briefing_scheduler_loop():
@@ -166,7 +166,7 @@ async def hourly_briefing_scheduler_loop():
 
             # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (0순위 최우선 태스크) ──
             if current_hour != last_run_hour:
-                logger.info(f"[RealTime-Brief] 🕐 {current_hour:02d}:00 KST 감지 — 실시간 리포트 최우선 생성을 시작합니다.")
+                logger.info(f"[RealTime-Brief] {current_hour:02d}:00 KST 감지 - 실시간 리포트 최우선 생성을 시작합니다.")
                 try:
                     # [Precision] 실시간 생성 시에도 분/초를 절삭한 정시 타임스탬프를 강제 지정
                     target_kst = now.replace(minute=0, second=0, microsecond=0)
@@ -174,9 +174,9 @@ async def hourly_briefing_scheduler_loop():
                     
                     await generate_market_wide_briefing(target_time=target_utc)
                     last_run_hour = current_hour
-                    logger.info(f"[RealTime-Brief] ✅ {current_hour:02d}:00 리포트 생성 및 저장 완료.")
+                    logger.info(f"[RealTime-Brief] {current_hour:02d}:00 리포트 생성 및 저장 완료.")
                 except Exception as e:
-                    logger.error(f"[RealTime-Brief] ❌ 생성 실패: {e}")
+                    logger.error(f"[RealTime-Brief] 생성 실패: {e}")
 
             # ── 매일 새벽 4시: DB 정리 ──
             if current_hour == 4 and current_date != last_cleanup_date:
