@@ -42,6 +42,35 @@ def nuke_placeholders(view: bool = False):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/admin/db-status")
+def get_db_status():
+    """[Admin] Check DB row count and path"""
+    from db_manager import DB_FILE
+    from utils.briefing_store import get_db
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM morning_briefings")
+        count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT user_id, COUNT(*) FROM morning_briefings GROUP BY user_id")
+        group_stats = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        cursor.execute("SELECT MAX(created_at) FROM morning_briefings")
+        last_date = cursor.fetchone()[0]
+        
+        conn.close()
+        return {
+            "status": "ok",
+            "db_path": DB_FILE,
+            "total_rows": count,
+            "group_stats": group_stats,
+            "last_entry_at": last_date,
+            "file_exists": os.path.exists(DB_FILE)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.post("/admin/clear-cache")
 def clear_cache():
     """[Admin] Force clear all server-side cache"""
