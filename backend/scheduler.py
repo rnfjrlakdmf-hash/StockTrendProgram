@@ -91,43 +91,51 @@ async def check_and_notify_disclosures():
         scraper._close_driver()
 
 
+# Global analysis lock to prevent concurrent DB writes from multiple background tasks
+ANALYSIS_LOCK = asyncio.Lock()
+
 async def backfill_system_briefings(kst_timezone):
-    """과거 누락된 브리핑을 백그라운드에서 병렬로 복구합니다."""
-    from utils.global_briefing import generate_market_wide_briefing
-    from utils.briefing_store import has_system_briefing_for_hour, get_db
-    
-    now = datetime.now(kst_timezone)
-    logger.info(f"[Backfill-Engine] Background recovery started at {now.strftime('%H:%M')} KST.")
-    
-    # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
-        deleted_count = cursor.rowcount
-        conn.commit()
-        conn.close() # Explicitly close
-        if deleted_count > 0:
-            logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders for regeneration.")
-    except Exception as e:
-        logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
-
-    # [Diet] 최근 48시간(2일) 우선 복구
-    for h_offset in range(48):
-        current_now = datetime.now(kst_timezone)
-        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+    """
+    서버 시작 시 누락된 시스템 브리핑 데이터를 소급하여 생성합니다.
+    (DIET: 최근 48시간만 우선 복구)
+    """
+    async with ANALYSIS_LOCK:
+        logger.info("[Backfill-Engine] Starting Diet-Mode backfill (Target: 48h)...")
+        from utils.global_briefing import generate_market_wide_briefing
+        from utils.briefing_store import has_system_briefing_for_hour, get_db
         
-        # Check exists with its own connection block (has_system_briefing_for_hour closes it)
-        if not has_system_briefing_for_hour(t_date, t_hour):
-            try:
-                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-P1] Filling gap (Diet-Mode): {t_date} {t_hour:02d}:00")
-                await generate_market_wide_briefing(target_time=target_utc)
-                await asyncio.sleep(120) # 2 minute diet sleep to prevent DB lock
-            except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
+        now = datetime.now(kst_timezone)
+        logger.info(f"[Backfill-Engine] Background recovery started at {now.strftime('%H:%M')} KST.")
+        
+        # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
+            deleted_count = cursor.rowcount
+            conn.commit()
+            conn.close() # Explicitly close
+            if deleted_count > 0:
+                logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders for regeneration.")
+        except Exception as e:
+            logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
 
-    logger.info("[Backfill-Engine] Diet backfill completed (Target: 48h).")
+        # [Diet] 최근 48시간(2일) 우선 복구
+        for h_offset in range(48):
+            current_now = datetime.now(kst_timezone)
+            target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+            t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+            
+            # Check exists with its own connection block (has_system_briefing_for_hour closes it)
+            if not has_system_briefing_for_hour(t_date, t_hour):
+                try:
+                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                    logger.info(f"[Backfill-P1] Filling gap (Diet-Mode): {t_date} {t_hour:02d}:00")
+                    await generate_market_wide_briefing(target_time=target_utc)
+                    await asyncio.sleep(120) # 2 minute diet sleep to prevent DB lock
+                except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
+
+        logger.info("[Backfill-Engine] Diet backfill completed (Target: 48h).")
 
 
 async def hourly_briefing_scheduler_loop():
@@ -155,15 +163,18 @@ async def hourly_briefing_scheduler_loop():
 
             # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (0순위 최우선 태스크) ──
             if current_hour != last_run_hour:
-                logger.info(f"[RealTime-Brief] {current_hour:02d}:00 KST 감지 - 실시간 리포트 최우선 생성을 시작합니다.")
+                logger.info(f"[Hourly-Briefing] Starting analysis for {current_date} {current_hour:02d}:00")
+                
+                target_utc = (now - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                
+                # Ensure sequential execution even during hourly schedule
                 try:
-                    # [Precision] 실시간 생성 시에도 분/초를 절삭한 정시 타임스탬프를 강제 지정
-                    target_kst = now.replace(minute=0, second=0, microsecond=0)
-                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
+                    async with ANALYSIS_LOCK:
+                        await generate_market_wide_briefing(target_time=target_utc)
+                        cleanup_old_briefings()
                     
-                    await generate_market_wide_briefing(target_time=target_utc)
                     last_run_hour = current_hour
-                    logger.info(f"[RealTime-Brief] {current_hour:02d}:00 리포트 생성 및 저장 완료.")
+                    logger.info(f"[Hourly-Briefing] Completed for {current_hour:02d}:00")
                 except Exception as e:
                     logger.error(f"[RealTime-Brief] 생성 실패: {e}")
 

@@ -9,10 +9,19 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 
 def get_db_connection():
-    return sqlite3.connect(DB_FILE, timeout=30)
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    # Enable WAL mode for high concurrency (Read-while-Write)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+    except Exception as e:
+        print(f"[DB] WAL Mode Error: {e}")
+    return conn
 
 def init_db():
     conn = sqlite3.connect(DB_FILE, timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     cursor = conn.cursor()
     
     # AI 점수 히스토리 테이블

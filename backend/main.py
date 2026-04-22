@@ -81,7 +81,7 @@ async def startup_event():
         except Exception as e:
             print(f"[Startup Error] Price Alerts: {e}")
             
-        # 1.3 스케줄러 루프 활성화 (시장 히스토리 축적)
+        # 1.3 스케줄러 루프 활성화
         try:
             from scheduler import hourly_briefing_scheduler_loop
             asyncio.create_task(hourly_briefing_scheduler_loop())
@@ -89,27 +89,7 @@ async def startup_event():
         except Exception as e:
             print(f"[Startup Error] Scheduler: {e}")
 
-        # 1.4 [Bootstrap] 현재 시간 데이터 강제 생성 (데이터 다이어트 지원)
-        try:
-            import pytz
-            from datetime import datetime as dt
-            from utils.briefing_store import has_system_briefing_for_hour
-            from utils.global_briefing import generate_market_wide_briefing
-            from datetime import timedelta
-            
-            kst = pytz.timezone('Asia/Seoul')
-            now_kst = dt.now(kst)
-            t_date, t_hour = now_kst.strftime("%Y-%m-%d"), now_kst.hour
-            
-            if not has_system_briefing_for_hour(t_date, t_hour):
-                print(f"[Bootstrap] No data found for {t_date} {t_hour:02d}:00. Generating now...")
-                target_kst = now_kst.replace(minute=0, second=0, microsecond=0)
-                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
-                asyncio.create_task(generate_market_wide_briefing(target_time=target_utc))
-        except Exception as e:
-            print(f"[Bootstrap Error] Failed to generate initial brief: {e}")
-
-        # 1.5 [24/7 생존 로직] Self-Ping
+        # 1.4 [24/7 생존 로직] Self-Ping
         async def self_ping_loop(url: str):
             """서버가 잠들지 않도록 24시간 심장박동 신호를 보냅니다 (v3.6.31-ULTRA-STABLE-FINAL 무인 가동 보장)"""
             import aiohttp
