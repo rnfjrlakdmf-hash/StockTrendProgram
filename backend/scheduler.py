@@ -129,14 +129,20 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-3D] Priority Filling (Today First): {t_date} {t_hour:02d}:00")
+                # [Fast-Pass] 최신 데이터(0시간 전)는 대기 없이 즉시 생성하여 화면 먹통 해소
+                is_urgent = (h_offset == 0)
                 
-                # [Crucial Fix] 잠금을 루프 내부로 이동하여 작업 사이에 다른 API 요청이 실행될 수 있게 함
+                logger.info(f"[Backfill-3D] {'URGENT' if is_urgent else 'Normal'} Filling: {t_date} {t_hour:02d}:00")
+                
                 async with ANALYSIS_LOCK:
                     await generate_market_wide_briefing(target_time=target_utc)
                 
-                # 생성 직후 잠시 대기하여 DB 상태 안정화 및 다른 요청 처리 기회 제공
-                await asyncio.sleep(120) 
+                # 최신 데이터 생성 후에는 즉시 다음 단계로 넘어가거나, 과거 데이터는 120초씩 쉼
+                if not is_urgent:
+                    await asyncio.sleep(120) 
+                else:
+                    logger.info("[Backfill-3D] Urgent data ready. Trickling other hours...")
+                    await asyncio.sleep(10) # 짧은 휴식 후 계속
             except Exception as e: logger.error(f"[Backfill-3D] Error: {e}")
 
     logger.info("[Backfill-Engine] Recency-First backfill completed (Target: 72h).")

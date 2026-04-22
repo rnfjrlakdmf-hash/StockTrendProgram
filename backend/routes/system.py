@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Header, Query
-from pydantic import BaseModel
 from typing import Optional
+import os
+import json
 from turbo_engine import turbo_engine
 
 router = APIRouter()
@@ -45,10 +45,9 @@ def nuke_placeholders(view: bool = False):
 @router.get("/admin/db-status")
 def get_db_status():
     """[Admin] Check DB row count and path"""
-    from db_manager import DB_FILE
-    from utils.briefing_store import get_db
+    from db_manager import DB_FILE, get_db_connection
     try:
-        conn = get_db()
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM morning_briefings")
         count = cursor.fetchone()[0]
@@ -59,14 +58,41 @@ def get_db_status():
         cursor.execute("SELECT MAX(created_at) FROM morning_briefings")
         last_date = cursor.fetchone()[0]
         
+        cursor.execute("SELECT journal_mode FROM pragma_journal_mode")
+        mode = cursor.fetchone()[0]
+        
         conn.close()
         return {
             "status": "ok",
             "db_path": DB_FILE,
+            "journal_mode": mode,
             "total_rows": count,
             "group_stats": group_stats,
             "last_entry_at": last_date,
             "file_exists": os.path.exists(DB_FILE)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/admin/raw-check")
+def raw_db_check():
+    """[Diagnostic] DB 내부의 실제 브리핑 데이터 상위 5개를 가공 없이 반환합니다."""
+    from db_manager import get_db_connection
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, user_id, 
+                   strftime('%Y-%m-%d %H:%M:%S', datetime(created_at, '+9 hours')) as kst_time,
+                   substr(briefing_json, 1, 100) as snippet 
+            FROM morning_briefings 
+            ORDER BY created_at DESC LIMIT 5
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return {
+            "status": "success",
+            "data": [{"id": r[0], "user_id": r[1], "kst_time": r[2], "snippet": r[3]} for r in rows]
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}

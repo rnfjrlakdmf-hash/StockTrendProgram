@@ -9,8 +9,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 
 def get_db_connection():
-    # Production-ready connection factory
-    conn = sqlite3.connect(DB_FILE, timeout=30)
+    # Production-ready connection factory with WAL enforcement
+    # Increased timeout to 60s to handle heavy AI analysis writes
+    conn = sqlite3.connect(DB_FILE, timeout=60)
+    try:
+        # WAL mode is crucial for allowing readers (Dashboard) while writers (AI Backfiller) are active
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+    except Exception as e:
+        print(f"[DB-Error] Failed to set WAL mode: {e}")
     return conn
 
 def init_db():
