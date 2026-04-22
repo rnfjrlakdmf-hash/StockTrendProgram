@@ -15,12 +15,26 @@ def health_check():
     }
 
 @router.get("/admin/nuke-placeholders")
-def nuke_placeholders():
-    """[Admin] Force clear all stuck placeholders from SQLite"""
+def nuke_placeholders(view: bool = False):
+    """[Admin] Force clear all stuck placeholders from SQLite or view them"""
     from utils.briefing_store import get_db
+    import json
     try:
         conn = get_db()
         cursor = conn.cursor()
+        
+        if view:
+            cursor.execute("SELECT briefing_json, created_at FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
+            rows = cursor.fetchall()
+            conn.close()
+            placeholders = []
+            for r in rows:
+                try:
+                    placeholders.append({"created_at": r[1], "json": json.loads(r[0])})
+                except:
+                    placeholders.append({"created_at": r[1], "json": r[0]})
+            return {"status": "ok", "count": len(placeholders), "data": placeholders}
+            
         cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
         count = cursor.rowcount
         conn.commit()

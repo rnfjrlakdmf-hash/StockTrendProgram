@@ -40,7 +40,7 @@ def _generate_sync_impl(target_time: Optional[str] = None) -> Optional[Dict[str,
 
     if not API_KEY:
         print("[SYSTEM-Briefing] No API Key - saving placeholder briefing")
-        _save_placeholder(user_id, now, target_time)
+        _save_placeholder(user_id, now, target_time, error_msg="Gemini API 키가 누락되었습니다.")
         return None
 
     # 2. 시장 상태 확인
@@ -111,7 +111,7 @@ def _generate_sync_impl(target_time: Optional[str] = None) -> Optional[Dict[str,
     except Exception as e:
         print(f"[SYSTEM-Briefing] Generation error: {e}")
         # AI 실패 시 기본 브리핑으로 폴백 (히스토리 빈 슬롯 방지)
-        _save_placeholder(user_id, now, target_time)
+        _save_placeholder(user_id, now, target_time, error_msg=str(e))
         return None
 
 async def generate_market_wide_briefing(target_time: str = None):
@@ -122,16 +122,18 @@ async def generate_market_wide_briefing(target_time: str = None):
     """
     return await asyncio.to_thread(_generate_sync_impl, target_time)
 
-def _save_placeholder(user_id: str, now: datetime, target_time: Optional[str]):
+def _save_placeholder(user_id: str, now: datetime, target_time: Optional[str], error_msg: str = ""):
     """AI 실패 시 빈 슬롯을 채우기 위한 기본 브리핑 저장"""
     from utils.briefing_store import save_morning_briefing
+    
+    content_msg = f"시장 데이터를 수집하고 있습니다.\n(Error Log: {error_msg})" if error_msg else "시장 데이터를 수집하고 있습니다."
     
     placeholder = {
         "user_id": user_id,
         "market_title": f"{now.strftime('%H시')} 시장 데이터 수집 중",
         "summary_bullets": ["· 시장 데이터를 수집 중입니다.", "· 잠시 후 업데이트됩니다."],
         "simple_summary_bullets": ["· 잠시 후 업데이트됩니다."],
-        "sections": [{"emoji": "⏳", "title": "데이터 수집 중", "content": "시장 데이터를 수집하고 있습니다."}],
+        "sections": [{"emoji": "⏳", "title": "데이터 수집 중", "content": content_msg}],
         "simple_sections": [{"emoji": "⏳", "title": "준비 중", "content": "잠시 후 업데이트됩니다."}],
         "watchlist_briefs": [],
         "market_focus": "데이터 수집 중",
