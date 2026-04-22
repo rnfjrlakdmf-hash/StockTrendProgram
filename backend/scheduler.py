@@ -112,7 +112,7 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
 
-    # [Phase 1] 최근 48시간 우선 복구
+    # [Diet] 최근 48시간(2일) 우선 복구
     for h_offset in range(48):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
@@ -122,27 +122,12 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-P1] Filling gap: {t_date} {t_hour:02d}:00")
+                logger.info(f"[Backfill-P1] Filling gap (Diet-Mode): {t_date} {t_hour:02d}:00")
                 await generate_market_wide_briefing(target_time=target_utc)
-                await asyncio.sleep(30) # Rate limit safety
+                await asyncio.sleep(120) # 2 minute diet sleep to prevent DB lock
             except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
 
-    # [Phase 2] 나머지 일주일치 복구 (더 천천히)
-    for h_offset in range(48, 168):
-        current_now = datetime.now(kst_timezone)
-        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-        if target_kst.weekday() >= 5: continue
-        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
-
-        if not has_system_briefing_for_hour(t_date, t_hour):
-            try:
-                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-P2] Trickling gap: {t_date} {t_hour:02d}:00")
-                await generate_market_wide_briefing(target_time=target_utc)
-                await asyncio.sleep(45) 
-            except Exception as e: logger.error(f"[Backfill-P2] Error: {e}")
-
-    logger.info("[Backfill-Engine] All history recovered or checked.")
+    logger.info("[Backfill-Engine] Diet backfill completed (Target: 48h).")
 
 
 async def hourly_briefing_scheduler_loop():

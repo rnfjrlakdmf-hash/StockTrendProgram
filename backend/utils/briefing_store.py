@@ -152,10 +152,10 @@ def get_today_briefing_timeline(user_id: str) -> list:
         from datetime import timedelta
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # Optimization: Calculate UTC threshold to use index on created_at
-        utc_threshold = (now - timedelta(days=8)).astimezone(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
+        # Diet: Only show last 2 days of history to reduce load
+        utc_threshold = (now - timedelta(days=2)).astimezone(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
         
-        print(f"[BriefingStore] Fetching timeline for uid='{user_id}' since {utc_threshold} UTC")
+        print(f"[BriefingStore] DIET-Mode: Fetching timeline for last 48h (since {utc_threshold} UTC)")
 
         cursor.execute(
             """
