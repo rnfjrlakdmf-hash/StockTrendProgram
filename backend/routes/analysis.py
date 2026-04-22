@@ -79,6 +79,7 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
     
     # [Mod] 게스트(비로그인) 사용자 배려: x_user_id가 없으면 'SYSTEM' 리포트를 보여줌
     uid = x_user_id.strip() if x_user_id else "SYSTEM"
+    print(f"[API] get_morning_brief for uid='{uid}' (force={force})")
     latest = get_latest_briefing(uid)
     if force or should_generate_new_briefing(uid):
         # [Zero-Wait] 즉시 브리핑 먼저 생성
@@ -96,7 +97,9 @@ async def get_briefing_timeline(x_user_id: Optional[str] = Header(None)):
     from utils.briefing_store import get_today_briefing_timeline
     # [Mod] 게스트 사용자도 타임라인 조회가 가능하도록 'SYSTEM' 계정 활용
     uid = x_user_id.strip() if x_user_id else "SYSTEM"
-    return {"status": "success", "data": get_today_briefing_timeline(uid)}
+    print(f"[API] get_briefing_timeline for uid='{uid}'")
+    timeline = get_today_briefing_timeline(uid)
+    return {"status": "success", "data": timeline}
 
 @router.get("/quant/{symbol}")
 def read_quant_scorecard(symbol: str):

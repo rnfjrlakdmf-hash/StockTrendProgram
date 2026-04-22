@@ -152,7 +152,11 @@ def get_today_briefing_timeline(user_id: str) -> list:
         from datetime import timedelta
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # [Mod] SYSTEM 데이터와 해당 사용자 데이터를 동시에 조회하여 타임라인 구성
+        # Optimization: Calculate UTC threshold to use index on created_at
+        utc_threshold = (now - timedelta(days=8)).astimezone(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
+        
+        print(f"[BriefingStore] Fetching timeline for uid='{user_id}' since {utc_threshold} UTC")
+
         cursor.execute(
             """
             SELECT user_id, briefing_json, 
@@ -160,10 +164,10 @@ def get_today_briefing_timeline(user_id: str) -> list:
                    strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) as kst_date
             FROM morning_briefings 
             WHERE user_id IN ('SYSTEM', ?)
-            AND strftime('%Y-%m-%d', datetime(created_at, '+9 hours')) >= ? 
+            AND created_at >= ?
             ORDER BY created_at DESC
             """,
-            (user_id, seven_days_ago)
+            (user_id, utc_threshold)
         )
         rows = cursor.fetchall()
         results = []
@@ -175,6 +179,7 @@ def get_today_briefing_timeline(user_id: str) -> list:
                 data["kst_date"] = row[3]
                 results.append(data)
             except: continue
+        print(f"[BriefingStore] Found {len(results)} timeline items")
         return results
     finally:
         conn.close()
