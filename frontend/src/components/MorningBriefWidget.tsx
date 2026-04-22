@@ -223,7 +223,7 @@ export default function MorningBriefWidget() {
         const dates = [];
         let checkDate = new Date();
         let daysFound = 0;
-        const targetDays = 7; // [Update] 요청하신 대로 정확히 7 영업일 표시
+        const targetDays = 3; // [Update] 3일 데이터 다이어트에 맞춰 3일만 표시
         
         while (daysFound < targetDays) {
             const dayOfWeek = checkDate.getDay(); // 0: 일, 6: 토
