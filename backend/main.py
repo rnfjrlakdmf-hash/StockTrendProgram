@@ -46,8 +46,18 @@ app.include_router(sockets_router, tags=["WebSocket"])
 @app.on_event("startup")
 async def startup_event():
     """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행하며, 24/7 생존 로직을 가동합니다."""
-    print(f"\n[Startup] v3.6.31-ULTRA-STABLE-FINAL Engine active on PID: {os.getpid()}")
+    print(f"\n[Startup] v3.6.32-DB-HOTFIX Engine active on PID: {os.getpid()}")
     
+    # [Hotfix] Ensure DB schemas exist since we removed stock_app.db from git
+    try:
+        from db_manager import init_db
+        from utils.briefing_store import init_briefing_table
+        init_db()
+        init_briefing_table()
+        print("[Startup] Database schemas successfully initialized.")
+    except Exception as e:
+        print(f"[Startup Error] DB Init: {e}")
+
     async def delayed_startup_sequence():
         # 1. 서버가 외부에 먼저 응답할 수 있도록 20초 대기
         await asyncio.sleep(20)
