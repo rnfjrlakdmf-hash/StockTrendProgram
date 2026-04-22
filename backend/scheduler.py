@@ -97,48 +97,49 @@ ANALYSIS_LOCK = asyncio.Lock()
 async def backfill_system_briefings(kst_timezone):
     """
     서버 시작 시 누락된 시스템 브리핑 데이터를 소급하여 생성합니다.
-    (DIET: 최근 48시간만 우선 복구)
+    (Diet-V3: 최근 3일간의 데이터를 최신순으로 복구)
     """
-    async with ANALYSIS_LOCK:
-        logger.info("[Backfill-Engine] Starting Diet-Mode backfill (Target: 48h)...")
-        from utils.global_briefing import generate_market_wide_briefing
-        from utils.briefing_store import has_system_briefing_for_hour, get_db
-        
-        now = datetime.now(kst_timezone)
-        logger.info(f"[Backfill-Engine] Background recovery started at {now.strftime('%H:%M')} KST.")
-        
-        # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
-        try:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
-            deleted_count = cursor.rowcount
-            conn.commit()
-            conn.close() # Explicitly close
-            if deleted_count > 0:
-                logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders for regeneration.")
-        except Exception as e:
-            logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
+    from utils.global_briefing import generate_market_wide_briefing
+    from utils.briefing_store import has_system_briefing_for_hour, get_db
 
-        # [Diet-V3] 최근 72시간(3일) 소급 복구 (Burden optimized)
-        for h_offset in range(72):
-            current_now = datetime.now(kst_timezone)
-            target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-            
-            # 주말(토/일)은 과거 데이터 복구를 건너뜀 (부담 완화)
-            if target_kst.weekday() >= 5: continue
-            
-            t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
-            
-            if not has_system_briefing_for_hour(t_date, t_hour):
-                try:
-                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                    logger.info(f"[Backfill-3D] Filling gap: {t_date} {t_hour:02d}:00")
+    # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close() 
+        if deleted_count > 0:
+            logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders.")
+    except Exception as e:
+        logger.error(f"[Backfill-SelfHeal] Error: {e}")
+
+    # [Diet-V3] 최근 72시간(3일) 소급 복구 (최신 데이터부터 우선 순위)
+    # 0시 전(오늘)부터 71시간 전(그제) 순서로 생성
+    for h_offset in range(72):
+        current_now = datetime.now(kst_timezone)
+        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+        
+        # 주말(토/일)은 과거 데이터 복구를 건너뜀 (부담 완화)
+        if target_kst.weekday() >= 5: continue
+        
+        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+        
+        if not has_system_briefing_for_hour(t_date, t_hour):
+            try:
+                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                logger.info(f"[Backfill-3D] Priority Filling (Today First): {t_date} {t_hour:02d}:00")
+                
+                # [Crucial Fix] 잠금을 루프 내부로 이동하여 작업 사이에 다른 API 요청이 실행될 수 있게 함
+                async with ANALYSIS_LOCK:
                     await generate_market_wide_briefing(target_time=target_utc)
-                    await asyncio.sleep(120) 
-                except Exception as e: logger.error(f"[Backfill-3D] Error: {e}")
+                
+                # 생성 직후 잠시 대기하여 DB 상태 안정화 및 다른 요청 처리 기회 제공
+                await asyncio.sleep(120) 
+            except Exception as e: logger.error(f"[Backfill-3D] Error: {e}")
 
-        logger.info("[Backfill-Engine] 3-Day Diet (Weekday only) completed.")
+    logger.info("[Backfill-Engine] Recency-First backfill completed (Target: 72h).")
 
 
 async def hourly_briefing_scheduler_loop():
