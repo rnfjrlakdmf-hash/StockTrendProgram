@@ -106,6 +106,7 @@ async def backfill_system_briefings(kst_timezone):
         cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
         deleted_count = cursor.rowcount
         conn.commit()
+        conn.close() # Explicitly close
         if deleted_count > 0:
             logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders for regeneration.")
     except Exception as e:
@@ -115,9 +116,9 @@ async def backfill_system_briefings(kst_timezone):
     for h_offset in range(48):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-        if target_kst.weekday() >= 5: continue
         t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
         
+        # Check exists with its own connection block (has_system_briefing_for_hour closes it)
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
@@ -159,6 +160,9 @@ async def hourly_briefing_scheduler_loop():
         try:
             from utils.global_briefing import generate_market_wide_briefing
             from utils.briefing_store import cleanup_old_briefings
+            
+            # Initial run delay to let other parts of system catch up
+            await asyncio.sleep(5) 
             
             now = datetime.now(kst)
             current_hour = now.hour

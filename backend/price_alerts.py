@@ -51,28 +51,34 @@ class PriceAlertMonitor:
                 symbols_to_check[symbol] = []
             symbols_to_check[symbol].append(alert)
         
-        # 각 심볼의 현재 가격 조회 및 알림 체크
-        for symbol, symbol_alerts in symbols_to_check.items():
+        # 각 심볼의 현재 가격 조회 및 알림 체크 (Parallel)
+        async def check_single_symbol(symbol, alerts):
             try:
                 current_price = await self.get_current_price(symbol)
                 if current_price:
-                    for alert in symbol_alerts:
+                    for alert in alerts:
                         await self.check_alert(alert, current_price)
             except Exception as e:
                 print(f"[PriceAlert] Error checking {symbol}: {e}")
+
+        tasks = [check_single_symbol(s, a) for s, a in symbols_to_check.items()]
+        if tasks:
+            await asyncio.gather(*tasks)
     
     async def get_current_price(self, symbol: str) -> Optional[float]:
-        """현재 가격 조회"""
-        try:
-            ticker = yf.Ticker(symbol)
-            data = ticker.history(period="1d", interval="1m")
-            
-            if not data.empty:
-                return float(data['Close'].iloc[-1])
-            return None
-        except Exception as e:
-            print(f"[PriceAlert] Price fetch error for {symbol}: {e}")
-            return None
+        """현재 가격 조회 (Offloaded to thread)"""
+        def _get_price():
+            try:
+                ticker = yf.Ticker(symbol)
+                data = ticker.history(period="1d", interval="1m")
+                if not data.empty:
+                    return float(data['Close'].iloc[-1])
+                return None
+            except Exception as e:
+                print(f"[PriceAlert] Price fetch error for {symbol}: {e}")
+                return None
+
+        return await asyncio.to_thread(_get_price)
     
     async def check_alert(self, alert: Dict, current_price: float):
         """단일 알림 조건 체크"""
@@ -103,7 +109,7 @@ class PriceAlertMonitor:
             target_price = alert['target_price']
             if current_price >= target_price:
                 triggered = True
-                message = f"🎯 목표가 도달! {alert['symbol']}이(가) ₩{current_price:,.0f}에 도달했습니다."
+                message = f"Target price reached! {alert['symbol']} reached {current_price:,.0f}."
         
         # 알림 발송
         if triggered:
@@ -168,9 +174,9 @@ class PriceAlertMonitor:
             )
             
             if result.get('success'):
-                print(f"[PriceAlert] ✅ Push sent to {result.get('success_count', 0)} devices")
+                print(f"[PriceAlert] Push sent to {result.get('success_count', 0)} devices")
             else:
-                print(f"[PriceAlert] ❌ Push failed: {result.get('error')}")
+                print(f"[PriceAlert] Push failed: {result.get('error')}")
                 
         except Exception as e:
             print(f"[PriceAlert] Push notification error: {e}")

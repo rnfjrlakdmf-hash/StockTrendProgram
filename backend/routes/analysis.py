@@ -82,8 +82,8 @@ async def get_morning_brief(force: bool = Query(False), x_user_id: Optional[str]
     print(f"[API] get_morning_brief for uid='{uid}' (force={force})")
     latest = get_latest_briefing(uid)
     if force or should_generate_new_briefing(uid):
-        # [Zero-Wait] 즉시 브리핑 먼저 생성
-        instant = generate_instant_briefing(uid)
+        # [Zero-Wait] 즉시 브리핑 먼저 생성 (Offload to thread to keep API responsive)
+        instant = await asyncio.to_thread(generate_instant_briefing, uid)
         latest = instant
         # 백그라운드에서 AI 정밀 브리핑 생성
         async def run_bg():
