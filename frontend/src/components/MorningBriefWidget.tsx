@@ -357,20 +357,23 @@ export default function MorningBriefWidget() {
                             <Sparkles className="w-7 h-7 text-blue-400" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-black tracking-widest uppercase">
-                                    NAVER STYLE AI INSIGHT
-                                </span>
-                                <span className="text-[10px] bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-black tracking-widest uppercase border border-purple-500/20">
-                                    v3.6.31-ULTRA-STABLE-FINAL
-                                </span>
-                                {latestPersonal?.is_instant && (
-                                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full font-black tracking-widest uppercase animate-pulse">
-                                        INSTANT DATA (AI ANALYZING...)
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="px-2 py-0.5 bg-emerald-500 text-black text-[9px] font-black rounded-sm flex items-center gap-1 shadow-lg shadow-emerald-500/10">
+                                        <Sparkles className="w-3 h-3" />
+                                        AI 마켓 리포트
+                                    </div>
+                                    <span className="text-[9px] bg-white/10 text-gray-400 px-2.5 py-0.5 rounded-sm font-black tracking-widest uppercase border border-white/5">
+                                        최근 3일 인텔리전스
                                     </span>
-                                )}
-                            </div>
-                            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none">AI 마켓 인텔리전스 리포트</h2>
+                                    {latestPersonal?.is_instant && (
+                                        <span className="text-[9px] bg-amber-500/20 text-amber-500 px-2.5 py-0.5 rounded-sm font-black tracking-widest uppercase animate-pulse border border-amber-500/10">
+                                            실시간 초고속 생성
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-none drop-shadow-2xl">
+                                    {latestPersonal?.market_title || "시장 인텔리전스 리포트"}
+                                </h2>
                         </div>
                     </div>
 
@@ -409,9 +412,15 @@ export default function MorningBriefWidget() {
                             <div className="space-y-10 animate-in fade-in slide-in-from-left duration-700">
                                 {/* Naver Style Summary Box */}
                                 <div className="bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
-                                     <h4 className="text-2xl md:text-3xl font-black text-white leading-tight mb-8">
-                                        {latestPersonal?.market_title || "시장 상황을 분석 중입니다..."}
+                                {latestPersonal?.market_title && !latestPersonal.market_title.includes('분석 중') ? (
+                                    <h4 className="text-2xl md:text-3xl font-black text-white leading-tight mb-8">
+                                        {latestPersonal.market_title}
                                     </h4>
+                                ) : (
+                                    <h4 className="text-2xl md:text-3xl font-black text-gray-500 leading-tight mb-8 animate-pulse">
+                                        오늘의 시장 리포트를 생성하고 있습니다...
+                                    </h4>
+                                )}
 
                                     <div className="bg-black/40 rounded-3xl p-8 border border-white/5 space-y-5 mb-10">
                                         <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-2">TODAY'S CORE SUMMARY</div>
@@ -479,7 +488,7 @@ export default function MorningBriefWidget() {
                             <div className="flex flex-col items-center justify-center py-24 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10">
                                 <Bot className="w-14 h-14 text-white/5 mb-6 animate-pulse" />
                                 <h4 className="text-xl font-bold text-gray-600">개인 맞춤 인텔리전스를 수집 중입니다.</h4>
-                                <p className="text-xs text-gray-700 mt-2">잠시만 기다려 주시거나 아래 버튼을 클릭하세요.</p>
+                                <p className="text-[10px] text-gray-700 mt-2 font-medium">최근 3일간의 시장 데이터를 기반으로 AI 브리핑을 구성합니다.</p>
                                 <button onClick={generateNow} className="mt-8 px-12 py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-black rounded-[2rem] border border-emerald-500/30 transition-all shadow-2xl">즉시 데이터 수집하기</button>
                             </div>
                         )}
@@ -577,23 +586,22 @@ export default function MorningBriefWidget() {
                                             <div className="relative group animate-in fade-in slide-in-from-right duration-500">
                                             {/* Naver Style Dot */}
                                             <div className={`absolute -left-[1.65rem] md:-left-[2.05rem] top-2.5 w-2.5 h-2.5 rounded-full border-2 border-black z-10 transition-colors
-                                                ${idx === 0 ? 'bg-emerald-400 ring-4 ring-emerald-400/10' : 'bg-gray-700 group-hover:bg-gray-500'}`}>
+                                                ${idx === 0 ? 'bg-emerald-400 ring-4 ring-emerald-400/10' : 'bg-gray-700'}`}>
                                             </div>
                                             
-                                            <div className="space-y-2 pb-6">
+                                            <div className="space-y-2 pb-6 border-l border-white/5 -ml-[1.4rem] md:-ml-[1.75rem] pl-6 transition-colors">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`text-[11px] font-bold font-mono ${idx === 0 ? 'text-emerald-400' : 'text-gray-500'}`}>{timeLabel}</span>
                                                         
-                                                        {/* [Naver Badge System] */}
-                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-black tracking-tight
-                                                            ${brief.category === 'PERIODIC' ? 'bg-gray-800 text-gray-400 border border-gray-700' :
-                                                              brief.category === 'WATCHLIST' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                              brief.category === 'DISCLOSURE' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                                                              'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                                            {brief.category === 'PERIODIC' ? '정기 브리핑' :
-                                                             brief.category === 'WATCHLIST' ? '관심종목' :
-                                                             brief.category === 'DISCLOSURE' ? '주요공시' : '시장요약'}
+                                                        <span className={`text-[9px] px-2 py-0.5 rounded-sm font-black tracking-tight border
+                                                            ${brief.category === 'PERIODIC' ? 'bg-gray-800 text-gray-400 border-gray-700' :
+                                                              brief.category === 'WATCHLIST' ? 'bg-blue-500/20 text-blue-400 border-blue-500/20' :
+                                                              brief.category === 'DISCLOSURE' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20' :
+                                                              'bg-emerald-500/20 text-emerald-400 border-emerald-500/20'}`}>
+                                                            {brief.category === 'PERIODIC' ? '정시' :
+                                                             brief.category === 'WATCHLIST' ? '관심' :
+                                                             brief.category === 'DISCLOSURE' ? '공시' : '요약'}
                                                         </span>
                                                     </div>
                                                     <button onClick={() => brief.generated_at && toggleExpand(brief.generated_at)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors text-gray-600 hover:text-gray-400">

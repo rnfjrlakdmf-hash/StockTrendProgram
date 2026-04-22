@@ -120,22 +120,25 @@ async def backfill_system_briefings(kst_timezone):
         except Exception as e:
             logger.error(f"[Backfill-SelfHeal] Error clearing placeholders: {e}")
 
-        # [Diet] 최근 48시간(2일) 우선 복구
-        for h_offset in range(48):
+        # [Diet-V3] 최근 72시간(3일) 소급 복구 (Burden optimized)
+        for h_offset in range(72):
             current_now = datetime.now(kst_timezone)
             target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+            
+            # 주말(토/일)은 과거 데이터 복구를 건너뜀 (부담 완화)
+            if target_kst.weekday() >= 5: continue
+            
             t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
             
-            # Check exists with its own connection block (has_system_briefing_for_hour closes it)
             if not has_system_briefing_for_hour(t_date, t_hour):
                 try:
                     target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                    logger.info(f"[Backfill-P1] Filling gap (Diet-Mode): {t_date} {t_hour:02d}:00")
+                    logger.info(f"[Backfill-3D] Filling gap: {t_date} {t_hour:02d}:00")
                     await generate_market_wide_briefing(target_time=target_utc)
-                    await asyncio.sleep(120) # 2 minute diet sleep to prevent DB lock
-                except Exception as e: logger.error(f"[Backfill-P1] Error: {e}")
+                    await asyncio.sleep(120) 
+                except Exception as e: logger.error(f"[Backfill-3D] Error: {e}")
 
-        logger.info("[Backfill-Engine] Diet backfill completed (Target: 48h).")
+        logger.info("[Backfill-Engine] 3-Day Diet (Weekday only) completed.")
 
 
 async def hourly_briefing_scheduler_loop():
@@ -161,13 +164,17 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-            # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (0순위 최우선 태스크) ──
+            # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (주말 제외) ──
             if current_hour != last_run_hour:
+                # [Burden-Diet] 주말(토/일)은 운영 부담을 위해 분석 스킵
+                if now.weekday() >= 5:
+                    logger.info(f"[Hourly-Briefing] Weekend mode ({now.strftime('%A')}). Skipping analysis.")
+                    last_run_hour = current_hour
+                    continue
+
                 logger.info(f"[Hourly-Briefing] Starting analysis for {current_date} {current_hour:02d}:00")
-                
                 target_utc = (now - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
                 
-                # Ensure sequential execution even during hourly schedule
                 try:
                     async with ANALYSIS_LOCK:
                         await generate_market_wide_briefing(target_time=target_utc)
@@ -176,7 +183,7 @@ async def hourly_briefing_scheduler_loop():
                     last_run_hour = current_hour
                     logger.info(f"[Hourly-Briefing] Completed for {current_hour:02d}:00")
                 except Exception as e:
-                    logger.error(f"[RealTime-Brief] 생성 실패: {e}")
+                    logger.error(f"[Hourly-Briefing] Failed: {e}")
 
             # ── 매일 새벽 4시: DB 정리 ──
             if current_hour == 4 and current_date != last_cleanup_date:
