@@ -65,6 +65,18 @@ async def startup_event():
             await asyncio.to_thread(create_price_alerts_tables)
             asyncio.create_task(price_alert_monitor.start())
         except: pass
+
+        # 3. 전광판 지수 상시 정찰대 (15초마다 미리 수집하여 0초 응답 달성)
+        async def market_ticker_warmer():
+            from stock_data import get_market_data
+            print("[Turbo] Market Ticker Warmer Service Started.")
+            while True:
+                try:
+                    await asyncio.to_thread(get_market_data)
+                except: pass
+                await asyncio.sleep(15) 
+        
+        asyncio.create_task(market_ticker_warmer())
         print("[Background] All services active.")
 
     asyncio.create_task(gradual_background_startup())

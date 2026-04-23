@@ -946,7 +946,14 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
 
 
 def get_market_data():
-    """주요 지수, 매크로 지표 및 주도주 데이터 수집 (장중 고가/저가 및 스파크라인 포함)"""
+    """주요 지수, 매크로 지표 및 주도주 데이터 수집 (Turbo Cached)"""
+    from turbo_engine import turbo_engine
+    
+    # [Turbo Mode] Check for existing high-speed cache (0ms)
+    cached = turbo_engine.get_cache("MARKET_INDICES_SNAPSHOT")
+    if cached:
+        return cached
+
     indices = [
         {"symbol": "^KS11", "label": "KOSPI", "naver_code": "KOSPI", "icon": "🇰🇷"},
         {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ", "icon": "🇰🇷"},
