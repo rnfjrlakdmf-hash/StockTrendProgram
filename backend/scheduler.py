@@ -134,6 +134,12 @@ async def backfill_system_briefings(kst_timezone):
                 
                 logger.info(f"[Ultra-Light] {'URGENT' if is_urgent else 'Sync'} Filling: {t_date} {t_hour:02d}:00")
                 
+                # [Instant-UI-Fix] 분석을 시작하기 전에 '데이터 준비 중' 리포트를 먼저 저장하여 빈 화면 즉시 해소
+                if is_urgent:
+                    from utils.global_briefing import _save_placeholder
+                    _save_placeholder("SYSTEM", current_now, target_utc, error_msg="AI 분석이 진행 중입니다. 잠시만 기다려주세요...")
+                    logger.info("[Ultra-Light] Instant placeholder saved for UI.")
+                
                 async with ANALYSIS_LOCK:
                     await asyncio.wait_for(
                         generate_market_wide_briefing(target_time=target_utc),
