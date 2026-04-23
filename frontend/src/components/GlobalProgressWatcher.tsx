@@ -14,11 +14,6 @@ interface IndexingStatus {
 }
 
 export default function GlobalProgressWatcher() {
-    // [DISABLED] This component is temporarily disabled to prevent console errors
-    // Re-enable when backend /api/system/status endpoint is stable
-    return null;
-
-    /* eslint-disable no-unreachable */
     const [status, setStatus] = useState<IndexingStatus | null>(null);
     const [visible, setVisible] = useState(false);
 

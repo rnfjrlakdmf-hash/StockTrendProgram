@@ -26,6 +26,8 @@ import OverhangTab from "@/components/OverhangTab";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
+import FlipIndexTicker from "@/components/FlipIndexTicker";
+import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 
 // [WebSocket Integration] Real-time Price Updates
 // Replaces the old 5-second polling interval
@@ -265,7 +267,6 @@ const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, pre
 
     if (amtStr) {
        return { ...finalFormat, text: `${icon}${amtStr}(${pct})` };
-    }
     return { ...finalFormat, text: `${icon}${pct}` };
 };
 
@@ -562,6 +563,11 @@ function DiscoveryContent() {
                 {/* Initial View: Search, Widgets, Dashboard */}
                 {!stock && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        {/* NEW: Real-time Index Ticker (Header Level) */}
+                        <div className="w-full bg-black/40 border border-white/10 rounded-3xl py-2 px-4 shadow-xl overflow-hidden flex justify-center">
+                             <FlipIndexTicker />
+                        </div>
+
                         {/* Search / Hero Section */}
                         <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 overflow-hidden shadow-xl">
                             <div className="relative z-10 max-w-2xl">
@@ -594,6 +600,17 @@ function DiscoveryContent() {
                                 {error && <p className="text-red-400 mt-3 font-semibold bg-red-900/40 p-2 rounded-lg inline-block">{error}</p>}
                             </div>
                             <ShieldCheck className="absolute right-0 top-1/2 -translate-y-1/2 h-64 w-64 text-white/5 -rotate-12" />
+                        </div>
+
+                        {/* NEW: Global Progress Watcher (Real-time News/Data Sync Monitor) */}
+                        <GlobalProgressWatcher />
+
+                        {/* NEW: Real-time Market Indices Dashboard */}
+                        <div className="w-full">
+                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-blue-400" /> <span>실시간 주요 증시 지표 (Market Dashboard)</span>
+                            </h3>
+                            <MarketIndicators limit={6} />
                         </div>
 
                         {/* Market Traffic Light & Health Check Entry */}
