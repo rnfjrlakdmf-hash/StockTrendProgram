@@ -1322,7 +1322,7 @@ def get_global_assets_data():
                 
     return results
 
-def get_market_data():
+def get_market_intelligence_indicators():
     """
     [Integrated Engine] 글로벌 원자재, 지수, 환율, 국내 수급, 등락 종목 수 및 대형주 시세를 통합 수집합니다.
     """
