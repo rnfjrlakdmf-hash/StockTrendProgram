@@ -1440,22 +1440,11 @@ def get_market_intelligence_indicators():
 
 def get_macro_calendar():
     """
-    주요 거시 경제 일정(글로벌 매크로)을 수집합니다. 
-    기본적으로 실시간 뉴스 및 지표 발표를 모니터링하여 AI에게 전달합니다.
+    네이버 금융 글로벌 경제 캘린더에서 오늘의 실시간 경제 일정 및 지표를 수집합니다.
     """
     try:
-        # 간단한 로직: 주요 매크로 키워드 뉴스나 사전에 정의된 주요 경제 지표 일정을 반환
-        # 더 고도화된 수집이 필요할 경우 Investing.com 크롤러 등을 연결할 수 있음
-        import datetime
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        
-        # 현재는 주요 고정 매크로 일정 또는 실시간 뉴스에서 추출한 가상 일정을 반환 (AI가 분석용으로 사용)
-        events = [
-            {"event": "미국 실업수당청구건수 발표", "date": today, "impact": "high"},
-            {"event": "연준 위원 발언 일정", "date": today, "impact": "medium"},
-            {"event": "국제 유가 재고 발표", "date": today, "impact": "medium"}
-        ]
-        return events
+        from korea_data import get_naver_economy_calendar
+        return get_naver_economy_calendar()
     except Exception as e:
         print(f"[Macro Calendar] Error: {e}")
         return []

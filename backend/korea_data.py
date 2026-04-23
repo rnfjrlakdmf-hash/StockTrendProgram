@@ -2804,3 +2804,61 @@ def get_market_insights_data():
         "value_top": parse_trading_value()
     }
 
+@turbo_cache(ttl_seconds=1800)
+def get_naver_economy_calendar():
+    """
+    네이버 글로벌 경제 캘린더에서 오늘의 실시간 경제 일정을 수집합니다.
+    URL: https://finance.naver.com/world/economy_calendar.naver
+    """
+    url = "https://finance.naver.com/world/economy_calendar.naver"
+    events = []
+    
+    try:
+        res = requests.get(url, headers=HEADER, timeout=10)
+        # EUC-KR 인코딩 대응
+        html = res.content.decode('euc-kr', 'replace')
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # 캘린더 테이블 탐색
+        table = soup.select_one("table.tbl_calendar")
+        if not table: return []
+        
+        rows = table.select("tbody tr")
+        for row in rows:
+            cols = row.select("td")
+            # 네이버 캘린더 구조: 시간(0), 국가(1), 지표(2), 중요도(3), 실제(4), 예상(5), 이전(6)
+            if len(cols) < 7: continue
+            
+            time = cols[0].text.strip()
+            # 시간 정보가 없으면 행 간 구분을 위한 공백일 수 있음
+            if not time: continue
+            
+            country_tag = cols[1].select_one("img")
+            country = country_tag.get("alt", "Global") if country_tag else "Global"
+            
+            event_name = cols[2].text.strip()
+            
+            # 중요도(별점) 파싱
+            star_div = cols[3].select_one("div.star")
+            importance = len(star_div.select("span.on")) if star_div else 1
+            
+            actual = cols[4].text.strip() or "-"
+            forecast = cols[5].text.strip() or "-"
+            previous = cols[6].text.strip() or "-"
+            
+            events.append({
+                "time": time,
+                "country": "US" if "미국" in country else "KR" if "한국" in country else "JP" if "일본" in country else "CN" if "중국" in country else "EU" if "유럽" in country else "🌐",
+                "event": event_name,
+                "event_kr": event_name,
+                "importance": importance,
+                "actual": actual,
+                "forecast": forecast,
+                "previous": previous
+            })
+            
+    except Exception as e:
+        print(f"[EconomyCalendar] Scraping Error: {e}")
+        
+    return events
+
