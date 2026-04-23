@@ -200,24 +200,56 @@ def read_market_insights():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/assets")
+def get_assets():
+    """통합 시장 자산 지표(환율, 원자재, 채권 등) 반환"""
+    from major_indicators import get_normalized_major_indicators
+    try:
+        data = get_normalized_major_indicators()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/market/calendar")
+def get_global_macro_calendar():
+    """오늘의 글로벌 경제 일정 반환"""
+    from stock_data import get_macro_calendar
+    try:
+        data = get_macro_calendar()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/market/calendar/korea")
+def get_korea_macro_calendar():
+    """오늘의 한국 경제 및 시장 일정 반환"""
+    from stock_data import get_macro_calendar
+    try:
+        data = get_macro_calendar()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/calendar/events")
 def get_calendar_events():
-    from korea_data import get_ipo_data
+    """전 종목 실적 및 배당 일정 반환"""
     from stock_data import get_real_stock_events
-    import datetime
     try:
-        events = []
-        ipo_data = get_ipo_data()
-        if ipo_data:
-            for ipo in (ipo_data if isinstance(ipo_data, list) else []):
-                raw_date = ipo.get("date", "").split("~")[0].strip()
-                parts = raw_date.split('.')
-                if len(parts) == 3: formatted_date = f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
-                else: formatted_date = raw_date.replace(".", "-")
-                events.append({"symbol": ipo.get("code", "IPO"), "name": ipo.get("name", ""), "type": "ipo", "date": formatted_date, "detail": "공모 청약"})
-        real_events = get_real_stock_events()
-        events.extend(real_events)
+        data = get_real_stock_events()
+        # 미래 일정만 필터링 (선택 사항)
+        import datetime
         today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        filtered = [ev for ev in events if ev.get("date") and ev.get("date") >= today_str]
+        filtered = [ev for ev in data if ev.get("date") and ev.get("date") >= today_str]
         return {"status": "success", "data": filtered}
-    except Exception as e: return {"status": "error", "message": str(e)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/korea/ipo")
+def get_korean_ipo():
+    """신규 상장 및 공모주 일정 반환"""
+    from korea_data import get_ipo_data
+    try:
+        data = get_ipo_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
