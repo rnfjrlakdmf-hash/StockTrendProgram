@@ -97,12 +97,15 @@ export default function FlipIndexTicker() {
             
             <div className="ticker-content-h py-2 flex items-center gap-8">
                 {[...indices, ...indices].map((idx, i) => (
-                    <div key={i} className="flex items-center gap-4 px-8 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-full py-1.5 group/item">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[20px] filter drop-shadow-md">{idx.icon}</span>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-[20px] font-black text-white tabular-nums tracking-tighter drop-shadow-lg">{idx.value}</span>
-                                <span className={`text-[16px] font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/5 ${idx.up ? 'text-rose-400 border-rose-500/20' : 'text-sky-400 border-sky-500/20'}`}>
+                    <div key={i} className="flex items-center gap-6 px-8 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-2 group/item">
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[16px]">{idx.icon}</span>
+                                <span className="text-[13px] font-black text-gray-400 uppercase tracking-widest">{idx.label}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{idx.value}</span>
+                                <span className={`text-[15px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${idx.up ? 'text-rose-400 border-rose-500/20 bg-rose-500/5' : 'text-sky-400 border-sky-500/20 bg-sky-500/5'}`}>
                                     {idx.up ? '▲' : '▼'}{idx.change}
                                 </span>
                             </div>
