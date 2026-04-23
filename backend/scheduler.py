@@ -115,44 +115,81 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
-    # [Diet-V4] 스마트 백필: 최근 12시간은 '매시간', 이전 72시간까지는 '4시간 간격'으로 복구
-    # 이를 통해 Gemini 호출 횟수를 72회에서 20회 내외로 대폭 축소하여 서버 부담 최적화
-    for h_offset in range(72):
+    # [Burden-Optimized Diet-V5] 서버 기동 시에는 오늘(최근 2시간) 데이터만 즉시 생성하고 끝냅니다.
+    # 과거 72시간 전체를 한꺼번에 채우면 서버 자원이 고갈되어 화면이 멈추기 때문입니다.
+    for h_offset in range(2):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
         
         # 1. 주말 제외
         if target_kst.weekday() >= 5: continue
         
-        # 2. 밀도 조절: 최근 12시간은 정밀하게(1h), 그 이전은 주요 지점(4h)만 소급
-        if h_offset > 12 and h_offset % 4 != 0: continue
-        
         t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
         
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                is_urgent = (h_offset == 0)
+                logger.info(f"[Backfill-Startup] Fast-Pass Filling: {t_date} {t_hour:02d}:00")
                 
-                logger.info(f"[Backfill-Smart] {'URGENT' if is_urgent else 'Sparse'} Filling ({h_offset}h ago): {t_date} {t_hour:02d}:00")
-                
-                # [Crucial Timeout] 분석 작업이 무한대기하지 않도록 180초 타임아웃 적용
                 async with ANALYSIS_LOCK:
                     await asyncio.wait_for(
                         generate_market_wide_briefing(target_time=target_utc),
                         timeout=180.0
                     )
-                
-                # 최신 데이터는 즉시 다음으로, 나머지는 30초씩 휴식 (부담 최적화)
-                await asyncio.sleep(10 if is_urgent else 30) 
-            except asyncio.TimeoutError:
-                logger.error(f"[Backfill-Smart] Timeout for {t_date} {t_hour:02d}:00. Skipping.")
+                # 초기 2개는 빠르게 생성 후 종료
             except Exception as e: 
-                logger.error(f"[Backfill-Smart] Error: {e}")
+                logger.error(f"[Backfill-Startup] Error: {e}")
 
-    logger.info("[Backfill-Engine] Smart-Diet backfill completed.")
+    logger.info("[Backfill-Startup] Initial 2-hour data loaded. Server is now stable.")
 
-    logger.info("[Backfill-Engine] Recency-First backfill completed (Target: 72h).")
+
+async def historical_slow_trickle_loop():
+    """
+    [Burden-Optimized] 과거 데이터를 15분마다 1개씩 아주 천천히 채웁니다.
+    서버 자원을 거의 차지하지 않으면서 3일치 히스토리를 완성합니다.
+    """
+    import pytz
+    kst_timezone = pytz.timezone('Asia/Seoul')
+    logger.info("🐢 [Slow-Trickle] Historical recovery loop started.")
+    
+    while True:
+        try:
+            # 15분마다 하나씩만 시도
+            await asyncio.sleep(15 * 60)
+            
+            # 최근 72시간 중 비어있는 시간 하나 찾기 (과거부터 채움)
+            from utils.briefing_store import has_system_briefing_for_hour
+            from utils.global_briefing import generate_market_wide_briefing
+            
+            # 과거(72h) -> 최신(12h) 순으로 빈 틈 찾기
+            found_gap = False
+            for h_offset in range(71, 2, -1):
+                current_now = datetime.now(kst_timezone)
+                target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
+                
+                # 주말 제외
+                if target_kst.weekday() >= 5: continue
+                
+                t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
+                if not has_system_briefing_for_hour(t_date, t_hour):
+                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
+                    logger.info(f"🐢 [Slow-Trickle] Filling historical gap: {t_date} {t_hour:02d}:00")
+                    
+                    async with ANALYSIS_LOCK:
+                        await asyncio.wait_for(
+                            generate_market_wide_briefing(target_time=target_utc),
+                            timeout=180.0
+                        )
+                    found_gap = True
+                    break
+            
+            if not found_gap:
+                # 모든 빈틈이 채워졌으면 1시간 동안 휴식
+                await asyncio.sleep(3600)
+                
+        except Exception as e:
+            logger.error(f"🐢 [Slow-Trickle] Error: {e}")
+            await asyncio.sleep(300)
 
 
 async def hourly_briefing_scheduler_loop():
@@ -163,8 +200,11 @@ async def hourly_briefing_scheduler_loop():
     last_run_hour = -1
     last_cleanup_date = ""
 
-    # [Startup] 과거 데이터 복구를 백그라운드 태스크로 즉시 실행 (메인 루프 차단 없음)
+    # 1. [Startup] 최근 2시간 데이터 즉시 복구 (최우선)
     asyncio.create_task(backfill_system_briefings(kst))
+    
+    # 2. [Background] 나머지 과거 데이터는 15분마다 하나씩 천천히 복구
+    asyncio.create_task(historical_slow_trickle_loop())
 
     while True:
         try:
