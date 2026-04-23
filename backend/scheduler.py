@@ -90,31 +90,6 @@ async def check_and_notify_disclosures():
     finally:
         scraper._close_driver()
 
-
-# Global analysis lock to prevent concurrent DB writes from multiple background tasks
-ANALYSIS_LOCK = asyncio.Lock()
-
-async def backfill_system_briefings(kst_timezone):
-    """
-    서버 시작 시 누락된 시스템 브리핑 데이터를 소급하여 생성합니다.
-    (Diet-V3: 최근 3일간의 데이터를 최신순으로 복구)
-    """
-    from utils.global_briefing import generate_market_wide_briefing
-    from utils.briefing_store import has_system_briefing_for_hour, get_db
-
-    # [Self-Healing] 과거 수집 실패로 인해 저장된 '수집 중' 임시 데이터를 삭제하여 재시도 유도
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM morning_briefings WHERE user_id = 'SYSTEM' AND briefing_json LIKE '%시장 데이터 수집 중%'")
-        deleted_count = cursor.rowcount
-        conn.commit()
-        conn.close() 
-        if deleted_count > 0:
-            logger.info(f"[Backfill-SelfHeal] Cleared {deleted_count} failed placeholders.")
-    except Exception as e:
-        logger.error(f"[Backfill-SelfHeal] Error: {e}")
-
 # Global analysis lock to prevent concurrent DB writes from multiple background tasks
 ANALYSIS_LOCK = asyncio.Lock()
 
@@ -161,9 +136,6 @@ async def hourly_briefing_scheduler_loop():
         except Exception as e:
             logger.error(f"📅 [Scheduler] Loop error: {e}")
             await asyncio.sleep(60)
-
-
-
 
 async def disclosure_scheduler_loop():
     """Background loop to run the disclosure check every 30 minutes."""
