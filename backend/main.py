@@ -60,8 +60,8 @@ async def startup_event():
         print(f"[Startup Error] DB Init: {e}")
 
     async def delayed_startup_sequence():
-        # 1. 서버가 외부에 먼저 응답할 수 있도록 20초 대기
-        await asyncio.sleep(20)
+        # 1. 서버 부하 분산을 위해 5초 대기 후 시작 (Faster Startup)
+        await asyncio.sleep(5)
         print("[Delayed-Startup] Starting background services...")
         
         # 1.1 배경 인덱서 로드

@@ -115,35 +115,42 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
-    # [Diet-V3] 최근 72시간(3일) 소급 복구 (최신 데이터부터 우선 순위)
-    # 0시 전(오늘)부터 71시간 전(그제) 순서로 생성
+    # [Diet-V4] 스마트 백필: 최근 12시간은 '매시간', 이전 72시간까지는 '4시간 간격'으로 복구
+    # 이를 통해 Gemini 호출 횟수를 72회에서 20회 내외로 대폭 축소하여 서버 부담 최적화
     for h_offset in range(72):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
         
-        # 주말(토/일)은 과거 데이터 복구를 건너뜀 (부담 완화)
+        # 1. 주말 제외
         if target_kst.weekday() >= 5: continue
+        
+        # 2. 밀도 조절: 최근 12시간은 정밀하게(1h), 그 이전은 주요 지점(4h)만 소급
+        if h_offset > 12 and h_offset % 4 != 0: continue
         
         t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
         
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                # [Fast-Pass] 최신 데이터(0시간 전)는 대기 없이 즉시 생성하여 화면 먹통 해소
                 is_urgent = (h_offset == 0)
                 
-                logger.info(f"[Backfill-3D] {'URGENT' if is_urgent else 'Normal'} Filling: {t_date} {t_hour:02d}:00")
+                logger.info(f"[Backfill-Smart] {'URGENT' if is_urgent else 'Sparse'} Filling ({h_offset}h ago): {t_date} {t_hour:02d}:00")
                 
+                # [Crucial Timeout] 분석 작업이 무한대기하지 않도록 180초 타임아웃 적용
                 async with ANALYSIS_LOCK:
-                    await generate_market_wide_briefing(target_time=target_utc)
+                    await asyncio.wait_for(
+                        generate_market_wide_briefing(target_time=target_utc),
+                        timeout=180.0
+                    )
                 
-                # 최신 데이터 생성 후에는 즉시 다음 단계로 넘어가거나, 과거 데이터는 120초씩 쉼
-                if not is_urgent:
-                    await asyncio.sleep(120) 
-                else:
-                    logger.info("[Backfill-3D] Urgent data ready. Trickling other hours...")
-                    await asyncio.sleep(10) # 짧은 휴식 후 계속
-            except Exception as e: logger.error(f"[Backfill-3D] Error: {e}")
+                # 최신 데이터는 즉시 다음으로, 나머지는 30초씩 휴식 (부담 최적화)
+                await asyncio.sleep(10 if is_urgent else 30) 
+            except asyncio.TimeoutError:
+                logger.error(f"[Backfill-Smart] Timeout for {t_date} {t_hour:02d}:00. Skipping.")
+            except Exception as e: 
+                logger.error(f"[Backfill-Smart] Error: {e}")
+
+    logger.info("[Backfill-Engine] Smart-Diet backfill completed.")
 
     logger.info("[Backfill-Engine] Recency-First backfill completed (Target: 72h).")
 
