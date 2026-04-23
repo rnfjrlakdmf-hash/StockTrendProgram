@@ -963,73 +963,54 @@ def get_market_data():
     results = []
     
     def _fetch_index_info(idx):
+        label = idx["label"]
+        icon = idx.get("icon", "")
+        # 1. Primary: Naver Mobile API
         try:
-            # 1. 기본 시세 (네이버 모바일 API 우선)
             url = f"https://m.stock.naver.com/api/index/{idx['naver_code']}/basic"
             if "FX_" in idx['naver_code']:
-                 url = f"https://m.stock.naver.com/api/exchange/{idx['naver_code']}/basic"
+                url = f"https://m.stock.naver.com/api/exchange/{idx['naver_code']}/basic"
             
-            res = requests.get(url, timeout=3)
-            res.encoding = 'utf-8'
-            
-            high, low = None, None
-            sparkline = []
-            
+            res = requests.get(url, timeout=3, headers={"User-Agent": "Mozilla/5.0"})
             if res.status_code == 200:
                 data = res.json()
-                price = data.get('closePrice', '0').replace(',', '')
-                pct = data.get('fluctuationsRatio', '0')
-                high = data.get('highPrice', price).replace(',', '')
-                low = data.get('lowPrice', price).replace(',', '')
+                price_raw = str(data.get('closePrice', '0')).replace(',', '')
+                pct_raw = str(data.get('fluctuationsRatio', '0'))
                 
-                # 2. 스파크라인 및 변동성 데이터 (yfinance 보강)
                 try:
-                    ticker = yf.Ticker(idx["symbol"])
-                    hist = ticker.history(period="1d", interval="15m")
-                    if not hist.empty:
-                        sparkline = hist['Close'].tolist()
-                        # 네이버 데이터가 부실할 경우 yfinance 데이터로 보정
-                        if not high or high == price:
-                            high = str(hist['High'].max())
-                        if not low or low == price:
-                            low = str(hist['Low'].min())
-                except:
-                    pass
-                
-                return {
-                    "label": idx["label"],
-                    "icon": idx.get("icon", ""),
-                    "value": f"{float(price):,.2f}",
-                    "change": f"{float(pct):+.2f}%",
-                    "up": float(pct) >= 0,
-                    "high": f"{float(high):,.2f}" if high else "N/A",
-                    "low": f"{float(low):,.2f}" if low else "N/A",
-                    "sparkline": sparkline
-                }
-        except Exception:
-            pass
-            
-        # Fallback to pure yfinance
+                    price_val = float(price_raw)
+                    pct_val = float(pct_raw)
+                    return {
+                        "label": label, "icon": icon,
+                        "value": f"{price_val:,.2f}",
+                        "change": f"{pct_val:+.2f}%",
+                        "up": pct_val >= 0, "sparkline": []
+                    }
+                except: pass
+        except: pass
+
+        # 2. Secondary: Yahoo Finance
         try:
             ticker = yf.Ticker(idx["symbol"])
-            hist = ticker.history(period="1d", interval="15m")
             fast = ticker.fast_info
             p = fast.last_price
             pc = fast.previous_close
-            chg = ((p - pc) / pc) * 100
-            
-            return {
-                "label": idx["label"],
-                "icon": idx.get("icon", ""),
-                "value": f"{p:,.2f}",
-                "change": f"{chg:+.2f}%",
-                "up": chg >= 0,
-                "high": f"{hist['High'].max():,.2f}" if not hist.empty else "N/A",
-                "low": f"{hist['Low'].min():,.2f}" if not hist.empty else "N/A",
-                "sparkline": hist['Close'].tolist() if not hist.empty else []
-            }
-        except:
-            return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True, "sparkline": [], "high": "N/A", "low": "N/A"}
+            if p and pc:
+                chg = ((p - pc) / pc) * 100
+                return {
+                    "label": label, "icon": icon,
+                    "value": f"{p:,.2f}",
+                    "change": f"{chg:+.2f}%",
+                    "up": chg >= 0, "sparkline": []
+                }
+        except: pass
+
+        # 3. Last Resort
+        return {
+            "label": label, "icon": icon,
+            "value": "준비중", "change": "0.00%", "up": True, "sparkline": []
+        }
+
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(_fetch_index_info, idx) for idx in indices]
