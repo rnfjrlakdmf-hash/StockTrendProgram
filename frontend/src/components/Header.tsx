@@ -110,8 +110,8 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                 {/* Navigation moved to Sidebar */}
                 
-                {/* [New] Re-activated Premium Scrolling Ticker (Yellow Circle Area) */}
-                <div className="hidden lg:flex flex-1 items-center justify-center max-w-4xl mx-8">
+                {/* [New] Re-activated Premium Scrolling Ticker (Visible on MD and up) */}
+                <div className="hidden md:flex flex-1 items-center justify-center max-w-4xl mx-4 overflow-hidden">
                     <FlipIndexTicker />
                 </div>
             </div>
