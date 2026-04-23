@@ -97,15 +97,15 @@ export default function FlipIndexTicker() {
             
             <div className="ticker-content-h py-2 flex items-center gap-8">
                 {[...indices, ...indices].map((idx, i) => (
-                    <div key={i} className="flex items-center gap-4 px-6 border-r border-white/5 last:border-none hover:bg-white/[0.02] transition-colors rounded-xl">
+                    <div key={i} className="flex items-center gap-6 px-8 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-colors rounded-2xl py-1">
                         <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[12px]">{idx.icon}</span>
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-tighter">{idx.label}</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[16px]">{idx.icon}</span>
+                                <span className="text-[13px] font-black text-gray-400 uppercase tracking-tight">{idx.label}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-white tabular-nums tracking-tighter">{idx.value}</span>
-                                <span className={`text-[10px] font-bold ${idx.up ? 'text-red-400' : 'text-blue-400'}`}>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{idx.value}</span>
+                                <span className={`text-[15px] font-black drop-shadow-sm ${idx.up ? 'text-rose-400' : 'text-sky-400'}`}>
                                     {idx.up ? '▲' : '▼'}{idx.change}
                                 </span>
                             </div>
