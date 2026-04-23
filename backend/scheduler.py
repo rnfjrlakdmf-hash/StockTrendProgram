@@ -115,103 +115,49 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
-    # [Ultra-Light Diet-V6] 오직 오늘과 어제(최근 24시간)만 관리합니다. (사용자 요청 반영)
-    # 72시간 치를 포기함으로써 서버 자원 소모를 1/3로 줄이고 안정성을 확보합니다.
-    for h_offset in range(24):
-        current_now = datetime.now(kst_timezone)
-        target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-        
-        # 1. 주말 제외
-        if target_kst.weekday() >= 5: continue
-        
-        t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
-        
-        if not has_system_briefing_for_hour(t_date, t_hour):
-            try:
-                target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                # 최신 1시간 데이터는 긴급(Urgent)하게 처리
-                is_urgent = (h_offset == 0)
-                
-                logger.info(f"[Ultra-Light] {'URGENT' if is_urgent else 'Sync'} Filling: {t_date} {t_hour:02d}:00")
-                
-                # [Instant-UI-Fix] 분석을 시작하기 전에 '데이터 준비 중' 리포트를 먼저 저장하여 빈 화면 즉시 해소
-                if is_urgent:
-                    from utils.global_briefing import _save_placeholder
-                    _save_placeholder("SYSTEM", current_now, target_utc, error_msg="AI 분석이 진행 중입니다. 잠시만 기다려주세요...")
-                    logger.info("[Ultra-Light] Instant placeholder saved for UI.")
-                
-                async with ANALYSIS_LOCK:
-                    await asyncio.wait_for(
-                        generate_market_wide_briefing(target_time=target_utc),
-                        timeout=180.0
-                    )
-                # 너무 몰아치지 않게 60초 정도 휴식
-                await asyncio.sleep(10 if is_urgent else 60)
-            except Exception as e: 
-                logger.error(f"[Ultra-Light] Error for {t_date} {t_hour}: {e}")
-
-    logger.info("[Ultra-Light] Today/Yesterday sync completed.")
-
-
-async def historical_slow_trickle_loop():
-    """
-    [Burden-Optimized] 과거 데이터를 15분마다 1개씩 아주 천천히 채웁니다.
-    서버 자원을 거의 차지하지 않으면서 3일치 히스토리를 완성합니다.
-    """
-    import pytz
-    kst_timezone = pytz.timezone('Asia/Seoul')
-    logger.info("🐢 [Slow-Trickle] Historical recovery loop started.")
-    
-    while True:
-        try:
-            # 15분마다 하나씩만 시도
-            await asyncio.sleep(15 * 60)
-            
-            # 최근 72시간 중 비어있는 시간 하나 찾기 (과거부터 채움)
-            from utils.briefing_store import has_system_briefing_for_hour
-            from utils.global_briefing import generate_market_wide_briefing
-            
-            # 과거(72h) -> 최신(12h) 순으로 빈 틈 찾기
-            found_gap = False
-            for h_offset in range(71, 2, -1):
-                current_now = datetime.now(kst_timezone)
-                target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
-                
-                # 주말 제외
-                if target_kst.weekday() >= 5: continue
-                
-                t_date, t_hour = target_kst.strftime("%Y-%m-%d"), target_kst.hour
-                if not has_system_briefing_for_hour(t_date, t_hour):
-                    target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                    logger.info(f"🐢 [Slow-Trickle] Filling historical gap: {t_date} {t_hour:02d}:00")
-                    
-                    async with ANALYSIS_LOCK:
-                        await asyncio.wait_for(
-                            generate_market_wide_briefing(target_time=target_utc),
-                            timeout=180.0
-                        )
-                    found_gap = True
-                    break
-            
-            if not found_gap:
-                # 모든 빈틈이 채워졌으면 1시간 동안 휴식
-                await asyncio.sleep(3600)
-                
-        except Exception as e:
-            logger.error(f"🐢 [Slow-Trickle] Error: {e}")
-            await asyncio.sleep(300)
-
-
 async def hourly_briefing_scheduler_loop():
-    """매 정각 정기 브리핑 생성 (실시간 우선 모드)"""
-    logger.info("📅 Real-time Hourly Scheduler Started.")
+    """
+    매 정각 정기 브리핑 생성 (초경량 실시간 전용 모드)
+    - 자원 독점을 막기 위해 과거 소급 작업을 완전히 제거했습니다.
+    - 오직 1시간마다 한 번만 동작하여 다른 기능에 전혀 영향을 주지 않습니다.
+    """
+    logger.info("📅 [Resource-Clean] Hourly Scheduler Active.")
     import pytz
     kst = pytz.timezone('Asia/Seoul')
     last_run_hour = -1
     last_cleanup_date = ""
 
-    # 1. [Startup] 오늘과 어제 데이터 즉시 복구 (최우선)
-    asyncio.create_task(backfill_system_briefings(kst))
+    while True:
+        try:
+            now = datetime.now(kst)
+            current_hour = now.hour
+            current_date = now.strftime("%Y-%m-%d")
+
+            # 평일(월~금) 장중/마감 시간에만 동작하여 서버 자원 극도 절약
+            is_weekend = (now.weekday() >= 5)
+            
+            if not is_weekend and current_hour != last_run_hour:
+                logger.info(f"📅 [Scheduler] Starting hourly briefing for: {current_hour}:00")
+                from utils.global_briefing import generate_market_wide_briefing
+                
+                async with ANALYSIS_LOCK:
+                    await asyncio.wait_for(
+                        generate_market_wide_briefing(),
+                        timeout=180.0
+                    )
+                last_run_hour = current_hour
+                logger.info(f"📅 [Scheduler] Task completed for {current_hour}:00")
+
+            # 새벽 시간에 한 번 DB 정리 (선택사항)
+            if current_hour == 2 and current_date != last_cleanup_date:
+                from utils.briefing_store import cleanup_old_briefings
+                cleanup_old_briefings()
+                last_cleanup_date = current_date
+            
+            await asyncio.sleep(60) # 1분마다 체크
+        except Exception as e:
+            logger.error(f"📅 [Scheduler] Loop error: {e}")
+            await asyncio.sleep(60)
 
     while True:
         try:
