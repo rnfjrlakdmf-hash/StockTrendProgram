@@ -2758,40 +2758,31 @@ def get_market_insights_data():
             rows = table.select("tr")
             for row in rows:
                 cols = row.select("td")
-                if len(cols) < 10: continue # 컬럼 수가 충분한지 확인
-                
-                # 네이버 거래대금 상위 테이블 구조:
-                # N(0), 종목명(1), 현재가(2), 전일비(3), 등락률(4), 거래량(5), 거래대금(6)...
-                name_tag = cols[1].select_one("a")
+                if len(cols) < 10: continue
+
+                name_tag = cols[2].select_one("a")
                 if not name_tag: continue
-                
+
                 name = name_tag.text.strip()
                 symbol = name_tag.get("href", "").split("code=")[-1]
-                
-                volume_raw = cols[5].text.strip().replace(",", "")
-                value_raw = cols[6].text.strip().replace(",", "")
-                
-                # 가독성을 위해 거래량 단위를 변환 (ex: 1234567 -> 123만 주)
-                try:
-                    vol_num = int(volume_raw)
-                    if vol_num >= 1000000:
-                        vol_display = f"{vol_num/1000000:.1f}백만"
-                    elif vol_num >= 10000:
-                        vol_display = f"{vol_num/10000:.0f}만"
-                    else:
-                        vol_display = f"{vol_num:,}"
-                except:
-                    vol_display = volume_raw
 
-                # 전일비 방향(상승/하락) 기호 포함
-                change_txt = cols[3].text.strip()
+                # 거래대금 상위 페이지 구조: N(0), 거래대금(1), 종목명(2), 현재가(3), 전일비(4), 등락률(5)...
+                value_raw = cols[1].text.strip().replace(",", "")
+                
+                try:
+                    val_num = float(value_raw)
+                    if val_num >= 10000: value_display = f"{val_num/10000:.1f}조"
+                    else: value_display = f"{val_num:,.0f}억"
+                except: value_display = f"{value_raw}억"
+
+                change_txt = cols[4].text.strip()
                 direction = "상승" if "상" in change_txt or "▲" in change_txt else "하락" if "하" in change_txt or "▼" in change_txt else ""
 
                 items.append({
                     "name": name,
                     "symbol": symbol,
-                    "value": f"{direction} {vol_display}주", # 사용자 요청에 따라 '주' 단위 우선 표시
-                    "amount": f"{value_raw}억" # 필요시 거래대금도 함께 보관
+                    "value": f"{direction} {value_display}",
+                    "amount": f"{value_raw}억"
                 })
                 if len(items) >= 15: break
             return items
