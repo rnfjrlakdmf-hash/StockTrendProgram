@@ -90,15 +90,14 @@ async def check_and_notify_disclosures():
     finally:
         scraper._close_driver()
 
-# Global analysis lock to prevent concurrent DB writes from multiple background tasks
-ANALYSIS_LOCK = asyncio.Lock()
-
 async def hourly_briefing_scheduler_loop():
     """
     매 정각 정기 브리핑 생성 (초경량 실시간 전용 모드)
-    - 자원 독점을 막기 위해 과거 소급 작업을 완전히 제거했습니다.
-    - 오직 1시간마다 한 번만 동작하여 다른 기능에 전혀 영향을 주지 않습니다.
     """
+    # [Safe-Initialization] 루프가 시작된 후 락을 생성하여 이벤트 루프 충돌 방지
+    global ANALYSIS_LOCK
+    ANALYSIS_LOCK = asyncio.Lock()
+    
     logger.info("📅 [Resource-Clean] Hourly Scheduler Active.")
     import pytz
     kst = pytz.timezone('Asia/Seoul')

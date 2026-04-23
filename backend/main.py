@@ -60,24 +60,26 @@ async def startup_event():
         print(f"[Startup Error] DB Init: {e}")
 
     async def delayed_startup_sequence():
-        # 1. 서버 부하 분산을 위해 5초 대기 후 시작 (Faster Startup)
-        await asyncio.sleep(5)
-        print("[Delayed-Startup] Starting background services...")
+        # 1. 서버 부하 분산을 위해 10초 대기 후 시작 (Maximum Stability)
+        await asyncio.sleep(10)
+        print("[Delayed-Startup] Starting background services safely...")
         
         # 1.1 배경 인덱서 로드
         try:
             from background_indexer import background_indexer
             asyncio.create_task(background_indexer.run_forever())
             print("[Delayed-Startup] Background indexer active.")
+            await asyncio.sleep(2)
         except Exception as e:
             print(f"[Startup Error] Indexer: {e}")
 
         # 1.2 가격 알림 모니터링 로드
         try:
             from price_alerts import price_alert_monitor, create_price_alerts_tables
-            create_price_alerts_tables() # Re-check tables
+            await asyncio.to_thread(create_price_alerts_tables) # Use to_thread for DB
             asyncio.create_task(price_alert_monitor.start())
             print("[Delayed-Startup] Price alert system active.")
+            await asyncio.sleep(2)
         except Exception as e:
             print(f"[Startup Error] Price Alerts: {e}")
             
@@ -86,6 +88,7 @@ async def startup_event():
             from scheduler import hourly_briefing_scheduler_loop
             asyncio.create_task(hourly_briefing_scheduler_loop())
             print("[Delayed-Startup] Hourly scheduler active.")
+            await asyncio.sleep(2)
         except Exception as e:
             print(f"[Startup Error] Scheduler: {e}")
 
