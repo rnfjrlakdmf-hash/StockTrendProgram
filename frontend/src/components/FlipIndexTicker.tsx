@@ -97,15 +97,15 @@ export default function FlipIndexTicker() {
             
             <div className="ticker-content-h py-2 flex items-center gap-8">
                 {[...indices, ...indices].map((idx, i) => (
-                    <div key={i} className="flex items-center gap-6 px-8 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-2 group/item">
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[16px]">{idx.icon}</span>
-                                <span className="text-[13px] font-black text-gray-400 uppercase tracking-widest">{idx.label}</span>
+                    <div key={i} className="flex items-center gap-8 px-10 border-r border-white/20 last:border-none hover:bg-white/[0.06] transition-all rounded-3xl py-3 group/item">
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-[20px] filter drop-shadow-md">{idx.icon}</span>
+                                <span className="text-[15px] font-black text-amber-300 uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(252,211,77,0.3)]">{idx.label || "INDEX"}</span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{idx.value}</span>
-                                <span className={`text-[15px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1 ${idx.up ? 'text-rose-400 border-rose-500/20 bg-rose-500/5' : 'text-sky-400 border-sky-500/20 bg-sky-500/5'}`}>
+                            <div className="flex items-center gap-4">
+                                <span className="text-3xl font-black text-white tabular-nums tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{idx.value || "---"}</span>
+                                <span className={`text-[17px] font-black px-3 py-1 rounded-xl border-2 flex items-center gap-1.5 shadow-lg ${idx.up ? 'text-rose-400 border-rose-500/30 bg-rose-500/10' : 'text-sky-400 border-sky-500/30 bg-sky-500/10'}`}>
                                     {idx.up ? '▲' : '▼'}{idx.change}
                                 </span>
                             </div>
