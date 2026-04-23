@@ -2694,21 +2694,48 @@ def get_market_insights_data():
             rows = table.select("tr")
             for row in rows:
                 cols = row.select("td")
-                if len(cols) < 6: continue
+                # 인기검색어 테이블 구조:
+                # 순위(0), 종목명(1), 검색비율(2), 현재가(3), 전일비(4), 등락률(5), 거래량(6)...
+                if len(cols) < 7: continue 
+                
                 name_tag = cols[1].select_one("a")
                 if not name_tag: continue
                 
+                name = name_tag.text.strip()
+                symbol = name_tag.get("href", "").split("code=")[-1]
+                
+                # 검색비율 대신 '거래량' 정보 추출 (사용자 요청: 몇 주인지가 더 정확함)
+                volume_raw = cols[6].text.strip().replace(",", "")
+                
+                try:
+                    vol_num = int(volume_raw)
+                    if vol_num >= 1000000:
+                        vol_display = f"{vol_num/1000000:.1f}백만"
+                    elif vol_num >= 10000:
+                        vol_display = f"{vol_num/10000:.0f}만"
+                    else:
+                        vol_display = f"{vol_num:,}"
+                except:
+                    vol_display = volume_raw
+
+                # 전일비/등락률 정보로 방향 판단
+                change_txt = cols[4].text.strip()
+                direction = "상승" if "상" in change_txt or "▲" in change_txt or "+" in change_txt else "하락" if "하" in change_txt or "▼" in change_txt or "-" in change_txt else ""
+
                 items.append({
-                    "name": name_tag.text.strip(),
-                    "symbol": name_tag.get("href", "").split("code=")[-1],
-                    "amount": cols[2].text.strip() # 검색비율
+                    "name": name,
+                    "symbol": symbol,
+                    "amount": f"{direction} {vol_display}주" # 검색비율 대신 거래량을 '주' 단위로 표시
                 })
                 if len(items) >= 15: break
             return items
-        except: return []
+        except Exception as e:
+            print(f"Error parsing popular search volume: {e}")
+            return []
 
     def parse_trading_value():
         try:
+            # 거래대금 상위 페이지
             url = "https://finance.naver.com/sise/sise_quant_high.naver?sosok=0"
             res = requests.get(url, headers=HEADER, timeout=5)
             soup = BeautifulSoup(decode_safe(res), "html.parser")
@@ -2719,18 +2746,46 @@ def get_market_insights_data():
             rows = table.select("tr")
             for row in rows:
                 cols = row.select("td")
-                if len(cols) < 6: continue
-                name_tag = cols[2].select_one("a")
+                if len(cols) < 10: continue # 컬럼 수가 충분한지 확인
+                
+                # 네이버 거래대금 상위 테이블 구조:
+                # N(0), 종목명(1), 현재가(2), 전일비(3), 등락률(4), 거래량(5), 거래대금(6)...
+                name_tag = cols[1].select_one("a")
                 if not name_tag: continue
                 
+                name = name_tag.text.strip()
+                symbol = name_tag.get("href", "").split("code=")[-1]
+                
+                volume_raw = cols[5].text.strip().replace(",", "")
+                value_raw = cols[6].text.strip().replace(",", "")
+                
+                # 가독성을 위해 거래량 단위를 변환 (ex: 1234567 -> 123만 주)
+                try:
+                    vol_num = int(volume_raw)
+                    if vol_num >= 1000000:
+                        vol_display = f"{vol_num/1000000:.1f}백만"
+                    elif vol_num >= 10000:
+                        vol_display = f"{vol_num/10000:.0f}만"
+                    else:
+                        vol_display = f"{vol_num:,}"
+                except:
+                    vol_display = volume_raw
+
+                # 전일비 방향(상승/하락) 기호 포함
+                change_txt = cols[3].text.strip()
+                direction = "상승" if "상" in change_txt or "▲" in change_txt else "하락" if "하" in change_txt or "▼" in change_txt else ""
+
                 items.append({
-                    "name": name_tag.text.strip(),
-                    "symbol": name_tag.get("href", "").split("code=")[-1],
-                    "value": cols[4].text.strip() + "억" # 거래대금
+                    "name": name,
+                    "symbol": symbol,
+                    "value": f"{direction} {vol_display}주", # 사용자 요청에 따라 '주' 단위 우선 표시
+                    "amount": f"{value_raw}억" # 필요시 거래대금도 함께 보관
                 })
                 if len(items) >= 15: break
             return items
-        except: return []
+        except Exception as e:
+            print(f"Error parsing trading volume: {e}")
+            return []
 
     return {
         "search_top": parse_popular_search(),
