@@ -115,9 +115,8 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
-    # [Burden-Optimized Diet-V5] 서버 기동 시에는 오늘(최근 2시간) 데이터만 즉시 생성하고 끝냅니다.
-    # 과거 72시간 전체를 한꺼번에 채우면 서버 자원이 고갈되어 화면이 멈추기 때문입니다.
-    for h_offset in range(2):
+    # [Burden-Optimized Diet-V5] 서버 기동 시에는 오늘(최근 1시간) 데이터만 즉시 생성하고 끝냅니다.
+    for h_offset in range(1):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
         
@@ -129,18 +128,20 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Backfill-Startup] Fast-Pass Filling: {t_date} {t_hour:02d}:00")
+                logger.info(f"[Emergency-Startup] Generating TODAY's record: {t_date} {t_hour:02d}:00")
                 
                 async with ANALYSIS_LOCK:
                     await asyncio.wait_for(
                         generate_market_wide_briefing(target_time=target_utc),
                         timeout=180.0
                     )
-                # 초기 2개는 빠르게 생성 후 종료
             except Exception as e: 
-                logger.error(f"[Backfill-Startup] Error: {e}")
+                logger.error(f"[Emergency-Startup] FAILED: {e}")
+                # [Fast-Fallback] 소급 생성 실패 시 빈 화면 방지를 위해 임시 안내 데이터라도 생성
+                from utils.global_briefing import _save_placeholder
+                _save_placeholder("SYSTEM", current_now, target_utc, error_msg="Initial sync failed, retrying...")
 
-    logger.info("[Backfill-Startup] Initial 2-hour data loaded. Server is now stable.")
+    logger.info("[Emergency-Startup] Complete. Today's data (or placeholder) is now in DB.")
 
 
 async def historical_slow_trickle_loop():
