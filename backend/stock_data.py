@@ -1031,7 +1031,7 @@ def get_market_data():
         except:
             return {"label": idx["label"], "value": "N/A", "change": "0.00%", "up": True, "sparkline": [], "high": "N/A", "low": "N/A"}
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(_fetch_index_info, idx) for idx in indices]
         for f in concurrent.futures.as_completed(futures):
             results.append(f.result())

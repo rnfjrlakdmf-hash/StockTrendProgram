@@ -32,24 +32,36 @@ def read_watchlist(x_user_id: str = Header(None)):
 
 @router.get("/watchlist/closing-summary")
 def get_watchlist_closing_summary(x_user_id: str = Header(None)):
-    """[NEW] 장마감 요약 전용 API - ClosingBanner.tsx 대응"""
+    """[NEW] 장마감 요약 전용 API - ClosingBanner.tsx 대응 (Parallel Optimized)"""
     from db_manager import get_watchlist
     from stock_data import get_simple_quote, get_korean_stock_name
+    from concurrent.futures import ThreadPoolExecutor
+    
     user_id = x_user_id or "guest"
     symbols = get_watchlist(user_id)
     
-    results = []
-    for sym in symbols:
-        quote = get_simple_quote(sym)
-        if quote:
-            results.append({
-                "symbol": sym,
-                "name": get_korean_stock_name(sym) or sym,
-                "price": quote.get("price", "0"),
-                "change": quote.get("change", "0.00%"),
-                "currency": "KRW" if sym.isdigit() else "USD"
-            })
-    return {"status": "success", "data": results}
+    if not symbols:
+        return {"status": "success", "data": []}
+
+    def fetch_quote_enriched(sym):
+        try:
+            quote = get_simple_quote(sym)
+            if quote:
+                return {
+                    "symbol": sym,
+                    "name": get_korean_stock_name(sym) or sym,
+                    "price": quote.get("price", "0"),
+                    "change": quote.get("change", "0.00%"),
+                    "currency": "KRW" if sym.isdigit() else "USD"
+                }
+        except: pass
+        return None
+
+    with ThreadPoolExecutor(max_workers=max(len(symbols), 1)) as executor:
+        results = list(executor.map(fetch_quote_enriched, symbols))
+    
+    final_data = [r for r in results if r]
+    return {"status": "success", "data": final_data}
 
 @router.post("/watchlist")
 def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):

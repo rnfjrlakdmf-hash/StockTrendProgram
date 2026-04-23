@@ -108,7 +108,7 @@ CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
 
 # [New] Global Ranking Cache
 CACHE_GLOBAL_RANKING = {}
-CACHE_GLOBAL_RANKING_DURATION = 10 # 10초 (실시간성 강화)
+CACHE_GLOBAL_RANKING_DURATION = 60 # 10초 -> 60초 (부하 감소 및 속도 향상)
 
 def fix_mojibake(text):
     """
