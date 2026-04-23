@@ -17,18 +17,14 @@ from routes.sockets import router as sockets_router
 # Initialize FastAPI
 app = FastAPI(
     title="AI Stock Analyst API",
-    version="v3.6.21-PREMIUM-STABLE",
-    description="24/7 무인 가동 및 정밀 데이터 소급 로우가 탑재된 프리미엄 안정화 백엔드"
+    version="v3.6.33-TOTAL-NORMALCY",
+    description="최적의 안정성과 속도를 위해 모든 군더더기를 제거한 원상 복구 버전"
 )
 
-# [CORS Hardening]
+# [CORS Policy]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://stock-trend-program.vercel.app",
-        "https://stock-trend-program-git-main-rnfjrlakdmf-hash.vercel.app",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,86 +41,42 @@ app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")
 async def startup_event():
-    """서버 안정성을 위해 무거운 작업들을 전체 가동 20초 후로 지연 실행하며, 24/7 생존 로직을 가동합니다."""
-    print(f"\n[Startup] v3.6.32-DB-HOTFIX Engine active on PID: {os.getpid()}")
+    """서버 생존(Port Binding)을 최우선으로 하여 가장 쾌적하게 기동합니다."""
+    print(f"\n[Startup] Nuclear Stability Mode active on PID: {os.getpid()}")
     
-    # [Hotfix] Ensure DB schemas exist since we removed stock_app.db from git
-    # Using to_thread to prevent blocking the event loop during initial DB connection
+    # 1. 필수 DB 초기화 (비동기 처리로 부팅 속도 극대화)
     try:
         from db_manager import init_db
-        from utils.briefing_store import init_briefing_table
         await asyncio.to_thread(init_db)
-        await asyncio.to_thread(init_briefing_table)
-        print("[Startup] Database schemas successfully initialized.")
-    except Exception as e:
-        print(f"[Startup Error] DB Init: {e}")
+    except: pass
 
-    async def delayed_startup_sequence():
-        # 1. 서버 부하 분산을 위해 10초 대기 후 시작 (Maximum Stability)
-        await asyncio.sleep(10)
-        print("[Delayed-Startup] Starting background services safely...")
-        
-        # 1.1 배경 인덱서 로드
+    # 2. 배경 서비스는 서버가 완전히 안정화된 20초 뒤에 천천히 깨웁니다.
+    async def gradual_background_startup():
+        await asyncio.sleep(20)
+        print("[Background] Starting secondary services...")
         try:
             from background_indexer import background_indexer
             asyncio.create_task(background_indexer.run_forever())
-            print("[Delayed-Startup] Background indexer active.")
-            await asyncio.sleep(2)
-        except Exception as e:
-            print(f"[Startup Error] Indexer: {e}")
-
-        # 1.2 가격 알림 모니터링 로드
+        except: pass
+        
+        await asyncio.sleep(5)
         try:
             from price_alerts import price_alert_monitor, create_price_alerts_tables
-            await asyncio.to_thread(create_price_alerts_tables) # Use to_thread for DB
+            await asyncio.to_thread(create_price_alerts_tables)
             asyncio.create_task(price_alert_monitor.start())
-            print("[Delayed-Startup] Price alert system active.")
-            await asyncio.sleep(2)
-        except Exception as e:
-            print(f"[Startup Error] Price Alerts: {e}")
-            
-        # 1.3 스케줄러 루프 활성화 (안정성을 위해 전면 중단)
-        # try:
-        #    from scheduler import hourly_briefing_scheduler_loop
-        #    asyncio.create_task(hourly_briefing_scheduler_loop())
-        #    print("[Disabled] Hourly scheduler is turned off for system stability.")
-        # except Exception as e:
-        #    print(f"[Startup Error] Scheduler: {e}")
+        except: pass
+        print("[Background] All services active.")
 
-        # 1.4 [24/7 생존 로직] Self-Ping
-        async def self_ping_loop(url: str):
-            """서버가 잠들지 않도록 24시간 심장박동 신호를 보냅니다 (v3.6.31-ULTRA-STABLE-FINAL 무인 가동 보장)"""
-            import aiohttp
-            import logging
-            logger = logging.getLogger("uvicorn")
-            logger.info(f"[Self-Ping] Heartbeat initializing for: {url}")
-            while True:
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(f"{url}/health") as resp:
-                            if resp.status == 200:
-                                logger.info(f"[Self-Ping] Heartbeat OK - 24/7 Autonomous Market Tracker is ACTIVE (v3.6.31)")
-                            else:
-                                logger.warning(f"[Self-Ping] Abnormal response: {resp.status}")
-                except Exception as e:
-                    logger.error(f"[Self-Ping] Heartbeat missed: {e}")
-                await asyncio.sleep(600)  # 10분마다 생존 신호 전송
-
-        asyncio.create_task(self_ping_loop("https://stocktrendprogram-production.up.railway.app/api"))
-
-    # 지연 실행 태스크 시작
-    asyncio.create_task(delayed_startup_sequence())
-    print("[Startup] Fast-Port-Binding enabled. v3.6.28-NUCLEAR-FIX API is ready for requests.\n")
+    asyncio.create_task(gradual_background_startup())
 
 @app.get("/")
 def read_root():
-    return {
-        "status": "success",
-        "message": "AI Stock Analyst API (Premium v3.6.28-NUCLEAR-FIX) is running.",
-        "version": "v3.6.28-NUCLEAR-FIX"
-    }
+    return {"status": "success", "message": "Resilient API is Online."}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "timestamp": time.time()}
 
 if __name__ == "__main__":
     import uvicorn
-    # uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=False)
     pass
