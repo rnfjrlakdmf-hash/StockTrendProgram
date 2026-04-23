@@ -180,6 +180,26 @@ async def read_theme_heatmap():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/investors/top")
+def read_investor_top():
+    """수급 및 상승률 상위 데이터 반환"""
+    from korea_data import get_investor_ranking_data
+    try:
+        data = get_investor_ranking_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/market-insights")
+def read_market_insights():
+    """인기 검색 및 거래대금 상위 데이터 반환"""
+    from korea_data import get_market_insights_data
+    try:
+        data = get_market_insights_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/calendar/events")
 def get_calendar_events():
     from korea_data import get_ipo_data

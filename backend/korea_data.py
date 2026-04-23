@@ -2622,3 +2622,118 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         print(f"Indicators intensive scraping error for {symbol}: {e}")
         return None
 
+def get_investor_ranking_data():
+    """
+    시장 주도주 탭을 위한 수급 및 상승률 랭킹 데이터 수집
+    프론트엔드 변수명에 맞춰 매핑:
+    - foreign_sell: KOSPI 상승률 TOP
+    - institution_sell: KOSDAQ 상승률 TOP
+    - foreign_top: KOSPI 거래량 TOP
+    - institution_top: KOSDAQ 거래량 TOP
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    
+    def parse_naver_sise(url, is_rise=False):
+        try:
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), "html.parser")
+            table = soup.select_one("table.type_2")
+            if not table: return []
+            
+            items = []
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 6: continue
+                
+                name_tag = cols[1].select_one("a")
+                if not name_tag: continue
+                
+                name = name_tag.text.strip()
+                href = name_tag.get("href", "")
+                symbol = href.split("code=")[-1] if "code=" in href else ""
+                
+                # 거래량 또는 등락률 값 추출
+                val = cols[3].text.strip() if not is_rise else cols[5].text.strip()
+                
+                items.append({
+                    "name": name,
+                    "symbol": symbol,
+                    "value": val
+                })
+                if len(items) >= 15: break
+            return items
+        except: return []
+
+    return {
+        "foreign_sell": parse_naver_sise("https://finance.naver.com/sise/sise_rise.naver?sosok=0", True),
+        "institution_sell": parse_naver_sise("https://finance.naver.com/sise/sise_rise.naver?sosok=1", True),
+        "foreign_top": parse_naver_sise("https://finance.naver.com/sise/sise_quant.naver?sosok=0"),
+        "institution_top": parse_naver_sise("https://finance.naver.com/sise/sise_quant.naver?sosok=1")
+    }
+
+def get_market_insights_data():
+    """
+    시장 주도주 탭을 위한 검색 및 거래대금 인사이트 데이터 수집
+    - search_top: 실시간 검색 순위
+    - value_top: 거래대금 상위
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    
+    def parse_popular_search():
+        try:
+            url = "https://finance.naver.com/sise/lastsearch2.naver"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), "html.parser")
+            table = soup.select_one("table.type_5")
+            if not table: return []
+            
+            items = []
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 6: continue
+                name_tag = cols[1].select_one("a")
+                if not name_tag: continue
+                
+                items.append({
+                    "name": name_tag.text.strip(),
+                    "symbol": name_tag.get("href", "").split("code=")[-1],
+                    "amount": cols[2].text.strip() # 검색비율
+                })
+                if len(items) >= 15: break
+            return items
+        except: return []
+
+    def parse_trading_value():
+        try:
+            url = "https://finance.naver.com/sise/sise_quant_high.naver?sosok=0"
+            res = requests.get(url, headers=HEADER, timeout=5)
+            soup = BeautifulSoup(decode_safe(res), "html.parser")
+            table = soup.select_one("table.type_2")
+            if not table: return []
+            
+            items = []
+            rows = table.select("tr")
+            for row in rows:
+                cols = row.select("td")
+                if len(cols) < 6: continue
+                name_tag = cols[2].select_one("a")
+                if not name_tag: continue
+                
+                items.append({
+                    "name": name_tag.text.strip(),
+                    "symbol": name_tag.get("href", "").split("code=")[-1],
+                    "value": cols[4].text.strip() + "억" # 거래대금
+                })
+                if len(items) >= 15: break
+            return items
+        except: return []
+
+    return {
+        "search_top": parse_popular_search(),
+        "value_top": parse_trading_value()
+    }
+
