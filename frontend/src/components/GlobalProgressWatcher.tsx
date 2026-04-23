@@ -70,8 +70,8 @@ export default function GlobalProgressWatcher() {
     if (status?.status === "done") percent = 100;
 
     return (
-        <div className="fixed top-24 right-6 z-50 animate-in slide-in-from-right-10 duration-500">
-            <div className="bg-[#111] border border-white/20 rounded-xl shadow-2xl p-4 w-72 backdrop-blur-md bg-opacity-90">
+        <div className="w-full animate-in fade-in duration-500">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl backdrop-blur-md">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         {status?.status === "running" && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
