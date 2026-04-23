@@ -291,6 +291,9 @@ def scan_all_signals(limit: int = 100) -> List[Dict]:
                 
                 if (i + 1) % 20 == 0:
                     print(f"[SmartSignal] Progress: {i+1}/{len(symbols)} stocks scanned...")
+                
+                # API 서버 응답성을 위해 짧은 지연 추가
+                await asyncio.sleep(0.05)
                     
             except Exception as e:
                 print(f"[SmartSignal] Error scanning {symbol}: {e}")

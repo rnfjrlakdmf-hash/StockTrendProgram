@@ -52,9 +52,9 @@ async def startup_event():
         await asyncio.to_thread(init_db)
     except: pass
 
-    # 2. 배경 서비스는 서버가 완전히 안정화된 20초 뒤에 천천히 깨웁니다.
+    # 2. 배경 서비스는 서버가 완전히 안정화되고 입구가 열린 40초 뒤에 아주 천천히 깨웁니다.
     async def gradual_background_startup():
-        await asyncio.sleep(20)
+        await asyncio.sleep(40)
         print("[Background] Starting secondary services...")
         try:
             from background_indexer import background_indexer
