@@ -160,6 +160,26 @@ def get_multi_quotes(symbols: str = Query(...)):
             except: results[sym] = {"price": "확인불가", "change": "0.00%"}
     return {"status": "success", "data": results}
 
+@router.get("/korea/sector_heatmap")
+async def read_sector_heatmap():
+    """업종별 히트맵 데이터 반환"""
+    from korea_data import get_sector_heatmap_data
+    try:
+        data = await get_sector_heatmap_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/korea/heatmap")
+async def read_theme_heatmap():
+    """테마별 히트맵 데이터 반환"""
+    from korea_data import get_theme_heatmap_data
+    try:
+        data = await get_theme_heatmap_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/calendar/events")
 def get_calendar_events():
     from korea_data import get_ipo_data
