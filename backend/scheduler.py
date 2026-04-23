@@ -115,8 +115,9 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
-    # [Burden-Optimized Diet-V5] 서버 기동 시에는 오늘(최근 1시간) 데이터만 즉시 생성하고 끝냅니다.
-    for h_offset in range(1):
+    # [Ultra-Light Diet-V6] 오직 오늘과 어제(최근 24시간)만 관리합니다. (사용자 요청 반영)
+    # 72시간 치를 포기함으로써 서버 자원 소모를 1/3로 줄이고 안정성을 확보합니다.
+    for h_offset in range(24):
         current_now = datetime.now(kst_timezone)
         target_kst = current_now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=h_offset)
         
@@ -128,20 +129,22 @@ async def backfill_system_briefings(kst_timezone):
         if not has_system_briefing_for_hour(t_date, t_hour):
             try:
                 target_utc = (target_kst - timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S")
-                logger.info(f"[Emergency-Startup] Generating TODAY's record: {t_date} {t_hour:02d}:00")
+                # 최신 1시간 데이터는 긴급(Urgent)하게 처리
+                is_urgent = (h_offset == 0)
+                
+                logger.info(f"[Ultra-Light] {'URGENT' if is_urgent else 'Sync'} Filling: {t_date} {t_hour:02d}:00")
                 
                 async with ANALYSIS_LOCK:
                     await asyncio.wait_for(
                         generate_market_wide_briefing(target_time=target_utc),
                         timeout=180.0
                     )
+                # 너무 몰아치지 않게 60초 정도 휴식
+                await asyncio.sleep(10 if is_urgent else 60)
             except Exception as e: 
-                logger.error(f"[Emergency-Startup] FAILED: {e}")
-                # [Fast-Fallback] 소급 생성 실패 시 빈 화면 방지를 위해 임시 안내 데이터라도 생성
-                from utils.global_briefing import _save_placeholder
-                _save_placeholder("SYSTEM", current_now, target_utc, error_msg="Initial sync failed, retrying...")
+                logger.error(f"[Ultra-Light] Error for {t_date} {t_hour}: {e}")
 
-    logger.info("[Emergency-Startup] Complete. Today's data (or placeholder) is now in DB.")
+    logger.info("[Ultra-Light] Today/Yesterday sync completed.")
 
 
 async def historical_slow_trickle_loop():
@@ -201,11 +204,8 @@ async def hourly_briefing_scheduler_loop():
     last_run_hour = -1
     last_cleanup_date = ""
 
-    # 1. [Startup] 최근 2시간 데이터 즉시 복구 (최우선)
+    # 1. [Startup] 오늘과 어제 데이터 즉시 복구 (최우선)
     asyncio.create_task(backfill_system_briefings(kst))
-    
-    # 2. [Background] 나머지 과거 데이터는 15분마다 하나씩 천천히 복구
-    asyncio.create_task(historical_slow_trickle_loop())
 
     while True:
         try:

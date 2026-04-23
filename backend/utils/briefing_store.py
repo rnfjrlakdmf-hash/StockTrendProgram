@@ -152,11 +152,11 @@ def get_today_briefing_timeline(user_id: str) -> list:
         from datetime import timedelta
         seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         
-        # Diet-V5: Broad 3-day window (Start from 00:00:00 of 3 days ago to ensure today is NEVER filtered out)
-        three_days_ago = (now - timedelta(days=3)).replace(hour=0, minute=0, second=0, microsecond=0)
-        utc_threshold = three_days_ago.astimezone(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
+        # Ultra-Light: strictly 2 days (Today and Yesterday)
+        two_days_ago = (now - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+        utc_threshold = two_days_ago.astimezone(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
         
-        print(f"[BriefingStore] Timeline Fetch: Last 3 Days (since {utc_threshold} UTC)")
+        print(f"[BriefingStore] Ultra-Light Timeline: Latest 2 Days (since {utc_threshold} UTC)")
 
         cursor.execute(
             """

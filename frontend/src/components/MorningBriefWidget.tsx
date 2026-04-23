@@ -218,12 +218,12 @@ export default function MorningBriefWidget() {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // [History] 최근 영업일(평일) 기준 정확히 7일간의 날짜 목록 생성 (주말 제외)
+    // [History] 최근 영업일(평일) 기준 정확히 2일간의 날짜 목록 생성 (주말 제외)
     const availableDates = (() => {
         const dates = [];
         let checkDate = new Date();
         let daysFound = 0;
-        const targetDays = 3; // [Update] 3일 데이터 다이어트에 맞춰 3일만 표시
+        const targetDays = 2; // [Ultra-Light] 사용자 요청에 따라 2일로 축소 (오늘, 어제)
         
         while (daysFound < targetDays) {
             const dayOfWeek = checkDate.getDay(); // 0: 일, 6: 토
