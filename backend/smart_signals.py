@@ -272,34 +272,38 @@ async def scan_all_signals(limit: int = 100) -> List[Dict]:
         symbols = [s.get("itemcode") for s in stocks if s.get("itemcode")]
         print(f"[SmartSignal] Scanning {len(symbols)} stocks for signals...")
         
-        # 2. 각 종목별 시그널 탐지 (병렬 처리 고려 가능하나 안정성을 위해 순차 처리 + 타임아웃 방지)
-        # 100개 종목에 대해 3가지 탐지 로직 수행
-        for i, symbol in enumerate(symbols):
-            try:
-                # 1. 거래량 폭증
-                vol_signal = detect_volume_surge(symbol)
-                if vol_signal:
-                    all_signals.append(vol_signal)
-                
-                # 2. 공시 감지 (비교적 무거운 작업이므로 소수만 또는 캐시 활용)
-                disc_signals = detect_new_disclosures(symbol)
-                all_signals.extend(disc_signals)
-                
-                # 3. 수급 이상 (히스토리 조회가 필요하므로 다소 무거움)
-                inv_signal = detect_investor_surge(symbol)
-                if inv_signal:
-                    all_signals.append(inv_signal)
-                
-                if (i + 1) % 20 == 0:
-                    print(f"[SmartSignal] Progress: {i+1}/{len(symbols)} stocks scanned...")
-                
-                # API 서버 응답성을 위해 짧은 지연 추가
-                await asyncio.sleep(0.05)
+        # 2. 각 종목별 시그널 탐지 (병렬 처리 최적화: 5개 동시 처리)
+        semaphore = asyncio.Semaphore(5)  # 시스템 안정성을 위해 동시 작업수를 5개로 제한
+
+        async def scan_single_symbol(symbol):
+            async with semaphore:
+                local_signals = []
+                try:
+                    # 각각의 탐지 로직을 별도 스레드에서 실행하여 블로킹 방지
+                    vol_signal = await asyncio.to_thread(detect_volume_surge, symbol)
+                    if vol_signal: local_signals.append(vol_signal)
                     
-            except Exception as e:
-                print(f"[SmartSignal] Error scanning {symbol}: {e}")
+                    disc_signals = await asyncio.to_thread(detect_new_disclosures, symbol)
+                    local_signals.extend(disc_signals)
+                    
+                    inv_signal = await asyncio.to_thread(detect_investor_surge, symbol)
+                    if inv_signal: local_signals.append(inv_signal)
+                    
+                    return local_signals
+                except Exception as e:
+                    print(f"[SmartSignal] Error scanning {symbol}: {e}")
+                    return []
+
+        # 모든 종목에 대한 태스크 생성 및 병렬 실행
+        tasks = [scan_single_symbol(symbol) for symbol in symbols]
+        print(f"[SmartSignal] Task queue ready. Executing parallel scan...")
         
-        # 3. DB 저장
+        # 결과를 기다리며 진행률 표시 (chunk 단위로 처리하여 로깅)
+        results = await asyncio.gather(*tasks)
+        for sublist in results:
+            all_signals.extend(sublist)
+        
+        # 3. DB 저장 (Batch 처리 유도)
         from db_manager import save_signal
         saved_count = 0
         for sig in all_signals:
@@ -314,7 +318,7 @@ async def scan_all_signals(limit: int = 100) -> List[Dict]:
                 saved_count += 1
             except: pass
             
-        print(f"[SmartSignal] Full Scan Complete: {len(all_signals)} signals detected, {saved_count} saved.")
+        print(f"[SmartSignal] Parallel Scan Complete: {len(all_signals)} detected, {saved_count} saved.")
         return all_signals
         
     except Exception as e:
