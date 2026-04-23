@@ -142,10 +142,20 @@ def init_db():
             signal_type TEXT NOT NULL, -- VOLUME_SURGE, DISCLOSURE, INVESTOR_SURGE
             title TEXT,
             summary TEXT,
-            data TEXT, -- JSON structure
+            data_json TEXT, -- JSON structure
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # [Migration] Rename data to data_json if needed
+    try:
+        cursor.execute("SELECT data_json FROM signals LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating signals table (adding data_json)...")
+        try:
+            cursor.execute("ALTER TABLE signals ADD COLUMN data_json TEXT")
+        except Exception as e:
+            print(f"Migration Warning (signals): {e}")
 
     conn.commit()
     conn.close()

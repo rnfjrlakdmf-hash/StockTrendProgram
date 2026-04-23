@@ -27,6 +27,16 @@ async def market_status():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/market/risk-alerts")
+def read_risk_alerts():
+    """DART 공시 기반 시장 리스크 및 알림 데이터 반환"""
+    try:
+        from stock_data import get_dart_risk_alerts
+        data = get_dart_risk_alerts()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/rank/etf")
 @turbo_cache(ttl_seconds=300)
 def read_etf_rank(market: str = "KR", category: Optional[str] = None):
