@@ -1,5 +1,5 @@
-﻿"use client";
-// [Deployment Trigger] symbol-based deduplication v2 - 2026-03-04
+"use client";
+// [Deployment Trigger] Force Redraw - 2026-04-23 17:03
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
