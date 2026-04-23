@@ -24,12 +24,12 @@ async def trigger_scan(type: str = Query("all"), x_user_id: Optional[str] = Head
             
         # 백그라운드 태스크 대신 프론트엔드가 결과를 기다릴 수 있도록 직접 실행 (작은 수의 경우)
         # 하지만 갯수가 많으면 타임아웃 우려되므로 일단 직접 실행 후 추후 비동기 검토
-        results = scan_watchlist_signals(symbols)
+        results = await scan_watchlist_signals(symbols)
         return {"status": "success", "message": f"{len(results)}개의 관심종목 시그널이 감지되었습니다.", "data": results}
         
     else:
         # 전체 시장 스캔 (거래량 상위 100종목)
-        results = scan_all_signals(limit=100)
+        results = await scan_all_signals(limit=100)
         return {"status": "success", "message": f"전체 시장 스캔 완료: {len(results)}개의 시그널 감지.", "data": results}
 
 @router.get("/signals/{symbol}/briefing")

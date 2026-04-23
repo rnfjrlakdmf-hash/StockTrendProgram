@@ -187,7 +187,7 @@ def detect_investor_surge(symbol: str) -> Optional[Dict]:
         return None
 
 
-def scan_watchlist_signals(watchlist_symbols: List[str]) -> List[Dict]:
+async def scan_watchlist_signals(watchlist_symbols: List[str]) -> List[Dict]:
     """
     관심 종목 리스트에 대해 모든 시그널을 스캔
     
@@ -233,7 +233,7 @@ def scan_watchlist_signals(watchlist_symbols: List[str]) -> List[Dict]:
     return all_signals
 
 
-def scan_all_signals(limit: int = 100) -> List[Dict]:
+async def scan_all_signals(limit: int = 100) -> List[Dict]:
     """
     [NEW] 전체 시장 스캔 (거래량 상위 limit 종목 대상)
     
