@@ -2807,58 +2807,61 @@ def get_market_insights_data():
 @turbo_cache(ttl_seconds=1800)
 def get_naver_economy_calendar():
     """
-    네이버 글로벌 경제 캘린더에서 오늘의 실시간 경제 일정을 수집합니다.
-    URL: https://finance.naver.com/world/economy_calendar.naver
+    네이버 증권 최신 API를 사용하여 오늘의 실시간 글로벌 경제 일정을 수집합니다.
+    URL: https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate
     """
-    url = "https://finance.naver.com/world/economy_calendar.naver"
+    import datetime
+    today_str = datetime.datetime.now().strftime("%Y%m%d")
+    
+    # 한국(KOR)과 미국(USA) 지표를 우선 수집
+    url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&nationTypeList=USA&page=1&pageSize=100&releaseDate={today_str}"
+    
+    # 네이버 보안 통과를 위한 필수 헤더
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://stock.naver.com/"
+    }
+    
     events = []
     
     try:
-        res = requests.get(url, headers=HEADER, timeout=10)
-        # EUC-KR 인코딩 대응
-        html = res.content.decode('euc-kr', 'replace')
-        soup = BeautifulSoup(html, 'html.parser')
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code != 200:
+            print(f"[EconomyCalendar] API Return Error: {res.status_code}")
+            return []
+            
+        data = res.json()
+        indicators = data.get("indicators", [])
         
-        # 캘린더 테이블 탐색
-        table = soup.select_one("table.tbl_calendar")
-        if not table: return []
-        
-        rows = table.select("tbody tr")
-        for row in rows:
-            cols = row.select("td")
-            # 네이버 캘린더 구조: 시간(0), 국가(1), 지표(2), 중요도(3), 실제(4), 예상(5), 이전(6)
-            if len(cols) < 7: continue
+        for item in indicators:
+            name = item.get("name", "Unknown")
+            nation = item.get("nationType", "🌐")
             
-            time = cols[0].text.strip()
-            # 시간 정보가 없으면 행 간 구분을 위한 공백일 수 있음
-            if not time: continue
+            # 시간 형식 변환 (HHMMSS -> HH:MM)
+            raw_time = item.get("releaseTime", "000000")
+            time_fmt = f"{raw_time[:2]}:{raw_time[2:4]}" if len(raw_time) >= 4 else "00:00"
             
-            country_tag = cols[1].select_one("img")
-            country = country_tag.get("alt", "Global") if country_tag else "Global"
+            importance = item.get("importance", 1)
+            actual = item.get("actualValue", 0)
+            previous = item.get("previousValue", 0)
             
-            event_name = cols[2].text.strip()
-            
-            # 중요도(별점) 파싱
-            star_div = cols[3].select_one("div.star")
-            importance = len(star_div.select("span.on")) if star_div else 1
-            
-            actual = cols[4].text.strip() or "-"
-            forecast = cols[5].text.strip() or "-"
-            previous = cols[6].text.strip() or "-"
+            # 실제치나 이전치가 0인 경우 "-"로 표시 (발표 전일 수 있음)
+            actual_str = str(actual) if actual != 0 else "-"
+            prev_str = str(previous) if previous != 0 else "-"
             
             events.append({
-                "time": time,
-                "country": "US" if "미국" in country else "KR" if "한국" in country else "JP" if "일본" in country else "CN" if "중국" in country else "EU" if "유럽" in country else "🌐",
-                "event": event_name,
-                "event_kr": event_name,
+                "time": time_fmt,
+                "country": "US" if nation == "USA" else "KR" if nation == "KOR" else nation,
+                "event": name,
+                "event_kr": name,
                 "importance": importance,
-                "actual": actual,
-                "forecast": forecast,
-                "previous": previous
+                "actual": actual_str,
+                "forecast": "-", # 현재 API에서 forecast 필드 부재
+                "previous": prev_str
             })
             
     except Exception as e:
-        print(f"[EconomyCalendar] Scraping Error: {e}")
+        print(f"[EconomyCalendar] API Processing Error: {e}")
         
     return events
 
