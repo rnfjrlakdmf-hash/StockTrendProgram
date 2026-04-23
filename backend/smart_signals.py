@@ -3,6 +3,7 @@ Smart Signals — 거래량 폭증, 공시, 수급 이상 감지
 팩트 기반 이벤트 감지 시스템 (투자 추천 없음)
 """
 
+import asyncio
 import json
 import traceback
 from datetime import datetime, timedelta
