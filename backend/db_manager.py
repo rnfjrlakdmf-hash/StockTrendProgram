@@ -134,6 +134,19 @@ def init_db():
         )
     ''')
 
+    # [NEW] Signals Table (Intraday Scanner Signals)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            signal_type TEXT NOT NULL, -- VOLUME_SURGE, DISCLOSURE, INVESTOR_SURGE
+            title TEXT,
+            summary TEXT,
+            data TEXT, -- JSON structure
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
