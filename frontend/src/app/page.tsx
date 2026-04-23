@@ -162,7 +162,7 @@ export default function Home() {
           // Default Dashboard Content
           <div className="space-y-8 animate-in fade-in duration-1000">
             {/* Morning Brief Section */}
-            <MorningBriefWidget />
+            {/* <MorningBriefWidget /> */}
 
             {/* Global Real-time Ranking (New Premium Widget) */}
             <GlobalRankingWidget />

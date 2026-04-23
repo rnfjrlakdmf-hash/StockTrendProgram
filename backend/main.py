@@ -83,14 +83,13 @@ async def startup_event():
         except Exception as e:
             print(f"[Startup Error] Price Alerts: {e}")
             
-        # 1.3 스케줄러 루프 활성화
-        try:
-            from scheduler import hourly_briefing_scheduler_loop
-            asyncio.create_task(hourly_briefing_scheduler_loop())
-            print("[Delayed-Startup] Hourly scheduler active.")
-            await asyncio.sleep(2)
-        except Exception as e:
-            print(f"[Startup Error] Scheduler: {e}")
+        # 1.3 스케줄러 루프 활성화 (안정성을 위해 전면 중단)
+        # try:
+        #    from scheduler import hourly_briefing_scheduler_loop
+        #    asyncio.create_task(hourly_briefing_scheduler_loop())
+        #    print("[Disabled] Hourly scheduler is turned off for system stability.")
+        # except Exception as e:
+        #    print(f"[Startup Error] Scheduler: {e}")
 
         # 1.4 [24/7 생존 로직] Self-Ping
         async def self_ping_loop(url: str):
