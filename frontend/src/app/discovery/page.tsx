@@ -293,7 +293,7 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor' | 'overhang'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'market_analysis' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor' | 'overhang'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
@@ -1026,6 +1026,12 @@ function DiscoveryContent() {
                                                 >
                                                     <span>공시(DART)</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
                                                 </button>
+                                                <button
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'market_analysis' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('market_analysis')}
+                                                >
+                                                    <Activity className="w-3.5 h-3.5" /> 시장 분석 <span className="text-xs bg-amber-500/20 px-2 py-0.5 rounded-full ml-1 text-amber-300">Hot</span>
+                                                </button>
                                             </>
                                         )}
 
@@ -1060,6 +1066,24 @@ function DiscoveryContent() {
                                             symbol={stock.symbol}
                                             stockName={stock.name}
                                         />
+                                    )}
+
+                                    {activeTab === 'market_analysis' && (
+                                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-400">
+                                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                                                <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                                                    <Globe className="h-6 w-6 text-blue-400" /> 글로벌 증시 주요 지표
+                                                </h4>
+                                                <MarketIndicators />
+                                            </div>
+                                            
+                                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                                                <h4 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                                                    <Zap className="h-6 w-6 text-amber-400" /> {stock.name} 퀀트 분석 모델 (v2.0)
+                                                </h4>
+                                                <TurboQuantIndicators symbol={stock.symbol} />
+                                            </div>
+                                        </div>
                                     )}
 
                                     {activeTab === 'analysis' ? (
