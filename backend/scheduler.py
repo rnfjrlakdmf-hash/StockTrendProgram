@@ -115,6 +115,9 @@ async def backfill_system_briefings(kst_timezone):
     except Exception as e:
         logger.error(f"[Backfill-SelfHeal] Error: {e}")
 
+# Global analysis lock to prevent concurrent DB writes from multiple background tasks
+ANALYSIS_LOCK = asyncio.Lock()
+
 async def hourly_briefing_scheduler_loop():
     """
     매 정각 정기 브리핑 생성 (초경량 실시간 전용 모드)
