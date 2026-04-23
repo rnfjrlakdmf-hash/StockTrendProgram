@@ -13,6 +13,7 @@ from routes.community import router as community_router
 from routes.user import router as user_router
 from routes.system import router as system_router
 from routes.sockets import router as sockets_router
+from routes.signals import router as signals_router
 
 # Initialize FastAPI
 app = FastAPI(
@@ -37,6 +38,7 @@ app.include_router(market_router, prefix="/api", tags=["Market"])
 app.include_router(analysis_router, prefix="/api", tags=["Analysis"])
 app.include_router(community_router, prefix="/api", tags=["Community"])
 app.include_router(user_router, prefix="/api", tags=["User"])
+app.include_router(signals_router, prefix="/api", tags=["Signals"])
 app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")

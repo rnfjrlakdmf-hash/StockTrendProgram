@@ -17,25 +17,30 @@ def detect_volume_surge(symbol: str, threshold: float = 2.0) -> Optional[Dict]:
     Returns: signal dict or None
     """
     try:
-        from korea_data import get_stock_quote_naver
+        from korea_data import gather_naver_stock_data, get_naver_daily_prices
         
-        quote = get_stock_quote_naver(symbol)
-        if not quote:
+        info = gather_naver_stock_data(symbol)
+        if not info:
             return None
         
-        volume = quote.get("volume", 0)
-        avg_volume = quote.get("avg_volume", 0)
+        volume = info.get("volume", 0)
+        # 10일 평균 거래량 계산
+        history = get_naver_daily_prices(symbol)
+        if not history or len(history) < 3: 
+            return None
+            
+        total_vol = sum(h.get("volume", 0) for h in history[1:]) 
+        avg_volume = total_vol / (len(history) - 1)
         
-        # 평균 거래량이 없으면 스킵
         if not avg_volume or avg_volume == 0:
             return None
         
         ratio = volume / avg_volume
         
         if ratio >= threshold:
-            name = quote.get("name", symbol)
-            price = quote.get("price", 0)
-            change_pct = quote.get("change_pct", 0)
+            name = info.get("name", symbol)
+            price = info.get("price", 0)
+            change_pct = info.get("change", "0%")
             
             return {
                 "symbol": symbol,
@@ -209,7 +214,110 @@ def scan_watchlist_signals(watchlist_symbols: List[str]) -> List[Dict]:
         except Exception as e:
             print(f"[SmartSignal] Scan error for {symbol}: {e}")
     
+    # DB에 저장 로직 추가
+    from db_manager import save_signal
+    saved_count = 0
+    for sig in all_signals:
+        try:
+            save_signal(
+                symbol=sig["symbol"],
+                signal_type=sig["signal_type"],
+                title=sig["title"],
+                summary=sig["summary"],
+                data=sig["data"]
+            )
+            saved_count += 1
+        except: pass
+    
+    print(f"[SmartSignal] Watchlist Scan Complete: {len(all_signals)} signals detected, {saved_count} saved.")
     return all_signals
+
+
+def scan_all_signals(limit: int = 100) -> List[Dict]:
+    """
+    [NEW] 전체 시장 스캔 (거래량 상위 limit 종목 대상)
+    
+    Returns: list of detected signals
+    """
+    import requests
+    all_signals = []
+    
+    print(f"[SmartSignal] Starting Full Market Scan (Top {limit} Volume)...")
+    
+    try:
+        # 1. 거래량 상위 종목 리스트 가져오기 (Naver API 활용)
+        url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType=quantTop&startIdx=0&pageSize={limit}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://finance.naver.com/'
+        }
+        
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code != 200:
+            print(f"[SmartSignal] Failed to fetch top volume stocks: {res.status_code}")
+            return []
+            
+        data = res.json()
+        # API 응답이 리스트인 경우와 딕셔너리인 경우 모두 대응
+        if isinstance(data, list):
+            stocks = data
+        else:
+            stocks = data.get("result", {}).get("items", []) or data.get("items", [])
+        
+        if not stocks:
+            print("[SmartSignal] No stocks found for full scan.")
+            return []
+            
+        symbols = [s.get("itemcode") for s in stocks if s.get("itemcode")]
+        print(f"[SmartSignal] Scanning {len(symbols)} stocks for signals...")
+        
+        # 2. 각 종목별 시그널 탐지 (병렬 처리 고려 가능하나 안정성을 위해 순차 처리 + 타임아웃 방지)
+        # 100개 종목에 대해 3가지 탐지 로직 수행
+        for i, symbol in enumerate(symbols):
+            try:
+                # 1. 거래량 폭증
+                vol_signal = detect_volume_surge(symbol)
+                if vol_signal:
+                    all_signals.append(vol_signal)
+                
+                # 2. 공시 감지 (비교적 무거운 작업이므로 소수만 또는 캐시 활용)
+                disc_signals = detect_new_disclosures(symbol)
+                all_signals.extend(disc_signals)
+                
+                # 3. 수급 이상 (히스토리 조회가 필요하므로 다소 무거움)
+                inv_signal = detect_investor_surge(symbol)
+                if inv_signal:
+                    all_signals.append(inv_signal)
+                
+                if (i + 1) % 20 == 0:
+                    print(f"[SmartSignal] Progress: {i+1}/{len(symbols)} stocks scanned...")
+                    
+            except Exception as e:
+                print(f"[SmartSignal] Error scanning {symbol}: {e}")
+        
+        # 3. DB 저장
+        from db_manager import save_signal
+        saved_count = 0
+        for sig in all_signals:
+            try:
+                save_signal(
+                    symbol=sig["symbol"],
+                    signal_type=sig["signal_type"],
+                    title=sig["title"],
+                    summary=sig["summary"],
+                    data=sig["data"]
+                )
+                saved_count += 1
+            except: pass
+            
+        print(f"[SmartSignal] Full Scan Complete: {len(all_signals)} signals detected, {saved_count} saved.")
+        return all_signals
+        
+    except Exception as e:
+        print(f"[SmartSignal] Full scan critical error: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 def get_investor_top_stocks(market: str = "KR", limit: int = 10) -> Dict:
