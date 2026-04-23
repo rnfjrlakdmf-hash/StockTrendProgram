@@ -159,57 +159,7 @@ async def hourly_briefing_scheduler_loop():
             logger.error(f"📅 [Scheduler] Loop error: {e}")
             await asyncio.sleep(60)
 
-    while True:
-        try:
-            from utils.global_briefing import generate_market_wide_briefing
-            from utils.briefing_store import cleanup_old_briefings
-            
-            # Initial run delay to let other parts of system catch up
-            await asyncio.sleep(5) 
-            
-            now = datetime.now(kst)
-            current_hour = now.hour
-            current_date = now.strftime("%Y-%m-%d")
 
-            # ── 매 정각: 새 시간 감지 → 실시간 브리핑 생성 (주말 제외) ──
-            if current_hour != last_run_hour:
-                # [Burden-Diet] 주말(토/일)은 운영 부담을 위해 분석 스킵
-                if now.weekday() >= 5:
-                    logger.info(f"[Hourly-Briefing] Weekend mode ({now.strftime('%A')}). Skipping analysis.")
-                    last_run_hour = current_hour
-                    continue
-
-                logger.info(f"[Hourly-Briefing] Starting analysis for {current_date} {current_hour:02d}:00")
-                target_utc = (now - timedelta(hours=9)).strftime("%Y-%m-%d %H:00:00")
-                
-                try:
-                    async with ANALYSIS_LOCK:
-                        await generate_market_wide_briefing(target_time=target_utc)
-                        cleanup_old_briefings()
-                    
-                    last_run_hour = current_hour
-                    logger.info(f"[Hourly-Briefing] Completed for {current_hour:02d}:00")
-                except Exception as e:
-                    logger.error(f"[Hourly-Briefing] Failed: {e}")
-
-            # ── 매일 새벽 4시: DB 정리 ──
-            if current_hour == 4 and current_date != last_cleanup_date:
-                try:
-                    deleted = cleanup_old_briefings()
-                    logger.info(f"[Cleanup] ✅ Deleted {deleted} old records.")
-                except Exception as e:
-                    logger.error(f"[Cleanup] Failed: {e}")
-                last_cleanup_date = current_date
-
-            # 30초마다 체크 (정각 감지를 위해)
-            await asyncio.sleep(30)
-
-        except asyncio.CancelledError:
-            logger.info("Hourly Briefing Scheduler stopped.")
-            break
-        except Exception as e:
-            logger.error(f"[HourlyBrief] Scheduler crash: {e}")
-            await asyncio.sleep(60)
 
 
 async def disclosure_scheduler_loop():
