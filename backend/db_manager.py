@@ -134,7 +134,15 @@ def init_db():
         )
     ''')
 
-    # [NEW] Signals Table (Intraday Scanner Signals)
+    # [RECONSTRUCT] Signals Table (Intraday Scanner Signals)
+    # 기존에 data 컬럼으로 잘못 생성되었거나 구조가 꼬인 경우를 대비해 초기화 후 재구성합니다.
+    try:
+        # 컬럼 존재 여부 체크
+        cursor.execute("SELECT data_json FROM signals LIMIT 1")
+    except sqlite3.OperationalError:
+        print("[DB-Migration] Signals table structure mismatch or missing. Reconstructing...")
+        cursor.execute("DROP TABLE IF EXISTS signals")
+        
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS signals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,16 +154,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-
-    # [Migration] Rename data to data_json if needed
-    try:
-        cursor.execute("SELECT data_json FROM signals LIMIT 1")
-    except sqlite3.OperationalError:
-        print("Migrating signals table (adding data_json)...")
-        try:
-            cursor.execute("ALTER TABLE signals ADD COLUMN data_json TEXT")
-        except Exception as e:
-            print(f"Migration Warning (signals): {e}")
 
     conn.commit()
     conn.close()
