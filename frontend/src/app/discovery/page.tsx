@@ -602,15 +602,26 @@ function DiscoveryContent() {
                             <ShieldCheck className="absolute right-0 top-1/2 -translate-y-1/2 h-64 w-64 text-white/5 -rotate-12" />
                         </div>
 
-                        {/* NEW: Global Progress Watcher (Real-time News/Data Sync Monitor) */}
-                        <GlobalProgressWatcher />
-
-                        {/* NEW: Real-time Market Indices Dashboard */}
+                        {/* 📊 NEW: Real-time Market Indices Dashboard (Moved UP) */}
                         <div className="w-full">
                             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-blue-400" /> <span>실시간 주요 증시 지표 (Market Dashboard)</span>
+                                <Activity className="w-5 h-5 text-blue-400" /> <span>실시간 글로벌 주요 지표 (Market Dashboard)</span>
                             </h3>
                             <MarketIndicators limit={6} />
+                        </div>
+
+                        {/* 🏢 NEW: LIVE Market Scanner & News Crawler Feed */}
+                        <div className="w-full">
+                             <MarketScannerDashboard />
+                        </div>
+
+                        {/* 📰 NEW: Global Progress Watcher (Data Sync Monitor) */}
+                        <div className="w-full bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-4">
+                             <h4 className="text-xs font-black text-indigo-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                <RefreshCw className="w-3 h-3 animate-spin" /> 실시간 엔진 수집 현황 (Engine Status)
+                             </h4>
+                             <GlobalProgressWatcher />
+                             {!stock && <p className="text-[10px] text-gray-500 mt-2">시스템이 24시간 실시간으로 뉴스와 공시를 스캐닝하고 있습니다.</p>}
                         </div>
 
                         {/* Market Traffic Light & Health Check Entry */}
