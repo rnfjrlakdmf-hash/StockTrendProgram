@@ -1779,12 +1779,13 @@ def get_exchange_rate(currency="USD"):
 
     symbol = symbol_map.get(currency.upper(), "FX_USDKRW")
 
-    # 1차: 네이버 금융 스크래핑
+    # 1차: 네이버 금융 스크래핑 (셀렉터: .today em)
     try:
         url = f"https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd={symbol}"
         res = requests.get(url, headers=HEADER, timeout=5)
         soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        val_tag = soup.select_one(".value")
+        # 실제 DOM 구조: .today em 또는 p.no_today em
+        val_tag = soup.select_one(".today em") or soup.select_one("p.no_today em")
         if val_tag:
             rate = float(val_tag.text.replace(',', ''))
             if "JPY" in symbol or "VND" in symbol:
