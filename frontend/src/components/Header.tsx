@@ -6,9 +6,8 @@ import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCh
 import { useEffect, useRef } from 'react';
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
-import FlipIndexTicker from "@/components/FlipIndexTicker";
 
-
+import FlipIndexTicker from './FlipIndexTicker';
 
 interface HeaderProps {
     title?: string;
@@ -109,13 +108,12 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
 
                 {/* Navigation moved to Sidebar */}
-                
-                {/* [New] Re-activated Premium Scrolling Ticker (Visible on MD and up) */}
-                <div className="hidden md:flex flex-1 items-center justify-center max-w-4xl mx-4 overflow-hidden">
-                    <FlipIndexTicker />
-                </div>
             </div>
 
+            {/* [New] Flip Clock Style Index Ticker (Center Space) */}
+            <div className="hidden lg:flex flex-1 items-center justify-center mx-4">
+                <FlipIndexTicker />
+            </div>
 
             <div className="flex items-center gap-4 w-full md:w-auto justify-end">
                 {/* Search Bar Removed as per user request */}
