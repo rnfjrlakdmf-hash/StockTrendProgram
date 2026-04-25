@@ -617,21 +617,31 @@ def gather_naver_stock_data(symbol: str):
                         except: return None
                         
                     r_title_clean = r_title.replace(" ", "").replace("\n", "").replace("\t", "")
-                    mapping = {
-                        "매출액": "revenue", "영업이익률": "operating_margin", "영업이익": "operating_income",
-                        "순이익률": "net_income_margin", "당기순이익": "net_income", "ROE": "roe", "ROA": "roa",
-                        "부채비율": "debt_ratio", "당좌비율": "quick_ratio", "유보율": "reserve_ratio",
-                        "유동비율": "current_ratio", "자산회전율": "asset_turnover", "매출총이익률": "gross_margin",
-                        "EPS": "eps", "BPS": "bps", "PER": "per", "PBR": "pbr",
-                        "주당배당금": "dps", "시가배당률": "dividend_yield", "배당성향": "payout_ratio"
-                    }
+                    # [Fix] Robust Mapping: Use keys that are less likely to break with encoding, 
+                    # and prioritize longer matches to distinguish 'operating_income' from 'operating_margin'.
+                    mapping = [
+                        ("매출액", "revenue"), ("매출", "revenue"),
+                        ("영업이익률", "operating_margin"), ("영업이익", "operating_income"),
+                        ("순이익률", "net_income_margin"), ("당기순이익", "net_income"), ("순이익", "net_income"),
+                        ("ROE", "roe"), ("ROA", "roa"),
+                        ("부채비율", "debt_ratio"), ("부채", "debt_ratio"),
+                        ("당좌비율", "quick_ratio"), ("당좌", "quick_ratio"),
+                        ("유보율", "reserve_ratio"), ("유보", "reserve_ratio"),
+                        ("유동비율", "current_ratio"), ("유동", "current_ratio"),
+                        ("자산회전율", "asset_turnover"), ("매출총이익률", "gross_margin"),
+                        ("EPS", "eps"), ("BPS", "bps"), ("PER", "per"), ("PBR", "pbr"),
+                        ("주당배당금", "dps"), ("배당금", "dps"),
+                        ("시가배당률", "dividend_yield"), ("배당률", "dividend_yield"),
+                        ("배당성향", "payout_ratio")
+                    ]
 
                     key = None
-                    for k in sorted(mapping.keys(), key=len, reverse=True):
+                    for k, target_key in mapping:
                         if k in r_title_clean:
-                            key = mapping[k]
+                            key = target_key
                             break
-                    if key:
+                    
+                    if key and key not in fin_data: # Avoid double assignment
                         fin_data[key] = {"dates": dates, "values": [_s_float(v) for v in f_values]}
                 
                 for k, v in fin_data.items():
