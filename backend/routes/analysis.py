@@ -132,3 +132,13 @@ async def read_theme(keyword: str):
             q = get_simple_quote(s.get("symbol"))
             if q: s.update({"price": q.get("price"), "change": q.get("change")})
     return {"status": "success", "data": result}
+    
+@router.get("/stock/{symbol}/investor")
+def stock_investor(symbol: str, period: int = Query(20)):
+    """투자자별 매매동향 및 거래원 데이터 반환"""
+    from korea_data import get_naver_investor_data
+    try:
+        # get_naver_investor_data already returns {"status": "success", "data": {...}}
+        return get_naver_investor_data(symbol, trader_day=period)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
