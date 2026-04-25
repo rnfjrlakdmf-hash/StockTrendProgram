@@ -719,27 +719,39 @@ def get_naver_daily_prices(symbol: str):
                 close = int(cols[1].text.replace(',', ''))
                 
                 # [Fix] Robust change parsing
-                # Text is like "\n\t\t\t\t하락\n\t\t\t\t8,500"
-                # Remove all whitespace and non-digit chars EXCEPT for signs if any (Naver signs are words usually)
-                raw_diff_text = cols[2].text.strip()
-                # Extract number
-                diff_match = re.search(r'[\d,]+', raw_diff_text)
-                diff = 0
-                if diff_match:
-                    diff = int(diff_match.group().replace(',', ''))
+                # Naver uses EUC-KR. The decode_safe should handle it, but let's be extra careful.
+                # The structure is usually <td><img><span>5,000</span></td>
                 
-                # Check direction (images or text)
+                # 1. Get the direction
                 is_drop = False
-                if '하락' in raw_diff_text or '파란색' in str(cols[2]): # weak text check
-                    is_drop = True
-                else:
-                    # Check img alt
-                    img = cols[2].select_one('img')
-                    if img and ('하락' in img.get('alt', '') or 'nv' in img.get('src', '')):
-                         is_drop = True
+                is_up = False
+                
+                # Check for images (up/down icons)
+                img = cols[2].select_one('img')
+                if img:
+                    alt = img.get('alt', '')
+                    src = img.get('src', '')
+                    if '하락' in alt or 'nv' in src or 'down' in src.lower():
+                        is_drop = True
+                    elif '상승' in alt or 'pc' in src or 'up' in src.lower():
+                        is_up = True
+                
+                # Fallback: Check for class names (red02 for up, nv01 for down)
+                span = cols[2].select_one('span')
+                if span:
+                    cls = " ".join(span.get('class', []))
+                    if 'red' in cls: is_up = True
+                    elif 'nv' in cls or 'blue' in cls: is_drop = True
+                
+                # 2. Get the value
+                raw_txt = cols[2].text.strip().replace(',', '')
+                diff_match = re.search(r'(\d+)', raw_txt)
+                diff = int(diff_match.group(1)) if diff_match else 0
                 
                 if is_drop:
-                    diff = -diff
+                    diff = -abs(diff)
+                elif is_up:
+                    diff = abs(diff)
                 
                 open_p = int(cols[3].text.replace(',', ''))
                 high = int(cols[4].text.replace(',', ''))
