@@ -1,5 +1,16 @@
 import type { NextConfig } from "next";
 
+// 환경에 따라 백엔드 URL 자동 선택
+// 1순위: 환경변수 (Vercel 대시보드에서 설정 가능)
+// 2순위: 운영 환경(Vercel) → Railway 서버
+// 3순위: 로컬 개발 환경 → localhost:8000
+const isProduction = process.env.NODE_ENV === 'production';
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  (isProduction
+    ? 'https://stocktrendprogram-production.up.railway.app'
+    : 'http://localhost:8000');
+
 const nextConfig: NextConfig = {
   distDir: '.next',
   images: {
@@ -15,7 +26,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://stocktrendprogram-production.up.railway.app/api/:path*',
+        destination: `${BACKEND_URL}/api/:path*`,
       },
     ];
   },

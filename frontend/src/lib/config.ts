@@ -13,12 +13,11 @@ let apiBase = "";
 
 if (process.env.NEXT_PUBLIC_API_URL) {
   apiBase = process.env.NEXT_PUBLIC_API_URL;
-} else if (typeof window !== 'undefined') {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    apiBase = "http://localhost:8000";
-  } else {
-    apiBase = "";
-  }
+} else if (isAndroid) {
+  apiBase = "http://10.0.2.2:8000";
+} else {
+  // Web: Use relative paths (Next.js rewrites will proxy to localhost:8000)
+  apiBase = "";
 }
 
 export const API_BASE_URL = apiBase;
