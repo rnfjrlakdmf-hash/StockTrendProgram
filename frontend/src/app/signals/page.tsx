@@ -12,13 +12,13 @@ import {
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
 } from "lucide-react";
 import MarketIndicators from "@/components/MarketIndicators";
+import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
 import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
-interface VoteResult { up: number; down: number; total: number; up_pct: number; down_pct: number; }
 
 export default function SignalsPage() {
     return (
@@ -31,21 +31,21 @@ export default function SignalsPage() {
 function SignalsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    // Vercel 媛뺤젣 Dynamic ?뚮뜑留?(罹먯떆 諛⑹?) ?몃━嫄?
+    // Vercel 강제 Dynamic 렌더링 (캐시 방지) 트리거
     const forceDynamic = searchParams.get('refresh');
 
     const [activeTab, setActiveTab] = useState<"signals" | "heatmap" | "supply" | "calendar">("signals");
 
     const tabs = [
-        { id: "signals" as const, label: "?쒓렇??, icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
-        { id: "heatmap" as const, label: "?덊듃留?, icon: <BarChart3 className="w-4 h-4" />, gradient: "from-red-600 to-pink-600" },
-        { id: "supply" as const, label: "?쒖옣 二쇰룄二?, icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
-        { id: "calendar" as const, label: "罹섎┛??二쇱슂 寃쎌젣吏??, icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
+        { id: "signals" as const, label: "시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
+        { id: "heatmap" as const, label: "히트맵", icon: <BarChart3 className="w-4 h-4" />, gradient: "from-red-600 to-pink-600" },
+        { id: "supply" as const, label: "시장 주도주", icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
+        { id: "calendar" as const, label: "캘린더/주요 경제지표", icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
     ];
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="?쒖옣 ?명뀛由ъ쟾?? subtitle="?ㅼ떆媛??쒓렇??쨌 湲濡쒕쾶 罹섎┛??쨌 ?쒖옣 二쇰룄二?遺꾩꽍" />
+            <Header title="시장 인텔리전스" subtitle="실시간 시그널 · 글로벌 캘린더 · 시장 주도주 분석" />
             <div className="max-w-5xl mx-auto p-4 space-y-6">
                 {/* Tab Bar */}
                 <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide">
@@ -77,7 +77,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [briefing, setBriefing] = useState<any>(null);
     const [briefingLoading, setBriefingLoading] = useState(false);
 
-    // ?좉퇋 異붽?: 怨듭떆 ?곸꽭 紐⑤떖 ?곹깭
+    // 신규 추가: 공시 상세 모달 상태
     const [selectedDisclosure, setSelectedDisclosure] = useState<Signal | null>(null);
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -112,7 +112,7 @@ function SignalsFeedTab({ router }: { router: any }) {
             });
             const j = await r.json();
             if (j.status === "error" && type === 'watchlist') {
-                alert(j.message || "愿?ъ쥌紐??ㅼ틪???ㅽ뙣?덉뒿?덈떎.");
+                alert(j.message || "관심종목 스캔에 실패했습니다.");
             } else {
                 fetchSignals();
                 if (type === 'watchlist' && !showWatchlistOnly) {
@@ -129,7 +129,7 @@ function SignalsFeedTab({ router }: { router: any }) {
         if (showWatchlistOnly && watchlistSymbols.length === 0) {
             (async () => {
                 const token = await getAuthToken();
-                if (!token) { alert("濡쒓렇?몄씠 ?꾩슂?⑸땲??"); setShowWatchlistOnly(false); return; }
+                if (!token) { alert("로그인이 필요합니다."); setShowWatchlistOnly(false); return; }
                 try {
                     const r = await fetch(`${API_BASE_URL}/api/watchlist`, { headers: { "x-user-id": token } });
                     const j = await r.json();
@@ -143,7 +143,7 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     const fetchBriefing = async (sym: string) => { setBriefingSymbol(sym); setBriefingLoading(true); setBriefing(null); try { const r = await fetch(`${API_BASE_URL}/api/signals/${sym}/briefing`); const j = await r.json(); if (j.status === "success") setBriefing(j.data); } catch { } finally { setBriefingLoading(false); } };
 
-    // 由ъ뒪??怨듭떆 ?곗씠??媛?몄삤湲?(?꾩뿭 ?곹깭 ??????대??먯꽌 愿由?
+    // 리스크 공시 데이터 가져오기
     const fetchRiskAlerts = async () => {
         setRiskLoading(true);
         try {
@@ -153,30 +153,30 @@ function SignalsFeedTab({ router }: { router: any }) {
         } catch { } finally { setRiskLoading(false); }
     };
 
-    // 由ъ뒪??怨듭떆??????숈쟻 諛곗? ?앹꽦 
+    // 리스크 공시에 대한 동적 배지 생성 
     const getRiskBadge = (category: string) => {
-        if (category === "risk") return { label: "怨좎쐞??, color: "bg-red-500/20 text-red-300", border: "border-red-500/40" };
-        if (category === "insider") return { label: "?섍툒蹂??, color: "bg-purple-500/20 text-purple-300", border: "border-purple-500/40" };
-        if (category === "contract") return { label: "??뺥샇??, color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
-        return { label: "二쇱슂?ы빆", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
+        if (category === "risk") return { label: "고위험", color: "bg-red-500/20 text-red-300", border: "border-red-500/40" };
+        if (category === "insider") return { label: "수급변동", color: "bg-purple-500/20 text-purple-300", border: "border-purple-500/40" };
+        if (category === "contract") return { label: "대형호재", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
+        return { label: "주요사항", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
     useEffect(() => {
         fetchSignals();
         fetchRiskAlerts();
-        // 5遺꾨쭏??由ъ뒪??怨듭떆 媛깆떊
+        // 5분마다 리스크 공시 갱신
         const inv = setInterval(fetchRiskAlerts, 300000);
         return () => clearInterval(inv);
     }, []);
 
     const getBadge = (t: string) => {
-        if (t === "VOLUME_SURGE") return { label: "嫄곕옒????쬆", color: "bg-orange-500/20 text-orange-300", border: "border-orange-500/40" };
-        if (t === "DISCLOSURE") return { label: "怨듭떆", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
-        if (t === "INVESTOR_SURGE") return { label: "?섍툒 湲됰?", color: "bg-green-500/20 text-green-300", border: "border-green-500/40" };
-        return { label: "?쒓렇??, color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
+        if (t === "VOLUME_SURGE") return { label: "거래량 급증", color: "bg-orange-500/20 text-orange-300", border: "border-orange-500/40" };
+        if (t === "DISCLOSURE") return { label: "공시", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
+        if (t === "INVESTOR_SURGE") return { label: "수급 급증", color: "bg-green-500/20 text-green-300", border: "border-green-500/40" };
+        return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
-    // 寃?됱뼱 ?꾪꽣留?濡쒖쭅: ?대쫫 ?먮뒗 ?щ낵(肄붾뱶)??寃?됱뼱媛 ?ы븿???쒓렇?먮쭔 ?쒖떆, ?섍툒 愿??留ㅼ묶
+    // 검색어 필터링 로직
     const filteredSignals = signals.filter(sig => {
         const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
         const matchWatch = !showWatchlistOnly || watchlistSymbols.includes(sig.symbol);
@@ -185,14 +185,14 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     return (
         <div className="space-y-4 text-left">
-            {/* [NEW] ?ㅻ뒛??二쇱슂 怨듭떆 由ъ뒪???뚮┝ ?꾩젽 (?쒓렇????理쒖긽??諛곗튂) */}
+            {/* [NEW] 오늘의 주요 공시 리스트 알림 패널 */}
             {riskAlerts.length > 0 && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-2 backdrop-blur-md overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-purple-500 to-blue-500 opacity-50"></div>
                     <div className="flex items-center gap-2 mb-3">
                         <Zap className="w-5 h-5 text-yellow-400" />
-                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">?ㅼ떆媛?二쇱슂 怨듭떆 ?몄궗?댄듃</h4>
-                        <span className="ml-auto text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">LIVE ?ㅼ틪 以?/span>
+                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">실시간 주요 공시 인사이트</h4>
+                        <span className="ml-auto text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">LIVE 스캔 중</span>
                     </div>
                     <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                         {riskAlerts.map((alert, idx) => {
@@ -215,7 +215,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                                         <span className="text-xs text-gray-300 font-bold truncate group-hover:text-white transition-colors">
                                             {alert.title}
                                         </span>
-                                        <span className="text-[9px] text-gray-500 font-mono">{alert.date} ??DART ?먮Ц</span>
+                                        <span className="text-[9px] text-gray-500 font-mono">{alert.date} · DART 원문</span>
                                     </div>
                                     <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-white transition-colors flex-shrink-0" />
                                 </a>
@@ -223,66 +223,66 @@ function SignalsFeedTab({ router }: { router: any }) {
                         })}
                     </div>
                     <p className="mt-3 text-[9px] text-gray-600 font-bold leading-relaxed text-center border-t border-white/5 pt-2 italic">
-                        ?뮕 蹂??뺣낫??DART 怨듭떆 ?먮Ц???ㅼ썙?쒕? 湲곕컲?쇰줈 ??媛앷????ъ떎 蹂대룄?대ŉ, ?ъ옄 沅뚯쑀媛 ?꾨떃?덈떎.
+                        본 정보는 DART 공시 원문과 키워드를 기반으로 한 객관적 사실 보도이며, 투자 권유가 아닙니다.
                     </p>
                 </div>
             )}
 
-            {/* ?쒓렇???덈궡 ?⑤꼸 */}
+            {/* 시그널 안내 패널 */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start justify-between">
                 <div className="flex-1">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
-                        <Zap className="w-4 h-4 text-orange-400" /> ?곗씠??湲곕컲 ?쒖옣 紐⑤땲?곕쭅
+                        <Zap className="w-4 h-4 text-orange-400" /> 데이터 기반 시장 모니터링
                     </h3>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                        ?꾩껜 ?쒖옣???몄씠利덈? ?쒓굅?섍퀬 ?뺢탳???뚭퀬由ъ쬁 議곌굔(<span className="text-orange-300">嫄곕옒??湲됱쬆</span>, <span className="text-blue-300">?듭떖 怨듭떆</span>, <span className="text-green-300">二쇱슂 ?섍툒 蹂??/span>)??遺?⑺븯???좎쓽誘명븳 ?쒓렇?먯쓣 ?ㅼ떆媛꾩쑝濡??ъ갑?⑸땲??
+                        전체 시장의 노이즈를 제거하고 정교한 알고리즘 조건(<span className="text-orange-300">거래량 급증</span>, <span className="text-blue-300">핵심 공시</span>, <span className="text-green-300">주요 수급 변동</span>)에 부합하는 유의미한 시그널을 실시간으로 포착합니다.
                     </p>
                 </div>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
-                    <h3 className="text-lg font-bold flex items-center gap-2">媛먯????쒓렇????/h3>
+                    <h3 className="text-lg font-bold flex items-center gap-2">감지된 시그널 피드</h3>
                     <label
                         className="flex items-center gap-1.5 text-xs text-blue-300 font-bold cursor-pointer hover:text-blue-200 transition-colors w-max bg-blue-900/10 px-2 py-1.5 rounded-lg border border-blue-500/20"
-                        title="?꾩껜 ?쒖옣???섎쭖? ?쒓렇??以? ?닿? 愿???덈뒗 醫낅ぉ???대깽?몃쭔 ?꾪꽣留곹빐??遊낅땲??"
+                        title="전체 시장의 수많은 시그널 중, 내가 관심 있는 종목의 이벤트만 필터링해서 봅니다."
                     >
                         <input type="checkbox" className="rounded bg-black border-blue-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 w-3.5 h-3.5"
                             checked={showWatchlistOnly} onChange={(e) => setShowWatchlistOnly(e.target.checked)} />
-                        愿?ъ쥌紐??쒓렇?먮쭔 ?꾪꽣留?
+                        관심종목 시그널만 필터링
                     </label>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                     <div className="relative flex-1 sm:w-48">
                         <input
                             type="text"
-                            placeholder="醫낅ぉ紐?肄붾뱶 寃??
+                            placeholder="종목명/코드 검색"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
                         />
                         <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-xs z-10">??/button>
+                            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-xs z-10">✕</button>
                         )}
                     </div>
 
                     <button onClick={() => scanSignals('watchlist')} disabled={scanning} className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 border border-blue-500/30 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors">
-                        <Users className="w-4 h-4" />??醫낅ぉ ?ㅼ틪
+                        <Users className="w-4 h-4" />내 종목 스캔
                     </button>
 
                     <button onClick={() => scanSignals('all')} disabled={scanning} className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-500 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors">
-                        <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "?ㅼ틪 以? : "?꾩껜 ?ㅼ틪"}
+                        <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "스캔 중..." : "전체 스캔"}
                     </button>
                 </div>
             </div>
 
-            {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />濡쒕뵫 以?..</div>
+            {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
                 : filteredSignals.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                         <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'??????쒓렇??寃??寃곌낵媛 ?놁뒿?덈떎` : '?꾩쭅 媛먯????쒓렇?먯씠 ?놁뒿?덈떎'}</p>
-                        {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">?뵇 泥??ㅼ틪 ?ㅽ뻾</button>}
+                        <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다.'}</p>
+                        {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">지금 첫 스캔 실행</button>}
                     </div>
                 ) : filteredSignals.map(sig => {
                     const badge = getBadge(sig.signal_type);
@@ -307,22 +307,22 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     <p className="text-xs text-gray-400 mt-1 line-clamp-1">{sig.summary}</p>
                                 </div>
                                 <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold ml-2">
-                                    <Bot className="w-3.5 h-3.5" /> AI
+                                    <Bot className="w-3.5 h-3.5" /> AI 분석
                                 </button>
                             </div>
                         </div>
                     );
                 })}
 
-            {/* AI 釉뚮━??紐⑤떖 */}
+            {/* AI 브리핑 모달 */}
             {briefingSymbol && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setBriefingSymbol(null)}>
                     <div className="bg-gray-900 border border-white/20 rounded-3xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-blue-400" />AI 1遺?釉뚮━????{briefingSymbol}</h3>
-                            <button onClick={() => setBriefingSymbol(null)} className="text-gray-500 hover:text-white text-xl">??/button>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-blue-400" />AI 1분 브리핑 · {briefingSymbol}</h3>
+                            <button onClick={() => setBriefingSymbol(null)} className="text-gray-500 hover:text-white text-xl">✕</button>
                         </div>
-                        {briefingLoading ? <div className="text-center py-8"><Bot className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-pulse" /><p className="text-gray-400">AI 遺꾩꽍 以?..</p></div>
+                        {briefingLoading ? <div className="text-center py-8"><Bot className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-pulse" /><p className="text-gray-400">AI 분석 중...</p></div>
                             : briefing ? (
                                 <div className="space-y-4">
                                     {briefing.price && (
@@ -340,10 +340,10 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     </div>
                                     {briefing.key_points && (
                                         <div className="space-y-2">
-                                            <h4 className="text-xs font-bold text-gray-400">?듭떖 ?ъ씤??/h4>
+                                            <h4 className="text-xs font-bold text-gray-400">핵심 포인트</h4>
                                             {briefing.key_points.map((p: string, i: number) => (
                                                 <div key={i} className="flex items-start gap-2 text-sm bg-gray-800/50 p-2 rounded-lg border border-white/5">
-                                                    <span className="text-blue-400 mt-0.5">??/span>
+                                                    <span className="text-blue-400 mt-0.5">●</span>
                                                     <span className="text-gray-300 leading-relaxed">{p}</span>
                                                 </div>
                                             ))}
@@ -351,28 +351,28 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     )}
                                     <p className="text-[10px] text-gray-600 text-center mt-2">{briefing.disclaimer}</p>
                                 </div>
-                            ) : <p className="text-gray-500 text-center py-8">遺덈윭?????놁뒿?덈떎</p>}
+                            ) : <p className="text-gray-500 text-center py-8">불러올 수 없습니다</p>}
                     </div>
                 </div>
             )}
 
-            {/* 怨듭떆 ?곸꽭 紐⑤떖 */}
+            {/* 공시 상세 모달 */}
             {selectedDisclosure && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedDisclosure(null)}>
                     <div className="bg-gray-900 border border-white/20 rounded-3xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-start justify-between mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400" />怨듭떆 ?곸꽭</h3>
-                            <button onClick={() => setSelectedDisclosure(null)} className="text-gray-500 hover:text-white text-xl">??/button>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400" />공시 상세</h3>
+                            <button onClick={() => setSelectedDisclosure(null)} className="text-gray-500 hover:text-white text-xl">✕</button>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-full text-xs font-bold">
-                                    {selectedDisclosure.data?.type || "怨듭떆"}
+                                    {selectedDisclosure.data?.type || "공시"}
                                 </span>
                                 {selectedDisclosure.data?.is_important && (
                                     <span className="px-2 py-0.5 bg-red-500/20 text-red-300 border border-red-500/40 rounded-full text-xs font-bold">
-                                        二쇱슂
+                                        주요
                                     </span>
                                 )}
                                 <span className="text-xs text-gray-400">
@@ -385,7 +385,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                             </h4>
 
                             <p className="text-sm text-gray-400">
-                                愿??醫낅ぉ: <span className="text-white font-bold">{selectedDisclosure.symbol}</span>
+                                관련 종목: <span className="text-white font-bold">{selectedDisclosure.symbol}</span>
                             </p>
 
                             {selectedDisclosure.data?.link && (
@@ -395,7 +395,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-center gap-2 w-full py-3 mt-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors"
                                 >
-                                    <FileText className="w-4 h-4" /> DART/?ㅼ씠踰?怨듭떆 ?먮Ц 蹂닿린
+                                    <FileText className="w-4 h-4" /> DART/네이버 공시 원문 보기
                                 </a>
                             )}
 
@@ -403,7 +403,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                                 onClick={() => router.push(`/discovery?q=${selectedDisclosure.symbol}`)}
                                 className="flex items-center justify-center gap-2 w-full py-3 mt-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold transition-colors"
                             >
-                                <Search className="w-4 h-4" /> 醫낅ぉ 遺꾩꽍?쇰줈 ?대룞
+                                <Search className="w-4 h-4" /> 종목 분석으로 이동
                             </button>
                         </div>
                     </div>
@@ -423,14 +423,14 @@ function HeatmapTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
-                // [MODIFY] /api/korea/sector_heatmap ?ъ슜, no-store 異붽??섏뿬 ?ㅼ떆媛?蹂댁옣
+                // [MODIFY] /api/korea/sector_heatmap 사용, no-store 추가하여 실시간 보장
                 const [s, h] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/korea/sector_heatmap`, { cache: 'no-store' }),
                     fetch(`${API_BASE_URL}/api/korea/heatmap`, { cache: 'no-store' })
                 ]);
                 const sj = await s.json(), hj = await h.json();
 
-                // ?낆쥌蹂? ?뚮쭏蹂?紐⑤몢 ?숈씪??諛섑솚 援ъ“(name, change, stocks)瑜?媛吏?
+                // 업종별/테마별 모두 동일한 반환 구조(name, change, stocks)를 가짐
                 if (sj.status === "success" && sj.data) {
                     setSectors(sj.data);
                 }
@@ -447,11 +447,11 @@ function HeatmapTab({ router }: { router: any }) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                    <button onClick={() => setView("sectors")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "sectors" ? "bg-red-600 text-white" : "text-gray-400"}`}>?낆쥌蹂?/button>
-                    <button onClick={() => setView("themes")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "themes" ? "bg-purple-600 text-white" : "text-gray-400"}`}>?뚮쭏蹂?/button>
+                    <button onClick={() => setView("sectors")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "sectors" ? "bg-red-600 text-white" : "text-gray-400"}`}>업종별</button>
+                    <button onClick={() => setView("themes")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "themes" ? "bg-purple-600 text-white" : "text-gray-400"}`}>테마별</button>
                 </div>
                 <div className="flex items-center gap-1 text-[9px] text-gray-500">
-                    <span className="w-4 h-2 bg-blue-500 rounded" />?섎씫 <span className="w-4 h-2 bg-gray-700 rounded ml-1" />蹂댄빀 <span className="w-4 h-2 bg-red-500 rounded ml-1" />?곸듅
+                    <span className="w-4 h-2 bg-blue-500 rounded" />하락 <span className="w-4 h-2 bg-gray-700 rounded ml-1" />보합 <span className="w-4 h-2 bg-red-500 rounded ml-1" />상승
                 </div>
             </div>
 
@@ -495,7 +495,7 @@ function HeatmapTab({ router }: { router: any }) {
                                         </div>
                                     ))}
                                     {(!item.stocks || item.stocks.length === 0) && (
-                                        <div className="text-xs text-gray-500 text-center py-2">?몄엯 醫낅ぉ ?뺣낫 ?놁쓬</div>
+                                        <div className="text-xs text-gray-500 text-center py-2">편입 종목 정보 없음</div>
                                     )}
                                 </div>
                             </div>
@@ -507,7 +507,7 @@ function HeatmapTab({ router }: { router: any }) {
     );
 }
 
-// ============ TAB 3: MARKET INSIGHTS (援??섍툒/怨듬ℓ?? ============
+// ============ TAB 3: MARKET INSIGHTS (국내 수급/공매도) ============
 function MarketInsightsTab({ router }: { router: any }) {
     const [insightsData, setInsightsData] = useState<any>(null);
     const [investorData, setInvestorData] = useState<any>(null);
@@ -517,12 +517,12 @@ function MarketInsightsTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
-                // 1. 嫄곕옒??諛??곸듅瑜??곸쐞 (湲곗〈 API)
+                // 1. 거래량 및 상승률 상위 (기존 API)
                 const r1 = await fetch(`${API_BASE_URL}/api/investors/top`);
                 const j1 = await r1.json();
                 if (j1.status === "success") setInvestorData(j1.data);
 
-                // 2. ?ㅼ떆媛?寃??諛?嫄곕옒?湲??곸쐞 (?좉퇋 API)
+                // 2. 실시간 검색 및 거래대금 상위 (신규 API)
                 const r2 = await fetch(`${API_BASE_URL}/api/market-insights`);
                 const j2 = await r2.json();
                 if (j2.status === "success") setInsightsData(j2.data);
@@ -540,31 +540,31 @@ function MarketInsightsTab({ router }: { router: any }) {
                     <span className={`text-${color}-400 font-mono text-[10px]`}>{item.amount || item.value || ""}</span>
                 </div>
             ))}
-            {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">?곗씠???놁쓬</p>}
+            {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">데이터 없음</p>}
         </div>
     );
 
     return (
         <div className="space-y-4">
             <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setSubTab("volume")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "volume" ? "bg-green-600 text-white" : "text-gray-400"}`}>?뵦 湲됰벑쨌嫄곕옒???곸쐞</button>
-                <button onClick={() => setSubTab("value")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "value" ? "bg-orange-600 text-white" : "text-gray-400"}`}>?뮥 寃?됀룰굅?섎?湲??곸쐞</button>
+                <button onClick={() => setSubTab("volume")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "volume" ? "bg-green-600 text-white" : "text-gray-400"}`}>급등/거래량 상위</button>
+                <button onClick={() => setSubTab("value")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "value" ? "bg-orange-600 text-white" : "text-gray-400"}`}>검색/거래대금 상위</button>
             </div>
 
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div>
                 : subTab === "volume" ? (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {renderList("KOSPI ?곸듅瑜?TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSDAQ ?곸듅瑜?TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSPI 嫄곕옒??TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSDAQ 嫄곕옒??TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
+                            {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
                         </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderList("?ㅼ떆媛?寃???쒖쐞 (媛쒖씤?ъ옄??愿?щ룄)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
-                        {renderList("嫄곕옒?湲??곸쐞 (?ㅼ닔湲??곗넀 ?ъ갑)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
+                        {renderList("실시간 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
+                        {renderList("거래대금 상위 (실수급 연속 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
                     </div>
                 )}
         </div>
@@ -573,10 +573,10 @@ function MarketInsightsTab({ router }: { router: any }) {
 
 // ============ TAB 4: CALENDAR ============
 function CalendarTab({ router }: { router: any }) {
-    // 硫붿씤 ?쒕툕???곹깭 (寃쎌젣吏??/ ?ㅼ쟻쨌諛곕떦 / 怨듬え二?
+    // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
     const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
 
-    // ?? 寃쎌젣吏????
+    // 매크로 경제지표 데이터
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
     const [countryFilter, setCountryFilter] = useState<"calendar" | "market">("market");
@@ -585,17 +585,17 @@ function CalendarTab({ router }: { router: any }) {
     const [globalAssets, setGlobalAssets] = useState<any>(null);
     const [globalAssetsLoading, setGlobalAssetsLoading] = useState(false);
 
-    // ?? ?ㅼ쟻쨌諛곕떦 ??
+    // 실적·배당 데이터
     const [events, setEvents] = useState<any[]>([]);
     const [earndivLoading, setEarndivLoading] = useState(true);
     const [calTab, setCalTab] = useState<"earnings" | "dividend">("earnings");
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    // ?? 怨듬え二?IPO) ??
+    // 공모주(IPO) 데이터
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
 
-    // 寃쎌젣吏???곗씠??fetch (湲濡쒕쾶)
+    // 경제지표 데이터 fetch (글로벌)
     useEffect(() => {
         (async () => {
             try {
@@ -607,15 +607,15 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, []);
 
-    // ?듯빀 ?쒖옣 吏??fetch
+    // 통합 시장 지표 fetch
     useEffect(() => {
-        // ?곗씠?곌? ?꾩쭅 ?녾굅??媛깆떊???꾩슂????濡쒕뵫 ?쒖옉
+        // 데이터가 아직 없거나 갱신이 필요할 때 로딩 시작
         if (!krEvents.length) setKrLoading(true);
         if (!globalAssets) setGlobalAssetsLoading(true);
 
         const fetchMarketData = async () => {
             try {
-                // 蹂묐젹濡??곗씠???몄텧
+                // 병렬로 데이터 호출
                 const [krRes, globalRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
                     fetch(`${API_BASE_URL}/api/assets`)
@@ -636,12 +636,12 @@ function CalendarTab({ router }: { router: any }) {
 
         fetchMarketData();
 
-        // 1遺꾨쭏???먮룞 媛깆떊
+        // 1분마다 자동 갱신
         const interval = setInterval(fetchMarketData, 60000);
         return () => clearInterval(interval);
     }, []);
 
-    // ?ㅼ쟻쨌諛곕떦 ?곗씠??fetch
+    // 실적·배당 데이터 fetch
     useEffect(() => {
         (async () => {
             try {
@@ -653,7 +653,7 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, []);
 
-    // 怨듬え二??곗씠??fetch
+    // 공모주 데이터 fetch
     useEffect(() => {
         if (mainTab !== "ipo") return;
         (async () => {
@@ -673,7 +673,7 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, [mainTab]);
 
-    // ?ㅼ쟻쨌諛곕떦 ?щ젰 怨꾩궛
+    // 실적·배당 달력 계산
     const filtered = events.filter(e => e.type === calTab);
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
@@ -685,31 +685,31 @@ function CalendarTab({ router }: { router: any }) {
         const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         return filtered.filter(e => e.date === ds);
     };
-    const icon = (t: string) => t === "earnings" ? "?뱤" : t === "dividend" ? "?뮥" : "?넅";
+    const icon = (t: string) => t === "earnings" ? "📈" : t === "dividend" ? "💰" : "📋";
 
     return (
         <div className="space-y-4">
-            {/* 硫붿씤 ?쒕툕??*/}
+            {/* 메인 서브탭 */}
             <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
                 <button onClick={() => setMainTab("economic")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "economic" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    ?뱢 二쇱슂 寃쎌젣 吏??
+                    📅 주요 경제 지표
                 </button>
                 <button onClick={() => setMainTab("earndiv")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "earndiv" ? "bg-orange-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    ?뱤 ?ㅼ쟻쨌諛곕떦
+                    📈 실적/배당
                 </button>
                 <button onClick={() => setMainTab("ipo")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "ipo" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    ?넅 怨듬え二?
+                    📋 공모주
                 </button>
             </div>
 
-            {/* ?? 二쇱슂 寃쎌젣 吏?????? */}
+            {/* 주요 경제 지표 서브탭 */}
             {mainTab === "economic" && (
                 <div className="space-y-4">
-                    {/* ?곷떒 湲濡쒕쾶 寃쎌젣 罹섎┛???쇱젙 ?뱀뀡 */}
+                    {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-blue-400" /> ?ㅻ뒛 湲濡쒕쾶 ?쇱젙
+                                <Calendar className="w-4 h-4 text-blue-400" /> 오늘 글로벌 일정
                             </h4>
                             <div className="text-[10px] text-gray-500">Naver Finance</div>
                         </div>
@@ -718,7 +718,7 @@ function CalendarTab({ router }: { router: any }) {
                             <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
                         ) : macroEvents.length === 0 ? (
                             <div className="text-center py-4 text-gray-500 text-xs">
-                                <p>?ㅻ뒛 ?덉젙??二쇱슂 ?쇱젙???놁뒿?덈떎.</p>
+                                <p>오늘 예정된 주요 일정이 없습니다.</p>
                             </div>
                         ) : (
                             <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
@@ -728,14 +728,14 @@ function CalendarTab({ router }: { router: any }) {
                                             <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
                                         </div>
                                         <div className="flex items-center gap-2 px-1">
-                                            {evt.country === 'KR' ? '?눖?눟' : evt.country === 'US' ? '?눣?눡' : evt.country === 'JP' ? '?눓?눝' : evt.country === 'CN' ? '?눊?눛' : evt.country === 'EU' ? '?눎?눣' : '?뙋'}
+                                            {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className={`font-bold text-xs truncate ${evt.importance >= 3 ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
                                             <div className="flex gap-3 mt-1 text-[10px] font-bold">
-                                                {evt.previous && evt.previous !== "-" && <span className="text-gray-500">?댁쟾 <span className="text-gray-400">{evt.previous}</span></span>}
-                                                {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">?덉긽 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
-                                                {evt.actual && evt.actual !== "-" && <span className="text-gray-400">?ㅼ젣 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
+                                                {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
+                                                {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
+                                                {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -747,25 +747,16 @@ function CalendarTab({ router }: { router: any }) {
                         )}
                     </div>
 
-                    {/* ?섎떒 ?듯빀 ?쒖옣 紐⑤땲???뱀뀡 (Naver Major Indicators ?곕룞) */}
-                    <div className="space-y-4 pt-4 border-t border-white/5">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <h4 className="font-black text-sm px-1 text-white flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-emerald-400" /> ?꾨━誘몄뾼 湲濡쒕쾶 留덉폆 ?몃뜳??
-                            </h4>
-                            <span className="text-[10px] text-gray-500">Naver Finance ?ㅼ떆媛??곕룞 (Sync-Turbo)</span>
-                        </div>
-                        <MarketIndicators />
-                    </div>
+
                 </div>
             )}
 
-            {/* ?? ?ㅼ쟻쨌諛곕떦 ???? */}
+            {/* 실적/배당 서브탭 */}
             {mainTab === "earndiv" && (
                 <div className="space-y-4">
                     <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>?뱤 ?ㅼ쟻</button>
-                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>?뮥 諛곕떦</button>
+                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📈 실적</button>
+                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 배당</button>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -775,7 +766,7 @@ function CalendarTab({ router }: { router: any }) {
                             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
                         </div>
                         <div className="grid grid-cols-7 gap-1 mb-1">
-                            {["??, "??, "??, "??, "紐?, "湲?, "??].map(d => <div key={d} className={`text-center text-[10px] font-bold py-1 ${d === "?? ? "text-red-400" : d === "?? ? "text-blue-400" : "text-gray-500"}`}>{d}</div>)}
+                            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className={`text-center text-[10px] font-bold py-1 ${d === "일" ? "text-red-400" : d === "토" ? "text-blue-400" : "text-gray-500"}`}>{d}</div>)}
                         </div>
                         <div className="grid grid-cols-7 gap-1">
                             {Array.from({ length: firstDay }, (_, i) => <div key={`e-${i}`} className="min-h-[55px]" />)}
@@ -792,29 +783,29 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                     </div>
 
-                    <h4 className="font-bold text-sm text-gray-400">?ㅺ??ㅻ뒗 ?쇱젙</h4>
+                    <h4 className="font-bold text-sm text-gray-400">다가오는 일정</h4>
                     {earndivLoading ? <div className="text-center py-6"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-gray-500" /></div>
                         : filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10).map((ev, i) => {
                             const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
                             return (
                                 <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 cursor-pointer flex justify-between items-center" onClick={() => router.push(`/discovery?q=${ev.symbol}`)}>
                                     <div className="flex items-center gap-2"><span className="text-lg">{icon(ev.type)}</span><div><span className="font-bold text-sm">{ev.name}</span><span className="text-gray-500 text-xs ml-1">{ev.symbol}</span><p className="text-[10px] text-gray-400">{ev.detail}</p></div></div>
-                                    <div className="text-right"><div className="text-xs font-mono text-gray-400">{ev.date}</div><span className={`text-xs font-bold ${dDay <= 3 ? "text-red-400" : dDay <= 7 ? "text-yellow-400" : "text-gray-400"}`}>{dDay > 0 ? `D-${dDay}` : dDay === 0 ? "?ㅻ뒛" : `D+${Math.abs(dDay)}`}</span></div>
+                                    <div className="text-right"><div className="text-xs font-mono text-gray-400">{ev.date}</div><span className={`text-xs font-bold ${dDay <= 3 ? "text-red-400" : dDay <= 7 ? "text-yellow-400" : "text-gray-400"}`}>{dDay > 0 ? `D-${dDay}` : dDay === 0 ? "오늘" : `D+${Math.abs(dDay)}`}</span></div>
                                 </div>
                             );
                         })}
                 </div>
             )}
 
-            {/* ?? 怨듬え二?IPO) ???? */}
+            {/* 공모주 서브탭 */}
             {mainTab === "ipo" && (
                 <div className="space-y-3">
-                    <p className="text-xs text-gray-500">?쒓뎅 怨듬え二?泥?빟 ?쇱젙 (38而ㅻ??덉??댁뀡 ?쒓났)</p>
+                    <p className="text-xs text-gray-500">한국 공모주 청약 일정 (38커뮤니케이션 제공)</p>
                     {ipoLoading ? (
                         <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
                     ) : ipos.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                            <p>?덉젙??怨듬え二쇨? ?놁뒿?덈떎.</p>
+                            <p>예정된 공모주가 없습니다.</p>
                         </div>
                     ) : (
                         <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
@@ -822,10 +813,10 @@ function CalendarTab({ router }: { router: any }) {
                                 <table className="w-full text-left border-collapse">
                                     <thead className="bg-white/10 text-gray-300 text-xs font-bold sticky top-0 backdrop-blur-md z-10">
                                         <tr>
-                                            <th className="p-3 whitespace-nowrap">醫낅ぉ紐?/th>
-                                            <th className="p-3 whitespace-nowrap text-center">怨듬え?쇱젙</th>
-                                            <th className="p-3 whitespace-nowrap text-right">怨듬え媛</th>
-                                            <th className="p-3 whitespace-nowrap text-center">?뺣낫</th>
+                                            <th className="p-3 whitespace-nowrap">종목명</th>
+                                            <th className="p-3 whitespace-nowrap text-center">공모일정</th>
+                                            <th className="p-3 whitespace-nowrap text-right">공모가</th>
+                                            <th className="p-3 whitespace-nowrap text-center">정보</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5 text-sm">
@@ -840,9 +831,9 @@ function CalendarTab({ router }: { router: any }) {
                                                 </td>
                                                 <td className="p-3 text-center align-middle">
                                                     <button
-                                                        onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 怨듬え二?)}`, '_blank')}
+                                                        onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
                                                         className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5"
-                                                    >?뺣낫</button>
+                                                    >정보</button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -856,5 +847,3 @@ function CalendarTab({ router }: { router: any }) {
         </div>
     );
 }
-
-// ============ TAB 5: VOTE ============

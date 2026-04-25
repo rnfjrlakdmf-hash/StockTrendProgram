@@ -15,8 +15,8 @@ const navigation = [
     { name: "대시보드", href: "/", icon: LayoutDashboard },
     { name: "시장 인텔리전스", href: "/signals", icon: Activity },
 
-    { name: "종목 발굴", href: "/discovery", icon: Compass },
-    { name: "종목 심층분석", href: "/analysis", icon: BarChart3 },
+    { name: "종목발굴", href: "/discovery", icon: Compass },
+    { name: "정리분석", href: "/analysis", icon: BarChart3 },
     { name: "이슈 테마", href: "/theme", icon: Sparkles },
     { name: "차트 분석", href: "/pattern", icon: LineChart },
     { name: "ETF 분석", href: "/etf", icon: Activity },
@@ -370,7 +370,7 @@ export default function Sidebar() {
 
                     <MarketClock />
                     <div className="px-2 pt-4 border-t border-white/5 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.31-ULTRA-STABLE-FINAL</p>
+                        <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.36-ULTRA-STABLE-FINAL</p>
                     </div>
                 </div>
 
