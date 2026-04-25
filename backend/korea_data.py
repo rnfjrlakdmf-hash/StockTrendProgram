@@ -1746,9 +1746,19 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                     if f_holdings == 0 and total_shares > 0:
                         f_holdings = int(total_shares * (f_ratio / 100.0))
                     
+                    close_val = clean_i(item.get('closePrice', 0))
+                    diff_val = clean_i(item.get('compareToPreviousClosePrice', 0))
+                    prev_close = close_val - diff_val
+                    change_pct = 0.0
+                    if prev_close != 0:
+                        change_pct = (diff_val / prev_close) * 100
+                        
                     new_items.append({
                         "date": dt,
-                        "close": clean_i(item.get('closePrice', 0)),
+                        "close": close_val,
+                        "diff": diff_val,
+                        "change": round(change_pct, 2),
+                        "volume": clean_i(item.get('accumulatedTradingVolume', 0)),
                         "institution": clean_i(item.get('organPureBuyQuant', 0)),
                         "foreigner": clean_i(item.get('foreignerPureBuyQuant', 0)),
                         "retail": clean_i(item.get('individualPureBuyQuant', 0)),

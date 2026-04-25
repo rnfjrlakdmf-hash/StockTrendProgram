@@ -366,31 +366,46 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <table className="w-full text-sm text-left text-gray-300">
                             <thead className="text-[10px] text-gray-500 bg-white/5 uppercase border-b border-white/10 tracking-widest font-black">
                                 <tr>
-                                    <th scope="col" className="px-6 py-4">일자 (DATE)</th>
-                                    <th scope="col" className="px-6 py-4 text-right">종가 (CLOSE)</th>
-                                    <th scope="col" className="px-6 py-4 text-right">기관 (INST)</th>
-                                    <th scope="col" className="px-6 py-4 text-right">외국인 (FRGN)</th>
-                                    <th scope="col" className="px-4 py-4 text-right">보유주수/비율</th>
+                                    <th scope="col" className="px-4 py-4">일자</th>
+                                    <th scope="col" className="px-4 py-4 text-right">종가</th>
+                                    <th scope="col" className="px-4 py-4 text-right">전일비</th>
+                                    <th scope="col" className="px-4 py-4 text-right">등락률</th>
+                                    <th scope="col" className="px-4 py-4 text-right">거래량</th>
+                                    <th scope="col" className="px-4 py-4 text-right">기관</th>
+                                    <th scope="col" className="px-4 py-4 text-right">외국인</th>
+                                    <th scope="col" className="px-4 py-4 text-right">보유주수</th>
+                                    <th scope="col" className="px-4 py-4 text-right">보유율</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5 font-mono">
                                 {[...trendData].reverse().map((day: any, idx) => (
                                     <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4 text-gray-200 group-hover:text-white font-bold">
+                                        <td className="px-4 py-4 text-gray-200 group-hover:text-white font-bold">
                                             <span>{day.date.substring(5)}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-right font-bold text-white">
+                                        <td className="px-4 py-4 text-right font-bold text-white">
                                             <span>{formatNumber(day.close)}</span>
                                         </td>
-                                        <td className={`px-6 py-4 text-right font-black ${day.institution > 0 ? 'text-red-400' : day.institution < 0 ? 'text-blue-400' : ''}`}>
+                                        <td className={`px-4 py-4 text-right font-bold ${day.diff > 0 ? 'text-red-400' : day.diff < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                            <span>{day.diff > 0 ? '▲' : day.diff < 0 ? '▼' : ''} {formatNumber(Math.abs(day.diff))}</span>
+                                        </td>
+                                        <td className={`px-4 py-4 text-right font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                            <span>{day.change > 0 ? '+' : ''}{day.change.toFixed(2)}%</span>
+                                        </td>
+                                        <td className="px-4 py-4 text-right text-gray-400 text-xs">
+                                            <span>{formatNumber(day.volume)}</span>
+                                        </td>
+                                        <td className={`px-4 py-4 text-right font-black ${day.institution > 0 ? 'text-red-400' : day.institution < 0 ? 'text-blue-400' : ''}`}>
                                             <span>{day.institution > 0 ? '+' : ''}</span><span>{formatNumber(day.institution)}</span>
                                         </td>
-                                        <td className={`px-6 py-4 text-right font-black ${day.foreigner > 0 ? 'text-red-400' : day.foreigner < 0 ? 'text-blue-400' : ''}`}>
+                                        <td className={`px-4 py-4 text-right font-black ${day.foreigner > 0 ? 'text-red-400' : day.foreigner < 0 ? 'text-blue-400' : ''}`}>
                                             <span>{day.foreigner > 0 ? '+' : ''}</span><span>{formatNumber(day.foreigner)}</span>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                           <div className="text-gray-400 text-[11px]"><span>{formatNumber(day.foreign_holdings)}</span></div>
-                                           <div className="text-gray-500 text-[10px]"><span>{day.foreign_ratio}</span><span>%</span></div>
+                                        <td className="px-4 py-4 text-right text-gray-400 text-xs">
+                                            <span>{formatNumber(day.foreign_holdings)}</span>
+                                        </td>
+                                        <td className="px-4 py-4 text-right text-gray-300 font-bold">
+                                            <span>{day.foreign_ratio.toFixed(2)}%</span>
                                         </td>
                                     </tr>
                                 ))}
