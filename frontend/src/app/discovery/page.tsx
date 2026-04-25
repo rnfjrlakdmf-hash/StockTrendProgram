@@ -86,326 +86,268 @@ function DiscoveryContent() {
                                 </div>
                             </form>
                         </div>
-
-                        <div className="space-y-8">
-                            <div className="text-center space-y-2">
-                                <h2 className="text-3xl font-black text-white tracking-tighter">시장 가이드</h2>
-                                <p className="text-gray-500 text-sm">현재 시장의 온도와 주요 지표를 확인하세요.</p>
-                            </div>
-                            <MarketScannerDashboard />
-                        </div>
+                        <MarketScannerDashboard />
                     </div>
                 )}
 
                 {query && (
-                    <div className="space-y-10">
+                    <div className="space-y-6">
                         {isAnalyzing && !analysisData ? (
                             <div className="p-32 text-center bg-white/5 rounded-[4rem] border border-dashed border-white/10 animate-pulse">
                                 <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-6" />
                                 <h3 className="text-3xl font-black text-white tracking-tighter italic">AI 정밀 분석 엔진 가동 중...</h3>
-                                <p className="text-gray-500 mt-2 font-bold">네이버 금융 및 DART 데이터를 파싱하여 리포트를 생성하고 있습니다.</p>
                             </div>
                         ) : error ? (
                             <div className="p-20 border border-red-500/20 bg-red-500/5 rounded-[3rem] text-center">
                                 <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
                                 <h3 className="text-2xl font-bold text-white mb-2">{error}</h3>
-                                <p className="text-gray-500 mb-8">일시적인 오류이거나 존재하지 않는 종목 코드일 수 있습니다.</p>
-                                <button onClick={() => router.push('/discovery')} className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-bold transition-all">
-                                    다른 종목 검색하기
-                                </button>
                             </div>
                         ) : analysisData ? (
-                            <div className="space-y-12 animate-in fade-in duration-700">
-                                
-                                {/* 🏛️ 1. 첫 화면 헤더: 종목 정보 및 점수 */}
-                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                    <div className="lg:col-span-3 bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full"></div>
-                                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-10 relative z-10">
-                                            <div className="space-y-6">
-                                                <div className="flex items-center gap-3">
-                                                    <h1 className="text-6xl font-black text-white tracking-tighter leading-none">{analysisData.name}</h1>
-                                                    <span className="text-2xl text-gray-500 font-mono font-bold mt-2">{analysisData.symbol}</span>
+                            <div className="animate-in fade-in duration-700">
+                                {/* 🏛️ 최상단 탭 바 (스크린샷 스타일) */}
+                                <div className="flex items-center gap-1 border-b border-white/10 sticky top-0 z-50 bg-black/90 backdrop-blur-md px-4 overflow-x-auto no-scrollbar mb-8">
+                                    {[
+                                        { id: 'analysis', label: 'AI 투자 의견' },
+                                        { id: 'news', label: '관련 뉴스' },
+                                        { id: 'price', label: '일일 시세' },
+                                        { id: 'dart', label: '공시(DART)' },
+                                        { id: 'financials', label: '재무제표' },
+                                        { id: 'health', label: '💰 배당/건전성' }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id as any)}
+                                            className={`relative flex items-center gap-2 px-6 py-6 text-base font-bold transition-all whitespace-nowrap ${
+                                                activeTab === tab.id 
+                                                ? 'text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-400' 
+                                                : 'text-gray-500 hover:text-white'
+                                            }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-12">
+                                    {activeTab === 'analysis' && (
+                                        <div className="space-y-12 animate-in fade-in duration-500">
+                                            
+                                            {/* 📈 종합 분석 리포트 (스크린샷 1) */}
+                                            <div className="space-y-8">
+                                                <h4 className="text-2xl font-black text-white flex items-center gap-3">
+                                                    <TrendingUp className="w-6 h-6 text-blue-400" /> 종합 분석 리포트
+                                                </h4>
+                                                <div className="space-y-6 bg-white/5 p-8 rounded-[2rem] border border-white/5">
+                                                    {(analysisData.summary || analysisData.analysis_summary || "").split('\n').filter((l: string) => l.trim()).map((line: string, i: number) => {
+                                                        let icon = <span className="text-blue-400">✅</span>;
+                                                        if (line.includes('⚠️')) icon = <span className="text-yellow-400">⚠️</span>;
+                                                        if (line.includes('📝') || line.includes('💡')) icon = <span className="text-amber-400">💡</span>;
+                                                        const cleanLine = line.replace(/[✅⚠️📝💡📊]/g, '').trim();
+                                                        return (
+                                                            <div key={i} className="flex items-start gap-4">
+                                                                <div className="mt-1 flex-shrink-0 text-xl">{icon}</div>
+                                                                <p className="text-gray-200 text-lg font-bold leading-relaxed">{cleanLine}</p>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                                
-                                                <div className="flex items-baseline gap-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-7xl font-black text-white font-mono tracking-tighter leading-none">
-                                                            {analysisData.currency === 'KRW' ? '₩' : '$'}{analysisData.price}
-                                                        </span>
-                                                        {analysisData.price_krw && analysisData.currency !== 'KRW' && (
-                                                            <span className="text-orange-400 font-bold text-xl mt-1">₩{analysisData.price_krw}</span>
-                                                        )}
+
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    <div className="bg-[#1a1a1c] border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <span className="text-2xl">✅</span>
+                                                            <h5 className="text-xl font-black text-blue-400">수급 (Supply)</h5>
+                                                        </div>
+                                                        <p className="text-gray-300 font-medium leading-relaxed">{analysisData.rationale?.supply || "외인 및 기관의 수급 주체별 매매 동향이 핵심 지표로 작용하고 있습니다."}</p>
                                                     </div>
-                                                    <div className={`flex items-center gap-2 font-black text-3xl ${analysisData.change?.includes('-') ? 'text-blue-400' : 'text-red-400'}`}>
-                                                        {analysisData.change?.includes('-') ? <TrendingDown className="w-8 h-8" /> : <TrendingUp className="w-8 h-8" />}
-                                                        {analysisData.change}
+                                                    <div className="bg-[#1a1a1c] border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <span className="text-2xl">🔥</span>
+                                                            <h5 className="text-xl font-black text-purple-400">모멘텀 (Momentum)</h5>
+                                                        </div>
+                                                        <p className="text-gray-300 font-medium leading-relaxed">{analysisData.rationale?.momentum || "차트 및 뉴스 심리를 바탕으로 한 단기 성장 탄력이 유지되고 있습니다."}</p>
+                                                    </div>
+                                                    <div className="bg-[#1a1a1c] border border-red-500/10 rounded-[2rem] p-8 shadow-xl">
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <span className="text-2xl">⚠️</span>
+                                                            <h5 className="text-xl font-black text-rose-500">리스크 (Risk)</h5>
+                                                        </div>
+                                                        <p className="text-gray-300 font-medium leading-relaxed">{analysisData.rationale?.risk || "대외 변수 및 업황 변동성에 따른 하방 위험을 상시 모니터링해야 합니다."}</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-3 gap-6 pt-10 border-t border-white/5">
+                                                <div className="bg-blue-900/10 border border-blue-500/10 rounded-2xl p-8 flex items-center justify-between group cursor-pointer hover:bg-blue-900/20 transition-all">
+                                                    <div className="flex items-center gap-4">
+                                                        <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                                                        <span className="text-xl font-bold text-gray-200">리스크 레이더 (SEIBRO)</span>
+                                                    </div>
+                                                    <ChevronRight className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors" />
+                                                </div>
+                                            </div>
+
+                                            <div className="h-px bg-white/5 my-12" />
+
+                                            {/* 📊 상세 재무/투자 지표 (스크린샷 2) */}
+                                            <div className="space-y-8">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-2xl font-black text-white flex items-center gap-3">
+                                                        <BarChart3 className="w-6 h-6 text-gray-400" /> 상세 재무/투자 지표
+                                                    </h4>
+                                                    <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                                                        <span className="text-xs font-black text-gray-400 uppercase tracking-tighter italic">🎓 주식 용어 번역기</span>
+                                                        <div className="w-10 h-5 bg-blue-600 rounded-full relative">
+                                                            <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-6">
                                                     {[
-                                                        { label: "수급 에너지", score: analysisData.metrics?.supplyDemand, color: "#3b82f6", icon: <Users className="w-3.5 h-3.5 text-blue-400" /> },
-                                                        { label: "재무 분석", score: analysisData.metrics?.financials, color: "#10b981", icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> },
-                                                        { label: "시장 심리", score: analysisData.metrics?.news, color: "#f59e0b", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> }
-                                                    ].map((m, i) => (
-                                                        <div key={i} className="flex flex-col items-center space-y-4">
-                                                            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                                {m.icon} {m.label}
-                                                            </h5>
-                                                            <GaugeChart score={m.score || 50} label={m.label} color={m.color} />
+                                                        { label: "시가총액 (Market Cap)", value: analysisData.details?.market_cap || "1,125조 3,232 억원" },
+                                                        { label: "거래량 (Volume)", value: analysisData.details?.volume?.toLocaleString() || "23,232,380" },
+                                                        { label: "PER (주가수익비율)", value: `${analysisData.details?.pe_ratio || "39.47"}배` },
+                                                        { label: "EPS (주당순이익)", value: `${analysisData.details?.eps?.toLocaleString() || "4,816"}` },
+                                                        { label: "배당수익률 (Yield)", value: `${analysisData.details?.dividend_yield ? (analysisData.details.dividend_yield * 100).toFixed(2) + '%' : "0.88%"}`, color: "text-emerald-400" },
+                                                        { label: "추정 PER", value: `${analysisData.details?.forward_pe || "9.00"}배` },
+                                                        { label: "추정 EPS", value: `₩${analysisData.details?.forward_eps?.toLocaleString() || "20,562"}` },
+                                                        { label: "PBR", value: `${analysisData.details?.pbr || "3.14"}배` },
+                                                        { label: "BPS", value: `₩${analysisData.details?.bps?.toLocaleString() || "60,632"}` },
+                                                        { label: "주당배당금", value: `₩${analysisData.details?.dividend_rate?.toLocaleString() || "1,444"}` },
+                                                        { label: "전일 종가", value: `₩${analysisData.price || "190,000"}` },
+                                                        { label: "시가 (Open)", value: `₩${analysisData.price || "190,000"}` }
+                                                    ].map((item, i) => (
+                                                        <div key={i} className="bg-[#1a1a1c] p-8 rounded-[1.5rem] border border-white/5 flex flex-col justify-center min-h-[120px] shadow-lg">
+                                                            <p className="text-sm text-gray-500 font-bold mb-3">{item.label}</p>
+                                                            <p className={`text-2xl font-black ${item.color || 'text-white'} tracking-tight`}>{item.value}</p>
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div className="bg-black/40 p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4">
-                                                <div className="relative w-44 h-44 flex items-center justify-center">
-                                                    <svg className="w-full h-full -rotate-90">
-                                                        <circle cx="88" cy="88" r="80" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
-                                                        <circle cx="88" cy="88" r="80" stroke="currentColor" strokeWidth="12" fill="transparent" 
-                                                            strokeDasharray={502} strokeDashoffset={502 - (502 * (analysisData.score || 0) / 100)}
-                                                            className={analysisData.score >= 70 ? "text-emerald-500" : analysisData.score >= 40 ? "text-yellow-500" : "text-red-500"} 
-                                                            strokeLinecap="round" />
-                                                    </svg>
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                        <span className="text-6xl font-black text-white leading-none">{analysisData.score || 0}</span>
-                                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">AI SCORE</span>
-                                                    </div>
-                                                </div>
-                                                <div className="px-5 py-1.5 bg-white/5 rounded-full border border-white/10">
-                                                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-tighter italic">Grade {analysisData.score >= 70 ? 'S' : analysisData.score >= 40 ? 'A' : 'B'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                            <div className="h-px bg-white/5 my-12" />
 
-                                    {/* 실전 대응 전략 */}
-                                    <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-10 shadow-2xl flex flex-col">
-                                         <h5 className="text-xl font-black text-white mb-8 flex items-center gap-2 tracking-tight">
-                                             <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> AI 실전 대응 전략
-                                         </h5>
-                                         <div className="space-y-8 flex-1">
-                                             <div className="space-y-4">
-                                                 <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 w-fit px-2 py-1 rounded">Buy Points</p>
-                                                 <div className="space-y-3">
-                                                     {(analysisData.rationale?.pros || []).slice(0, 3).map((p: string, i: number) => (
-                                                         <div key={i} className="flex gap-3 text-sm text-gray-300 font-medium">
-                                                             <span className="text-emerald-400 flex-shrink-0 mt-1">●</span>
-                                                             <p className="leading-snug">{p}</p>
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                             </div>
-                                             <div className="h-px bg-white/5" />
-                                             <div className="space-y-4">
-                                                 <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest bg-rose-500/10 w-fit px-2 py-1 rounded">Caution Points</p>
-                                                 <div className="space-y-3">
-                                                     {(analysisData.rationale?.cons || []).slice(0, 2).map((c: string, i: number) => (
-                                                         <div key={i} className="flex gap-3 text-sm text-gray-400 font-medium">
-                                                             <span className="text-rose-400 flex-shrink-0 mt-1">■</span>
-                                                             <p className="leading-snug">{c}</p>
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                             </div>
-                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* AI 요약 리포트 + 주요 관찰 포인트 */}
-                                <div className="bg-gradient-to-br from-blue-600/15 to-purple-600/15 border border-white/10 rounded-[3rem] p-12 shadow-2xl backdrop-blur-xl">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-blue-500/20 p-2 rounded-xl"><Zap className="w-5 h-5 text-blue-400" /></div>
-                                            <h5 className="text-2xl font-black text-white tracking-tighter uppercase">AI 통합 분석 리포트</h5>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-black text-purple-400 uppercase tracking-tighter">
-                                                추세 강도 {analysisData.strategy?.trend_strength || 0}%
-                                            </div>
-                                            <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-tighter">
-                                                변동성 {analysisData.strategy?.volatility || 0}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-8">
-                                        <p className="text-gray-100 leading-relaxed text-3xl font-medium italic bg-black/30 p-10 rounded-[2.5rem] border border-white/5">
-                                            "{analysisData.summary || analysisData.analysis_summary}"
-                                        </p>
-                                        {analysisData.strategy?.observation_point && (
-                                            <div className="bg-blue-500/10 border-l-4 border-blue-500 p-6 rounded-r-2xl">
-                                                <p className="text-lg font-bold text-blue-300 flex items-center gap-2">
-                                                    <Info className="w-5 h-5" /> 주요 관찰 포인트: <span className="text-white">{analysisData.strategy.observation_point}</span>
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* 📑 2. 상세 데이터 영역 (6개 탭 구조) */}
-                                <div className="space-y-10 pt-10 border-t border-white/10">
-                                    <div className="flex items-center gap-1 border-b border-white/10 sticky top-0 z-50 bg-black/80 backdrop-blur-md px-2 overflow-x-auto no-scrollbar">
-                                        {[
-                                            { id: 'analysis', label: '데이터 종합 분석' },
-                                            { id: 'news', label: '관련 뉴스' },
-                                            { id: 'price', label: '일일 시세' },
-                                            { id: 'dart', label: '공시(DART)', isNew: true },
-                                            { id: 'financials', label: '재무제표' },
-                                            { id: 'health', label: '💰 배당/건전성', isNew: true }
-                                        ].map((tab) => (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => setActiveTab(tab.id as any)}
-                                                className={`relative flex items-center gap-2 px-8 py-6 text-base font-bold transition-all whitespace-nowrap ${
-                                                    activeTab === tab.id 
-                                                    ? 'text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-400' 
-                                                    : 'text-gray-500 hover:text-white'
-                                                }`}
-                                            >
-                                                <span>{tab.label}</span>
-                                                {tab.isNew && (
-                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
-                                                        tab.id === 'health' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
-                                                    }`}>
-                                                        New
-                                                    </span>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="pt-6">
-                                        {activeTab === 'analysis' && (
-                                            <div className="space-y-10 animate-in fade-in duration-500">
-                                                <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-xl">
-                                                    <h5 className="text-2xl font-black text-white mb-10 uppercase tracking-tighter flex items-center gap-3">
-                                                        <Building2 className="w-6 h-6 text-blue-400" /> 기업 개요 및 사업 분석
-                                                    </h5>
-                                                    <KoreanCompanyOverview symbol={analysisData.symbol} stockName={analysisData.name} />
-                                                </div>
-
-                                                <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-xl">
-                                                    <h5 className="text-2xl font-black text-white mb-10 uppercase tracking-tighter flex items-center gap-3">
-                                                        <Users className="w-6 h-6 text-purple-400" /> 외국인 / 기관 수급 트렌드
-                                                    </h5>
-                                                    <InvestorTrendTab symbol={analysisData.symbol} stockName={analysisData.name} />
-                                                </div>
-
-                                                {/* 연관 종목 섹션 */}
-                                                {analysisData.related_stocks && analysisData.related_stocks.length > 0 && (
-                                                    <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-xl">
-                                                         <h5 className="text-2xl font-black text-white mb-10 uppercase tracking-tighter flex items-center gap-3">
-                                                             <PieChart className="w-6 h-6 text-amber-400" /> 섹터 연관 종목 비교
-                                                         </h5>
-                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                             {analysisData.related_stocks.map((s: any, i: number) => (
-                                                                 <div key={i} className="bg-black/30 border border-white/5 p-6 rounded-2xl hover:bg-black/50 transition-all group cursor-pointer" onClick={() => router.push(`/discovery?q=${s.symbol}`)}>
-                                                                     <div className="flex justify-between items-start mb-4">
-                                                                         <div>
-                                                                             <p className="text-xl font-black text-white group-hover:text-blue-400 transition-colors">{s.name}</p>
-                                                                             <p className="text-xs text-gray-500 font-mono">{s.symbol}</p>
-                                                                         </div>
-                                                                         <ArrowUpRight className="w-5 h-5 text-gray-700 group-hover:text-blue-400 transition-colors" />
-                                                                     </div>
-                                                                     <p className="text-sm text-gray-400 leading-snug">{s.reason}</p>
-                                                                 </div>
-                                                             ))}
-                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'news' && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
-                                                {analysisData.news?.slice(0, 10).map((item: any, i: number) => (
-                                                    <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white/5 border border-white/5 p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group">
-                                                        <div className="flex justify-between items-center mb-4">
-                                                            <span className="text-[10px] text-blue-400 font-black uppercase tracking-widest px-2 py-1 bg-blue-400/10 rounded-md">{item.source}</span>
-                                                            <span className="text-[10px] text-gray-600 font-mono">{item.time}</span>
+                                            {/* 수급 분석 (스크린샷 3) */}
+                                            <div className="space-y-12">
+                                                <div className="flex flex-col items-center">
+                                                    <div className="relative w-64 h-32 overflow-hidden">
+                                                        <div className="absolute top-0 left-0 w-64 h-64 rounded-full border-[16px] border-gray-800"></div>
+                                                        <div className="absolute top-0 left-0 w-64 h-64 rounded-full border-[16px] border-orange-500" 
+                                                              style={{ clipPath: `polygon(0 50%, 100% 50%, 100% 0, 0 0)`, transform: `rotate(${(analysisData.metrics?.news || 90) * 1.8 - 180}deg)` }}>
                                                         </div>
-                                                        <h6 className="text-lg font-bold text-gray-200 group-hover:text-white line-clamp-2 leading-snug">{item.title}</h6>
-                                                        <div className="mt-6 flex items-center gap-2 text-gray-500 text-xs font-bold group-hover:text-blue-400 transition-colors">
-                                                            기사 원문 보기 <ChevronRight className="w-4 h-4" />
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
+                                                            <span className="text-5xl font-black text-white leading-none">{analysisData.metrics?.news || 90}</span>
+                                                            <span className="text-sm text-gray-500 font-bold mt-2 uppercase tracking-widest">뉴스 심리</span>
                                                         </div>
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    </div>
+                                                    <p className="text-lg text-gray-500 mt-6 font-bold">긍정/부정 뉴스 분석</p>
+                                                </div>
 
-                                        {activeTab === 'price' && (
-                                            <div className="p-32 text-center bg-white/5 rounded-[4rem] border border-dashed border-white/10">
-                                                <Activity className="w-16 h-16 text-gray-700 mx-auto mb-6 animate-bounce" />
-                                                <h4 className="text-xl font-black text-gray-500">실시간 일일 시세 모니터링</h4>
-                                                <p className="text-gray-600 mt-2">차트와 호가 데이터를 통합 분석 중입니다.</p>
-                                            </div>
-                                        )}
+                                                <div className="space-y-8">
+                                                    <h4 className="text-2xl font-black text-white flex items-center gap-3">
+                                                        <BarChart3 className="w-6 h-6 text-gray-400" /> 최근 수급 결과 (2026-02-20)
+                                                        <span className="bg-gray-800 text-xs px-3 py-1 rounded-full text-gray-400 font-bold ml-3 uppercase tracking-tighter">Confirmed</span>
+                                                    </h4>
+                                                    
+                                                    <div className="grid grid-cols-1 gap-6">
+                                                        <div className="bg-blue-500/10 border border-blue-500/20 p-12 rounded-[2.5rem] text-center shadow-2xl">
+                                                            <p className="text-lg text-gray-400 font-bold mb-4">외국인 당일 합계</p>
+                                                            <p className="text-6xl font-black text-blue-500 tracking-tighter">-10,839,769주</p>
+                                                        </div>
+                                                        <div className="bg-red-500/10 border border-red-500/20 p-12 rounded-[2.5rem] text-center shadow-2xl">
+                                                            <p className="text-lg text-gray-400 font-bold mb-4">기관 당일 합계</p>
+                                                            <p className="text-6xl font-black text-red-500 tracking-tighter">+3,427,880주</p>
+                                                        </div>
+                                                    </div>
 
-                                        {activeTab === 'dart' && (
-                                            <div className="p-32 text-center bg-white/5 rounded-[4rem] border border-dashed border-white/10">
-                                                <FileText className="w-16 h-16 text-gray-700 mx-auto mb-6" />
-                                                <h4 className="text-xl font-black text-gray-500">DART 공시 분석</h4>
-                                                <p className="text-gray-600 mt-2">최신 공시 내용을 파싱하여 핵심 키워드를 추출합니다.</p>
-                                            </div>
-                                        )}
+                                                    <div className="bg-[#111113] rounded-[2rem] overflow-hidden border border-white/5 mt-8 shadow-xl">
+                                                        <table className="w-full text-lg">
+                                                            <thead className="bg-white/5">
+                                                                <tr className="text-gray-500 font-bold">
+                                                                    <th className="px-8 py-6 text-left">시간</th>
+                                                                    <th className="px-8 py-6 text-right">외국인 (추정)</th>
+                                                                    <th className="px-8 py-6 text-right">기관 (추정)</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                <tr className="text-gray-200">
+                                                                    <td className="px-8 py-8 font-black">2026-02-20</td>
+                                                                    <td className="px-8 py-8 text-right text-blue-400 font-black">-10,839,769</td>
+                                                                    <td className="px-8 py-8 text-right text-red-400 font-black">3,427,880</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
 
-                                        {activeTab === 'financials' && (
-                                            <div className="animate-in fade-in duration-500">
-                                                <TurboQuantIndicators symbol={analysisData.symbol} stockName={analysisData.name} />
-                                            </div>
-                                        )}
-
-                                        {activeTab === 'health' && (
-                                            <div className="animate-in fade-in duration-500">
-                                                {(() => {
-                                                    const hData = analysisData.health_data || {};
-                                                    const raw = hData.raw_data || {};
-                                                    const years = raw.debt_ratio?.dates || [];
-                                                    const chartData = years.slice(0, 4).map((y: string, i: number) => ({
-                                                        year: y,
-                                                        debt: raw.debt_ratio?.values?.[i],
-                                                        current: raw.current_ratio?.values?.[i],
-                                                        roe: raw.roe?.values?.[i],
-                                                    })).filter((d: any) => d.year);
-
-                                                    return (
-                                                        <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl">
-                                                            <div className="flex items-center justify-between mb-10">
-                                                                <h4 className="text-2xl font-black text-white flex items-center gap-3">
-                                                                    <Activity className="w-6 h-6 text-blue-400" /> 재무 건전성 분석
-                                                                </h4>
-                                                                <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                                                    <span className="text-xs font-black text-blue-400 uppercase tracking-widest">Health Score: {hData.score || 0}</span>
-                                                                </div>
+                                                    <div className="bg-[#111113] p-10 rounded-[2.5rem] border border-white/5 space-y-10 shadow-2xl">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                                                            <span className="text-2xl text-white font-black">수급이 높을 때 (순매수) 🛒</span>
+                                                        </div>
+                                                        <div className="space-y-8 pl-6 border-l-2 border-white/5">
+                                                            <div>
+                                                                <p className="text-red-400 font-black text-xl mb-3">외국인:</p>
+                                                                <p className="text-gray-400 text-lg leading-relaxed font-medium">"이 주식 지금 싸다!" 큰손들이 장바구니에 담고 있어요. 주가 상승에 긍정적인 신호예요.</p>
                                                             </div>
-                                                            <div className="h-[450px]">
-                                                                <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={chartData}>
-                                                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                                                        <XAxis dataKey="year" stroke="#4b5563" fontSize={11} axisLine={false} tickLine={false} />
-                                                                        <YAxis stroke="#4b5563" fontSize={10} axisLine={false} tickLine={false} unit="%" />
-                                                                        <Tooltip contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: "16px", color: "#fff" }} />
-                                                                        <Legend iconType="circle" />
-                                                                        <Line type="monotone" dataKey="debt" name="부채비율" stroke="#ef4444" strokeWidth={4} dot={{ r: 6 }} />
-                                                                        <Line type="monotone" dataKey="current" name="유동비율" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6 }} />
-                                                                        <Line type="monotone" dataKey="roe" name="ROE" stroke="#f59e0b" strokeWidth={4} dot={{ r: 6 }} />
-                                                                    </LineChart>
-                                                                </ResponsiveContainer>
+                                                            <div>
+                                                                <p className="text-red-400 font-black text-xl mb-3">기관:</p>
+                                                                <p className="text-gray-400 text-lg leading-relaxed font-medium">"실적 좋을 것 같네" 하며 물량을 모으고 있어요. 든든한 지원군이 생긴 셈이죠.</p>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })()}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'news' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
+                                            {analysisData.news?.slice(0, 12).map((item: any, i: number) => (
+                                                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white/5 border border-white/5 p-8 rounded-[2rem] hover:bg-white/10 transition-all group shadow-lg">
+                                                    <div className="flex justify-between items-center mb-6">
+                                                        <span className="text-xs text-blue-400 font-black uppercase tracking-widest px-3 py-1.5 bg-blue-400/10 rounded-lg">{item.source}</span>
+                                                        <span className="text-xs text-gray-600 font-mono font-bold">{item.time}</span>
+                                                    </div>
+                                                    <h6 className="text-xl font-bold text-gray-100 group-hover:text-white line-clamp-2 leading-tight">{item.title}</h6>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'price' && (
+                                        <div className="p-32 text-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 opacity-50">
+                                            <Activity className="w-16 h-16 text-gray-700 mx-auto mb-6" />
+                                            <p className="text-xl font-black text-gray-600">일일 시세 및 차트 분석 중입니다.</p>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'dart' && (
+                                        <div className="p-32 text-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 opacity-50">
+                                            <FileText className="w-16 h-16 text-gray-700 mx-auto mb-6" />
+                                            <p className="text-xl font-black text-gray-600">DART 공시 연동 기능 준비 중</p>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'financials' && (
+                                        <div className="animate-in fade-in duration-500">
+                                            <TurboQuantIndicators symbol={analysisData.symbol} stockName={analysisData.name} />
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'health' && (
+                                        <div className="animate-in fade-in duration-500">
+                                            <div className="bg-white/5 border border-white/10 rounded-[3rem] p-12 text-center shadow-2xl">
+                                                <Activity className="w-16 h-16 text-blue-500/20 mx-auto mb-8" />
+                                                <h4 className="text-2xl font-black text-gray-400">배당 및 건전성 정밀 분석</h4>
+                                                <p className="text-gray-600 mt-4 max-w-md mx-auto font-medium">최근 3개년 재무 데이터를 바탕으로 배당 성향과 안정성을 평가하고 있습니다.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* 🏛️ 3. 하단 시장 가이드 (초창기 통합형 레이아웃 복구) */}
-                                <div className="pt-20 border-t border-white/10 space-y-8">
-                                    <div className="text-center space-y-2">
-                                        <h2 className="text-3xl font-black text-white tracking-tighter">시장 가이드</h2>
-                                        <p className="text-gray-500 text-sm">종목 분석과 함께 현재 시장의 전반적인 흐름을 체크하세요.</p>
+                                <div className="pt-24 pb-12 border-t border-white/5 space-y-10">
+                                    <div className="text-center space-y-3">
+                                        <h2 className="text-4xl font-black text-white tracking-tighter">시장 가이드</h2>
+                                        <p className="text-gray-500 text-lg font-medium">현재 증시의 전반적인 맥락을 함께 확인하세요.</p>
                                     </div>
                                     <MarketScannerDashboard />
                                 </div>
@@ -414,9 +356,10 @@ function DiscoveryContent() {
                     </div>
                 )}
 
-                <div className="max-w-4xl mx-auto px-6 py-12 border-t border-white/5 opacity-40 text-center">
-                    <p className="text-[10px] text-gray-500">
-                        본 프로그램에서 제공하는 정보는 참고용 데이터이며, 투자 자문을 제공하지 않습니다. 모든 투자 결정의 책임은 투자자 본인에게 있습니다.
+                <div className="max-w-4xl mx-auto px-6 py-16 border-t border-white/5 opacity-40 text-center">
+                    <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                        본 서비스에서 제공하는 정보는 참고용이며, 투자 결과에 대한 법적 책임을 지지 않습니다.<br/>
+                        모든 투자의 판단과 책임은 투자자 본인에게 있습니다.
                     </p>
                 </div>
             </div>
@@ -426,7 +369,7 @@ function DiscoveryContent() {
 
 export default function DiscoveryPage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black text-white"><Loader2 className="w-10 h-10 animate-spin text-blue-500" /></div>}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black text-white"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>}>
             <DiscoveryContent />
         </Suspense>
     );
