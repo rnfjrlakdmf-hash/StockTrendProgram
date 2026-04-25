@@ -4,7 +4,8 @@ import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
-import { Loader2, Search, TrendingUp, TrendingDown, Activity, Zap, BarChart3, ChevronRight } from "lucide-react";
+import { Loader2, Search, TrendingUp, TrendingDown, Activity, Zap, BarChart3, ChevronRight, ShieldCheck } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
 
@@ -301,6 +302,76 @@ function DiscoveryContent() {
                                         </div>
                                     </div>
                                 </div>
+                                
+                                {(() => {
+                                    const hData = analysisData.health_data || {};
+                                    const healthChartData = (hData.years && Array.isArray(hData.years))
+                                        ? hData.years.map((y: string, i: number) => ({
+                                            year: y,
+                                            debt: (hData.debt_ratio || [])[i],
+                                            current: (hData.current_ratio || [])[i],
+                                            roe: (hData.roe || [])[i],
+                                        }))
+                                        : [];
+
+                                    if (healthChartData.length === 0) return null;
+
+                                    return (
+                                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                                            <div className="flex items-center justify-between mb-10">
+                                                <div>
+                                                    <h4 className="text-xl font-black text-white flex items-center gap-2">
+                                                        <span className="bg-blue-500/20 p-2 rounded-xl"><Activity className="w-5 h-5 text-blue-400" /></span>
+                                                        🏦 재무 건전성 추이 분석
+                                                    </h4>
+                                                    <p className="text-xs text-gray-500 mt-2 ml-11 uppercase font-bold tracking-widest">3개년 재무 안정성 지표 (DART/Naver 실시간 연동)</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="h-[300px] w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <LineChart data={healthChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                                        <XAxis dataKey="year" stroke="#4b5563" fontSize={11} axisLine={false} tickLine={false} tickMargin={10} />
+                                                        <YAxis stroke="#4b5563" fontSize={10} axisLine={false} tickLine={false} unit="%" />
+                                                        <Tooltip
+                                                            contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "24px", backdropFilter: "blur(12px)", color: "#fff" }}
+                                                            formatter={(value: any) => [`${value}%`, ""]}
+                                                        />
+                                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold' }} />
+                                                        <Line type="monotone" dataKey="debt" name="부채비율" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, strokeWidth: 2, stroke: "#000", fill: "#ef4444" }} connectNulls animationDuration={1000} />
+                                                        <Line type="monotone" dataKey="current" name="유동비율" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, strokeWidth: 2, stroke: "#000", fill: "#3b82f6" }} connectNulls animationDuration={1200} />
+                                                        <Line type="monotone" dataKey="roe" name="자기자본이익률(ROE)" stroke="#f59e0b" strokeWidth={4} dot={{ r: 6, strokeWidth: 2, stroke: "#000", fill: "#f59e0b" }} connectNulls animationDuration={1400} />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10">
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 group hover:bg-red-500/5 transition-all">
+                                                    <div className="flex items-center gap-2 mb-2 text-red-400">
+                                                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                                        <span className="text-[10px] font-black uppercase">부채비율</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 leading-snug">자본 대비 빚의 비율입니다. 100% 미만이면 재무 상태가 매우 탄탄해요.</p>
+                                                </div>
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 group hover:bg-blue-500/5 transition-all">
+                                                    <div className="flex items-center gap-2 mb-2 text-blue-400">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                                                        <span className="text-[10px] font-black uppercase">유동비율</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 leading-snug">현금화 가능한 자산의 비율입니다. 200% 이상이면 단기 위기에 강해요.</p>
+                                                </div>
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 group hover:bg-amber-500/5 transition-all">
+                                                    <div className="flex items-center gap-2 mb-2 text-amber-400">
+                                                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                                                        <span className="text-[10px] font-black uppercase">ROE (수익성)</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-400 leading-snug">내 돈으로 얼마나 벌었는지를 뜻해요. 15% 이상이면 알짜배기 성장을 하고 있어요.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                                 
                                 {/* 📉 하단: 섹터 내 위치 및 추가 분석 카드 */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
