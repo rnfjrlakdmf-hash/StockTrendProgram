@@ -8,6 +8,7 @@ import { Loader2, Search, TrendingUp, TrendingDown, Activity, Zap, BarChart3, Ch
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
+import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 
 function DiscoveryContent() {
     const searchParams = useSearchParams();
@@ -235,6 +236,16 @@ function DiscoveryContent() {
                                                             <p key={i} className="text-sm text-gray-400">• {c}</p>
                                                         ))}
                                                     </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 초창기 모델의 핵심: 상세 기업 개요 추가 */}
+                                            <div className="lg:col-span-3">
+                                                <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+                                                    <h5 className="text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-2">
+                                                        <Building2 className="w-5 h-5 text-blue-400" /> 데이터 기반 상세 분석 (초창기 모델 복구)
+                                                    </h5>
+                                                    <KoreanCompanyOverview symbol={analysisData.symbol} stockName={analysisData.name} />
                                                 </div>
                                             </div>
                                         </div>
