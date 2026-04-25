@@ -305,14 +305,16 @@ function DiscoveryContent() {
                                 
                                 {(() => {
                                     const hData = analysisData.health_data || {};
-                                    const healthChartData = (hData.years && Array.isArray(hData.years))
-                                        ? hData.years.map((y: string, i: number) => ({
-                                            year: y,
-                                            debt: (hData.debt_ratio || [])[i],
-                                            current: (hData.current_ratio || [])[i],
-                                            roe: (hData.roe || [])[i],
-                                        }))
-                                        : [];
+                                    const raw = hData.raw_data || {};
+                                    
+                                    // 백엔드 raw_data 구조에 맞게 데이터 가공 (dates와 values 결합)
+                                    const years = raw.debt_ratio?.dates || [];
+                                    const healthChartData = years.slice(0, 4).map((y: string, i: number) => ({
+                                        year: y,
+                                        debt: raw.debt_ratio?.values?.[i],
+                                        current: raw.current_ratio?.values?.[i],
+                                        roe: raw.roe?.values?.[i],
+                                    })).filter(d => d.year && (d.debt !== null || d.current !== null || d.roe !== null));
 
                                     if (healthChartData.length === 0) return null;
 
