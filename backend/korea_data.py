@@ -229,15 +229,31 @@ def gather_naver_stock_data(symbol: str):
             elif '코스피' in alt:
                 market_type = 'KS'
                 
-        # [New] Company Description (Summary) - Mobile API integration
+        # [Fix] Company Description - 네이버 금융 기업개요 탭 스크래핑 (모바일 API /overview 폐지 대응)
         description = ""
         try:
-            m_sum_url = f"https://m.stock.naver.com/api/stock/{code}/overview"
-            m_sum_res = requests.get(m_sum_url, headers=HEADER, timeout=3)
-            m_sum_json = m_sum_res.json()
-            description = m_sum_json.get('description', '')
-        except:
-            pass
+            co_url = f"https://finance.naver.com/item/coinfo.naver?code={code}&target=corp"
+            co_res = requests.get(co_url, headers=HEADER, timeout=4)
+            co_html = co_res.content.decode('euc-kr', errors='replace')
+            co_soup = BeautifulSoup(co_html, 'html.parser')
+            # 기업개요: p 태그에서 실제 회사 소개 문장만 추출
+            desc_parts = []
+            paras = co_soup.select("p")
+            for p in paras:
+                t = p.text.strip()
+                # 30자 이상이고 마케팅/법률 면책문구가 아닌 텍스트만 수집
+                if (30 < len(t) < 300
+                        and '네이버파이낸셜' not in t
+                        and 'PER' not in t and 'PBR' not in t
+                        and '코스피' not in t and '코스닥' not in t
+                        and '시가총액' not in t and '외국인' not in t):
+                    desc_parts.append(t)
+                    if len(desc_parts) >= 3:  # 최대 3문장
+                        break
+            description = " ".join(desc_parts)
+        except Exception as e:
+            print(f"[CompanyDesc] 기업개요 수집 실패 ({code}): {e}")
+
 
         # Price
         no_today = soup.select_one("p.no_today span.blind")
