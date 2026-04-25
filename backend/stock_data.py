@@ -374,10 +374,10 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             print(f"[get_stock_info] FAILED to resolve name '{symbol}' to code.")
 
     # [Cache Check]
-    if symbol in STOCK_DATA_CACHE:
-        cached_data, timestamp = STOCK_DATA_CACHE[symbol]
-        if time.time() - timestamp < CACHE_TTL:
-            return cached_data
+    # if symbol in STOCK_DATA_CACHE:
+    #     cached_data, timestamp = STOCK_DATA_CACHE[symbol]
+    #     if time.time() - timestamp < CACHE_TTL:
+    #         return cached_data
 
 
 
@@ -429,7 +429,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                             print(f"News Fetch Error: {e}")
                         
                         try:
-                            analysis_res = f_analysis.result(timeout=5)
+                            analysis_res = f_analysis.result(timeout=10)
                             if analysis_res.get("success"):
                                 health_data = analysis_res # Keep key as health_data for front-end compatibility, but content is neutralized
                         except Exception as e:

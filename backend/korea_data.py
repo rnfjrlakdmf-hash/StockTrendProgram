@@ -185,7 +185,7 @@ def search_stock_code(keyword: str):
         
 search_korean_stock_symbol = search_stock_code # Alias
 
-@turbo_cache(ttl_seconds=30)
+# @turbo_cache(ttl_seconds=30)
 def gather_naver_stock_data(symbol: str):
     """
     Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials) in ONE request.
