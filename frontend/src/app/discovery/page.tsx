@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, TrendingUp, TrendingDown, Activity, Zap, BarChart3, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
 
@@ -177,72 +177,167 @@ function DiscoveryContent() {
                             </div>
                          ) : analysisData && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                {/* 분석 요약 카드 */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/10 rounded-[2.5rem] p-8 backdrop-blur-2xl">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl">📊</div>
-                                            <div>
-                                                <h4 className="text-2xl font-black text-white">{analysisData.name} <span className="text-gray-400 text-sm font-normal ml-2">{analysisData.symbol}</span></h4>
-                                                <p className="text-blue-300/80 text-sm font-bold">종합 투자 점수: {analysisData.score}점</p>
+                                {/* 🏢 종목 헤더 (리포트 스타일) */}
+                                <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 backdrop-blur-3xl shadow-2xl overflow-hidden relative group">
+                                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                        <BarChart3 className="w-48 h-48 -rotate-12" />
+                                    </div>
+                                    <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h4 className="text-3xl md:text-4xl font-black text-white tracking-tighter">{analysisData.name}</h4>
+                                                <span className="text-gray-500 font-mono text-lg tracking-widest">{analysisData.symbol}</span>
+                                                {analysisData.details?.market_status && (
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black border ${
+                                                        analysisData.details.market_status.includes('장중') ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                    }`}>
+                                                        {analysisData.details.market_status}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-baseline gap-4">
+                                                <span className="text-4xl md:text-5xl font-black text-white font-mono tracking-tighter">
+                                                    {analysisData.currency === 'KRW' ? '₩' : '$'}{analysisData.price}
+                                                </span>
+                                                <div className={`flex items-center gap-1 font-bold text-lg ${analysisData.change?.includes('-') ? 'text-blue-400' : 'text-red-400'}`}>
+                                                    {analysisData.change?.includes('-') ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                                                    <span>{analysisData.change}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <p className="text-gray-200 leading-relaxed text-lg mb-4 bg-black/30 p-6 rounded-2xl border border-white/5 italic">
-                                            "{analysisData.summary}"
-                                        </p>
-                                        {analysisData.description && (
-                                            <div className="mb-8 px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
-                                                <h5 className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
-                                                    <div className="w-1 h-3 bg-blue-500 rounded-full"></div>
-                                                    기업 개요 (Naver Finance)
-                                                </h5>
-                                                <p className="text-xs text-gray-400 leading-relaxed">
-                                                    {analysisData.description}
-                                                </p>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full md:w-auto">
+                                            {[
+                                                { label: "시가총액", value: analysisData.details?.market_cap || "N/A" },
+                                                { label: "PER", value: `${analysisData.details?.pe_ratio || "N/A"}배` },
+                                                { label: "PBR", value: `${analysisData.details?.pbr || "N/A"}배` },
+                                                { label: "거래량", value: analysisData.details?.volume?.toLocaleString() || "N/A" }
+                                            ].map((item, i) => (
+                                                <div key={i} className="bg-white/5 px-4 py-3 rounded-2xl border border-white/5 min-w-[100px]">
+                                                    <p className="text-[10px] text-gray-500 font-black uppercase mb-1">{item.label}</p>
+                                                    <p className="text-sm font-bold text-gray-200">{item.value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 🧠 AI 분석 매트릭스 (2열 레이아웃) */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/10 rounded-[2.5rem] p-8 backdrop-blur-2xl h-full">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl animate-pulse">🤖</div>
+                                                <div>
+                                                    <h5 className="text-xl font-black text-white uppercase tracking-tight">AI 통합 분석 리포트</h5>
+                                                    <p className="text-blue-300/80 text-xs font-bold uppercase tracking-widest">Composite Investment Score: {analysisData.score}pts</p>
+                                                </div>
                                             </div>
-                                        )}
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div className="bg-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[10px] text-gray-500 uppercase font-black mb-1">수급 에너지</p>
-                                                <p className="text-xl font-black text-white">{analysisData.metrics?.supplyDemand}%</p>
-                                            </div>
-                                            <div className="bg-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[10px] text-gray-500 uppercase font-black mb-1">재무 건전성</p>
-                                                <p className="text-xl font-black text-white">{analysisData.metrics?.financials}%</p>
-                                            </div>
-                                            <div className="bg-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[10px] text-gray-500 uppercase font-black mb-1">이슈 민감도</p>
-                                                <p className="text-xl font-black text-white">{analysisData.metrics?.news}%</p>
+                                            <p className="text-gray-200 leading-relaxed text-lg mb-6 bg-black/30 p-6 rounded-2xl border border-white/5 italic">
+                                                "{analysisData.summary}"
+                                            </p>
+                                            
+                                            {analysisData.description && (
+                                                <div className="mb-8 px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
+                                                    <h5 className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
+                                                        <div className="w-1 h-3 bg-blue-500 rounded-full"></div>
+                                                        기업 개요
+                                                    </h5>
+                                                    <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 hover:line-clamp-none transition-all cursor-pointer">
+                                                        {analysisData.description}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 text-center group hover:bg-blue-500/10 transition-colors">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1">수급 에너지</p>
+                                                    <p className="text-2xl font-black text-white">{analysisData.metrics?.supplyDemand}%</p>
+                                                </div>
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 text-center group hover:bg-blue-500/10 transition-colors">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1">재무 건전성</p>
+                                                    <p className="text-2xl font-black text-white">{analysisData.metrics?.financials}%</p>
+                                                </div>
+                                                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 text-center group hover:bg-blue-500/10 transition-colors">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1">이슈 민감도</p>
+                                                    <p className="text-2xl font-black text-white">{analysisData.metrics?.news}%</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 flex flex-col justify-between">
-                                        <h5 className="text-lg font-bold text-white mb-4">💡 AI 대처 전략</h5>
-                                        <div className="space-y-4 flex-1">
-                                            {analysisData.rationale?.pros?.slice(0, 3).map((p: string, i: number) => (
-                                                <div key={i} className="flex gap-3 text-sm text-gray-300">
-                                                    <span className="text-green-400 font-bold">✓</span>
-                                                    <p>{p}</p>
+                                    <div className="space-y-6">
+                                        <div className="bg-[#0d0d0f] border border-white/10 rounded-[2.5rem] p-8 h-full flex flex-col">
+                                            <h5 className="text-lg font-black text-white mb-6 flex items-center gap-2">
+                                                <Zap className="w-5 h-5 text-amber-400" /> AI 대처 전략
+                                            </h5>
+                                            <div className="space-y-5 flex-1">
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] text-green-500 font-black uppercase tracking-widest">Strong Points</p>
+                                                    {analysisData.rationale?.pros?.slice(0, 3).map((p: string, i: number) => (
+                                                        <div key={i} className="flex gap-3 text-sm text-gray-300 items-start">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                            <p className="leading-snug">{p}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                            {analysisData.rationale?.cons?.slice(0, 2).map((c: string, i: number) => (
-                                                <div key={i} className="flex gap-3 text-sm text-gray-400">
-                                                    <span className="text-rose-400 font-bold">!</span>
-                                                    <p>{c}</p>
+                                                <div className="h-px bg-white/5 w-full my-2" />
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest">Cautionary Points</p>
+                                                    {analysisData.rationale?.cons?.slice(0, 2).map((c: string, i: number) => (
+                                                        <div key={i} className="flex gap-3 text-sm text-gray-400 items-start">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                                                            <p className="leading-snug">{c}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <button 
+                                                onClick={() => router.push(`/analysis?symbol=${analysisData.symbol}`)}
+                                                className="mt-8 w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold transition-all border border-white/10 group flex items-center justify-center gap-2"
+                                            >
+                                                <span>프로 분석 리포트 이동</span>
+                                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            </button>
                                         </div>
-                                        <button className="mt-8 w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold transition-all border border-white/5">
-                                            상세 리포트 보기
-                                        </button>
                                     </div>
                                 </div>
                                 
-                                <div className="opacity-40 scale-[0.98] origin-top transition-all hover:opacity-100 hover:scale-100 duration-500">
+                                {/* 📉 하단: 섹터 내 위치 및 추가 분석 카드 */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-between group cursor-pointer hover:border-blue-500/30 transition-all"
+                                         onClick={() => router.push(`/analysis?symbol=${analysisData.symbol}`)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                                                <Activity className="w-6 h-6 text-blue-400" />
+                                            </div>
+                                            <div>
+                                                <h6 className="font-bold text-white">섹터 내 순위 및 비교 분석</h6>
+                                                <p className="text-xs text-gray-500">동종 업계 대비 가치/성장 점수를 확인하세요.</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-between group cursor-pointer hover:border-purple-500/30 transition-all"
+                                         onClick={() => router.push(`/signals`)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                                                <Search className="w-6 h-6 text-purple-400" />
+                                            </div>
+                                            <div>
+                                                <h6 className="font-bold text-white">유사 테마 종목 발굴</h6>
+                                                <p className="text-xs text-gray-500">현재 상승 모멘텀을 공유하는 종목들을 탐색합니다.</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                                    </div>
+                                </div>
+
+                                <div className="pt-10 opacity-30 hover:opacity-100 transition-opacity">
+                                    <h5 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 text-center">Current Market Snapshot</h5>
                                     <MarketScannerDashboard />
                                 </div>
                             </div>
+                        )}
                          )}
                     </div>
                 )}
