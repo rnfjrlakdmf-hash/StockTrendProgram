@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
+import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 
 function DiscoveryContent() {
     const searchParams = useSearchParams();
@@ -284,9 +285,8 @@ function DiscoveryContent() {
                                     )}
 
                                     {activeTab === 'financials' && (
-                                        <div className="p-20 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 animate-in fade-in duration-500">
-                                            <p className="text-gray-500 mb-2">상세 재무제표 데이터를 파싱 중입니다.</p>
-                                            <p className="text-[10px] text-gray-600 uppercase font-black">Coming Soon</p>
+                                        <div className="animate-in fade-in duration-500">
+                                            <TurboQuantIndicators symbol={analysisData.symbol} stockName={analysisData.name} />
                                         </div>
                                     )}
 
