@@ -117,9 +117,8 @@ function DiscoveryContent() {
                         ) : analysisData ? (
                             <div className="space-y-12 animate-in fade-in duration-700">
                                 
-                                {/* 🚀 1. 첫 화면: 종목 핵심 대시보드 (사용자 선호 레이아웃) */}
+                                {/* 🏛️ 1. 첫 화면 헤더: 종목 정보 및 점수 */}
                                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                    {/* 종목 가격 및 기본 정보 */}
                                     <div className="lg:col-span-3 bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full"></div>
                                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-10 relative z-10">
@@ -146,7 +145,7 @@ function DiscoveryContent() {
 
                                                 <div className="grid grid-cols-3 gap-6 pt-10 border-t border-white/5">
                                                     {[
-                                                        { label: "수급 분석", score: analysisData.metrics?.supplyDemand, color: "#3b82f6", icon: <Users className="w-3.5 h-3.5 text-blue-400" /> },
+                                                        { label: "수급 에너지", score: analysisData.metrics?.supplyDemand, color: "#3b82f6", icon: <Users className="w-3.5 h-3.5 text-blue-400" /> },
                                                         { label: "재무 분석", score: analysisData.metrics?.financials, color: "#10b981", icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> },
                                                         { label: "시장 심리", score: analysisData.metrics?.news, color: "#f59e0b", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> }
                                                     ].map((m, i) => (
@@ -160,7 +159,6 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            {/* AI 종합 점수 서클 */}
                                             <div className="bg-black/40 p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4">
                                                 <div className="relative w-44 h-44 flex items-center justify-center">
                                                     <svg className="w-full h-full -rotate-90">
@@ -176,13 +174,13 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="px-5 py-1.5 bg-white/5 rounded-full border border-white/10">
-                                                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-tighter italic">Investment Grade {analysisData.score >= 70 ? 'S' : analysisData.score >= 40 ? 'A' : 'B'}</span>
+                                                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-tighter italic">Grade {analysisData.score >= 70 ? 'S' : analysisData.score >= 40 ? 'A' : 'B'}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* AI 대처 전략 (우측 사이드) */}
+                                    {/* 실전 대응 전략 */}
                                     <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-10 shadow-2xl flex flex-col">
                                          <h5 className="text-xl font-black text-white mb-8 flex items-center gap-2 tracking-tight">
                                              <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> AI 실전 대응 전략
@@ -191,7 +189,7 @@ function DiscoveryContent() {
                                              <div className="space-y-4">
                                                  <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 w-fit px-2 py-1 rounded">Buy Points</p>
                                                  <div className="space-y-3">
-                                                     {analysisData.rationale?.pros?.slice(0, 3).map((p: string, i: number) => (
+                                                     {(analysisData.rationale?.pros || []).slice(0, 3).map((p: string, i: number) => (
                                                          <div key={i} className="flex gap-3 text-sm text-gray-300 font-medium">
                                                              <span className="text-emerald-400 flex-shrink-0 mt-1">●</span>
                                                              <p className="leading-snug">{p}</p>
@@ -203,7 +201,7 @@ function DiscoveryContent() {
                                              <div className="space-y-4">
                                                  <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest bg-rose-500/10 w-fit px-2 py-1 rounded">Caution Points</p>
                                                  <div className="space-y-3">
-                                                     {analysisData.rationale?.cons?.slice(0, 2).map((c: string, i: number) => (
+                                                     {(analysisData.rationale?.cons || []).slice(0, 2).map((c: string, i: number) => (
                                                          <div key={i} className="flex gap-3 text-sm text-gray-400 font-medium">
                                                              <span className="text-rose-400 flex-shrink-0 mt-1">■</span>
                                                              <p className="leading-snug">{c}</p>
@@ -215,15 +213,34 @@ function DiscoveryContent() {
                                     </div>
                                 </div>
 
-                                {/* AI 요약 리포트 (와이드 카드) */}
+                                {/* AI 요약 리포트 + 주요 관찰 포인트 */}
                                 <div className="bg-gradient-to-br from-blue-600/15 to-purple-600/15 border border-white/10 rounded-[3rem] p-12 shadow-2xl backdrop-blur-xl">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="bg-blue-500/20 p-2 rounded-xl"><Zap className="w-5 h-5 text-blue-400" /></div>
-                                        <h5 className="text-2xl font-black text-white tracking-tighter uppercase">AI 통합 분석 리포트</h5>
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-blue-500/20 p-2 rounded-xl"><Zap className="w-5 h-5 text-blue-400" /></div>
+                                            <h5 className="text-2xl font-black text-white tracking-tighter uppercase">AI 통합 분석 리포트</h5>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-black text-purple-400 uppercase tracking-tighter">
+                                                추세 강도 {analysisData.strategy?.trend_strength || 0}%
+                                            </div>
+                                            <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                                                변동성 {analysisData.strategy?.volatility || 0}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-gray-100 leading-relaxed text-3xl font-medium italic bg-black/30 p-10 rounded-[2.5rem] border border-white/5">
-                                        "{analysisData.summary}"
-                                    </p>
+                                    <div className="space-y-8">
+                                        <p className="text-gray-100 leading-relaxed text-3xl font-medium italic bg-black/30 p-10 rounded-[2.5rem] border border-white/5">
+                                            "{analysisData.summary || analysisData.analysis_summary}"
+                                        </p>
+                                        {analysisData.strategy?.observation_point && (
+                                            <div className="bg-blue-500/10 border-l-4 border-blue-500 p-6 rounded-r-2xl">
+                                                <p className="text-lg font-bold text-blue-300 flex items-center gap-2">
+                                                    <Info className="w-5 h-5" /> 주요 관찰 포인트: <span className="text-white">{analysisData.strategy.observation_point}</span>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* 📑 2. 상세 데이터 영역 (6개 탭 구조) */}
@@ -274,6 +291,29 @@ function DiscoveryContent() {
                                                     </h5>
                                                     <InvestorTrendTab symbol={analysisData.symbol} stockName={analysisData.name} />
                                                 </div>
+
+                                                {/* 연관 종목 섹션 */}
+                                                {analysisData.related_stocks && analysisData.related_stocks.length > 0 && (
+                                                    <div className="bg-white/5 border border-white/10 rounded-[3rem] p-10 shadow-xl">
+                                                         <h5 className="text-2xl font-black text-white mb-10 uppercase tracking-tighter flex items-center gap-3">
+                                                             <PieChart className="w-6 h-6 text-amber-400" /> 섹터 연관 종목 비교
+                                                         </h5>
+                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                             {analysisData.related_stocks.map((s: any, i: number) => (
+                                                                 <div key={i} className="bg-black/30 border border-white/5 p-6 rounded-2xl hover:bg-black/50 transition-all group cursor-pointer" onClick={() => router.push(`/discovery?q=${s.symbol}`)}>
+                                                                     <div className="flex justify-between items-start mb-4">
+                                                                         <div>
+                                                                             <p className="text-xl font-black text-white group-hover:text-blue-400 transition-colors">{s.name}</p>
+                                                                             <p className="text-xs text-gray-500 font-mono">{s.symbol}</p>
+                                                                         </div>
+                                                                         <ArrowUpRight className="w-5 h-5 text-gray-700 group-hover:text-blue-400 transition-colors" />
+                                                                     </div>
+                                                                     <p className="text-sm text-gray-400 leading-snug">{s.reason}</p>
+                                                                 </div>
+                                                             ))}
+                                                         </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -359,6 +399,15 @@ function DiscoveryContent() {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* 🏛️ 3. 하단 시장 가이드 (초창기 통합형 레이아웃 복구) */}
+                                <div className="pt-20 border-t border-white/10 space-y-8">
+                                    <div className="text-center space-y-2">
+                                        <h2 className="text-3xl font-black text-white tracking-tighter">시장 가이드</h2>
+                                        <p className="text-gray-500 text-sm">종목 분석과 함께 현재 시장의 전반적인 흐름을 체크하세요.</p>
+                                    </div>
+                                    <MarketScannerDashboard />
                                 </div>
                             </div>
                         ) : null}
