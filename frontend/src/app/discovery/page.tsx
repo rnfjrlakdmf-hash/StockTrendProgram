@@ -127,7 +127,7 @@ function DiscoveryContent() {
                                 <h3 className="text-xl font-bold text-white mb-2">{error}</h3>
                                 <button onClick={() => router.push('/discovery')} className="mt-8 text-blue-400 hover:underline">홈으로 돌아가기</button>
                             </div>
-                         ) : analysisData && (
+                         ) : analysisData ? (
                             <div className="space-y-8 animate-in fade-in duration-700">
                                 {/* 종목 헤더 */}
                                 <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl">
