@@ -33,17 +33,4 @@ def get_hot_stocks():
     hot = [{"symbol": sym, "count": cnt} for sym, cnt in counter.most_common(10)]
     return {"status": "success", "data": hot}
 
-class VoteRequest(BaseModel):
-    direction: str
 
-@router.post("/votes/{symbol}")
-def submit_vote(symbol: str, req: VoteRequest, x_user_id: str = Header(None)):
-    from db_manager import save_vote, get_vote_stats
-    u_id = x_user_id or "anonymous"
-    save_vote(symbol.upper(), u_id, req.direction)
-    return {"status": "success", "results": get_vote_stats(symbol.upper())}
-
-@router.get("/votes/{symbol}")
-def read_vote_results(symbol: str):
-    from db_manager import get_vote_stats
-    return {"status": "success", "data": get_vote_stats(symbol.upper())}

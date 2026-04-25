@@ -98,15 +98,7 @@ def init_db():
         )
     ''')
     
-    # Sentiment Battle (User Votes) Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS sentiment_votes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            vote_type TEXT NOT NULL, -- 'UP' or 'DOWN'
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+
     
     
     # [NEW] FCM Tokens Table
@@ -628,35 +620,7 @@ def migrate_watchlist(from_id, to_id):
 # [Optimized] Moved to main.py startup event to prevent block during import
 # init_db() 
 
-def cast_vote(symbol, vote_type):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO sentiment_votes (symbol, vote_type) VALUES (?, ?)", (symbol, vote_type))
-    conn.commit()
-    conn.close()
 
-def get_vote_stats(symbol):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    # Get total counts
-    cursor.execute("SELECT vote_type, COUNT(*) FROM sentiment_votes WHERE symbol = ? GROUP BY vote_type", (symbol,))
-    rows = cursor.fetchall()
-    
-    stats = {"UP": 0, "DOWN": 0}
-    for row in rows:
-        stats[row[0]] = row[1]
-    
-    total = stats["UP"] + stats["DOWN"]
-    if total > 0:
-        stats["UP_PERCENT"] = int((stats["UP"] / total) * 100)
-        stats["DOWN_PERCENT"] = int((stats["DOWN"] / total) * 100)
-    else:
-        stats["UP_PERCENT"] = 50
-        stats["DOWN_PERCENT"] = 50
-        
-    conn.close()
-    return stats
 
 
 # ============================================================
@@ -865,137 +829,7 @@ def get_signals_by_symbol(symbol: str, limit: int = 20) -> list:
         conn.close()
 
 
-# ============================================================
-# Votes (종목 투표)
-# ============================================================
 
-def create_votes_table():
-    """투표 테이블 생성"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS votes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            user_id TEXT NOT NULL,
-            direction TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(symbol, user_id, created_at)
-        )
-    """)
-    conn.commit()
-    conn.close()
-    print("[DB] Votes table created")
-
-
-def save_vote(symbol: str, user_id: str, direction: str) -> dict:
-    """투표 저장 (1인 1일 1표)"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # 오늘 이미 투표한 경우 업데이트
-        cursor.execute("""
-            SELECT id FROM votes
-            WHERE symbol = ? AND user_id = ? AND DATE(created_at) = DATE('now')
-        """, (symbol, user_id))
-        existing = cursor.fetchone()
-
-        if existing:
-            cursor.execute("""
-                UPDATE votes SET direction = ? WHERE id = ?
-            """, (direction, existing[0]))
-        else:
-            cursor.execute("""
-                INSERT INTO votes (symbol, user_id, direction) VALUES (?, ?, ?)
-            """, (symbol, user_id, direction))
-
-        conn.commit()
-        return {"success": True, "updated": existing is not None}
-    except Exception as e:
-        print(f"[DB] Save vote error: {e}")
-        return {"success": False, "error": str(e)}
-    finally:
-        conn.close()
-
-
-def get_vote_results(symbol: str) -> dict:
-    """종목 투표 결과 조회 (최근 24시간)"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT direction, COUNT(*) as cnt
-            FROM votes
-            WHERE symbol = ? AND created_at >= datetime('now', '-1 day')
-            GROUP BY direction
-        """, (symbol,))
-        rows = cursor.fetchall()
-        results = {"up": 0, "down": 0}
-        for row in rows:
-            if row[0] == "up":
-                results["up"] = row[1]
-            elif row[0] == "down":
-                results["down"] = row[1]
-
-        total = results["up"] + results["down"]
-        results["total"] = total
-        results["up_pct"] = round(results["up"] / total * 100) if total > 0 else 50
-        results["down_pct"] = round(results["down"] / total * 100) if total > 0 else 50
-        return results
-    except Exception as e:
-        print(f"[DB] Get votes error: {e}")
-        return {"up": 0, "down": 0, "total": 0, "up_pct": 50, "down_pct": 50}
-    finally:
-        conn.close()
-
-
-def get_user_vote(symbol: str, user_id: str) -> str:
-    """사용자의 오늘 투표 확인"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT direction FROM votes
-            WHERE symbol = ? AND user_id = ? AND DATE(created_at) = DATE('now')
-        """, (symbol, user_id))
-        row = cursor.fetchone()
-        return row[0] if row else None
-    except Exception as e:
-        print(f"[DB] Get user vote error: {e}")
-        return None
-    finally:
-        conn.close()
-
-
-def get_yesterday_vote_results(symbol: str) -> dict:
-    """어제 날짜 투표 결과 조회 (예측 vs 실제 비교용)"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT direction, COUNT(*) as cnt
-            FROM votes
-            WHERE symbol = ? AND DATE(created_at) = DATE('now', '-1 day')
-            GROUP BY direction
-        """, (symbol,))
-        rows = cursor.fetchall()
-        results = {"up": 0, "down": 0}
-        for row in rows:
-            if row[0] == "up":
-                results["up"] = row[1]
-            elif row[0] == "down":
-                results["down"] = row[1]
-
-        total = results["up"] + results["down"]
-        results["total"] = total
-        results["up_pct"] = round(results["up"] / total * 100) if total > 0 else 0
-        results["down_pct"] = round(results["down"] / total * 100) if total > 0 else 0
-        return results
-    except Exception as e:
-        print(f"[DB] Get yesterday votes error: {e}")
-        return {"up": 0, "down": 0, "total": 0, "up_pct": 0, "down_pct": 0}
-    finally:
-        conn.close()
 
 def get_user_tokens_by_watchlist_symbol(symbol: str) -> list:
     """특정 종목을 관심종목으로 등록한 모든 사용자의 FCM 토큰 조회"""

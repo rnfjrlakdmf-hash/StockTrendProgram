@@ -312,6 +312,17 @@ function AnalysisContent() {
                                         )}
                                     </div>
                                 </div>
+                                {stockInfo.description && (
+                                    <div className="mt-6 pt-6 border-t border-white/5">
+                                        <p className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
+                                            <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
+                                            기업 개요
+                                        </p>
+                                        <p className="text-xs text-gray-400 leading-relaxed max-h-24 overflow-y-auto pr-2 custom-scrollbar">
+                                            {stockInfo.description}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

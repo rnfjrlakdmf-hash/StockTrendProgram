@@ -187,9 +187,20 @@ function DiscoveryContent() {
                                                 <p className="text-blue-300/80 text-sm font-bold">종합 투자 점수: {analysisData.score}점</p>
                                             </div>
                                         </div>
-                                        <p className="text-gray-200 leading-relaxed text-lg mb-8 bg-black/30 p-6 rounded-2xl border border-white/5 italic">
+                                        <p className="text-gray-200 leading-relaxed text-lg mb-4 bg-black/30 p-6 rounded-2xl border border-white/5 italic">
                                             "{analysisData.summary}"
                                         </p>
+                                        {analysisData.description && (
+                                            <div className="mb-8 px-6 py-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <h5 className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
+                                                    <div className="w-1 h-3 bg-blue-500 rounded-full"></div>
+                                                    기업 개요 (Naver Finance)
+                                                </h5>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    {analysisData.description}
+                                                </p>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-3 gap-4">
                                             <div className="bg-white/5 p-4 rounded-2xl text-center">
                                                 <p className="text-[10px] text-gray-500 uppercase font-black mb-1">수급 에너지</p>
