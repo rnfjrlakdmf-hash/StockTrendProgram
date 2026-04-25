@@ -18,7 +18,7 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showWaitHint, setShowWaitHint] = useState(false);
-    const [activeTab, setActiveTab] = useState<'analysis' | 'health' | 'news'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'price' | 'dart' | 'financials' | 'health'>('analysis');
 
     React.useEffect(() => {
         let timer: any;
@@ -162,27 +162,38 @@ function DiscoveryContent() {
                                     </div>
                                 </div>
 
-                                {/* 탭 바 */}
-                                <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl sticky top-4 z-50 backdrop-blur-xl">
+                                {/* 📑 탭 바 (요청된 순서 및 명칭 적용) */}
+                                <div className="flex items-center gap-1 border-b border-white/10 sticky top-0 z-50 bg-black/80 backdrop-blur-md px-2">
                                     {[
-                                        { id: 'analysis', label: '종합 분석', icon: Zap },
-                                        { id: 'health', label: '재무 건전성', icon: Activity },
-                                        { id: 'news', label: '최신 뉴스', icon: Search }
+                                        { id: 'analysis', label: '데이터 종합 분석' },
+                                        { id: 'news', label: '관련 뉴스' },
+                                        { id: 'price', label: '일일 시세' },
+                                        { id: 'dart', label: '공시(DART)', isNew: true },
+                                        { id: 'financials', label: '재무제표' },
+                                        { id: 'health', label: '💰 배당/건전성', isNew: true }
                                     ].map((tab) => (
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id as any)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black transition-all ${
-                                                activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                            className={`relative flex items-center gap-2 px-6 py-5 text-sm font-bold transition-all whitespace-nowrap ${
+                                                activeTab === tab.id 
+                                                ? 'text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-400' 
+                                                : 'text-gray-500 hover:text-white'
                                             }`}
                                         >
-                                            <tab.icon className="w-4 h-4" />
                                             <span>{tab.label}</span>
+                                            {tab.isNew && (
+                                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                                                    tab.id === 'health' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
+                                                }`}>
+                                                    New
+                                                </span>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="space-y-8">
+                                <div className="space-y-8 pt-4">
                                     {activeTab === 'analysis' && (
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
                                             <div className="lg:col-span-2 space-y-6">
@@ -229,8 +240,47 @@ function DiscoveryContent() {
                                         </div>
                                     )}
 
+                                    {activeTab === 'news' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-500">
+                                            {analysisData.news && analysisData.news.length > 0 ? (
+                                                analysisData.news.slice(0, 8).map((item: any, i: number) => (
+                                                    <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:bg-white/10 transition-all">
+                                                        <p className="text-[10px] text-blue-400 font-bold uppercase mb-2">{item.source}</p>
+                                                        <h6 className="font-bold text-gray-200 line-clamp-2">{item.title}</h6>
+                                                        <p className="text-xs text-gray-500 mt-2">{item.time}</p>
+                                                    </a>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-full p-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                                    <p className="text-gray-500">검색된 뉴스가 없습니다.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'price' && (
+                                        <div className="p-20 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 animate-in fade-in duration-500">
+                                            <p className="text-gray-500 mb-2">일일 시세 데이터 분석 중입니다.</p>
+                                            <p className="text-[10px] text-gray-600 uppercase font-black">Coming Soon</p>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'dart' && (
+                                        <div className="p-20 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 animate-in fade-in duration-500">
+                                            <p className="text-gray-500 mb-2">실시간 DART 공시 연동 기능이 준비 중입니다.</p>
+                                            <p className="text-[10px] text-gray-600 uppercase font-black">Coming Soon</p>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'financials' && (
+                                        <div className="p-20 text-center bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 animate-in fade-in duration-500">
+                                            <p className="text-gray-500 mb-2">상세 재무제표 데이터를 파싱 중입니다.</p>
+                                            <p className="text-[10px] text-gray-600 uppercase font-black">Coming Soon</p>
+                                        </div>
+                                    )}
+
                                     {activeTab === 'health' && (
-                                        <div className="animate-in fade-in duration-500">
+                                        <div className="animate-in fade-in duration-500 space-y-8">
                                             {(() => {
                                                 const hData = analysisData.health_data || {};
                                                 const raw = hData.raw_data || {};
@@ -242,12 +292,16 @@ function DiscoveryContent() {
                                                     roe: raw.roe?.values?.[i],
                                                 })).filter(d => d.year);
 
-                                                if (chartData.length === 0) return <p className="text-center text-gray-500">재무 데이터가 없습니다.</p>;
+                                                if (chartData.length === 0) return (
+                                                    <div className="p-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                                        <p className="text-gray-500">재무 건전성 데이터가 없습니다.</p>
+                                                    </div>
+                                                );
 
                                                 return (
                                                     <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
                                                         <h4 className="text-xl font-black text-white mb-10 flex items-center gap-2">
-                                                            <Activity className="w-5 h-5 text-blue-400" /> 재무 건전성 추이
+                                                            <Activity className="w-5 h-5 text-blue-400" /> 재무 건전성 및 배당 추이
                                                         </h4>
                                                         <div className="h-[400px]">
                                                             <ResponsiveContainer width="100%" height="100%">
@@ -266,18 +320,6 @@ function DiscoveryContent() {
                                                     </div>
                                                 );
                                             })()}
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'news' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-500">
-                                            {analysisData.news?.slice(0, 8).map((item: any, i: number) => (
-                                                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:bg-white/10 transition-all">
-                                                    <p className="text-[10px] text-blue-400 font-bold uppercase mb-2">{item.source}</p>
-                                                    <h6 className="font-bold text-gray-200 line-clamp-2">{item.title}</h6>
-                                                    <p className="text-xs text-gray-500 mt-2">{item.time}</p>
-                                                </a>
-                                            ))}
                                         </div>
                                     )}
                                 </div>
