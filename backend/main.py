@@ -32,6 +32,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"[Request] {request.method} {request.url.path}")
+    response = await call_next(request)
+    print(f"[Response] {request.method} {request.url.path} -> {response.status_code}")
+    return response
+
 # [Route Registration]
 app.include_router(system_router, prefix="/api", tags=["System"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])

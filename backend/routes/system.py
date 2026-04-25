@@ -17,6 +17,22 @@ def health_check():
         "service": "AI Stock Analyst Backend - Zero-Wait Architecture"
     }
 
+@router.get("/system/status")
+def get_system_status():
+    """컴포넌트 호환성을 위한 시스템 및 인덱싱 상태 반환"""
+    try:
+        from background_indexer import background_indexer
+        status = background_indexer.get_status()
+        return {
+            "status": "success",
+            "data": {
+                "indexing": status,
+                "uptime": time.time()
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/admin/nuke-placeholders")
 def nuke_placeholders(view: bool = False):
     """[Admin] Force clear all stuck placeholders from SQLite or view them"""

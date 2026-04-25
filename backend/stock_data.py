@@ -360,6 +360,19 @@ def fetch_full_info(ticker):
 
 
 def get_stock_info(symbol: str, skip_ai: bool = False):
+    symbol = symbol.strip()
+    print(f"[get_stock_info] Searching for: '{symbol}'")
+    
+    # [Fix] Resolve Korean Names to Codes (e.g., '삼성전자' -> '005930')
+    if not re.match(r'^\d{6}$', symbol) and not symbol.endswith(('.KS', '.KQ')) and not re.match(r'^[A-Z]+$', symbol):
+        from korea_data import search_korean_stock_symbol
+        found_code = search_korean_stock_symbol(symbol)
+        if found_code:
+            print(f"[get_stock_info] Resolved '{symbol}' to code: {found_code}")
+            symbol = found_code
+        else:
+            print(f"[get_stock_info] FAILED to resolve name '{symbol}' to code.")
+
     # [Cache Check]
     if symbol in STOCK_DATA_CACHE:
         cached_data, timestamp = STOCK_DATA_CACHE[symbol]
@@ -379,6 +392,12 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             # Use Comprehensive Naver Crawler (Gather all details at once)
             from korea_data import gather_naver_stock_data
             naver_info = gather_naver_stock_data(t_symbol)
+            
+            if naver_info:
+                print(f"[get_stock_info] Naver data fetch SUCCESS for '{t_symbol}'")
+            else:
+                print(f"[get_stock_info] Naver data fetch FAILED (None) for '{t_symbol}'")
+                
             if naver_info:
                 # [Fix] Correct Symbol Suffix (KS vs KQ)
                 # Naver search works by code, so we trust its returned market type

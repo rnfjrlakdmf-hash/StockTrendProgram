@@ -253,3 +253,19 @@ def get_korean_ipo():
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+@router.get("/market/scanner")
+def read_market_scanner():
+    """오늘의 증시 스캐너 데이터 (상승/하락 종목 수 및 특이 공시)"""
+    from korea_data import get_market_summary_stats, get_live_disclosures
+    try:
+        stats = get_market_summary_stats()
+        disclosures = get_live_disclosures()
+        return {
+            "status": "success",
+            "data": {
+                "stats": stats,
+                "disclosures": disclosures
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

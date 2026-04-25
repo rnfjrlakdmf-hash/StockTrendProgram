@@ -9,7 +9,7 @@ from turbo_engine import turbo_cache, turbo_engine
 router = APIRouter()
 
 @router.get("/stock/{symbol}")
-def read_stock(symbol: str, skip_ai: bool = False):
+async def read_stock(symbol: str, skip_ai: bool = False):
     symbol = urllib.parse.unquote(symbol).strip()
     cache_key = f"stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
@@ -20,11 +20,13 @@ def read_stock(symbol: str, skip_ai: bool = False):
     from ai_analysis import analyze_stock
     from db_manager import save_analysis_result
     
-    data = get_stock_info(symbol)
+    # Use to_thread to prevent blocking
+    data = await asyncio.to_thread(get_stock_info, symbol)
     if data:
         if not skip_ai:
             try:
-                ai_result = analyze_stock(data)
+                # Run heavy AI analysis in a separate thread
+                ai_result = await asyncio.to_thread(analyze_stock, data)
                 data.update({
                     "score": ai_result.get("score", 50),
                     "metrics": ai_result.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
@@ -32,8 +34,10 @@ def read_stock(symbol: str, skip_ai: bool = False):
                     "rationale": ai_result.get("rationale", {}),
                     "related_stocks": ai_result.get("related_stocks", [])
                 })
-                save_analysis_result(data)
-            except: pass
+                await asyncio.to_thread(save_analysis_result, data)
+            except Exception as e:
+                print(f"[ERROR] AI Analysis in thread failed: {e}")
+        
         turbo_engine.set_cache(cache_key, data)
         return {"status": "success", "data": data, "turbo": False}
     return {"status": "error", "message": "Stock not found"}

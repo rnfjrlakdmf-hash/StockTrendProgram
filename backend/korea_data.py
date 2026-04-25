@@ -62,6 +62,7 @@ get_korean_stock_name = get_korean_name  # Alias
 
 @turbo_cache(ttl_seconds=86400) # Mapping is stable, cache longer
 def search_stock_code(keyword: str):
+    print(f"\n[TRACE] search_stock_code called with keyword: '{keyword}'")
     """
     [v3.1.0-Enhanced] Mission-Critical Multi-layer Search Engine
     Goal: 100% resolution for Korean stocks with Unicode Normalization (NFC).
