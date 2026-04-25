@@ -755,7 +755,8 @@ def get_naver_daily_prices(symbol: str):
                 history.append({
                     "date": date,
                     "close": close,
-                    "change": change_percent, # Return % to match Yahoo behavior
+                    "change": change_percent,
+                    "change_val": diff,
                     "open": open_p,
                     "high": high,
                     "low": low,

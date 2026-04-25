@@ -1240,7 +1240,10 @@ function DiscoveryContent() {
                                                         <tr className="border-b border-white/10 text-gray-400 text-sm">
                                                             <th className="py-3 px-2">날짜</th>
                                                             <th className="py-3 px-2">종가</th>
-                                                            <th className="py-3 px-2">등락</th>
+                                                            <th className="py-3 px-2">전일비</th>
+                                                            <th className="py-3 px-2">시가</th>
+                                                            <th className="py-3 px-2">고가</th>
+                                                            <th className="py-3 px-2">저가</th>
                                                             <th className="py-3 px-2 text-right">거래량</th>
                                                         </tr>
                                                     </thead>
@@ -1255,7 +1258,20 @@ function DiscoveryContent() {
                                                                         <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span></span>
                                                                     </td>
                                                                     <td className={`py-3 px-2 font-mono font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                        <span><span>{day.change > 0 ? '+' : null}</span><span>{day.change.toFixed(2)}</span><span>%</span></span>
+                                                                        <span>
+                                                                            <span>{day.change > 0 ? '▲' : day.change < 0 ? '▼' : null}</span>
+                                                                            <span>{(day.change_val || 0).toLocaleString()}</span>
+                                                                            <span className="text-[10px] ml-1 opacity-70">({day.change.toFixed(2)}%)</span>
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                        <span>{day.open.toLocaleString()}</span>
+                                                                    </td>
+                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                        <span className="text-red-400/80">{day.high.toLocaleString()}</span>
+                                                                    </td>
+                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                        <span className="text-blue-400/80">{day.low.toLocaleString()}</span>
                                                                     </td>
                                                                     <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
                                                                         <span>{day.volume.toLocaleString()}</span>
@@ -1264,7 +1280,7 @@ function DiscoveryContent() {
                                                             ))
                                                         ) : (
                                                             <tr>
-                                                                <td colSpan={4} className="py-4 text-center text-gray-500">일일 시세 데이터 없음</td>
+                                                                <td colSpan={7} className="py-4 text-center text-gray-500">일일 시세 데이터 없음</td>
                                                             </tr>
                                                         )}
                                                     </tbody>
