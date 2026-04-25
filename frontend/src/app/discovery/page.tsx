@@ -10,6 +10,7 @@ import { useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
+import InvestorTrendTab from "@/components/InvestorTrendTab";
 
 function DiscoveryContent() {
     const searchParams = useSearchParams();
@@ -244,9 +245,19 @@ function DiscoveryContent() {
                                             <div className="lg:col-span-3">
                                                 <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
                                                     <h5 className="text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-2">
-                                                        <Building2 className="w-5 h-5 text-blue-400" /> 데이터 기반 상세 분석 (초창기 모델 복구)
+                                                        <Building2 className="w-5 h-5 text-blue-400" /> 데이터 기반 상세 분석
                                                     </h5>
                                                     <KoreanCompanyOverview symbol={analysisData.symbol} stockName={analysisData.name} />
+                                                </div>
+                                            </div>
+
+                                            {/* 초창기 모델의 핵심: 수급 분석 추가 */}
+                                            <div className="lg:col-span-3">
+                                                <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+                                                    <h5 className="text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-2">
+                                                        <Users className="w-5 h-5 text-purple-400" /> 외국인/기관 수급 트렌드
+                                                    </h5>
+                                                    <InvestorTrendTab symbol={analysisData.symbol} stockName={analysisData.name} />
                                                 </div>
                                             </div>
                                         </div>
