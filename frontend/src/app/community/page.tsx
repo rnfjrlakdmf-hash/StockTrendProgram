@@ -13,6 +13,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+interface ChatReply {
+    id: number;
+    user_name: string;
+    text: string;
+    timestamp: string;
+}
+
 interface ChatMessage {
     id: number;
     user_name: string;
@@ -20,6 +27,7 @@ interface ChatMessage {
     timestamp: string;
     symbol: string;
     profit?: number; // [New] 수익률 인증
+    replies?: ChatReply[]; // [New] 답글
 }
 
 interface HotStock {
@@ -64,6 +72,11 @@ function CommunityContent() {
     
     // [New] Watchlist State
     const [watchlist, setWatchlist] = useState<any[]>([]);
+    
+    // [New] Reply States
+    const [replyingTo, setReplyingTo] = useState<number | null>(null);
+    const [replyInput, setReplyInput] = useState<string>("");
+    const [replySending, setReplySending] = useState(false);
     
     const chatEndRef = useRef<HTMLDivElement>(null);
     const stockChatEndRef = useRef<HTMLDivElement>(null);
@@ -193,6 +206,27 @@ function CommunityContent() {
         finally { setStockSending(false); }
     };
 
+    const handleSendReply = async (messageId: number) => {
+        if (!replyInput.trim() || replySending) return;
+        if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
+        setReplySending(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/community/lounge/${messageId}/reply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_name: user.name, text: replyInput })
+            });
+            const json = await res.json();
+            if (json.status === "success") { 
+                setReplyInput(""); 
+                setReplyingTo(null);
+                if (activeTab === 'lounge') fetchChats();
+                else if (targetSymbol) fetchStockChats(targetSymbol);
+            }
+        } catch (e) { console.error(e); }
+        finally { setReplySending(false); }
+    };
+
     const handleSymbolSearch = () => {
         if (!symbolInput.trim()) return;
         setTargetSymbol(symbolInput.trim().toUpperCase());
@@ -286,6 +320,44 @@ function CommunityContent() {
                                                 }`}>
                                                     {chat.text}
                                                 </div>
+                                                
+                                                {/* Reply Button */}
+                                                <button onClick={() => { setReplyingTo(replyingTo === chat.id ? null : chat.id); setReplyInput(""); }} 
+                                                    className="text-[10px] text-gray-500 hover:text-white mt-0.5 ml-2 self-start flex items-center gap-1 transition-colors">
+                                                    <MessageSquare className="w-3 h-3" /> 답글 달기
+                                                </button>
+                                                
+                                                {/* Replies List */}
+                                                {chat.replies && chat.replies.length > 0 && (
+                                                    <div className="ml-4 mt-1 space-y-2 border-l-2 border-white/5 pl-4 py-1">
+                                                        {chat.replies.map(r => (
+                                                            <div key={r.id} className="flex flex-col gap-0.5">
+                                                                <div className="flex items-baseline gap-2">
+                                                                    <span className="text-[10px] font-bold text-gray-400">{r.user_name}</span>
+                                                                    <span className="text-[8px] text-gray-600 font-mono">
+                                                                        {new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-300 bg-white/5 px-3 py-1.5 rounded-xl rounded-tl-none w-fit border border-white/5 max-w-[90%]">
+                                                                    {r.text}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Reply Input Box */}
+                                                {replyingTo === chat.id && (
+                                                    <div className="ml-4 mt-1 flex gap-2 w-[85%] animate-in slide-in-from-top-2 fade-in duration-200">
+                                                        <input type="text" value={replyInput} onChange={e => setReplyInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendReply(chat.id)} 
+                                                            placeholder="답글을 입력하세요..." disabled={replySending}
+                                                            className="flex-1 text-xs bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50" />
+                                                        <button onClick={() => handleSendReply(chat.id)} disabled={replySending || !replyInput.trim()} 
+                                                            className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl text-xs font-bold text-white transition-colors">
+                                                            {replySending ? <Loader2 className="w-3 h-3 animate-spin"/> : <Send className="w-3 h-3"/>}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     )}
@@ -386,6 +458,44 @@ function CommunityContent() {
                                                         }`}>
                                                             {chat.text}
                                                         </div>
+                                                        
+                                                        {/* Reply Button */}
+                                                        <button onClick={() => { setReplyingTo(replyingTo === chat.id ? null : chat.id); setReplyInput(""); }} 
+                                                            className="text-[10px] text-gray-500 hover:text-white mt-0.5 ml-2 self-start flex items-center gap-1 transition-colors">
+                                                            <MessageSquare className="w-3 h-3" /> 답글 달기
+                                                        </button>
+                                                        
+                                                        {/* Replies List */}
+                                                        {chat.replies && chat.replies.length > 0 && (
+                                                            <div className="ml-4 mt-1 space-y-2 border-l-2 border-white/5 pl-4 py-1">
+                                                                {chat.replies.map(r => (
+                                                                    <div key={r.id} className="flex flex-col gap-0.5">
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className="text-[10px] font-bold text-gray-400">{r.user_name}</span>
+                                                                            <span className="text-[8px] text-gray-600 font-mono">
+                                                                                {new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-300 bg-white/5 px-3 py-1.5 rounded-xl rounded-tl-none w-fit border border-white/5 max-w-[90%]">
+                                                                            {r.text}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Reply Input Box */}
+                                                        {replyingTo === chat.id && (
+                                                            <div className="ml-4 mt-1 flex gap-2 w-[85%] animate-in slide-in-from-top-2 fade-in duration-200">
+                                                                <input type="text" value={replyInput} onChange={e => setReplyInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendReply(chat.id)} 
+                                                                    placeholder="답글을 입력하세요..." disabled={replySending}
+                                                                    className="flex-1 text-xs bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50" />
+                                                                <button onClick={() => handleSendReply(chat.id)} disabled={replySending || !replyInput.trim()} 
+                                                                    className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl text-xs font-bold text-white transition-colors">
+                                                                    {replySending ? <Loader2 className="w-3 h-3 animate-spin"/> : <Send className="w-3 h-3"/>}
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))
                                             )}
