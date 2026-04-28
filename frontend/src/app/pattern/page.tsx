@@ -118,7 +118,7 @@ export default function PatternPage() {
 
         try {
             const ticker = getTickerFromKorean(symbolToSearch).toUpperCase();
-            const res = await fetch(`${API_BASE_URL}/api/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}`);
+            const res = await fetch(`${API_BASE_URL}/api/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}&t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 setResult(json.data);

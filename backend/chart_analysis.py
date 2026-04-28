@@ -245,7 +245,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
                     "date": date_str, "open": row['Open'], "high": row['High'], "low": row['Low'], "close": row['Close'], "volume": row['Volume']
                 })
             
-            stories = detect_inflection_points(yf_ticker, interval, df)
+            stories = detect_inflection_points(yf_ticker, yf_period, interval)
             
             # Beginner Insight (1y daily)
             insight_df = df
