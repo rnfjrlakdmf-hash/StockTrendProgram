@@ -41,7 +41,9 @@ async def log_requests(request, call_next):
     return response
 
 # [Route Registration]
-app.mount("/uploads", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "uploads")), name="uploads")
+UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 app.include_router(system_router, prefix="/api", tags=["System"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(market_router, prefix="/api", tags=["Market"])
