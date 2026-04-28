@@ -66,6 +66,7 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
         if hist.empty: return {"status": "success", "data": []}
         hist['PrevClose'] = hist['Close'].shift(1)
         hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
+        hist['ChangeVal'] = hist['Close'] - hist['PrevClose']
         hist_desc = hist.sort_index(ascending=False)
         res = []
         for date, row in hist_desc.iterrows():
@@ -74,6 +75,7 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
                 "date": date.strftime("%Y-%m-%d"),
                 "close": float(row['Close']),
                 "change": float(row['ChangePct']) if pd.notna(row['ChangePct']) else 0.0,
+                "change_val": float(row['ChangeVal']) if pd.notna(row['ChangeVal']) else 0.0,
                 "volume": int(row['Volume']) if pd.notna(row['Volume']) else 0,
                 "open": float(row['Open']) if 'Open' in row and pd.notna(row['Open']) else 0.0,
                 "high": float(row['High']) if 'High' in row and pd.notna(row['High']) else 0.0,

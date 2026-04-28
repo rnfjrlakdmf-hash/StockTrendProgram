@@ -325,6 +325,7 @@ def get_daily_prices_data(ticker):
         hist_asc['PrevClose'] = hist_asc['Close'].shift(1)
         hist_asc['Change'] = (
             (hist_asc['Close'] - hist_asc['PrevClose']) / hist_asc['PrevClose']) * 100
+        hist_asc['ChangeVal'] = hist_asc['Close'] - hist_asc['PrevClose']
 
         # Sort desc and take top 20
         hist_desc = hist_asc.sort_index(ascending=False).head(20)
@@ -339,7 +340,8 @@ def get_daily_prices_data(ticker):
                 "low": safe_float(row['Low']),
                 "close": safe_float(row['Close']),
                 "volume": int(row['Volume']) if pd.notna(row['Volume']) else 0,
-                "change": safe_float(row['Change']) if pd.notna(row['Change']) else 0.0
+                "change": safe_float(row['Change']) if pd.notna(row['Change']) else 0.0,
+                "change_val": safe_float(row['ChangeVal']) if pd.notna(row['ChangeVal']) else 0.0
             })
         return daily_prices
     except Exception as e:

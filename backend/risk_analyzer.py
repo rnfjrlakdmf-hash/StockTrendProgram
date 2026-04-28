@@ -434,7 +434,7 @@ def calculate_analysis_score(symbol: str) -> Dict:
             "message": message,
             "color": color,
             "details": details,
-            "raw_data": info.get("full_data") if info.get("is_korean_adapter") else None, # [New] Pass raw metrics for table
+            "raw_data": info.get("full_data") if info.get("is_korean_adapter") else None, # [Fix] Use top-level full_data from adapter
             "analyzed_at": datetime.now().isoformat(),
             "disclaimer": "본 분석 결과는 객관적 재무 지표를 알고리즘에 따라 산출한 수치이며, 특정 종목에 대한 투자 권유나 추천이 아닙니다."
         }

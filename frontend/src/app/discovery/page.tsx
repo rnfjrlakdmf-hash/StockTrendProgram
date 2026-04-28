@@ -1006,7 +1006,7 @@ function DiscoveryContent() {
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'financials' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
                                                     onClick={() => setActiveTab('financials')}
                                                 >
-                                                    <span>💰 배당/건전성</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
+                                                    <span>💰 재무제표</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
@@ -1088,7 +1088,7 @@ function DiscoveryContent() {
                                                 ) : (
                                                     <span>{stock.summary || "분석 내용이 없습니다."}</span>
                                                 )}
-                                                <AIDisclaimer isCompact={true} className="mt-4" />
+
                                             </div>
 
                                             {/* [New] Healthcare Analysis Integration - Hidden by user request 

@@ -185,7 +185,7 @@ def search_stock_code(keyword: str):
         
 search_korean_stock_symbol = search_stock_code # Alias
 
-# @turbo_cache(ttl_seconds=30)
+@turbo_cache(ttl_seconds=30)
 def gather_naver_stock_data(symbol: str):
     """
     Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials) in ONE request.
@@ -199,23 +199,39 @@ def gather_naver_stock_data(symbol: str):
             
         url = f"https://finance.naver.com/item/main.naver?code={code}"
         res = requests.get(url, headers=HEADER, timeout=10)
+        if res.status_code != 200:
+            print(f"[gather_naver_stock_data] HTTP Error {res.status_code} for {code}")
+            return None
         
-        # [Fix] Smart Decoding v2: UTF-8 First
-        # EUC-KR bytes are often invalid UTF-8 (fail fast), 
-        # whereas UTF-8 bytes can look like valid EUC-KR (garbage success).
-        # So we MUST try UTF-8 first.
-        # [Fix] Smart Decoding v7: Explicitly handle Naver's hybrid encoding
         content = res.content
-        if b'charset=utf-8' in content.lower() or b'\xec\x82\xbc' in content: # UTF-8 signature OR meta
-            html = content.decode('utf-8', 'ignore')
-        else:
-            html = content.decode('cp949', 'ignore')
+        
+        # Try multiple encodings to be robust (Naver is CP949/EUC-KR)
+        html = None
+        for enc in ['cp949', 'euc-kr', 'utf-8']:
+            try:
+                candidate_html = content.decode(enc, 'ignore')
+                has_cop = 'cop_analysis' in candidate_html
+                has_kor = '매출액' in candidate_html or '영업이익' in candidate_html
+                if has_cop and has_kor:
+                    html = candidate_html
+                    print(f"[gather_naver_stock_data] Decoded with {enc} SUCCESS (Validated with Korean keywords)")
+                    break
+                else:
+                    print(f"[DEBUG] {enc} decoding passed but missing keywords: has_cop={has_cop}, has_kor={has_kor}")
+            except Exception as e:
+                print(f"[DEBUG] Encoding {enc} failed: {e}")
+                continue
+                
+        if not html:
+            html = content.decode('utf-8', 'ignore') # Final fallback
+            print(f"[gather_naver_stock_data] Decoded with fallback UTF-8")
              
         soup = BeautifulSoup(html, 'html.parser')
         
         # Name
         name_tag = soup.select_one(".wrap_company h2 a")
         if not name_tag:
+            print(f"[gather_naver_stock_data] Name tag not found for {code}. Page structure might have changed.")
             return None
         name = name_tag.text.strip()
         
@@ -345,8 +361,12 @@ def gather_naver_stock_data(symbol: str):
         # 4. If all fails but price exists, default to "장중" if hour is 9-16 (KST)
         if market_status == "Unknown" and price > 0:
             now_kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-            if now_kst.weekday() < 5 and 9 <= now_kst.hour < 16:
+            # Standard Market: 09:00 ~ 15:30 (KST)
+            current_min = now_kst.hour * 100 + now_kst.minute
+            if now_kst.weekday() < 5 and 900 <= current_min < 1530:
                  market_status = "장중"
+            elif now_kst.weekday() < 5 and current_min >= 1530:
+                 market_status = "장마감"
         
         # 4. Ultimate Fallback: keyword scan in HTML
         if market_status == "Unknown":
@@ -1788,6 +1808,42 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                 print(f"Mobile API Fetch Error (last_bizdate={last_bizdate}): {e}")
                 break
 
+        # [New] Merge today's live/confirmed data if missing from mobile API trend
+        try:
+            import pytz
+            kst = pytz.timezone('Asia/Seoul')
+            today_str = datetime.datetime.now(kst).strftime("%Y-%m-%d")
+            # If the first trend item is not today, try to get today's data
+            if not trend or trend[0].get("date") != today_str:
+                live_data = get_live_investor_estimates(code)
+                if live_data and len(live_data) > 0:
+                    latest_live = live_data[-1] # Use the most recent point
+                    # Find price if missing
+                    current_price = trend[0].get("close", 0) if trend else 0
+                    if current_price == 0:
+                        try:
+                            from stock_data import get_simple_quote
+                            q = get_simple_quote(symbol)
+                            if q: current_price = float(str(q.get("price")).replace(',', ''))
+                        except: pass
+                    
+                    # Create a trend-compatible item
+                    today_item = {
+                        "date": today_str,
+                        "close": current_price,
+                        "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
+                        "change": 0.0, # Approximate
+                        "volume": 0,
+                        "institution": latest_live.get("institution", 0),
+                        "foreigner": latest_live.get("foreigner", 0),
+                        "retail": 0, 
+                        "foreign_holdings": trend[0].get("foreign_holdings", 0) if trend else 0,
+                        "foreign_ratio": trend[0].get("foreign_ratio", 0) if trend else 0
+                    }
+                    trend.insert(0, today_item)
+        except Exception as merge_err:
+            print(f"Investor Merge Error: {merge_err}")
+
         return {
             "status": "success",
             "data": {
@@ -1915,7 +1971,9 @@ def get_live_investor_estimates(symbol: str):
     Scrapes '잠정치' from Naver Finance.
     Falls back to confirmed daily data if unavailable.
     """
-    now = datetime.datetime.now()
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.datetime.now(kst)
     today_str = now.strftime("%Y-%m-%d")
     
     # 0. Fix Symbol Format (digit only for Naver)
@@ -1952,21 +2010,13 @@ def get_live_investor_estimates(symbol: str):
         soup = BeautifulSoup(html, 'html.parser')
 
         # Find the table containing "잠정" (Provisional)
-        # Search for table by summary or content keywords
+        # Search for table by column headers since 'summary' attribute was removed by Naver
         table = None
         for tbl in soup.select("table"):
-            summary = tbl.get("summary", "")
-            if "잠정" in summary or "순매매" in summary:
+            headers = [th.text.strip() for th in tbl.select("th")]
+            if "시간" in headers and "외국인" in headers and "기관" in headers:
                 table = tbl
                 break
-        
-        if not table:
-            # Fallback: look for the second sub_section table which is usually the one
-            tables = soup.select(".sub_section table")
-            if len(tables) >= 2:
-                table = tables[1]
-            elif tables:
-                table = tables[0]
 
         if table:
             rows = table.select("tr")

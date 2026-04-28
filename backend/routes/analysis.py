@@ -142,3 +142,41 @@ def stock_investor(symbol: str, period: int = Query(20)):
         return get_naver_investor_data(symbol, trader_day=period)
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.get("/stock/{symbol}/investors/live")
+def stock_investors_live(symbol: str):
+    from korea_data import get_live_investor_estimates
+    try:
+        data = get_live_investor_estimates(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/stock/{symbol}/financials")
+def stock_financials(symbol: str):
+    from korea_data import get_stock_financials
+    try:
+        data = get_stock_financials(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/stock/{symbol}/dart_overhang")
+@turbo_cache(ttl_seconds=300)
+def stock_dart_overhang(symbol: str):
+    from dart_disclosure import get_dart_overhang_and_investments
+    try:
+        data = get_dart_overhang_and_investments(symbol)
+        return data
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/stock/{symbol}/disclosures")
+@turbo_cache(ttl_seconds=300)
+def stock_disclosures(symbol: str, period: str = Query("1m")):
+    from dart_disclosure import get_dart_disclosures
+    try:
+        data = get_dart_disclosures(symbol, period)
+        return data
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
