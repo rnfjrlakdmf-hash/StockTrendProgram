@@ -200,7 +200,6 @@ function CommunityContent() {
             }
 
             const payload: any = { user_name: user.name, text: inputText, symbol: "global" };
-            if (profitInput) payload.profit = parseFloat(profitInput);
             if (uploadedUrl) payload.image_url = uploadedUrl;
             
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
@@ -209,7 +208,7 @@ function CommunityContent() {
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setInputText(""); setProfitInput(""); clearImage(); fetchChats(); }
+            if (json.status === "success") { setInputText(""); clearImage(); fetchChats(); }
             else if (json.status === "blocked") { alert(json.message); setInputText(""); clearImage(); }
         } catch (e) { console.error(e); }
         finally { setSending(false); }
@@ -230,7 +229,6 @@ function CommunityContent() {
             }
 
             const payload: any = { user_name: user.name, text: stockInputText, symbol: targetSymbol };
-            if (profitInput) payload.profit = parseFloat(profitInput);
             if (uploadedUrl) payload.image_url = uploadedUrl;
 
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
@@ -239,7 +237,7 @@ function CommunityContent() {
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setStockInputText(""); setProfitInput(""); clearImage(); fetchStockChats(targetSymbol); fetchHotStocks(); }
+            if (json.status === "success") { setStockInputText(""); clearImage(); fetchStockChats(targetSymbol); fetchHotStocks(); }
             else if (json.status === "blocked") { alert(json.message); setStockInputText(""); clearImage(); }
         } catch (e) { console.error(e); }
         finally { setStockSending(false); }
@@ -343,11 +341,6 @@ function CommunityContent() {
                                             <div key={chat.id} className="flex flex-col gap-1">
                                                 <div className="flex items-baseline gap-2">
                                                     <span className={`text-xs font-black ${chat.user_name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{chat.user_name}</span>
-                                                    {chat.profit !== undefined && (
-                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${chat.profit > 0 ? 'bg-red-500/20 text-red-400' : chat.profit < 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                                                            수익 {chat.profit > 0 ? '+' : ''}{chat.profit}%
-                                                        </span>
-                                                    )}
                                                     <span className="text-[8px] text-gray-600 font-mono">
                                                         {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
@@ -417,20 +410,11 @@ function CommunityContent() {
                                     <div className="flex gap-2">
                                         {/* Image Upload Button */}
                                         <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageChange} />
-                                        <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0">
-                                            <ImageIcon className="w-5 h-5 text-gray-400" />
+                                        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0 group/img">
+                                            <ImageIcon className="w-5 h-5 text-emerald-400 group-hover/img:text-emerald-300 transition-colors" />
+                                            <span className="text-xs font-bold text-emerald-400/80 group-hover/img:text-emerald-300">인증샷</span>
                                         </button>
                                         
-                                        {/* Profit Input */}
-                                        <div className="relative w-24 shrink-0">
-                                            <input 
-                                                type="number" step="0.1" value={profitInput}
-                                                onChange={(e) => setProfitInput(e.target.value)}
-                                                placeholder="수익(%)"
-                                                disabled={!user || sending}
-                                                className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
-                                            />
-                                        </div>
                                         <div className="relative group flex-1">
                                             <input 
                                                 type="text" value={inputText}
@@ -568,20 +552,11 @@ function CommunityContent() {
                                             )}
                                             <div className="flex gap-2">
                                                 {/* Image Upload Button */}
-                                                <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0">
-                                                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                                                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0 group/img">
+                                                    <ImageIcon className="w-5 h-5 text-emerald-400 group-hover/img:text-emerald-300 transition-colors" />
+                                                    <span className="text-xs font-bold text-emerald-400/80 group-hover/img:text-emerald-300">인증샷</span>
                                                 </button>
                                                 
-                                                {/* Profit Input */}
-                                                <div className="relative w-24 shrink-0">
-                                                    <input 
-                                                        type="number" step="0.1" value={profitInput}
-                                                        onChange={(e) => setProfitInput(e.target.value)}
-                                                        placeholder="수익(%)"
-                                                        disabled={!user || stockSending}
-                                                        className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
-                                                    />
-                                                </div>
                                                 <div className="relative group flex-1">
                                                     <input 
                                                         type="text" value={stockInputText}
