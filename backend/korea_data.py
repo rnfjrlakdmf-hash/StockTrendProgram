@@ -1816,31 +1816,31 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
             # If the first trend item is not today, try to get today's data
             if not trend or trend[0].get("date") != today_str:
                 live_data = get_live_investor_estimates(code)
-                if live_data and len(live_data) > 0:
-                    latest_live = live_data[-1] # Use the most recent point
-                    # Find price if missing
-                    current_price = trend[0].get("close", 0) if trend else 0
-                    if current_price == 0:
-                        try:
-                            from stock_data import get_simple_quote
-                            q = get_simple_quote(symbol)
-                            if q: current_price = float(str(q.get("price")).replace(',', ''))
-                        except: pass
-                    
-                    # Create a trend-compatible item
-                    today_item = {
-                        "date": today_str,
-                        "close": current_price,
-                        "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
-                        "change": 0.0, # Approximate
-                        "volume": 0,
-                        "institution": latest_live.get("institution", 0),
-                        "foreigner": latest_live.get("foreigner", 0),
-                        "retail": 0, 
-                        "foreign_holdings": trend[0].get("foreign_holdings", 0) if trend else 0,
-                        "foreign_ratio": trend[0].get("foreign_ratio", 0) if trend else 0
-                    }
-                    trend.insert(0, today_item)
+                latest_live = live_data[-1] if live_data and len(live_data) > 0 else {}
+                
+                # Find price if missing
+                current_price = trend[0].get("close", 0) if trend else 0
+                if current_price == 0:
+                    try:
+                        from stock_data import get_simple_quote
+                        q = get_simple_quote(symbol)
+                        if q: current_price = float(str(q.get("price")).replace(',', ''))
+                    except: pass
+                
+                # Create a trend-compatible item
+                today_item = {
+                    "date": today_str,
+                    "close": current_price,
+                    "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
+                    "change": 0.0, # Approximate
+                    "volume": 0,
+                    "institution": latest_live.get("institution", 0),
+                    "foreigner": latest_live.get("foreigner", 0),
+                    "retail": 0, 
+                    "foreign_holdings": trend[0].get("foreign_holdings", 0) if trend else 0,
+                    "foreign_ratio": trend[0].get("foreign_ratio", 0) if trend else 0
+                }
+                trend.insert(0, today_item)
         except Exception as merge_err:
             print(f"Investor Merge Error: {merge_err}")
 
