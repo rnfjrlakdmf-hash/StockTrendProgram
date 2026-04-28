@@ -148,7 +148,24 @@ def search_stock_api(q: str):
 
 @router.get("/quote/{symbol}")
 def read_quote(symbol: str):
-    symbol = urllib.parse.unquote(symbol)
+    symbol = urllib.parse.unquote(symbol).strip()
+    
+    import re
+    if not re.match(r'^[A-Za-z0-9.]+$', symbol):
+        import unicodedata
+        from korea_data import search_stock_code
+        from stock_data import GLOBAL_KOREAN_NAMES
+        q_norm = unicodedata.normalize('NFC', symbol).replace(" ", "")
+        resolved = None
+        for t, k in GLOBAL_KOREAN_NAMES.items():
+            if q_norm == k or q_norm in k:
+                resolved = t
+                break
+        if not resolved:
+            resolved = search_stock_code(q_norm)
+        if resolved:
+            symbol = resolved
+
     cache_key = f"quote_simple_{symbol}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
