@@ -623,6 +623,10 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                         comm["change_display"] = f"{change:+.2f}%"
                         comm["change_value"] = change
                 except: pass
+        # 3. Ensure array properties exist to prevent frontend crashes
+        data["nodes"] = data.get("nodes") or []
+        data["links"] = data.get("links") or []
+        data["commodities"] = data.get("commodities") or []
 
         # [Fix] Ensure summary is always a string to prevent frontend split errors
         summary_raw = data.get("summary", "")

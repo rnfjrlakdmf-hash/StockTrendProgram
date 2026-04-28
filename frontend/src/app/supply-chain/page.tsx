@@ -198,8 +198,8 @@ export default function SupplyChainPage() {
                                 <div className="p-6 rounded-2xl border border-dashed border-green-500/30 bg-green-500/5 backdrop-blur-sm">
                                     <h3 className="text-green-400 font-bold mb-4 flex items-center gap-2">공급사 (Suppliers) <ArrowRight className="w-4 h-4" /></h3>
                                     <div className="space-y-6">
-                                        {data.nodes.filter((n: any) => n.group === 'supplier').map((node: any) => {
-                                            const link = data.links.find((l: any) => l.source === node.id);
+                                        {(data.nodes || []).filter((n: any) => n.group === 'supplier').map((node: any) => {
+                                            const link = (data.links || []).find((l: any) => l.source === node.id);
                                             const isArtery = link?.width_type === 'artery';
                                             return (
                                                 <div key={node.id} className="relative group">
@@ -269,16 +269,16 @@ export default function SupplyChainPage() {
                                         </div>
                                         
                                         <span 
-                                            onClick={() => handleNodeClick(data.nodes.find((n: any) => n.group === 'target'))}
+                                            onClick={() => handleNodeClick((data.nodes || []).find((n: any) => n.group === 'target'))}
                                             className="text-lg md:text-2xl font-black text-white text-center px-6 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all relative z-10"
                                         >
-                                            {data.nodes.find((n: any) => n.group === 'target')?.label}
+                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.label || data.symbol || "Target"}
                                         </span>
                                         
                                         {/* [NEW] Target Themes */}
-                                        {data.nodes.find((n: any) => n.group === 'target')?.themes && (
+                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.themes && (
                                             <div className="flex flex-wrap justify-center gap-1 mt-3 px-4 relative z-10">
-                                                {data.nodes.find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
+                                                {(data.nodes || []).find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
                                                     <span key={i} className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-md border border-white/30 font-bold">
                                                         {t}
                                                     </span>
@@ -286,27 +286,27 @@ export default function SupplyChainPage() {
                                             </div>
                                         )}
                                         {/* Price */}
-                                        {data.nodes.find((n: any) => n.group === 'target')?.price_display && (
+                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.price_display && (
                                             <div className="mt-2 bg-black/40 px-3 py-1 rounded-full text-sm font-mono border border-white/20 backdrop-blur-md relative z-10">
-                                                <span className="text-white mr-2">{data.nodes.find((n: any) => n.group === 'target')?.price_display}</span>
-                                                <span className={data.nodes.find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                    {data.nodes.find((n: any) => n.change_display)}
+                                                <span className="text-white mr-2">{(data.nodes || []).find((n: any) => n.group === 'target')?.price_display}</span>
+                                                <span className={(data.nodes || []).find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.change_display || ""}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
-                                    {data.nodes.find((n: any) => n.group === 'target')?.event && (
+                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
                                         <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <span className="text-sm">🚩</span>
-                                                <span>{data.nodes.find((n: any) => n.group === 'target')?.event.d_day}</span>
+                                                <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
                                             </div>
-                                            <div className="text-[10px] font-extrabold mt-0.5">{data.nodes.find((n: any) => n.group === 'target')?.event.name}</div>
-                                            {data.nodes.find((n: any) => n.group === 'target')?.event.date && data.nodes.find((n: any) => n.group === 'target')?.event.date !== 'Unknown' && (
+                                            <div className="text-[10px] font-extrabold mt-0.5">{(data.nodes || []).find((n: any) => n.group === 'target')?.event.name}</div>
+                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date && (data.nodes || []).find((n: any) => n.group === 'target')?.event.date !== 'Unknown' && (
                                                 <div className="text-[9px] text-red-100 mt-1 border-t border-white/20 pt-1">
-                                                    {data.nodes.find((n: any) => n.group === 'target')?.event.date}
+                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date}
                                                 </div>
                                             )}
                                         </div>
@@ -324,7 +324,7 @@ export default function SupplyChainPage() {
                                 <div className="p-6 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 backdrop-blur-sm">
                                     <h3 className="text-red-400 font-bold mb-4 flex items-center justify-end gap-2">경쟁사 (Rivals) <div className="w-2 h-2 rounded-full bg-red-500"></div></h3>
                                     <div className="space-y-6">
-                                        {data.nodes.filter((n: any) => n.group === 'competitor').map((node: any) => (
+                                        {(data.nodes || []).filter((n: any) => n.group === 'competitor').map((node: any) => (
                                             <div key={node.id} className="flex flex-col items-end gap-1 group relative">
                                                 <div className="flex items-center justify-end gap-3">
                                                     <span 
@@ -335,7 +335,7 @@ export default function SupplyChainPage() {
                                                     </span>
                                                     <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
                                                 </div>
-                                                <div className="text-xs text-gray-500">{data.links.find((l: any) => l.target === node.id)?.value}</div>
+                                                <div className="text-xs text-gray-500">{(data.links || []).find((l: any) => l.target === node.id)?.value}</div>
                                                 {/* Price Badge */}
                                                 {node.price_display && (
                                                     <div className="flex items-center gap-2 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5">
@@ -364,8 +364,8 @@ export default function SupplyChainPage() {
                                 <div className="p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm text-right">
                                     <h3 className="text-blue-400 font-bold mb-4 flex items-center justify-end gap-2"><ArrowRight className="w-4 h-4" /> 고객사 (Clients)</h3>
                                     <div className="space-y-6">
-                                        {data.nodes.filter((n: any) => n.group === 'customer').map((node: any) => {
-                                            const link = data.links.find((l: any) => l.target === node.id);
+                                        {(data.nodes || []).filter((n: any) => n.group === 'customer').map((node: any) => {
+                                            const link = (data.links || []).find((l: any) => l.target === node.id);
                                             const isArtery = link?.width_type === 'artery';
                                             return (
                                                 <div key={node.id} className="relative group">
