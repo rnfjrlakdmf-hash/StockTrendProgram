@@ -161,6 +161,18 @@ def stock_financials(symbol: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/stock/{symbol}/indicators")
+@turbo_cache(ttl_seconds=300)
+def stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "1"):
+    from korea_data import get_korean_investment_indicators
+    try:
+        data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+        if data and data.get("status") == "success":
+            return {"status": "success", "data": data}
+        return {"status": "error", "message": "지표 데이터를 찾을 수 없습니다."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/stock/{symbol}/dart_overhang")
 @turbo_cache(ttl_seconds=300)
 def stock_dart_overhang(symbol: str):
