@@ -27,7 +27,7 @@ export default function ThemePage() {
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/theme?keyword=${encodeURIComponent(searchKeyword)}`, {
+            const res = await fetch(`${API_BASE_URL}/api/theme/${encodeURIComponent(searchKeyword)}`, {
                 signal: controller.signal
             });
 
