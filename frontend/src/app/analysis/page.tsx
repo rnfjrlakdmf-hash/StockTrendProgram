@@ -592,8 +592,8 @@ function AnalysisContent() {
                                                 metrics: [
                                                     { key: "PER", label: "PER (배)" },
                                                     { key: "PBR", label: "PBR (배)" },
-                                                    { key: "Fwd. 12M PER 추이", label: "Fwd. 12M PER" },
-                                                    { key: "Fwd. 12M PBR 추이", label: "Fwd. 12M PBR" }
+                                                    { key: "Fwd. 12M PER", label: "Fwd. 12M PER" },
+                                                    { key: "Fwd. 12M PBR", label: "Fwd. 12M PBR" }
                                                 ]
                                             },
                                             {

@@ -207,6 +207,8 @@ def get_sector_analysis_route(symbol: str, sector_id: str = None):
     from sector_analysis import get_sector_analysis_data
     try:
         data = get_sector_analysis_data(symbol, sector_id)
+        if isinstance(data, dict) and "status" in data and "data" in data:
+            return data
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
