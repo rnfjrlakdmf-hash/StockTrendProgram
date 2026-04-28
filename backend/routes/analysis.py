@@ -308,6 +308,8 @@ def optimize_portfolio_route(req: PortfolioReq):
     from portfolio_opt import optimize_portfolio
     try:
         data = optimize_portfolio(target)
+        if isinstance(data, dict) and "error" in data:
+            return {"status": "error", "message": data["error"]}
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}

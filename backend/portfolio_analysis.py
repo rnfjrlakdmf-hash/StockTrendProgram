@@ -2,6 +2,7 @@ import re
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import os
 from datetime import datetime, timedelta
 
 # ==========================================
@@ -615,8 +616,16 @@ def analyze_portfolio_factors(symbols: list) -> dict:
     
     for symbol in symbols:
         try:
-            is_korean_code = symbol.isdigit()
-            is_korean = symbol.endswith(".KS") or symbol.endswith(".KQ") or is_korean_code
+            raw_sym = str(symbol).strip()
+            search_code = raw_sym
+            
+            if re.search('[가-힣]', raw_sym):
+                found = search_stock_code(raw_sym)
+                if found:
+                    search_code = found
+                    
+            is_korean_code = search_code.isdigit()
+            is_korean = search_code.endswith(".KS") or search_code.endswith(".KQ") or is_korean_code
             
             beta = 1.0
             pe = 30.0
@@ -625,9 +634,8 @@ def analyze_portfolio_factors(symbols: list) -> dict:
             mom = 0.0
 
             if is_korean:
-                search_code = symbol
-                if "." in symbol:
-                     search_code = symbol.split(".")[0]
+                if "." in search_code:
+                     search_code = search_code.split(".")[0]
 
                 info = get_naver_stock_info(search_code)
                 if info:
@@ -719,16 +727,16 @@ def analyze_portfolio_factors(symbols: list) -> dict:
     score_alpha = min(max(50 + raw_alpha, 0), 100)
     
     return {
-        "beta": round(score_beta, 1),
-        "value": round(score_value, 1),
-        "yield": round(score_yield, 1),
-        "momentum": round(score_momentum, 1),
-        "volatility": round(score_volatility, 1),
-        "alpha": round(score_alpha, 1),
+        "beta": float(round(score_beta, 1)),
+        "value": float(round(score_value, 1)),
+        "yield": float(round(score_yield, 1)),
+        "momentum": float(round(score_momentum, 1)),
+        "volatility": float(round(score_volatility, 1)),
+        "alpha": float(round(score_alpha, 1)),
         "raw_stats": {
-            "avg_beta": round(avg_beta, 2),
-            "avg_pe": round(avg_pe, 1),
-            "avg_yield": round(avg_yield, 2),
-            "avg_momentum": round(avg_mom, 1)
+            "avg_beta": float(round(avg_beta, 2)),
+            "avg_pe": float(round(avg_pe, 1)),
+            "avg_yield": float(round(avg_yield, 2)),
+            "avg_momentum": float(round(avg_mom, 1))
         }
     }
