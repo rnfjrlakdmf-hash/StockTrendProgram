@@ -21,7 +21,14 @@ def get_lounge_chats(symbol: str = "global"):
 def post_lounge_chat(data: dict):
     text = data.get("text", "").strip()
     if not text: return {"status": "error", "message": "내용 없음"}
-    new_chat = {"id": len(COMMUNITY_CHATS) + 1, "user_name": data.get("user_name", "익명"), "text": text, "symbol": data.get("symbol", "global"), "timestamp": datetime.now().isoformat()}
+    new_chat = {
+        "id": len(COMMUNITY_CHATS) + 1, 
+        "user_name": data.get("user_name", "익명"), 
+        "text": text, 
+        "symbol": data.get("symbol", "global"), 
+        "profit": data.get("profit"),
+        "timestamp": datetime.now().isoformat()
+    }
     COMMUNITY_CHATS.append(new_chat)
     return {"status": "success", "data": new_chat}
 

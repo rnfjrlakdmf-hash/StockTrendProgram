@@ -19,6 +19,7 @@ interface ChatMessage {
     text: string;
     timestamp: string;
     symbol: string;
+    profit?: number; // [New] 수익률 인증
 }
 
 interface HotStock {
@@ -58,6 +59,12 @@ function CommunityContent() {
     const [hotStocks, setHotStocks] = useState<HotStock[]>([]);
     const [hotLoading, setHotLoading] = useState(false);
     
+    // [New] Profit Input State
+    const [profitInput, setProfitInput] = useState<string>("");
+    
+    // [New] Watchlist State
+    const [watchlist, setWatchlist] = useState<any[]>([]);
+    
     const chatEndRef = useRef<HTMLDivElement>(null);
     const stockChatEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +86,7 @@ function CommunityContent() {
         }
         if (activeTab === 'stock_talk') {
             fetchHotStocks();
+            if (user) fetchWatchlist(); // [New] Fetch watchlist when logged in
             const interval = setInterval(fetchHotStocks, 10000);
             return () => clearInterval(interval);
         }
@@ -136,18 +144,30 @@ function CommunityContent() {
         finally { setHotLoading(false); }
     };
 
+    const fetchWatchlist = async () => {
+        if (!user) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/user/watchlist`, { headers: { 'x-user-id': user.id } });
+            const json = await res.json();
+            if (json.status === "success") setWatchlist(json.data);
+        } catch (e) { console.error(e); }
+    };
+
     const handleSendMessage = async () => {
         if (!inputText.trim() || sending) return;
         if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
         setSending(true);
         try {
+            const payload: any = { user_name: user.name, text: inputText, symbol: "global" };
+            if (profitInput) payload.profit = parseFloat(profitInput);
+            
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_name: user.name, text: inputText, symbol: "global" })
+                body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setInputText(""); fetchChats(); }
+            if (json.status === "success") { setInputText(""); setProfitInput(""); fetchChats(); }
             else if (json.status === "blocked") { alert(json.message); setInputText(""); }
         } catch (e) { console.error(e); }
         finally { setSending(false); }
@@ -158,13 +178,16 @@ function CommunityContent() {
         if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
         setStockSending(true);
         try {
+            const payload: any = { user_name: user.name, text: stockInputText, symbol: targetSymbol };
+            if (profitInput) payload.profit = parseFloat(profitInput);
+
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_name: user.name, text: stockInputText, symbol: targetSymbol })
+                body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setStockInputText(""); fetchStockChats(targetSymbol); fetchHotStocks(); }
+            if (json.status === "success") { setStockInputText(""); setProfitInput(""); fetchStockChats(targetSymbol); fetchHotStocks(); }
             else if (json.status === "blocked") { alert(json.message); setStockInputText(""); }
         } catch (e) { console.error(e); }
         finally { setStockSending(false); }
@@ -247,6 +270,11 @@ function CommunityContent() {
                                             <div key={chat.id} className="flex flex-col gap-1">
                                                 <div className="flex items-baseline gap-2">
                                                     <span className={`text-xs font-black ${chat.user_name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{chat.user_name}</span>
+                                                    {chat.profit !== undefined && (
+                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${chat.profit > 0 ? 'bg-red-500/20 text-red-400' : chat.profit < 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                            수익 {chat.profit > 0 ? '+' : ''}{chat.profit}%
+                                                        </span>
+                                                    )}
                                                     <span className="text-[8px] text-gray-600 font-mono">
                                                         {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
@@ -263,22 +291,34 @@ function CommunityContent() {
                                     )}
                                     <div ref={chatEndRef} />
                                 </div>
-                                <div className="p-4 bg-black/40 border-t border-white/10">
-                                    <div className="relative group">
-                                        <input 
-                                            type="text" value={inputText}
-                                            onChange={(e) => setInputText(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                            placeholder={user ? "자유롭게 의견을 나누세요 (AI 모니터링 중)" : "로그인 후 대화에 참여하세요"}
-                                            disabled={!user || sending}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
-                                        />
-                                        <button onClick={handleSendMessage} disabled={!user || !inputText.trim() || sending}
-                                            className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/40">
-                                            {sending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
-                                        </button>
+                                <div className="p-4 bg-black/40 border-t border-white/10 space-y-3">
+                                    <div className="flex gap-2">
+                                        {/* Profit Input */}
+                                        <div className="relative w-24 shrink-0">
+                                            <input 
+                                                type="number" step="0.1" value={profitInput}
+                                                onChange={(e) => setProfitInput(e.target.value)}
+                                                placeholder="수익(%)"
+                                                disabled={!user || sending}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
+                                            />
+                                        </div>
+                                        <div className="relative group flex-1">
+                                            <input 
+                                                type="text" value={inputText}
+                                                onChange={(e) => setInputText(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                                placeholder={user ? "자유롭게 의견을 나누세요 (AI 모니터링 중)" : "로그인 후 대화에 참여하세요"}
+                                                disabled={!user || sending}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
+                                            />
+                                            <button onClick={handleSendMessage} disabled={!user || !inputText.trim() || sending}
+                                                className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/40">
+                                                {sending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="mt-2 text-[10px] text-gray-500 text-center font-medium">건전한 대화 문화를 위해 <span className="text-blue-400">데이터 기반 분석</span> 위주로 소통해 주세요.</p>
+                                    <p className="text-[10px] text-gray-500 text-center font-medium">건전한 대화 문화를 위해 <span className="text-blue-400">데이터 기반 분석</span> 위주로 소통해 주세요.</p>
                                 </div>
                             </motion.div>
                         )}
@@ -330,6 +370,11 @@ function CommunityContent() {
                                                     <div key={chat.id} className="flex flex-col gap-1">
                                                         <div className="flex items-baseline gap-2">
                                                             <span className={`text-xs font-black ${chat.user_name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{chat.user_name}</span>
+                                                            {chat.profit !== undefined && (
+                                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${chat.profit > 0 ? 'bg-red-500/20 text-red-400' : chat.profit < 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                                    수익 {chat.profit > 0 ? '+' : ''}{chat.profit}%
+                                                                </span>
+                                                            )}
                                                             <span className="text-[8px] text-gray-600 font-mono">
                                                                 {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
@@ -348,20 +393,32 @@ function CommunityContent() {
                                         </div>
 
                                         {/* Input */}
-                                        <div className="p-4 bg-black/40 border-t border-white/10">
-                                            <div className="relative group">
-                                                <input 
-                                                    type="text" value={stockInputText}
-                                                    onChange={(e) => setStockInputText(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSendStockMessage()}
-                                                    placeholder={user ? `${targetSymbol}에 대한 의견을 나눠보세요` : "로그인 후 대화에 참여하세요"}
-                                                    disabled={!user || stockSending}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
-                                                />
-                                                <button onClick={handleSendStockMessage} disabled={!user || !stockInputText.trim() || stockSending}
-                                                    className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95">
-                                                    {stockSending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
-                                                </button>
+                                        <div className="p-4 bg-black/40 border-t border-white/10 space-y-3">
+                                            <div className="flex gap-2">
+                                                {/* Profit Input */}
+                                                <div className="relative w-24 shrink-0">
+                                                    <input 
+                                                        type="number" step="0.1" value={profitInput}
+                                                        onChange={(e) => setProfitInput(e.target.value)}
+                                                        placeholder="수익(%)"
+                                                        disabled={!user || stockSending}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
+                                                    />
+                                                </div>
+                                                <div className="relative group flex-1">
+                                                    <input 
+                                                        type="text" value={stockInputText}
+                                                        onChange={(e) => setStockInputText(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSendStockMessage()}
+                                                        placeholder={user ? `${targetSymbol}에 대한 의견을 나눠보세요` : "로그인 후 대화에 참여하세요"}
+                                                        disabled={!user || stockSending}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
+                                                    />
+                                                    <button onClick={handleSendStockMessage} disabled={!user || !stockInputText.trim() || stockSending}
+                                                        className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95">
+                                                        {stockSending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -387,45 +444,76 @@ function CommunityContent() {
                                             </div>
                                         </div>
 
-                                        {/* Hot Stocks Ranking */}
-                                        <div className="bg-white/5 rounded-3xl border border-white/10 p-6 shadow-xl">
-                                            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                <Flame className="w-4 h-4 text-orange-400" /> 실시간 인기 토론 종목
-                                                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse ml-1" />
-                                            </h3>
-                                            {hotLoading ? (
-                                                <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
-                                            ) : hotStocks.length === 0 ? (
-                                                <div className="py-10 text-center text-gray-500">
-                                                    <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                                                    <p className="text-sm">아직 종목 토론이 없습니다. 첫 번째 토론을 시작해보세요!</p>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    {hotStocks.map((item, idx) => {
-                                                        const intensity = intensityLabel(item.count);
-                                                        return (
-                                                            <button key={item.symbol} onClick={() => setTargetSymbol(item.symbol)}
-                                                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-black/30 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all group">
-                                                                <div className={`text-2xl font-black w-8 text-center ${
-                                                                    idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-gray-600'
-                                                                }`}>{idx + 1}</div>
-                                                                <div className="flex-1 text-left">
-                                                                    <p className="font-black text-white group-hover:text-blue-300 transition-colors">{item.symbol}</p>
-                                                                    <p className={`text-xs font-bold ${intensity.color}`}>{intensity.text}</p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <div className="flex items-center gap-1 px-3 py-1 bg-white/5 rounded-xl border border-white/10">
-                                                                        <MessageCircle className="w-3 h-3 text-gray-400" />
-                                                                        <span className="text-sm font-black text-white">{item.count}</span>
-                                                                        <span className="text-xs text-gray-500">건</span>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Hot Stocks Ranking */}
+                                            <div className="bg-white/5 rounded-3xl border border-white/10 p-6 shadow-xl">
+                                                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <Flame className="w-4 h-4 text-orange-400" /> 실시간 인기 토론 종목
+                                                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse ml-1" />
+                                                </h3>
+                                                {hotLoading ? (
+                                                    <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
+                                                ) : hotStocks.length === 0 ? (
+                                                    <div className="py-10 text-center text-gray-500">
+                                                        <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                                        <p className="text-sm">아직 종목 토론이 없습니다.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {hotStocks.map((item, idx) => {
+                                                            const intensity = intensityLabel(item.count);
+                                                            return (
+                                                                <button key={item.symbol} onClick={() => setTargetSymbol(item.symbol)}
+                                                                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-black/30 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all group">
+                                                                    <div className={`text-2xl font-black w-8 text-center ${
+                                                                        idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-gray-600'
+                                                                    }`}>{idx + 1}</div>
+                                                                    <div className="flex-1 text-left">
+                                                                        <p className="font-black text-white group-hover:text-blue-300 transition-colors">{item.symbol}</p>
+                                                                        <p className={`text-xs font-bold ${intensity.color}`}>{intensity.text}</p>
                                                                     </div>
-                                                                </div>
+                                                                    <div className="text-right">
+                                                                        <div className="flex items-center gap-1 px-3 py-1 bg-white/5 rounded-xl border border-white/10">
+                                                                            <MessageCircle className="w-3 h-3 text-gray-400" />
+                                                                            <span className="text-sm font-black text-white">{item.count}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* My Watchlist Rooms */}
+                                            <div className="bg-white/5 rounded-3xl border border-white/10 p-6 shadow-xl flex flex-col">
+                                                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <Sparkles className="w-4 h-4 text-purple-400" /> 관심주식 종목 토론방
+                                                </h3>
+                                                {!user ? (
+                                                    <div className="flex-1 py-10 flex flex-col items-center justify-center text-gray-500 text-center">
+                                                        <Users className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                                        <p className="text-sm font-bold">로그인 후 이용할 수 있습니다</p>
+                                                        <p className="text-xs mt-1">관심종목을 등록하고 토론방에 바로 입장하세요</p>
+                                                    </div>
+                                                ) : watchlist.length === 0 ? (
+                                                    <div className="flex-1 py-10 flex flex-col items-center justify-center text-gray-500 text-center">
+                                                        <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                                        <p className="text-sm font-bold">관심종목이 없습니다</p>
+                                                        <p className="text-xs mt-1">종목을 추가하여 빠른 토론방 입장을 즐겨보세요</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {watchlist.map((item) => (
+                                                            <button key={item.symbol} onClick={() => setTargetSymbol(item.symbol)}
+                                                                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-black/30 hover:bg-white/10 border border-white/5 hover:border-purple-500/30 transition-all group">
+                                                                <p className="font-black text-white group-hover:text-purple-300 transition-colors text-lg">{item.symbol}</p>
+                                                                <p className="text-[10px] text-gray-500 mt-1">입장하기 &rarr;</p>
                                                             </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
