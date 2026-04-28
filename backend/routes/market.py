@@ -44,6 +44,16 @@ def read_etf_rank(market: str = "KR", category: Optional[str] = None):
     data = get_etf_ranking(market, category)
     return {"status": "success", "data": data}
 
+@router.get("/etf-detail/{symbol}")
+def read_etf_detail(symbol: str):
+    """특정 ETF 상세 분석 데이터 반환"""
+    try:
+        from etf_detail import get_etf_detail
+        result = get_etf_detail(symbol)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/stock/{symbol}/daily-history")
 @turbo_cache(ttl_seconds=300)
 def stock_daily_history(symbol: str, range: str = Query("1mo")):
