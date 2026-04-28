@@ -167,7 +167,7 @@ def stock_dart_overhang(symbol: str):
     from dart_disclosure import get_dart_overhang_and_investments
     try:
         data = get_dart_overhang_and_investments(symbol)
-        return data
+        return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -177,6 +177,6 @@ def stock_disclosures(symbol: str, period: str = Query("1m")):
     from dart_disclosure import get_dart_disclosures
     try:
         data = get_dart_disclosures(symbol, period)
-        return data
+        return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
