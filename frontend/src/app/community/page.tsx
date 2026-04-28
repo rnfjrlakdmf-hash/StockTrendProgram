@@ -8,7 +8,7 @@ import {
     Users, MessageSquare, ShieldAlert, Send, 
     TrendingUp, TrendingDown, Info, AlertTriangle,
     CheckCircle2, Loader2, Sparkles, X,
-    Search, Flame, ArrowLeft, MessageCircle
+    Search, Flame, ArrowLeft, MessageCircle, ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,7 @@ interface ChatMessage {
     timestamp: string;
     symbol: string;
     profit?: number; // [New] 수익률 인증
+    image_url?: string; // [New] 인증 이미지
     replies?: ChatReply[]; // [New] 답글
 }
 
@@ -77,6 +78,24 @@ function CommunityContent() {
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
     const [replyInput, setReplyInput] = useState<string>("");
     const [replySending, setReplySending] = useState(false);
+    
+    // [New] Image Upload States
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+    
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedImage(e.target.files[0]);
+            setSelectedImagePreview(URL.createObjectURL(e.target.files[0]));
+        }
+    };
+    
+    const clearImage = () => {
+        setSelectedImage(null);
+        setSelectedImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
     
     const chatEndRef = useRef<HTMLDivElement>(null);
     const stockChatEndRef = useRef<HTMLDivElement>(null);
@@ -167,12 +186,22 @@ function CommunityContent() {
     };
 
     const handleSendMessage = async () => {
-        if (!inputText.trim() || sending) return;
+        if ((!inputText.trim() && !selectedImage) || sending) return;
         if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
         setSending(true);
         try {
+            let uploadedUrl = null;
+            if (selectedImage) {
+                const formData = new FormData();
+                formData.append("file", selectedImage);
+                const uploadRes = await fetch(`${API_BASE_URL}/api/community/upload`, { method: "POST", body: formData });
+                const uploadJson = await uploadRes.json();
+                if (uploadJson.status === "success") uploadedUrl = uploadJson.url;
+            }
+
             const payload: any = { user_name: user.name, text: inputText, symbol: "global" };
             if (profitInput) payload.profit = parseFloat(profitInput);
+            if (uploadedUrl) payload.image_url = uploadedUrl;
             
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
                 method: "POST",
@@ -180,19 +209,29 @@ function CommunityContent() {
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setInputText(""); setProfitInput(""); fetchChats(); }
-            else if (json.status === "blocked") { alert(json.message); setInputText(""); }
+            if (json.status === "success") { setInputText(""); setProfitInput(""); clearImage(); fetchChats(); }
+            else if (json.status === "blocked") { alert(json.message); setInputText(""); clearImage(); }
         } catch (e) { console.error(e); }
         finally { setSending(false); }
     };
 
     const handleSendStockMessage = async () => {
-        if (!stockInputText.trim() || stockSending || !targetSymbol) return;
+        if ((!stockInputText.trim() && !selectedImage) || stockSending || !targetSymbol) return;
         if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
         setStockSending(true);
         try {
+            let uploadedUrl = null;
+            if (selectedImage) {
+                const formData = new FormData();
+                formData.append("file", selectedImage);
+                const uploadRes = await fetch(`${API_BASE_URL}/api/community/upload`, { method: "POST", body: formData });
+                const uploadJson = await uploadRes.json();
+                if (uploadJson.status === "success") uploadedUrl = uploadJson.url;
+            }
+
             const payload: any = { user_name: user.name, text: stockInputText, symbol: targetSymbol };
             if (profitInput) payload.profit = parseFloat(profitInput);
+            if (uploadedUrl) payload.image_url = uploadedUrl;
 
             const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
                 method: "POST",
@@ -200,8 +239,8 @@ function CommunityContent() {
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
-            if (json.status === "success") { setStockInputText(""); setProfitInput(""); fetchStockChats(targetSymbol); fetchHotStocks(); }
-            else if (json.status === "blocked") { alert(json.message); setStockInputText(""); }
+            if (json.status === "success") { setStockInputText(""); setProfitInput(""); clearImage(); fetchStockChats(targetSymbol); fetchHotStocks(); }
+            else if (json.status === "blocked") { alert(json.message); setStockInputText(""); clearImage(); }
         } catch (e) { console.error(e); }
         finally { setStockSending(false); }
     };
@@ -319,6 +358,11 @@ function CommunityContent() {
                                                     : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
                                                 }`}>
                                                     {chat.text}
+                                                    {chat.image_url && (
+                                                        <div className="mt-2 border border-white/10 rounded-lg overflow-hidden w-fit">
+                                                            <img src={`${API_BASE_URL}/uploads/${chat.image_url}`} alt="Attached" className="max-w-[200px] object-contain" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 
                                                 {/* Reply Button */}
@@ -364,7 +408,19 @@ function CommunityContent() {
                                     <div ref={chatEndRef} />
                                 </div>
                                 <div className="p-4 bg-black/40 border-t border-white/10 space-y-3">
+                                    {selectedImagePreview && (
+                                        <div className="relative w-20 h-20 rounded-lg border border-white/10 overflow-hidden">
+                                            <img src={selectedImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                            <button onClick={clearImage} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full hover:bg-black/80"><X className="w-3 h-3 text-white"/></button>
+                                        </div>
+                                    )}
                                     <div className="flex gap-2">
+                                        {/* Image Upload Button */}
+                                        <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageChange} />
+                                        <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0">
+                                            <ImageIcon className="w-5 h-5 text-gray-400" />
+                                        </button>
+                                        
                                         {/* Profit Input */}
                                         <div className="relative w-24 shrink-0">
                                             <input 
@@ -372,7 +428,7 @@ function CommunityContent() {
                                                 onChange={(e) => setProfitInput(e.target.value)}
                                                 placeholder="수익(%)"
                                                 disabled={!user || sending}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
+                                                className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
                                             />
                                         </div>
                                         <div className="relative group flex-1">
@@ -382,9 +438,9 @@ function CommunityContent() {
                                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                                 placeholder={user ? "자유롭게 의견을 나누세요 (AI 모니터링 중)" : "로그인 후 대화에 참여하세요"}
                                                 disabled={!user || sending}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
+                                                className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
                                             />
-                                            <button onClick={handleSendMessage} disabled={!user || !inputText.trim() || sending}
+                                            <button onClick={handleSendMessage} disabled={!user || (!inputText.trim() && !selectedImage) || sending}
                                                 className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/40">
                                                 {sending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
                                             </button>
@@ -504,7 +560,18 @@ function CommunityContent() {
 
                                         {/* Input */}
                                         <div className="p-4 bg-black/40 border-t border-white/10 space-y-3">
+                                            {selectedImagePreview && (
+                                                <div className="relative w-20 h-20 rounded-lg border border-white/10 overflow-hidden">
+                                                    <img src={selectedImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                                    <button onClick={clearImage} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full hover:bg-black/80"><X className="w-3 h-3 text-white"/></button>
+                                                </div>
+                                            )}
                                             <div className="flex gap-2">
+                                                {/* Image Upload Button */}
+                                                <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors shrink-0">
+                                                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                                                </button>
+                                                
                                                 {/* Profit Input */}
                                                 <div className="relative w-24 shrink-0">
                                                     <input 
@@ -512,7 +579,7 @@ function CommunityContent() {
                                                         onChange={(e) => setProfitInput(e.target.value)}
                                                         placeholder="수익(%)"
                                                         disabled={!user || stockSending}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
+                                                        className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-center"
                                                     />
                                                 </div>
                                                 <div className="relative group flex-1">
@@ -522,9 +589,9 @@ function CommunityContent() {
                                                         onKeyDown={(e) => e.key === 'Enter' && handleSendStockMessage()}
                                                         placeholder={user ? `${targetSymbol}에 대한 의견을 나눠보세요` : "로그인 후 대화에 참여하세요"}
                                                         disabled={!user || stockSending}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
+                                                        className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all pr-14 group-hover:bg-white/10"
                                                     />
-                                                    <button onClick={handleSendStockMessage} disabled={!user || !stockInputText.trim() || stockSending}
+                                                    <button onClick={handleSendStockMessage} disabled={!user || (!stockInputText.trim() && !selectedImage) || stockSending}
                                                         className="absolute right-2 top-2 p-3 bg-blue-600 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 active:scale-95">
                                                         {stockSending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4" />}
                                                     </button>
