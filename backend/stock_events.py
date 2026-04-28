@@ -140,7 +140,7 @@ def detect_inflection_points(symbol: str, period: str = "1y", interval: str = "1
     """
     try:
         # [NEW] Strictly limit intraday data to 1d to prevent performance lag
-        if "m" in interval or interval == "1h":
+        if interval in ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"]:
             period = "1d"
 
         # 가격 데이터 가져오기
@@ -512,7 +512,7 @@ def get_chart_story(symbol: str, period: str = "1y", interval: str = "1d") -> Di
         ticker = yf.Ticker(symbol)
         
         # [NEW] Strictly limit intraday data to 1d to prevent performance lag
-        if "m" in interval or interval == "1h":
+        if interval in ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"]:
             period = "1d"
             
         hist = ticker.history(period=period, interval=interval)
