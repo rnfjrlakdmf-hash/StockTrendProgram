@@ -509,19 +509,53 @@ function EtfAnalysisContent() {
                                                     },
                                                     tooltip: {
                                                         shared: true,
-                                                        intersect: false,
-                                                        x: {
-                                                            format: 'yyyy년 MM월 dd일'
-                                                        },
-                                                        y: {
-                                                            formatter: (val: number) => {
-                                                                const rounded = Math.round(val);
-                                                                if (isUs && etfData?.exchange_rate) {
-                                                                    const krw = Math.round(val * etfData.exchange_rate);
-                                                                    return `$${rounded.toLocaleString()} (${krw.toLocaleString()}원)`;
+                                                        x: { format: 'yyyy년 MM월 dd일' },
+                                                        y: { formatter: (val: number) => Math.round(val || 0).toLocaleString() },
+                                                        custom: function({ seriesIndex, dataPointIndex, w }: any) {
+                                                            const history = filteredChartData || [];
+                                                            const item = history[dataPointIndex];
+                                                            if (!item) return "";
+                                            
+                                                            const rawDate = new Date(item.date);
+                                                            const yyyy = rawDate.getFullYear();
+                                                            const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
+                                                            const dd = String(rawDate.getDate()).padStart(2, '0');
+                                                            const dateHeader = `${yyyy}. ${mm}. ${dd}.`;
+                                            
+                                                            const volumeStr = item.volume?.toLocaleString() || "0";
+                                                            
+                                                            const formatPrice = (val: number | null | undefined) => {
+                                                                if (val === undefined || val === null || isNaN(val)) return '-';
+                                                                if (isUs) {
+                                                                    const rounded = Math.round(val * 100) / 100;
+                                                                    return `$${rounded.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                                                                 }
-                                                                return isUs ? `$${rounded.toLocaleString()}` : `${rounded.toLocaleString()}원`;
-                                                            }
+                                                                return `${Math.round(val).toLocaleString()}`;
+                                                            };
+
+                                                            const priceSection = `
+                                                                <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${formatPrice(item.open)}</span></div>
+                                                                <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${formatPrice(item.high)}</span></div>
+                                                                <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${formatPrice(item.low)}</span></div>
+                                                                <div class="flex gap-10 justify-between mb-2 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${formatPrice(item.close)}</span></div>
+                                                            `;
+                                            
+                                                            return `
+                                                                <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 p-3 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.6)] text-white whitespace-nowrap z-50 pointer-events-none min-w-[200px]">
+                                                                    <div class="text-[11px] font-black text-gray-400 border-b border-gray-700/50 pb-2 mb-2 tracking-tighter">
+                                                                        📅 ${dateHeader}
+                                                                    </div>
+                                                                    ${priceSection}
+                                                                    <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
+                                                                    
+                                                                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">MA5</span> <span class="font-mono text-gray-300">${formatPrice(item.ma5)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">MA20</span> <span class="font-mono text-gray-300">${formatPrice(item.ma20)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">MA60</span> <span class="font-mono text-gray-300">${formatPrice(item.ma60)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">MA120</span> <span class="font-mono text-gray-300">${formatPrice(item.ma120)}</span></div>
+                                                                    </div>
+                                                                </div>
+                                                            `;
                                                         }
                                                     },
                                                     grid: { borderColor: '#1f2937', strokeDashArray: 4 },
