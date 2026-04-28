@@ -281,3 +281,33 @@ def supply_chain_scenario_route(keyword: str, target_symbol: str = Query(None)):
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+class PortfolioReq(BaseModel):
+    portfolio: list[str] = []
+    symbols: list[str] = []
+
+@router.post("/portfolio/diagnosis")
+def analyze_portfolio_route(req: PortfolioReq):
+    target = req.portfolio if req.portfolio else req.symbols
+    if not target:
+        return {"status": "error", "message": "No symbols provided"}
+    
+    from ai_analysis import analyze_portfolio_data
+    try:
+        data = analyze_portfolio_data(target)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/portfolio/optimize")
+def optimize_portfolio_route(req: PortfolioReq):
+    target = req.symbols if req.symbols else req.portfolio
+    if not target or len(target) < 2:
+        return {"status": "error", "message": "At least 2 symbols required for optimization"}
+    
+    from portfolio_opt import optimize_portfolio
+    try:
+        data = optimize_portfolio(target)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
