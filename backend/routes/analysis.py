@@ -133,6 +133,15 @@ async def read_theme(keyword: str):
             if q: s.update({"price": q.get("price"), "change": q.get("change")})
     return {"status": "success", "data": result}
     
+@router.get("/chart/patterns/{ticker}")
+async def read_chart_patterns(ticker: str, interval: str = "1d", period: str = None):
+    from chart_analysis import get_chart_analysis_full
+    result = await asyncio.to_thread(get_chart_analysis_full, ticker, interval, period)
+    if result and "history" in result and len(result["history"]) > 0:
+        return {"status": "success", "data": result}
+    return {"status": "error", "message": "No data found"}
+
+
 @router.get("/stock/{symbol}/investor")
 def stock_investor(symbol: str, period: int = Query(20)):
     """투자자별 매매동향 및 거래원 데이터 반환"""
