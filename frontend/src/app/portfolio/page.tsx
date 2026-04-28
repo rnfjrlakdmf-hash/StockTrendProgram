@@ -151,6 +151,47 @@ export default function PortfolioPage() {
         }
     };
 
+    const syncFromWatchlist = async () => {
+        const userId = localStorage.getItem("stock_user_id");
+        if (!userId) {
+            alert("로그인 후 이용할 수 있는 기능입니다.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                headers: { "X-User-ID": userId }
+            });
+            const json = await res.json();
+            if (json.status === "success" && json.data.length > 0) {
+                const favHoldings = json.data.map((s: any) => ({
+                    symbol: s.symbol,
+                    price: s.current_price || "0",
+                    quantity: "1"
+                }));
+                
+                // Save to DB
+                for (const h of favHoldings) {
+                    await fetch(`${API_BASE_URL}/api/portfolio`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+                        body: JSON.stringify(h)
+                    });
+                }
+
+                setHoldings(favHoldings);
+                alert(`${favHoldings.length}개의 관심종목을 현재가 기준으로 포트폴리오에 담았습니다. 수익금을 확인해 보세요!`);
+                runOptimization(favHoldings);
+            } else {
+                alert("가져올 관심종목이 없습니다.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("가져오기 실패");
+        } finally {
+            setLoading(false);
+        }
+    };
 
 
     const handleAdReward = () => {
@@ -183,6 +224,15 @@ export default function PortfolioPage() {
                 <div className="max-w-[1600px] mx-auto h-full flex flex-col gap-4">
 
                     <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4 shrink-0 backdrop-blur-md">
+                        <div className="flex gap-2">
+                             <button
+                                onClick={syncFromWatchlist}
+                                className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/20 transition-all shrink-0 whitespace-nowrap"
+                            >
+                                <Star className="w-4 h-4" />
+                                관심종목 불러오기
+                            </button>
+                        </div>
                         <div className="flex-1 w-full flex items-center gap-4 overflow-x-auto custom-scrollbar pb-1 md:pb-0 font-bold">
                             {holdings.map(h => {
                                 const priceNum = Number(h.price);
