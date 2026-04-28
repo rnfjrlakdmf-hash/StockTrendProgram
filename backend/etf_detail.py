@@ -84,7 +84,8 @@ def get_etf_detail(symbol: str):
         },
         "holdings": [],
         "performance": {},
-        "chart_data": []
+        "chart_data": [],
+        "similar_etfs": []
     }
     
     # Normalize symbol for market detection (Internal use only)
@@ -225,6 +226,35 @@ def get_etf_detail(symbol: str):
 
             # [Fix] Calculate performance for US ETFs
             data["performance"] = calculate_performance(hist)
+
+            # [NEW] Populate Similar ETFs for US ETFs
+            PEER_GROUPS = {
+                "S&P 500": [{"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust"}, {"symbol": "IVV", "name": "iShares Core S&P 500 ETF"}, {"symbol": "VOO", "name": "Vanguard S&P 500 ETF"}, {"symbol": "SPLG", "name": "SPDR Portfolio S&P 500 ETF"}],
+                "NASDAQ": [{"symbol": "QQQ", "name": "Invesco QQQ Trust"}, {"symbol": "QQQM", "name": "Invesco NASDAQ 100 ETF"}, {"symbol": "TQQQ", "name": "ProShares UltraPro QQQ (3X)"}],
+                "DIVIDEND": [{"symbol": "SCHD", "name": "Schwab US Dividend Equity ETF"}, {"symbol": "JEPI", "name": "JPMorgan Equity Premium Income ETF"}, {"symbol": "VYM", "name": "Vanguard High Dividend Yield ETF"}, {"symbol": "DGRO", "name": "iShares Core Dividend Growth ETF"}],
+                "SEMICONDUCTOR": [{"symbol": "SMH", "name": "VanEck Semiconductor ETF"}, {"symbol": "SOXX", "name": "iShares Semiconductor ETF"}, {"symbol": "SOXL", "name": "Direxion Daily Semiconductor Bull 3X"}],
+                "BOND": [{"symbol": "TLT", "name": "iShares 20+ Year Treasury Bond ETF"}, {"symbol": "TMF", "name": "Direxion Daily 20+ Yr Trsy Bull 3X"}, {"symbol": "SHV", "name": "iShares Short Treasury Bond ETF"}],
+                "GOLD": [{"symbol": "GLD", "name": "SPDR Gold Shares"}, {"symbol": "IAU", "name": "iShares Gold Trust"}],
+                "TECH": [{"symbol": "XLK", "name": "Technology Select Sector SPDR Fund"}, {"symbol": "VGT", "name": "Vanguard Information Technology ETF"}],
+            }
+            
+            summary_upper = str(info.get('longBusinessSummary', '')).upper()
+            name_upper = eng_name.upper()
+            found_group = None
+            
+            for key, peers in PEER_GROUPS.items():
+                if key in name_upper or key in summary_upper:
+                    found_group = [p for p in peers if p["symbol"] != symbol.upper()]
+                    if found_group:
+                        data["similar_etfs"] = found_group
+                        break
+            
+            # If no group found, try generic matching
+            if not data["similar_etfs"]:
+                if "VALUE" in name_upper: data["similar_etfs"] = [{"symbol": "VTV", "name": "Vanguard Value ETF"}, {"symbol": "IWD", "name": "iShares Russell 1000 Value ETF"}]
+                elif "GROWTH" in name_upper: data["similar_etfs"] = [{"symbol": "VUG", "name": "Vanguard Growth ETF"}, {"symbol": "IWF", "name": "iShares Russell 1000 Growth ETF"}]
+                elif "EMERGING" in name_upper: data["similar_etfs"] = [{"symbol": "VWO", "name": "Vanguard FTSE Emerging Markets ETF"}, {"symbol": "IEMG", "name": "iShares Core MSCI Emerging Markets ETF"}]
+                else: data["similar_etfs"] = [{"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust (미국 대표)"}, {"symbol": "QQQ", "name": "Invesco QQQ Trust (나스닥 대표)"}]
 
             return {"status": "success", "data": data}
         except Exception as e:

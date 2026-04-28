@@ -370,16 +370,39 @@ function EtfAnalysisContent() {
                                                 <div className="space-y-4">
                                                     <div className="p-5 rounded-2xl bg-indigo-900/20 border border-indigo-500/20">
                                                         <h4 className="text-indigo-400 font-black text-sm mb-2 flex items-center gap-2">
-                                                            🔍 ETF 핵심 운용 전략
+                                                            💡 비슷한 성향의 ETF 추천
                                                         </h4>
-                                                        <p className="text-gray-300 text-xs leading-relaxed font-bold">
-                                                            {etfData.name.includes("레버리지") ? "시장 상승 폭의 2배 수익을 목표로 하는 공격적인 복합 파생 전략을 사용합니다." :
-                                                             etfData.name.includes("인버스") ? "시장 하락 시 수익이 발생하는 역방향 헤지 전략을 지향합니다." :
-                                                             etfData.name.includes("채권") ? "안전자산인 채권을 기반으로 안정적인 이자 수익과 원금 보존에 집중하는 전략입니다." :
-                                                             etfData.name.includes("미국") ? "미국 시장 주요 우량 기업들에 분산 투자하여 글로벌 성장 성과를 추종합니다." :
-                                                             "기초 지수의 성과를 최대한 정확하게 추적하도록 설계된 패시브 분산 투자 전략입니다."}
+                                                        <p className="text-gray-300 text-xs leading-relaxed font-bold mb-4">
+                                                            이 ETF와 유사한 투자 전략을 가진 다른 주요 상품들입니다. 포트폴리오 다변화나 수수료(TER) 비교를 위해 참고해보세요.
                                                         </p>
+                                                        
+                                                        {etfData.similar_etfs && etfData.similar_etfs.length > 0 ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                {etfData.similar_etfs.map((peer: any, idx: number) => (
+                                                                    <button 
+                                                                        key={idx}
+                                                                        onClick={() => { setSymbol(peer.symbol); fetchEtfDetail(peer.symbol); }}
+                                                                        className="flex items-center justify-between p-3 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500/50 transition-all text-left group"
+                                                                    >
+                                                                        <div>
+                                                                            <span className="font-black text-indigo-300 text-sm">{peer.symbol}</span>
+                                                                            <p className="text-xs text-gray-400 font-bold mt-0.5 line-clamp-1">{peer.name}</p>
+                                                                        </div>
+                                                                        <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
+                                                                            <svg className="w-3 h-3 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700/50 text-center text-gray-500 text-xs font-bold">
+                                                                추천 가능한 유사 ETF가 없습니다.
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                    
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700/50">
                                                             <p className="text-[10px] text-gray-500 font-bold mb-1">거래 활성도</p>
@@ -401,9 +424,8 @@ function EtfAnalysisContent() {
                                                         </div>
                                                     </div>
                                                     <div className="p-4 rounded-xl border border-dashed border-gray-700 text-gray-500 text-[11px] leading-relaxed italic">
-                                                        * 해외 추종 상품 등 일부 ETF는 실시간 구성종목 노출이 제한되어 AI 전략 가이드로 대체됩니다.
+                                                        * 무료 실시간 데이터 연동 환경에서는 일부 미국 상장 ETF의 구성종목 조회가 제한되어, 대체 분석 지표(유사 ETF 추천)를 제공합니다.
                                                     </div>
-                                                    <AIDisclaimer isCompact={true} className="mt-4" />
                                                 </div>
                                             </div>
                                         )}
