@@ -251,3 +251,33 @@ def stock_disclosures(symbol: str, period: str = Query("1m")):
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.get("/supply-chain/{symbol}")
+@turbo_cache(ttl_seconds=300)
+def supply_chain_route(symbol: str):
+    from ai_analysis import analyze_supply_chain
+    try:
+        data = analyze_supply_chain(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/supply-chain/detail/{symbol}")
+@turbo_cache(ttl_seconds=300)
+def supply_chain_detail_route(symbol: str, name: str = Query(None)):
+    from ai_analysis import analyze_node_detail
+    try:
+        data = analyze_node_detail(symbol, name)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/supply-chain/scenario")
+@turbo_cache(ttl_seconds=300)
+def supply_chain_scenario_route(keyword: str, target_symbol: str = Query(None)):
+    from ai_analysis import analyze_supply_chain_scenario
+    try:
+        data = analyze_supply_chain_scenario(keyword, target_symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
