@@ -52,12 +52,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         ux_mode: isMobile ? "redirect" : "popup",
         redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
         onSuccess: handleGoogleSuccess,
-        onError: (err) => {
+        onError: (err: any) => {
             console.error("Google login error:", err);
             setStatus("error");
             setErrorMsg("구글 로그인 창이 차단되었습니다. 팝업 차단을 해제해 주세요.");
         },
-    });
+    } as any);
 
     if (!isOpen) return null;
 

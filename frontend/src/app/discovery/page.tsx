@@ -771,17 +771,33 @@ function DiscoveryContent() {
                                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                                                             </span>
                                                         )}
-                                                        {stock.details.market_status === 'After-Market' ? <span>야간거래(NXT)</span> : 
-                                                         stock.details.market_status === 'Unknown' ? <span>데이터 준비중</span> : 
+                                                        {stock.details.market_status.includes('NXT') ? (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span className="opacity-60 font-medium">정규장 마감</span>
+                                                                <span className="opacity-30">|</span>
+                                                                <span className="text-indigo-400">야간거래(NXT)</span>
+                                                            </span>
+                                                        ) : stock.details.market_status === 'Unknown' ? <span>데이터 준비중</span> : 
                                                          <span>{stock.details.market_status}</span>}
                                                     </span>
                                                 )}
                                             </div>
                                             {/* [New] NXT After Market Price */}
                                             {stock.details?.nxt_data && (
-                                                <div className="mt-2 flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-3 py-2 w-fit">
+                                                <div className={`mt-2 flex items-center gap-3 rounded-xl px-3 py-2 w-fit transition-all duration-500 ${
+                                                    stock.details.market_status?.includes('NXT') 
+                                                    ? 'bg-indigo-600/20 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                                    : 'bg-white/5 border border-white/10 opacity-60'
+                                                }`}>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider"><span>NXT After Market</span></span>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <span className="text-[9px] text-gray-400 uppercase font-black tracking-wider">NXT After Market</span>
+                                                            {stock.details.market_status?.includes('NXT') && (
+                                                                <span className="flex items-center gap-1 bg-indigo-500 text-[8px] text-white px-1.5 py-0.5 rounded-sm font-black animate-pulse">
+                                                                    LIVE
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xl font-black text-white">
                                                                 <span>₩</span><span>{stock.details.nxt_data.price.toLocaleString()}</span>
@@ -969,15 +985,6 @@ function DiscoveryContent() {
                                             <span>데이터 종합 분석</span>
                                         </button>
 
-                                        {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                            <button
-                                                className={`pb-3 whitespace-nowrap ${activeTab === 'financials' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                onClick={() => setActiveTab('financials')}
-                                            >
-                                                <span>재무제표</span>
-                                            </button>
-                                        )}
-
 
 
                                         <button
@@ -996,23 +1003,10 @@ function DiscoveryContent() {
                                                     <span>📈 투자자 동향</span> <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
                                                 </button>
                                                 <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'dividend_health' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => {
-                                                        setActiveTab('dividend_health');
-                                                        if (stock && !dividendData) {
-                                                            setDividendLoading(true);
-                                                            const sym = encodeURIComponent(stock.symbol);
-                                                            Promise.all([
-                                                                fetch(`${API_BASE_URL}/api/stock/${sym}/dividends`).then(r => r.json()),
-                                                                fetch(`${API_BASE_URL}/api/stock/${sym}/health`).then(r => r.json())
-                                                            ]).then(([divRes, healthRes]) => {
-                                                                if (divRes.status === 'success') setDividendData(divRes.data);
-                                                                if (healthRes.status === 'success') setHealthData(healthRes.data);
-                                                            }).catch(() => { }).finally(() => setDividendLoading(false));
-                                                        }
-                                                    }}
+                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'financials' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
+                                                    onClick={() => setActiveTab('financials')}
                                                 >
-                                                    <span>💰 배당/건전성</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">New</span>
+                                                    <span>💰 배당/건전성</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
                                                 </button>
                                                 <button
                                                     className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
@@ -1039,30 +1033,17 @@ function DiscoveryContent() {
 
                                     </div>
 
-                                    {activeTab === 'dividend_health' && (
-                                        <DividendHealthTab
-                                            dividendData={dividendData}
-                                            healthData={healthData}
-                                            loading={dividendLoading}
-                                            currency={stock.currency || 'KRW'}
-                                        />
-                                    )}
-
-                                    {activeTab === 'investor' && (
+                                    {activeTab === 'investor' ? (
                                         <InvestorTrendTab
                                             symbol={stock.symbol}
                                             stockName={stock.name}
                                         />
-                                    )}
-
-                                    {activeTab === 'overhang' && (
+                                    ) : activeTab === 'overhang' ? (
                                         <OverhangTab
                                             symbol={stock.symbol}
                                             stockName={stock.name}
                                         />
-                                    )}
-
-                                    {activeTab === 'analysis' ? (
+                                    ) : activeTab === 'analysis' ? (
                                         <>
                                             {/* Chart Section Hidden */}
 
@@ -1260,8 +1241,8 @@ function DiscoveryContent() {
                                                                     <td className={`py-3 px-2 font-mono font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
                                                                         <span>
                                                                             <span>{day.change > 0 ? '▲' : day.change < 0 ? '▼' : null}</span>
-                                                                            <span>{(day.change_val || 0).toLocaleString()}</span>
-                                                                            <span className="text-[10px] ml-1 opacity-70">({day.change.toFixed(2)}%)</span>
+                                                                            <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
+                                                                            <span className="text-[10px] ml-1 opacity-70">({day.change > 0 ? '+' : ''}{day.change.toFixed(2)}%)</span>
                                                                         </span>
                                                                     </td>
                                                                     <td className="py-3 px-2 text-gray-400 font-mono text-sm">
@@ -1879,10 +1860,10 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
         if (symbol && !symbol.includes("MARKET")) {
             fetchSupply();
 
-            // Auto-refresh every 3 minutes (180000ms) for real-time updates
+            // Auto-refresh every 1 minute (60000ms) for real-time updates as requested
             const interval = setInterval(() => {
                 fetchSupply();
-            }, 180000);
+            }, 60000);
 
             // Cleanup interval on unmount
             return () => clearInterval(interval);
@@ -1897,8 +1878,12 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
     // Assuming user is in Korea based on context.
     const day = now.getDay(); // 0=Sun, 6=Sat
     const hour = now.getHours();
+    const minute = now.getMinutes();
+    const currentTime = hour * 100 + minute;
+    
     const isWeekend = day === 0 || day === 6;
-    const isMarketOpen = !isWeekend && hour >= 9 && hour < 16;
+    // Market: 09:00 ~ 15:30
+    const isMarketOpen = !isWeekend && currentTime >= 900 && currentTime < 1530;
 
     if (!data || !Array.isArray(data) || data.length === 0) {
         if (loading) return null;
@@ -1918,8 +1903,8 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                     ) : !isMarketOpen ? (
                         <>
                             <div className="text-3xl">🌙</div>
-                            <div className="text-gray-300 font-bold"><span>지금은 장 운영 시간이 아닙니다.</span></div>
-                            <div className="text-sm text-gray-500"><span>실시간 수급 집계가 종료되었습니다. (운영시간: 09:00 ~ 15:30)</span></div>
+                            <div className="text-gray-300 font-bold"><span>지금은 정규장 운영 시간이 아닙니다.</span></div>
+                            <div className="text-sm text-gray-500"><span>실시간 수급 집계가 종료되었습니다. (정규장: 09:00 ~ 15:30)</span></div>
                         </>
                     ) : (
                         <>
@@ -2225,212 +2210,6 @@ function StockLiveChart({ symbol }: { symbol: string }) {
 }
 
 
-// [RENEWED] 배당 히스토리 & 재무 건전성 프리미엄 탭 컴포넌트
-function DividendHealthTab({
-    dividendData,
-    healthData,
-    loading,
-    currency,
-}: {
-    dividendData: any;
-    healthData: any;
-    loading: boolean;
-    currency?: string;
-}) {
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-24 gap-6 animate-pulse">
-                <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
-                    <Coins className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-emerald-500" />
-                </div>
-                <div className="text-center">
-                    <p className="text-emerald-200 font-bold mb-1"><span>프리미엄 데이터 팩 로딩 중...</span></p>
-                    <p className="text-gray-500 text-xs"><span>DART/yfinance 실시간 재무 데이터 동기화</span></p>
-                </div>
-            </div>
-        );
-    }
+// Old DividendHealthTab removed in favor of FinancialsTable and direct raw_data binding
 
-    const hasDividend = dividendData && Array.isArray(dividendData.years) && dividendData.years.length > 0;
-    const hasHealth = healthData && healthData.data && ( (healthData.data.years && healthData.data.years.length > 0) || (healthData.data.score > 0) );
-    
-    // API 응답 구조가 중첩되어 있을 수 있으므로 방어 처리
-    const hData = healthData?.data || {};
-    const dData = dividendData || {};
 
-    if (!hasDividend && !hasHealth) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-500 gap-4 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                <div className="p-4 bg-white/5 rounded-full mb-2">
-                    <BarChart2 className="w-12 h-12 opacity-20" />
-                </div>
-                <div className="text-center">
-                    <p className="text-gray-400 font-bold"><span>재무 데이터 수집 지연</span></p>
-                    <p className="text-xs text-gray-600 mt-1 max-w-[250px]"><span>이 종목의 공식 배당/재무 히스토리가 아직 색인되지 않았습니다. 종목코드 검색을 추천합니다.</span></p>
-                </div>
-            </div>
-        );
-    }
-
-    const divChartData = hasDividend && Array.isArray(dData.years) && Array.isArray(dData.amounts)
-        ? dData.years.map((y: string, i: number) => ({ year: String(y || ""), div: Number(dData.amounts[i] || 0) }))
-        : [];
-
-    const healthChartData = (hData.years && Array.isArray(hData.years))
-        ? hData.years.map((y: string, i: number) => ({
-            year: y,
-            debt: (hData.debt_ratio || [])[i],
-            current: (hData.current_ratio || [])[i],
-            roe: (hData.roe || [])[i],
-        }))
-        : [];
-
-    const summary = dData.summary ?? {};
-    const symbolCurrency = currency === 'USD' ? '$' : '₩';
-    const currencyLabel = currency === 'USD' ? '달러' : '원';
-
-    return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-            {/* 1. Quick Info Cards */}
-            {hasDividend && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="relative overflow-hidden group bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-2xl p-5 hover:border-emerald-500/40 transition-all shadow-lg shadow-emerald-900/10">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                            <Coins className="w-12 h-12 text-emerald-400" />
-                        </div>
-                        <p className="text-[11px] text-emerald-400/70 font-black uppercase tracking-widest mb-2">최근 배당금 (Latest)</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-white"><span>{ (summary.latest_div ?? 0).toLocaleString() }</span></span>
-                            <span className="text-sm font-bold text-gray-400"><span>{symbolCurrency}</span></span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-2 font-medium flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-emerald-500"></span> <span>{summary.latest_year} 회계연도 기준</span>
-                        </p>
-                    </div>
-                    
-                    <div className="relative overflow-hidden group bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-2xl p-5 hover:border-blue-500/40 transition-all shadow-lg shadow-blue-900/10">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <ShieldCheck className="w-12 h-12 text-blue-400" />
-                        </div>
-                        <p className="text-[11px] text-blue-400/70 font-black uppercase tracking-widest mb-2">배당 신뢰 기간 (Trust)</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-white"><span>{summary.consecutive_years ?? "-"}</span></span>
-                            <span className="text-sm font-bold text-gray-400"><span>년 연속</span></span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-2 font-medium"><span>기업의 꾸준한 배당 지급 이력</span></p>
-                    </div>
-
-                    <div className={`relative overflow-hidden group border rounded-2xl p-5 transition-all shadow-lg ${summary.yoy_growth_pct >= 0 ? "bg-red-500/10 border-red-500/20 shadow-red-900/10" : "bg-blue-500/10 border-blue-500/20 shadow-blue-900/10"}`}>
-                        <p className="text-[11px] font-black uppercase tracking-widest mb-2 text-gray-400">전년 대비 성장률 (YoY)</p>
-                        <div className={`text-2xl font-black flex items-center gap-1 ${summary.yoy_growth_pct >= 0 ? "text-red-400" : "text-blue-400"}`}>
-                            {summary.yoy_growth_pct >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                            <span>{summary.yoy_growth_pct >= 0 ? "+" : null}{summary.yoy_growth_pct}%</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-2 font-medium">전년 대비 배당금 증감률</p>
-                    </div>
-                </div>
-            )}
-
-            {/* 2. Dividend Chart */}
-            {hasDividend && (
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h4 className="text-lg font-black text-white flex items-center gap-2">
-                                <span className="bg-emerald-500/20 p-2 rounded-xl"><LineChartIcon className="w-5 h-5 text-emerald-400" /></span>
-                                <span>💰 연간 배당금 히스토리</span>
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1 ml-11 uppercase font-bold tracking-widest"><span>최근 5개년 배당 성장 분석 ({currencyLabel} 단위)</span></p>
-                        </div>
-                    </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                        <AreaChart data={divChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="divGradPremium" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                            <XAxis dataKey="year" stroke="#4b5563" fontSize={11} axisLine={false} tickLine={false} tickMargin={10} />
-                            <YAxis stroke="#4b5563" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "16px", backdropFilter: "blur(12px)", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)" }}
-                                itemStyle={{ color: "#fff", fontWeight: "bold" }}
-                                formatter={(v: any) => [`${Number(v).toLocaleString()} ${symbolCurrency}`, "배당금"]}
-                            />
-                            <Area type="monotone" dataKey="div" name="배당금" stroke="#10b981" strokeWidth={4} fill="url(#divGradPremium)" dot={{ r: 6, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }} animationDuration={1500} />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            )}
-
-            {/* 3. Health Matrix */}
-            {hasHealth && (
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 shadow-2xl overflow-hidden">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h4 className="text-lg font-black text-white flex items-center gap-2">
-                                <span className="bg-blue-500/20 p-2 rounded-xl"><Activity className="w-5 h-5 text-blue-400" /></span>
-                                🏦 재무 건전성 추이 분석
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1 ml-11 uppercase font-bold tracking-widest"><span>안정성 지표 (DART/yfinance 실시간 연동)</span></p>
-                        </div>
-                        {hData.score && (
-                            <div className="text-right">
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-tighter">건전성 점수</p>
-                                <p className={`text-2xl font-black ${hData.score >= 80 ? 'text-blue-400' : hData.score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                    <span><span>{hData.score}</span><span>점</span></span>
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {healthChartData.length > 0 && (
-                        <ResponsiveContainer width="100%" height={260}>
-                            <LineChart data={healthChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                <XAxis dataKey="year" stroke="#4b5563" fontSize={11} axisLine={false} tickLine={false} tickMargin={10} />
-                                <YAxis stroke="#4b5563" fontSize={10} axisLine={false} tickLine={false} unit="%" />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "16px", backdropFilter: "blur(12px)" }}
-                                    formatter={(value: any) => [value !== null && value !== undefined ? `${value}%` : "정보없음", ""]}
-                                />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold' }} />
-                                <Line type="monotone" dataKey="debt" name="부채비율" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls animationDuration={1000} />
-                                <Line type="monotone" dataKey="current" name="유동비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls animationDuration={1200} />
-                                <Line type="monotone" dataKey="roe" name="자기자본이익률(ROE)" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} connectNulls animationDuration={1400} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8">
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                            <div className="flex items-center gap-2 mb-2 text-red-400"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span><span className="text-[10px] font-black uppercase"><span>부채비율</span></span></div>
-                            <p className="text-[11px] text-gray-400 leading-snug"><span>자본 대비 빚의 비율입니다. 100% 미만이면 재무 상태가 매우 탄탄해요.</span></p>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                            <div className="flex items-center gap-2 mb-2 text-blue-400"><span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span><span className="text-[10px] font-black uppercase"><span>유동비율</span></span></div>
-                            <p className="text-[11px] text-gray-400 leading-snug"><span>현금화 가능한 자산의 비율입니다. 200% 이상이면 단기 위기에 강해요.</span></p>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                            <div className="flex items-center gap-2 mb-2 text-yellow-400"><span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span><span className="text-[10px] font-black uppercase"><span>ROE (수익성)</span></span></div>
-                            <p className="text-[11px] text-gray-400 leading-snug"><span>내 돈으로 얼마나 벌었는지를 뜻해요. 15% 이상이면 알짜배기 성장을 하고 있어요.</span></p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-gray-500 italic max-w-xs">
-                    <span>* {hData.source === 'DART' ? 'DART(전자공시)' : '글로벌 데이터'} 기반의 객관적 분석입니다. 투자 결정은 본인의 책임하에 진행하세요.</span>
-                </p>
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-gray-400"><span>데이터 출처:</span></span>
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black"><span>{hData.source || "yfinance / Naver"}</span></span>
-                </div>
-            </div>
-        </div>
-    );
-}
