@@ -411,6 +411,28 @@ def get_etf_detail(symbol: str):
                                 except: pass
         except: pass
 
+        # 5. Populate Similar ETFs for KR ETFs
+        if not data["similar_etfs"]:
+            name_str = data["name"].upper()
+            KR_PEERS = {
+                "200": [{"symbol": "069500", "name": "KODEX 200"}, {"symbol": "133690", "name": "TIGER 미국나스닥100"}, {"symbol": "148020", "name": "KBSTAR 200"}],
+                "나스닥": [{"symbol": "133690", "name": "TIGER 미국나스닥100"}, {"symbol": "379800", "name": "KODEX 미국나스닥100TR"}],
+                "S&P": [{"symbol": "360200", "name": "TIGER 미국S&P500"}, {"symbol": "379810", "name": "KODEX 미국S&P500TR"}],
+                "배당": [{"symbol": "458730", "name": "TIGER 미국배당다우존스"}, {"symbol": "458740", "name": "ACE 미국배당다우존스"}],
+                "반도체": [{"symbol": "091160", "name": "KODEX 반도체"}, {"symbol": "091230", "name": "TIGER 반도체"}],
+                "2차전지": [{"symbol": "305720", "name": "KODEX 2차전지산업"}, {"symbol": "305540", "name": "TIGER 2차전지테마"}],
+            }
+            
+            for key, peers in KR_PEERS.items():
+                if key in name_str:
+                    found_kr = [p for p in peers if p["symbol"] != clean_sym]
+                    if found_kr:
+                        data["similar_etfs"] = found_kr
+                        break
+                        
+            if not data["similar_etfs"]:
+                data["similar_etfs"] = [{"symbol": "069500", "name": "KODEX 200 (국내 코스피 대표)"}, {"symbol": "360200", "name": "TIGER 미국S&P500 (해외 S&P 대표)"}]
+
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": f"Global error: {str(e)}"}
