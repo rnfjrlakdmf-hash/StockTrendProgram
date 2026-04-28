@@ -318,14 +318,14 @@ export default function PortfolioPage() {
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="bg-blue-500 text-xs font-bold px-2 py-0.5 rounded text-white">AI 데이터 분석</span>
                                             <h3 className="text-lg font-bold text-white leading-tight">
-                                                {analysisResult?.diagnosis || "분석 완료"}
+                                                {analysisResult?.analysis || "분석 완료"}
                                             </h3>
                                         </div>
                                         <div className="text-3xl font-bold text-white mb-3">
                                             {analysisResult?.score || 0}<span className="text-sm font-normal text-gray-400">점</span>
                                         </div>
                                         <p className="text-sm text-gray-300 bg-black/20 p-3 rounded-xl border border-white/5 leading-relaxed">
-                                            "{analysisResult?.prescription || "분석 결과를 토대로 자산을 관리해 보세요."}"
+                                            "{analysisResult?.report || "분석 결과를 토대로 자산을 관리해 보세요."}"
                                         </p>
                                     </div>
                                 </div>
@@ -341,11 +341,11 @@ export default function PortfolioPage() {
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="bg-gray-800/50 border border-white/10 p-4 rounded-2xl text-center">
                                                 <div className="text-xs text-gray-400 mb-1">기대 수익 (연)</div>
-                                                <div className="text-xl font-bold text-red-400">{result.metrics.expected_return}%</div>
+                                                <div className="text-xl font-bold text-red-400">{result.metrics?.expected_return || 0}%</div>
                                             </div>
                                             <div className="bg-gray-800/50 border border-white/10 p-4 rounded-2xl text-center">
                                                 <div className="text-xs text-gray-400 mb-1">변동성</div>
-                                                <div className="text-xl font-bold text-blue-400">{result.metrics.volatility}%</div>
+                                                <div className="text-xl font-bold text-blue-400">{result.metrics?.volatility || 0}%</div>
                                             </div>
                                         </div>
                                     </div>
@@ -359,7 +359,7 @@ export default function PortfolioPage() {
                                         {analysisResult?.calendar?.map((event: any, i: number) => (
                                             <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-xs">
                                                 <span>{event.symbol}</span>
-                                                <span className="font-bold text-red-400">+{event.amount.toLocaleString()}원</span>
+                                                <span className="font-bold text-red-400">+{(event.amount || 0).toLocaleString()}원</span>
                                             </div>
                                         ))}
                                     </div>
