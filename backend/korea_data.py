@@ -755,8 +755,14 @@ def get_naver_daily_prices(symbol: str):
                 # 1. Get the direction
                 is_drop = False
                 is_up = False
+                # Check for em classes (bu_pup for up, bu_pdn for down)
+                em = cols[2].select_one('em')
+                if em:
+                    cls = " ".join(em.get('class', []))
+                    if 'bu_pup' in cls: is_up = True
+                    elif 'bu_pdn' in cls: is_drop = True
                 
-                # Check for images (up/down icons)
+                # Check for images (legacy up/down icons)
                 img = cols[2].select_one('img')
                 if img:
                     alt = img.get('alt', '')
@@ -766,7 +772,7 @@ def get_naver_daily_prices(symbol: str):
                     elif '상승' in alt or 'pc' in src or 'up' in src.lower():
                         is_up = True
                 
-                # Fallback: Check for class names (red02 for up, nv01 for down)
+                # Fallback: Check for span class names (red02 for up, nv01 for down)
                 span = cols[2].select_one('span')
                 if span:
                     cls = " ".join(span.get('class', []))

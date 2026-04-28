@@ -68,6 +68,10 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
         hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
         hist['ChangeVal'] = hist['Close'] - hist['PrevClose']
         hist_desc = hist.sort_index(ascending=False)
+        # Drop the oldest day since it has no PrevClose, resulting in 0 change
+        if len(hist_desc) > 0:
+            hist_desc = hist_desc.iloc[:-1]
+            
         res = []
         for date, row in hist_desc.iterrows():
             if pd.isna(row['Close']): continue
