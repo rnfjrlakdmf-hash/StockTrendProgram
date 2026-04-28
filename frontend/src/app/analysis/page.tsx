@@ -584,7 +584,20 @@ function AnalysisContent() {
                             {sectorLoading ? (
                                 <div className="text-center py-32"><RefreshCw className="w-16 h-16 animate-spin mx-auto text-red-500 mb-6 opacity-50" /><p className="text-gray-400 font-black tracking-widest uppercase">Fetching 17-Factor Deep Matrix...</p></div>
                             ) : sectorData ? (
-                                <div className="space-y-16">
+                                <div className="space-y-6">
+                                    {showEasy && (
+                                        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                            <div className="bg-red-500/20 p-2 rounded-lg h-fit">
+                                                <HelpCircle className="w-5 h-5 text-red-400" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-red-400 mb-1">초보자 가이드 모드 활성화됨 (섹터 매트릭스)</h4>
+                                                <p className="text-xs text-gray-300 leading-relaxed">
+                                                    현재 종목이 속한 산업(섹터) 전체 평균 및 코스피/코스닥 시장 지수와 성적을 나란히 비교해 드립니다. 이를 통해 이 회사가 업계 평균보다 장사를 잘하고 있는지 직관적으로 알 수 있습니다.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                     {(() => {
                                         const sectorSections = [
                                             {
@@ -673,6 +686,34 @@ function AnalysisContent() {
                                                                     </span>
                                                                 </div>
                                                             </div>
+                                                            
+                                                            {showEasy && (
+                                                                <div className="mb-6 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                                                    <p className="text-xs text-red-300 font-medium leading-relaxed italic">
+                                                                        {(() => {
+                                                                            const k = metric.key;
+                                                                            if(k==="PER") return "현재 주가가 이익 대비 싼지 비싼지 알려주는 가성비 지표입니다. 업계 평균보다 낮으면 저평가, 높으면 고평가로 봅니다.";
+                                                                            if(k==="PBR") return "회사 자산(재산) 대비 주가가 싼지 비싼지 보여줍니다. 보통 1 미만이면 자산가치보다 싸다고 봅니다.";
+                                                                            if(k==="Fwd. 12M PER" || k==="Fwd. 12M PBR") return "1년 뒤 예상되는 실적을 기준으로 계산한 가성비 지표입니다. 미래의 떡상 여력을 볼 때 참고해요.";
+                                                                            if(k==="매출액증가율") return "회사의 외형(물건 파는 스케일)이 얼마나 쑥쑥 크고 있는지 보여줍니다.";
+                                                                            if(k==="영업이익증가율") return "물건 팔아서 남긴 순수익(마진)이 작년보다 얼마나 늘었는지 봅니다. 제일 중요한 성장성 지표예요!";
+                                                                            if(k==="순이익증가율") return "세금 등 뗄 거 다 떼고 내 주머니에 최종적으로 남는 돈의 성장 속도입니다.";
+                                                                            if(k==="ROE") return "내 돈(자본금)으로 1년간 얼마나 알짜 장사를 했는지 (가성비율) 보여줍니다. 높을수록 워렌 버핏이 좋아해요.";
+                                                                            if(k==="ROA") return "빚까지 합친 전체 자산을 얼마나 부지런히 굴렸는지 보여주는 활동 마진율입니다.";
+                                                                            if(k==="매출총이익률") return "물건 떼온 원가만 빼고 얼마나 마진을 크게 남겨먹는지 보여줍니다.";
+                                                                            if(k==="영업이익률") return "1만원어치 팔아서 몇 천원을 진짜로 남기는지, 회사의 핵심 장사 실력입니다.";
+                                                                            if(k==="순이익률") return "최종 세금까지 다 빼고 순수하게 남은 진짜 찐 마진율입니다.";
+                                                                            if(k==="부채비율") return "내 돈 대비 빌린 돈(빚)이 얼마나 많은지 봅니다. 100% 이하가 안전하며, 섹터 평균보다 낮으면 튼튼합니다.";
+                                                                            if(k==="유동비율") return "1년 안에 갚아야 할 빚보다 당장 현금화 가능한 자산이 많은지 봅니다. 높을수록 부도 위험이 낮습니다.";
+                                                                            if(k==="배당수익률") return "주식을 들고만 있어도 통장에 꽂히는 배당금의 이자율 같은 개념입니다.";
+                                                                            if(k==="배당성향") return "회사가 벌어들인 돈 중 몇 %를 주주들에게 착하게 나눠주는지 보여줍니다.";
+                                                                            if(k==="주가수익률") return "특정 기간 동안 실제로 주가가 얼마나 올랐는지(혹은 떨어졌는지) 보여줍니다.";
+                                                                            return "해당 지표의 섹터 평균 및 시장 지수와의 비교를 보여줍니다.";
+                                                                        })()}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            
                                                             <div className="h-[300px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
                                                                     <LineChart data={cat.chart_data}>
@@ -717,6 +758,20 @@ function AnalysisContent() {
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">피어 데이터 분석 중...</p></div>
                             ) : peerData?.data && peerData.data.length > 0 ? (
                                 <div className="space-y-4 animate-in fade-in duration-300">
+                                    {showEasy && (
+                                        <div className="bg-purple-500/10 border border-purple-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                            <div className="bg-purple-500/20 p-2 rounded-lg h-fit">
+                                                <HelpCircle className="w-5 h-5 text-purple-400" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-purple-400 mb-1">초보자 가이드 모드 활성화됨 (동종 업계 라이벌 비교)</h4>
+                                                <p className="text-xs text-gray-300 leading-relaxed">
+                                                    비슷한 업종에서 경쟁하는 라이벌 회사들과 주요 성적표를 나란히 두고 비교합니다. 
+                                                    각 지표마다 가장 뛰어난 1등 회사에게는 <span className="text-[10px]">👑</span> 왕관이 표시됩니다!
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Comparison Table */}
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
