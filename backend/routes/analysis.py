@@ -191,6 +191,36 @@ def stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", cate
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
+
+@router.get("/financial-health/{symbol}")
+def get_financial_health_route(symbol: str):
+    from pro_analysis import get_financial_health
+    try:
+        data = get_financial_health(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/sector-analysis/{symbol}")
+def get_sector_analysis_route(symbol: str, sector_id: str = None):
+    from sector_analysis import get_sector_analysis_data
+    try:
+        data = get_sector_analysis_data(symbol, sector_id)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/peer-compare")
+def get_peer_compare_route(symbols: str):
+    from pro_analysis import get_peer_comparison
+    try:
+        sym_list = [s.strip() for s in symbols.split(",")]
+        data = get_peer_comparison(sym_list)
+        return {"status": "success", **data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/stock/{symbol}/dart_overhang")
 @turbo_cache(ttl_seconds=300)
 def stock_dart_overhang(symbol: str):
