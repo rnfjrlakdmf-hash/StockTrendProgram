@@ -329,11 +329,8 @@ function EtfAnalysisContent() {
                                     <h3 className="text-xl font-black text-white mb-6 flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-2">
                                             <PieChart className="w-5 h-5 text-indigo-400" />
-                                            {etfData.holdings && etfData.holdings.length > 0 ? "구성 종목 (CU)" : "AI 전략 포인트"}
+                                            {etfData.holdings && etfData.holdings.length > 0 ? "구성 종목 (CU)" : "유사 ETF 추천"}
                                         </div>
-                                        {!(etfData.holdings && etfData.holdings.length > 0) && (
-                                            <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded animate-pulse font-black">AI GEN</span>
-                                        )}
                                     </h3>
                                     <div className="flex-1 overflow-x-auto">
                                         {etfData.holdings && etfData.holdings.length > 0 ? (
