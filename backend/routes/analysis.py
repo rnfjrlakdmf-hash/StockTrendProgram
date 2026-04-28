@@ -166,9 +166,27 @@ def stock_financials(symbol: str):
 def stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "1"):
     from korea_data import get_korean_investment_indicators
     try:
-        data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
-        if data and data.get("status") == "success":
-            return {"status": "success", "data": data}
+        raw_data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+        if raw_data and raw_data.get("status") == "success":
+            headers = raw_data.get("headers", [])
+            indicators = raw_data.get("indicators", [])
+            
+            rows = []
+            for ind in indicators:
+                val_dict = ind.get("values", {})
+                val_array = [val_dict.get(h, "") for h in headers]
+                rows.append({
+                    "label": ind.get("name", ""),
+                    "values": val_array
+                })
+                
+            transformed_data = {
+                "symbol": symbol,
+                "name": symbol, # fallback name
+                "years": headers,
+                "rows": rows
+            }
+            return {"status": "success", "data": transformed_data}
         return {"status": "error", "message": "지표 데이터를 찾을 수 없습니다."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
