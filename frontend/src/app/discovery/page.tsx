@@ -331,7 +331,7 @@ function DiscoveryContent() {
             if (!stock?.symbol) return;
             setDailyLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}`);
+                const res = await fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}&t=${Date.now()}`);
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setDailyPricesData(json.data);
@@ -491,7 +491,7 @@ function DiscoveryContent() {
 
                 // 3. Fetch Financial Highlights
                 setFinancialsLoading(true);
-                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials`)
+                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials?t=${Date.now()}`)
                     .then(res => res.json())
                     .then(resJson => {
                         if (resJson.status === "success") {
