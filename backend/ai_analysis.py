@@ -1324,7 +1324,7 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     Portfolio: [{portfolio_str}]
     
     Data:
-    1. Sector Distribution: {nutrition_summary}
+    1. Sector Distribution: {composition_summary}
     2. Factor Metrics: {factor_summary}
     
     Instructions:

@@ -143,7 +143,7 @@ def optimize_portfolio(symbols: list):
         # 결과 포맷팅
         allocation = []
         for i, sym in enumerate(df.columns):
-            weight = round(optimal_weights[i] * 100, 2)
+            weight = float(round(optimal_weights[i] * 100, 2))
             if weight > 0.01: # 0.01% 이상만 표시
                 allocation.append({"symbol": sym, "weight": weight})
                 
@@ -154,9 +154,9 @@ def optimize_portfolio(symbols: list):
             "status": "success",
             "allocation": allocation,
             "metrics": {
-                "expected_return": round(optimal_ret * 100, 2),
-                "volatility": round(optimal_vol * 100, 2),
-                "sharpe_ratio": round(optimal_sharpe, 2)
+                "expected_return": float(round(optimal_ret * 100, 2)),
+                "volatility": float(round(optimal_vol * 100, 2)),
+                "sharpe_ratio": float(round(optimal_sharpe, 2))
             }
         }
         

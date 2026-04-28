@@ -146,7 +146,7 @@ export default function PortfolioPage() {
                 });
                 const jsonOpt = await resOpt.json();
                 if (jsonOpt.status === "success") {
-                    setResult(jsonOpt);
+                    setResult(jsonOpt.data || jsonOpt);
                 }
             }
 
