@@ -97,6 +97,24 @@ export default function PortfolioPage() {
         if (e.key === 'Enter') addHolding();
     };
 
+    const fetchPriceForSymbol = async (sym: string) => {
+        if (!sym.trim()) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/quote/${encodeURIComponent(sym.trim())}`);
+            const json = await res.json();
+            if (json.status === "success" && json.data?.price) {
+                // Ensure price is formatted as a simple string without commas for the number input
+                const priceValue = typeof json.data.price === 'number' ? json.data.price : parseFloat(json.data.price.toString().replace(/,/g, ''));
+                if (!isNaN(priceValue)) {
+                    setInputPrice(priceValue.toString());
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch price", e);
+        }
+    };
+
+
     const runOptimization = async (overrideHoldings?: any[]) => {
         const targetHoldings = overrideHoldings || holdings;
         const targetSymbols = targetHoldings.map(h => h.symbol);
@@ -260,6 +278,7 @@ export default function PortfolioPage() {
                                     value={inputSymbol}
                                     onChange={(e) => setInputSymbol(e.target.value)}
                                     onKeyDown={handleKeyDown}
+                                    onBlur={(e) => fetchPriceForSymbol(e.target.value)}
                                 />
                                 <input
                                     type="number"
