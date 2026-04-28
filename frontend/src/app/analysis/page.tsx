@@ -806,7 +806,26 @@ function AnalysisContent() {
 
                                                     return (
                                                         <tr key={metric.key} className="border-b border-white/5 hover:bg-white/5">
-                                                            <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">{metric.label}</td>
+                                                            <td className="py-3 px-2 text-gray-400 text-xs font-bold whitespace-nowrap">
+                                                                <div>{metric.label}</div>
+                                                                {showEasy && (
+                                                                    <div className="text-[10px] text-purple-300/80 font-medium mt-1.5 whitespace-normal break-keep leading-tight max-w-[130px]">
+                                                                        {(() => {
+                                                                            if(metric.key === "market_cap_display") return "회사의 전체 몸값 (크기)";
+                                                                            if(metric.key === "per") return "이익 대비 저평가 정도 (낮을수록 좋음)";
+                                                                            if(metric.key === "pbr") return "자산 대비 저평가 정도 (낮을수록 좋음)";
+                                                                            if(metric.key === "roe") return "자본(내 돈)으로 굴린 이익률 (높을수록 좋음)";
+                                                                            if(metric.key === "operating_margin") return "실제 장사 마진율 (높을수록 좋음)";
+                                                                            if(metric.key === "revenue_growth") return "외형(규모)의 성장 속도 (높을수록 좋음)";
+                                                                            if(metric.key === "dividend_yield") return "주식 보유 시 받는 배당 이자 (높을수록 좋음)";
+                                                                            if(metric.key === "debt_to_equity") return "가진 돈 대비 빚의 비율 (낮을수록 안전)";
+                                                                            if(metric.key === "beta") return "시장 변동성 (1보다 높으면 고위험/고수익)";
+                                                                            if(metric.key === "change_3m") return "최근 3개월간 주가 수익률";
+                                                                            return "";
+                                                                        })()}
+                                                                    </div>
+                                                                )}
+                                                            </td>
                                                             {peerData.data.map((s: any, i: number) => {
                                                                 const val = s[metric.key];
                                                                 const isBest = isHigherBetter ? i === maxIdx : i === minIdx;
