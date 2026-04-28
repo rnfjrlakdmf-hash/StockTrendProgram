@@ -144,7 +144,7 @@ function EtfAnalysisContent() {
             setEtfData(null);
         }
         try {
-            const res = await fetch(`${API_BASE_URL}/api/etf-detail/${sym}`);
+            const res = await fetch(`${API_BASE_URL}/api/etf-detail/${sym}?t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success") {
                 setEtfData(json.data);
