@@ -22,8 +22,10 @@ def migrate_watchlist_api(req: MigrateRequest):
 def read_watchlist(x_user_id: str = Header(None)):
     from db_manager import get_watchlist
     user_id = x_user_id or "guest"
-    # Returns List of (symbol, added_price)
+    print(f"[Watchlist] Reading for user: {user_id}")
     items = get_watchlist(user_id)
+    print(f"[Watchlist] Found {len(items)} items for {user_id}")
+    
     from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
     data = []
     for sym, added_p in items:
@@ -33,7 +35,7 @@ def read_watchlist(x_user_id: str = Header(None)):
             "name": name, 
             "added_price": added_p or 0
         })
-    return {"status": "success", "data": data}
+    return {"status": "success", "data": data, "user_id_echo": user_id}
 
 @router.get("/watchlist/closing-summary")
 def get_watchlist_closing_summary(x_user_id: str = Header(None)):

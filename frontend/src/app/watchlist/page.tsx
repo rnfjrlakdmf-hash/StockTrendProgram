@@ -196,6 +196,16 @@ export default function WatchlistPage() {
                         <RefreshCw className="w-4 h-4" /> 실시간 시세 자동 업데이트 중 ({lastUpdated.toLocaleTimeString()})
                     </p>
                 </div>
+                <button
+                    onClick={() => {
+                        setLoading(true);
+                        fetchWatchlist();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    리스트 새로고침
+                </button>
             </div>
 
             {/* Content */}
