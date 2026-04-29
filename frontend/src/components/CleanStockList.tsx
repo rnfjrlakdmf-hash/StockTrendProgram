@@ -17,6 +17,7 @@ export interface CleanStockItem {
         icon: string;
         reason?: string;
     };
+    added_price?: number; // Price when added to watchlist
 }
 
 interface CleanStockListProps {
@@ -78,6 +79,23 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         <p className="text-[13px] md:text-[14px] text-white leading-snug break-words opacity-90" suppressHydrationWarning>
                                             <span>- </span><span>{item.badge.reason}</span>
                                         </p>
+                                    </div>
+                                )}
+                                {/* Added Price & Profit */}
+                                {item.added_price && item.added_price > 0 && (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                        <span className="text-[10px] text-gray-500">관심 등록가: {item.added_price.toLocaleString()}</span>
+                                        {(() => {
+                                            const current = parseFloat(String(item.price || "0").replace(/,/g, ""));
+                                            if (isNaN(current) || current <= 0) return null;
+                                            const profitRate = ((current - item.added_price) / item.added_price) * 100;
+                                            const isPlus = profitRate > 0;
+                                            return (
+                                                <span className={`text-[10px] font-black ${isPlus ? 'text-red-400' : 'text-blue-400'}`}>
+                                                    ({isPlus ? '+' : ''}{profitRate.toFixed(2)}%)
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>

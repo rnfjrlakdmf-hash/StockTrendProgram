@@ -22,12 +22,17 @@ def migrate_watchlist_api(req: MigrateRequest):
 def read_watchlist(x_user_id: str = Header(None)):
     from db_manager import get_watchlist
     user_id = x_user_id or "guest"
-    symbols = get_watchlist(user_id)
+    # Returns List of (symbol, added_price)
+    items = get_watchlist(user_id)
     from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
     data = []
-    for sym in symbols:
+    for sym, added_p in items:
         name = get_korean_stock_name(sym) or GLOBAL_KOREAN_NAMES.get(sym, sym)
-        data.append({"symbol": sym, "name": name})
+        data.append({
+            "symbol": sym, 
+            "name": name, 
+            "added_price": added_p or 0
+        })
     return {"status": "success", "data": data}
 
 @router.get("/watchlist/closing-summary")
@@ -66,8 +71,20 @@ def get_watchlist_closing_summary(x_user_id: str = Header(None)):
 @router.post("/watchlist")
 def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
     from db_manager import add_watchlist
+    from stock_data import get_simple_quote
+    from portfolio_analysis import safe_num
+    
     user_id = x_user_id or "guest"
-    success = add_watchlist(user_id, req.symbol)
+    
+    # 추가 시점의 가격 가져오기
+    current_price = 0
+    try:
+        quote = get_simple_quote(req.symbol)
+        if quote and quote.get('price'):
+            current_price = safe_num(quote['price'])
+    except: pass
+    
+    success = add_watchlist(user_id, req.symbol, current_price)
     if success:
         from utils.briefing_store import invalidate_today_briefing
         invalidate_today_briefing(user_id)

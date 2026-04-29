@@ -229,7 +229,8 @@ export default function WatchlistPage() {
                                 name: item.name || (data ? data.name : item.symbol),
                                 price: data ? data.price : "-",
                                 change: data ? data.change : "0%",
-                                badge: item.badge
+                                badge: item.badge,
+                                added_price: item.added_price
                             };
                         })}
                         onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}

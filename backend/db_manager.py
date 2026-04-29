@@ -93,10 +93,19 @@ def init_db():
         CREATE TABLE IF NOT EXISTS watchlist (
             user_id TEXT,
             symbol TEXT,
+            added_price REAL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, symbol)
         )
     ''')
+    
+    # [Migration] Add added_price to watchlist if not exists
+    try:
+        cursor.execute("SELECT added_price FROM watchlist LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN added_price REAL DEFAULT 0")
+        except: pass
     
 
     
@@ -475,16 +484,14 @@ def get_prediction_report():
         
     return report
 
-def add_watchlist(user_id, symbol):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    u_id = user_id.strip() if user_id else "guest"
+def add_watchlist(user_id: str, symbol: str, added_price: float = 0):
+    conn = get_db_connection()
     try:
-        cursor.execute("INSERT OR IGNORE INTO watchlist (user_id, symbol) VALUES (?, ?)", (u_id, symbol))
+        conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price) VALUES (?, ?, ?)", (user_id, symbol, added_price))
         conn.commit()
         return True
     except Exception as e:
-        print(f"Add Watchlist Error: {e}")
+        print(f"Error adding to watchlist: {e}")
         return False
     finally:
         conn.close()
