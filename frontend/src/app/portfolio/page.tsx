@@ -65,6 +65,14 @@ function StatCard({ icon, label, value, desc, color }: any) {
   );
 }
 
+const getDayOfWeek = (dateStr: string) => {
+  try {
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    const d = new Date(dateStr);
+    return days[d.getDay()];
+  } catch { return ""; }
+};
+
 export default function PortfolioPage() {
   const [inputSymbol, setInputSymbol] = useState("");
   const [selectedName, setSelectedName] = useState("");
@@ -536,22 +544,56 @@ export default function PortfolioPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <Calendar className="w-4 h-4 text-yellow-400" />
                     <span className="font-bold text-white text-sm">예상 배당 캘린더</span>
-                    <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full">보유 중 받을 수 있는 배당금</span>
+                    <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full">연간 흐름 확인</span>
                   </div>
-                  <p className="text-[11px] text-gray-500 mb-4">배당금은 기업이 이익의 일부를 주주에게 나눠주는 돈이에요. 예상치이므로 실제와 다를 수 있어요.</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {calendarItems.slice(0, 9).map((event: any, i: number) => {
-                      if (!event) return null;
-                      return (
-                        <div key={i} className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 flex justify-between items-center">
-                          <div>
-                            <div className="font-bold text-sm text-white">{event.symbol || "?"}</div>
-                            <div className="text-[11px] text-gray-500">{event.date || ""} · {event.type || ""}</div>
-                          </div>
-                          <div className="text-yellow-400 font-black text-sm">+{safeNum(event.amount).toLocaleString()}원</div>
+                  <p className="text-[11px] text-gray-500 mb-4">
+                    과거 배당 이력을 바탕으로 한 예상 일정입니다. <span className="text-blue-400 font-bold">확정</span>은 공시가 완료된 데이터, <span className="text-gray-400">예상</span>은 과거 패턴 분석 결과입니다.
+                  </p>
+                  
+                  <div className="flex flex-col gap-6">
+                    {/* 월별 그룹화 출력 */}
+                    {Object.entries(
+                      calendarItems.reduce((acc: any, curr: any) => {
+                        const month = curr.date ? curr.date.substring(0, 7) : "Unknown"; // YYYY-MM
+                        if (!acc[month]) acc[month] = [];
+                        acc[month].push(curr);
+                        return acc;
+                      }, {})
+                    ).sort().slice(0, 6).map(([month, events]: [string, any]) => (
+                      <div key={month} className="flex flex-col gap-2">
+                        <h4 className="text-xs font-black text-gray-400 flex items-center gap-2 px-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
+                          {month.split('-')[0]}년 {parseInt(month.split('-')[1])}월
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {events.map((event: any, i: number) => {
+                            const isConfirmed = event.type?.includes("확정") || event.source === "확정";
+                            const dayOfWeek = getDayOfWeek(event.date);
+                            return (
+                              <div key={i} className="bg-white/5 border border-white/10 hover:border-yellow-500/30 rounded-xl p-3 flex justify-between items-center transition-colors">
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-xs text-white">{event.name || event.symbol}</span>
+                                    <span className={`text-[9px] px-1 py-0.25 rounded ${isConfirmed ? "bg-blue-500/20 text-blue-400" : "bg-gray-500/20 text-gray-400"}`}>
+                                      {isConfirmed ? "확정" : "예상"}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-500">
+                                    {event.date.split('-')[2]}일 ({dayOfWeek}) · {event.type.replace("확정", "").replace("예상", "").trim()}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-yellow-400 font-black text-sm">
+                                    +{safeNum(event.amount).toLocaleString()}{event.currency === "KRW" ? "원" : "$"}
+                                  </div>
+                                  <div className="text-[9px] text-gray-600">주당 배당금</div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
