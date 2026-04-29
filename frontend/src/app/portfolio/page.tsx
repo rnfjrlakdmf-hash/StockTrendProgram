@@ -138,7 +138,7 @@ export default function PortfolioPage() {
         if (json.usd_krw) setUsdKrw(json.usd_krw);
       }
     } catch (e) { console.error(e); }
-  }, [holdings]);
+  }, [holdings, API_BASE_URL]);
 
   // 30초마다 시세 자동 갱신
   useEffect(() => {
@@ -381,18 +381,25 @@ export default function PortfolioPage() {
                         </button>
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                        <span>{buyPrice.toLocaleString()}{h.currency === "USD" ? "$" : "원"} ×</span>
+                        <span className="shrink-0">{buyPrice.toLocaleString()}{h.currency === "USD" ? "$" : "원"} ×</span>
                         <input 
                           type="number" 
+                          min="0"
+                          step="any"
                           value={h.quantity} 
                           onChange={(e) => updateQuantity(h.symbol, e.target.value)}
-                          className="bg-white/10 border border-white/10 rounded w-12 px-1 text-white outline-none focus:border-blue-500 text-center"
+                          className="bg-white/10 border border-white/20 rounded w-16 px-1.5 py-0.5 text-white outline-none focus:border-blue-500 text-center font-bold"
                         />
-                        <span>주</span>
+                        <span className="shrink-0">주</span>
                       </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <div className="text-xs font-bold text-gray-200">{currPrice.toLocaleString()}원</div>
-                        <div className={`text-[10px] font-black px-1.5 py-0.5 rounded ${isUp ? "bg-red-500/10 text-red-400" : isDown ? "bg-blue-500/10 text-blue-400" : "bg-gray-500/10 text-gray-400"}`}>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                        <div className="flex flex-col">
+                          <div className="text-[10px] text-gray-500">실시간가</div>
+                          <div className="text-xs font-black text-yellow-400">
+                            {currPrice > 0 ? `${currPrice.toLocaleString()}${h.currency === "USD" ? "$" : "원"}` : "조회중..."}
+                          </div>
+                        </div>
+                        <div className={`text-[10px] font-black px-1.5 py-0.5 rounded h-fit ${isUp ? "bg-red-500/10 text-red-400" : isDown ? "bg-blue-500/10 text-blue-400" : "bg-gray-500/10 text-gray-400"}`}>
                           {isUp ? "▲" : isDown ? "▼" : ""} {Math.abs(profitRate).toFixed(2)}%
                         </div>
                       </div>
@@ -448,6 +455,9 @@ export default function PortfolioPage() {
               </div>
               <button onClick={addHolding} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
                 <Plus className="w-4 h-4" /> 추가
+              </button>
+              <button onClick={() => refreshPrices()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
+                <Activity className="w-4 h-4 text-blue-400" /> 시세 갱신
               </button>
               <button onClick={() => runOptimization()} disabled={loading || holdings.length < 1}
                 className="ml-auto bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all">
