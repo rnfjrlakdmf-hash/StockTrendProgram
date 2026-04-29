@@ -214,7 +214,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
 
     try:
         # [NEW] Strictly limit intraday intervals to 1d to prevent performance lag
-        is_intraday = any(x in str(interval) for x in ["m", "h", "1m", "3m", "5m", "15m", "30m", "60m", "90m"])
+        is_intraday = interval in ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"]
         
         if is_intraday:
             yf_period = "1d"

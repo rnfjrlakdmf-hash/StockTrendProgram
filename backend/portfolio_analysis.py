@@ -63,6 +63,22 @@ CHARACTER_COLOR_MAP = {
     "기타 (미분류)": "#94a3b8"       
 }
 
+SECTOR_CHARACTER_MAP = {
+    "Technology": "기술/성장주 (에너지)",
+    "Communication Services": "기술/성장주 (에너지)",
+    "Consumer Cyclical": "기술/성장주 (에너지)",
+    "Financial Services": "안정/기초 (기반 자산)",
+    "Industrials": "안정/기초 (기반 자산)",
+    "Real Estate": "안정/기초 (기반 자산)",
+    "Healthcare": "방어/저변동 (안전망)",
+    "Consumer Defensive": "방어/저변동 (안전망)",
+    "Utilities": "방어/저변동 (안전망)",
+    "Energy": "자원/원자재 (고밀도)",
+    "Basic Materials": "자원/원자재 (고밀도)",
+    "Cash": "유동성 (현금성 자산)",
+    "Unknown": "기타 (미분류)"
+}
+
 def get_korean_character(kor_sector_name):
     # Heuristic mapping
     for key, val in KOR_SECTOR_MAP.items():
@@ -108,7 +124,8 @@ def analyze_portfolio_composition(symbols: list) -> dict:
                 if "." in search_code and search_code.split('.')[0].isdigit():
                     final_code = search_code.split('.')[0]
                 
-                info = get_naver_stock_info(final_code)
+                from korea_data import gather_naver_stock_data
+                info = gather_naver_stock_data(final_code)
                 if info:
                     sector = info.get('sector', 'Unknown')
                     character = get_korean_character(sector)
@@ -637,19 +654,20 @@ def analyze_portfolio_factors(symbols: list) -> dict:
                 if "." in search_code:
                      search_code = search_code.split(".")[0]
 
-                info = get_naver_stock_info(search_code)
+                from korea_data import gather_naver_stock_data
+                info = gather_naver_stock_data(search_code)
                 if info:
                     # Beta (Manual Default or Future Scrape)
                     beta = 1.0 
                     
                     # Value (PER)
-                    if info.get('per') and info['per'] > 0:
-                        pe = info['per']
-                    elif info.get('est_per') and info['est_per'] > 0:
-                        pe = info['est_per']
+                    if info.get('per') and float(str(info['per']).replace(',', '')) > 0:
+                        pe = float(str(info['per']).replace(',', ''))
+                    elif info.get('est_per') and float(str(info['est_per']).replace(',', '')) > 0:
+                        pe = float(str(info['est_per']).replace(',', ''))
                         
                     # Yield
-                    div_yield = info.get('dvr', 0) # 0.05 etc.
+                    div_yield = float(str(info.get('dvr', 0)).replace(',', '')) / 100.0 # dvr is usually % in gather_naver_stock_data
                     
                     # Momentum (High/Low)
                     # Use position in 52w range as proxy for momentum
@@ -697,46 +715,48 @@ def analyze_portfolio_factors(symbols: list) -> dict:
         
     # --- Aggregation & Normalization (0-100 Scale for Radar) ---
     
+    # Use nanmean to ignore possible NaN values from individual stocks
+    avg_beta = float(np.nanmean(betas)) if betas else 1.0
+    avg_pe = float(np.nanmean(pe_ratios)) if pe_ratios else 30.0
+    avg_yield = float(np.nanmean(yields)) if yields else 0.0
+    avg_mom = float(np.nanmean(momentums)) if momentums else 0.0
+    avg_vol = float(np.nanmean(volatilities)) if volatilities else 20.0
+    
     # 1. Beta Score (High Beta = High Risk/Aggressive)
-    # Avg Beta 1.0 -> 50, 1.5 -> 75, 2.0 -> 100, 0.5 -> 25
-    avg_beta = np.mean(betas)
     score_beta = min(max(avg_beta * 50, 0), 100)
     
     # 2. Value Score (Low P/E = High Value)
-    # P/E 20 -> 50, 10 -> 75, 5 -> 100, 40 -> 25
-    avg_pe = np.mean(pe_ratios)
-    score_value = min(max(100 - (avg_pe * 1.5), 0), 100) # Simple heuristic
+    score_value = min(max(100 - (avg_pe * 1.5), 0), 100)
     
     # 3. Yield Score (High Yield = High Score)
-    # Yield 2% -> 40, 5% -> 100
-    avg_yield = np.mean(yields)
     score_yield = min(max(avg_yield * 20, 0), 100)
     
     # 4. Momentum Score (High Return = High Score)
-    avg_mom = np.mean(momentums)
-    score_momentum = min(max(50 + avg_mom, 0), 100) # 0% return -> 50 score
+    score_momentum = min(max(50 + avg_mom, 0), 100)
     
     # 5. Volatility Score (High Vol = High Score)
-    avg_vol = np.mean(volatilities)
-    score_volatility = min(max(avg_vol * 2, 0), 100) # 25% vol -> 50 score
+    score_volatility = min(max(avg_vol * 2, 0), 100)
     
-    # 6. Alpha (Simulated/Heuristic for now)
-    # Used Momentum vs Beta to guess? Or just random for demo if data insufficient?
-    # Let's use (Momentum - Beta*5) as a proxy for "Excess Return"
-    raw_alpha = avg_mom - (avg_beta * 5) # If beta is 1.0 (5% expected baseline), and mom is 10%, alpha is positive
+    # 6. Alpha
+    raw_alpha = avg_mom - (avg_beta * 5)
     score_alpha = min(max(50 + raw_alpha, 0), 100)
     
+    # Final NaN/Inf check
+    def clean(val):
+        if np.isnan(val) or np.isinf(val): return 50.0
+        return float(round(val, 1))
+
     return {
-        "beta": float(round(score_beta, 1)),
-        "value": float(round(score_value, 1)),
-        "yield": float(round(score_yield, 1)),
-        "momentum": float(round(score_momentum, 1)),
-        "volatility": float(round(score_volatility, 1)),
-        "alpha": float(round(score_alpha, 1)),
+        "beta": clean(score_beta),
+        "value": clean(score_value),
+        "yield": clean(score_yield),
+        "momentum": clean(score_momentum),
+        "volatility": clean(score_volatility),
+        "alpha": clean(score_alpha),
         "raw_stats": {
-            "avg_beta": float(round(avg_beta, 2)),
-            "avg_pe": float(round(avg_pe, 1)),
-            "avg_yield": float(round(avg_yield, 2)),
-            "avg_momentum": float(round(avg_mom, 1))
+            "avg_beta": float(round(np.nan_to_num(avg_beta), 2)),
+            "avg_pe": float(round(np.nan_to_num(avg_pe), 1)),
+            "avg_yield": float(round(np.nan_to_num(avg_yield), 2)),
+            "avg_momentum": float(round(np.nan_to_num(avg_mom), 1))
         }
     }

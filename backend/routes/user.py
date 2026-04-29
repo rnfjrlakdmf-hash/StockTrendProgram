@@ -91,15 +91,22 @@ def read_user_portfolio(x_user_id: str = Header(None)):
 
 class PortfolioEntry(BaseModel):
     symbol: str
-    price: float
-    quantity: float
+    price: str | float
+    quantity: str | float
 
 @router.post("/portfolio")
 def create_portfolio_entry(req: PortfolioEntry, x_user_id: str = Header(None)):
     from db_manager import save_user_portfolio
     user_id = x_user_id or "guest"
-    success = save_user_portfolio(user_id, req.symbol, req.price, req.quantity)
-    return {"status": "success" if success else "error"}
+    
+    # Clean strings (remove commas)
+    try:
+        clean_price = float(str(req.price).replace(',', ''))
+        clean_qty = float(str(req.quantity).replace(',', ''))
+        success = save_user_portfolio(user_id, req.symbol, clean_price, clean_qty)
+        return {"status": "success" if success else "error"}
+    except Exception as e:
+        return {"status": "error", "message": f"Invalid number format: {e}"}
 
 @router.delete("/portfolio/{symbol}")
 def remove_portfolio_entry(symbol: str, x_user_id: str = Header(None)):

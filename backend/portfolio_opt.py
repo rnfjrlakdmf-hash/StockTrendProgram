@@ -138,7 +138,7 @@ def optimize_portfolio(symbols: list):
         
         optimal_weights = max_sharpe.x
         optimal_ret, optimal_vol = portfolio_annualised_performance(optimal_weights, mean_returns, cov_matrix)
-        optimal_sharpe = (optimal_ret - risk_free_rate) / optimal_vol
+        optimal_sharpe = (optimal_ret - risk_free_rate) / optimal_vol if optimal_vol > 0 else 0
         
         # 결과 포맷팅
         allocation = []

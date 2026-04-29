@@ -754,16 +754,20 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
                     amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
 
-            # [TurboQuant KRW Conversion]
-            f_price = 0.0
-            try:
-                ps = str(price).replace(",", "").strip()
-                f_price = float(ps) if ps and ps != "-" else 0.0
-            except: pass
+            # [v6.2.0] Robust Numeric Parsing
+            def safe_float(v):
+                try:
+                    return float(str(v).replace(",", "").strip())
+                except: return 0.0
+
+            f_price = safe_float(price)
+            f_change_rate = safe_float(change_rate)
             
-            price_krw = None
+            price_krw = "0"
             if nation != "KOR" and f_price > 0:
-                price_krw = f"{f_price * rate:,.0f}"
+                try:
+                    price_krw = f"{f_price * rate:,.0f}"
+                except: pass
 
             # Baseline Data Preservation
             processed.append({
@@ -773,12 +777,11 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 "price": price if price and price != "-" else "0", 
                 "price_krw": price_krw,
                 "change_val": change_val or 0,
-                "change_percent": f"{float(change_rate):+.2f}%" if change_rate and str(change_rate).replace('.','').replace('-','').isdigit() else "0.00%",
+                "change_percent": f"{f_change_rate:+.2f}%",
                 "risefall": risefall,
                 "volume": volume,
                 "amount": amount,
-                "market": market,
-                "price_krw": price_krw or "0" # Ensure field exists
+                "market": market
             })
 
         # [v6.0.0] High-Precision Integration Sync for Foreign Stocks (Especially SearchTop)
@@ -803,7 +806,10 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         
                         f_rate = info.get("fluctuationsRatio")
                         if f_rate is not None:
-                            p["change_percent"] = f"{float(f_rate):+.2f}%"
+                            try:
+                                p["change_percent"] = f"{float(str(f_rate).replace(',','')):+.2f}%"
+                            except:
+                                p["change_percent"] = "0.00%"
                         
                         p["change_val"] = info.get("fluctuations") or info.get("compareToPreviousClosePrice") or p["change_val"]
                         
