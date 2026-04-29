@@ -166,7 +166,7 @@ export default function PortfolioPage() {
             let price = "0";
             let currency = "KRW";
             try {
-              const qr = await fetch(`${API_BASE_URL}/api/stock/quote/${encodeURIComponent(s.symbol)}`);
+              const qr = await fetch(`${API_BASE_URL}/api/quote/${encodeURIComponent(s.symbol)}`);
               const qj = await qr.json();
               if (qj.status === "success" && qj.data) {
                 price = String(safeNum(qj.data.price));
@@ -260,6 +260,11 @@ export default function PortfolioPage() {
     }
     setInputSymbol(""); setSelectedName(""); setInputPrice(""); setInputQuantity("");
     setSuggestions([]);
+  };
+
+  const updateQuantity = (symbol: string, newQty: string) => {
+    const updated = holdings.map(h => h.symbol === symbol ? { ...h, quantity: newQty } : h);
+    setHoldings(updated);
   };
 
   const removeHolding = async (sym: string) => {
@@ -375,7 +380,16 @@ export default function PortfolioPage() {
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <div className="text-[11px] text-gray-500">{buyPrice.toLocaleString()}원 × {h.quantity}주</div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <span>{buyPrice.toLocaleString()}{h.currency === "USD" ? "$" : "원"} ×</span>
+                        <input 
+                          type="number" 
+                          value={h.quantity} 
+                          onChange={(e) => updateQuantity(h.symbol, e.target.value)}
+                          className="bg-white/10 border border-white/10 rounded w-12 px-1 text-white outline-none focus:border-blue-500 text-center"
+                        />
+                        <span>주</span>
+                      </div>
                       <div className="flex items-center justify-between mt-1">
                         <div className="text-xs font-bold text-gray-200">{currPrice.toLocaleString()}원</div>
                         <div className={`text-[10px] font-black px-1.5 py-0.5 rounded ${isUp ? "bg-red-500/10 text-red-400" : isDown ? "bg-blue-500/10 text-blue-400" : "bg-gray-500/10 text-gray-400"}`}>
