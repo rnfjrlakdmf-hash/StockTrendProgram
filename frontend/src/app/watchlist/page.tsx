@@ -160,15 +160,10 @@ export default function WatchlistPage() {
                 const res = await fetch(`/api/stock/quotes/multi?symbols=${encodeURIComponent(symbols)}`);
                 const json = await res.json();
                 if (json.status === "success") {
-                    console.log("[WatchlistDebug] Quotes loaded:", json.data);
                     setQuotes(json.data);
                     setLastUpdated(new Date());
-                } else {
-                    console.error("[WatchlistDebug] API Error:", json.message);
                 }
-            } catch (e) {
-                console.error("[WatchlistDebug] Fetch error:", e);
-            }
+            } catch (e) { }
         };
         fetchQuotes();
     }, [watchlist]);
@@ -183,6 +178,9 @@ export default function WatchlistPage() {
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
             setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
+            
+            // Dispatch event to sync with Sidebar
+            window.dispatchEvent(new CustomEvent('watchlistChanged'));
         } catch (e) {
             console.error(e);
         }
@@ -201,32 +199,16 @@ export default function WatchlistPage() {
                         <RefreshCw className="w-4 h-4" /> 실시간 시세 자동 업데이트 중 ({lastUpdated.toLocaleTimeString()})
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => {
-                            setLoading(true);
-                            fetchWatchlist();
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        리스트 새로고침
-                    </button>
-                    <button
-                        onClick={() => {
-                            const debugInfo = JSON.stringify({
-                                watchlistSize: watchlist.length,
-                                quoteKeys: Object.keys(quotes),
-                                sampleQuote: quotes[watchlist[0]?.symbol] || "None",
-                                user: user ? { id: user.id, email: user.email } : "Not Logged In"
-                            }, null, 2);
-                            alert(`[데이터 상태 점검]\n${debugInfo}`);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all font-bold border border-blue-500/20"
-                    >
-                        데이터 상태 점검
-                    </button>
-                </div>
+                <button
+                    onClick={() => {
+                        setLoading(true);
+                        fetchWatchlist();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    리스트 새로고침
+                </button>
             </div>
 
             {/* Content */}
@@ -290,6 +272,7 @@ export default function WatchlistPage() {
                         <div className="grid md:grid-cols-2 gap-6 p-6 bg-blue-900/10 border border-blue-500/20 rounded-3xl animate-in zoom-in-95">
                             <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
                                 <h3 className="font-bold flex items-center gap-2 text-blue-300"><Bell className="w-4 h-4" /> 웹 푸시 알림</h3>
+                                <p className="text-[10px] text-gray-500 font-mono text-center">v3.6.40-STABLE</p>
                                 <p className="text-xs text-gray-500 leading-relaxed">브라우저 알림으로 가격 변동 소식을 즉시 받아볼 수 있습니다.</p>
                                 <button
                                     onClick={async () => {
