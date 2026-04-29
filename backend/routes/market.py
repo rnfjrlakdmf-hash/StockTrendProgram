@@ -133,40 +133,44 @@ def search_stock_api(q: str):
     from stock_data import GLOBAL_KOREAN_NAMES
     from korea_data import search_stock_code
     from global_search import search_global_ticker
+    import unicodedata
+    
     q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
     
     results = []
+    seen_codes = set()
     
-    # 1. Direct Ticker Check
+    def add_result(code, name, market):
+        if not code or code in seen_codes: return
+        results.append({"code": code, "symbol": code, "name": name, "market": market})
+        seen_codes.add(code)
+
+    # 1. Direct Ticker Check (6-digit KR or simple Alpha Global)
     if q_norm.isdigit() and len(q_norm) == 6:
-        results.append({"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"})
+        add_result(q_norm, q_norm, "KR")
+    elif q_norm.isalpha() and 1 <= len(q_norm) <= 5:
+        # Looks like a US ticker
+        add_result(q_norm.upper(), q_norm.upper(), "Global")
     
-    # 2. Global Mapping Check
+    # 2. High-Priority Global Mapping Check (e.g. '애플' -> 'AAPL')
     for ticker, ko_name in GLOBAL_KOREAN_NAMES.items():
         if q_norm == ko_name or q_norm in ko_name:
-            results.append({"code": ticker, "symbol": ticker, "name": ko_name, "market": "Global"})
+            add_result(ticker, ko_name, "Global")
     
-    # 3. Domestic Search
+    # 3. Domestic Search Fallback
     kr_result = search_stock_code(q_norm)
     if kr_result:
-        market_type = "KR" if (kr_result.isdigit() and len(kr_result) == 6) else "Global"
-        results.append({"code": kr_result, "symbol": kr_result, "name": q_norm, "market": market_type})
+        m_type = "KR" if (kr_result.isdigit() and len(kr_result) == 6) else "Global"
+        add_result(kr_result, q_norm, m_type)
         
-    # 4. Global Search (If no results or explicitly looks like global)
+    # 4. Global Search Fallback
     if not results or any(c.isalpha() for c in q_norm):
         gb_result = search_global_ticker(q_norm)
-        if gb_result and not any(r['code'] == gb_result for r in results):
-            results.append({"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"})
+        if gb_result:
+            add_result(gb_result, q_norm, "Global")
             
     if results:
-        # Deduplicate by code
-        unique_results = []
-        seen = set()
-        for r in results:
-            if r['code'] not in seen:
-                unique_results.append(r)
-                seen.add(r['code'])
-        return {"status": "success", "data": unique_results}
+        return {"status": "success", "data": results}
         
     return {"status": "error", "message": f"해당 종목을 찾을 수 없습니다: '{q_norm}'"}
 
