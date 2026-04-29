@@ -181,23 +181,24 @@ def read_quote(symbol: str):
 def get_multi_quotes(symbols: str = Query(...)):
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     results = {}
+    from stock_data import get_simple_quote
     from korea_data import get_exchange_rate
     rate = get_exchange_rate("USD")
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(symbol_list) or 1) as executor:
-        future_to_symbol = {executor.submit(get_simple_quote, sym): sym for sym in symbol_list}
-        for future in concurrent.futures.as_completed(future_to_symbol):
-            sym = future_to_symbol[future]
-            try:
-                data = future.result()
-                if data:
-                    results[sym] = {
-                        "price": data.get("price", "확인불가"), 
-                        "change": data.get("change", "0.00%"), 
-                        "up": data.get("up", True),
-                        "currency": data.get("currency", "KRW")
-                    }
-            except: results[sym] = {"price": "확인불가", "change": "0.00%"}
+    for sym in symbol_list:
+        try:
+            data = get_simple_quote(sym)
+            if data:
+                results[sym] = {
+                    "price": data.get("price", "확인불가"), 
+                    "change": data.get("change", "0.00%"), 
+                    "up": data.get("up", True),
+                    "currency": data.get("currency", "KRW")
+                }
+        except Exception as e:
+            print(f"[MarketAPI] Failed to get multi-quote for {sym}: {e}")
+            results[sym] = {"price": "확인불가", "change": "0.00%"}
+    
     return {"status": "success", "data": results, "usd_krw": rate}
 
 @router.get("/korea/sector_heatmap")
