@@ -19,7 +19,8 @@ def migrate_watchlist_api(req: MigrateRequest):
     return {"status": "success" if success else "error"}
 
 @router.get("/watchlist")
-def read_watchlist(x_user_id: str = Header(None)):
+def read_watchlist(response: Response, x_user_id: str = Header(None)):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     from db_manager import get_watchlist
     user_id = x_user_id or "guest"
     print(f"[Watchlist] Reading for user: {user_id}")
@@ -45,7 +46,8 @@ def get_watchlist_closing_summary(x_user_id: str = Header(None)):
     from concurrent.futures import ThreadPoolExecutor
     
     user_id = x_user_id or "guest"
-    symbols = get_watchlist(user_id)
+    items = get_watchlist(user_id)
+    symbols = [i[0] for i in items]
     
     if not symbols:
         return {"status": "success", "data": []}
@@ -71,7 +73,8 @@ def get_watchlist_closing_summary(x_user_id: str = Header(None)):
     return {"status": "success", "data": final_data}
 
 @router.post("/watchlist")
-def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
+def create_watchlist(req: WatchlistRequest, response: Response, x_user_id: str = Header(None)):
+    response.headers["Cache-Control"] = "no-store"
     try:
         from db_manager import add_watchlist
         from stock_data import get_simple_quote
@@ -137,3 +140,25 @@ def remove_portfolio_entry(symbol: str, x_user_id: str = Header(None)):
     user_id = x_user_id or "guest"
     success = delete_user_portfolio(user_id, symbol)
     return {"status": "success" if success else "error"}
+
+@router.get("/watchlist/debug/dump")
+def dump_watchlist():
+    try:
+        from db_manager import get_db_connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, symbol, added_price FROM watchlist ORDER BY created_at DESC LIMIT 50")
+        rows = cursor.fetchall()
+        conn.close()
+        # Anonymize user_id (first 4 chars + ***)
+        data = []
+        for r in rows:
+            uid = str(r[0])
+            data.append({
+                "user_id": uid[:4] + "***" if len(uid) > 4 else uid,
+                "symbol": r[1],
+                "price": r[2]
+            })
+        return {"status": "success", "rows": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

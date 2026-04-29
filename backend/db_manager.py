@@ -487,8 +487,11 @@ def get_prediction_report():
 def add_watchlist(user_id: str, symbol: str, added_price: float = 0):
     conn = get_db_connection()
     try:
-        conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price) VALUES (?, ?, ?)", (user_id, symbol, added_price))
+        u_id = user_id.strip() if user_id else "guest"
+        s_sym = symbol.strip() if symbol else ""
+        conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price) VALUES (?, ?, ?)", (u_id, s_sym, added_price))
         conn.commit()
+        print(f"[DB] Watchlist added: {u_id} -> {s_sym} (${added_price})")
         return True
     except Exception as e:
         print(f"Error adding to watchlist: {e}")
@@ -597,13 +600,12 @@ def update_user_keys(user_id, app_key, secret, account):
 def get_watchlist(user_id):
     if not user_id:
         return []
-    u_id = user_id.strip()
+    u_id = user_id.strip() if user_id else "guest"
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT symbol FROM watchlist WHERE user_id = ?", (u_id,))
-    rows = cursor.fetchall()
+    cursor.execute("SELECT symbol, added_price FROM watchlist WHERE user_id = ?", (u_id,))
+    res = cursor.fetchall()
     conn.close()
-    res = [row[0] for row in rows]
     print(f"[DB_WATCHLIST] user_id='{u_id}' found {len(res)} items")
     return res
 

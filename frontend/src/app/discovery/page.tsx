@@ -1511,7 +1511,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
 
             const options: RequestInit = { 
                 method,
-                headers: { "X-User-ID": user.id }
+                headers: { "X-User-ID": user.id || (user as any).uid || "guest" }
             };
             if (!isWatchlisted) {
                 options.headers = { 
@@ -1526,7 +1526,8 @@ function WatchlistButton({ symbol }: { symbol: string }) {
 
             if (json.status === "success") {
                 setIsWatchlisted(!isWatchlisted);
-                alert(isWatchlisted ? "❌ 관심종목에서 삭제되었습니다." : "⭐ 관심종목에 등록되었습니다!");
+                const userId = user.id || (user as any).uid || "guest";
+                alert(isWatchlisted ? "❌ 관심종목에서 삭제되었습니다." : `⭐ 관심종목에 등록되었습니다! (ID: ${userId})`);
                 // Dispatch event to notify Sidebar
                 window.dispatchEvent(new CustomEvent('watchlistChanged'));
             } else {
