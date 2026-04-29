@@ -160,10 +160,15 @@ export default function WatchlistPage() {
                 const res = await fetch(`/api/stock/quotes/multi?symbols=${encodeURIComponent(symbols)}`);
                 const json = await res.json();
                 if (json.status === "success") {
+                    console.log("[WatchlistDebug] Quotes loaded:", json.data);
                     setQuotes(json.data);
                     setLastUpdated(new Date());
+                } else {
+                    console.error("[WatchlistDebug] API Error:", json.message);
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("[WatchlistDebug] Fetch error:", e);
+            }
         };
         fetchQuotes();
     }, [watchlist]);
@@ -196,16 +201,32 @@ export default function WatchlistPage() {
                         <RefreshCw className="w-4 h-4" /> 실시간 시세 자동 업데이트 중 ({lastUpdated.toLocaleTimeString()})
                     </p>
                 </div>
-                <button
-                    onClick={() => {
-                        setLoading(true);
-                        fetchWatchlist();
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    리스트 새로고침
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            setLoading(true);
+                            fetchWatchlist();
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        리스트 새로고침
+                    </button>
+                    <button
+                        onClick={() => {
+                            const debugInfo = JSON.stringify({
+                                watchlistSize: watchlist.length,
+                                quoteKeys: Object.keys(quotes),
+                                sampleQuote: quotes[watchlist[0]?.symbol] || "None",
+                                user: user ? { id: user.id, email: user.email } : "Not Logged In"
+                            }, null, 2);
+                            alert(`[데이터 상태 점검]\n${debugInfo}`);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all font-bold border border-blue-500/20"
+                    >
+                        데이터 상태 점검
+                    </button>
+                </div>
             </div>
 
             {/* Content */}

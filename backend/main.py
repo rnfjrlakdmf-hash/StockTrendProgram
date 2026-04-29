@@ -20,7 +20,7 @@ from routes.alerts import router as alerts_router
 # Initialize FastAPI
 app = FastAPI(
     title="AI Stock Analyst API",
-    version="v3.6.35-WATCHLIST-STABLE",
+    version="v3.6.38-DEBUG-MODE",
     description="최적의 안정성과 속도를 위해 모든 군더더기를 제거한 원상 복구 버전"
 )
 

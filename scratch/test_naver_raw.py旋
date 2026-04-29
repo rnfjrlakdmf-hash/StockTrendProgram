@@ -1,0 +1,16 @@
+
+import requests
+
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Referer": "https://m.stock.naver.com/"
+}
+
+def test_naver(code):
+    url = f"https://m.stock.naver.com/api/stock/{code}/basic"
+    res = requests.get(url, headers=HEADER)
+    print(f"Code {code}: {res.status_code}")
+    if res.status_code == 200:
+        print(res.text)
+
+test_naver("005930")

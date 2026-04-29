@@ -1,0 +1,15 @@
+
+import requests
+
+def test_polling(code):
+    url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{code}"
+    res = requests.get(url)
+    print(f"Polling {code}: {res.status_code}")
+    if res.status_code == 200:
+        data = res.json()
+        item = data['result']['areas'][0]['datas'][0]
+        print(f"Name: {item.get('nm')}")
+        print(f"Price: {item.get('nv')}")
+
+test_polling("005930")
+test_polling("000660")
