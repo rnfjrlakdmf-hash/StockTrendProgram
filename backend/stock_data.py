@@ -871,8 +871,15 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 yf_symbol = symbol.split('.')[0]
             
         ticker = yf.Ticker(yf_symbol)
+        
+        # [v3.7.5] Multi-layer price extraction for yfinance reliability
         current_price = ticker.fast_info.last_price
+        if not current_price or math.isnan(current_price):
+            current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+            
         prev_close = ticker.fast_info.previous_close
+        if not prev_close or math.isnan(prev_close):
+            prev_close = ticker.info.get('previousClose') or ticker.info.get('regularMarketPreviousClose')
         
         # [Fix] Handle NaN from yfinance
         import math
