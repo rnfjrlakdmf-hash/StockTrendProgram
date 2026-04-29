@@ -1303,7 +1303,8 @@ def get_naver_stock_info(symbol: str):
                         "change": f"{float(pct):+.2f}%",
                         "change_val": change_val,
                         "risefall_name": rf_name,
-                        "up": float(pct) >= 0 or rf_name == 'RISING'
+                        "up": float(pct) >= 0 or rf_name == 'RISING',
+                        "currency": "KRW"
                     }
         except: pass
 
@@ -1331,7 +1332,8 @@ def get_naver_stock_info(symbol: str):
                         "change": f"{float(pct):+.2f}%",
                         "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
                         "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
-                        "up": float(pct) >= 0
+                        "up": float(pct) >= 0,
+                        "currency": "USD" if is_foreign else "KRW"
                     }
         except: pass
 

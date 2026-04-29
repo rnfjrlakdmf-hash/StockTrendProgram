@@ -76,7 +76,7 @@ const getDayOfWeek = (dateStr: string) => {
 export default function PortfolioPage() {
   const [inputSymbol, setInputSymbol] = useState("");
   const [selectedName, setSelectedName] = useState("");
-  const [holdings, setHoldings] = useState<{ symbol: string; name?: string; price: string; quantity: string }[]>([]);
+  const [holdings, setHoldings] = useState<{ symbol: string; name?: string; price: string; quantity: string; currency?: string }[]>([]);
   const [inputPrice, setInputPrice] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -89,6 +89,7 @@ export default function PortfolioPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [usdKrw, setUsdKrw] = useState(1350);
   const { user, isLoading: authLoading } = useAuth();
 
   // 항상 최신 userId를 반환 - localStorage 직접 읽기로 타이밍 문제 해결
@@ -134,6 +135,7 @@ export default function PortfolioPage() {
       const json = await res.json();
       if (json.status === "success" && json.data) {
         setCurrentPrices(json.data);
+        if (json.usd_krw) setUsdKrw(json.usd_krw);
       }
     } catch (e) { console.error(e); }
   }, [holdings]);
@@ -162,14 +164,16 @@ export default function PortfolioPage() {
         const newHoldings = await Promise.all(
           json.data.map(async (s: any) => {
             let price = "0";
+            let currency = "KRW";
             try {
-              const qr = await fetch(`${API_BASE_URL}/api/quote/${encodeURIComponent(s.symbol)}`);
+              const qr = await fetch(`${API_BASE_URL}/api/stock/quote/${encodeURIComponent(s.symbol)}`);
               const qj = await qr.json();
-              if (qj.status === "success" && qj.data?.price) {
+              if (qj.status === "success" && qj.data) {
                 price = String(safeNum(qj.data.price));
+                currency = qj.data.currency || "KRW";
               }
             } catch {}
-            return { symbol: s.symbol, name: s.name, price, quantity: "1" };
+            return { symbol: s.symbol, name: s.name, price, quantity: "1", currency };
           })
         );
         setHoldings(newHoldings);
@@ -243,7 +247,9 @@ export default function PortfolioPage() {
     const sym = inputSymbol.toUpperCase().trim();
     // 선택된 이름이 있으면 사용, 없으면 제안 리스트에서 찾기, 그것도 없으면 심볼 사용
     const foundName = selectedName || suggestions.find(s => s.symbol === sym)?.name || sym;
-    const newH = { symbol: sym, name: foundName, price: inputPrice, quantity: inputQuantity };
+    const isUS = sym.match(/[A-Z]/) && !sym.includes(".");
+    const currency = isUS ? "USD" : "KRW";
+    const newH = { symbol: sym, name: foundName, price: inputPrice, quantity: inputQuantity, currency };
     const updated = [...holdings, newH];
     setHoldings(updated);
     refreshPrices(updated);
@@ -289,7 +295,13 @@ export default function PortfolioPage() {
 
   const handleAdReward = () => { setHasPaid(true); setShowAdModal(false); setTimeout(() => runOptimization(), 100); };
 
-  const totalInvested = holdings.reduce((acc, h) => acc + safeNum(h.price) * safeNum(h.quantity), 0);
+  const totalInvested = holdings.reduce((acc, h) => {
+    const price = safeNum(h.price);
+    const qty = safeNum(h.quantity);
+    const isUSD = h.currency === "USD" || (h.symbol.match(/[A-Z]/) && !h.symbol.includes("."));
+    const value = isUSD ? price * qty * usdKrw : price * qty;
+    return acc + value;
+  }, 0);
   const score = safeNum(analysisResult?.score) || 0;
   const grade = getGrade(score);
 
@@ -462,7 +474,7 @@ export default function PortfolioPage() {
                   icon={<Coins className="w-4 h-4" />}
                   label="총 투자 금액"
                   value={`${totalInvested.toLocaleString()}원`}
-                  desc="내가 실제로 투자한 총 금액이에요"
+                  desc={`미국 주식은 현재 환율(약 ${usdKrw.toLocaleString()}원)을 적용해 원화로 합산했어요.`}
                   color="bg-white/5 border-white/10"
                 />
 
