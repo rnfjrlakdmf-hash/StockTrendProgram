@@ -1526,11 +1526,15 @@ function WatchlistButton({ symbol }: { symbol: string }) {
 
             if (json.status === "success") {
                 setIsWatchlisted(!isWatchlisted);
+                alert(isWatchlisted ? "❌ 관심종목에서 삭제되었습니다." : "⭐ 관심종목에 등록되었습니다!");
                 // Dispatch event to notify Sidebar
                 window.dispatchEvent(new CustomEvent('watchlistChanged'));
+            } else {
+                alert("⚠️ 저장 실패: " + (json.message || "서버 응답 오류"));
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            alert("🛑 통신 오류: " + err.message);
         } finally {
             setLoading(false);
         }

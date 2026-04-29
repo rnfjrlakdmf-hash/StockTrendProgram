@@ -57,7 +57,7 @@ export default function Sidebar() {
     useEffect(() => {
         const fetchExchangeRate = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/market/status`);
+                const res = await fetch(`/api/market/status`);
 
                 // [Fix] Check response status before parsing
                 if (!res.ok) {
@@ -161,7 +161,7 @@ export default function Sidebar() {
                 return;
             }
             try {
-                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                const res = await fetch(`/api/watchlist`, {
                     headers: { "X-User-ID": user.id || (user as any).uid }
                 });
                 const json = await res.json();
@@ -204,7 +204,7 @@ export default function Sidebar() {
             setIsLoadingTrial(true);
             try {
                 // Call Backend API to decrement count
-                const res = await fetch(`${API_BASE_URL}/api/auth/use-trial`, {
+                const res = await fetch(`/api/auth/use-trial`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ user_id: user?.id })
