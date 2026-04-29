@@ -70,25 +70,29 @@ def get_watchlist_closing_summary(x_user_id: str = Header(None)):
 
 @router.post("/watchlist")
 def create_watchlist(req: WatchlistRequest, x_user_id: str = Header(None)):
-    from db_manager import add_watchlist
-    from stock_data import get_simple_quote
-    from portfolio_analysis import safe_num
-    
-    user_id = x_user_id or "guest"
-    
-    # 추가 시점의 가격 가져오기
-    current_price = 0
     try:
-        quote = get_simple_quote(req.symbol)
-        if quote and quote.get('price'):
-            current_price = safe_num(quote['price'])
-    except: pass
-    
-    success = add_watchlist(user_id, req.symbol, current_price)
-    if success:
-        from utils.briefing_store import invalidate_today_briefing
-        invalidate_today_briefing(user_id)
-    return {"status": "success" if success else "error"}
+        from db_manager import add_watchlist
+        from stock_data import get_simple_quote
+        
+        user_id = x_user_id or "guest"
+        
+        # 추가 시점의 가격 가져오기
+        current_price = 0
+        try:
+            quote = get_simple_quote(req.symbol)
+            if quote and quote.get('price'):
+                p_str = str(quote['price']).replace(',', '')
+                current_price = float(p_str)
+        except: pass
+        
+        success = add_watchlist(user_id, req.symbol, current_price)
+        if success:
+            from utils.briefing_store import invalidate_today_briefing
+            invalidate_today_briefing(user_id)
+        return {"status": "success" if success else "error"}
+    except Exception as e:
+        print(f"[Watchlist-Error] {e}")
+        return {"status": "error", "message": str(e)}
 
 @router.delete("/watchlist/{symbol}")
 def delete_watchlist(symbol: str, x_user_id: str = Header(None)):
