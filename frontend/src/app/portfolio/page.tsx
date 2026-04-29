@@ -67,7 +67,8 @@ function StatCard({ icon, label, value, desc, color }: any) {
 
 export default function PortfolioPage() {
   const [inputSymbol, setInputSymbol] = useState("");
-  const [holdings, setHoldings] = useState<{ symbol: string; price: string; quantity: string }[]>([]);
+  const [selectedName, setSelectedName] = useState("");
+  const [holdings, setHoldings] = useState<{ symbol: string; name?: string; price: string; quantity: string }[]>([]);
   const [inputPrice, setInputPrice] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -160,7 +161,7 @@ export default function PortfolioPage() {
                 price = String(safeNum(qj.data.price));
               }
             } catch {}
-            return { symbol: s.symbol, price, quantity: "1" };
+            return { symbol: s.symbol, name: s.name, price, quantity: "1" };
           })
         );
         setHoldings(newHoldings);
@@ -224,6 +225,7 @@ export default function PortfolioPage() {
 
   const selectSuggestion = (s: any) => {
     setInputSymbol(s.symbol);
+    setSelectedName(s.name);
     setSuggestions([]);
     fetchPriceForSymbol(s.symbol);
   };
@@ -231,7 +233,9 @@ export default function PortfolioPage() {
   const addHolding = async () => {
     if (!inputSymbol || !inputPrice || !inputQuantity) { alert("종목, 단가, 수량을 모두 입력해주세요."); return; }
     const sym = inputSymbol.toUpperCase().trim();
-    const newH = { symbol: sym, price: inputPrice, quantity: inputQuantity };
+    // 선택된 이름이 있으면 사용, 없으면 제안 리스트에서 찾기, 그것도 없으면 심볼 사용
+    const foundName = selectedName || suggestions.find(s => s.symbol === sym)?.name || sym;
+    const newH = { symbol: sym, name: foundName, price: inputPrice, quantity: inputQuantity };
     const updated = [...holdings, newH];
     setHoldings(updated);
     refreshPrices(updated);
@@ -240,7 +244,7 @@ export default function PortfolioPage() {
       try { await fetch(`${API_BASE_URL}/api/portfolio`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-ID": userId }, body: JSON.stringify(newH) }); }
       catch (e) { console.error(e); }
     }
-    setInputSymbol(""); setInputPrice(""); setInputQuantity("");
+    setInputSymbol(""); setSelectedName(""); setInputPrice(""); setInputQuantity("");
     setSuggestions([]);
   };
 
@@ -343,7 +347,10 @@ export default function PortfolioPage() {
                   return (
                     <div key={h.symbol} className="group relative flex flex-col gap-1 bg-white/5 border border-white/10 hover:border-blue-500/40 p-3 rounded-2xl transition-all min-w-[140px]">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="font-mono font-black text-blue-400">{h.symbol}</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white truncate max-w-[100px]">{h.name || h.symbol}</span>
+                          <span className="text-[9px] font-mono text-gray-500">{h.symbol}</span>
+                        </div>
                         <button onClick={() => removeHolding(h.symbol)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
                           <X className="w-3.5 h-3.5" />
                         </button>

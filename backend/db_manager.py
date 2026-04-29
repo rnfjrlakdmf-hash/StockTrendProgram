@@ -549,10 +549,19 @@ def get_user_portfolio(user_id):
     try:
         cursor.execute("SELECT symbol, avg_price, quantity FROM user_portfolio WHERE user_id = ?", (user_id,))
         rows = cursor.fetchall()
-        return [
-            {"symbol": row[0], "price": str(row[1]), "quantity": str(row[2])}
-            for row in rows
-        ]
+        
+        from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+        data = []
+        for row in rows:
+            sym = row[0]
+            name = get_korean_stock_name(sym) or GLOBAL_KOREAN_NAMES.get(sym, sym)
+            data.append({
+                "symbol": sym, 
+                "name": name,
+                "price": str(row[1]), 
+                "quantity": str(row[2])
+            })
+        return data
     except Exception as e:
         print(f"Get Portfolio Error: {e}")
         return []
