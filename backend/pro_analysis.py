@@ -433,6 +433,58 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         health_score = round((min(z_score, 5) / 5 * 40) + (f_score / 9 * 60))
         health_score = max(0, min(100, health_score))
 
+        # --- Chart Data Generation ---
+        stability_chart = []
+        profitability_chart = []
+        
+        if nav_full and nav_full.get("debt_ratio"):
+            # Korean stock path (Naver)
+            stability_chart = [
+                {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "부채비율": d, "당좌비율": c}
+                for yr, d, c in zip(
+                    nav_full.get("debt_ratio", {}).get("dates", [])[:4],
+                    nav_full.get("debt_ratio", {}).get("values", [])[:4],
+                    nav_full.get("quick_ratio", {}).get("values", [])[:4]
+                ) if d is not None and c is not None
+            ]
+            profitability_chart = [
+                {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "ROE": r, "영업이익률": a}
+                for yr, r, a in zip(
+                    nav_full.get("roe", {}).get("dates", [])[:4],
+                    nav_full.get("roe", {}).get("values", [])[:4],
+                    nav_full.get("operating_margin", {}).get("values", [])[:4]
+                ) if r is not None and a is not None
+            ]
+        elif bs is not None and not bs.empty:
+            # Global stock path (yfinance)
+            try:
+                # Use recent 4 years
+                cols = bs.columns[:4]
+                for col in reversed(cols):
+                    year_label = str(col.year) if hasattr(col, 'year') else str(col)[:4]
+                    
+                    # Stability
+                    t_assets = safe(bs, "Total Assets", col)
+                    t_liab = safe(bs, "Total Liabilities Net Minority Interest", col) or safe(bs, "Total Liabilities", col)
+                    t_equity = safe(bs, "Stockholders Equity", col) or 1
+                    c_assets = safe(bs, "Current Assets", col)
+                    c_liab = safe(bs, "Current Liabilities", col) or 1
+                    
+                    debt_r = (t_liab / t_equity * 100) if t_equity > 0 else 0
+                    curr_r = (c_assets / c_liab * 100) if c_liab > 0 else 0
+                    stability_chart.append({"year": year_label, "부채비율": round(debt_r, 1), "당좌비율": round(curr_r, 1)})
+                    
+                    # Profitability
+                    rev = safe(fin, "Total Revenue", col) or 1
+                    op_inc = safe(fin, "Operating Income", col) or 0
+                    net_inc = safe(fin, "Net Income", col) or 0
+                    
+                    roe_val = (net_inc / t_equity * 100) if t_equity > 0 else 0
+                    op_m = (op_inc / rev * 100) if rev > 0 else 0
+                    profitability_chart.append({"year": year_label, "ROE": round(roe_val, 1), "영업이익률": round(op_m, 1)})
+            except Exception as e:
+                print(f"[Analysis] Global chart generation failed for {symbol}: {e}")
+
         return {
             "symbol": symbol,
             "name": naver_data.get("name") if naver_data else info.get("shortName") or symbol,
@@ -442,22 +494,8 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
             "f_score": {"value": f_score, "max": 9, "details": f_details},
             "ratios": ratios,
             "charts": {
-                "stability": [
-                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "부채비율": d, "당좌비율": c}
-                    for yr, d, c in zip(
-                        (nav_full.get("debt_ratio") or {}).get("dates", [])[:4],
-                        (nav_full.get("debt_ratio") or {}).get("values", [])[:4],
-                        (nav_full.get("quick_ratio") or {}).get("values", [])[:4]
-                    ) if d is not None and c is not None
-                ],
-                "profitability": [
-                    {"year": str(yr).split('/')[0] if '/' in str(yr) else str(yr), "ROE": r, "영업이익률": a}
-                    for yr, r, a in zip(
-                        (nav_full.get("roe") or {}).get("dates", [])[:4],
-                        (nav_full.get("roe") or {}).get("values", [])[:4],
-                        (nav_full.get("operating_margin") or {}).get("values", [])[:4]
-                    ) if r is not None and a is not None
-                ]
+                "stability": stability_chart,
+                "profitability": profitability_chart
             },
             "disclaimer": "본 데이터는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
         }
