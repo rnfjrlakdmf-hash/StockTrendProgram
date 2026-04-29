@@ -134,17 +134,40 @@ def search_stock_api(q: str):
     from korea_data import search_stock_code
     from global_search import search_global_ticker
     q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
+    
+    results = []
+    
+    # 1. Direct Ticker Check
     if q_norm.isdigit() and len(q_norm) == 6:
-        return {"status": "success", "data": [{"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"}]}
+        results.append({"code": q_norm, "symbol": q_norm, "name": q_norm, "market": "KR"})
+    
+    # 2. Global Mapping Check
     for ticker, ko_name in GLOBAL_KOREAN_NAMES.items():
         if q_norm == ko_name or q_norm in ko_name:
-            return {"status": "success", "data": [{"code": ticker, "symbol": ticker, "name": ko_name, "market": "Global"}]}
+            results.append({"code": ticker, "symbol": ticker, "name": ko_name, "market": "Global"})
+    
+    # 3. Domestic Search
     kr_result = search_stock_code(q_norm)
-    if kr_result and kr_result.isdigit() and len(kr_result) == 6:
-        return {"status": "success", "data": [{"code": kr_result, "symbol": kr_result, "name": q_norm, "market": "KR"}]}
-    gb_result = search_global_ticker(q_norm)
-    if gb_result:
-        return {"status": "success", "data": [{"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"}]}
+    if kr_result:
+        market_type = "KR" if (kr_result.isdigit() and len(kr_result) == 6) else "Global"
+        results.append({"code": kr_result, "symbol": kr_result, "name": q_norm, "market": market_type})
+        
+    # 4. Global Search (If no results or explicitly looks like global)
+    if not results or any(c.isalpha() for c in q_norm):
+        gb_result = search_global_ticker(q_norm)
+        if gb_result and not any(r['code'] == gb_result for r in results):
+            results.append({"code": gb_result, "symbol": gb_result, "name": q_norm, "market": "Global"})
+            
+    if results:
+        # Deduplicate by code
+        unique_results = []
+        seen = set()
+        for r in results:
+            if r['code'] not in seen:
+                unique_results.append(r)
+                seen.add(r['code'])
+        return {"status": "success", "data": unique_results}
+        
     return {"status": "error", "message": f"해당 종목을 찾을 수 없습니다: '{q_norm}'"}
 
 @router.get("/quote/{symbol}")
