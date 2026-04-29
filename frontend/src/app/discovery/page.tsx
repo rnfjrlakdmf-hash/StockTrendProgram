@@ -1878,13 +1878,17 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
         }
     }, [symbol]);
 
-    // Check Market Hours (KST)
-    const now = new Date();
-    // Convert to KST (UTC+9) roughly for display logic, though browser might be in KST already if user is in Korea.
-    // Assuming user is in Korea based on context.
-    const day = now.getDay(); // 0=Sun, 6=Sat
-    const hour = now.getHours();
-    const minute = now.getMinutes();
+    // Check Market Hours (Force KST - UTC+9)
+    const getKST = () => {
+        const d = new Date();
+        const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+        return new Date(utc + (3600000 * 9));
+    };
+    
+    const nowKST = getKST();
+    const day = nowKST.getDay(); // 0=Sun, 6=Sat
+    const hour = nowKST.getHours();
+    const minute = nowKST.getMinutes();
     const currentTime = hour * 100 + minute;
     
     const isWeekend = day === 0 || day === 6;
@@ -1906,17 +1910,15 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                             <div className="text-gray-300 font-bold"><span>오늘은 휴장일(주말)입니다.</span></div>
                             <div className="text-sm text-gray-500"><span>실시간 잠정 수급은 평일 장중(09:30 ~ 14:30)에만 집계됩니다.</span></div>
                         </>
-                    ) : !isMarketOpen ? (
-                        <>
-                            <div className="text-3xl">🌙</div>
-                            <div className="text-gray-300 font-bold"><span>지금은 정규장 운영 시간이 아닙니다.</span></div>
-                            <div className="text-sm text-gray-500"><span>실시간 수급 집계가 종료되었습니다. (정규장: 09:00 ~ 15:30)</span></div>
-                        </>
                     ) : (
                         <>
-                            <div className="text-3xl">📭</div>
-                            <div className="text-gray-300 font-bold"><span>잠정 집계 현황이 아직 없습니다.</span></div>
-                            <div className="text-sm text-gray-500"><span>장 시작 직후이거나, 거래량이 적어 집계되지 않았을 수 있습니다.</span></div>
+                            <div className="text-3xl">{isMarketOpen ? '📭' : '🌙'}</div>
+                            <div className="text-gray-300 font-bold">
+                                <span>{isMarketOpen ? "잠정 집계 현황이 아직 없습니다." : "지금은 정규장 운영 시간이 아닙니다."}</span>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                                <span>{isMarketOpen ? "장 시작 직후이거나, 거래량이 적어 집계되지 않았을 수 있습니다." : "실시간 수급 집계가 종료되었습니다. (정규장: 09:00 ~ 15:30)"}</span>
+                            </div>
                         </>
                     )}
                 </div>
