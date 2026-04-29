@@ -243,7 +243,6 @@ export default function PortfolioPage() {
     setInputSymbol(""); setInputPrice(""); setInputQuantity("");
     setSuggestions([]);
   };
-  };
 
   const removeHolding = async (sym: string) => {
     setHoldings(prev => prev.filter(h => h.symbol !== sym));
