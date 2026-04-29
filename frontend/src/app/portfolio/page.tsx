@@ -609,7 +609,14 @@ export default function PortfolioPage() {
                               <div key={i} className="bg-white/5 border border-white/10 hover:border-yellow-500/30 rounded-xl p-3 flex justify-between items-center transition-colors">
                                 <div className="flex flex-col gap-0.5">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-xs text-white">{event.name || event.symbol}</span>
+                                    <span className="font-bold text-xs text-white">
+                                      {(() => {
+                                        if (event.name && event.name !== event.symbol) return event.name;
+                                        // Fallback: search in current items if name is missing
+                                        const found = items.find(it => it.symbol === event.symbol);
+                                        return found?.name || event.symbol;
+                                      })()}
+                                    </span>
                                     <span className={`text-[9px] px-1 py-0.25 rounded ${isConfirmed ? "bg-blue-500/20 text-blue-400" : "bg-gray-500/20 text-gray-400"}`}>
                                       {isConfirmed ? "확정" : "예상"}
                                     </span>
