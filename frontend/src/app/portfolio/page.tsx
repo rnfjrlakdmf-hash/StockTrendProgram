@@ -16,20 +16,20 @@ const safeNum = (v: any): number => {
 
 // 점수에 따른 등급
 function getGrade(score: number) {
-  if (score >= 80) return { label: "우수 💎", color: "text-blue-400", bg: "bg-blue-500/20" };
-  if (score >= 65) return { label: "양호 ✅", color: "text-green-400", bg: "bg-green-500/20" };
-  if (score >= 50) return { label: "보통 😐", color: "text-yellow-400", bg: "bg-yellow-500/20" };
-  return { label: "주의 ⚠️", color: "text-red-400", bg: "bg-red-500/20" };
+  if (score >= 80) return { label: "아주 튼튼해요 💎", color: "text-blue-400", bg: "bg-blue-500/20" };
+  if (score >= 65) return { label: "균형 잡혔어요 ✅", color: "text-green-400", bg: "bg-green-500/20" };
+  if (score >= 50) return { label: "적당한 상태예요 😐", color: "text-yellow-400", bg: "bg-yellow-500/20" };
+  return { label: "관리가 필요해요 ⚠️", color: "text-red-400", bg: "bg-red-500/20" };
 }
 
 // 팩터 설명
 const FACTOR_INFO: Record<string, { label: string; desc: string; icon: string }> = {
-  베타:    { label: "시장 민감도", desc: "주식 시장 움직임에 얼마나 민감한지. 높을수록 시장과 함께 크게 움직여요.", icon: "📡" },
-  알파:    { label: "초과 성과", desc: "시장 평균 대비 얼마나 더 잘했는지. 높을수록 시장보다 좋은 성과예요.", icon: "🏆" },
-  모멘텀:  { label: "상승 탄력", desc: "최근 주가가 얼마나 상승 중인지. 높을수록 상승세가 강해요.", icon: "🚀" },
-  밸류:    { label: "저평가 정도", desc: "현재 주가가 얼마나 싸게 거래되는지. 높을수록 저평가 상태예요.", icon: "🏷️" },
-  변동성:  { label: "가격 변동폭", desc: "주가가 얼마나 오르내리는지. 높을수록 가격이 불안정해요.", icon: "🎢" },
-  배당:    { label: "배당 수익률", desc: "주식 보유 시 받는 배당금 비율. 높을수록 이자처럼 돈을 받아요.", icon: "💰" },
+  베타:    { label: "시장 민감도", desc: "시장의 파도에 얼마나 민감한지. 높을수록 큰 파도를 타요.", icon: "📡" },
+  알파:    { label: "실력 점수", desc: "평균보다 얼마나 더 수익을 냈는지 보여주는 성적표예요.", icon: "🏆" },
+  모멘텀:  { label: "달리는 힘", desc: "주가가 최근 얼마나 씩씩하게 올라가고 있는지 나타내요.", icon: "🚀" },
+  밸류:    { label: "가성비", desc: "좋은 회사를 저렴한 가격에 샀는지 보여주는 지표예요.", icon: "🏷️" },
+  변동성:  { label: "출렁임", desc: "가격이 롤러코스터처럼 얼마나 오르내리는지 정도예요.", icon: "🎢" },
+  배당:    { label: "보너스", desc: "주식을 가지고만 있어도 회사에서 주는 보너스 수익이에요.", icon: "💰" },
 };
 
 function FactorBar({ name, value }: { name: string; value: number }) {
