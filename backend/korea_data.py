@@ -1323,7 +1323,8 @@ def get_naver_stock_info(symbol: str):
                     pct = data.get('fluctuationsRatio', '0')
                     
                     # Format: 2 decimals for symbols with dots (Foreign) or letters
-                    is_foreign = '.' in symbol or any(c.isalpha() for c in symbol)
+                    # [v5.7.5] Refined foreign check: Has dot or has Latin letters (not just any alpha)
+                    is_foreign = '.' in symbol or bool(re.search(r'[A-Za-z]', symbol))
                     
                     return {
                         "symbol": symbol,

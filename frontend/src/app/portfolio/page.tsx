@@ -113,7 +113,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     const userId = getUserId();
     if (!userId) return;
-    fetch(`${API_BASE_URL}/api/portfolio`, { headers: { "X-User-ID": userId } })
+    fetch(`/api/portfolio`, { headers: { "X-User-ID": userId } })
       .then(r => r.json())
       .then(json => {
         if (json.status === "success" && Array.isArray(json.data)) {
@@ -131,7 +131,7 @@ export default function PortfolioPage() {
     if (list.length === 0) return;
     const syms = list.map(h => h.symbol).join(",");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/stock/quotes/multi?symbols=${encodeURIComponent(syms)}`);
+      const res = await fetch(`/api/stock/quotes/multi?symbols=${encodeURIComponent(syms)}`);
       const json = await res.json();
       if (json.status === "success" && json.data) {
         setCurrentPrices(json.data);
@@ -155,7 +155,7 @@ export default function PortfolioPage() {
     }
     setSyncLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+      const res = await fetch(`/api/watchlist`, {
         headers: { "X-User-ID": userId },
       });
       const json = await res.json();
@@ -166,7 +166,7 @@ export default function PortfolioPage() {
             let price = "0";
             let currency = "KRW";
             try {
-              const qr = await fetch(`${API_BASE_URL}/api/quote/${encodeURIComponent(s.symbol)}`);
+              const qr = await fetch(`/api/quote/${encodeURIComponent(s.symbol)}`);
               const qj = await qr.json();
               if (qj.status === "success" && qj.data) {
                 price = String(safeNum(qj.data.price));
@@ -180,7 +180,7 @@ export default function PortfolioPage() {
         // DB에도 저장
         for (const h of newHoldings) {
           try {
-            await fetch(`${API_BASE_URL}/api/portfolio`, {
+            await fetch(`/api/portfolio`, {
               method: "POST",
               headers: { "Content-Type": "application/json", "X-User-ID": userId },
               body: JSON.stringify(h),
@@ -202,7 +202,7 @@ export default function PortfolioPage() {
   const fetchPriceForSymbol = async (sym: string) => {
     if (!sym.trim()) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/quote/${encodeURIComponent(sym.trim())}`);
+      const res = await fetch(`/api/quote/${encodeURIComponent(sym.trim())}`);
       const json = await res.json();
       if (json.status === "success" && json.data?.price) {
         const p = safeNum(json.data.price);
@@ -224,7 +224,7 @@ export default function PortfolioPage() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(inputSymbol)}`);
+        const res = await fetch(`/api/stock/search?q=${encodeURIComponent(inputSymbol)}`);
         const json = await res.json();
         if (json.status === "success" && Array.isArray(json.data)) {
           setSuggestions(json.data.slice(0, 5));
@@ -255,7 +255,7 @@ export default function PortfolioPage() {
     refreshPrices(updated);
     const userId = getUserId();
     if (userId) {
-      try { await fetch(`${API_BASE_URL}/api/portfolio`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-ID": userId }, body: JSON.stringify(newH) }); }
+      try { await fetch(`/api/portfolio`, { method: "POST", headers: { "Content-Type": "application/json", "X-User-ID": userId }, body: JSON.stringify(newH) }); }
       catch (e) { console.error(e); }
     }
     setInputSymbol(""); setSelectedName(""); setInputPrice(""); setInputQuantity("");
@@ -270,7 +270,7 @@ export default function PortfolioPage() {
   const removeHolding = async (sym: string) => {
     setHoldings(prev => prev.filter(h => h.symbol !== sym));
     const userId = getUserId();
-    if (userId) { try { await fetch(`${API_BASE_URL}/api/portfolio/${sym}`, { method: "DELETE", headers: { "X-User-ID": userId } }); } catch (e) { console.error(e); } }
+    if (userId) { try { await fetch(`/api/portfolio/${sym}`, { method: "DELETE", headers: { "X-User-ID": userId } }); } catch (e) { console.error(e); } }
   };
 
   const runOptimization = async (overrideHoldings?: any[]) => {
@@ -283,12 +283,12 @@ export default function PortfolioPage() {
     try {
       if (syms.length >= 2) {
         try {
-          const r = await fetch(`${API_BASE_URL}/api/portfolio/optimize`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: syms }) });
+          const r = await fetch(`/api/portfolio/optimize`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: syms }) });
           const j = await r.json();
           if (j.status === "success" && j.data) setResult(j.data);
         } catch (e) { console.warn(e); }
       }
-      const rd = await fetch(`${API_BASE_URL}/api/portfolio/diagnosis`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ portfolio: syms }) });
+      const rd = await fetch(`/api/portfolio/diagnosis`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ portfolio: syms }) });
       if (!rd.ok) throw new Error(`Server error: ${rd.status}`);
       const jd = await rd.json();
       if (jd.status === "success" && jd.data) setAnalysisResult(jd.data);

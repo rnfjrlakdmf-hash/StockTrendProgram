@@ -825,6 +825,23 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
     고객님이 요청한 '실시간 정보' 확보를 최우선으로 합니다.
     야후 파이낸스 차단 상황을 대비하여 네이버 통합 API를 최우선으로 사용합니다.
     """
+    # 0. Resolve Name to Code if needed
+    import re
+    if not re.match(r'^[A-Za-z0-9.]+$', symbol):
+        from korea_data import search_stock_code
+        from stock_data import GLOBAL_KOREAN_NAMES
+        import unicodedata
+        q_norm = unicodedata.normalize('NFC', symbol).replace(" ", "")
+        resolved = None
+        for t, k in GLOBAL_KOREAN_NAMES.items():
+            if q_norm == k or q_norm in k:
+                resolved = t
+                break
+        if not resolved:
+            resolved = search_stock_code(q_norm)
+        if resolved:
+            symbol = resolved
+
     # 1. 네이버 통합 API 시도 (국내/해외 모두 지원)
     try:
         naver_info = get_naver_stock_info(symbol)
