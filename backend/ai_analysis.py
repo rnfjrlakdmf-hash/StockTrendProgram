@@ -1320,7 +1320,7 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     model = get_json_model()
     
     prompt = f"""
-    You are a 'Senior Portfolio Advisor'.
+    You are an 'Automated Portfolio Analysis Engine'.
     Portfolio Assets: [{portfolio_str}]
     
     Data provided:

@@ -609,6 +609,18 @@ export default function PortfolioPage() {
                   </div>
                 </div>
               )}
+
+              {/* 법적 고지문 (Legal Disclaimer) */}
+              <div className="mt-8 pt-6 border-t border-white/5">
+                <div className="flex gap-2 text-gray-500 bg-white/5 p-4 rounded-xl">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div className="text-[10px] leading-relaxed">
+                    <p className="font-bold mb-1 text-gray-400">[투자 유의사항 및 법적 고지]</p>
+                    <p>본 서비스에서 제공하는 포트폴리오 진단 및 AI 리포트는 과거의 데이터와 알고리즘을 바탕으로 한 통계적 분석 결과이며, 특정 종목에 대한 매수 또는 매도 권유가 아닙니다.</p>
+                    <p className="mt-1">모든 투자 결정과 그에 따른 책임은 투자자 본인에게 있으며, 본 시스템의 분석 결과는 투자 참고용으로만 활용하시기 바랍니다. 금융위원회 등록 투자자문업자가 아니며, 개별적인 투자 상담을 제공하지 않습니다.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
