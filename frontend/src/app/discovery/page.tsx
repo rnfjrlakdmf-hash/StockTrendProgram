@@ -1498,6 +1498,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
     }, [symbol, user]);
 
     const toggleWatchlist = async () => {
+        console.log("[Watchlist] Toggling symbol:", symbol, "isWatchlisted:", isWatchlisted);
         if (!user) {
             alert("관심종목 기능은 로그인이 필요합니다.");
             return;
