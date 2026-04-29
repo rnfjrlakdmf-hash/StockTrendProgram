@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 # 1. Account Nutritionist (Sector Analysis)
 # ==========================================
 
-from korea_data import get_naver_stock_info, search_stock_code
+from korea_data import get_naver_stock_info, search_stock_code, get_korean_stock_name
 
 # ==========================================
 # 1. Account Nutritionist (Sector Analysis)
@@ -447,14 +447,15 @@ def get_dividend_calendar(symbols: list) -> list:
                         
                     pay_date = f"{pay_year}-{pay_month:02d}-{pay_day:02d}"
                     
+                    stock_name = get_korean_stock_name(final_code) or raw_sym
                     calendar_events.append({
+                        "symbol": symbol,
+                        "name": stock_name,
                         "date": pay_date,
-                        "symbol": raw_sym,
-                        "name": raw_sym,
-                        "amount": seibro_data['amount'],
+                        "amount": float(seibro_data.get('amount', 0)),
                         "currency": "KRW",
-                        "type": "확정 (SEIBRO)", # 공공데이터 기반
-                        "source": "공공데이터포털"
+                        "type": "확정 (현금배당)",
+                        "source": "SEIBRO"
                     })
                     continue
 
@@ -495,7 +496,7 @@ def get_dividend_calendar(symbols: list) -> list:
                                 calendar_events.append({
                                     "date": projected_date.strftime("%Y-%m-%d"),
                                     "symbol": raw_sym,
-                                    "name": raw_sym,
+                                    "name": get_korean_stock_name(final_code) or raw_sym,
                                     "amount": float(amount),
                                     "currency": "KRW",
                                     "type": div_type,
@@ -551,8 +552,8 @@ def get_dividend_calendar(symbols: list) -> list:
                             "name": ticker_name,
                             "amount": float(last_div_value),
                             "currency": ticker_currency,
-                            "type": "확정 (Ex-Dividend)",
-                            "source": "확정"
+                            "type": "확정 (현금배당)",
+                            "source": "Yahoo Finance"
                         })
                 except Exception as e:
                     print(f"[Dividend] Ex-div date parse error for {raw_sym}: {e}")
