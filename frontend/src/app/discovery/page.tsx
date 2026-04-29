@@ -1471,7 +1471,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
                 return;
             }
             try {
-                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                const res = await fetch(`/api/watchlist`, {
                     headers: { "X-User-ID": user.id || (user as any).uid }
                 });
 
@@ -1506,7 +1506,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
         setLoading(true);
         try {
             const method = isWatchlisted ? 'DELETE' : 'POST';
-            const url = isWatchlisted ? `${API_BASE_URL}/api/watchlist/${symbol}` : `${API_BASE_URL}/api/watchlist`;
+            const url = isWatchlisted ? `/api/watchlist/${symbol}` : `/api/watchlist`;
 
             const options: RequestInit = { 
                 method,
