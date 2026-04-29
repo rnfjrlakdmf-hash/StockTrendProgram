@@ -1320,7 +1320,7 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     model = get_json_model()
     
     prompt = f"""
-    You are a 'Beginner-Friendly Portfolio Doctor'.
+    You are a 'Senior Portfolio Advisor'.
     Portfolio Assets: [{portfolio_str}]
     
     Data provided:
@@ -1328,23 +1328,24 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     2. Factor Metrics: {factor_summary}
     
     Instructions:
-    1. **Balance Score (0-100)**: Rate the portfolio's balance. 80+ is excellent, 50-70 is average, below 50 needs attention.
-    2. **Allocation Style**: Give a catchy Korean name for the style (e.g., "불타는 성장형 고구마", "든든한 국밥같은 안정형").
+    1. **Balance Score (0-100)**: Rate the overall structural stability.
+    2. **Allocation Style**: Give a professional yet easy-to-understand Korean name (e.g., "공격적 수익 추구형", "안정적 자산 배분형").
     3. **Analysis Report**: 
-       - Write for a **complete beginner** who just started stock trading.
-       - Use an intuitive metaphor (e.g., 'Nutritional balance of a meal', 'A physical health checkup', or 'Driving a car').
-       - **AVOID complex jargon** like "beta", "alpha", "volatility", "diversification" without easy explanation.
-       - Explain WHY the score is high/low and what ONE simple thing they could do to improve it.
+       - Write for a beginner in **Korean**.
+       - **DO NOT use food/diet metaphors** (Avoid words like 식단, 고기, 채소).
+       - Use direct but kind language.
+       - Explain the current state of their assets clearly.
+       - Suggest one simple action to improve the portfolio's health.
        - Keep it under 4 sentences.
     
     Response Format (JSON) - MUST BE IN KOREAN:
     {{
         "score": 75,
-        "analysis": "성장에 올인한 공격수 스타일",
-        "report": "현재 포트폴리오는 마치 고기만 가득한 식단 같아요! 수익을 낼 힘은 강력하지만, 시장이 흔들릴 때 버틸 채소(안정적인 종목)가 부족합니다. 조금 더 안정적인 회사들을 섞어주면 훨씬 튼튼한 포트폴리오가 될 거예요.",
+        "analysis": "성장 중심의 공격적 투자형",
+        "report": "현재 포트폴리오는 주가 상승에 따른 수익을 노리는 종목들에 집중되어 있습니다. 수익성은 높을 수 있지만 시장이 흔들릴 때 변동이 클 수 있으니, 일부는 안정적인 배당주나 대형주로 채워 균형을 잡는 것을 추천합니다.",
         "details": {{
-            "sector_risk": "한 곳에 너무 몰려있어요",
-            "diversification": "조금 더 골고루 담는 게 필요해요"
+            "sector_risk": "특정 분야에 집중되어 있어 위험할 수 있어요",
+            "diversification": "조금 더 다양한 업종에 나누어 담아보세요"
         }}
     }}
     """

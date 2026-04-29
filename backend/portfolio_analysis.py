@@ -723,23 +723,24 @@ def analyze_portfolio_factors(symbols: list) -> dict:
     avg_vol = float(np.nanmean(volatilities)) if volatilities else 20.0
     
     # 1. Beta Score (High Beta = High Risk/Aggressive)
-    score_beta = min(max(avg_beta * 50, 0), 100)
+    score_beta = min(max(avg_beta * 50, 10), 100)
     
     # 2. Value Score (Low P/E = High Value)
-    score_value = min(max(100 - (avg_pe * 1.5), 0), 100)
+    # If P/E is very high, score is low, but let's keep a floor of 10
+    score_value = min(max(100 - (avg_pe * 1.2), 10), 100)
     
     # 3. Yield Score (High Yield = High Score)
-    score_yield = min(max(avg_yield * 20, 0), 100)
+    score_yield = min(max(avg_yield * 15, 10), 100)
     
     # 4. Momentum Score (High Return = High Score)
-    score_momentum = min(max(50 + avg_mom, 0), 100)
+    score_momentum = min(max(50 + avg_mom, 10), 100)
     
     # 5. Volatility Score (High Vol = High Score)
-    score_volatility = min(max(avg_vol * 2, 0), 100)
+    score_volatility = min(max(avg_vol * 1.5, 10), 100)
     
-    # 6. Alpha
-    raw_alpha = avg_mom - (avg_beta * 5)
-    score_alpha = min(max(50 + raw_alpha, 0), 100)
+    # 6. Alpha (Relative Performance)
+    raw_alpha = avg_mom - (avg_beta * 3)
+    score_alpha = min(max(50 + raw_alpha, 10), 100)
     
     # Final NaN/Inf check
     def clean(val):
