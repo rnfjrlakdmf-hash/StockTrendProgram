@@ -424,6 +424,7 @@ function DiscoveryContent() {
         let query = (term || searchInput || "").trim();
         if (!query) return;
 
+        const timestamp = new Date().getTime();
         setLoading(true);
         setError("");
         setActiveTab('analysis');
@@ -435,10 +436,14 @@ function DiscoveryContent() {
             const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
 
             if (isKorean) {
-                const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`);
+                const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
+                const searchRes = await fetch(searchUrl, { cache: 'no-store' });
                 const searchJson = await searchRes.json();
+                
                 if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                    targetSymbol = searchJson.data[0].symbol || searchJson.data[0].code;
+                    // [Fix] Always prioritize 'symbol' or 'code' for the next fetch
+                    const found = searchJson.data[0];
+                    targetSymbol = found.symbol || found.code || found.ticker || targetSymbol;
                 } else {
                     setStock(null);
                     setLoading(false);
@@ -447,11 +452,10 @@ function DiscoveryContent() {
                 }
             }
 
-            const timestamp = new Date().getTime();
             const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
 
             // 1. FAST Fetch
-            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`);
+            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`, { cache: 'no-store' });
             const jsonFast = await resFast.json();
 
             if (jsonFast.status === "success" && jsonFast.data && jsonFast.data.symbol) {
