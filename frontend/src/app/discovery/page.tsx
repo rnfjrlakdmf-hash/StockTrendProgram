@@ -421,16 +421,13 @@ function DiscoveryContent() {
     }, [searchParams]);
 
     const handleSearch = async (term?: string) => {
-        let query = term || searchInput;
+        let query = (term || searchInput || "").trim();
         if (!query) return;
-
-        // Clean query
-        query = query.trim();
 
         // [Cache Check] Instant load if recent
         let ticker = getTickerFromKorean(query).toUpperCase();
         const now = Date.now();
-        if (STOCK_CACHE[ticker] && (now - STOCK_CACHE[ticker].timestamp < CACHE_DURATION)) {
+        if (!term && STOCK_CACHE[ticker] && (now - STOCK_CACHE[ticker].timestamp < CACHE_DURATION)) {
             setStock(STOCK_CACHE[ticker].data);
             if (STOCK_CACHE[ticker].data.symbol.toUpperCase().includes("MARKET")) {
                 setActiveTab('news');
@@ -446,17 +443,17 @@ function DiscoveryContent() {
         setIsAnalyzing(false);
 
         try {
-            ticker = ticker.toUpperCase();
-            const safeTicker = encodeURIComponent(ticker);
+            // [Fix] Standardize URL Encoding for Korean characters
+            const safeQuery = encodeURIComponent(query);
             const timestamp = new Date().getTime();
 
-            // 1. FAST Fetch (Skip AI) -> Immediate rendering
-            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`);
+            // 1. Primary Attempt: Fetch directly by query/ticker
+            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeQuery}?t=${timestamp}&skip_ai=true`);
             const jsonFast = await resFast.json();
 
             if (jsonFast.status === "success" && jsonFast.data && jsonFast.data.symbol) {
                 setStock(jsonFast.data);
-                setLoading(false); // Stop loading spinner, show data!
+                setLoading(false); 
 
                 // If Market, stop here
                 if (jsonFast.data.symbol.toUpperCase().includes("MARKET")) {
@@ -464,75 +461,44 @@ function DiscoveryContent() {
                     return;
                 }
 
-                // 2. SLOW Fetch (Full AI Analysis) -> Background update
+                // 2. Slow Fetch (Background AI)
                 setIsAnalyzing(true);
-
-                // Do not await UI thread? No, we need waiting for result. But React already rendered stock.
-                fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}`)
-                    .then(res => {
-                        // [Fix] Check response status
-                        if (!res.ok) {
-                            setIsAnalyzing(false);
-                            return null;
-                        }
-                        return res.json();
-                    })
+                fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(jsonFast.data.symbol)}?t=${timestamp}`)
+                    .then(res => res.ok ? res.json() : null)
                     .then(jsonFull => {
-                        if (jsonFull && jsonFull.status === "success" && jsonFull.data && jsonFull.data.symbol) {
+                        if (jsonFull?.status === "success") {
                             setStock(jsonFull.data);
-                            STOCK_CACHE[ticker] = { data: jsonFull.data, timestamp: Date.now() };
+                            STOCK_CACHE[jsonFull.data.symbol.toUpperCase()] = { data: jsonFull.data, timestamp: Date.now() };
                         }
                         setIsAnalyzing(false);
                     })
-                    .catch(e => {
-                        // [Fix] Silently ignore
-                        setIsAnalyzing(false);
-                    });
+                    .catch(() => setIsAnalyzing(false));
 
-                // 3. Fetch Financial Highlights
-                setFinancialsLoading(true);
-                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials?t=${Date.now()}`)
-                    .then(res => res.json())
-                    .then(resJson => {
-                        if (resJson.status === "success") {
-                            setFinancialHighlights(resJson.data || []);
-                        }
-                    })
-                    .catch(() => { })
-                    .finally(() => setFinancialsLoading(false));
-
-            } else if (!term) {
-                // [Fallback] Search via Backend API (Global/Dynamic Map)
-                // Only try fallback if this isn't already a fallback call (term is undefined)
-                try {
-                    const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeTicker}`);
-                    const searchJson = await searchRes.json();
-
-                    if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                        // Found a better match! Retry with this symbol
-                        const foundSymbol = searchJson.data[0].symbol;
-                        if (foundSymbol && foundSymbol.toUpperCase() !== ticker.toUpperCase()) {
-                            console.log(`[Search] Found better match: ${ticker} -> ${foundSymbol}. Retrying...`);
-                            handleSearch(foundSymbol);
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Search API fallback failed", e);
-                }
-
-                setStock(null);
-                setLoading(false);
-                setError(`'${query}'에 대한 검색 결과가 없습니다. 종목명이나 코드가 정확한지 확인해주세요.`);
-            } else {
-                setStock(null);
-                setLoading(false);
-                setError(`종목 데이터를 불러올 수 없습니다 (${ticker}).`);
+                return; // Success
             }
+
+            // 3. Secondary Attempt: Try Unified Search API if first fetch fails
+            const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeQuery}`);
+            const searchJson = await searchRes.json();
+
+            if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
+                const found = searchJson.data[0];
+                if (found.symbol && found.symbol.toUpperCase() !== query.toUpperCase()) {
+                    console.log(`[Search] Found better match: ${query} -> ${found.symbol}. Retrying...`);
+                    // Recursive call with the resolved symbol
+                    handleSearch(found.symbol);
+                    return;
+                }
+            }
+
+            // If we get here, no results were found
+            setStock(null);
+            setLoading(false);
+            setError(`'${query}'에 대한 검색 결과가 없습니다. 종목명이나 코드가 정확한지 확인해주세요.`);
         } catch (err) {
             setStock(null);
             setLoading(false);
-            setError("서버 연결에 실패했습니다. (백엔드 실행 여부를 확인하세요)");
+            setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
             console.error(err);
         }
     };
