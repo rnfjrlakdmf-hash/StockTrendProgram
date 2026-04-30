@@ -424,7 +424,8 @@ function DiscoveryContent() {
         let query = (term || searchInput || "").trim();
         if (!query) return;
 
-        const timestamp = new Date().getTime();
+        console.log("[Search] Starting search for:", query);
+        const timestamp = Date.now();
         setLoading(true);
         setError("");
         setActiveTab('analysis');
@@ -436,15 +437,20 @@ function DiscoveryContent() {
             const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
 
             if (isKorean) {
+                console.log("[Search] Korean query detected. Resolving ticker...");
                 const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
                 const searchRes = await fetch(searchUrl, { cache: 'no-store' });
-                const searchJson = await searchRes.json();
+                if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
                 
+                const searchJson = await searchRes.json();
+                console.log("[Search] Search API result:", searchJson);
+
                 if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                    // [Fix] Always prioritize 'symbol' or 'code' for the next fetch
                     const found = searchJson.data[0];
-                    targetSymbol = found.symbol || found.code || found.ticker || targetSymbol;
+                    targetSymbol = found.symbol || found.code || targetSymbol;
+                    console.log("[Search] Resolved ticker:", targetSymbol);
                 } else {
+                    console.warn("[Search] No mapping found for:", query);
                     setStock(null);
                     setLoading(false);
                     setError(`'${query}'에 대한 검색 결과가 없습니다.`);
@@ -453,10 +459,15 @@ function DiscoveryContent() {
             }
 
             const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
+            console.log("[Search] Fetching data for ticker:", safeTicker);
 
             // 1. FAST Fetch
-            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`, { cache: 'no-store' });
+            const fastUrl = `${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`;
+            const resFast = await fetch(fastUrl, { cache: 'no-store' });
+            if (!resFast.ok) throw new Error(`Stock data API failed with status ${resFast.status}`);
+            
             const jsonFast = await resFast.json();
+            console.log("[Search] Fast fetch result:", jsonFast);
 
             if (jsonFast.status === "success" && jsonFast.data && jsonFast.data.symbol) {
                 setStock(jsonFast.data);
@@ -518,7 +529,10 @@ function DiscoveryContent() {
     // [Removed] Old polling logic replaced by WebSocket real-time updates (lines 180-198)
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') handleSearch();
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSearch();
+        }
     };
 
     if (!mounted) return null;
