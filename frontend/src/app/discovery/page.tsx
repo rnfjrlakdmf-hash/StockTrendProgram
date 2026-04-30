@@ -424,31 +424,34 @@ function DiscoveryContent() {
         let query = (term || searchInput || "").trim();
         if (!query) return;
 
-        // [Cache Check] Instant load if recent
-        let ticker = getTickerFromKorean(query).toUpperCase();
-        const now = Date.now();
-        if (!term && STOCK_CACHE[ticker] && (now - STOCK_CACHE[ticker].timestamp < CACHE_DURATION)) {
-            setStock(STOCK_CACHE[ticker].data);
-            if (STOCK_CACHE[ticker].data.symbol.toUpperCase().includes("MARKET")) {
-                setActiveTab('news');
-            }
-            setLoading(false);
-            setError("");
-            return;
-        }
-
         setLoading(true);
         setError("");
         setActiveTab('analysis');
         setIsAnalyzing(false);
 
         try {
-            // [Fix] Standardize URL Encoding for Korean characters
-            const safeQuery = encodeURIComponent(query);
-            const timestamp = new Date().getTime();
+            // [Fix] Like AnalysisPage, resolve Korean names to tickers first
+            let targetSymbol = query;
+            const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
 
-            // 1. Primary Attempt: Fetch directly by query/ticker
-            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeQuery}?t=${timestamp}&skip_ai=true`);
+            if (isKorean) {
+                const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`);
+                const searchJson = await searchRes.json();
+                if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
+                    targetSymbol = searchJson.data[0].symbol || searchJson.data[0].code;
+                } else {
+                    setStock(null);
+                    setLoading(false);
+                    setError(`'${query}'에 대한 검색 결과가 없습니다.`);
+                    return;
+                }
+            }
+
+            const timestamp = new Date().getTime();
+            const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
+
+            // 1. FAST Fetch
+            const resFast = await fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`);
             const jsonFast = await resFast.json();
 
             if (jsonFast.status === "success" && jsonFast.data && jsonFast.data.symbol) {
@@ -461,9 +464,9 @@ function DiscoveryContent() {
                     return;
                 }
 
-                // 2. Slow Fetch (Background AI)
+                // 2. Slow Fetch (Background AI Analysis)
                 setIsAnalyzing(true);
-                fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(jsonFast.data.symbol)}?t=${timestamp}`)
+                fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}`)
                     .then(res => res.ok ? res.json() : null)
                     .then(jsonFull => {
                         if (jsonFull?.status === "success") {
@@ -474,31 +477,27 @@ function DiscoveryContent() {
                     })
                     .catch(() => setIsAnalyzing(false));
 
-                return; // Success
+                // 3. Fetch Financial Highlights
+                setFinancialsLoading(true);
+                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials?t=${Date.now()}`)
+                    .then(res => res.json())
+                    .then(resJson => {
+                        if (resJson.status === "success") {
+                            setFinancialHighlights(resJson.data || []);
+                        }
+                    })
+                    .catch(() => { })
+                    .finally(() => setFinancialsLoading(false));
+
+            } else {
+                setStock(null);
+                setLoading(false);
+                setError(`'${targetSymbol}' 데이터를 불러올 수 없습니다.`);
             }
-
-            // 3. Secondary Attempt: Try Unified Search API if first fetch fails
-            const searchRes = await fetch(`${API_BASE_URL}/api/stock/search?q=${safeQuery}`);
-            const searchJson = await searchRes.json();
-
-            if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                const found = searchJson.data[0];
-                if (found.symbol && found.symbol.toUpperCase() !== query.toUpperCase()) {
-                    console.log(`[Search] Found better match: ${query} -> ${found.symbol}. Retrying...`);
-                    // Recursive call with the resolved symbol
-                    handleSearch(found.symbol);
-                    return;
-                }
-            }
-
-            // If we get here, no results were found
-            setStock(null);
-            setLoading(false);
-            setError(`'${query}'에 대한 검색 결과가 없습니다. 종목명이나 코드가 정확한지 확인해주세요.`);
         } catch (err) {
             setStock(null);
             setLoading(false);
-            setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            setError("서버 연결에 실패했습니다.");
             console.error(err);
         }
     };
