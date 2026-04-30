@@ -1,0 +1,6 @@
+import yfinance as yf
+try:
+    t = yf.Ticker("AAPL")
+    print(f"Price: {t.fast_info.last_price}")
+except Exception as e:
+    print(f"Error: {e}")

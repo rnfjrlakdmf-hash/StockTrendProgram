@@ -1,0 +1,19 @@
+import requests
+import re
+
+HEADER = {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+}
+
+def test_naver(symbol):
+    url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+    res = requests.get(url, headers=HEADER)
+    print(f"Symbol: {symbol}, Status: {res.status_code}")
+    if res.status_code == 200:
+        data = res.json()
+        print(f"Name: {data.get('stockName')}, Price: {data.get('closePrice')}")
+
+test_naver("AAPL")
+test_naver("AAPL.O")
+test_naver("AAPL.N")
+旋

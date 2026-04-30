@@ -1,0 +1,18 @@
+import requests
+
+HEADER = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+}
+
+def test_api(symbol):
+    # Testing the URL identified by subagent
+    url = f"https://api.stock.naver.com/stock/{symbol}/basic"
+    res = requests.get(url, headers=HEADER)
+    print(f"Symbol: {symbol}, Status: {res.status_code}")
+    if res.status_code == 200:
+        data = res.json()
+        print(f"Name: {data.get('stockName')}, Price: {data.get('closePrice')}")
+
+test_api("AAPL.O")
+test_api("TSLA.O")
+test_api("NVDA.O")

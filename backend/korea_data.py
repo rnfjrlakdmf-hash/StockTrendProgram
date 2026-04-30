@@ -1285,7 +1285,7 @@ def get_naver_stock_info(symbol: str):
     # 1. 국내 주식 시도
     if len(clean_code) == 6 and clean_code.isdigit():
         try:
-            url = f"https://m.stock.naver.com/api/stock/{clean_code}/basic"
+            url = f"https://api.stock.naver.com/stock/{clean_code}/basic"
             res = requests.get(url, headers=HEADER, timeout=3)
             if res.status_code == 200:
                 data = res.json()
@@ -1314,7 +1314,7 @@ def get_naver_stock_info(symbol: str):
     # 전달된 심볼에 이미 점이 포함되어 있다면 해당 심볼로 먼저 시도
     if '.' in symbol:
         try:
-            url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
+            url = f"https://api.stock.naver.com/stock/{symbol}/basic"
             res = requests.get(url, headers=HEADER, timeout=3)
             if res.status_code == 200:
                 data = res.json()
@@ -1343,7 +1343,7 @@ def get_naver_stock_info(symbol: str):
         test_symbol = clean_code + suffix
         if test_symbol == symbol: continue # 이미 시도함
         try:
-            url = f"https://m.stock.naver.com/api/stock/{test_symbol}/basic"
+            url = f"https://api.stock.naver.com/stock/{test_symbol}/basic"
             res = requests.get(url, headers=HEADER, timeout=3)
             if res.status_code == 200:
                 data = res.json()
