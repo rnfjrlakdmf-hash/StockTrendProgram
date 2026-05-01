@@ -1479,21 +1479,28 @@ def get_stock_financials(symbol: str):
                 annual_data = []
                 quarterly_data = []
                 
+                # Helper to get value from dataframe safely
+                def get_val(df, key, col):
+                    if df.empty or key not in df.index or col not in df.columns:
+                        return 0
+                    val = df.loc[key, col]
+                    import pandas as pd
+                    if pd.isna(val): return 0
+                    return float(val)
+
                 try:
                     # Annual
                     for i, date in enumerate(income_stmt.columns[:4]):
                         d_str = str(date.year)
                         
                         # Get assets from balance sheet if available
-                        assets = 0
-                        if not t.balance_sheet.empty and date in t.balance_sheet.columns:
-                            assets = t.balance_sheet.loc['Total Assets', date] if 'Total Assets' in t.balance_sheet.index else 0
+                        assets = get_val(balance_sheet, 'Total Assets', date)
                         
                         annual_data.append({
                             "date": d_str,
-                            "revenue": income_stmt.loc['Total Revenue', date] if 'Total Revenue' in income_stmt.index else 0,
-                            "operating_income": income_stmt.loc['Operating Income', date] if 'Operating Income' in income_stmt.index else 0,
-                            "net_income": income_stmt.loc['Net Income', date] if 'Net Income' in income_stmt.index else 0,
+                            "revenue": get_val(income_stmt, 'Total Revenue', date),
+                            "operating_income": get_val(income_stmt, 'Operating Income', date),
+                            "net_income": get_val(income_stmt, 'Net Income', date),
                             "total_assets": assets
                         })
                         
@@ -1504,11 +1511,12 @@ def get_stock_financials(symbol: str):
                             d_str = f"{date.year}.{((date.month-1)//3)+1}Q"
                             quarterly_data.append({
                                 "date": d_str,
-                                "revenue": q_stmt.loc['Total Revenue', date] if 'Total Revenue' in q_stmt.index else 0,
-                                "operating_income": q_stmt.loc['Operating Income', date] if 'Operating Income' in q_stmt.index else 0,
-                                "net_income": q_stmt.loc['Net Income', date] if 'Net Income' in q_stmt.index else 0
+                                "revenue": get_val(q_stmt, 'Total Revenue', date),
+                                "operating_income": get_val(q_stmt, 'Operating Income', date),
+                                "net_income": get_val(q_stmt, 'Net Income', date)
                             })
-                except: pass
+                except Exception as e:
+                    print(f"Global financials detailed error: {e}")
 
                 financials.update({
                     "detailed": {

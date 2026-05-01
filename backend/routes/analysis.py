@@ -174,13 +174,27 @@ def stock_investor(symbol: str, period: int = Query(20)):
             
             data = []
             if holders is not None and not holders.empty:
-                # yfinance returns: Holder, Shares, Date Reported, % Out, Value
+                import pandas as pd
+                # yfinance column names can vary: Holder, Shares, Date Reported, % Out, Value
                 for _, row in holders.iterrows():
+                    def get_clean_val(row, keys, default=None):
+                        for k in keys:
+                            if k in row:
+                                val = row[k]
+                                if pd.isna(val): continue
+                                return val
+                        return default
+
+                    h_name = get_clean_val(row, ['Holder', 'Entity', 'Institution'], 'Unknown')
+                    h_shares = get_clean_val(row, ['Shares'], 0)
+                    h_date = get_clean_val(row, ['Date Reported', 'Date'], '')
+                    h_pct = get_clean_val(row, ['% Out', 'Pct Out', 'Percentage'], 0)
+                    
                     data.append({
-                        "name": str(row.get('Holder', 'Unknown')),
-                        "shares": int(row.get('Shares', 0)),
-                        "date": str(row.get('Date Reported', '')),
-                        "percent": f"{row.get('% Out', 0)*100:.2f}%" if row.get('% Out') else "N/A"
+                        "name": str(h_name),
+                        "shares": int(h_shares) if h_shares else 0,
+                        "date": str(h_date).split(' ')[0], # Just the date
+                        "percent": f"{float(h_pct)*100:.2f}%" if h_pct else "N/A"
                     })
             
             return {
