@@ -582,7 +582,7 @@ function DiscoveryContent() {
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         {/* Search / Hero Section */}
                         <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 shadow-xl overflow-visible">
-                            <div className="relative z-10 max-w-2xl">
+                            <div className="relative z-20 max-w-2xl">
                                 <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md"><span>종목 데이터 분석 (AI Analysis)</span></h2>
                                 <p className="text-gray-200 mb-4 text-sm md:text-base">
                                     <span><span>종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.</span><br />

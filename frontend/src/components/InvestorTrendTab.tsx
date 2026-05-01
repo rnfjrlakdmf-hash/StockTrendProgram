@@ -21,6 +21,18 @@ interface InvestorTrendTabProps {
     stockName: string;
 }
 
+function formatNumber(num: number | string | undefined | null) {
+    if (num === undefined || num === null || num === "N/A" || num === "NaN") return "0";
+    if (typeof num === 'string') {
+        const cleaned = num.replace(/,/g, '');
+        if (cleaned === "" || isNaN(Number(cleaned))) return "0";
+        const n = parseFloat(cleaned);
+        return n.toLocaleString();
+    }
+    if (isNaN(num as number)) return "0";
+    return (num as number).toLocaleString();
+}
+
 export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTabProps) {
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);

@@ -1533,7 +1533,11 @@ def get_stock_financials(symbol: str):
                 return financials
             except Exception as e:
                 print(f"Global info fetch error for {symbol}: {e}")
-                return {"per": "N/A", "pbr": "N/A", "success": False}
+                # Return empty detailed structure so frontend doesn't crash
+                return {
+                    "per": "N/A", "pbr": "N/A", "success": False,
+                    "detailed": { "success": False, "annual": [], "quarterly": [], "summary": {"per": "N/A", "pbr": "N/A", "roe": "N/A"} }
+                }
             
         # Domestic Stock Logic (Naver)
         res = gather_naver_stock_data(symbol)
