@@ -14,8 +14,8 @@ let apiBase = "";
 if (isAndroid) {
   apiBase = "http://10.0.2.2:8000";
 } else {
-  // Use relative path for web to leverage Next.js rewrites proxy (prevents CORS issues)
-  apiBase = "";
+  // Use direct Railway URL to bypass Vercel proxy issues
+  apiBase = "https://stocktrendprogram-production.up.railway.app";
 }
 
 export const API_BASE_URL = apiBase;
