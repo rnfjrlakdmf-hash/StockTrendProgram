@@ -128,22 +128,41 @@ def read_major_indicators():
     return {"status": "success", "data": data}
 
 @router.get("/stock/search")
-def search_stock_api(q: str):
-    if not q: return {"status": "error", "message": "Query parameter 'q' is required"}
+def search_stock_api(q: str = None, query: str = None):
+    # Support both 'q' and 'query' for backward compatibility
+    search_q = q or query
+    if not search_q: return {"status": "error", "message": "Query parameter 'q' or 'query' is required"}
+    q = search_q # Use the resolved one
     from stock_data import GLOBAL_KOREAN_NAMES
     from korea_data import search_stock_code
     from global_search import search_global_ticker
     import unicodedata
+    import urllib.parse
     
-    q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
+    # [Fix] Decode URL encoded characters and Normalize to NFC
+    try:
+        q_decoded = urllib.parse.unquote(q)
+        q_norm = unicodedata.normalize('NFC', q_decoded.strip()).replace(" ", "")
+    except:
+        q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
     
     results = []
     seen_codes = set()
     
     def add_result(code, name, market):
-        if not code or code in seen_codes: return
-        results.append({"code": code, "symbol": code, "name": name, "market": market})
-        seen_codes.add(code)
+        if not code or not name: return
+        # [Fix] Filter out results where code is same as Korean name (invalid ticker)
+        # Ticker should be alphanumeric/dots (Global) or 6-digit (KR)
+        import re
+        is_valid_global = bool(re.match(r'^[A-Z0-9.]{1,10}$', code.upper()))
+        is_valid_kr = bool(re.match(r'^\d{6}$', code))
+        
+        if not (is_valid_global or is_valid_kr):
+            return
+
+        if code not in seen_codes:
+            results.append({"code": code, "symbol": code, "name": name, "market": market})
+            seen_codes.add(code)
 
     # 1. Direct Ticker Check (6-digit KR or simple Alpha Global)
     if q_norm.isdigit() and len(q_norm) == 6:
@@ -153,9 +172,14 @@ def search_stock_api(q: str):
         add_result(q_norm.upper(), q_norm.upper(), "Global")
     
     # 2. High-Priority Global Mapping Check (e.g. '애플' -> 'AAPL')
-    for ticker, ko_name in GLOBAL_KOREAN_NAMES.items():
-        if q_norm == ko_name or q_norm in ko_name:
-            add_result(ticker, ko_name, "Global")
+    for ticker, ko_names in GLOBAL_KOREAN_NAMES.items():
+        # Support both string and list of names
+        names = ko_names if isinstance(ko_names, list) else [ko_names]
+        for ko_name in names:
+            clean_ko = ko_name.replace(" ", "").strip()
+            if q_norm == clean_ko or q_norm in clean_ko or clean_ko in q_norm:
+                add_result(ticker, ko_name, "Global")
+                break # Found for this ticker
     
     # 3. Domestic Search Fallback
     kr_result = search_stock_code(q_norm)
@@ -185,8 +209,9 @@ def read_quote(symbol: str):
         from stock_data import GLOBAL_KOREAN_NAMES
         q_norm = unicodedata.normalize('NFC', symbol).replace(" ", "")
         resolved = None
-        for t, k in GLOBAL_KOREAN_NAMES.items():
-            if q_norm == k or q_norm in k:
+        for t, k_names in GLOBAL_KOREAN_NAMES.items():
+            names = k_names if isinstance(k_names, list) else [k_names]
+            if any(q_norm == name.replace(" ", "").strip() or q_norm in name.replace(" ", "").strip() for name in names):
                 resolved = t
                 break
         if not resolved:

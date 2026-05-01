@@ -27,7 +27,12 @@ app = FastAPI(
 # [CORS Policy]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://stock-trend-program.vercel.app",
+        "https://stock-trend-program-rnfjr.vercel.app",
+        "http://localhost:3000",
+        "https://stock-trend-program-git-main-rnfjr.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

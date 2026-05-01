@@ -23,7 +23,7 @@ def search_global_ticker(query: str):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         
-        res = requests.get(url, headers=headers, timeout=5)
+        res = requests.get(url, headers=headers, timeout=7) # Increased to 7s
         if res.status_code == 200:
             data = res.json()
             quotes = data.get("quotes", [])

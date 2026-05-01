@@ -93,9 +93,17 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     # [Safe Convert] Financials의 NaN 처리
     import math
     safe_financials = {}
+    
+    # [Fix] Merge multiple financial sources for better global stock analysis
     raw_fin = stock_data.get('financials', {})
-    if isinstance(raw_fin, dict):
-        for k, v in raw_fin.items():
+    detailed_summary = stock_data.get('detailed_financials', {}).get('summary', {})
+    
+    merged_fin = {}
+    if isinstance(raw_fin, dict): merged_fin.update(raw_fin)
+    if isinstance(detailed_summary, dict): merged_fin.update(detailed_summary)
+    
+    if merged_fin:
+        for k, v in merged_fin.items():
             try:
                 if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
                     safe_financials[k] = "N/A"
@@ -104,7 +112,7 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
             except:
                 safe_financials[k] = str(v)
     else:
-        safe_financials = str(raw_fin)
+        safe_financials = "N/A"
 
     prompt = f"""
     You are a professional financial data analyst. Provide a CONCISE, READABLE data summary.

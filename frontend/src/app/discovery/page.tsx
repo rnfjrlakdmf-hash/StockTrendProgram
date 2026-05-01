@@ -288,6 +288,8 @@ function DiscoveryContent() {
     const searchParams = useSearchParams();
     const [mounted, setMounted] = useState(false);
     const [searchInput, setSearchInput] = useState("");
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
     const [stock, setStock] = useState<StockData | null>(null);
     const [loading, setLoading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
@@ -305,6 +307,7 @@ function DiscoveryContent() {
 
     useEffect(() => {
         setMounted(true);
+        console.log("[Discovery] Mounted. API_BASE_URL:", API_BASE_URL);
     }, []);
 
     // [New] News Period State
@@ -411,25 +414,52 @@ function DiscoveryContent() {
         return (p * rate).toLocaleString(undefined, { maximumFractionDigits: 0 });
     };
 
-    // [New] Handle URL Query Params
+    // [New] Real-time Search Logic
+    useEffect(() => {
+        const fetchSearchResults = async () => {
+            const query = searchInput.trim();
+            if (query.length < 2) {
+                setSearchResults([]);
+                setShowResults(false);
+                return;
+            }
+
+            try {
+                console.log("[Search] Fetching suggestions for:", query);
+                const res = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(query)}&_t=${Date.now()}`);
+                const data = await res.json();
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    setSearchResults(data.data);
+                    setShowResults(data.data.length > 0);
+                }
+            } catch (err) {
+                console.error("Autocomplete error:", err);
+            }
+        };
+
+        const timer = setTimeout(fetchSearchResults, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    // [New] Handle URL Query Params - ONLY ONCE on mount
     useEffect(() => {
         const query = searchParams.get("q");
-        if (query) {
+        if (query && !stock) {
             setSearchInput(query);
             handleSearch(query);
         }
-    }, [searchParams]);
+    }, [searchParams, !!stock]);
 
     const handleSearch = async (term?: string) => {
         let query = (term || searchInput || "").trim();
+        console.log("[Search] handleSearch initiated. term:", term, "searchInput:", searchInput, "final query:", query);
         if (!query) return;
-
-        console.log("[Search] Starting search for:", query);
         const timestamp = Date.now();
         setLoading(true);
         setError("");
         setActiveTab('analysis');
         setIsAnalyzing(false);
+        setShowResults(false);
 
         try {
             // [Fix] Like AnalysisPage, resolve Korean names to tickers first
@@ -458,12 +488,17 @@ function DiscoveryContent() {
                 }
             }
 
+            const timestamp = Date.now();
+            const cacheBuster = Math.random().toString(36).substring(7);
             const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
             console.log("[Search] Fetching data for ticker:", safeTicker);
 
             // 1. FAST Fetch
-            const fastUrl = `${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&skip_ai=true`;
-            const resFast = await fetch(fastUrl, { cache: 'no-store' });
+            const fastUrl = `${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&cb=${cacheBuster}&skip_ai=true`;
+            const resFast = await fetch(fastUrl, { 
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            });
             if (!resFast.ok) throw new Error(`Stock data API failed with status ${resFast.status}`);
             
             const jsonFast = await resFast.json();
@@ -563,7 +598,35 @@ function DiscoveryContent() {
                                             value={searchInput}
                                             onChange={(e) => setSearchInput(e.target.value)}
                                             onKeyDown={handleKeyDown}
+                                            onFocus={() => searchResults.length > 0 && setShowResults(true)}
                                         />
+                                        
+                                        {/* [New] Search Results Dropdown */}
+                                        {showResults && searchResults.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-gray-900 border border-white/20 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[300px] overflow-y-auto">
+                                                {searchResults.map((res, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => {
+                                                            setSearchInput(res.name);
+                                                            setShowResults(false);
+                                                            handleSearch(res.symbol || res.code);
+                                                        }}
+                                                        className="w-full text-left px-4 py-3 hover:bg-blue-600/30 transition-colors border-b border-white/5 last:border-b-0 flex items-center justify-between"
+                                                    >
+                                                        <div>
+                                                            <div className="font-bold text-white text-sm md:text-base">{res.name}</div>
+                                                            <div className="text-xs text-gray-400 font-mono uppercase">{res.symbol || res.code}</div>
+                                                        </div>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                                            res.market === 'Global' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                                                        }`}>
+                                                            {res.market}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         onClick={() => handleSearch()}
@@ -820,8 +883,8 @@ function DiscoveryContent() {
                                         <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="긍정/부정 뉴스 분석" color="#f59e0b" />
                                     </div>
 
-                                    {/* [New] Live Supply Widget for Korea Stocks */}
-                                    {stock.currency === 'KRW' && stock.symbol && (
+                                    {/* [New] Live Supply Widget for Korea Stocks ONLY */}
+                                    {stock.currency === 'KRW' && stock.symbol && !stock.symbol.includes('.') && (
                                         <div className="mt-8">
                                             <LiveSupplyWidget symbol={stock.symbol} />
                                         </div>

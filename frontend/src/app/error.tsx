@@ -32,7 +32,16 @@ export default function GlobalError({
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 <button
                     className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-yellow-900/50 flex items-center justify-center gap-2 active:scale-95"
-                    onClick={() => reset()}
+                    onClick={() => {
+                        // [Fix] Clear all client-side state to break error loops
+                        try {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                        } catch(e) {}
+                        
+                        reset();
+                        window.location.reload();
+                    }}
                 >
                     <RefreshCw className="w-4 h-4" />
                     시스템 재가동

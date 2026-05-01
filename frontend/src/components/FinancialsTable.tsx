@@ -46,14 +46,17 @@ const METRIC_GROUPS = [
     { title: "🎁 배당", description: "얼마나 나눠주는지", keys: ["dps", "dividend_yield", "payout_ratio"] },
 ];
 
-function formatValue(val: number, format: string, unit: string): string {
+function formatValue(val: any, format: string, unit: string): string {
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num)) return '-';
+
     if (format === 'number' && unit === '억원') {
-        if (Math.abs(val) >= 10000) return `${(val / 10000).toFixed(1)}조`;
-        return val.toLocaleString();
+        if (Math.abs(num) >= 10000) return `${(num / 10000).toFixed(1)}조`;
+        return num.toLocaleString();
     }
-    if (format === 'percent') return `${val.toFixed(1)}%`;
-    if (format === 'ratio') return `${val.toFixed(2)}배`;
-    return val.toLocaleString();
+    if (format === 'percent') return `${num.toFixed(1)}%`;
+    if (format === 'ratio') return `${num.toFixed(2)}배`;
+    return num.toLocaleString();
 }
 
 function getTrend(values: (number | null)[], idx: number): 'up' | 'down' | 'flat' | 'none' {

@@ -8,9 +8,23 @@ from turbo_engine import turbo_cache, turbo_engine
 
 router = APIRouter()
 
+@router.get("/stock/{symbol}/fast")
+async def read_stock_fast(symbol: str):
+    """최적의 체감 속도를 위해 AI 분석을 생략하고 핵심 주가/재무 데이터만 즉시 반환합니다."""
+    import unicodedata
+    symbol = urllib.parse.unquote(symbol).strip()
+    symbol = unicodedata.normalize('NFC', symbol) # [Fix] Handle NFD/NFC mismatch
+    from stock_data import get_stock_info
+    data = await asyncio.to_thread(get_stock_info, symbol, skip_ai=True)
+    if data:
+        return {"status": "success", "data": data}
+    return {"status": "error", "message": "Stock not found"}
+
 @router.get("/stock/{symbol}")
 async def read_stock(symbol: str, skip_ai: bool = False):
+    import unicodedata
     symbol = urllib.parse.unquote(symbol).strip()
+    symbol = unicodedata.normalize('NFC', symbol)
     cache_key = f"stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}

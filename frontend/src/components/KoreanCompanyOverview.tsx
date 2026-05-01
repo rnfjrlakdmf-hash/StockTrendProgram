@@ -143,7 +143,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                         <span className="text-slate-200 font-medium"><span>{s.product}</span></span>
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">
-                        <span>{s.percentage.toFixed(2)}%</span>
+                        <span>{typeof s.percentage === 'number' ? s.percentage.toFixed(2) : (parseFloat(s.percentage) || 0).toFixed(2)}%</span>
                       </td>
                     </tr>
                   ))}

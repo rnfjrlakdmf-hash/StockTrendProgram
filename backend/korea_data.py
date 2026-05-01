@@ -1315,7 +1315,7 @@ def get_naver_stock_info(symbol: str):
     if '.' in symbol:
         try:
             url = f"https://api.stock.naver.com/stock/{symbol}/basic"
-            res = requests.get(url, headers=HEADER, timeout=3)
+            res = requests.get(url, headers=HEADER, timeout=7) # Increased timeout
             if res.status_code == 200:
                 data = res.json()
                 if data.get('closePrice'):
@@ -1344,7 +1344,7 @@ def get_naver_stock_info(symbol: str):
         if test_symbol == symbol: continue # 이미 시도함
         try:
             url = f"https://api.stock.naver.com/stock/{test_symbol}/basic"
-            res = requests.get(url, headers=HEADER, timeout=3)
+            res = requests.get(url, headers=HEADER, timeout=7)
             if res.status_code == 200:
                 data = res.json()
                 if data.get('closePrice'):
@@ -1388,8 +1388,75 @@ def get_detailed_financials(symbol: str) -> dict:
     return {"success": False, "error": "Fetch failed"}
 
 def get_stock_financials(symbol: str):
-    """ Legacy Wrapper to prevent duplicated requests """
+    """ Legacy Wrapper to prevent duplicated requests (Supports Global) """
+    import re
+    import yfinance as yf
+    import math
+    
     try:
+        # Check if it's a US/Global stock
+        is_global = bool(re.search(r'[A-Za-z]', symbol)) and not symbol.endswith(('.KS', '.KQ'))
+        
+        if is_global:
+            try:
+                # Global Stock Logic (yfinance) - Using safer fast_info where possible
+                ticker_name = symbol.split('.')[0]
+                t = yf.Ticker(ticker_name)
+                
+                # [Fix] info is slow and can trigger rate limits/errors, try fast_info first
+                info = {}
+                try:
+                    info = t.info # Still need for some fields
+                except: pass
+                
+                # Format to match Korean data structure with aggressive fallbacks
+                mcap = info.get('marketCap') or 0
+                financials = {
+                    "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A",
+                    "per": str(info.get('trailingPE', 'N/A')),
+                    "pbr": str(info.get('priceToBook', 'N/A')),
+                    "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
+                    "revenue": 'N/A'
+                }
+                try:
+                    income_stmt = t.income_stmt
+                    if not income_stmt.empty:
+                        if 'Total Revenue' in income_stmt.index:
+                            rev = income_stmt.loc['Total Revenue'].iloc[0]
+                            financials['revenue'] = f"{rev:,.0f}"
+                        if 'Net Income' in income_stmt.index:
+                            net = income_stmt.loc['Net Income'].iloc[0]
+                            financials['net_income'] = f"{net:,.0f}"
+                except: pass
+
+                try:
+                    balance_sheet = t.balance_sheet
+                    if not balance_sheet.empty:
+                        if 'Total Assets' in balance_sheet.index:
+                            assets = balance_sheet.loc['Total Assets'].iloc[0]
+                            financials['total_assets'] = f"{assets:,.0f}"
+                except: pass
+                
+                financials.update({
+                    "operating_income": info.get('operatingCashflow', 'N/A'),
+                    "debt_ratio": info.get('debtToEquity', 'N/A'),
+                    "detailed": {
+                        "success": True,
+                        "summary": {
+                            "per": info.get('trailingPE', 'N/A'),
+                            "pbr": info.get('priceToBook', 'N/A'),
+                            "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A'
+                        },
+                        "annual": [],
+                        "quarterly": []
+                    }
+                })
+                return financials
+            except Exception as e:
+                print(f"Global info fetch error for {symbol}: {e}")
+                return {"per": "N/A", "pbr": "N/A", "success": False}
+            
+        # Domestic Stock Logic (Naver)
         res = gather_naver_stock_data(symbol)
         if not res or not res.get("detailed_financials", {}).get("success"):
             return {"per": "N/A", "pbr": "N/A", "success": False}
@@ -1408,8 +1475,8 @@ def get_stock_financials(symbol: str):
         }
         return financials
     except Exception as e:
-        print(f"Financials crawl error: {e}")
-        return None
+        print(f"Financials crawl error for {symbol}: {e}")
+        return {"per": "N/A", "pbr": "N/A", "success": False}
 
 
 def get_korean_market_indices():

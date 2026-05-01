@@ -24,8 +24,10 @@ except ImportError:
 from korea_data import (
     get_korean_name, get_naver_flash_news, get_naver_stock_info, 
     get_naver_daily_prices, get_naver_market_index_data, search_korean_stock_symbol,
-    search_stock_code, get_korean_stock_name, get_korean_market_indices, get_exchange_rate
+    search_stock_code, get_korean_stock_name, get_korean_market_indices, get_exchange_rate,
+    gather_naver_stock_data
 )
+from global_search import search_global_ticker
 import korea_data
 from risk_analyzer import calculate_analysis_score
 from turbo_engine import turbo_cache
@@ -85,6 +87,32 @@ def get_market_status_info():
         "current_time_kst": now.strftime("%H:%M")
     }
 
+def is_us_market_open():
+    """
+    미국 증시(NYSE, NASDAQ) 정규장 운영 여부를 판별합니다.
+    - 정규장: 현지시간 09:30 ~ 16:00
+    - 한국시간(KST) 기준:
+      - 서머타임 적용 시: 22:30 ~ 05:00 (다음날)
+      - 서머타임 미적용 시: 23:30 ~ 06:00 (다음날)
+    """
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+    
+    # 서머타임 판별 (3월 둘째 일요일 ~ 11월 첫째 일요일)
+    # 간단한 판별: 3월말 ~ 10월말 사이는 대략 서머타임
+    is_dst = 3 < now.month < 11
+    
+    current_time = now.hour * 100 + now.minute
+    weekday = now.weekday()
+    
+    if weekday >= 5: return False # 주말은 닫힘
+    
+    if is_dst:
+        # 서머타임 (22:30 ~ 05:00)
+        return (current_time >= 2230) or (current_time < 500)
+    else:
+        # 서머타임 아님 (23:30 ~ 06:00)
+        return (current_time >= 2330) or (current_time < 600)
+
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
 STOCK_DATA_CACHE = {}  # {symbol: (data, timestamp)}
@@ -96,30 +124,33 @@ ASSETS_CACHE = {
 
 # [Config] Global Stock Korean Name Mapping
 GLOBAL_KOREAN_NAMES = {
-    "AAPL": "애플", "TSLA": "테슬라", "MSFT": "마이크로소프트", "NVDA": "엔비디아",
-    "AMZN": "아마존", "GOOGL": "구글", "GOOG": "구글",
-    "META": "메타",
-    "NFLX": "넷플릭스",
-    "AMD": "AMD",
-    "INTC": "인텔",
-    "QCOM": "퀄컴",
-    "AVGO": "브로드컴",
-    "TXN": "텍사스 인스트루먼트",
-    "ASML": "ASML",
-    "KO": "코카콜라",
-    "PEP": "펩시",
-    "SBUX": "스타벅스",
-    "NKE": "나이키",
-    "DIS": "디즈니",
-    "MCD": "맥도날드",
-    "JNJ": "존슨앤존슨",
-    "PFE": "화이자",
-    "MRNA": "모더나",
-    "PLTR": "팔란티어",
-    "IONQ": "아이온큐",
-    "U": "유니티",
-    "RBLX": "로블록스",
-    "COIN": "코인베이스",
+    "AAPL": ["애플", "에플", "아이폰", "APPLE"], 
+    "TSLA": ["테슬라", "테슬라주식", "TESLA"],
+    "MSFT": ["마이크로소프트", "MSFT"],
+    "NVDA": ["엔비디아", "엔비디아주식", "NVDA"],
+    "AMZN": ["아마존"], "GOOGL": ["구글"], "GOOG": ["구글"],
+    "META": ["메타", "페이스북"],
+    "NFLX": ["넷플릭스"],
+    "AMD": ["AMD"],
+    "INTC": ["인텔"],
+    "QCOM": ["퀄컴"],
+    "AVGO": ["브로드컴"],
+    "TXN": ["텍사스 인스트루먼트"],
+    "ASML": ["ASML"],
+    "KO": ["코카콜라"],
+    "PEP": ["펩시"],
+    "SBUX": ["스타벅스"],
+    "NKE": ["나이키"],
+    "DIS": ["디즈니"],
+    "MCD": ["맥도날드"],
+    "JNJ": ["존슨앤존슨"],
+    "PFE": ["화이자"],
+    "MRNA": ["모더나"],
+    "PLTR": ["팔란티어"],
+    "IONQ": ["아이온큐"],
+    "U": ["유니티"],
+    "RBLX": ["로블록스"],
+    "COIN": ["코인베이스"],
     "RIVN": "리비안",
     "LCID": "루시드",
     "TQQQ": "TQQQ",
@@ -357,18 +388,37 @@ def fetch_full_info(ticker):
 
 
 def get_stock_info(symbol: str, skip_ai: bool = False):
+    import unicodedata
     symbol = symbol.strip()
+    symbol = unicodedata.normalize('NFC', symbol)
     print(f"[get_stock_info] Searching for: '{symbol}'")
     
-    # [Fix] Resolve Korean Names to Codes (e.g., '삼성전자' -> '005930')
-    if not re.match(r'^\d{6}$', symbol) and not symbol.endswith(('.KS', '.KQ')) and not re.match(r'^[A-Z]+$', symbol):
-        from korea_data import search_korean_stock_symbol
-        found_code = search_korean_stock_symbol(symbol)
-        if found_code:
-            print(f"[get_stock_info] Resolved '{symbol}' to code: {found_code}")
-            symbol = found_code
-        else:
-            print(f"[get_stock_info] FAILED to resolve name '{symbol}' to code.")
+    # [Fix] Resolve Korean Names to Codes (e.g., '삼성전자' -> '005930', '애플' -> 'AAPL')
+    # v2: We also process English tickers that might need normalization (e.g. AAPL -> AAPL.O on Naver)
+    is_code_already = re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ', '.O', '.N', '.A'))
+    
+    if not is_code_already:
+        # 1. Try Global Mapping first (Fastest for popular US stocks)
+        for t, ko_list in GLOBAL_KOREAN_NAMES.items():
+            # Support both string and list of names
+            if isinstance(ko_list, list):
+                if symbol in ko_list:
+                    print(f"[get_stock_info] Resolved '{symbol}' to Global Ticker via Mapping: {t}")
+                    symbol = t
+                    break
+            elif symbol == ko_list:
+                print(f"[get_stock_info] Resolved '{symbol}' to Global Ticker via Mapping: {t}")
+                symbol = t
+                break
+        
+        # 2. Try Korean Search if still not resolved (handles Korean names like '삼성전자')
+        if not re.match(r'^[A-Z]+$', symbol):
+            found_code = search_korean_stock_symbol(symbol)
+            if found_code:
+                print(f"[get_stock_info] Resolved '{symbol}' to code via Search: {found_code}")
+                symbol = found_code
+            else:
+                print(f"[get_stock_info] FAILED to resolve name '{symbol}' to code. Trying Global Fallback...")
 
     # [Cache Check]
     # if symbol in STOCK_DATA_CACHE:
@@ -387,7 +437,6 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 t_symbol += ".KS"  # Try KS first default
 
             # Use Comprehensive Naver Crawler (Gather all details at once)
-            from korea_data import gather_naver_stock_data
             naver_info = gather_naver_stock_data(t_symbol)
             
             if naver_info:
@@ -517,7 +566,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
 
         # Wait up to 5 seconds for a winner (Increased from 2.0s)
         done, _ = concurrent.futures.wait(
-            quote_futures.keys(), timeout=5.0, return_when=concurrent.futures.ALL_COMPLETED)
+            quote_futures.keys(), timeout=7.0, return_when=concurrent.futures.ALL_COMPLETED) # Increased to 7s
 
         # Logic to pick winner: Prefer KS if both valid, otherwise first valid
         results_map = {}
@@ -525,7 +574,9 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             try:
                 res = f.result()
                 if res:
-                    results_map[res['symbol']] = res
+                    # [Fix] Map by the ORIGINAL requested symbol (s) from candidates
+                    orig_s = quote_futures[f]
+                    results_map[orig_s] = res
             except BaseException:
                 pass
 
@@ -538,6 +589,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         elif len(candidates) == 1:
             if candidates[0] in results_map:
                 winner_data = results_map[candidates[0]]
+            elif results_map: # [Fallback] Take any valid result if exact match fails
+                winner_data = list(results_map.values())[0]
 
         # If no valid ticker found via fast check
         if not winner_data:
@@ -545,16 +598,16 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             print(f"Direct ticker check failed for '{symbol}'. Searching by name...")
             found_code = search_korean_stock_symbol(symbol)
             
-            if found_code:
+            if found_code and found_code != symbol:
                 print(f"Found Korean code '{found_code}' for name '{symbol}'. Retrying...")
                 return get_stock_info(found_code, skip_ai=skip_ai)
             
             # [New] Global Stock Search Fallback (Yahoo Finance)
             # If Korean search failed, try global search
             print(f"Korean search failed for '{symbol}'. Trying Global Search...")
-            global_symbol = search_yahoo_finance(symbol)
+            global_symbol = search_global_ticker(symbol)
             
-            if global_symbol:
+            if global_symbol and global_symbol != symbol:
                 print(f"Found Global symbol '{global_symbol}' for name '{symbol}'. Retrying...")
                 return get_stock_info(global_symbol, skip_ai=skip_ai)
 
@@ -567,7 +620,11 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         # [Fix] Ensure 'ticker' object exists (yf.Ticker)
         ticker_obj = winner_data.get('ticker')
         if not ticker_obj:
-            ticker_obj = yf.Ticker(target_symbol)
+            # yfinance wants symbols without Naver-specific suffixes for US stocks
+            yf_symbol = target_symbol
+            if '.' in target_symbol and not target_symbol.endswith(('.KS', '.KQ')):
+                yf_symbol = target_symbol.split('.')[0]
+            ticker_obj = yf.Ticker(yf_symbol)
 
         # Sub-tasks
         f_info = executor.submit(fetch_full_info, ticker_obj)  # Slowest
@@ -662,17 +719,23 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         else:
             change_str = "0.00%"
 
+        f_price = 0.0
         if currency == 'KRW':
             try:
-                # Always convert to float for safe formatting with commas
-                f_price = float(str(current_price).replace(',', ''))
-                price_str = f"{f_price:,.0f}"
+                if current_price and current_price != "확인불가":
+                    f_price = float(str(current_price).replace(',', ''))
+                    price_str = f"{f_price:,.0f}"
+                else:
+                    price_str = "확인불가"
             except:
                 price_str = str(current_price)
         else:
             try:
-                f_price = float(str(current_price).replace(',', ''))
-                price_str = f"{f_price:,.2f}"
+                if current_price and current_price != "확인불가":
+                    f_price = float(str(current_price).replace(',', ''))
+                    price_str = f"{f_price:,.2f}"
+                else:
+                    price_str = "확인불가"
             except:
                 price_str = str(current_price)
 
@@ -684,8 +747,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 # Use cached or fresh rate
                 rate_ticker = yf.Ticker("KRW=X")
                 exchange_rate = rate_ticker.fast_info.last_price
-                if exchange_rate:
-                    krw_val = current_price * exchange_rate
+                if exchange_rate and f_price > 0:
+                    krw_val = f_price * exchange_rate
                     price_krw = f"{krw_val:,.0f}"  # Display as Integer
             except Exception as e:
                 print(f"Exchange Rate Error: {e}")
@@ -693,7 +756,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         # Resolve History
         daily_prices = []
         try:
-            daily_prices = f_hist.result(timeout=5.0)  # Increased from 2.0s
+            daily_prices = f_hist.result(timeout=7.0)  # Increased from 5.0s
         except BaseException:
             pass
 
@@ -701,18 +764,23 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         stock_news = []
         if f_news:
             try:
-                stock_news = f_news.result(timeout=5.0)  # Increased from 1.5s
+                stock_news = f_news.result(timeout=7.0)  # Increased from 5.0s
             except BaseException:
                 pass
         elif not (target_symbol.endswith('.KS') or target_symbol.endswith('.KQ')):
             # Simple yfinance news fallback
             try:
-                stock_news = [{
-                    "title": n.get('content', {}).get('title', ''),
-                    "publisher": n.get('content', {}).get('provider', {}).get('displayName', 'Yahoo'),
-                    "link": n.get('content', {}).get('clickThroughUrl', {}).get('url', ''),
-                    "published": n.get('content', {}).get('pubDate', '')
-                } for n in ticker_obj.news if n.get('content')]
+                raw_news = getattr(ticker_obj, 'news', [])
+                if raw_news:
+                    stock_news = [{
+                        "title": n.get('content', {}).get('title', ''),
+                        "publisher": n.get('content', {}).get('provider', {}).get('displayName', 'Yahoo'),
+                        "link": n.get('content', {}).get('clickThroughUrl', {}).get('url', ''),
+                        "published": n.get('content', {}).get('pubDate', '')
+                    } for n in raw_news if n and isinstance(n, dict) and n.get('content')]
+            except Exception as e:
+                print(f"News extraction error: {e}")
+                stock_news = []
             except BaseException:
                 pass
 
@@ -724,17 +792,22 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
 
         m_cap = info.get('marketCap')
         if not m_cap:
-            m_cap = winner_data['market_cap']  # Fallback
+            m_cap = winner_data.get('market_cap', 0)  # Fallback with safe get
 
+        mkt_cap_str = "N/A"
         if m_cap:
-            if m_cap > 1e12:
-                mkt_cap_str = f"{m_cap / 1e12:.2f}T"
-            elif m_cap > 1e9:
-                mkt_cap_str = f"{m_cap / 1e9:.2f}B"
-            else:
-                mkt_cap_str = f"{m_cap / 1e6:.2f}M"
-        else:
-            mkt_cap_str = "N/A"
+            try:
+                m_cap_val = float(m_cap)
+                if m_cap_val > 1e12:
+                    mkt_cap_str = f"{m_cap_val / 1e12:.2f}T"
+                elif m_cap_val > 1e9:
+                    mkt_cap_str = f"{m_cap_val / 1e9:.2f}B"
+                elif m_cap_val > 1e6:
+                    mkt_cap_str = f"{m_cap_val / 1e6:.2f}M"
+                else:
+                    mkt_cap_str = f"{m_cap_val:,.0f}"
+            except:
+                mkt_cap_str = "N/A"
 
         executor.shutdown(wait=False)
 
@@ -761,14 +834,18 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             if stock_name and stock_name != target_symbol:
                 display_name = stock_name
 
+        # [Fix] Match domestic stock data structure for UI consistency
         result_data = {
             "name": display_name,
-            "description": info.get('longBusinessSummary', ''),
+            "description": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "symbol": target_symbol,
+            "code": target_symbol, # Added for UI
+            "market_type": "NASDAQ" if "NASDAQ" in info.get('exchange', '') else "NYSE",
             "price": price_str,
-            "price_krw": price_krw,  # Added field
+            "price_krw": price_krw,
             "currency": currency,
             "change": change_str,
+            "change_percent": change_str, # Mirror
             "summary": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "sector": info.get('sector', 'N/A'),
             "financials": {
@@ -783,28 +860,64 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 "year_high": info.get('fiftyTwoWeekHigh'),
                 "volume": info.get('volume'),
                 "market_cap": mkt_cap_str,
+                "market_cap_str": mkt_cap_str, # Mirror
                 "pe_ratio": pe,
                 "eps": info.get('trailingEps'),
                 "dividend_yield": info.get('dividendYield'),
                 "forward_pe": info.get('forwardPE'),
                 "forward_eps": info.get('forwardEps'),
-                "pbr": info.get('priceToBook'),
-                "bps": info.get('bookValue'),
-                "dividend_rate": info.get('dividendRate')
+                "pbr": info.get('pbr') or info.get('priceToBook'),
+                "bps": info.get('bps') or info.get('bookValue'),
+                "dividend_rate": info.get('dividendRate'),
+                "market_status": "미국 장중" if is_us_market_open() else "미국 장마감", # Real-time status
+                "nxt_data": None
+            },
+            "detailed_financials": {
+                "success": True,
+                "summary": {
+                    "per": pe, "pbr": pbr, "roe": roe, "eps": info.get('trailingEps'), "bps": info.get('bookValue')
+                },
+                "full_data": {}
             },
             "daily_prices": daily_prices,
             "news": stock_news[:5],
-            "score": 0, "metrics": {"supplyDemand": 0, "financials": 0, "news": 0}
+            "score": 0, 
+            "metrics": {"supplyDemand": 0, "financials": 0, "news": 0},
+            "health_score": 0,
+            "health_data": {"score": 0, "status": "no_data_global"}
         }
 
-        # [New] Translate Description for Foreign Stocks (if not KR)
+        # [New] Add AI Analysis Score for Global Stocks if not skipped
+        if not skip_ai:
+            try:
+                # Reuse the analysis engine for global stocks
+                analysis_res = calculate_analysis_score(target_symbol)
+                if analysis_res.get("success"):
+                    result_data["score"] = analysis_res.get("score", 0)
+                    result_data["health_score"] = analysis_res.get("score", 0)
+                    result_data["health_data"] = analysis_res
+                    result_data["metrics"] = {
+                        "supplyDemand": 50, # Placeholder for global
+                        "financials": analysis_res.get("score", 50),
+                        "news": 50 # Placeholder for global
+                    }
+            except Exception as e:
+                print(f"Global AI Analysis Error: {e}")
+
+        # [New] Translate Description and Summary for Foreign Stocks (if not KR)
         if not (target_symbol.endswith('.KS') or target_symbol.endswith('.KQ')):
-            if result_data.get("description"):
+            desc = result_data.get("description")
+            if desc and desc != '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.':
                 try:
-                    translated_desc = GoogleTranslator(source='en', target='ko').translate(result_data["description"][:4500])
-                    if translated_desc:
-                         result_data["description"] = translated_desc
-                except: pass
+                    # Translate in chunks or limit length to avoid translator errors
+                    text_to_translate = desc[:3000] # Limit for stability
+                    if GoogleTranslator:
+                        translated_desc = GoogleTranslator(source='en', target='ko').translate(text_to_translate)
+                        if translated_desc:
+                             result_data["description"] = translated_desc
+                             result_data["summary"] = translated_desc[:200] + "..." # Sync summary
+                except Exception as te:
+                    print(f"Translation error for {target_symbol}: {te}")
 
         # Update Cache (for yfinance results too)
         STOCK_DATA_CACHE[symbol] = (result_data, time.time())
@@ -823,8 +936,6 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
     # 0. Resolve Name to Code if needed
     import re
     if not re.match(r'^[A-Za-z0-9.]+$', symbol):
-        from korea_data import search_stock_code
-        from stock_data import GLOBAL_KOREAN_NAMES
         import unicodedata
         q_norm = unicodedata.normalize('NFC', symbol).replace(" ", "")
         resolved = None
@@ -837,13 +948,16 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         if resolved:
             symbol = resolved
 
+    naver_info = None
     # 1. 네이버 통합 API 시도 (국내/해외 모두 지원)
+    # v3.8.0: High Priority for Naver to bypass yfinance blocks on cloud IPs
     try:
         naver_info = get_naver_stock_info(symbol)
         if naver_info and naver_info.get('price') and naver_info['price'] != "확인불가":
+            print(f"[get_simple_quote] Success via Naver for {symbol}")
             return naver_info
     except Exception as e:
-        print(f"[StockData] Naver Primary Check Error for {symbol}: {e}")
+        print(f"[get_simple_quote] Naver Check Error for {symbol}: {e}")
 
     # 2. 브로커 클라이언트 사용 시도
     if broker_client:
@@ -853,39 +967,60 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 return broker_quote
         except: pass
 
+    is_us_stock = False
+    if re.search(r'[A-Z]', symbol.split('.')[0]):
+        is_us_stock = True
+
     try:
-        # [v3.7.2] Robust Universal Ticker Normalization (Strip all suffixes for US equities)
+        # [v3.7.2] Robust Universal Ticker Normalization
         yf_symbol = symbol
-        is_us_stock = False
-        
-        # Determine if it's a US stock: Contains letters or explicitly US suffix
-        if re.search(r'[A-Z]', symbol.split('.')[0]) or symbol.endswith(('.O', '.N', '.A', '.K')):
-            is_us_stock = True
-            # Strip Naver/Reuters suffixes for yfinance compatibility
-            if '.' in symbol:
-                yf_symbol = symbol.split('.')[0]
+            
+        # [v3.7.6] Aggressive Naver Probing for US Stocks if first try failed
+        if is_us_stock and (not naver_info or naver_info.get('price') == "확인불가"):
+            for sfx in ['.O', '.N', '.A']:
+                try:
+                    probe = get_naver_stock_info(yf_symbol.split('.')[0] + sfx)
+                    if probe and probe.get('price') and probe['price'] != "확인불가":
+                        return probe
+                except: continue
+
+        # yfinance Fallback
+        if '.' in symbol and is_us_stock and not symbol.endswith(('.KS', '.KQ')):
+            yf_symbol = symbol.split('.')[0]
             
         ticker = yf.Ticker(yf_symbol)
         
-        # [v3.7.5] Multi-layer price extraction for yfinance reliability
-        current_price = ticker.fast_info.last_price
-        if not current_price or math.isnan(current_price):
-            current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
-            
-        prev_close = ticker.fast_info.previous_close
-        if not prev_close or math.isnan(prev_close):
-            prev_close = ticker.info.get('previousClose') or ticker.info.get('regularMarketPreviousClose')
+        # Multi-layer price extraction
+        current_price = None
+        try:
+            current_price = ticker.fast_info.last_price
+        except: pass
         
-        # [Fix] Handle NaN from yfinance
-        import math
-        if current_price and current_price > 0 and not math.isnan(current_price):
-            change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close and not math.isnan(prev_close) else 0
+        if current_price is None or (isinstance(current_price, float) and math.isnan(current_price)):
+            try:
+                current_price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice')
+            except: pass
             
-            # Format price: 2 decimals for US stocks, 0 for Korean stocks (digits)
-            if is_us_stock:
-                price_str = f"{current_price:,.2f}"
-            else:
-                price_str = f"{current_price:,.0f}"
+        if current_price is not None and current_price > 0:
+            # Check for NaN specifically if it's a float
+            if isinstance(current_price, float) and math.isnan(current_price):
+                current_price = None
+                
+        if current_price is not None and current_price > 0:
+            prev_close = 0
+            try:
+                prev_close = ticker.fast_info.previous_close
+            except: pass
+            
+            if prev_close is None or (isinstance(prev_close, float) and math.isnan(prev_close)):
+                prev_close = ticker.info.get('previousClose', 0)
+            
+            # Final safety check for prev_close before division
+            if not prev_close or (isinstance(prev_close, float) and math.isnan(prev_close)):
+                prev_close = current_price # Avoid division by zero
+            
+            change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close else 0
+            price_str = f"{current_price:,.2f}" if is_us_stock else f"{current_price:,.0f}"
 
             return {
                 "symbol": symbol,
@@ -895,16 +1030,29 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "up": change_pct >= 0,
                 "currency": "USD" if is_us_stock else "KRW"
             }
-    except: pass
+    except Exception as e:
+        print(f"[get_simple_quote] yfinance fallback failed for {symbol}: {e}")
 
-    if strict: return None
+    if strict:
+        # [v3.7.8] Never return None for known alphabetic tickers to prevent "Stock not found"
+        if is_us_stock or re.match(r'^[A-Z]+$', symbol.split('.')[0]):
+            return {
+                "symbol": symbol,
+                "name": symbol,
+                "price": "확인불가",
+                "change": "0.00%",
+                "up": True,
+                "currency": "USD" if is_us_stock else "KRW"
+            }
+        return None
     
     return {
         "symbol": symbol,
         "name": symbol,
         "price": "확인불가",
         "change": "0.00%",
-        "up": True
+        "up": True,
+        "currency": "USD" if is_us_stock else "KRW"
     }
 
 

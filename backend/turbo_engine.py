@@ -189,11 +189,16 @@ def turbo_cache(ttl_seconds: int = 300):
                 return cached_data
                 
             result = func(*args, **kwargs)
+            
+            # [Fix] Strictly prevent caching None, False, or empty data
+            if result is None or result is False:
+                return result
+
             # 상태 코드가 있는 dict 구조일 경우, 성공(success)이 아니면 캐시하지 않음
             if isinstance(result, dict) and result.get("status") == "error":
                 return result
 
-            if result is not None:
+            if result:
                 turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
             return result
 
