@@ -1416,30 +1416,66 @@ def get_stock_financials(symbol: str):
                     "per": str(info.get('trailingPE', 'N/A')),
                     "pbr": str(info.get('priceToBook', 'N/A')),
                     "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
-                    "revenue": 'N/A'
+                    "revenue": 'N/A',
+                    "net_income": 'N/A',
+                    "total_assets": 'N/A',
+                    "operating_income": 'N/A',
+                    "debt_ratio": 'N/A'
                 }
+                
+                # Fetch Financial Statements
                 try:
                     income_stmt = t.income_stmt
                     if not income_stmt.empty:
-                        if 'Total Revenue' in income_stmt.index:
-                            rev = income_stmt.loc['Total Revenue'].iloc[0]
-                            financials['revenue'] = f"{rev:,.0f}"
-                        if 'Net Income' in income_stmt.index:
-                            net = income_stmt.loc['Net Income'].iloc[0]
-                            financials['net_income'] = f"{net:,.0f}"
+                        # yfinance uses different labels sometimes, check common ones
+                        rev_keys = ['Total Revenue', 'Revenue']
+                        for rk in rev_keys:
+                            if rk in income_stmt.index:
+                                rev = income_stmt.loc[rk].iloc[0]
+                                financials['revenue'] = f"{rev:,.0f}"
+                                break
+                                
+                        ni_keys = ['Net Income', 'Net Income Common Stockholders']
+                        for nk in ni_keys:
+                            if nk in income_stmt.index:
+                                ni = income_stmt.loc[nk].iloc[0]
+                                financials['net_income'] = f"{ni:,.0f}"
+                                break
+                                
+                        oi_keys = ['Operating Income', 'EBIT']
+                        for ok in oi_keys:
+                            if ok in income_stmt.index:
+                                oi = income_stmt.loc[ok].iloc[0]
+                                financials['operating_income'] = f"{oi:,.0f}"
+                                break
                 except: pass
 
                 try:
                     balance_sheet = t.balance_sheet
                     if not balance_sheet.empty:
-                        if 'Total Assets' in balance_sheet.index:
-                            assets = balance_sheet.loc['Total Assets'].iloc[0]
-                            financials['total_assets'] = f"{assets:,.0f}"
+                        as_keys = ['Total Assets']
+                        for ak in as_keys:
+                            if ak in balance_sheet.index:
+                                assets = balance_sheet.loc[ak].iloc[0]
+                                financials['total_assets'] = f"{assets:,.0f}"
+                                break
+                                
+                        # Debt to Equity
+                        if 'Total Liab' in balance_sheet.index and 'Total Stockholder Equity' in balance_sheet.index:
+                            liab = balance_sheet.loc['Total Liab'].iloc[0]
+                            equity = balance_sheet.loc['Total Stockholder Equity'].iloc[0]
+                            if equity != 0:
+                                financials['debt_ratio'] = f"{(liab / equity) * 100:.2f}%"
                 except: pass
                 
+                # If operating_income still N/A, try info
+                if financials['operating_income'] == 'N/A':
+                    financials['operating_income'] = info.get('operatingCashflow', 'N/A')
+                
+                if financials['debt_ratio'] == 'N/A':
+                    financials['debt_ratio'] = info.get('debtToEquity', 'N/A')
+
                 financials.update({
-                    "operating_income": info.get('operatingCashflow', 'N/A'),
-                    "debt_ratio": info.get('debtToEquity', 'N/A'),
                     "detailed": {
                         "success": True,
                         "summary": {

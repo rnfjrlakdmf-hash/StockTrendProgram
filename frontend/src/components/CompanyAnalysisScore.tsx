@@ -49,7 +49,7 @@ export default function CompanyAnalysisScore({ symbol, autoLoad = true }: Compan
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/health/${symbol}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/financial-health/${symbol}`);
             const data = await res.json();
 
             if (data.status === "success") {

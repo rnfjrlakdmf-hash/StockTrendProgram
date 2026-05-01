@@ -27,12 +27,7 @@ app = FastAPI(
 # [CORS Policy]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://stock-trend-program.vercel.app",
-        "https://stock-trend-program-rnfjr.vercel.app",
-        "http://localhost:3000",
-        "https://stock-trend-program-git-main-rnfjr.vercel.app"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -111,4 +106,7 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Railway 등 배포 환경에서는 PORT 환경변수를 사용해야 함
+    port = int(os.environ.get("PORT", 8000))
+    # 운영 환경에서는 reload=False 권장
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

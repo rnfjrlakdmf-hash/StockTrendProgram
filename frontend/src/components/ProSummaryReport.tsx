@@ -26,7 +26,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/pro/summary/${encodeURIComponent(symbol)}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${encodeURIComponent(symbol)}`);
             const json = await res.json();
             if (json.status === "success") {
                 setData(json.data);

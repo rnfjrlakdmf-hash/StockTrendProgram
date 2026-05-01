@@ -31,7 +31,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
 
         try {
             // t parameter to bypass cache
-            const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/dart_overhang?t=${Date.now()}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${symbol}/dart_overhang?t=${Date.now()}`);
             const data = await res.json();
             
             if (data.status === 'success' && data.data) {

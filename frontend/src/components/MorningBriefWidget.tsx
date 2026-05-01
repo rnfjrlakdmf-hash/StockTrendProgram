@@ -77,7 +77,7 @@ export default function MorningBriefWidget() {
         try {
             // [Zero-Wait Step 1] 기존 타임라인 즉시 로드 (1초 내 완료)
             const [timelineRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/ai/briefing-timeline`, {
+                fetch(`${API_BASE_URL}/api/analysis/ai/briefing-timeline`, {
                     headers: { "X-User-ID": userId }
                 })
             ]);
@@ -111,7 +111,7 @@ export default function MorningBriefWidget() {
         }
         
         try {
-            const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief`, {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/ai/morning-brief`, {
                 headers: { "X-User-ID": userId }
             });
             const json = await res.json();
@@ -152,7 +152,7 @@ export default function MorningBriefWidget() {
         
         try {
             // 강제 재생성 요청 (비차단)
-            const res = await fetch(`${API_BASE_URL}/api/ai/morning-brief?force=true`, {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/ai/morning-brief?force=true`, {
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
@@ -174,7 +174,7 @@ export default function MorningBriefWidget() {
         
         setIsUpdating(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/ai/briefing/rollback`, {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/ai/briefing/rollback`, {
                 method: "POST",
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });

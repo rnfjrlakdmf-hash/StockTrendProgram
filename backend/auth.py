@@ -95,3 +95,12 @@ def update_settings(req: UserSettingsRequest):
             return {"status": "success", "message": "Settings updated"}
     except: pass
     return {"status": "error", "message": "Settings update failed"}
+@router.get("/telegram/recent-users")
+def get_recent_telegram_users_api():
+    """텔레그램 봇과 최근에 대화한 사용자 목록 조회 (Chat ID 설정용)"""
+    try:
+        from alerts import get_recent_telegram_users
+        users = get_recent_telegram_users()
+        return {"status": "success", "data": users}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

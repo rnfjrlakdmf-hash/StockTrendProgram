@@ -158,10 +158,44 @@ async def read_chart_patterns(ticker: str, interval: str = "1d", period: str = N
 
 @router.get("/stock/{symbol}/investor")
 def stock_investor(symbol: str, period: int = Query(20)):
-    """투자자별 매매동향 및 거래원 데이터 반환"""
+    """투자자별 매매동향 (글로벌 종목 대응: 기관 보유 현황 반환)"""
+    import re
     from korea_data import get_naver_investor_data
+    
+    # 글로벌 종목 여부 판별
+    is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
+    
+    if is_global:
+        import yfinance as yf
+        try:
+            ticker_name = symbol.split('.')[0]
+            t = yf.Ticker(ticker_name)
+            holders = t.institutional_holders
+            
+            data = []
+            if holders is not None and not holders.empty:
+                # yfinance returns: Holder, Shares, Date Reported, % Out, Value
+                for _, row in holders.iterrows():
+                    data.append({
+                        "name": str(row.get('Holder', 'Unknown')),
+                        "shares": int(row.get('Shares', 0)),
+                        "date": str(row.get('Date Reported', '')),
+                        "percent": f"{row.get('% Out', 0)*100:.2f}%" if row.get('% Out') else "N/A"
+                    })
+            
+            return {
+                "status": "success", 
+                "data": {
+                    "type": "global_institutional",
+                    "trend": data,
+                    "message": "해외 종목은 일일 매매동향 대신 주요 기관 보유 현황을 제공합니다."
+                }
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Global holders fetch failed: {str(e)}"}
+
     try:
-        # get_naver_investor_data already returns {"status": "success", "data": {...}}
+        # Domestic Stock (Naver)
         return get_naver_investor_data(symbol, trader_day=period)
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -253,6 +287,45 @@ def stock_dart_overhang(symbol: str):
     try:
         data = get_dart_overhang_and_investments(symbol)
         return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/stock/{symbol}/news")
+async def stock_news_period(symbol: str, period: str = Query("1d")):
+    """특정 종목의 기간별 뉴스 수집 (글로벌 종목 대응)"""
+    from stock_data import fetch_google_news, get_korean_name
+    try:
+        # 1. 글로벌 종목 여부 판별
+        is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
+        
+        # 2. 종목명 찾기 (뉴스 검색용)
+        from stock_data import NAME_CACHE, GLOBAL_KOREAN_NAMES
+        
+        name = NAME_CACHE.get(symbol)
+        if not name:
+            # GLOBAL_KOREAN_NAMES에서 먼저 확인
+            if symbol in GLOBAL_KOREAN_NAMES:
+                val = GLOBAL_KOREAN_NAMES[symbol]
+                name = val[0] if isinstance(val, list) else val
+            else:
+                name = await asyncio.to_thread(get_korean_name, symbol)
+                if not name:
+                    name = symbol
+
+        # 3. 뉴스 검색 (글로벌 종목은 영어/US 검색 병행 또는 전환 고려)
+        if is_global:
+            # 글로벌 종목은 영어 뉴스 비중이 높으므로 언어 설정 조정 가능
+            # 여기서는 우선 쿼리를 종목명 + 심볼로 강화
+            search_query = f"{name} {symbol} stock"
+            news = await asyncio.to_thread(fetch_google_news, search_query, lang='en', region='US', period=period)
+            
+            # 만약 영어 뉴스 결과가 너무 적으면 한국어 뉴스도 시도 (선택 사항)
+            if not news:
+                news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period=period)
+        else:
+            news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period=period)
+            
+        return {"status": "success", "data": news}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

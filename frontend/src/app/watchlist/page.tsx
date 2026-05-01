@@ -43,7 +43,7 @@ export default function WatchlistPage() {
     const fetchWatchlist = async () => {
         if (!user) return;
         try {
-            const res = await fetch(`/api/watchlist`, {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
@@ -65,7 +65,7 @@ export default function WatchlistPage() {
 
     const fetchAlerts = async () => {
         try {
-            const res = await fetch(`/api/alerts`);
+            const res = await fetch(`${API_BASE_URL}/api/alerts`);
             const json = await res.json();
             if (json.status === "success") {
                 const sorted = json.data.sort((a: Alert, b: Alert) => b.id - a.id);
@@ -81,7 +81,7 @@ export default function WatchlistPage() {
     const handleDeleteAlert = async (id: number) => {
         if (!confirm("알림을 삭제하시겠습니까?")) return;
         try {
-            await fetch(`/api/alerts/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE_URL}/api/alerts/${id}`, { method: 'DELETE' });
             setAlerts(prev => prev.filter(a => a.id !== id));
         } catch (error) {
             console.error(error);
@@ -91,7 +91,7 @@ export default function WatchlistPage() {
     const runAlertCheck = async () => {
         setAlertsLoading(true);
         try {
-            await fetch(`/api/alerts/check`);
+            await fetch(`${API_BASE_URL}/api/alerts/check`);
             await fetchAlerts();
         } catch (err) {
             console.error(err);
@@ -104,7 +104,7 @@ export default function WatchlistPage() {
         if (!user) return;
         setCbLoading(true);
         try {
-            const res = await fetch(`/api/watchlist/cb-alerts`, {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist/cb-alerts`, {
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
@@ -157,7 +157,7 @@ export default function WatchlistPage() {
         const fetchQuotes = async () => {
             const symbols = watchlist.map(i => i.symbol).join(",");
             try {
-                const res = await fetch(`/api/stock/quotes/multi?symbols=${encodeURIComponent(symbols)}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${encodeURIComponent(symbols)}`);
                 const json = await res.json();
                 if (json.status === "success") {
                     setQuotes(json.data);
@@ -173,7 +173,7 @@ export default function WatchlistPage() {
         if (!confirm(`${symbol} 종목을 삭제하시겠습니까?`)) return;
 
         try {
-            await fetch(`/api/watchlist/${symbol}`, {
+            await fetch(`${API_BASE_URL}/api/watchlist/${symbol}`, {
                 method: "DELETE",
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
@@ -313,7 +313,7 @@ export default function WatchlistPage() {
                                 <div className="text-sm font-mono bg-white/5 p-3 rounded-lg text-gray-300">ID: {chatId || "미설정"}</div>
                                 <button
                                     onClick={async () => {
-                                        const res = await fetch(`${API_BASE_URL}/api/telegram/recent-users`);
+                                        const res = await fetch(`${API_BASE_URL}/api/auth/telegram/recent-users`);
                                         const json = await res.json();
                                         if (json.data?.length > 0) {
                                             localStorage.setItem("telegram_chat_id", json.data[0].id);

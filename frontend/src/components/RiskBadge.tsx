@@ -55,7 +55,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/risk/${symbol}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/risk/${symbol}`);
             const data = await res.json();
 
             if (data.status === "success") {
@@ -75,7 +75,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/risk/${symbol}/report`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/risk/${symbol}/report`);
             const data = await res.json();
 
             if (data.status === "success") {

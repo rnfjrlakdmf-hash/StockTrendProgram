@@ -162,3 +162,44 @@ def dump_watchlist():
         return {"status": "success", "rows": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+@router.get("/watchlist/cb-alerts")
+def get_watchlist_cb_alerts(x_user_id: str = Header(None)):
+    """[NEW] 관심종목 중 최근 전환사채(CB) 공시가 있는지 확인하여 반환"""
+    from db_manager import get_watchlist
+    from dart_disclosure import get_dart_disclosures
+    from stock_data import get_korean_stock_name
+    from concurrent.futures import ThreadPoolExecutor
+    
+    user_id = x_user_id or "guest"
+    items = get_watchlist(user_id)
+    # 한국 주식(숫자 6자리)만 대상으로 함
+    symbols = [i[0] for i in items if i[0].isdigit()]
+    
+    if not symbols:
+        return {"status": "success", "data": []}
+        
+    all_cb = []
+    def fetch_cb_for_symbol(sym):
+        try:
+            # 최근 1주일간의 공시 조회
+            disclosures = get_dart_disclosures(sym, period="1w")
+            # '전환사채' 또는 'CB' 키워드가 포함된 공시만 필터링
+            cb_list = [d for d in disclosures if "전환사채" in d['title'] or "CB" in d['title']]
+            for cb in cb_list:
+                cb['symbol'] = sym
+                cb['name'] = get_korean_stock_name(sym) or sym
+            return cb_list
+        except:
+            return []
+
+    # 병렬 처리를 통해 속도 향상
+    with ThreadPoolExecutor(max_workers=min(len(symbols), 10)) as executor:
+        results = list(executor.map(fetch_cb_for_symbol, symbols))
+        
+    for res in results:
+        all_cb.extend(res)
+            
+    # 날짜 역순 정렬
+    all_cb.sort(key=lambda x: x.get('date', ''), reverse=True)
+            
+    return {"status": "success", "data": all_cb}

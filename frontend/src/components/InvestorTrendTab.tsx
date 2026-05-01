@@ -34,7 +34,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
         setError(false);
         try {
             const sym = encodeURIComponent(symbol);
-            const res = await fetch(`${API_BASE_URL}/api/stock/${sym}/investor?period=${period}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${sym}/investor?period=${period}`);
             const json = await res.json();
             if (json.status === "success") {
                 setApiResponse(json.data);

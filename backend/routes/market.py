@@ -8,7 +8,7 @@ from turbo_engine import turbo_cache, turbo_engine
 
 router = APIRouter()
 
-@router.get("/market/indices")
+@router.get("/indices")
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
     try:
@@ -18,7 +18,7 @@ async def market_indices():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@router.get("/market/status")
+@router.get("/status")
 async def market_status():
     """실시간 시장 지수 및 환율 데이터 반환 (요약 형태)"""
     try:
@@ -28,7 +28,7 @@ async def market_status():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@router.get("/market/risk-alerts")
+@router.get("/risk-alerts")
 def read_risk_alerts():
     """DART 공시 기반 시장 리스크 및 알림 데이터 반환"""
     try:
@@ -121,7 +121,7 @@ def read_global_rank(market: str = "KOSPI", category: str = "trading_volume"):
     data = get_global_ranking(market, category)
     return {"status": "success", "data": data}
 
-@router.get("/market/major")
+@router.get("/major")
 def read_major_indicators():
     from major_indicators import get_normalized_major_indicators
     data = get_normalized_major_indicators()
@@ -303,7 +303,7 @@ def get_assets():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@router.get("/market/calendar")
+@router.get("/calendar")
 def get_global_macro_calendar():
     """오늘의 글로벌 경제 일정 반환"""
     from stock_data import get_macro_calendar
@@ -313,7 +313,7 @@ def get_global_macro_calendar():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@router.get("/market/calendar/korea")
+@router.get("/calendar/korea")
 def get_korea_macro_calendar():
     """오늘의 한국 경제 및 시장 일정 반환"""
     from stock_data import get_macro_calendar
@@ -346,7 +346,7 @@ def get_korean_ipo():
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-@router.get("/market/scanner")
+@router.get("/scanner")
 def read_market_scanner():
     """오늘의 증시 스캐너 데이터 (상승/하락 종목 수 및 특이 공시)"""
     from korea_data import get_market_summary_stats, get_live_disclosures

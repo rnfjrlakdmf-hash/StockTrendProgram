@@ -334,7 +334,7 @@ function DiscoveryContent() {
             if (!stock?.symbol) return;
             setDailyLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}&t=${Date.now()}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}&t=${Date.now()}`);
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setDailyPricesData(json.data);
@@ -355,7 +355,7 @@ function DiscoveryContent() {
             if (!stock?.symbol) return;
             setNewsLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/stock/` + encodeURIComponent(stock.symbol) + `/news?period=` + newsPeriod);
+                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/` + encodeURIComponent(stock.symbol) + `/news?period=` + newsPeriod);
                 const json = await res.json();
                 if (json.status === "success") {
                     setPeriodNews(json.data);
@@ -468,7 +468,7 @@ function DiscoveryContent() {
 
             if (isKorean) {
                 console.log("[Search] Korean query detected. Resolving ticker...");
-                const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
+                const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
                 const searchRes = await fetch(searchUrl, { cache: 'no-store' });
                 if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
                 
@@ -529,7 +529,7 @@ function DiscoveryContent() {
 
                 // 3. Fetch Financial Highlights
                 setFinancialsLoading(true);
-                fetch(`${API_BASE_URL}/api/stock/${safeTicker}/financials?t=${Date.now()}`)
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}/financials?t=${Date.now()}`)
                     .then(res => res.json())
                     .then(resJson => {
                         if (resJson.status === "success") {
@@ -1427,7 +1427,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
         const fetchHistory = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/history`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/${symbol}/daily-history`);
                 const json = await res.json();
                 if (json.status === "success") {
                     setHistory(json.data);
@@ -1517,7 +1517,7 @@ function WatchlistButton({ symbol }: { symbol: string }) {
                 return;
             }
             try {
-                const res = await fetch(`/api/watchlist`, {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
                     headers: { "X-User-ID": user.id || (user as any).uid }
                 });
 
@@ -1897,7 +1897,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
             try {
                 // Encode symbol just in case
                 const safeSymbol = encodeURIComponent(symbol);
-                const res = await fetch(`${API_BASE_URL}/api/stock/${safeSymbol}/investors/live`);
+                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${safeSymbol}/investors/live`);
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setData(json.data);
@@ -2212,7 +2212,7 @@ function StockLiveChart({ symbol }: { symbol: string }) {
             setLoading(true);
             try {
                 // symbol이 이미 .KS 등이 붙어있을 수 있음
-                const res = await fetch(`${API_BASE_URL}/api/stock/chart/${encodeURIComponent(symbol)}`);
+                const res = await fetch(`${API_BASE_URL}/api/analysis/chart/patterns/${encodeURIComponent(symbol)}`);
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
                     setData(json.data);
