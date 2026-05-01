@@ -210,7 +210,8 @@ def stock_investor(symbol: str, period: int = Query(20)):
 
     try:
         # Domestic Stock (Naver)
-        return get_naver_investor_data(symbol, trader_day=period)
+        data = get_naver_investor_data(symbol, trader_day=period)
+        return data # get_naver_investor_data already returns {"status": "success", "data": {...}}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

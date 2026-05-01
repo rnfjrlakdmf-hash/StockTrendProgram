@@ -119,8 +119,9 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
             </div>
 
-            {/* 거래원 정보 (Brokerage) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 거래원 정보 (Brokerage) - Domestic Only */}
+            {apiResponse?.type !== 'global_institutional' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 매도 상위 */}
                 <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="px-4 py-3 bg-blue-500/10 border-b border-blue-500/20 flex justify-between items-center">
@@ -154,29 +155,6 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                 <span className="text-gray-400 font-mono text-xs"><span>{formatNumber(b.volume)}</span><span>주</span></span>
                             </div>
                         )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500"><span>데이터 없음</span></div>}
-                    </div>
-                </div>
-            </div>
-
-            {/* 외국계 추정합 (오늘만 노출) */}
-            {period === 1 && brokerage.foreign_estimate && (
-                <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-indigo-500/20 p-2 rounded-lg">
-                            <Globe className="w-5 h-5 text-indigo-400" />
-                        </div>
-                        <div>
-                            <div className="text-xs text-indigo-300 font-bold mb-0.5">외국계 추정합 (실시간 집계)</div>
-                            <div className="text-[10px] text-indigo-400/60">오늘 외국계 증권사 전체 매매 현황</div>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <div className={`text-xl font-black ${brokerage.foreign_estimate.net > 0 ? 'text-red-400' : brokerage.foreign_estimate.net < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                            <span>{brokerage.foreign_estimate.net > 0 ? '+' : ''}</span><span>{formatNumber(brokerage.foreign_estimate.net)}</span>
-                        </div>
-                        <div className="text-[10px] text-gray-500 font-mono">
-                            <span>매수 {formatNumber(brokerage.foreign_estimate.buy)} / 매도 {formatNumber(brokerage.foreign_estimate.sell)}</span>
-                        </div>
                     </div>
                 </div>
             )}
@@ -218,7 +196,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                             <span>기관 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})</span>
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.institution > 0 ? 'text-red-400' : latestData.institution < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
-                            <span>{latestData.institution > 0 ? '+' : ''}</span><span>{formatNumber(latestData.institution)}</span>
+                            <span>{latestData.institution > 0 ? '+' : ''}</span><span>{formatNumber(latestData.institution || 0)}</span>
                             <span className="text-xs font-normal text-slate-500 uppercase"><span>Shares</span></span>
                         </div>
                     </div>
@@ -228,7 +206,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                             <span>외국인 순매수 ({latestData?.date ? latestData.date.substring(5) : '오늘'})</span>
                         </div>
                         <div className={`text-2xl font-black flex items-baseline gap-1 ${latestData.foreigner > 0 ? 'text-red-400' : latestData.foreigner < 0 ? 'text-blue-400' : 'text-slate-200'}`}>
-                            <span>{latestData.foreigner > 0 ? '+' : ''}</span><span>{formatNumber(latestData.foreigner)}</span>
+                            <span>{latestData.foreigner > 0 ? '+' : ''}</span><span>{formatNumber(latestData.foreigner || 0)}</span>
                             <span className="text-xs font-normal text-slate-500 uppercase"><span>Shares</span></span>
                         </div>
                     </div>

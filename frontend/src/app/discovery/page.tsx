@@ -1336,7 +1336,7 @@ function DiscoveryContent() {
                                         </div>
                                     ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'financials' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <FinancialsTable data={stock.health_data?.raw_data} currency={stock.currency} />
+                                            <FinancialsTable data={financialHighlights} currency={stock.currency} />
                                         </div>
                                     ) : activeTab === 'alerts' && stock.symbol ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
