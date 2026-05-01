@@ -283,7 +283,22 @@ def get_peer_compare_route(symbols: str):
 @router.get("/stock/{symbol}/dart_overhang")
 @turbo_cache(ttl_seconds=300)
 def stock_dart_overhang(symbol: str):
+    """오버행 및 타법인 출자 현황 (국내 전용)"""
+    import re
     from dart_disclosure import get_dart_overhang_and_investments
+    
+    # 글로벌 종목 여부 판별
+    is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
+    
+    if is_global:
+        return {
+            "status": "success", 
+            "data": {
+                "is_global": True,
+                "message": "오버행 및 타법인 출자 분석은 현재 국내 공시(DART) 데이터가 존재하는 종목에 최적화되어 있습니다."
+            }
+        }
+
     try:
         data = get_dart_overhang_and_investments(symbol)
         return {"status": "success", "data": data}
@@ -332,7 +347,22 @@ async def stock_news_period(symbol: str, period: str = Query("1d")):
 @router.get("/stock/{symbol}/disclosures")
 @turbo_cache(ttl_seconds=300)
 def stock_disclosures(symbol: str, period: str = Query("1m")):
+    """기업 공시 정보 (국내 전용 - DART 연동)"""
+    import re
     from dart_disclosure import get_dart_disclosures
+    
+    # 글로벌 종목 여부 판별
+    is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
+    
+    if is_global:
+        return {
+            "status": "success", 
+            "data": {
+                "is_global": True,
+                "message": "공시 정보는 현재 국내 상장사(DART) 기준으로 제공됩니다. 해외 종목의 경우 실시간 뉴스 탭을 참고해 주세요."
+            }
+        }
+
     try:
         data = get_dart_disclosures(symbol, period)
         return {"status": "success", "data": data}
