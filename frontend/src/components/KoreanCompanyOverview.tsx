@@ -19,7 +19,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/stock/${symbol}/overview`);
+        const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${symbol}/overview`);
         const json = await res.json();
         if (json.status === "success" && json.data) {
           setData(json.data);

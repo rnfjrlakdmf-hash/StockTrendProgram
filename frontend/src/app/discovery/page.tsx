@@ -426,7 +426,7 @@ function DiscoveryContent() {
 
             try {
                 console.log("[Search] Fetching suggestions for:", query);
-                const res = await fetch(`${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(query)}&_t=${Date.now()}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(query)}&_t=${Date.now()}`);
                 const data = await res.json();
                 if (data.status === 'success' && Array.isArray(data.data)) {
                     setSearchResults(data.data);
@@ -494,7 +494,7 @@ function DiscoveryContent() {
             console.log("[Search] Fetching data for ticker:", safeTicker);
 
             // 1. FAST Fetch
-            const fastUrl = `${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}&cb=${cacheBuster}&skip_ai=true`;
+            const fastUrl = `${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}&cb=${cacheBuster}&skip_ai=true`;
             const resFast = await fetch(fastUrl, { 
                 cache: 'no-store',
                 headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
@@ -516,7 +516,7 @@ function DiscoveryContent() {
 
                 // 2. Slow Fetch (Background AI Analysis)
                 setIsAnalyzing(true);
-                fetch(`${API_BASE_URL}/api/stock/${safeTicker}?t=${timestamp}`)
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`)
                     .then(res => res.ok ? res.json() : null)
                     .then(jsonFull => {
                         if (jsonFull?.status === "success") {

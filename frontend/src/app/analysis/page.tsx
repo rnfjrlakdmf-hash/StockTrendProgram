@@ -87,7 +87,7 @@ function AnalysisContent() {
         if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
-                const searchUrl = `${API_BASE_URL}/api/stock/search?q=${encodeURIComponent(targetSymbol)}`;
+                const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}`;
                 const res = await fetch(searchUrl);
                 const json = await res.json();
                 if (json.status === "success" && json.data && json.data.length > 0) {
@@ -123,7 +123,7 @@ function AnalysisContent() {
         if (!sym) return;
         setStockLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/pro/summary/${sym}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}`);
             const json = await res.json();
             if (json.status === "success") setStockInfo(json.data.stock_info);
         } catch (err) { console.error(err); }
@@ -135,7 +135,7 @@ function AnalysisContent() {
         setQuantLoading(true);
         setIsTurbo(false);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/quant/${sym}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/quant/${sym}`);
             const json = await res.json();
             if (json.status === "success") {
                 setQuantData(json.data);
@@ -149,7 +149,7 @@ function AnalysisContent() {
         if (!sym) return;
         setFinancialLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/financial-health/${sym}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/financial-health/${sym}`);
             const json = await res.json();
             if (json.status === "success") setFinancialData(json.data);
         } catch (err) { console.error(err); }
@@ -160,7 +160,7 @@ function AnalysisContent() {
         if (!sym) return;
         setSectorLoading(true);
         try {
-            const url = new URL(`${API_BASE_URL}/api/sector-analysis/${sym}`);
+            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
             url.searchParams.append("v", "4.9.5");
             url.searchParams.append("t", new Date().getTime().toString());
@@ -180,7 +180,7 @@ function AnalysisContent() {
         if (!peerSymbols) return;
         setPeerLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/peer-compare?symbols=${encodeURIComponent(peerSymbols)}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/peer-compare?symbols=${encodeURIComponent(peerSymbols)}`);
             const json = await res.json();
             if (json.status === "success") setPeerData(json);
         } catch (err) { console.error(err); }

@@ -19,7 +19,7 @@ export interface StockData {
 
 export async function fetchStockAnalysis(symbol: string): Promise<StockData | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/stock/${symbol}`);
+        const response = await fetch(`${API_BASE_URL}/api/analysis/stock/${symbol}`);
         if (!response.ok) {
             console.error("Failed to fetch stock data");
             return null;
@@ -51,7 +51,7 @@ export interface ThemeAnalysisResult {
 
 export async function fetchThemeAnalysis(keyword: string): Promise<ThemeAnalysisResult | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/theme/${keyword}`);
+        const response = await fetch(`${API_BASE_URL}/api/analysis/theme/${keyword}`);
         if (!response.ok) return null;
         const result = await response.json();
         if (result.status === "success") {
