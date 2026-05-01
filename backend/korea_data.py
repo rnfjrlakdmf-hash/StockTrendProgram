@@ -22,32 +22,63 @@ HEADER = {
 # [Helper] Robust Decoding
 def decode_safe(res: requests.Response) -> str:
     """
-    Decodes response content robustly.
-    1. Checks Content-Type header for explicit charset.
-    2. Tries UTF-8 strict.
-    3. Fallback to CP949 (common for legacy Naver pages).
+    [v3.5.0] Most-Korean Decoding Engine.
+    Attempts multiple encodings and picks the one with the highest density of Korean characters.
     """
-    try:
-        content = res.content
-        # [Strategy 1] Check for BOM
-        if content.startswith(b'\xef\xbb\xbf'):
-            return content.decode('utf-8-sig', 'ignore')
+    if not res or not res.content: return ""
+    content = res.content
+    
+    candidates = []
+    for enc in ['cp949', 'utf-8', 'euc-kr']:
+        try:
+            decoded = content.decode(enc, 'ignore')
+            kor_count = sum(1 for c in decoded if 0xAC00 <= ord(c) <= 0xD7A3)
+            candidates.append((kor_count, decoded))
+        except: pass
+        
+    if not candidates:
+        return content.decode('utf-8', 'ignore')
+        
+    # Sort by Korean character count descending
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+def robust_name(s: str) -> str:
+    """
+    [v4.0.0] The Silver Bullet for Naver's mixed-encoding madness.
+    Recovers Korean text even if the page has mixed UTF-8 and CP949.
+    """
+    if not s or not isinstance(s, str) or s == "-": return s
+    
+    # 1. If it has Korean, it's probably fine, but check for "Half-Mojibake"
+    # (e.g. some chars are fine, some are garbled)
+    # But for now, if it has any Korean, we trust it mostly.
+    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in s):
+        # Even if it has Korean, it might contain \ufffd or Mojibake markers
+        if "\ufffd" not in s and "" not in s and "Ｚ" not in s:
+            return s
             
-        # [Strategy 2] Use apparent_encoding for Naver legacy pages (EUC-KR/CP949)
-        encoding = res.encoding if res.encoding and res.encoding.lower() != 'iso-8859-1' else res.apparent_encoding
-        if not encoding or encoding.lower() == 'iso-8859-1':
-            # Force CP949 for Naver if undecided
-            encoding = 'cp949'
-            
-        # [Strategy 3] Specific Korean byte detection
-        if b'\xec\x82\xbc' in content or b'\xec\xa0\x84' in content:
-            encoding = 'utf-8'
-        elif b'\xbb\xef' in content or b'\xbc\xba' in content:
-            encoding = 'cp949'
-            
-        return content.decode(encoding, 'ignore')
-    except Exception:
-        return res.content.decode('cp949', 'ignore')
+    # 2. Recovery Strategies
+    strategies = [
+        ('iso-8859-1', 'utf-8'),
+        ('iso-8859-1', 'cp949'),
+        ('utf-8', 'cp949'),
+        ('cp949', 'utf-8')
+    ]
+    
+    for enc_from, enc_to in strategies:
+        try:
+            # We try to re-encode the "garbage" and decode it correctly
+            repaired = s.encode(enc_from, errors='ignore').decode(enc_to, errors='ignore')
+            if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                # Check if it looks "clean"
+                if "\ufffd" not in repaired and "" not in repaired:
+                    return repaired
+        except: pass
+        
+    # 3. Clean up remaining garbage characters
+    s = s.replace("\ufffd", "").replace("", "")
+    return s.strip()
 
 def get_korean_name(symbol: str):
     """
@@ -205,27 +236,25 @@ def gather_naver_stock_data(symbol: str):
         
         content = res.content
         
-        # Try multiple encodings to be robust (Naver is CP949/EUC-KR)
         html = None
-        for enc in ['cp949', 'euc-kr', 'utf-8']:
-            try:
-                candidate_html = content.decode(enc, 'ignore')
-                has_cop = 'cop_analysis' in candidate_html
-                has_kor = '매출액' in candidate_html or '영업이익' in candidate_html
-                if has_cop and has_kor:
-                    html = candidate_html
-                    print(f"[gather_naver_stock_data] Decoded with {enc} SUCCESS (Validated with Korean keywords)")
-                    break
-                else:
-                    print(f"[DEBUG] {enc} decoding passed but missing keywords: has_cop={has_cop}, has_kor={has_kor}")
-            except Exception as e:
-                print(f"[DEBUG] Encoding {enc} failed: {e}")
-                continue
-                
+        decoded_str = decode_safe(res)
+        if 'cop_analysis' in decoded_str and ('매출액' in decoded_str or '영업이익' in decoded_str):
+            html = decoded_str
+            print(f"[gather_naver_stock_data] Decoded with decode_safe SUCCESS")
+        
         if not html:
-            html = content.decode('utf-8', 'ignore') # Final fallback
-            print(f"[gather_naver_stock_data] Decoded with fallback UTF-8")
-             
+            # Final manual loop if decode_safe wasn't enough for this specific page
+            for enc in ['cp949', 'euc-kr', 'utf-8']:
+                try:
+                    candidate_html = content.decode(enc, 'ignore')
+                    if 'cop_analysis' in candidate_html and ('매출액' in candidate_html or '영업이익' in candidate_html):
+                        html = candidate_html
+                        break
+                except: continue
+        
+        if not html:
+            html = decoded_str or content.decode('utf-8', 'ignore')
+        
         soup = BeautifulSoup(html, 'html.parser')
         
         # Name
@@ -1364,10 +1393,53 @@ def get_naver_stock_info(symbol: str):
     # 3. 최후의 수단: 기존 스크래핑 엔진 (비상용)
     return gather_naver_stock_data(symbol)
 
+def fetch_naver_ranking_data(nation: str, order_type: str) -> list:
+    """
+    [v4.5.0] Unified Stable Ranking Engine.
+    Uses mobile-first APIs to avoid legacy 400/500 errors.
+    nation: KOR, USA, JPN, HKG, CHN, VNM
+    order_type: quantTop, priceTop, searchTop, riseTop, fallTop
+    """
+    import requests
+    
+    # 1. Map order_type to Naver Mobile API parameters
+    # Mobile API uses:
+    # popularStock (searchTop)
+    # world/stockList (Volume/Amount/Change)
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://stock.naver.com/',
+        'Accept': 'application/json'
+    }
+    
+    try:
+        if order_type == "searchTop":
+            # [SearchTop] New Stable API (Domestic only)
+            url = "https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=15"
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                return res.json()
+        
+        # [Volume / Amount / Rise / Fall]
+        if nation == "KOR":
+            # Domestic
+            url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=15"
+        else:
+            # Foreign
+            url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=15"
+            
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            return res.json()
+            
+    except Exception as e:
+        print(f"[ERROR] fetch_naver_ranking_data({nation}, {order_type}): {e}")
+        
+    return []
+
 # ============================================================
 # [호환성 유지] 구 API 이름 → 통합 함수로 리다이렉트
-# 이전에 사용하던 함수 이름들을 그대로 import해도 오류가 나지 않도록 별칭을 제공합니다.
-# ============================================================
 def get_naver_news(symbol: str = "", *args, **kwargs):
     """ Legacy alias → get_integrated_stock_news """
     return get_integrated_stock_news(symbol=symbol)
@@ -2957,108 +3029,67 @@ def get_investor_ranking_data():
 
 def get_market_insights_data():
     """
-    시장 주도주 탭을 위한 검색 및 거래대금 인사이트 데이터 수집
-    - search_top: 실시간 검색 순위
-    - value_top: 거래대금 상위
+    시장 주도주 탭을 위한 검색 및 거래대금 인사이트 데이터 수집.
+    Unified Mobile-First API를 사용하여 안정성 확보.
     """
-    import requests
-    from bs4 import BeautifulSoup
+    from korea_data import fetch_naver_ranking_data, robust_name
     
     def parse_popular_search():
-        try:
-            url = "https://finance.naver.com/sise/lastsearch2.naver"
-            res = requests.get(url, headers=HEADER, timeout=5)
-            soup = BeautifulSoup(decode_safe(res), "html.parser")
-            table = soup.select_one("table.type_5")
-            if not table: return []
+        items = fetch_naver_ranking_data("KOR", "searchTop")
+        if not items: return []
+        processed = []
+        
+        # Use simple_quote for enrichment
+        from stock_data import get_simple_quote
+        
+        for item in items[:15]:
+            symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode") or ""
+            quote = get_simple_quote(symbol)
             
-            items = []
-            rows = table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                # 인기검색어 테이블 구조:
-                # 순위(0), 종목명(1), 검색비율(2), 현재가(3), 전일비(4), 등락률(5), 거래량(6)...
-                if len(cols) < 7: continue 
-                
-                name_tag = cols[1].select_one("a")
-                if not name_tag: continue
-                
-                name = name_tag.text.strip()
-                symbol = name_tag.get("href", "").split("code=")[-1]
-                
-                # 검색비율 대신 '거래량' 정보 추출 (사용자 요청: 몇 주인지가 더 정확함)
-                volume_raw = cols[6].text.strip().replace(",", "")
-                
-                try:
-                    vol_num = int(volume_raw)
-                    if vol_num >= 1000000:
-                        vol_display = f"{vol_num/1000000:.1f}백만"
-                    elif vol_num >= 10000:
-                        vol_display = f"{vol_num/10000:.0f}만"
-                    else:
-                        vol_display = f"{vol_num:,}"
-                except:
-                    vol_display = volume_raw
-
-                # 전일비/등락률 정보로 방향 판단
-                change_txt = cols[4].text.strip()
-                direction = "상승" if "상" in change_txt or "▲" in change_txt or "+" in change_txt else "하락" if "하" in change_txt or "▼" in change_txt or "-" in change_txt else ""
-
-                items.append({
-                    "name": name,
-                    "symbol": symbol,
-                    "amount": f"{direction} {vol_display}주" # 검색비율 대신 거래량을 '주' 단위로 표시
-                })
-                if len(items) >= 15: break
-            return items
-        except Exception as e:
-            print(f"Error parsing popular search volume: {e}")
-            return []
+            name = quote.get("name") or robust_name(item.get("stockName") or item.get("itemName") or "")
+            vol_num = 0
+            try: vol_num = int(quote.get("volume") or item.get("accumulatedTradingVolume") or 0)
+            except: pass
+            
+            if vol_num >= 1000000: vol_display = f"{vol_num/1000000:.1f}백만"
+            elif vol_num >= 10000: vol_display = f"{vol_num/10000:.0f}만"
+            else: vol_display = f"{vol_num:,}"
+            
+            processed.append({
+                "name": name,
+                "symbol": symbol,
+                "amount": f"{vol_display}주"
+            })
+        return processed
 
     def parse_trading_value():
-        try:
-            # 거래대금 상위 페이지
-            url = "https://finance.naver.com/sise/sise_quant_high.naver?sosok=0"
-            res = requests.get(url, headers=HEADER, timeout=5)
-            soup = BeautifulSoup(decode_safe(res), "html.parser")
-            table = soup.select_one("table.type_2")
-            if not table: return []
+        items = fetch_naver_ranking_data("KOR", "priceTop")
+        if not items: return []
+        processed = []
+        
+        from stock_data import get_simple_quote
+        
+        for item in items[:15]:
+            symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode") or ""
+            quote = get_simple_quote(symbol)
             
-            items = []
-            rows = table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) < 10: continue
-
-                name_tag = cols[2].select_one("a")
-                if not name_tag: continue
-
-                name = name_tag.text.strip()
-                symbol = name_tag.get("href", "").split("code=")[-1]
-
-                # 거래대금 상위 페이지 구조: N(0), 거래대금(1), 종목명(2), 현재가(3), 전일비(4), 등락률(5)...
-                value_raw = cols[1].text.strip().replace(",", "")
-                
-                try:
-                    val_num = float(value_raw)
-                    if val_num >= 10000: value_display = f"{val_num/10000:.1f}조"
-                    else: value_display = f"{val_num:,.0f}억"
-                except: value_display = f"{value_raw}억"
-
-                change_txt = cols[4].text.strip()
-                direction = "상승" if "상" in change_txt or "▲" in change_txt else "하락" if "하" in change_txt or "▼" in change_txt else ""
-
-                items.append({
-                    "name": name,
-                    "symbol": symbol,
-                    "value": f"{direction} {value_display}",
-                    "amount": f"{value_raw}억"
-                })
-                if len(items) >= 15: break
-            return items
-        except Exception as e:
-            print(f"Error parsing trading volume: {e}")
-            return []
+            name = quote.get("name") or robust_name(item.get("stockName") or item.get("itemName") or "")
+            
+            val_num = 0
+            try: val_num = float(item.get("tradeAmount") or item.get("accumulatedTradingValue") or 0)
+            except: pass
+            
+            if val_num >= 1000000000000: value_display = f"{val_num/1000000000000:.1f}조"
+            elif val_num >= 100000000: value_display = f"{val_num/100000000:,.0f}억"
+            else: value_display = f"{val_num:,.0f}"
+            
+            processed.append({
+                "name": name,
+                "symbol": symbol,
+                "value": value_display,
+                "amount": f"{val_num/100000000:,.0f}억" if val_num > 0 else "0억"
+            })
+        return processed
 
     return {
         "search_top": parse_popular_search(),

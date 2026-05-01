@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { RefreshCw, TrendingUp, Search, DollarSign, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type MarketType = 'KOSPI' | 'USA' | 'CHINA' | 'HONG_KONG' | 'JAPAN' | 'VIETNAM';
+type MarketType = 'KOSPI' | 'USA';
 type CategoryType = 'trading_volume' | 'trading_amount' | 'popular_search';
 
 interface RankItem {
@@ -49,7 +49,7 @@ export default function GlobalRankingWidget() {
             try {
                 const results = await Promise.all(
                     CATEGORY_CONFIG.map(cat => 
-                        fetch(`${API_BASE_URL}/api/rank/global?market=${market}&category=${cat.id}`)
+                        fetch(`${API_BASE_URL}/api/market/rank/global?market=${market}&category=${cat.id}`)
                             .then(res => res.json())
                     )
                 );
@@ -83,11 +83,7 @@ export default function GlobalRankingWidget() {
         if (price === undefined || price === null || price === '-' || 
             String(price).toLowerCase() === 'nan' || String(price) === '확인불가') return '-';
         
-        let decimals = 2; // Default (USA)
-        if (market === 'KOSPI') decimals = 0;
-        else if (market === 'CHINA' || market === 'HONG_KONG') decimals = 3;
-        else if (market === 'JAPAN') decimals = 1;
-        else if (market === 'VIETNAM') decimals = 0;
+        const decimals = market === 'KOSPI' ? 0 : 2;
 
         let num = 0;
         if (typeof price === 'string') {
@@ -103,9 +99,7 @@ export default function GlobalRankingWidget() {
             maximumFractionDigits: decimals
         });
         
-        // Match screenshot prefix (HK$ uses concatenated style, USA uses $, others space)
-        const prefix = market === 'HONG_KONG' ? 'HK$' : 
-                      (market === 'USA' ? '$' : (currency_symbol || ''));
+        const prefix = market === 'USA' ? '$' : (currency_symbol || '');
         const suffix = market === 'KOSPI' ? '원' : '';
         
         return `${prefix}${formatted}${suffix}`;
@@ -114,7 +108,6 @@ export default function GlobalRankingWidget() {
     const getRiseFallInfo = (item: RankItem) => {
         const { risefall, change_val, change_percent } = item;
         
-        // Robust numeric parsing (removes commas before parseFloat)
         const parseValue = (v: any) => {
             if (v === undefined || v === null || v === '-') return NaN;
             if (typeof v === 'number') return v;
@@ -127,7 +120,6 @@ export default function GlobalRankingWidget() {
         let color = 'text-gray-400';
         let icon = '';
         
-        // Naver use specific codes if available
         const rfCode = String(risefall);
         if (rfCode === '2' || rfCode === '3' || val > 0) {
             color = 'text-[#f23c3c]'; // Naver Red
@@ -138,7 +130,7 @@ export default function GlobalRankingWidget() {
         }
 
         const abs_str = abs_val ? Math.abs(Number(abs_val)).toLocaleString(undefined, { 
-            minimumFractionDigits: (market === 'KOSPI' || market === 'VIETNAM') ? 0 : (market === 'CHINA' || market === 'HONG_KONG' ? 3 : 1) 
+            minimumFractionDigits: market === 'KOSPI' ? 0 : 1 
         }) : '';
         
         const sign = val > 0 ? '+' : (val < 0 ? '-' : '');

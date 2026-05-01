@@ -5,15 +5,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 def is_v_garbled(s):
     """
-    [v3.9.3] Centralized Whitelist Validator.
+    [v3.9.4-Fixed] Centralized Whitelist Validator.
     Checks for replacement characters, garbage Latin-1, or invalid non-alphanumeric chars.
     """
-    if not s or not isinstance(s, str): return True
+    if not s or not isinstance(s, str): return False # Non-strings are not 'garbled' in the encoding sense
     if "\ufffd" in s or "\u00c0" in s: return True
     if not s.strip(): return True
     
-    # Pattern for clean stock names: Korean, English, Numbers, standard symbols
-    clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"]')
+    # Pattern for clean stock names: Korean, English, Numbers, standard symbols, and common dividers
+    # [v3.9.5] Added middle dot, slash, and more symbols to avoid false positives
+    clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"·/★☆]')
     if clean_pattern.search(s): return True
     return False
 
@@ -56,8 +57,8 @@ def fetch_naver_search_top_api(market="USA"):
     [v6.1.3] Naver Finance Real-time SearchTop API (Mobile front-api for 1:1 Parity)
     Corrects nationType mapping: overseas (USA/Global), domestic (KOR)
     """
-    nation_type = "overseas" if market in ["USA", "Global"] else "domestic"
-    # Mobile popularStock API is more accurate for search trends
+    # [v6.1.4] nationType mapping: USA (Global), KOR (Domestic)
+    nation_type = "USA" if market in ["USA", "Global"] else "KOR"
     url = f"https://m.stock.naver.com/front-api/market/popularStock?nationType={nation_type}"
     
     headers = {
@@ -69,22 +70,43 @@ def fetch_naver_search_top_api(market="USA"):
     try:
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code == 200:
-            res.encoding = 'utf-8'
-            raw_data = res.json()
+            # [v6.2.0] Robust JSON decoding for Naver Mobile API
+            try:
+                raw_data = res.json()
+            except:
+                try:
+                    res.encoding = 'cp949'
+                    raw_data = res.json()
+                except:
+                    res.encoding = 'utf-8'
+                    raw_data = res.json()
+            
             data = raw_data.get("result", {})
             items = data.get("datas", []) or data.get("items", [])
             
             processed_items = []
             for item in items:
-                sym = item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode")
-                name = item.get("stockName") or item.get("itemname")
+                sym = str(item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode") or "")
+                name = str(item.get("stockName") or item.get("itemname") or "")
+                
+                # [v6.2.1] Double repair for mobile API names
+                if is_v_garbled(name):
+                    try:
+                        repaired = name.encode('iso-8859-1').decode('utf-8', 'ignore')
+                        if not is_v_garbled(repaired): name = repaired
+                    except: pass
+                
                 processed_items.append({
                     "symbol": sym,
                     "reutersCode": sym,
                     "name": name,
                     "stockName": name,
                     "itemname": name,
-                    "ranking": item.get("ranking")
+                    "ranking": item.get("ranking"),
+                    # Added missing fields for enrichment parity
+                    "closePrice": item.get("closePrice"),
+                    "fluctuationsRatio": item.get("fluctuationsRatio"),
+                    "compareToPreviousPrice": item.get("compareToPreviousPrice")
                 })
             return processed_items
     except Exception as e:
@@ -477,32 +499,21 @@ def fetch_yahoo_movers():
         gainers.append(item)
         
     for i, item in enumerate(sorted_data[-5:]): # Last 5, reversed for losers (biggest drop first)
-        # Deep copy to modify rank without affecting original list if reused?
-        l_item = item.copy()
-        l_item['rank'] = i + 1
-        losers.append(l_item)
-        
-    # Correct order for losers (Worst first)
-    losers.sort(key=lambda x: x.get('change_percent', 0))
-    # Re-rank
-    for i, item in enumerate(losers):
         item['rank'] = i + 1
-        
+        losers.append(item)
     return {"gainers": gainers, "losers": losers}
 
 def get_global_ranking(market="KOSPI", category="trading_volume"):
     """
-    [v5.1.0-Fixed] Global Dashboard Ranking Engine (Using stock.naver.com API)
-    market: KOSPI, KOSI, KOSDAQ, USA, CHINA (CHN), HONG_KONG (HKG), JAPAN (JPN), VIETNAM (VNM)
-    category: trading_volume (quantTop), trading_amount (priceTop), popular_search (searchTop)
+    [v6.3.0] Unified Global Ranking Engine.
+    Stabilized for both Domestic and Foreign markets using mobile-first APIs.
     """
     import requests
     import time
     
-    # [v3.5.5] Cache key prefix to flush old poisoned or shifted data
+    # Cache logic
     cache_key = f"v3.5.5_{market}_{category}"
     now = time.time()
-    
     if cache_key in CACHE_GLOBAL_RANKING:
         cached = CACHE_GLOBAL_RANKING[cache_key]
         if now - cached['timestamp'] < CACHE_GLOBAL_RANKING_DURATION:
@@ -524,410 +535,136 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     
     nation = nation_map.get(market, "USA")
     order_type = cat_map.get(category, "quantTop")
-
-    # Currency/Rate Mapping
-    currency_map = {"KOR": "KRW", "USA": "USD", "CHN": "CNY", "HKG": "HKD", "JPN": "JPY", "VND": "VND"}
-    symbol_map = {"KRW": "₩", "USD": "$", "CNY": "¥", "HKD": "$", "JPY": "¥", "VND": "₫"}
     
+    # Currency mapping
+    currency_map = {"KOR": "KRW", "USA": "USD", "CHN": "CNY", "HKG": "HKD", "JPN": "JPY", "VNM": "VND"}
     currency = currency_map.get(nation, "USD")
-    symbol_prefix = symbol_map.get(currency, "$")
-    
-    rate = 1.0
+    rate = 1350.0 
     if currency != "KRW":
         try:
-            from korea_data import get_exchange_rate
+            from stock_data import get_exchange_rate
             rate = get_exchange_rate(currency)
-        except:
-            pass
+        except: pass
 
-    # Standard Browser Headers
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://finance.naver.com/',
-        'Accept': 'application/json, text/plain, */*'
-    }
+    # 1. Fetch Items (Unified Mobile-First API)
+    from korea_data import fetch_naver_ranking_data, robust_name
+    items = fetch_naver_ranking_data(nation, order_type)
     
-    # [v6.1.1] Homepage Visual Parity Mode
-    if order_type == "searchTop":
-        # USA or Fallback SearchTop (Domestic KR will fall through to precision logic below)
-        if nation != "KOR":
-            home_items = fetch_naver_search_top_api(nation)
-            if home_items:
-                processed = []
-                symbols_to_poll = []
-                for i, item in enumerate(home_items[:10]):
-                    sym = item.get("reutersCode") or item.get("symbolCode") or item.get("symbol")
-                    name = item.get("stockName") or item.get("name")
-                    processed.append({
-                        "rank": i + 1, "symbol": sym, "name": name,
-                        "price": "0", "change_val": 0, "change_percent": "0.00%",
-                        "risefall": 3, "market": market
-                    })
-                    if sym: symbols_to_poll.append(sym)
-                    
-                # Batch enrichment for accurate pricing
-                if symbols_to_poll:
-                    polling_data = get_world_stock_integration(symbols_to_poll)
-                    if polling_data:
-                        rate = get_exchange_rate("USD")
-                        for p in processed:
-                            info = polling_data.get(p["symbol"])
-                            if info:
-                                p["name"] = info.get("stockName") or p["name"]
-                                price_val = info.get("currentPrice") or info.get("closePrice") or p["price"]
-                                p["price"] = price_val
-                                # [v6.1.3] Precision Percentage Calculation Sync
-                                try:
-                                    f_rate = float(info.get('fluctuationsRatio', 0))
-                                    # Handle cases where ratio mapping might be shifted or absolute
-                                    p["change_percent"] = f"{f_rate:+.2f}%"
-                                except:
-                                    p["change_percent"] = "0.00%"
-                                
-                                # [v6.1.4] Accurate Change Mapping (Prioritize raw fluctuations from API)
-                                raw_fluct = info.get("fluctuations") or info.get("compareToPreviousClosePrice")
-                                if raw_fluct is not None and str(raw_fluct) not in ["0", ""]:
-                                    p["change_val"] = raw_fluct
-                                else:
-                                    # Backup calculation if raw fluctuations are missing
-                                    try:
-                                        pct = float(info.get('fluctuationsRatio', 0))
-                                        curr_p = float(str(price_val).replace(',', ''))
-                                        if curr_p > 0 and pct != 0:
-                                            # Correct formula for net change from current price and ratio
-                                            # change = current_price * (ratio / (100 + ratio))
-                                            p["change_val"] = curr_p * (pct / (100.0 + pct))
-                                    except:
-                                        p["change_val"] = 0
-
-                                p["risefall"] = 2 if float(info.get('fluctuationsRatio', 0)) > 0 else (5 if float(info.get('fluctuationsRatio', 0)) < 0 else 3)
-                                
-                                # [v6.1.2] Advanced KRW Conversion & Mirroring
-                                try:
-                                    f_p = float(str(price_val).replace(',', ''))
-                                    if f_p > 0:
-                                        p["price_krw"] = f"{f_p * rate:,.0f}"
-                                    else:
-                                        p["price_krw"] = "0"
-                                except:
-                                    p["price_krw"] = "0"
-                
-                if processed:
-                    # [v6.1.2] Force 10 items padding for UI stability
-                    while len(processed) < 10:
-                        processed.append({
-                            "rank": len(processed) + 1, "symbol": "-", "name": "-",
-                            "price": "0", "change_val": 0, "change_percent": "0.00%",
-                            "risefall": 3, "market": market, "price_krw": "0"
-                        })
-                    CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
-                    return processed
-
-    # [v6.1.1] Precision Mirroring Source (Reverted to stable default API for KR)
-    if nation == "KOR":
-        url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
-    else:
-        if order_type == "searchTop":
-            # [v6.0.1] US SearchTop with category parameters for 1:1 match
-            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType={nation}&category1=STOCK_FOREIGN&category3=END_HIT&startIdx=0&pageSize=10"
-        else:
-            # For Volume/Amount top in Global markets
-            url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=10"
+    if not items:
+        return []
             
-    try:
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code != 200:
-            return []
-            
-        # [v3.9.3] Ultimate Hybrid Mirrored Decoding
-        try:
-            # We try standard UTF-8 first
-            decoded_content = res.content.decode('utf-8')
-            raw_data = json.loads(decoded_content)
-        except:
-            try:
-                res.encoding = 'cp949'
-                raw_data = res.json()
-            except:
-                return []
+    processed = []
+    for i, item in enumerate(items[:10]):
+        repair = robust_name
         
-        items = []
-        if isinstance(raw_data, list):
-            items = raw_data
-        elif isinstance(raw_data, dict):
-            items = raw_data.get("items") or raw_data.get("stocks") or raw_data.get("result")
-            if items is None and "result" in raw_data:
-                items = raw_data["result"].get("items") or raw_data["result"].get("stocks")
-                if isinstance(items, dict): # Handle result.items
-                     items = items.get("items") or items.get("stocks")
-            
-        if not items:
-            return []
-            
-        processed = []
-        for i, item in enumerate(items[:10]):
-            # Improved repair: only try if the string looks like Mojibake
-            def repair(s):
-                if not s or not isinstance(s, str): return s
-                # If it already has valid Korean, DON'T touch it!
-                if any(0xAC00 <= ord(c) <= 0xD7A3 for c in s): return s
-                
-                # [v3.9.6] Advanced Mojibake Recovery
-                try:
-                    # Strategy 1: Latin-1 -> UTF-8
-                    repaired = s.encode('iso-8859-1').decode('utf-8', 'ignore')
-                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
-                        return repaired
-                except: pass
-
-                try:
-                    # Strategy 2: Latin-1 -> CP949
-                    repaired = s.encode('iso-8859-1').decode('cp949', 'ignore')
-                    if any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
-                        return repaired
-                except: pass
-                
-                # [v5.7.0] Fallback to manual map if still garbled
-                clean_sym = item.get("itemcode") or item.get("reutersCode") or ""
-                if clean_sym:
-                    clean_sym = clean_sym.split('.')[0]
-                    # us_name_map is defined later in enrich_item, so we might need a global or local access
-                    # For now, we rely on the later enrichment pass which is more robust.
-                
-                return s
-
-            if nation == "KOR":
-                # Domestic Schema (Stable default API)
-                symbol = item.get("itemcode") or item.get("itemCode")
-                name = repair(item.get("itemname") or item.get("stockName"))
-                price = item.get("nowPrice") or item.get("closePrice")
-                change_rate = item.get("prevChangeRate") or item.get("fluctuationsRatio")
-                change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice")
-                
-                # risefall mapping
-                risefall = item.get("upDownGb") or 3
-                if isinstance(risefall, dict):
-                    risefall = int(risefall.get("code", 3))
-                    
-                volume = item.get("tradeVolume") or item.get("accumulatedTradingVolume")
-                amount = item.get("tradeAmount") or item.get("accumulatedTradingValue")
+        if nation == "KOR":
+            symbol = str(item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode") or item.get("itemCode") or item.get("code") or "")
+            name = repair(str(item.get("itemname") or item.get("stockName") or ""))
+            price = item.get("nowPrice") or item.get("closePrice")
+            change_rate = item.get("prevChangeRate") or item.get("fluctuationsRatio")
+            change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice")
+            raw_rf = item.get("upDownGb") or 3
+            if isinstance(raw_rf, dict):
+                risefall = int(raw_rf.get("code", 3))
             else:
-                # Foreign or SearchTop (USA) Schema
-                symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode")
-                
-                # [v3.8.2] Precision Field Recovery
-                # searchTop API uses koreanCodeName, global API uses stockName/itemname
-                k_name = repair(item.get("koreanCodeName") or item.get("itemname") or item.get("stockName") or item.get("itemName"))
-                e_name = repair(item.get("englishCodeName") or item.get("englishName"))
-                
-                # Priority: Valid Korean Name > Valid English Name > Symbol
-                if not is_v_garbled(k_name):
-                    name = k_name
-                elif not is_v_garbled(e_name):
-                    name = e_name
-                else:
-                    name = symbol
-                
-                # Final fallback for SearchTop items that might need STOCK_MAP
-                if (not name or name == symbol) and nation == "KOR":
+                try: risefall = int(raw_rf)
+                except: risefall = 3
+            volume = item.get("tradeVolume") or item.get("accumulatedTradingVolume")
+            amount = item.get("tradeAmount") or item.get("accumulatedTradingValue")
+        else:
+            symbol = str(item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode") or "")
+            k_name = repair(item.get("koreanCodeName") or item.get("itemname") or item.get("stockName") or item.get("itemName"))
+            e_name = repair(item.get("englishCodeName") or item.get("englishName"))
+            name = k_name if (k_name and not is_v_garbled(k_name)) else (e_name if (e_name and not is_v_garbled(e_name)) else symbol)
+            
+            price = item.get("currentPrice") or item.get("nowPrice") or item.get("closePrice")
+            change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
+            change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
+            risefall = item.get("risefall") or item.get("upDownGb") or 3
+            volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
+            amount = item.get("accumulatedTradingValue") or item.get("tradeAmount") or item.get("sumCount")
+
+        # Robust Numeric Parsing
+        def safe_f(v):
+            try: return float(str(v).replace(",", "").strip())
+            except: return 0.0
+
+        f_p = safe_f(price)
+        f_cr = safe_f(change_rate)
+        
+        p_krw = "0"
+        if nation != "KOR" and f_p > 0:
+            p_krw = f"{f_p * rate:,.0f}"
+
+        processed.append({
+            "rank": i + 1, "symbol": symbol, "name": name,
+            "price": price if price and price != "-" else "0", 
+            "price_krw": p_krw, "change_val": change_val or 0,
+            "change_percent": f"{f_cr:+.2f}%", "risefall": risefall,
+            "volume": volume, "amount": amount, "market": market
+        })
+
+    # 2. High-Precision Integration Sync (Foreign)
+    if nation != "KOR" and processed:
+        syms = [p["symbol"] for p in processed if p.get("symbol")]
+        poll = get_world_stock_integration(syms)
+        if poll:
+            for p in processed:
+                sym = p["symbol"]
+                if sym in poll:
+                    info = poll[sym]
+                    pn = info.get("stockName")
+                    if pn and not is_v_garbled(pn): p["name"] = pn
+                    p["price"] = info.get("currentPrice") or info.get("closePrice") or p["price"]
+                    fr = info.get("fluctuationsRatio")
+                    if fr is not None:
+                        try: p["change_percent"] = f"{float(str(fr)):+.2f}%"
+                        except: pass
+                    p["change_val"] = info.get("fluctuations") or info.get("compareToPreviousClosePrice") or p["change_val"]
                     try:
-                        from stock_names import STOCK_MAP
-                        for k, v in STOCK_MAP.items():
-                            if v == symbol:
-                                name = k
-                                break
+                        fp = float(str(p["price"]).replace(",", ""))
+                        if fp > 0 and currency != "KRW": p["price_krw"] = f"{fp * rate:,.0f}"
                     except: pass
 
-                if order_type == "searchTop" and nation != "KOR":
-                    # USA SearchTop API lacks real-time price fields in the list view response often.
-                    price = item.get("currentPrice") or item.get("nowPrice") or item.get("closePrice")
-                    change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
-                    change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
-                    risefall = item.get("risefall") or item.get("upDownGb") or 3
-                    volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
-                    amount = item.get("sumCount") # Map sumCount for SearchTop
-                else:
-                    price = item.get("currentPrice") or item.get("nowPrice")
-                    change_rate = item.get("fluctuationsRatio") or item.get("prevChangeRate") or item.get("changeRate")
-                    change_val = item.get("compareToPreviousClosePrice") or item.get("prevChangePrice")
-                    risefall = item.get("risefall") or item.get("upDownGb")
-                    volume = item.get("accumulatedTradingVolume") or item.get("tradeVolume")
-                    amount = item.get("accumulatedTradingValue") or item.get("tradeAmount")
-
-            # [v6.2.0] Robust Numeric Parsing
-            def safe_float(v):
+    # 3. Final Universal Enrichment (Real-time Overlay)
+    if processed:
+        from stock_data import get_simple_quote
+        from concurrent.futures import ThreadPoolExecutor
+        def enrich(p_item):
+            s = p_item["symbol"]
+            if not s or s == "-": return p_item
+            q = get_simple_quote(s)
+            if q:
+                nn = q.get("name")
+                if nn and not is_v_garbled(nn) and len(str(nn)) > 1: p_item["name"] = nn
+                qp = str(q.get("price", "0")).replace(",", "")
                 try:
-                    return float(str(v).replace(",", "").strip())
-                except: return 0.0
-
-            f_price = safe_float(price)
-            f_change_rate = safe_float(change_rate)
-            
-            price_krw = "0"
-            if nation != "KOR" and f_price > 0:
-                try:
-                    price_krw = f"{f_price * rate:,.0f}"
+                    f_qp = float(qp)
+                    if f_qp > 0:
+                        p_item["price"] = q["price"]
+                        if currency != "KRW": p_item["price_krw"] = f"{f_qp * rate:,.0f}"
                 except: pass
+                qc = str(q.get("change") or "0.00%")
+                if qc and qc not in ["0.00%", "0%"] and ("+" in qc or "-" in qc):
+                    if not p_item.get("change_percent") or p_item["change_percent"] in ["0.00%", "0.0%"]:
+                        p_item["change_percent"] = qc
+                rf = q.get("risefall_name")
+                if rf: p_item["risefall"] = 2 if rf == 'RISING' else (5 if rf == 'FALLING' else 3)
+            return p_item
 
-            # Baseline Data Preservation
-            processed.append({
-                "rank": i + 1,
-                "symbol": symbol,
-                "name": name,
-                "price": price if price and price != "-" else "0", 
-                "price_krw": price_krw,
-                "change_val": change_val or 0,
-                "change_percent": f"{f_change_rate:+.2f}%",
-                "risefall": risefall,
-                "volume": volume,
-                "amount": amount,
-                "market": market
-            })
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            processed = list(ex.map(enrich, processed))
 
-        # [v6.0.0] High-Precision Integration Sync for Foreign Stocks (Especially SearchTop)
-        if nation != "KOR" and processed:
-            symbols_to_poll = [p["symbol"] for p in processed if p.get("symbol")]
-            polling_data = get_world_stock_integration(symbols_to_poll)
-            
-            if polling_data:
-                for p in processed:
-                    sym = p["symbol"]
-                    if sym in polling_data:
-                        info = polling_data[sym]
-                        # 1:1 Mirroring with integration/price API
-                        # Fix encoding: stockName in integration/price often comes correctly but might be garbled by our repair
-                        p_name = info.get("stockName")
-                        if p_name and not is_v_garbled(p_name):
-                             p["name"] = p_name
-                        elif info.get("koreanCodeName"):
-                             p["name"] = info.get("koreanCodeName")
-                             
-                        p["price"] = info.get("currentPrice") or info.get("closePrice") or p["price"]
-                        
-                        f_rate = info.get("fluctuationsRatio")
-                        if f_rate is not None:
-                            try:
-                                p["change_percent"] = f"{float(str(f_rate).replace(',','')):+.2f}%"
-                            except:
-                                p["change_percent"] = "0.00%"
-                        
-                        p["change_val"] = info.get("fluctuations") or info.get("compareToPreviousClosePrice") or p["change_val"]
-                        
-                        # Update KRW if price changed
-                        try:
-                            f_p = float(str(p["price"]).replace(",", ""))
-                            if f_p > 0 and currency != "KRW":
-                                p["price_krw"] = f"{f_p * rate:,.0f}"
-                        except: pass
-            
-        # [v5.6.0] Universal Enrichment to fix Naver API Shift/NaN/Precision bugs
-        if processed:
-            from stock_data import get_simple_quote
-            from concurrent.futures import ThreadPoolExecutor
-            
-            def enrich_item(p_item):
-                sym = p_item["symbol"]
-                if not sym or sym == "-": return p_item
-                
-                # Fetch real-time data from mobile API to override unreliable list API
-                quote = get_simple_quote(sym)
-                if quote:
-                    # 1. Name Enrichment (Only if new name is valid and better)
-                    new_name = quote.get("name")
-                    if new_name and not is_v_garbled(new_name) and new_name != sym and len(str(new_name)) > 1:
-                        p_item["name"] = new_name
-                    
-                    # [v3.8.5] Expanded US/Global Name Translation Map
-                    clean_sym = sym.split('.')[0] if '.' in sym else sym
-                    us_name_map = {
-                        "NVDA": "엔비디아", "TSLA": "테슬라", "AAPL": "애플", 
-                        "MSFT": "마이크로소프트", "AMZN": "아마존", "GOOGL": "알파벳A",
-                        "PLTR": "팔란티어", "META": "메타", "AVGO": "브로드컴",
-                        "MSTR": "마이크로스트래티지", "SMCI": "슈퍼마이크로컴퓨터",
-                        "IONQ": "아이온큐", "SOXL": "세배 반도체 레버리지", "TQQQ": "세배 나스닥 레버리지",
-                        "SQQQ": "세배 나스닥 인버스", "TSLL": "테슬라 2배 레버리지", "NVDL": "엔비디아 2배",
-                        "SMR": "뉴스케일 파워", "OKLO": "오클로", "VIX": "공포지수", 
-                        "CONL": "코인베이스 2배", "MSTX": "마이크로스트래티지 1.75배",
-                        "SCHD": "슈왑 배당주 ETF", "JEPI": "제이피모건 커버드콜",
-                        "MU": "마이크론", "SNDK": "샌디스크", "AIXI": "아이엑시스", 
-                        "CRCL": "써클", "ARM": "ARM 홀딩스"
-                    }
-                    
-                    if is_v_garbled(p_item["name"]) or p_item["name"] == sym or ".O" in p_item["name"] or ".N" in p_item["name"]:
-                        if clean_sym in us_name_map:
-                            p_item["name"] = us_name_map[clean_sym]
-                        elif sym in us_name_map:
-                            p_item["name"] = us_name_map[sym]
-                    
-                    # 2. Price Enrichment (Only if positive and valid)
-                    q_price_str = str(quote.get("price", "0")).replace(",", "")
-                    try:
-                        q_price = float(q_price_str)
-                        if q_price > 0:
-                            p_item["price"] = quote["price"]
-                            # Update KRW (Robust Conversion)
-                            if currency != "KRW":
-                                p_item["price_krw"] = f"{q_price * rate:,.0f}"
-                            else:
-                                p_item["price_krw"] = "0"
-                    except:
-                        p_item["price_krw"] = p_item.get("price_krw") or "0"
-                    
-                    # 3. Change & Precision Enrichment (Selective)
-                    q_change = quote.get("change")
-                    if q_change and q_change not in ["0.00%", "0.0%"] and ("+" in q_change or "-" in q_change):
-                         # [v6.1.2] Favor existing (widget) change_percent if it looks valid
-                         if not p_item.get("change_percent") or p_item["change_percent"] in ["0.00%", "0.0%", "0%"]:
-                             p_item["change_percent"] = q_change
-                         
-                         # [v6.1.4] Corrected Change Value logic (Prioritize raw metadata)
-                         raw_fluct = quote.get("change_val") or quote.get("fluctuations")
-                         if raw_fluct and str(raw_fluct) not in ["0", ""]:
-                             try:
-                                 val = float(str(raw_fluct).replace(",", ""))
-                                 if quote.get("risefall_name") == 'FALLING': val = -abs(val)
-                                 p_item["change_val"] = int(val) if nation == "KOR" else val
-                             except: pass
-                         else:
-                             # Calculation fallback if raw data missing
-                             try:
-                                 pct_val = float(str(p_item["change_percent"]).replace("%", "").replace("+", "").strip())
-                                 price_val = float(str(p_item["price"]).replace(",", ""))
-                                 if price_val > 0 and pct_val != 0:
-                                     p_item["change_val"] = round(price_val * (pct_val / (100.0 + pct_val)), 4)
-                             except: pass
-                         
-                         # Parse risefall from quote if available
-                         if quote.get("risefall_name"):
-                             p_item["risefall"] = 2 if quote.get("risefall_name") == 'RISING' else (5 if quote.get("risefall_name") == 'FALLING' else 3)
-                return p_item
-
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                processed = list(executor.map(enrich_item, processed))
-
-        # [v6.1.2] Final Safeguard: Always ensure exactly 10 items for visual parity
-        if processed:
-            while len(processed) < 10:
-                processed.append({
-                    "rank": len(processed) + 1, "symbol": "-", "name": "-",
-                    "price": "0", "change_val": 0, "change_percent": "0.00%",
-                    "risefall": 3, "market": market, "price_krw": "0"
-                })
-            # Trim if somehow more (unlikely)
-            processed = processed[:10]
-
-        if processed:
-            CACHE_GLOBAL_RANKING[cache_key] = {
-                "data": processed,
-                "timestamp": now
-            }
-            
-        return processed
-        
-    except Exception as e:
-        print(f"Global Ranking API Error ({market}/{category}): {e}")
-        return []
-
+    # 4. Padding & Cache
+    while len(processed) < 10:
+        processed.append({
+            "rank": len(processed) + 1, "symbol": "-", "name": "-",
+            "price": "0", "change_val": 0, "change_percent": "0.00%",
+            "risefall": 3, "market": market, "price_krw": "0"
+        })
+    processed = processed[:10]
+    CACHE_GLOBAL_RANKING[cache_key] = {"data": processed, "timestamp": now}
+    return processed
 def get_naver_ranking(market="krx", rank_type="quant"):
     """
     네이버 금융 TOP종목 영역을 파싱합니다.

@@ -119,6 +119,9 @@ def read_rank_top10(market: str):
 def read_global_rank(market: str = "KOSPI", category: str = "trading_volume"):
     from rank_data import get_global_ranking
     data = get_global_ranking(market, category)
+    print(f"[DEBUG] /rank/global market={market}, category={category}, count={len(data) if data else 0}")
+    if data:
+        print(f"[DEBUG] First item: {data[0]}")
     return {"status": "success", "data": data}
 
 @router.get("/major")
