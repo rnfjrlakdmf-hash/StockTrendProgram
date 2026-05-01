@@ -437,7 +437,7 @@ function DiscoveryContent() {
             }
         };
 
-        const timer = setTimeout(fetchSearchResults, 300);
+        const timer = setTimeout(fetchSearchResults, 150);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
@@ -581,7 +581,7 @@ function DiscoveryContent() {
                 {!stock && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         {/* Search / Hero Section */}
-                        <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 overflow-hidden shadow-xl">
+                        <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 shadow-xl overflow-visible">
                             <div className="relative z-10 max-w-2xl">
                                 <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md"><span>종목 데이터 분석 (AI Analysis)</span></h2>
                                 <p className="text-gray-200 mb-4 text-sm md:text-base">
@@ -639,7 +639,9 @@ function DiscoveryContent() {
 
                                 {error && <p className="text-red-400 mt-3 font-semibold bg-red-900/40 p-2 rounded-lg inline-block">{error}</p>}
                             </div>
-                            <ShieldCheck className="absolute right-0 top-1/2 -translate-y-1/2 h-64 w-64 text-white/5 -rotate-12" />
+                            <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                                <ShieldCheck className="absolute right-0 top-1/2 -translate-y-1/2 h-64 w-64 text-white/5 -rotate-12" />
+                            </div>
                         </div>
 
                         {/* Market Traffic Light & Health Check Entry */}

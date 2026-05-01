@@ -128,6 +128,7 @@ def read_major_indicators():
     return {"status": "success", "data": data}
 
 @router.get("/stock/search")
+@turbo_cache(ttl_seconds=3600)
 def search_stock_api(q: str = None, query: str = None):
     # Support both 'q' and 'query' for backward compatibility
     search_q = q or query
