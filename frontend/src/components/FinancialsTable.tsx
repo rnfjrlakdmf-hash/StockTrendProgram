@@ -8,7 +8,8 @@ interface FinancialMetric {
 }
 
 interface FinancialsTableProps {
-    data: Record<string, FinancialMetric> | null;
+    data: any | null;
+    currency?: string;
 }
 
 const METRIC_CONFIG: Record<string, {
@@ -46,13 +47,20 @@ const METRIC_GROUPS = [
     { title: "🎁 배당", description: "얼마나 나눠주는지", keys: ["dps", "dividend_yield", "payout_ratio"] },
 ];
 
-function formatValue(val: any, format: string, unit: string): string {
+function formatValue(val: any, format: string, unit: string, currency?: string): string {
     const num = typeof val === 'number' ? val : parseFloat(String(val));
     if (isNaN(num)) return '-';
 
-    if (format === 'number' && unit === '억원') {
-        if (Math.abs(num) >= 10000) return `${(num / 10000).toFixed(1)}조`;
-        return num.toLocaleString();
+    if (format === 'number') {
+        if (currency === 'USD') {
+            if (Math.abs(num) >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
+            if (Math.abs(num) >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+            return `$${num.toLocaleString()}`;
+        }
+        if (unit === '억원') {
+            if (Math.abs(num) >= 10000) return `${(num / 10000).toFixed(1)}조`;
+            return num.toLocaleString();
+        }
     }
     if (format === 'percent') return `${num.toFixed(1)}%`;
     if (format === 'ratio') return `${num.toFixed(2)}배`;
@@ -82,9 +90,52 @@ function getColorClass(val: number, higherIsBetter: boolean, isZero: boolean): s
     }
 }
 
-export default function FinancialsTable({ data }: FinancialsTableProps) {
+export default function FinancialsTable({ data: rawData, currency }: FinancialsTableProps) {
     const [showEasyMode, setShowEasyMode] = useState(true);
     const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+    const data = React.useMemo(() => {
+        if (!rawData) return null;
+        
+        // If it's already in the correct format (Domestic), return as is
+        if (Object.values(rawData).some(v => v && typeof v === 'object' && 'dates' in v)) {
+            return rawData as Record<string, FinancialMetric>;
+        }
+
+        // If it's in the Global format (from yfinance), transform it
+        if (rawData.detailed && (rawData.detailed.annual || rawData.detailed.quarterly)) {
+            const annual = rawData.detailed.annual || [];
+            const quarterly = rawData.detailed.quarterly || [];
+            
+            // Limit to 4 annual and 6 quarterly to match Domestic UI expectation (total 10)
+            // Backend currently provides 4 annual and 4 quarterly
+            const combinedDates = [...annual.map((a: any) => a.date), ...quarterly.map((q: any) => q.date)];
+            
+            const transform = (key: string) => {
+                const values = [
+                    ...annual.map((a: any) => a[key] !== undefined ? a[key] / 100000000 : null), // Convert to 100M KRW equivalent if possible? No, global is USD.
+                    ...quarterly.map((q: any) => q[key] !== undefined ? q[key] / 100000000 : null)
+                ];
+                // Actually, for global, units might be different. Let's just keep raw numbers and handle in formatter.
+                return { dates: combinedDates, values: [
+                    ...annual.map((a: any) => a[key] ?? null),
+                    ...quarterly.map((q: any) => q[key] ?? null)
+                ] };
+            };
+
+            return {
+                revenue: transform('revenue'),
+                operating_income: transform('operating_income'),
+                net_income: transform('net_income'),
+                debt_ratio: { dates: combinedDates, values: combinedDates.map(() => rawData.debt_ratio || null) },
+                per: { dates: combinedDates, values: combinedDates.map(() => rawData.detailed.summary?.per || null) },
+                pbr: { dates: combinedDates, values: combinedDates.map(() => rawData.detailed.summary?.pbr || null) },
+                roe: { dates: combinedDates, values: combinedDates.map(() => rawData.detailed.summary?.roe || null) },
+            };
+        }
+        
+        return null;
+    }, [rawData]);
 
     if (!data) {
         return (
@@ -228,7 +279,7 @@ export default function FinancialsTable({ data }: FinancialsTableProps) {
                                                             ) : (
                                                                 <div className="flex flex-col items-center gap-0.5">
                                                                     <span className={`font-mono text-sm font-bold tracking-tight ${colorClass}`}>
-                                                                        {formatValue(val, config.format, config.unit)}
+                                                                        {formatValue(val, config.format, config.unit, currency)}
                                                                     </span>
                                                                     {/* 전기 대비 추세 */}
                                                                     {trend !== 'none' && showEasyMode && (

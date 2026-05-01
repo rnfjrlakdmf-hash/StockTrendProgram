@@ -1475,6 +1475,41 @@ def get_stock_financials(symbol: str):
                 if financials['debt_ratio'] == 'N/A':
                     financials['debt_ratio'] = info.get('debtToEquity', 'N/A')
 
+                # Populate Detailed History (Annual / Quarterly)
+                annual_data = []
+                quarterly_data = []
+                
+                try:
+                    # Annual
+                    for i, date in enumerate(income_stmt.columns[:4]):
+                        d_str = str(date.year)
+                        
+                        # Get assets from balance sheet if available
+                        assets = 0
+                        if not t.balance_sheet.empty and date in t.balance_sheet.columns:
+                            assets = t.balance_sheet.loc['Total Assets', date] if 'Total Assets' in t.balance_sheet.index else 0
+                        
+                        annual_data.append({
+                            "date": d_str,
+                            "revenue": income_stmt.loc['Total Revenue', date] if 'Total Revenue' in income_stmt.index else 0,
+                            "operating_income": income_stmt.loc['Operating Income', date] if 'Operating Income' in income_stmt.index else 0,
+                            "net_income": income_stmt.loc['Net Income', date] if 'Net Income' in income_stmt.index else 0,
+                            "total_assets": assets
+                        })
+                        
+                    # Quarterly
+                    q_stmt = t.quarterly_income_stmt
+                    if not q_stmt.empty:
+                        for i, date in enumerate(q_stmt.columns[:4]):
+                            d_str = f"{date.year}.{((date.month-1)//3)+1}Q"
+                            quarterly_data.append({
+                                "date": d_str,
+                                "revenue": q_stmt.loc['Total Revenue', date] if 'Total Revenue' in q_stmt.index else 0,
+                                "operating_income": q_stmt.loc['Operating Income', date] if 'Operating Income' in q_stmt.index else 0,
+                                "net_income": q_stmt.loc['Net Income', date] if 'Net Income' in q_stmt.index else 0
+                            })
+                except: pass
+
                 financials.update({
                     "detailed": {
                         "success": True,
@@ -1483,8 +1518,8 @@ def get_stock_financials(symbol: str):
                             "pbr": info.get('priceToBook', 'N/A'),
                             "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A'
                         },
-                        "annual": [],
-                        "quarterly": []
+                        "annual": annual_data,
+                        "quarterly": quarterly_data
                     }
                 })
                 return financials
