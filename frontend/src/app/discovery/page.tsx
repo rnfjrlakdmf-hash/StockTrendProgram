@@ -1042,30 +1042,43 @@ function DiscoveryContent() {
 
                                         {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                             <>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('investor')}
-                                                >
-                                                    <span>📈 투자자 동향</span> <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">New</span>
-                                                </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'financials' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('financials')}
-                                                >
-                                                    <span>💰 재무제표</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
-                                                </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('overhang')}
-                                                >
-                                                    <span>⚠️ 오버행/타법인</span> <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
-                                                </button>
-                                                <button
-                                                    className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                    onClick={() => setActiveTab('disclosure')}
-                                                >
-                                                    <span>공시(DART)</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
-                                                </button>
+                                                {/* [New] Conditionally show tabs based on Global/Domestic */}
+                                                {(() => {
+                                                    const isGlobal = /[a-zA-Z]/.test(stock.symbol) && !stock.symbol.endsWith('.KS') && !stock.symbol.endsWith('.KQ');
+                                                    return (
+                                                        <>
+                                                            <button
+                                                                className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                                                                onClick={() => setActiveTab('investor')}
+                                                            >
+                                                                <span>📈 {isGlobal ? '주요 주주' : '투자자 동향'}</span> <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">{isGlobal ? 'US' : 'New'}</span>
+                                                            </button>
+                                                            <button
+                                                                className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'financials' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
+                                                                onClick={() => setActiveTab('financials')}
+                                                            >
+                                                                <span>💰 재무제표</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
+                                                            </button>
+                                                            
+                                                            {!isGlobal && (
+                                                                <>
+                                                                    <button
+                                                                        className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
+                                                                        onClick={() => setActiveTab('overhang')}
+                                                                    >
+                                                                        <span>⚠️ 오버행/타법인</span> <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
+                                                                    </button>
+                                                                    <button
+                                                                        className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                                        onClick={() => setActiveTab('disclosure')}
+                                                                    >
+                                                                        <span>공시(DART)</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </>
                                         )}
 
