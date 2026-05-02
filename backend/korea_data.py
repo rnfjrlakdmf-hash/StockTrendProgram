@@ -920,36 +920,54 @@ def get_naver_market_index_data():
     """
     네이버 모바일 API를 사용하여 국내외 주요 지수 및 매크로 지표(금리, VIX, 환율 등)를 통합 수집합니다.
     """
+    # [v5.5.0] 네이버 API 경로 최적화 및 다우존스 추가
     indices_to_fetch = [
-        {"code": "KOSPI", "label": "KOSPI"},
-        {"code": "KOSDAQ", "label": "KOSDAQ"},
-        {"code": "SPI@SPX", "label": "S&P 500"},
-        {"code": "NAS@IXIC", "label": "NASDAQ"},
-        {"code": "DJI@DJI", "label": "DOW JONES"},
-        {"code": "NAS@NDX", "label": "NASDAQ 100"},
+        {"code": "KOSPI", "label": "KOSPI", "type": "dom"},
+        {"code": "KOSDAQ", "label": "KOSDAQ", "type": "dom"},
+        {"code": ".INX", "label": "S&P 500", "type": "world"},
+        {"code": ".IXIC", "label": "NASDAQ", "type": "world"},
+        {"code": ".DJI", "label": "DOW JONES", "type": "world"},
+        {"code": ".NDX", "label": "NASDAQ 100", "type": "world"},
         # [Macro Intelligence]
-        {"code": "VIX@VIX", "label": "VIX(공포지수)"},
-        {"code": "CMTS@TY10", "label": "미 국채 10년물 금리"},
-        {"code": "FRX@DXY", "label": "달러인덱스(DXY)"},
+        {"code": ".VIX", "label": "VIX(공포지수)", "type": "world"},
+        {"code": "CMTS@TY10", "label": "미 국채 10년물 금리", "type": "old"},
+        {"code": "FRX@DXY", "label": "달러 지수", "type": "old"},
         # [European Indices]
-        {"code": "DAX@DAX", "label": "독일 DAX"},
-        {"code": "CAC@CAC40", "label": "프랑스 CAC 40"},
-        {"code": "UKX@FTSE100", "label": "영국 FTSE 100"}
+        {"code": ".GDAXI", "label": "독일 DAX", "type": "world"},
+        {"code": ".FCHI", "label": "프랑스 CAC 40", "type": "world"},
+        {"code": ".FTSE", "label": "영국 FTSE 100", "type": "world"}
     ]
     
     results = []
     for idx in indices_to_fetch:
         try:
-            url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
+            if idx["type"] == "world":
+                url = f"https://api.stock.naver.com/index/{idx['code']}/basic"
+            elif idx["type"] == "dom":
+                url = f"https://m.stock.naver.com/front-api/realTime/marketPrice?itemCodes={idx['code']}&endType=index&stockType=domestic"
+            else:
+                url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
+                
             res = requests.get(url, headers=HEADER, timeout=5)
             if res.status_code == 200:
                 data = res.json()
-                price = data.get('closePrice', '0').replace(',', '')
-                pct = data.get('fluctuationsRatio', '0')
+                
+                if idx["type"] == "dom":
+                    # KOSPI/KOSDAQ structure
+                    stock_item = data.get("result", [{}])[0]
+                    price = stock_item.get('closePrice', '0').replace(',', '')
+                    pct = stock_item.get('fluctuationsRatio', '0')
+                else:
+                    price = data.get('closePrice', '0').replace(',', '')
+                    pct = data.get('fluctuationsRatio', '0')
                 
                 # 금리의 경우 f"{price}%" 형식으로, 지수의 경우 천단위 콤마 f"{price:,.2f}" 형식으로 유동적 처리
                 is_rate = "금리" in idx["label"] or "TY10" in idx["code"]
-                val_formatted = f"{float(price):.4f}%" if is_rate else f"{float(price):,.2f}"
+                try:
+                    price_val = float(price)
+                    val_formatted = f"{price_val:.4f}%" if is_rate else f"{price_val:,.2f}"
+                except:
+                    val_formatted = price
                 
                 results.append({
                     "label": idx["label"],
