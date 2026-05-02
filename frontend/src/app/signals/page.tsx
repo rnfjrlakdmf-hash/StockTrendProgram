@@ -101,7 +101,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const scanSignals = async (type: 'all' | 'watchlist' = 'all') => {
         setScanning(true);
         try {
-            const endpoint = type === 'watchlist' ? '/api/signals/scan/watchlist' : '/api/signals/scan';
+            const endpoint = type === 'watchlist' ? '/api/signals/scan?type=watchlist' : '/api/signals/scan?type=all';
             const token = await getAuthToken();
             const headers: any = { "Content-Type": "application/json" };
             if (token) headers["x-user-id"] = token;
