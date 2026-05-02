@@ -111,9 +111,11 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             </div>
 
             {/* [New] Flip Clock Style Index Ticker (Center Space) */}
-            <div className="hidden lg:flex flex-1 items-center justify-center mx-4">
-                <FlipIndexTicker />
-            </div>
+            {pathname !== '/settings' && title !== '설정' && (
+                <div className="hidden lg:flex flex-1 items-center justify-center mx-4">
+                    <FlipIndexTicker />
+                </div>
+            )}
 
             <div className="flex items-center gap-4 w-full md:w-auto justify-end">
                 {/* Search Bar Removed as per user request */}

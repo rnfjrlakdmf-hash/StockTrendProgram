@@ -628,11 +628,12 @@ function CalendarTab({ router }: { router: any }) {
 
                 if (krJson.status === "success") setKrEvents(krJson.data || []);
                 
-                if (globalJson.status === "success" && indicesJson.status === "success") {
+                if (globalJson.status === "success" || indicesJson.status === "success") {
                     const assets = globalJson.data || [];
                     const indices = indicesJson.data || [];
                     
-                    // 핵심 지수만 추출 (KOSPI, KOSDAQ, S&P 500, NASDAQ, DOW JONES, VIX)
+                    // 핵심 지수 추출 (KOSPI, KOSDAQ, S&P 500, NASDAQ, DOW JONES, VIX)
+                    // 필터링 시 category가 '🌍 글로벌 지수' 혹은 '📉 공포지수'인 것만 추출하여 대형주 혼입 방지
                     const coreIndices = indices.filter((i: any) => 
                         (i.category === "🌍 글로벌 지수" || i.category === "📉 공포지수") && (
                             i.event_kr.includes("KOSPI") || 
@@ -644,7 +645,7 @@ function CalendarTab({ router }: { router: any }) {
                         )
                     ).map((i: any) => ({
                         ...i,
-                        event_kr: i.event_kr.replace("[글로벌] ", "")
+                        event_kr: i.event_kr.replace("[글로벌] ", "").replace("(공포지수)", "").replace("DOW JONES", "다우존스")
                     }));
                     
                     // 원자재 및 환율 (WTI, 금, 원달러환율)
@@ -654,10 +655,15 @@ function CalendarTab({ router }: { router: any }) {
                         a.event_kr.includes("환율")
                     );
                     
-                    // 통합 배열 (지수 먼저, 그 다음 원자재/환율)
-                    setGlobalAssets([...coreIndices, ...coreAssets]);
-                } else if (globalJson.status === "success") {
-                    setGlobalAssets(globalJson.data || []);
+                    const combined = [...coreIndices, ...coreAssets];
+                    // 만약 필터링된 데이터가 하나도 없다면 원본 assets라도 표시하여 '데이터 없음' 방지
+                    if (combined.length > 0) {
+                        setGlobalAssets(combined);
+                    } else if (assets.length > 0) {
+                        setGlobalAssets(assets);
+                    } else if (indices.length > 0) {
+                        setGlobalAssets(indices.slice(0, 8)); // 최악의 경우 상위 8개라도 표시
+                    }
                 }
             } catch (error) {
                 console.error("Market data fetch error:", error);
