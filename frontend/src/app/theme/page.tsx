@@ -27,7 +27,7 @@ export default function ThemePage() {
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/theme/${encodeURIComponent(searchKeyword)}`, {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/theme/${encodeURIComponent(searchKeyword)}`, {
                 signal: controller.signal
             });
 
@@ -75,7 +75,7 @@ export default function ThemePage() {
 
             for (const symbol of allSymbols) {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/quote/${symbol}`);
+                    const res = await fetch(`${API_BASE_URL}/api/market/quote/${symbol}`);
                     const json = await res.json();
                     if (json.status === "success" && json.data) {
                         newQuotes[symbol] = json.data;
@@ -99,8 +99,8 @@ export default function ThemePage() {
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                // [Fix] 실시간 테마 및 인기 검색 키워드 수집
-                const res = await fetch(`${API_BASE_URL}/api/rank/themes`);
+                // [Fix] 실시간 테마 및 인기 검색 키워드 수집 (경로 수정: /api/market/rank/themes)
+                const res = await fetch(`${API_BASE_URL}/api/market/rank/themes`);
                 const json = await res.json();
                 if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
                     setTrendingThemes(json.data.slice(0, 10)); // 상위 10개 표시
