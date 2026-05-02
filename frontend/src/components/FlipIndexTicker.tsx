@@ -52,34 +52,49 @@ export default function FlipIndexTicker() {
             const res = await fetch(`${API_BASE_URL}/api/market/indices`);
             const json = await res.json();
             if (json.status === 'success' && Array.isArray(json.data)) {
-                // [v5.7.0] 필터링: 정확히 지수 데이터만 표시 (개별 종목 혼입 방지)
+                // [v5.8.0] 필터링 개선: 지수뿐만 아니라 수급, 통계, 매크로 지표를 통합적으로 표시
                 const coreIndices = json.data.filter((item: any) => {
                     const name = item.event_kr || "";
-                    // 지수 명칭이 정확히 일치하거나 핵심 지수 키워드만 포함된 경우
-                    const isIndex = name === "KOSPI" || name === "KOSDAQ" || 
-                                    name.includes("S&P 500") || name.includes("NASDAQ") || 
-                                    name.includes("다우존스") || name.includes("코스피") || name.includes("코스닥");
+                    const cat = item.category || "";
                     
-                    // 카테고리가 대형주/핵심주인 경우는 무조건 제외
+                    // 핵심 지수 (KOSPI, S&P 500 등)
+                    const isIndex = name.includes("지수") || name.includes("KOSPI") || name.includes("KOSDAQ") || 
+                                    name.includes("S&P") || name.includes("NASDAQ") || name.includes("다우존스");
+                    
+                    // 시장 동향 (수급, 통계)
+                    const isMarketStat = name.includes("[수급]") || name.includes("[통계]");
+                    
+                    // 매크로 지표 (환율, 금리, 원자재)
+                    const isMacro = cat.includes("외환") || cat.includes("금리") || cat.includes("원자재") || cat.includes("가상자산");
+                    
                     const isStock = item.category?.includes("대형주") || item.category?.includes("핵심주") || item.category?.includes("미국주");
                     
-                    return isIndex && !isStock;
+                    return (isIndex || isMarketStat || isMacro) && !isStock;
                 }).map((item: any) => {
-                    // 기호 결정
+                    // 기호 결정 최적화
                     let icon = "📈";
-                    if (item.event_kr.includes("KOSPI") || item.event_kr.includes("KOSDAQ")) icon = "🇰🇷";
-                    else if (item.event_kr.includes("S&P") || item.event_kr.includes("NASDAQ")) icon = "🇺🇸";
+                    if (item.event_kr.includes("KOSPI") || item.event_kr.includes("KOSDAQ") || item.event_kr.includes("코스피")) icon = "🇰🇷";
+                    else if (item.event_kr.includes("S&P") || item.event_kr.includes("NASDAQ") || item.event_kr.includes("다우")) icon = "🇺🇸";
+                    else if (item.event_kr.includes("비트코인")) icon = "₿";
+                    else if (item.event_kr.includes("환율") || item.event_kr.includes("달러")) icon = "💵";
+                    else if (item.event_kr.includes("금리") || item.event_kr.includes("채권")) icon = "📊";
+                    else if (item.event_kr.includes("WTI") || item.event_kr.includes("유가")) icon = "🛢️";
+                    else if (item.event_kr.includes("금") || item.event_kr.includes("Gold")) icon = "💰";
+                    else if (item.event_kr.includes("[수급]")) icon = "⚖️";
+                    else if (item.event_kr.includes("[통계]")) icon = "📉";
 
                     return {
-                        label: item.event_kr.replace("[글로벌] ", "").split(" (")[0], // Clean up names
+                        label: item.event_kr.replace("[글로벌] ", "").replace("[한국] ", "").replace("🏦 ", "").replace("📋 ", "").split(" (")[0],
                         icon: icon,
                         value: item.actual || "---",
                         change: item.change || "0.00%",
-                        // change_val이 있으면 사용, 없으면 change 문자열의 부호로 판단
                         up: item.change_val !== undefined ? item.change_val >= 0 : !item.change?.startsWith("-")
                     };
                 });
-                setIndices(coreIndices);
+                
+                // 중복 제거 (명칭 기준)
+                const uniqueIndices = coreIndices.filter((v: any, i: number, a: any[]) => a.findIndex(t => (t.label === v.label)) === i);
+                setIndices(uniqueIndices);
             }
         } catch (err) {
             console.error("Failed to fetch market indices:", err);

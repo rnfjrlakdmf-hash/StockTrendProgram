@@ -1534,16 +1534,34 @@ def get_market_intelligence_indicators():
         global_indices = get_naver_market_index_data()
         for idx in global_indices:
             label = idx['label']
-            cat = "📉 공포지수" if "VIX" in label else "📋 글로벌 금리" if "금리" in label else "🌍 글로벌 지수"
+            # [Fix] Standardize label to avoid duplicates with domestic fetch
+            if label == "KOSPI" or label == "KOSDAQ":
+                event_kr = f"[{'한국' if label=='KOSPI' else '한국'}] {label} 지수"
+            else:
+                event_kr = label
             
+            cat = "📉 공포지수" if "VIX" in label else "📋 글로벌 금리" if "금리" in label else "🌍 글로벌 지수"
+            if "환율" in label or "달러" in label: cat = "💵 외환"
+
             indicators.append({
                 "date": today, "time": "실시간",
-                "event_kr": f"{label}",
+                "event_kr": event_kr,
                 "actual": idx['value'],
                 "category": cat, "impact": "high", "change": idx['change'], "change_val": 0
             })
 
-        # [Optimized] 대형주 수집 섹션 제거 (사용자 요청)
+        # 1.2 [New] 비트코인 등 가상자산 추가
+        try:
+            from rank_data import get_simple_quote
+            btc = get_simple_quote("BTC-USD")
+            if btc:
+                indicators.append({
+                    "date": today, "time": "실시간",
+                    "event_kr": "₿ 비트코인 (BTC/USD)",
+                    "actual": btc['price'],
+                    "category": "₿ 가상자산", "impact": "medium", "change": btc['change'], "change_val": 0
+                })
+        except: pass
 
         # 1.3 기존 원자재 데이터 (WTI, 금, 구리 등)
         global_assets = get_global_assets_data()
@@ -1583,13 +1601,17 @@ def get_market_intelligence_indicators():
 
         # [Optimized] 시가총액 상위 종목 제거 (사용자 요청)
 
-        # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등)
+        # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등) - 중복 체크 강화
         indices = get_korean_market_indices()
         for key, info in indices.items():
-            name_kr = "코스피" if key == "kospi" else "코스닥" if key == "kosdaq" else "코스피200"
+            name_kr = "KOSPI" if key == "kospi" else "KOSDAQ" if key == "kosdaq" else "코스피200"
             actual_str = info.get('value', '-')
             chg_pct_str = info.get('percent', '0.00%')
             
+            # 이미 global_indices에서 처리된 경우 건너뜀 (명칭 매칭)
+            if any(name_kr in item['event_kr'] for item in indicators if '지수' in item.get('category', '')):
+                continue
+
             try:
                 cv = float(re.sub(r'[^0-9.-]', '', chg_pct_str))
             except: cv = 0.0
