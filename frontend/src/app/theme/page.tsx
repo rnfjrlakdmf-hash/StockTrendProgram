@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
-import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers } from "lucide-react";
+import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
 
 export default function ThemePage() {
