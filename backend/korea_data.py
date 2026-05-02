@@ -855,42 +855,51 @@ def get_naver_theme_rank() -> List[str]:
     """
     try:
         url = "https://finance.naver.com/sise/theme.naver"
-        res = requests.get(url, headers=HEADER, timeout=5)
+        # [v5.7.0] Updated User-Agent for better compatibility
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://finance.naver.com/"
+        }
+        res = requests.get(url, headers=headers, timeout=5)
         
-        # [Fix] Smart Decoding: Naver Finance Theme page is EUC-KR
-        content = res.content
-        try:
-            html = content.decode('euc-kr')
-        except UnicodeDecodeError:
-            try:
-                html = content.decode('utf-8')
-            except UnicodeDecodeError:
-                html = content.decode('cp949', 'ignore')
-
+        # [Fix] Use robust decode_safe
+        html = decode_safe(res)
+        if not html:
+            return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
+            
         soup = BeautifulSoup(html, 'html.parser')
         
         themes = []
-        # 테마명은 'col_type1' 클래스의 td 안에 <a> 태그로 존재합니다.
-        # 광고나 헤더를 제외한 실제 데이터 행들을 순회합니다.
+        # [Fix] Try multiple selectors as Naver occasionally tweaks class names
         name_tags = soup.select("table.type_1 td.col_type1 a")
-        
+        if not name_tags:
+            name_tags = soup.select("table.type_1 td.col_type_1 a")
+            
         for tag in name_tags:
             theme_name = tag.text.strip()
-            if theme_name:
+            if theme_name and theme_name not in themes:
                 themes.append(theme_name)
-                
-            # 상위 10~15개 정도만 활용해도 충분하므로 제한을 둡니다.
-            if len(themes) >= 20:
+            if len(themes) >= 15:
                 break
                 
-        # 만약 스크래핑에 전혀 실패했다면 기본 테마 목록을 반환합니다. (폴백)
+        # [v5.7.0] Supplement with popular search stocks to make it more "Real-time Popular Keywords"
+        try:
+            from korea_data import fetch_naver_ranking_data
+            search_stocks = fetch_naver_ranking_data("KOR", "searchTop")
+            if search_stocks:
+                for s in search_stocks[:10]:
+                    name = s.get("itemName") or s.get("stockName") or ""
+                    if name and name not in themes:
+                        themes.append(name)
+        except: pass
+
         if not themes:
-            return ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]
+            return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
             
-        return themes
+        return themes[:20]
     except Exception as e:
         print(f"Theme Rank Scraping Error: {e}")
-        return ["비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇"]
+        return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
 
 @turbo_cache(ttl_seconds=300)
 def get_naver_flash_news():

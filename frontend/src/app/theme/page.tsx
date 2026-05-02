@@ -99,17 +99,21 @@ export default function ThemePage() {
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                // [Fix] 실시간 테마 키워드: 네이버 금융의 실시간 테마 순위 API를 호출합니다.
+                // [Fix] 실시간 테마 및 인기 검색 키워드 수집
                 const res = await fetch(`${API_BASE_URL}/api/rank/themes`);
                 const json = await res.json();
                 if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
-                    setTrendingThemes(json.data.slice(0, 10)); // 상위 10개만 표시
+                    setTrendingThemes(json.data.slice(0, 10)); // 상위 10개 표시
                 }
             } catch (err) {
                 console.error("Failed to fetch trending themes:", err);
             }
         };
         fetchTrending();
+        
+        // 5분마다 실시간 인기 검색어 갱신
+        const interval = setInterval(fetchTrending, 300000);
+        return () => clearInterval(interval);
     }, []);
 
 
