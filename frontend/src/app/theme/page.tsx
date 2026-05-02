@@ -108,8 +108,8 @@ export default function ThemePage() {
         };
         fetchTrending();
         
-        // 5분마다 실시간 인기 검색어 갱신
-        const interval = setInterval(fetchTrending, 300000);
+        // 1분마다 실시간 인기 검색어 갱신
+        const interval = setInterval(fetchTrending, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -154,9 +154,12 @@ export default function ThemePage() {
                         </button>
                     </div>
 
-                    <div className="flex flex-wrap justify-center gap-2 text-sm">
-                        <span className="text-gray-500 mr-2">실시간 인기 검색어:</span>
-                        {trendingThemes.slice(0, 8).map((t, idx) => (
+                    <div className="flex flex-wrap justify-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+                        <span className="text-gray-500 font-medium flex items-center gap-1.5 mr-2">
+                            <Sparkles className="w-4 h-4 text-orange-500/70" />
+                            인기 검색:
+                        </span>
+                        {trendingThemes.slice(0, 10).map((t, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => { 
@@ -164,53 +167,20 @@ export default function ThemePage() {
                                     setKeyword(name); 
                                     handleAnalyze(name); 
                                 }}
-                                className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all hover:scale-105 text-gray-300 flex items-center gap-1.5"
+                                className="group px-4 py-1.5 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/10 hover:border-orange-500/30 transition-all hover:-translate-y-0.5 text-gray-400 hover:text-white flex items-center gap-2"
                             >
-                                <span className="text-orange-500/50 font-bold">{idx + 1}</span>
+                                <span className="text-[10px] font-black text-gray-600 group-hover:text-orange-500/50 transition-colors">
+                                    {String(idx + 1).padStart(2, '0')}
+                                </span>
                                 {typeof t === 'string' ? t : t.name}
+                                {typeof t !== 'string' && t.change && (
+                                    <span className={`text-[10px] font-bold ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-500/70' : 'text-blue-500/70'}`}>
+                                        {t.change}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
-
-                    {/* [New] Popular Theme Ranking Board */}
-                    {trendingThemes.length > 0 && (
-                        <div className="mt-12 bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <TrendingUp className="text-orange-500 w-5 h-5" />
-                                    실시간 테마/종목 인기 순위
-                                </h3>
-                                <span className="text-xs text-gray-500">Naver Finance 실시간 반영</span>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                {trendingThemes.slice(0, 10).map((t, idx) => {
-                                    const name = typeof t === 'string' ? t : t.name;
-                                    const change = typeof t === 'string' ? "0%" : t.change;
-                                    const isUp = change.includes('+') || (!change.includes('-') && change !== "0.00%");
-                                    
-                                    return (
-                                        <div 
-                                            key={idx}
-                                            onClick={() => { setKeyword(name); handleAnalyze(name); }}
-                                            className="group cursor-pointer p-4 bg-black/40 border border-white/5 rounded-xl hover:border-orange-500/50 transition-all hover:-translate-y-1"
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-2xl font-black text-white/20 group-hover:text-orange-500/30 transition-colors">
-                                                    {idx + 1}
-                                                </span>
-                                                <span className={`text-xs font-bold ${isUp ? 'text-red-400' : 'text-blue-400'}`}>
-                                                    {change}
-                                                </span>
-                                            </div>
-                                            <div className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
-                                                {name}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {error && (

@@ -104,7 +104,7 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
         return {"status": "error", "message": "Failed to fetch history"}
 
 @router.get("/rank/themes")
-@turbo_cache(ttl_seconds=300)
+@turbo_cache(ttl_seconds=60)
 def read_theme_rank():
     from korea_data import get_naver_theme_rank
     data = get_naver_theme_rank()
