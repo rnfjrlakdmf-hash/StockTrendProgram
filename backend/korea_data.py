@@ -953,10 +953,14 @@ def get_naver_market_index_data():
                 data = res.json()
                 
                 if idx["type"] == "dom":
-                    # KOSPI/KOSDAQ structure
-                    stock_item = data.get("result", [{}])[0]
-                    price = stock_item.get('closePrice', '0').replace(',', '')
-                    pct = stock_item.get('fluctuationsRatio', '0')
+                    # KOSPI/KOSDAQ structure: result -> datas -> [0]
+                    datas = data.get("result", {}).get("datas", [])
+                    if datas:
+                        stock_item = datas[0]
+                        price = stock_item.get('closePrice', '0').replace(',', '')
+                        pct = stock_item.get('fluctuationsRatio', '0')
+                    else:
+                        price, pct = '0', '0'
                 else:
                     price = data.get('closePrice', '0').replace(',', '')
                     pct = data.get('fluctuationsRatio', '0')

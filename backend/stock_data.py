@@ -1497,7 +1497,7 @@ def get_global_assets_data():
                     
                     # 카테고리 분류
                     category = "💰 원자재" if "원유" in name or "금" in name or "구리" in name else \
-                               "🏦 글로벌 지수" if "지수" in name or "500" in name else "💵 외환"
+                               "🌍 글로벌 지수" if "지수" in name or "500" in name else "💵 외환"
                     
                     results.append({
                         "date": today,
