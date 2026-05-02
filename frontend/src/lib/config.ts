@@ -18,7 +18,8 @@ if (isAndroid) {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      apiBase = "http://localhost:8000";
+      // Use production backend for local development since CORS is now fixed
+      apiBase = "https://stocktrendprogram-production.up.railway.app";
     } else {
       // Use relative path for Vercel proxy
       apiBase = "";
