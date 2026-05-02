@@ -120,15 +120,15 @@ export default function ThemePage() {
     };
 
     return (
-        <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="이슈 테마 분석" subtitle="Find the Next Big Thing." />
+        <div className="min-h-screen pb-20 text-white bg-zinc-950">
+            <Header title="실시간 이슈 테마 분석 (v2.6)" subtitle="Find the Next Big Thing with AI." />
 
             <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
                 {/* Search Hero */}
                 <div className="text-center space-y-6 py-10">
                     <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-orange-400 to-red-400">
-                        What is Trending Now?
+                        What's Trending Now? (v2.6)
                     </h2>
                     <p className="text-gray-400 text-lg">
                         관심있는 테마 키워드를 입력하면<br className="md:hidden" /> AI가 대장주와 리스크를 분석해드립니다.
