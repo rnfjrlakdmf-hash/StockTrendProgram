@@ -615,46 +615,42 @@ function CalendarTab({ router }: { router: any }) {
 
         const fetchMarketData = async () => {
             try {
-                // 병렬로 데이터 호출 (KOSPI/KOSDAQ 지수 포함을 위해 indices 추가 호출)
-                const [krRes, globalRes, indicesRes] = await Promise.all([
+                // 병렬로 데이터 호출
+                const [krRes, intelRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
-                    fetch(`${API_BASE_URL}/api/market/assets`),
-                    fetch(`${API_BASE_URL}/api/market/indices`)
+                    fetch(`${API_BASE_URL}/api/market/intelligence`)
                 ]);
 
                 const krJson = await krRes.json();
-                const globalJson = await globalRes.json();
-                const indicesJson = await indicesRes.json();
+                const intelJson = await intelRes.json();
 
                 if (krJson.status === "success") setKrEvents(krJson.data || []);
                 
-                if (globalJson.status === "success" && indicesJson.status === "success") {
-                    const assets = globalJson.data || [];
-                    const indices = indicesJson.data || [];
+                if (intelJson.status === "success") {
+                    const intelData = intelJson.data || [];
                     
-                    // 핵심 지수만 추출 (KOSPI, KOSDAQ, S&P 500, NASDAQ, VIX)
-                    const coreIndices = indices.filter((i: any) => 
-                        i.event_kr.includes("KOSPI") || 
-                        i.event_kr.includes("KOSDAQ") || 
-                        i.event_kr.includes("S&P") || 
-                        i.event_kr.includes("NASDAQ") ||
-                        i.event_kr.includes("VIX")
-                    ).map((i: any) => ({
+                    // 핵심 지표 필터링 (KOSPI, KOSDAQ, S&P 500, NASDAQ, 다우존스, VIX, WTI, 금, 환율)
+                    const coreIndicators = intelData.filter((i: any) => {
+                        if (!i.event_kr) return false;
+                        const name = i.event_kr.toUpperCase();
+                        return name.includes("KOSPI") || 
+                               name.includes("KOSDAQ") || 
+                               name.includes("S&P") || 
+                               name.includes("NASDAQ") ||
+                               name.includes("다우") ||
+                               name.includes("DOW") ||
+                               name.includes("VIX") ||
+                               name.includes("WTI") ||
+                               name.includes("금") ||
+                               name.includes("환율");
+                    }).map((i: any) => ({
                         ...i,
-                        event_kr: i.event_kr.replace("[글로벌] ", "")
+                        event_kr: i.event_kr.replace("[글로벌] ", "").replace("[한국] 🏦 ", "").replace("해외 ", "").replace("국제 ", "")
                     }));
                     
-                    // 원자재 및 환율 (WTI, 금, 원달러환율)
-                    const coreAssets = assets.filter((a: any) => 
-                        a.event_kr.includes("WTI") || 
-                        a.event_kr.includes("금") || 
-                        a.event_kr.includes("환율")
-                    );
-                    
-                    // 통합 배열 (지수 먼저, 그 다음 원자재/환율)
-                    setGlobalAssets([...coreIndices, ...coreAssets]);
-                } else if (globalJson.status === "success") {
-                    setGlobalAssets(globalJson.data || []);
+                    // 중복 제거 및 정렬
+                    const uniqueIndicators = Array.from(new Map(coreIndicators.map((item: any) => [item.event_kr, item])).values());
+                    setGlobalAssets(uniqueIndicators);
                 }
             } catch (error) {
                 console.error("Market data fetch error:", error);

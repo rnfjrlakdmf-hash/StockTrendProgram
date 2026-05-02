@@ -11,11 +11,11 @@ router = APIRouter()
 @router.get("/indices")
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
-    from stock_data import get_market_intelligence_indicators
+    from stock_data import get_market_data
     try:
         # [v5.3.0] 비동기 스레드 실행으로 이벤트 루프 차단 방지
         import asyncio
-        data = await asyncio.to_thread(get_market_intelligence_indicators)
+        data = await asyncio.to_thread(get_market_data)
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -27,6 +27,17 @@ async def market_status():
     try:
         import asyncio
         data = await asyncio.to_thread(get_market_status)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/intelligence")
+async def market_intelligence():
+    """시장 인텔리전스 통합 지표 (지수, 환율, 원자재, 대형주 등)"""
+    from stock_data import get_market_intelligence_indicators
+    try:
+        import asyncio
+        data = await asyncio.to_thread(get_market_intelligence_indicators)
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
