@@ -595,7 +595,7 @@ function CalendarTab({ router }: { router: any }) {
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
 
-    // 경제지표 데이터 fetch (글로벌)
+    // 경제지표 데이터 fetch (글로벌 일정)
     useEffect(() => {
         (async () => {
             try {
@@ -607,7 +607,7 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, []);
 
-    // 통합 시장 지표 fetch
+    // 통합 시장 지표 fetch (실시간 지수/자산)
     useEffect(() => {
         // 데이터가 아직 없거나 갱신이 필요할 때 로딩 시작
         if (!krEvents.length) setKrLoading(true);
@@ -632,45 +632,49 @@ function CalendarTab({ router }: { router: any }) {
                     const assets = globalJson.data || [];
                     const indices = indicesJson.data || [];
                     
-                    // 핵심 시장 지수 필터링 (대형주 제외)
-                    const coreIndices = indices.filter((i: any) => 
-                        (i.category === "🌍 글로벌 지수" || i.category === "📉 공포지수" || i.category === "📋 글로벌 금리") && (
-                            i.event_kr.includes("KOSPI") || 
-                            i.event_kr.includes("KOSDAQ") || 
-                            i.event_kr.includes("S&P") || 
-                            i.event_kr.includes("NASDAQ") ||
-                            i.event_kr.includes("DOW") ||
-                            i.event_kr.includes("VIX") ||
-                            i.event_kr.includes("다우") ||
-                            i.event_kr.includes("금리")
-                        )
-                    ).map((i: any) => ({
-                        ...i,
-                        event_kr: i.event_kr.replace("[글로벌] ", "").replace("(공포지수)", "").replace("DOW JONES", "다우존스")
+                    // 모든 원본 데이터를 하나로 합침
+                    const allData = [...(Array.isArray(indices) ? indices : []), ...(Array.isArray(assets) ? assets : [])];
+                    
+                    // [v5.6.0] 핵심 시장 지표만 추출 (대형주/개별종목은 카테고리 기반으로 철저히 배제)
+                    const filteredData = allData.filter((item: any) => {
+                        const name = item.event_kr || "";
+                        const cat = item.category || "";
+                        
+                        // 1. 개별 종목(대형주, 미국 핵심주)은 무조건 제외
+                        if (cat.includes("대형주") || cat.includes("핵심주")) return false;
+                        
+                        // 2. 주요 시장 지표 키워드 포함 여부 확인
+                        return (
+                            name.includes("KOSPI") || name.includes("KOSDAQ") || 
+                            name.includes("S&P") || name.includes("NASDAQ") || 
+                            name.includes("DOW") || name.includes("다우") || 
+                            name.includes("VIX") || name.includes("나스닥") ||
+                            name.includes("WTI") || name.includes("금") || 
+                            name.includes("은") || name.includes("구리") || 
+                            name.includes("환율") || name.includes("달러") ||
+                            name.includes("금리")
+                        );
+                    }).map((item: any) => ({
+                        ...item,
+                        // 화면 표시용 이름 정제
+                        event_kr: item.event_kr
+                            .replace("[글로벌] ", "")
+                            .replace("(공포지수)", "")
+                            .replace("DOW JONES", "다우존스")
+                            .replace("💵 ", "").replace("💰 ", "").replace("🛢️ ", "").replace("🏗️ ", "")
+                            .split(" (")[0]
                     }));
                     
-                    // 주요 원자재 및 환율 필터링
-                    const coreAssets = assets.filter((a: any) => 
-                        a.event_kr.includes("WTI") || 
-                        a.event_kr.includes("금") || 
-                        a.event_kr.includes("은") || 
-                        a.event_kr.includes("구리") || 
-                        a.event_kr.includes("환율") ||
-                        a.event_kr.includes("달러")
-                    ).map((a: any) => ({
-                        ...a,
-                        event_kr: a.event_kr.replace("💵 ", "").replace("💰 ", "").replace("🛢️ ", "").replace("🏗️ ", "")
-                    }));
+                    // 중복 제거 (이름 기준)
+                    const uniqueData = filteredData.filter((item, index, self) =>
+                        index === self.findIndex((t) => t.event_kr === item.event_kr)
+                    );
                     
-                    // 지수와 자산 통합 (대형주는 절대 포함하지 않음)
-                    const combined = [...coreIndices, ...coreAssets];
-                    
-                    if (combined.length > 0) {
-                        setGlobalAssets(combined);
-                    } else if (coreIndices.length > 0) {
-                        setGlobalAssets(coreIndices);
-                    } else if (coreAssets.length > 0) {
-                        setGlobalAssets(coreAssets);
+                    if (uniqueData.length > 0) {
+                        setGlobalAssets(uniqueData);
+                    } else if (allData.length > 0) {
+                        // 필터링 결과가 아예 없을 경우에만 최소한의 안전장치로 상위 데이터 표시
+                        setGlobalAssets(allData.filter(i => !i.category?.includes("대형주")).slice(0, 12));
                     }
                 }
             } catch (error) {
