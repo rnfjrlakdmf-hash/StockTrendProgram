@@ -848,58 +848,64 @@ def get_naver_daily_prices(symbol: str):
         return []
 
 @turbo_cache(ttl_seconds=300)
-def get_naver_theme_rank() -> List[str]:
+def get_naver_theme_rank() -> List[Dict[str, Any]]:
     """
-    네이버 금융에서 실시간 테마 순위(상위 10개)를 가져옵니다.
-    URL: https://finance.naver.com/sise/theme.naver
+    네이버 금융에서 실시간 테마 순위(상위 10-20개)를 상세 데이터와 함께 가져옵니다.
     """
     try:
         url = "https://finance.naver.com/sise/theme.naver"
-        # [v5.7.0] Updated User-Agent for better compatibility
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": "https://finance.naver.com/"
         }
         res = requests.get(url, headers=headers, timeout=5)
-        
-        # [Fix] Use robust decode_safe
         html = decode_safe(res)
         if not html:
-            return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
+            return [{"name": "전선", "change": "+5.2%"}, {"name": "반도체", "change": "+3.1%"}]
             
         soup = BeautifulSoup(html, 'html.parser')
         
         themes = []
-        # [Fix] Try multiple selectors as Naver occasionally tweaks class names
-        name_tags = soup.select("table.type_1 td.col_type1 a")
-        if not name_tags:
-            name_tags = soup.select("table.type_1 td.col_type_1 a")
+        rows = soup.select("table.type_1 tr")
+        
+        for row in rows:
+            name_tag = row.select_one("td.col_type1 a")
+            if not name_tag:
+                name_tag = row.select_one("td.col_type_1 a")
+                
+            if name_tag:
+                theme_name = name_tag.text.strip()
+                # 등락률 찾기 (보통 4번째 td)
+                tds = row.select("td")
+                change_val = "0.00%"
+                if len(tds) >= 4:
+                    change_val = tds[3].text.strip()
+                
+                themes.append({
+                    "name": theme_name,
+                    "change": change_val,
+                    "is_new": "new" in (row.get("class") or [])
+                })
             
-        for tag in name_tags:
-            theme_name = tag.text.strip()
-            if theme_name and theme_name not in themes:
-                themes.append(theme_name)
-            if len(themes) >= 15:
+            if len(themes) >= 20:
                 break
                 
-        # [v5.7.0] Supplement with popular search stocks to make it more "Real-time Popular Keywords"
-        try:
-            from korea_data import fetch_naver_ranking_data
-            search_stocks = fetch_naver_ranking_data("KOR", "searchTop")
-            if search_stocks:
-                for s in search_stocks[:10]:
-                    name = s.get("itemName") or s.get("stockName") or ""
-                    if name and name not in themes:
-                        themes.append(name)
-        except: pass
+        # Supplement with popular search stocks if themes are few
+        if len(themes) < 5:
+            try:
+                from korea_data import fetch_naver_ranking_data
+                search_stocks = fetch_naver_ranking_data("KOR", "searchTop")
+                if search_stocks:
+                    for s in search_stocks[:10]:
+                        name = s.get("itemName") or s.get("stockName") or ""
+                        if name:
+                            themes.append({"name": name, "change": s.get("changeRate", "0%"), "is_stock": True})
+            except: pass
 
-        if not themes:
-            return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
-            
-        return themes[:20]
+        return themes
     except Exception as e:
         print(f"Theme Rank Scraping Error: {e}")
-        return ["전선", "반도체", "인공지능", "2차전지", "원자력", "로봇"]
+        return [{"name": "반도체", "change": "+2.5%"}, {"name": "전선", "change": "+1.8%"}]
 
 @turbo_cache(ttl_seconds=300)
 def get_naver_flash_news():

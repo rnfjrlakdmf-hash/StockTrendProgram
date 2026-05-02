@@ -24,7 +24,7 @@ export default function ThemePage() {
 
         // Create AbortController for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/theme/${encodeURIComponent(searchKeyword)}`, {
@@ -91,19 +91,16 @@ export default function ThemePage() {
         fetchQuotes();
     }, [result]);
 
-    const [trendingThemes, setTrendingThemes] = useState<string[]>([
-        "비만치료제", "온디바이스 AI", "저PBR", "초전도체", "우주항공", "로봇",
-        "2차전지", "방산", "반도체", "친환경에너지"
-    ]);
+    const [trendingThemes, setTrendingThemes] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                // [Fix] 실시간 테마 및 인기 검색 키워드 수집 (경로 수정: /api/market/rank/themes)
+                // [Fix] 실시간 테마 및 인기 검색 키워드 수집 (상세 데이터 포함)
                 const res = await fetch(`${API_BASE_URL}/api/market/rank/themes`);
                 const json = await res.json();
                 if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
-                    setTrendingThemes(json.data.slice(0, 10)); // 상위 10개 표시
+                    setTrendingThemes(json.data); 
                 }
             } catch (err) {
                 console.error("Failed to fetch trending themes:", err);
@@ -158,17 +155,62 @@ export default function ThemePage() {
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-2 text-sm">
-                        <span className="text-gray-500 mr-2">인기 검색:</span>
-                        {trendingThemes.map(t => (
+                        <span className="text-gray-500 mr-2">실시간 인기 검색어:</span>
+                        {trendingThemes.slice(0, 8).map((t, idx) => (
                             <button
-                                key={t}
-                                onClick={() => { setKeyword(t); handleAnalyze(t); }}
-                                className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-gray-300"
+                                key={idx}
+                                onClick={() => { 
+                                    const name = typeof t === 'string' ? t : t.name;
+                                    setKeyword(name); 
+                                    handleAnalyze(name); 
+                                }}
+                                className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all hover:scale-105 text-gray-300 flex items-center gap-1.5"
                             >
-                                #{t}
+                                <span className="text-orange-500/50 font-bold">{idx + 1}</span>
+                                {typeof t === 'string' ? t : t.name}
                             </button>
                         ))}
                     </div>
+
+                    {/* [New] Popular Theme Ranking Board */}
+                    {trendingThemes.length > 0 && (
+                        <div className="mt-12 bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <TrendingUp className="text-orange-500 w-5 h-5" />
+                                    실시간 테마/종목 인기 순위
+                                </h3>
+                                <span className="text-xs text-gray-500">Naver Finance 실시간 반영</span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                {trendingThemes.slice(0, 10).map((t, idx) => {
+                                    const name = typeof t === 'string' ? t : t.name;
+                                    const change = typeof t === 'string' ? "0%" : t.change;
+                                    const isUp = change.includes('+') || (!change.includes('-') && change !== "0.00%");
+                                    
+                                    return (
+                                        <div 
+                                            key={idx}
+                                            onClick={() => { setKeyword(name); handleAnalyze(name); }}
+                                            className="group cursor-pointer p-4 bg-black/40 border border-white/5 rounded-xl hover:border-orange-500/50 transition-all hover:-translate-y-1"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-2xl font-black text-white/20 group-hover:text-orange-500/30 transition-colors">
+                                                    {idx + 1}
+                                                </span>
+                                                <span className={`text-xs font-bold ${isUp ? 'text-red-400' : 'text-blue-400'}`}>
+                                                    {change}
+                                                </span>
+                                            </div>
+                                            <div className="font-bold text-gray-200 group-hover:text-white transition-colors truncate">
+                                                {name}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {error && (
