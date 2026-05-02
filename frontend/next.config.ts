@@ -4,12 +4,9 @@ import type { NextConfig } from "next";
 // 1순위: 환경변수 (Vercel 대시보드에서 설정 가능)
 // 2순위: 운영 환경(Vercel) → Railway 서버
 // 3순위: 로컬 개발 환경 → localhost:8000
-const isProduction = process.env.NODE_ENV === 'production';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  (isProduction
-    ? 'https://stocktrendprogram-production.up.railway.app'
-    : 'http://localhost:8000');
+  'https://stocktrendprogram-production.up.railway.app'; // Always use production backend unless overridden
 
 const nextConfig: NextConfig = {
   distDir: '.next',

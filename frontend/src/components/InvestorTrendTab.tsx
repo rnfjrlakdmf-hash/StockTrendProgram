@@ -169,6 +169,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         )) : <div className="text-center py-4 text-gray-600 text-xs text-slate-500"><span>데이터 없음</span></div>}
                     </div>
                 </div>
+                </div>
             )}
 
             {/* [New] Global Institutional View */}
@@ -440,7 +441,6 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                 <AlertCircle className="w-3 h-3" />
                 <span><span>데이터 소스: 네이버 금융 실시간 거래원 및 모바일 투자자 트렌드 API 연동. 해외 주식은 주요 기관 보유 현황을 제공합니다.</span></span>
             </div>
-        </div>
         </div>
     );
 }
