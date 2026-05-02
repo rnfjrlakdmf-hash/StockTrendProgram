@@ -8,7 +8,7 @@ import urllib.parse
 import json
 import unicodedata
 from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from turbo_engine import turbo_cache
 from stock_names import STOCK_MAP
 
@@ -848,7 +848,7 @@ def get_naver_daily_prices(symbol: str):
         return []
 
 @turbo_cache(ttl_seconds=300)
-def get_naver_theme_rank() -> List[Dict[str, Any]]:
+def get_naver_theme_rank():
     """
     네이버 금융에서 실시간 테마 순위(상위 10-20개)를 상세 데이터와 함께 가져옵니다.
     """
@@ -893,13 +893,19 @@ def get_naver_theme_rank() -> List[Dict[str, Any]]:
         # Supplement with popular search stocks if themes are few
         if len(themes) < 5:
             try:
-                from korea_data import fetch_naver_ranking_data
+                # No need to import fetch_naver_ranking_data, it's in the same file
                 search_stocks = fetch_naver_ranking_data("KOR", "searchTop")
                 if search_stocks:
+                    seen_names = {t['name'] for t in themes}
                     for s in search_stocks[:10]:
                         name = s.get("itemName") or s.get("stockName") or ""
-                        if name:
-                            themes.append({"name": name, "change": s.get("changeRate", "0%"), "is_stock": True})
+                        if name and name not in seen_names:
+                            themes.append({
+                                "name": name, 
+                                "change": s.get("changeRate", "0%"), 
+                                "is_stock": True
+                            })
+                            seen_names.add(name)
             except: pass
 
         return themes
