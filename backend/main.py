@@ -28,7 +28,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -92,7 +92,50 @@ async def startup_event():
                 await asyncio.sleep(15) 
         
         asyncio.create_task(market_ticker_warmer())
+
         print("[Background] All services active.")
+
+        # 4. [v5.4.0] 개선된 글로벌 랭킹 캐시 워밍업 (Semaphore 도입)
+        async def ranking_cache_warmer():
+            print("[Turbo] Global Ranking Cache Warmer Started.")
+            from rank_data import get_global_ranking, get_naver_ranking, crawl_naver_movers
+            from korea_data import get_market_insights_data
+            
+            # 동시 실행 수를 3개로 제한 (Naver 차단 방지 및 스레드 폭주 방지)
+            sem = asyncio.Semaphore(3)
+            
+            async def semaphore_task(func, *args):
+                async with sem:
+                    return await asyncio.to_thread(func, *args)
+
+            combos = [
+                ("KOSPI", "trading_volume"),
+                ("KOSPI", "trading_amount"),
+                ("KOSPI", "popular_search"),
+                ("USA",   "trading_volume"),
+            ]
+            
+            while True:
+                start_time = time.time()
+                try:
+                    tasks = []
+                    for market, cat in combos:
+                        tasks.append(semaphore_task(get_global_ranking, market, cat))
+                    
+                    tasks.append(semaphore_task(get_market_insights_data))
+                    tasks.append(semaphore_task(get_naver_ranking, "krx", "quant"))
+                    tasks.append(semaphore_task(crawl_naver_movers))
+                    
+                    await asyncio.gather(*tasks, return_exceptions=True)
+                    duration = time.time() - start_time
+                    print(f"[Turbo] Cache Warm-up Completed in {duration:.1f}s.")
+                except Exception as e:
+                    print(f"[Turbo] Cache Warmer Critical Error: {e}")
+                
+                # 다음 주기까지 대기 (작업 시간을 고려하여 조정)
+                await asyncio.sleep(max(10, 60 - (time.time() - start_time)))
+
+        asyncio.create_task(ranking_cache_warmer())
 
     asyncio.create_task(gradual_background_startup())
 

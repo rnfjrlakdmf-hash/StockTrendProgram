@@ -14,8 +14,19 @@ let apiBase = "";
 if (isAndroid) {
   apiBase = "http://10.0.2.2:8000";
 } else {
-  // Use direct Railway URL to bypass Vercel proxy issues
-  apiBase = "https://stocktrendprogram-production.up.railway.app";
+  // Auto-detect environment
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      apiBase = "http://localhost:8000";
+    } else {
+      // Use relative path for Vercel proxy
+      apiBase = "";
+    }
+  } else {
+    // SSR
+    apiBase = "https://stocktrendprogram-production.up.railway.app";
+  }
 }
 
 export const API_BASE_URL = apiBase;
