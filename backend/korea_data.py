@@ -3236,16 +3236,11 @@ def get_market_insights_data():
 @turbo_cache(ttl_seconds=1800)
 def get_naver_economy_calendar():
     """
-    네이버 증권 최신 API를 사용하여 오늘의 실시간 글로벌 경제 일정을 수집합니다.
+    네이버 증권 최신 API를 사용하여 오늘부터 7일 후까지의 글로벌 경제 일정을 수집합니다.
     URL: https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate
     """
     import datetime
-    today_str = datetime.datetime.now().strftime("%Y%m%d")
     
-    # 한국(KOR)과 미국(USA) 지표를 우선 수집
-    url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&nationTypeList=USA&page=1&pageSize=100&releaseDate={today_str}"
-    
-    # 네이버 보안 통과를 위한 필수 헤더
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": "https://stock.naver.com/"
@@ -3254,41 +3249,52 @@ def get_naver_economy_calendar():
     events = []
     
     try:
-        res = requests.get(url, headers=headers, timeout=10)
-        if res.status_code != 200:
-            print(f"[EconomyCalendar] API Return Error: {res.status_code}")
-            return []
+        # Check from today up to 7 days ahead
+        for i in range(7):
+            target_date = datetime.datetime.now() + datetime.timedelta(days=i)
+            target_str = target_date.strftime("%Y%m%d")
             
-        data = res.json()
-        indicators = data.get("indicators", [])
-        
-        for item in indicators:
-            name = item.get("name", "Unknown")
-            nation = item.get("nationType", "🌐")
+            url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&nationTypeList=USA&page=1&pageSize=100&releaseDate={target_str}"
             
-            # 시간 형식 변환 (HHMMSS -> HH:MM)
-            raw_time = item.get("releaseTime", "000000")
-            time_fmt = f"{raw_time[:2]}:{raw_time[2:4]}" if len(raw_time) >= 4 else "00:00"
+            res = requests.get(url, headers=headers, timeout=10)
+            if res.status_code != 200:
+                continue
+                
+            data = res.json()
+            indicators = data.get("indicators", [])
             
-            importance = item.get("importance", 1)
-            actual = item.get("actualValue", 0)
-            previous = item.get("previousValue", 0)
+            for item in indicators:
+                name = item.get("name", "Unknown")
+                nation = item.get("nationType", "🌐")
+                
+                # 시간 형식 변환 (MM/DD HH:MM)
+                raw_time = item.get("releaseTime", "000000")
+                if not raw_time: raw_time = "000000"
+                time_fmt = f"{raw_time[:2]}:{raw_time[2:4]}" if len(raw_time) >= 4 else "00:00"
+                date_prefix = target_date.strftime("%m/%d")
+                final_time_str = f"{date_prefix} {time_fmt}"
+                
+                importance = item.get("importance", 1)
+                actual = item.get("actualValue", 0)
+                previous = item.get("previousValue", 0)
+                
+                actual_str = str(actual) if actual != 0 else "-"
+                prev_str = str(previous) if previous != 0 else "-"
+                
+                events.append({
+                    "time": final_time_str,
+                    "country": "US" if nation == "USA" else "KR" if nation == "KOR" else nation,
+                    "event": name,
+                    "event_kr": name,
+                    "importance": importance,
+                    "actual": actual_str,
+                    "forecast": "-", 
+                    "previous": prev_str
+                })
             
-            # 실제치나 이전치가 0인 경우 "-"로 표시 (발표 전일 수 있음)
-            actual_str = str(actual) if actual != 0 else "-"
-            prev_str = str(previous) if previous != 0 else "-"
-            
-            events.append({
-                "time": time_fmt,
-                "country": "US" if nation == "USA" else "KR" if nation == "KOR" else nation,
-                "event": name,
-                "event_kr": name,
-                "importance": importance,
-                "actual": actual_str,
-                "forecast": "-", # 현재 API에서 forecast 필드 부재
-                "previous": prev_str
-            })
-            
+            if len(events) >= 15:
+                break
+                
     except Exception as e:
         print(f"[EconomyCalendar] API Processing Error: {e}")
         
