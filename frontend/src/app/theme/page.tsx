@@ -1,4 +1,5 @@
 "use client";
+// Last Updated: 2026-05-03 06:47 AM (KST) - UI Clean up check
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
