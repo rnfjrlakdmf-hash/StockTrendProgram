@@ -1538,20 +1538,12 @@ def get_market_intelligence_indicators():
             
             indicators.append({
                 "date": today, "time": "실시간",
-                "event_kr": f"[글로벌] {label}",
+                "event_kr": f"{label}",
                 "actual": idx['value'],
                 "category": cat, "impact": "high", "change": idx['change'], "change_val": 0
             })
 
-        # 1.2 미국 핵심 테크주 시세 (Top 15)
-        us_stocks = get_top_us_stocks_data()
-        for s in us_stocks:
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[미국주] 🇺🇸 {s['name']} ({s['symbol']})",
-                "actual": f"${s['price']}",
-                "category": "🇺🇸 미국 핵심주", "impact": "medium", "change": s['change'], "change_val": 0
-            })
+        # [Optimized] 대형주 수집 섹션 제거 (사용자 요청)
 
         # 1.3 기존 원자재 데이터 (WTI, 금, 구리 등)
         global_assets = get_global_assets_data()
@@ -1563,7 +1555,7 @@ def get_market_intelligence_indicators():
     try:
         from korea_data import (
             get_korean_market_indices, get_korean_interest_rates, 
-            get_naver_market_details, get_top_market_cap_stocks
+            get_naver_market_details
         )
         
         # 2.1 투자자별 수급 및 등락 종목 수
@@ -1589,15 +1581,7 @@ def get_market_intelligence_indicators():
                 "category": "📊 시장 통계", "impact": "high", "change": f"보합:{counts['보합']}", "change_val": 0
             })
 
-        # 2.2 시가총액 상위 종목 시세 (TOP 10)
-        top_stocks = get_top_market_cap_stocks(limit=10)
-        for s in top_stocks:
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[대형주] 💾 {s['name']} ({s['market']})",
-                "actual": s['price'],
-                "category": "💾 주요 대형주", "impact": "medium", "change": s['change'], "change_val": 0
-            })
+        # [Optimized] 시가총액 상위 종목 제거 (사용자 요청)
 
         # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등)
         indices = get_korean_market_indices()

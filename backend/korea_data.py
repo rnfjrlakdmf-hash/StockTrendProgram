@@ -939,7 +939,8 @@ def get_naver_market_index_data():
     ]
     
     results = []
-    for idx in indices_to_fetch:
+    
+    def _fetch_one(idx):
         try:
             if idx["type"] == "world":
                 url = f"https://api.stock.naver.com/index/{idx['code']}/basic"
@@ -953,7 +954,6 @@ def get_naver_market_index_data():
                 data = res.json()
                 
                 if idx["type"] == "dom":
-                    # KOSPI/KOSDAQ structure: result -> datas -> [0]
                     datas = data.get("result", {}).get("datas", [])
                     if datas:
                         stock_item = datas[0]
@@ -965,7 +965,6 @@ def get_naver_market_index_data():
                     price = data.get('closePrice', '0').replace(',', '')
                     pct = data.get('fluctuationsRatio', '0')
                 
-                # 금리의 경우 f"{price}%" 형식으로, 지수의 경우 천단위 콤마 f"{price:,.2f}" 형식으로 유동적 처리
                 is_rate = "금리" in idx["label"] or "TY10" in idx["code"]
                 try:
                     price_val = float(price)
@@ -973,17 +972,26 @@ def get_naver_market_index_data():
                 except:
                     val_formatted = price
                 
-                results.append({
+                return {
                     "label": idx["label"],
                     "value": val_formatted,
                     "change": f"{float(pct):+.2f}%",
                     "up": float(pct) >= 0
-                })
+                }
         except Exception as e:
             print(f"Error fetching index {idx['label']}: {e}")
-            results.append({
+            return {
                 "label": idx["label"], "value": "N/A", "change": "0.00%", "up": True
-            })
+            }
+        return None
+
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(indices_to_fetch)) as executor:
+        futures = {executor.submit(_fetch_one, idx): idx for idx in indices_to_fetch}
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            if res:
+                results.append(res)
             
     return results
 

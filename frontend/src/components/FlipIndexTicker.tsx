@@ -52,13 +52,19 @@ export default function FlipIndexTicker() {
             const res = await fetch(`${API_BASE_URL}/api/market/indices`);
             const json = await res.json();
             if (json.status === 'success' && Array.isArray(json.data)) {
-                // [v5.5.0] 필터링: 국내외 4대 핵심 지수만 티커에 표시 (KOSPI, KOSDAQ, S&P 500, NASDAQ)
-                const coreIndices = json.data.filter((item: any) => 
-                    item.event_kr?.includes("KOSPI") || 
-                    item.event_kr?.includes("KOSDAQ") || 
-                    item.event_kr?.includes("S&P 500") || 
-                    item.event_kr?.includes("NASDAQ")
-                ).map((item: any) => {
+                // [v5.7.0] 필터링: 정확히 지수 데이터만 표시 (개별 종목 혼입 방지)
+                const coreIndices = json.data.filter((item: any) => {
+                    const name = item.event_kr || "";
+                    // 지수 명칭이 정확히 일치하거나 핵심 지수 키워드만 포함된 경우
+                    const isIndex = name === "KOSPI" || name === "KOSDAQ" || 
+                                    name.includes("S&P 500") || name.includes("NASDAQ") || 
+                                    name.includes("다우존스") || name.includes("코스피") || name.includes("코스닥");
+                    
+                    // 카테고리가 대형주/핵심주인 경우는 무조건 제외
+                    const isStock = item.category?.includes("대형주") || item.category?.includes("핵심주") || item.category?.includes("미국주");
+                    
+                    return isIndex && !isStock;
+                }).map((item: any) => {
                     // 기호 결정
                     let icon = "📈";
                     if (item.event_kr.includes("KOSPI") || item.event_kr.includes("KOSDAQ")) icon = "🇰🇷";
