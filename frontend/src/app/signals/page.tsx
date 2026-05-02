@@ -425,8 +425,8 @@ function HeatmapTab({ router }: { router: any }) {
             try {
                 // [MODIFY] /api/korea/sector_heatmap 사용, no-store 추가하여 실시간 보장
                 const [s, h] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/korea/sector_heatmap`, { cache: 'no-store' }),
-                    fetch(`${API_BASE_URL}/api/korea/heatmap`, { cache: 'no-store' })
+                    fetch(`${API_BASE_URL}/api/market/korea/sector_heatmap`, { cache: 'no-store' }),
+                    fetch(`${API_BASE_URL}/api/market/korea/heatmap`, { cache: 'no-store' })
                 ]);
                 const sj = await s.json(), hj = await h.json();
 
@@ -518,12 +518,12 @@ function MarketInsightsTab({ router }: { router: any }) {
         (async () => {
             try {
                 // 1. 거래량 및 상승률 상위 (기존 API)
-                const r1 = await fetch(`${API_BASE_URL}/api/investors/top`);
+                const r1 = await fetch(`${API_BASE_URL}/api/market/investors/top`);
                 const j1 = await r1.json();
                 if (j1.status === "success") setInvestorData(j1.data);
 
                 // 2. 실시간 검색 및 거래대금 상위 (신규 API)
-                const r2 = await fetch(`${API_BASE_URL}/api/market-insights`);
+                const r2 = await fetch(`${API_BASE_URL}/api/market/market-insights`);
                 const j2 = await r2.json();
                 if (j2.status === "success") setInsightsData(j2.data);
             } catch { } finally { setLoading(false); }
@@ -618,7 +618,7 @@ function CalendarTab({ router }: { router: any }) {
                 // 병렬로 데이터 호출
                 const [krRes, globalRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
-                    fetch(`${API_BASE_URL}/api/assets`)
+                    fetch(`${API_BASE_URL}/api/market/assets`)
                 ]);
 
                 const krJson = await krRes.json();
@@ -645,7 +645,7 @@ function CalendarTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
-                const r = await fetch(`${API_BASE_URL}/api/calendar/events`);
+                const r = await fetch(`${API_BASE_URL}/api/market/calendar/events`);
                 const j = await r.json();
                 if (j.status === "success") setEvents(j.data || []);
             } catch { }
@@ -658,7 +658,7 @@ function CalendarTab({ router }: { router: any }) {
         if (mainTab !== "ipo") return;
         (async () => {
             try {
-                const r = await fetch(`${API_BASE_URL}/api/korea/ipo`);
+                const r = await fetch(`${API_BASE_URL}/api/market/korea/ipo`);
                 const j = await r.json();
                 if (j.status === "success") {
                     setIpos(j.data.map((item: any) => ({
