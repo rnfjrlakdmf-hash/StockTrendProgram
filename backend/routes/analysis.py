@@ -8,6 +8,19 @@ from turbo_engine import turbo_cache, turbo_engine
 
 router = APIRouter()
 
+@router.get("/stock/{symbol}/overview")
+@turbo_cache(ttl_seconds=3600)
+def stock_company_overview(symbol: str):
+    """기업 개요 (기본정보, 연혁, 매출구성, R&D, 임직원 현황)"""
+    from korea_data import get_korean_company_overview
+    try:
+        data = get_korean_company_overview(symbol)
+        if data:
+            return {"status": "success", "data": data}
+        return {"status": "error", "message": "기업 개요 데이터를 찾을 수 없습니다."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/stock/{symbol}/fast")
 async def read_stock_fast(symbol: str):
     """최적의 체감 속도를 위해 AI 분석을 생략하고 핵심 주가/재무 데이터만 즉시 반환합니다."""

@@ -27,11 +27,11 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-2.0-flash', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-2.5-flash')
+    return genai.GenerativeModel('gemini-2.0-flash')
 
 def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 30, temperature: float = 0.1, models_to_try: list = None):
     """
@@ -44,10 +44,9 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 30, 
     
     if models_to_try is None:
         models_to_try = [
-            "gemini-2.5-flash",
             "gemini-2.0-flash", 
-            "gemini-flash-latest",
-            "gemini-pro-latest"
+            "gemini-1.5-flash",
+            "gemini-1.5-pro"
         ]
     
     last_error = None

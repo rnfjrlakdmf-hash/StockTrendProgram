@@ -1393,49 +1393,175 @@ def get_naver_stock_info(symbol: str):
     # 3. 최후의 수단: 기존 스크래핑 엔진 (비상용)
     return gather_naver_stock_data(symbol)
 
+def robust_name(name):
+    if not name: return ""
+    import unicodedata
+    try:
+        if isinstance(name, bytes):
+            # Try common encodings
+            for enc in ['utf-8', 'euc-kr', 'cp949']:
+                try:
+                    name = name.decode(enc)
+                    break
+                except: continue
+        
+        name = str(name)
+        # Remove replacement characters
+        name = name.replace('\ufffd', '').replace('', '')
+        # Basic normalization
+        name = unicodedata.normalize('NFC', name).strip()
+        return name
+    except:
+        return str(name).strip()
+
+
 def fetch_naver_ranking_data(nation: str, order_type: str) -> list:
     """
-    [v4.5.0] Unified Stable Ranking Engine.
-    Uses mobile-first APIs to avoid legacy 400/500 errors.
+    [v5.0.0] Unified Stable Ranking Engine - Fixed Name Resolution.
     nation: KOR, USA, JPN, HKG, CHN, VNM
-    order_type: quantTop, priceTop, searchTop, riseTop, fallTop
+    order_type: quantTop, priceTop, searchTop
     """
     import requests
-    
-    # 1. Map order_type to Naver Mobile API parameters
-    # Mobile API uses:
-    # popularStock (searchTop)
-    # world/stockList (Volume/Amount/Change)
-    
+    from concurrent.futures import ThreadPoolExecutor
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': 'https://stock.naver.com/',
         'Accept': 'application/json'
     }
-    
+
     try:
-        if order_type == "searchTop":
-            # [SearchTop] New Stable API (Domestic only)
-            url = "https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=15"
+        if order_type == "searchTop" and nation == "KOR":
+            # [v5.0.0] KOR searchTop: returns reutersCode only, no name
+            url = f"https://stock.naver.com/api/domestic/market/searchTop?nationType={nation}&startIdx=0&pageSize=15"
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code != 200:
+                return []
+
+            raw_list = res.json()
+            if not isinstance(raw_list, list):
+                return []
+
+            codes = [item.get("reutersCode", "") for item in raw_list if item.get("reutersCode")]
+
+            # Batch resolve stock names via Naver mobile API
+            def get_name_for_code(code: str) -> str:
+                try:
+                    from stock_names import STOCK_MAP
+                    code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str) and v.isdigit()}
+                    if code in code_to_name:
+                        return code_to_name[code]
+                    # Fallback: Naver mobile stock API
+                    r = requests.get(
+                        f"https://m.stock.naver.com/api/stock/{code}/basic",
+                        headers=headers, timeout=3
+                    )
+                    if r.status_code == 200:
+                        d = r.json()
+                        name = d.get("stockName") or d.get("itemname") or ""
+                        if name:
+                            return robust_name(name)
+                except Exception:
+                    pass
+                return code
+
+            name_map = {}
+            with ThreadPoolExecutor(max_workers=10) as ex:
+                futures = {ex.submit(get_name_for_code, c): c for c in codes}
+                for f, c in futures.items():
+                    try:
+                        name_map[c] = f.result(timeout=6)
+                    except Exception:
+                        name_map[c] = c
+
+            enriched = []
+            for item in raw_list:
+                code = item.get("reutersCode", "")
+                enriched.append({
+                    **item,
+                    "itemname": name_map.get(code, code),
+                    "itemcode": code,
+                    "reutersCode": code,
+                    "nowPrice": None,
+                    "prevChangeRate": None,
+                    "prevChangePrice": None,
+                    "upDownGb": 3,
+                    "tradeVolume": item.get("sumCount"),
+                    "tradeAmount": None,
+                })
+            return enriched
+
+        elif order_type == "searchTop":
+            # Foreign searchTop via mobile API
+            mobile_headers = {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+                'Referer': 'https://m.stock.naver.com/',
+                'Accept': 'application/json'
+            }
+            url = f"https://m.stock.naver.com/front-api/market/popularStock?nationType={nation}"
+            res = requests.get(url, headers=mobile_headers, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                items = (data.get("result") or {}).get("datas") or (data.get("result") or {}).get("items") or []
+                return items if isinstance(items, list) else []
+
+        elif nation == "KOR":
+            # Domestic Volume/Amount
+            url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=15"
             res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
-                return res.json()
-        
-        # [Volume / Amount / Rise / Fall]
-        if nation == "KOR":
-            # Domestic
-            url = f"https://stock.naver.com/api/domestic/market/stock/default?tradeType=KRX&marketType=ALL&orderType={order_type}&startIdx=0&pageSize=15"
+                data = res.json()
+                if isinstance(data, list):
+                    # [v5.0.0] Fix: itemname may be mojibake encoded
+                    try:
+                        from stock_names import STOCK_MAP
+                        code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str) and v.isdigit()}
+                    except Exception:
+                        code_to_name = {}
+
+                    for item in data:
+                        code = item.get("itemcode", "")
+                        # 1) Try local map first
+                        if code and code in code_to_name:
+                            item["itemname"] = code_to_name[code]
+                        else:
+                            # 2) Try to repair mojibake
+                            raw_name = item.get("itemname", "")
+                            if raw_name:
+                                repaired = robust_name(raw_name)
+                                if repaired and any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired):
+                                    item["itemname"] = repaired
+                    return data
+                elif isinstance(data, dict):
+                    return data.get("items") or data.get("stocks") or []
         else:
-            # Foreign
+            # Foreign Volume/Amount
             url = f"https://stock.naver.com/api/foreign/market/stock/global?nation={nation}&tradeType=ALL&orderType={order_type}&startIdx=0&pageSize=15"
-            
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code == 200:
-            return res.json()
-            
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                if isinstance(data, list):
+                    # [v5.0.0] Fix: koreanCodeName may be mojibake, fallback to englishCodeName
+                    for item in data:
+                        ko_name = item.get("koreanCodeName") or ""
+                        en_name = item.get("englishCodeName") or ""
+                        if ko_name:
+                            repaired = robust_name(ko_name)
+                            has_korean = any(0xAC00 <= ord(c) <= 0xD7A3 for c in repaired)
+                            if has_korean:
+                                item["koreanCodeName"] = repaired
+                            else:
+                                # Korean still garbled -> use English name
+                                item["koreanCodeName"] = en_name or item.get("reutersCode", "")
+                        else:
+                            item["koreanCodeName"] = en_name or item.get("reutersCode", "")
+                    return data
+                elif isinstance(data, dict):
+                    return data.get("items") or data.get("stocks") or []
+
     except Exception as e:
         print(f"[ERROR] fetch_naver_ranking_data({nation}, {order_type}): {e}")
-        
+
     return []
 
 # ============================================================
@@ -3030,71 +3156,82 @@ def get_investor_ranking_data():
 def get_market_insights_data():
     """
     시장 주도주 탭을 위한 검색 및 거래대금 인사이트 데이터 수집.
-    Unified Mobile-First API를 사용하여 안정성 확보.
+    [v5.1.0] 병렬 처리 최적화 - 순차 API 호출 제거, ThreadPoolExecutor 사용.
     """
-    from korea_data import fetch_naver_ranking_data, robust_name
-    
-    def parse_popular_search():
-        items = fetch_naver_ranking_data("KOR", "searchTop")
-        if not items: return []
-        processed = []
-        
-        # Use simple_quote for enrichment
-        from stock_data import get_simple_quote
-        
-        for item in items[:15]:
-            symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode") or ""
-            quote = get_simple_quote(symbol)
-            
-            name = quote.get("name") or robust_name(item.get("stockName") or item.get("itemName") or "")
-            vol_num = 0
-            try: vol_num = int(quote.get("volume") or item.get("accumulatedTradingVolume") or 0)
-            except: pass
-            
-            if vol_num >= 1000000: vol_display = f"{vol_num/1000000:.1f}백만"
-            elif vol_num >= 10000: vol_display = f"{vol_num/10000:.0f}만"
-            else: vol_display = f"{vol_num:,}"
-            
-            processed.append({
-                "name": name,
-                "symbol": symbol,
-                "amount": f"{vol_display}주"
-            })
-        return processed
+    import time
+    from concurrent.futures import ThreadPoolExecutor
 
-    def parse_trading_value():
-        items = fetch_naver_ranking_data("KOR", "priceTop")
-        if not items: return []
-        processed = []
-        
-        from stock_data import get_simple_quote
-        
-        for item in items[:15]:
-            symbol = item.get("reutersCode") or item.get("symbolCode") or item.get("itemCode") or ""
-            quote = get_simple_quote(symbol)
-            
-            name = quote.get("name") or robust_name(item.get("stockName") or item.get("itemName") or "")
-            
+    # 간단한 인메모리 캐시 (60초)
+    cache_attr = "_market_insights_cache"
+    cache_ts_attr = "_market_insights_cache_ts"
+    cached_data = globals().get(cache_attr)
+    cached_ts = globals().get(cache_ts_attr, 0)
+    if cached_data and (time.time() - cached_ts) < 60:
+        return cached_data
+
+    from korea_data import fetch_naver_ranking_data, robust_name
+    from stock_data import get_simple_quote
+
+    def process_item(item, value_mode=False):
+        symbol = (item.get("reutersCode") or item.get("symbolCode") or
+                  item.get("itemCode") or item.get("itemcode") or "")
+        if not symbol:
+            return None
+
+        # 이미 이름이 있으면 quote 생략
+        pre_name = (item.get("itemname") or item.get("stockName") or item.get("itemName") or "")
+        pre_name = robust_name(pre_name) if pre_name else ""
+        has_valid_name = bool(pre_name) and any(0xAC00 <= ord(c) <= 0xD7A3 for c in pre_name)
+
+        quote = {}
+        if not has_valid_name:
+            try:
+                q = get_simple_quote(symbol)
+                if q:
+                    quote = q
+            except Exception:
+                pass
+
+        name = (quote.get("name") if quote.get("name") and quote.get("name") != symbol else None) or pre_name or symbol
+
+        if value_mode:
             val_num = 0
             try: val_num = float(item.get("tradeAmount") or item.get("accumulatedTradingValue") or 0)
             except: pass
-            
             if val_num >= 1000000000000: value_display = f"{val_num/1000000000000:.1f}조"
             elif val_num >= 100000000: value_display = f"{val_num/100000000:,.0f}억"
             else: value_display = f"{val_num:,.0f}"
-            
-            processed.append({
-                "name": name,
-                "symbol": symbol,
-                "value": value_display,
-                "amount": f"{val_num/100000000:,.0f}억" if val_num > 0 else "0억"
-            })
-        return processed
+            return {"name": name, "symbol": symbol, "value": value_display,
+                    "amount": f"{val_num/100000000:,.0f}억" if val_num > 0 else "0억"}
+        else:
+            vol_num = 0
+            try: vol_num = int(quote.get("volume") or item.get("accumulatedTradingVolume") or item.get("tradeVolume") or 0)
+            except: pass
+            if vol_num >= 1000000: vol_display = f"{vol_num/1000000:.1f}백만"
+            elif vol_num >= 10000: vol_display = f"{vol_num/10000:.0f}만"
+            else: vol_display = f"{vol_num:,}"
+            return {"name": name, "symbol": symbol, "amount": f"{vol_display}주"}
 
-    return {
-        "search_top": parse_popular_search(),
-        "value_top": parse_trading_value()
-    }
+    search_items = fetch_naver_ranking_data("KOR", "searchTop") or []
+    value_items = fetch_naver_ranking_data("KOR", "priceTop") or []
+
+    search_top = []
+    value_top = []
+
+    # 두 목록을 한꺼번에 병렬로 처리
+    all_tasks = [(item, False) for item in search_items[:15]] + [(item, True) for item in value_items[:15]]
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futures = [ex.submit(process_item, item, mode) for item, mode in all_tasks]
+        results = [f.result() for f in futures]
+
+    search_top = [r for r in results[:len(search_items[:15])] if r]
+    value_top = [r for r in results[len(search_items[:15]):] if r]
+
+    data = {"search_top": search_top, "value_top": value_top}
+    globals()[cache_attr] = data
+    globals()[cache_ts_attr] = time.time()
+    return data
 
 @turbo_cache(ttl_seconds=1800)
 def get_naver_economy_calendar():

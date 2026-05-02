@@ -17,7 +17,7 @@ def health_check():
         "service": "AI Stock Analyst Backend - Zero-Wait Architecture"
     }
 
-@router.get("/system/status")
+@router.get("/status")
 def get_system_status():
     """컴포넌트 호환성을 위한 시스템 및 인덱싱 상태 반환"""
     try:

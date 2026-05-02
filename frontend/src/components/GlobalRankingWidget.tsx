@@ -44,22 +44,40 @@ export default function GlobalRankingWidget() {
     useEffect(() => {
         let ignore = false;
 
+        const fetchCategory = async (catId: CategoryType) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60초 타임아웃
+            try {
+                const res = await fetch(
+                    `${API_BASE_URL}/api/market/rank/global?market=${market}&category=${catId}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+                const json = await res.json();
+                return { catId, data: json?.data || [] };
+            } catch (e: any) {
+                clearTimeout(timeoutId);
+                if (e.name !== 'AbortError') {
+                    console.warn(`GlobalRankingWidget: ${catId} fetch failed`, e);
+                }
+                return { catId, data: [] };
+            }
+        };
+
         const fetchAllCategories = async () => {
             setLoading(true);
             try {
+                // 병렬 요청 (각 카테고리 독립적으로 처리)
                 const results = await Promise.all(
-                    CATEGORY_CONFIG.map(cat => 
-                        fetch(`${API_BASE_URL}/api/market/rank/global?market=${market}&category=${cat.id}`)
-                            .then(res => res.json())
-                    )
+                    CATEGORY_CONFIG.map(cat => fetchCategory(cat.id))
                 );
 
                 if (!ignore) {
                     const newData: any = {};
-                    CATEGORY_CONFIG.forEach((cat, idx) => {
-                        newData[cat.id] = results[idx]?.data || [];
+                    results.forEach(({ catId, data }) => {
+                        newData[catId] = data;
                     });
-                    setRankData(newData);
+                    setRankData(prev => ({ ...prev, ...newData }));
                 }
             } catch (e) {
                 console.error("GlobalRankingWidget Fetch Error:", e);
@@ -69,7 +87,7 @@ export default function GlobalRankingWidget() {
         };
 
         fetchAllCategories();
-        const interval = setInterval(fetchAllCategories, 30000); // 30s refresh
+        const interval = setInterval(fetchAllCategories, 60000); // 60s refresh (캐시 TTL에 맞춤)
 
         return () => {
             ignore = true;

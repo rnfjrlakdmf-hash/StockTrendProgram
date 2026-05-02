@@ -426,7 +426,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                                 <span>{formatNumber(day.foreign_holdings)}</span>
                                             </td>
                                             <td className="px-4 py-4 text-right text-gray-300 font-bold">
-                                                <span>{day.foreign_ratio.toFixed(2)}%</span>
+                                                <span>{((day.foreign_ratio ?? 0) as number).toFixed(2)}%</span>
                                             </td>
                                         </tr>
                                     ))}

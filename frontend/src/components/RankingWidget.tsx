@@ -18,7 +18,7 @@ export default function RankingWidget() {
         const fetchRankings = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/rank/movers/${market}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/rank/movers/${market}`);
                 const json = await res.json();
                 if (!ignore && json.status === "success") {
                     const rankingData = json.data || { gainers: [], losers: [] };

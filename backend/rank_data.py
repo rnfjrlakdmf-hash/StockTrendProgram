@@ -8,12 +8,14 @@ def is_v_garbled(s):
     [v3.9.4-Fixed] Centralized Whitelist Validator.
     Checks for replacement characters, garbage Latin-1, or invalid non-alphanumeric chars.
     """
-    if not s or not isinstance(s, str): return False # Non-strings are not 'garbled' in the encoding sense
-    if "\ufffd" in s or "\u00c0" in s: return True
-    if not s.strip(): return True
+    if not s or not isinstance(s, str): return False 
+    # Check for common garbled character markers
+    if "\ufffd" in s or "" in s or "â" in s: return True
+    if not s.strip() or s == "null" or s == "None": return True
     
-    # Pattern for clean stock names: Korean, English, Numbers, standard symbols, and common dividers
-    # [v3.9.5] Added middle dot, slash, and more symbols to avoid false positives
+    # If the string is mostly composed of '?' or other weird chars
+    if s.count('?') > len(s) / 2: return True
+    
     clean_pattern = re.compile(r'[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s\(\)\[\]\.\&/\-\,\!\?\'\"·/★☆]')
     if clean_pattern.search(s): return True
     return False
@@ -633,10 +635,29 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         def enrich(p_item):
             s = p_item["symbol"]
             if not s or s == "-": return p_item
+            
+            # [Optimization] Skip HTML scraping if we already have valid data from the JSON API!
+            price_val = str(p_item.get("price", "0")).replace(",", "")
+            has_valid_price = False
+            try:
+                if float(price_val) > 0: has_valid_price = True
+            except: pass
+            
+            current_name = p_item.get("name", "")
+            has_valid_name = bool(current_name) and current_name != s and current_name != "-" and len(current_name) > 1
+            
+            # Only do the heavy get_simple_quote if we are missing critical info
+            if has_valid_price and has_valid_name:
+                return p_item
+                
+            # [v5.0.0] Check if name is already valid (not same as symbol, has content)
             q = get_simple_quote(s)
             if q:
                 nn = q.get("name")
-                if nn and not is_v_garbled(nn) and len(str(nn)) > 1: p_item["name"] = nn
+                # Only update name if: quote has a better name AND current name is not already valid
+                if nn and not is_v_garbled(nn) and len(str(nn)) > 1:
+                    if not has_valid_name or (nn != s and not any(nn == sym for sym in [s, s.split(".")[0]])):
+                        p_item["name"] = nn
                 qp = str(q.get("price", "0")).replace(",", "")
                 try:
                     f_qp = float(qp)

@@ -11,9 +11,11 @@ router = APIRouter()
 @router.get("/indices")
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
+    from stock_data import get_market_data
     try:
-        from stock_data import get_market_data
-        data = get_market_data()
+        # [v5.3.0] 비동기 스레드 실행으로 이벤트 루프 차단 방지
+        import asyncio
+        data = await asyncio.to_thread(get_market_data)
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -21,9 +23,10 @@ async def market_indices():
 @router.get("/status")
 async def market_status():
     """실시간 시장 지수 및 환율 데이터 반환 (요약 형태)"""
+    from stock_data import get_market_status
     try:
-        from stock_data import get_market_status
-        data = get_market_status()
+        import asyncio
+        data = await asyncio.to_thread(get_market_status)
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -116,13 +119,36 @@ def read_rank_top10(market: str):
     return {"status": "success", "data": data}
 
 @router.get("/rank/global")
+@turbo_cache(ttl_seconds=60)
 def read_global_rank(market: str = "KOSPI", category: str = "trading_volume"):
     from rank_data import get_global_ranking
     data = get_global_ranking(market, category)
-    print(f"[DEBUG] /rank/global market={market}, category={category}, count={len(data) if data else 0}")
-    if data:
-        print(f"[DEBUG] First item: {data[0]}")
     return {"status": "success", "data": data}
+
+@router.get("/rank/naver/{market}/{rank_type}")
+@turbo_cache(ttl_seconds=60)
+def read_naver_rank(market: str, rank_type: str):
+    """네이버 금융 TOP종목 순위 (NaverTopWidget 호환)"""
+    from rank_data import get_naver_ranking
+    try:
+        data = get_naver_ranking(market, rank_type)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/rank/movers/{market}")
+@turbo_cache(ttl_seconds=60)
+def read_rank_movers(market: str):
+    """실시간 상승/하락 종목 (RankingWidget 호환)"""
+    from rank_data import crawl_naver_movers, fetch_yahoo_movers
+    try:
+        if market.upper() == "KR":
+            data = crawl_naver_movers()
+        else:
+            data = fetch_yahoo_movers()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @router.get("/major")
 def read_major_indicators():
