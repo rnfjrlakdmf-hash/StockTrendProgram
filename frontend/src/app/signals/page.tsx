@@ -705,6 +705,38 @@ function CalendarTab({ router }: { router: any }) {
             {/* 주요 경제 지표 서브탭 */}
             {mainTab === "economic" && (
                 <div className="space-y-4">
+                    {/* 글로벌 주요 지수 및 자산 (KOSPI/KOSDAQ 등) 복구 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
+                                🌍 주요 경제 지표 (실시간)
+                            </h4>
+                        </div>
+                        {globalAssetsLoading ? (
+                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
+                        ) : globalAssets && globalAssets.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {globalAssets.map((asset: any, i: number) => {
+                                    const isUp = parseFloat(asset.change_val || 0) > 0;
+                                    const isDown = parseFloat(asset.change_val || 0) < 0;
+                                    return (
+                                        <div key={i} className="bg-black/20 rounded-xl p-3 border border-white/5 flex flex-col justify-between">
+                                            <div className="text-[10px] text-gray-400 font-bold mb-1">{asset.event_kr}</div>
+                                            <div className="text-sm font-black text-white">{asset.actual}</div>
+                                            <div className={`text-[10px] font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                {asset.change}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-4 text-gray-500 text-xs">
+                                <p>데이터를 불러올 수 없습니다.</p>
+                            </div>
+                        )}
+                    </div>
+
                     {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">

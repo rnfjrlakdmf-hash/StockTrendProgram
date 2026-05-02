@@ -11,11 +11,11 @@ router = APIRouter()
 @router.get("/indices")
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
-    from stock_data import get_market_data
+    from stock_data import get_market_intelligence_indicators
     try:
         # [v5.3.0] 비동기 스레드 실행으로 이벤트 루프 차단 방지
         import asyncio
-        data = await asyncio.to_thread(get_market_data)
+        data = await asyncio.to_thread(get_market_intelligence_indicators)
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
