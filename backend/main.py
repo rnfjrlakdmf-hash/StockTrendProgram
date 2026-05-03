@@ -52,6 +52,12 @@ app.include_router(community_router, prefix="/api", tags=["Community"])
 app.include_router(user_router, prefix="/api", tags=["User"])
 app.include_router(signals_router, prefix="/api", tags=["Signals"])
 app.include_router(alerts_router, prefix="/api", tags=["Alerts"])
+
+# [Backward Compatibility] Support old ETF detail path to fix 404 while frontend redeploys
+@app.get("/api/etf-detail/{symbol}", tags=["Compatibility"])
+async def legacy_etf_detail(symbol: str):
+    from etf_detail import get_etf_detail
+    return get_etf_detail(symbol)
 app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")
