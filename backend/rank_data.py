@@ -861,25 +861,25 @@ def get_etf_ranking(market="KR", category=None):
             # 카테고리별 키워드 설정
             keywords = []
             if category == "inverse":
-                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "(H)", "Short"]
+                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "(H)", "Short", "Bear", "하락", "S-S", "2X"]
             elif category == "index":
-                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ"]
+                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ", "추종", "대표", "기초", "KRX", "Nasdaq100", "Dow"]
             elif category == "sector":
-                keywords = ["반도체", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지", "채권", "금리", "고배당", "리츠", "AI", "로봇"]
+                keywords = ["반도체", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지", "채권", "금리", "고배당", "리츠", "AI", "로봇", "필수소비재", "금융", "보험"]
             elif category == "leverage":
-                keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL"]
+                keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL", "2배", "3배", "Double", "Triple"]
             elif category == "dividend":
-                keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income"]
+                keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income", "성장배당", "고배당", "분기배당", "월배당", "Divid", "Yield"]
             elif category == "battery":
-                keywords = ["2차전지", "전지", "배터리", "Battery", "Secondary Cell"]
+                keywords = ["2차전지", "전지", "배터리", "Battery", "Secondary Cell", "에너지솔루션", "양극재", "음극재", "전고체", "소재"]
             elif category == "ai":
-                keywords = ["AI", "인공지능", "Tech", "IT", "Robo"]
+                keywords = ["AI", "인공지능", "Tech", "IT", "Robo", "소프트웨어", "데이터", "클라우드", "Cloud", "Computing"]
             elif category == "bond":
-                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT", "CD", "KOFR", "머니마켓", "단기채", "초단기"]
+                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT", "CD", "KOFR", "머니마켓", "단기채", "초단기", "국고채", "회사채", "단기금융"]
             elif category == "semiconductor":
-                keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA"]
+                keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA", "팹리스", "파운드리", "ASML", "HBM"]
             elif category == "healthcare":
-                keywords = ["헬스케어", "바이오", "Bio", "Health"]
+                keywords = ["헬스케어", "바이오", "Bio", "Health", "제약", "의료기기", "mRNA"]
 
             data = []
             
@@ -994,26 +994,25 @@ def get_etf_ranking(market="KR", category=None):
         if category:
             keywords = []
             if category == "inverse":
-                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS", "QID", "DXD", "RWM"]
+                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS", "QID", "DXD", "RWM", "SDS"]
             elif category == "index":
-                keywords = ["SPY", "QQQ", "IVV", "VOO", "S&P", "Nasdaq", "Core", "Total"]
+                keywords = ["SPY", "QQQ", "IVV", "VOO", "S&P", "Nasdaq", "Core", "Total", "Index", "IWM", "DIA"]
             elif category == "sector":
-                # Sector includes everything broad
-                keywords = ["Semiconductor", "IT", "Tech", "Energy", "Materials", "Financial", "Bond", "Treasury", "Health"]
+                keywords = ["Semiconductor", "IT", "Tech", "Energy", "Materials", "Financial", "Bond", "Treasury", "Health", "Technology", "Financials", "Utilities"]
             elif category == "leverage":
-                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "UPRO", "Leverage", "Double", "Triple"]
+                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "UPRO", "Leverage", "Double", "Triple", "2x", "3x"]
             elif category == "dividend":
-                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI", "DGRO", "VIG"]
+                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI", "DGRO", "VIG", "JEPQ", "VYM"]
             elif category == "bond":
-                keywords = ["Bond", "Treasury", "TLT", "IEF", "Fixed Income", "BND", "AGG", "TMF", "Corporate"]
+                keywords = ["Bond", "Treasury", "TLT", "IEF", "Fixed Income", "BND", "AGG", "TMF", "Corporate", "Bills", "SHY"]
             elif category == "battery":
-                keywords = ["Battery", "Lithium", "LIT", "REMX", "Metals", "Clean Energy"]
+                keywords = ["Battery", "Lithium", "LIT", "REMX", "Metals", "Clean Energy", "Solar", "Energy"]
             elif category == "ai":
-                keywords = ["AI", "Artificial Intelligence", "ROBO", "BOTZ", "GXG", "Tech", "Software", "Cloud"]
+                keywords = ["AI", "Artificial Intelligence", "ROBO", "BOTZ", "GXG", "Tech", "Software", "Cloud", "Data", "Computing"]
             elif category == "semiconductor":
-                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "SOXX", "NVDA", "Broadcom"]
+                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "SOXX", "NVDA", "Broadcom", "Chips"]
             elif category == "healthcare":
-                keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech"]
+                keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech", "Pharma", "Medical"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
             return filtered
