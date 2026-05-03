@@ -20,10 +20,10 @@ export default function EtfAnalysisPage() {
     const fetchEtfRankings = async (m: 'KR' | 'US', cat: string | null = null) => {
         setLoading(true);
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const baseUrl = API_BASE_URL;
             const url = cat 
-                ? `${baseUrl}/api/rank/etf?market=${m}&category=${cat}` 
-                : `${baseUrl}/api/rank/etf?market=${m}`;
+                ? `${baseUrl}/api/market/rank/etf?market=${m}&category=${cat}` 
+                : `${baseUrl}/api/market/rank/etf?market=${m}`;
                 
             const response = await fetch(url);
             const res = await response.json();
@@ -84,7 +84,7 @@ export default function EtfAnalysisPage() {
                                 </button>
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight">
-                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics v2.5</span>
+                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics v2.5.1-FINAL</span>
                             </h1>
                             <p className="text-gray-400 font-bold max-w-xl leading-snug text-xs md:text-sm">
                                 {market === 'KR' 

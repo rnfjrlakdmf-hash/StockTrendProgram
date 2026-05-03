@@ -6,7 +6,9 @@ import type { NextConfig } from "next";
 // 3순위: 로컬 개발 환경 → localhost:8000
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  'https://stocktrendprogram-production.up.railway.app'; // Always use production backend unless overridden
+  (process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:8000' 
+    : 'https://stocktrendprogram-production.up.railway.app');
 
 const nextConfig: NextConfig = {
   distDir: '.next',

@@ -1,4 +1,5 @@
 import requests
+import json
 import pandas as pd
 from bs4 import BeautifulSoup
 import io
@@ -305,20 +306,16 @@ def get_etf_detail(symbol: str):
             
             api_resp = requests.get(api_url, headers=headers, timeout=5)
             if api_resp.status_code == 200:
+                api_resp.encoding = 'utf-8' # Force UTF-8 for Mobile API
                 api_json = api_resp.json()
                 data["name"] = api_json.get("stockName", data["name"])
-                
-                # Market Data (Price, Change) from basic API if possible
-                basic_resp = requests.get(basic_url, headers=headers, timeout=5)
-                if basic_resp.status_code == 200:
-                    bj = basic_resp.json()
-                    data["market_data"]["price"] = bj.get("closePrice", "0")
-                    data["market_data"]["change"] = bj.get("compareToPreviousClosePrice", "0")
-                    data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
                 
                 # Indicator Data (TER, AUM, NAV, Dividend, Performance)
                 ind = api_json.get("etfKeyIndicator", {})
                 if ind:
+                    if ind.get("issuerName"):
+                        data["basic_info"]["amc"] = ind.get("issuerName")
+                    
                     data["basic_info"]["ter"] = f"{safe_to_float(ind.get('totalFee', 0)):.2f}%"
                     data["basic_info"]["aum"] = ind.get("marketValue", data["basic_info"]["aum"])
                     data["basic_info"]["dividend_yield"] = f"{safe_to_float(ind.get('dividendYieldTtm', 0)):.2f}%"
@@ -334,18 +331,6 @@ def get_etf_detail(symbol: str):
                         if k in ind:
                             f_val = safe_to_float(ind[k])
                             data["performance"][v] = f"{'+' if f_val > 0 else ''}{f_val:.2f}%"
-                    
-                    # [Backup] If some performance data is missing from Naver, use calculated data from yfinance history
-                    if len(data["performance"]) < 4 and "chart_data" in data and len(data["chart_data"]) > 0:
-                        try:
-                            # Use yfinance data fetched earlier if available
-                            # 'hist' for KR is defined around line 199
-                            if 'hist' in locals() and not hist.empty:
-                                calc_perf = calculate_performance(hist)
-                                for k, v in calc_perf.items():
-                                    if k not in data["performance"]:
-                                        data["performance"][k] = v
-                        except: pass
 
                 # Additional Info (Index, Listing Date)
                 for info in api_json.get("totalInfos", []):
@@ -355,60 +340,59 @@ def get_etf_detail(symbol: str):
                     elif c == "highPriceOf52Weeks": data["market_data"]["high52w"] = v
                     elif c == "lowPriceOf52Weeks": data["market_data"]["low52w"] = v
                     elif c == "accumulatedTradingVolume": data["market_data"]["volume"] = v
+                
+                # Market Data (Price, Change)
+                basic_resp = requests.get(basic_url, headers=headers, timeout=5)
+                if basic_resp.status_code == 200:
+                    bj = basic_resp.json()
+                    data["market_data"]["price"] = bj.get("closePrice", "0")
+                    data["market_data"]["change"] = bj.get("compareToPreviousClosePrice", "0")
+                    data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
         except: pass
 
-        # 3. AMC Mapping and Hardcoded Fallbacks (Listing Dates)
-        hardcoded_dates = {
-            "069500": "2002-10-14", "114800": "2009-09-16", "122630": "2010-07-21",
-            "229200": "2015-10-07", "233740": "2015-12-17", "252670": "2016-09-22"
-        }
-        if clean_sym in hardcoded_dates and data["basic_info"]["launch_date"] == "알 수 없음":
-            data["basic_info"]["launch_date"] = hardcoded_dates[clean_sym]
-
-        for key, val in AMC_MAP.items():
-            if key in data["name"].upper():
-                data["basic_info"]["amc"] = val
-                break
-
-        # 4. Ultimate Fallback Scraping (Listing Date, Index, Holdings)
+        # 3. Ultimate Fallback & Holdings (WiseReport)
         try:
-            if data["basic_info"]["launch_date"] == "알 수 없음" or not data["holdings"]:
-                web_url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
-                web_resp = requests.get(web_url, headers=headers, timeout=5)
-                if web_resp.status_code == 200:
-                    web_resp.encoding = 'euc-kr'
-                    soup_text = web_resp.text
-                    soup = BeautifulSoup(soup_text, "html.parser")
-                    
-                    # 4.1 Search for Launch Date via Regex in soup
-                    if data["basic_info"]["launch_date"] == "알 수 없음":
-                        dates = re.findall(r"20\d{2}[.-]\d{2}[.-]\d{2}", soup_text)
-                        if dates:
-                            # Usually the 1st or 2nd date in the info section is the listing date
-                            data["basic_info"]["launch_date"] = dates[0].replace(".", "-")
+            # WiseReport contains the actual holdings table and detailed info for KR ETFs
+            wise_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_sym}"
+            wise_resp = requests.get(wise_url, headers=headers, timeout=7)
+            if wise_resp.status_code == 200:
+                # Try to detect encoding or default to utf-8
+                wise_resp.encoding = 'utf-8' 
+                wise_html = wise_resp.text
+                
+                # 3.1 Basic Info from 'product_summary_data' JS variable
+                match_prod = re.search(r"var\s+product_summary_data\s*=\s*(\{.*?\});", wise_html, re.DOTALL)
+                if match_prod:
+                    try:
+                        prod_json = json.loads(match_prod.group(1))
+                        if data["basic_info"]["launch_date"] == "알 수 없음":
+                            data["basic_info"]["launch_date"] = prod_json.get("LIST_DT", "알 수 없음")
+                        if data["basic_info"]["index"] == "알 수 없음":
+                            data["basic_info"]["index"] = prod_json.get("BASE_IDX_NM_KOR", "알 수 없음")
+                        if data["basic_info"]["amc"] == "알 수 없음":
+                            data["basic_info"]["amc"] = prod_json.get("ISSUE_NM_KOR", "알 수 없음")
+                    except: pass
 
-                    # 4.2 Search for Index
-                    for th in soup.find_all("th"):
-                        txt = th.get_text().strip()
-                        if "기초지수" in txt and data["basic_info"]["index"] == "알 수 없음":
-                            td = th.find_next_sibling("td")
-                            if td: data["basic_info"]["index"] = td.get_text().strip()
-
-                    # 4.3 Holdings
-                    if not data["holdings"]:
-                        cu_div = soup.find("div", {"class": "section cu_info"}) or soup.find("div", {"class": "section etf_analysis"})
-                        if cu_div:
-                            for t in cu_div.find_all("table"):
-                                try:
-                                    df = pd.read_html(io.StringIO(str(t)))[0]
-                                    if len(df.columns) >= 3:
-                                        for row in df.values.tolist():
-                                            n, w = str(row[0]).strip(), str(row[2]).strip()
-                                            if n and n not in ['nan', '종목명', '종목(자산)'] and '%' in w:
-                                                data["holdings"].append({"name": " ".join(n.split()), "weight": w})
-                                                if len(data["holdings"]) >= 10: break
-                                        if data["holdings"]: break
-                                except: pass
+                # 3.2 Holdings from 'CU_data' JS variable
+                if not data["holdings"]:
+                    match_cu = re.search(r"var\s+CU_data\s*=\s*(\{.*?\});", wise_html, re.DOTALL)
+                    if match_cu:
+                        try:
+                            cu_json = json.loads(match_cu.group(1))
+                            for h_item in cu_json.get("grid_data", []):
+                                h_name = h_item.get("STK_NM_KOR")
+                                h_weight = h_item.get("ETF_WEIGHT")
+                                if h_name and h_name != "원화현금":
+                                    w_val = safe_to_float(h_weight)
+                                    w_str = f"{w_val:.2f}%" if w_val > 0 else "0.00%"
+                                    data["holdings"].append({"name": h_name, "weight": w_str})
+                                    if len(data["holdings"]) >= 15: break
+                        except: pass
+                
+                # 3.3 Fallback to regex if still missing launch date
+                if data["basic_info"]["launch_date"] == "알 수 없음":
+                    match_date = re.search(r"LIST_DT\"\s*:\s*\"(20\d{2}-\d{2}-\d{2})\"", wise_html)
+                    if match_date: data["basic_info"]["launch_date"] = match_date.group(1)
         except: pass
 
         # 5. Populate Similar ETFs for KR ETFs

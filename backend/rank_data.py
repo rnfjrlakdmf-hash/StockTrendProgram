@@ -1,7 +1,7 @@
 import json
 import re
 import requests
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def is_v_garbled(s):
     """
@@ -844,8 +844,17 @@ def get_etf_ranking(market="KR", category=None):
 
     if market == "KR":
         url = "https://finance.naver.com/api/sise/etfItemList.nhn"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://finance.naver.com/sise/sise_etf.naver',
+            'Accept': 'application/json, text/javascript, */*; q=0.01'
+        }
         try:
-            res = requests.get(url, timeout=5)
+            print(f"[ETF API] Requesting Naver KR ETF list...")
+            res = requests.get(url, headers=headers, timeout=7)
+            if res.status_code != 200:
+                print(f"[ETF API] Naver API Error: Status {res.status_code}")
+                return []
             json_data = res.json()
             items = json_data.get('result', {}).get('etfItemList', [])
             
@@ -923,26 +932,18 @@ def get_etf_ranking(market="KR", category=None):
         else:
             # 1. Define comprehensive list of major US ETFs by sector
             us_symbols = [
-                # Index
-                "SPY", "QQQ", "IVV", "VOO", "DIA", "IWM", "VTI", "QQQM", "SCHX", "VV",
+                # Index (Major)
+                "SPY", "QQQ", "DIA", "IWM", "VOO", "VTI",
                 # Inverse
-                "SQQQ", "PSQ", "SH", "DOG", "SDS", "SOXS", "SPDN", "RWM", "QID", "DXD",
+                "SQQQ", "PSQ", "SH", "SDS",
                 # Leverage
-                "TQQQ", "SOXL", "UPRO", "SPXL", "TECL", "ROM", "FAS", "TNA", "QLD", "SSO",
+                "TQQQ", "SOXL", "UPRO", "TECL", "FAS",
                 # Dividend
-                "SCHD", "JEPI", "VIG", "VYM", "NOBL", "DGRO", "HDV", "SDY", "DVY", "JEPQ",
+                "SCHD", "JEPI", "VIG", "VYM", "JEPQ",
                 # Bond
-                "TLT", "IEF", "SHY", "BND", "AGG", "TMF", "SHV", "LQD", "VCIT", "HYG", "JNK", "MBB",
-                # Battery/Energy
-                "LIT", "BATT", "REMX", "XLE", "VDE", "ICLN", "PBW", "TAN", "XOP", "AMLP",
-                # AI/IT
-                "XLK", "VGT", "BOTZ", "ROBO", "IRBO", "SNSR", "GXG", "AIQ", "SKYY", "CLOU", "IGV",
-                # Semiconductor
-                "SMH", "SOXX", "SOXL", "SOXS", "PSI", "XSD", "FTXL",
-                # Healthcare
-                "XLV", "VHT", "IBB", "ARKG", "XBI", "FHLC", "PPH", "IHI",
-                # Innovation/Others
-                "ARKK", "ARKF", "ARKW", "IBIT", "GLD", "SLV", "DBC", "USO"
+                "TLT", "BND", "AGG", "TMF",
+                # Sector & Theme (Popular)
+                "XLK", "SMH", "SOXX", "LIT", "ARKK", "XLV", "XLE", "IBIT", "GLD"
             ]
             
             # Parallel fetch quotes
@@ -965,9 +966,16 @@ def get_etf_ranking(market="KR", category=None):
                 return None
 
             # Reduced max_workers to avoid aggressive burst
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor(max_workers=10) as executor: # Increase workers for faster fetch
                 unique_symbols = list(set(us_symbols))
-                results = list(executor.map(fetch_quote_safe, unique_symbols))
+                # Add timeout to map
+                futures = {executor.submit(fetch_quote_safe, sym): sym for sym in unique_symbols}
+                results = []
+                for f in as_completed(futures):
+                    try:
+                        res = f.result(timeout=5)
+                        if res: results.append(res)
+                    except: pass
                 
             us_etfs = [r for r in results if r is not None]
             

@@ -98,7 +98,7 @@ async def startup_event():
         # 4. [v5.4.0] 개선된 글로벌 랭킹 캐시 워밍업 (Semaphore 도입)
         async def ranking_cache_warmer():
             print("[Turbo] Global Ranking Cache Warmer Started.")
-            from rank_data import get_global_ranking, get_naver_ranking, crawl_naver_movers
+            from rank_data import get_global_ranking, get_naver_ranking, crawl_naver_movers, get_etf_ranking
             from korea_data import get_market_insights_data
             
             # 동시 실행 수를 3개로 제한 (Naver 차단 방지 및 스레드 폭주 방지)
@@ -107,7 +107,7 @@ async def startup_event():
             async def semaphore_task(func, *args):
                 async with sem:
                     return await asyncio.to_thread(func, *args)
-
+ 
             combos = [
                 ("KOSPI", "trading_volume"),
                 ("KOSPI", "trading_amount"),
@@ -122,6 +122,10 @@ async def startup_event():
                     for market, cat in combos:
                         tasks.append(semaphore_task(get_global_ranking, market, cat))
                     
+                    # [Added] ETF Ranking Warm-up (Priority)
+                    tasks.append(semaphore_task(get_etf_ranking, "KR"))
+                    tasks.append(semaphore_task(get_etf_ranking, "US"))
+                    
                     tasks.append(semaphore_task(get_market_insights_data))
                     tasks.append(semaphore_task(get_naver_ranking, "krx", "quant"))
                     tasks.append(semaphore_task(crawl_naver_movers))
@@ -132,8 +136,8 @@ async def startup_event():
                 except Exception as e:
                     print(f"[Turbo] Cache Warmer Critical Error: {e}")
                 
-                # 다음 주기까지 대기 (작업 시간을 고려하여 조정)
-                await asyncio.sleep(max(10, 60 - (time.time() - start_time)))
+                # 다음 주기까지 대기 (주기를 2분으로 늘려 차단 방지)
+                await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
 
         asyncio.create_task(ranking_cache_warmer())
 

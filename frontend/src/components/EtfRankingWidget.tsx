@@ -24,7 +24,7 @@ interface EtfRankingWidgetProps {
 export default function EtfRankingWidget({ data, loading, market, filterKeyword }: EtfRankingWidgetProps) {
     const isPositive = (val: string | undefined) => {
         if (!val) return false;
-        return val.includes('▲') || (!val.includes('▼') && !val.includes('-') && val !== '0' && val !== '0%');
+        return val.includes('▲') || val.includes('+') || (!val.includes('▼') && !val.includes('-') && val !== '0' && val !== '0%');
     };
     
     const isNegative = (val: string | undefined) => {
@@ -116,14 +116,19 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 ) : (
                     <div className="col-span-full py-20 text-center">
                         <div className="inline-flex p-4 rounded-3xl bg-white/5 mb-4">
-                            <Activity className={`w-8 h-8 ${loading ? 'text-blue-500 animate-pulse' : 'text-gray-700'}`} />
+                            <Activity className={`w-8 h-8 ${loading ? 'text-blue-500 animate-spin' : 'text-gray-700'}`} />
                         </div>
-                        <p className="text-gray-500 font-bold text-sm">
-                            {loading ? '열심히 데이터를 가져오고 있습니다...' : '현재 거래량 상위권에 해당 유형의 종목이 없습니다.'}
+                        <p className="text-gray-400 font-black text-base">
+                            {loading ? '서버에서 최신 데이터를 동기화 중입니다...' : (filterKeyword ? '선택하신 조건에 맞는 종목이 현재 거래량 상위권에 없습니다.' : '데이터를 불러오는 데 실패했거나 현재 장외 시간입니다.')}
                         </p>
                         {!loading && filterKeyword && (
-                            <p className="text-gray-600 text-[10px] mt-2 font-medium">
-                                정렬 초기화를 눌러 전체 시장 상황을 먼저 확인해보세요.
+                            <p className="text-gray-600 text-[11px] mt-3 font-bold">
+                                우측의 [정렬 초기화]를 눌러 전체 시장 상황을 먼저 확인해보세요.
+                            </p>
+                        )}
+                        {!loading && !filterKeyword && (
+                            <p className="text-gray-600 text-[11px] mt-3 font-bold">
+                                일시적인 네트워크 장애일 수 있으니 잠시 후 다시 시도해주세요.
                             </p>
                         )}
                     </div>

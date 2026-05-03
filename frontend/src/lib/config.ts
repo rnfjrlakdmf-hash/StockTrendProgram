@@ -14,10 +14,10 @@ let apiBase = "";
 if (isAndroid) {
   apiBase = "http://10.0.2.2:8000";
 } else {
-  // Web/Server: Always use relative path to leverage Next.js rewrites
-  // This completely eliminates CORS issues for both localhost and Vercel
+  // Web/Server
   if (typeof window !== 'undefined') {
-    apiBase = "";
+    // CSR: Use localhost in dev mode, otherwise relative
+    apiBase = process.env.NODE_ENV === 'development' ? "http://localhost:8000" : "";
   } else {
     // SSR needs absolute URL
     apiBase = "https://stocktrendprogram-production.up.railway.app";

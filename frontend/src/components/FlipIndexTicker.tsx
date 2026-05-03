@@ -74,14 +74,15 @@ export default function FlipIndexTicker() {
                     // 기호 결정 최적화
                     let icon = "📈";
                     if (item.event_kr.includes("KOSPI") || item.event_kr.includes("KOSDAQ") || item.event_kr.includes("코스피")) icon = "🇰🇷";
-                    else if (item.event_kr.includes("S&P") || item.event_kr.includes("NASDAQ") || item.event_kr.includes("다우")) icon = "🇺🇸";
+                    else if (item.event_kr.includes("S&P") || item.event_kr.includes("NASDAQ") || item.event_kr.includes("다우") || item.event_kr.includes("나스닥")) icon = "🇺🇸";
                     else if (item.event_kr.includes("비트코인")) icon = "₿";
                     else if (item.event_kr.includes("환율") || item.event_kr.includes("달러")) icon = "💵";
-                    else if (item.event_kr.includes("금리") || item.event_kr.includes("채권")) icon = "📊";
+                    else if (item.event_kr.includes("금리") || item.event_kr.includes("채권") || item.event_kr.includes("CD") || item.event_kr.includes("콜")) icon = "📊";
                     else if (item.event_kr.includes("WTI") || item.event_kr.includes("유가")) icon = "🛢️";
                     else if (item.event_kr.includes("금") || item.event_kr.includes("Gold")) icon = "💰";
+                    else if (item.event_kr.includes("구리") || item.event_kr.includes("Copper")) icon = "🏗️";
                     else if (item.event_kr.includes("[수급]")) icon = "⚖️";
-                    else if (item.event_kr.includes("[통계]")) icon = "📉";
+                    else if (item.event_kr.includes("[통계]")) icon = "📈";
 
                     return {
                         label: item.event_kr.replace("[글로벌] ", "").replace("[한국] ", "").replace("🏦 ", "").replace("📋 ", "").split(" (")[0],

@@ -1524,52 +1524,73 @@ def get_market_intelligence_indicators():
     [Integrated Engine] 글로벌 원자재, 지수, 환율, 국내 수급, 등락 종목 수 및 대형주 시세를 통합 수집합니다.
     """
     indicators = []
+    seen_names = set()
     today = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    def add_indicator(name, value, category, change="0.00%", impact="medium", cv=0):
+        # 이름 정규화 (공백 제거, 특수문자 통일 등)
+        norm_name = name.replace(" ", "").replace("지수", "").replace("[한국]", "").replace("[글로벌]", "").strip()
+        if norm_name in seen_names:
+            return
+        seen_names.add(norm_name)
+        indicators.append({
+            "date": today, "time": "실시간",
+            "event_kr": name,
+            "actual": value,
+            "category": category, "impact": impact, "change": change, "change_val": cv
+        })
 
     # 1. 글로벌 및 매크로 지수 데이터 수집 (지수, 금리, VIX, 유럽 등)
     try:
-        from korea_data import get_naver_market_index_data, get_top_us_stocks_data
-        
-        # 1.1 주요 글로벌 지표 (VIX, 미 국채 금리, 유럽 지표 포함)
+        from korea_data import (
+            get_naver_market_index_data, get_korean_market_indices, 
+            get_korean_interest_rates, get_naver_market_details
+        )
         global_indices = get_naver_market_index_data()
         for idx in global_indices:
             label = idx['label']
-            # [Fix] Standardize label to avoid duplicates with domestic fetch
             if label == "KOSPI" or label == "KOSDAQ":
-                event_kr = f"[{'한국' if label=='KOSPI' else '한국'}] {label} 지수"
+                event_kr = f"[한국] {label} 지수"
             else:
                 event_kr = label
             
             cat = "📉 공포지수" if "VIX" in label else "📋 글로벌 금리" if "금리" in label else "🌍 글로벌 지수"
             if "환율" in label or "달러" in label: cat = "💵 외환"
 
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": event_kr,
-                "actual": idx['value'],
-                "category": cat, "impact": "high", "change": idx['change'], "change_val": 0
-            })
+            add_indicator(event_kr, idx['value'], cat, change=idx['change'], impact="high")
 
-        # 1.2 [New] 비트코인 등 가상자산 추가
+        # 1.2 가상자산 추가
         try:
             from rank_data import get_simple_quote
             btc = get_simple_quote("BTC-USD")
             if btc:
-                indicators.append({
-                    "date": today, "time": "실시간",
-                    "event_kr": "₿ 비트코인 (BTC/USD)",
-                    "actual": btc['price'],
-                    "category": "₿ 가상자산", "impact": "medium", "change": btc['change'], "change_val": 0
-                })
+                add_indicator("₿ 비트코인 (BTC/USD)", btc['price'], "₿ 가상자산", change=btc['change'])
         except: pass
 
-        # 1.3 기존 원자재 데이터 (WTI, 금, 구리 등)
-        global_assets = get_global_assets_data()
-        indicators.extend(global_assets)
+        # 1.3 주요 경제 지표 통합 수집 (가장 고정밀 데이터이므로 우선순위 높음)
+        from major_indicators import get_normalized_major_indicators
+        major_data = get_normalized_major_indicators()
+        
+        for category_name, items in major_data.items():
+            if category_name in ["updatedAt"]: continue
+            for item in items:
+                if not item: continue
+                name = item['name']
+                cat_display = "💰 원자재" if category_name == "Commodity" else \
+                             "💵 외환" if category_name == "Forex" else \
+                             "📈 지수" if category_name == "Indices" else \
+                             "📊 금리/채권" if category_name in ["Bonds", "Interest"] else \
+                             "₿ 가상자산" if category_name == "Crypto" else category_name
+                
+                event_kr = f"{name}"
+                if category_name == "Forex" and "/" not in name:
+                    event_kr = f"{name} 환율"
+                
+                add_indicator(event_kr, str(item['price']), cat_display, change=str(item['change']), impact="high")
     except Exception as e:
         print(f"[Global Intelligence Sync] Error: {e}")
 
-    # 2. 국내 증시 디테일 데이터 수집 (수급, 등락 종목 수, 상위 종목)
+    # 2. 국내 증시 디테일 데이터 수집
     try:
         from korea_data import (
             get_korean_market_indices, get_korean_interest_rates, 
@@ -1583,45 +1604,21 @@ def get_market_intelligence_indicators():
             counts = detail['stock_counts']
             m_name = "코스피" if m_id == "KOSPI" else "코스닥"
             
-            # 수급 데이터를 인디케이터에 추가
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[수급] 🧾 {m_name} 투자자 (외국인/기관)",
-                "actual": f"외인:{flow['외국인']}억 / 기관:{flow['기관']}억",
-                "category": "⚖️ 수급 동향", "impact": "high", "change": f"개인:{flow['개인']}억", "change_val": 0
-            })
-            
-            # 등락 종목 수 통계를 인디케이터에 추가
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[통계] 📉 {m_name} 등락 종목",
-                "actual": f"상승:{counts['상승']}(상한:{counts['상한가']}) / 하락:{counts['하락']}(하한:{counts['하한가']})",
-                "category": "📊 시장 통계", "impact": "high", "change": f"보합:{counts['보합']}", "change_val": 0
-            })
+            add_indicator(f"[수급] 🧾 {m_name} 투자자", f"외인:{flow['외국인']}억 / 기관:{flow['기관']}억", "⚖️ 수급 동향", change=f"개인:{flow['개인']}억", impact="high")
+            add_indicator(f"[통계] 📉 {m_name} 등락 종목", f"상승:{counts['상승']} / 하락:{counts['하락']}", "📊 시장 통계", change=f"보합:{counts['보합']}", impact="high")
 
-        # [Optimized] 시가총액 상위 종목 제거 (사용자 요청)
-
-        # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등) - 중복 체크 강화
+        # 2.3 지수 데이터 수집 (KOSPI, KOSDAQ 등)
         indices = get_korean_market_indices()
         for key, info in indices.items():
             name_kr = "KOSPI" if key == "kospi" else "KOSDAQ" if key == "kosdaq" else "코스피200"
             actual_str = info.get('value', '-')
             chg_pct_str = info.get('percent', '0.00%')
             
-            # 이미 global_indices에서 처리된 경우 건너뜀 (명칭 매칭)
-            if any(name_kr in item['event_kr'] for item in indicators if '지수' in item.get('category', '')):
-                continue
-
             try:
                 cv = float(re.sub(r'[^0-9.-]', '', chg_pct_str))
             except: cv = 0.0
 
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[한국] 🏦 {name_kr} 지수",
-                "actual": actual_str,
-                "category": "🏦 주가지수", "impact": "high", "change": chg_pct_str, "change_val": cv,
-            })
+            add_indicator(f"[한국] 🏦 {name_kr} 지수", actual_str, "🏦 주가지수", change=chg_pct_str, impact="high", cv=cv)
             
         # 3. 채권/금리 데이터 수집
         kr_rates = get_korean_interest_rates()
@@ -1632,26 +1629,11 @@ def get_market_intelligence_indicators():
             actual_str = f"{price:.2f}%"
             change_str = f"{chg_val:+.2f}%p" if chg_val != 0 else "0.00%p"
             
-            indicators.append({
-                "date": today, "time": "실시간",
-                "event_kr": f"[한국] 📋 {name}",
-                "actual": actual_str,
-                "category": "📋 채권 / 금리", "impact": "medium", "change": change_str, "change_val": chg_val,
-            })
+            add_indicator(f"[한국] 📋 {name}", actual_str, "📋 채권 / 금리", change=change_str, cv=chg_val)
     except Exception as e:
         print(f"[Market Data Engine] Detail Sync Error: {e}")
 
-    # 4. 필터링 및 정규화
-    filtered = []
-    seen = set()
-    for item in indicators:
-        key = item.get("event_kr", "")
-        actual = item.get("actual", "-")
-        if actual != "-" and key not in seen:
-            seen.add(key)
-            filtered.append(item)
-
-    return filtered
+    return indicators
 
 def get_macro_calendar():
     """
