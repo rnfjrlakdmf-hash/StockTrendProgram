@@ -344,18 +344,33 @@ function EtfAnalysisContent() {
                                                 </thead>
                                                 <tbody>
                                                     {etfData.holdings.map((h: any, i: number) => {
-                                                        const weightVal = parseFloat(h.weight.replace('%','')) || 0;
+                                                        const weightStr = String(h.weight || "0").replace('%','');
+                                                        const weightVal = parseFloat(weightStr) || 0;
+                                                        const isZero = weightVal <= 0;
+                                                        
                                                         return (
                                                             <tr key={i} className="border-b border-gray-800/50 hover:bg-white/5 transition-colors group">
                                                                 <td className="py-4 text-sm font-bold text-gray-500 w-12">{i + 1}</td>
                                                                 <td className="py-4 font-black text-gray-200">
-                                                                    {h.name}
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <span>{h.name}</span>
+                                                                        {isZero && (
+                                                                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">Top Holding</span>
+                                                                        )}
+                                                                    </div>
                                                                     <div className="w-full bg-gray-800 h-1.5 mt-2 rounded-full overflow-hidden">
-                                                                        <div className="bg-indigo-500 h-full rounded-full transition-all" style={{ width: `${Math.min(weightVal, 100)}%` }} />
+                                                                        <div 
+                                                                            className={`${isZero ? 'bg-gradient-to-r from-blue-600/40 to-indigo-600/40' : 'bg-indigo-500'} h-full rounded-full transition-all`} 
+                                                                            style={{ width: isZero ? `${100 - (i * 8)}%` : `${Math.min(weightVal, 100)}%` }} 
+                                                                        />
                                                                     </div>
                                                                 </td>
                                                                 <td className="py-4 text-sm font-black text-indigo-400 text-right w-24">
-                                                                    {h.weight.includes('%') ? h.weight : `${h.weight}%`}
+                                                                    {isZero ? (
+                                                                        <span className="text-gray-500 text-[11px] italic">수집중</span>
+                                                                    ) : (
+                                                                        h.weight.includes('%') ? h.weight : `${h.weight}%`
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         );
