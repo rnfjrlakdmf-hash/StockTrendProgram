@@ -14,15 +14,13 @@ let apiBase = "";
 if (isAndroid) {
   apiBase = "http://10.0.2.2:8000";
 } else {
-  // Web/Server
   if (typeof window !== 'undefined') {
-    // CSR: Use localhost in dev mode, otherwise relative
-    apiBase = process.env.NODE_ENV === 'development' ? "http://localhost:8000" : "";
+    // Client-side: use localhost for local dev, otherwise relative to current host
+    apiBase = window.location.hostname === 'localhost' ? "http://localhost:8000" : "";
   } else {
-    // SSR needs absolute URL
-    apiBase = "https://stocktrendprogram-production.up.railway.app";
+    // Server-side (SSR/SSG): use environment variable or fallback to Railway
+    apiBase = process.env.BACKEND_URL || "https://stocktrendprogram-production.up.railway.app";
   }
 }
 
-export const API_BASE_URL = apiBase;
 

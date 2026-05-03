@@ -1,0 +1,24 @@
+import requests
+import json
+
+def inspect_integration_api(symbol):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://m.stock.naver.com/"
+    }
+    url = f"https://m.stock.naver.com/api/stock/{symbol}/integration"
+    resp = requests.get(url, headers=headers, timeout=5)
+    if resp.status_code == 200:
+        data = resp.json()
+        print(f"Keys in integration API: {list(data.keys())}")
+        # Print first few levels of nesting
+        for k, v in data.items():
+            if isinstance(v, dict):
+                print(f"  {k} keys: {list(v.keys())}")
+            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
+                print(f"  {k} list sample keys: {list(v[0].keys())}")
+    else:
+        print(f"Failed with status: {resp.status_code}")
+
+if __name__ == "__main__":
+    inspect_integration_api("069500")

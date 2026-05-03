@@ -1,0 +1,17 @@
+import requests
+
+def dump_naver_co_info(symbol):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://finance.naver.com/"
+    }
+    # co_info.naver is where the ETF analysis/holdings usually reside
+    url = f"https://finance.naver.com/item/co_info.naver?code={symbol}"
+    resp = requests.get(url, headers=headers, timeout=5)
+    resp.encoding = 'euc-kr'
+    with open("scratch/naver_co_info_dump.html", "w", encoding="utf-8") as f:
+        f.write(resp.text)
+    print(f"Dumped to scratch/naver_co_info_dump.html")
+
+if __name__ == "__main__":
+    dump_naver_co_info("069500")

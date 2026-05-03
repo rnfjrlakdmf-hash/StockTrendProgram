@@ -7,10 +7,15 @@ import re
 import yfinance as yf
 from deep_translator import GoogleTranslator
 
+from turbo_engine import turbo_cache
+
 AMC_MAP = {
     "KODEX": "삼성자산운용", "TIGER": "미래에셋자산운용", "KBSTAR": "KB자산운용",
     "ACE": "한국투자신탁운용", "ARIRANG": "한화자산운용", "KIBO": "키움투자자산운용",
-    "HANARO": "NH-Amundi자산운용", "SOL": "한국투자신탁운용", "TIMEFOLIO": "타임폴리오자산운용"
+    "HANARO": "NH-Amundi자산운용", "SOL": "신한자산운용", "TIMEFOLIO": "타임폴리오자산운용",
+    "BlackRock": "블랙록", "Vanguard": "뱅가드", "State Street": "스테이트 스트리트",
+    "Invesco": "인베스코", "Charles Schwab": "찰스 슈왑", "ProShares": "프로셰어즈",
+    "Direxion": "디렉시온", "JPMorgan": "제이피모건"
 }
 
 def safe_to_float(val):
@@ -58,7 +63,9 @@ def calculate_performance(hist):
         
     return perf_data
 
+@turbo_cache(ttl_seconds=3600) # Detail data is cached for 1 hour
 def get_etf_detail(symbol: str):
+    symbol = symbol.upper().strip()
     if not symbol:
         return {"status": "error", "message": "Symbol is required"}
         
@@ -117,11 +124,20 @@ def get_etf_detail(symbol: str):
             
             eng_amc = info.get("fundFamily", "알 수 없음")
             if eng_amc != "알 수 없음":
-                try:
-                    kor_amc = GoogleTranslator(source='en', target='ko').translate(eng_amc)
-                    data["basic_info"]["amc"] = kor_amc.replace("Inc.", "").replace("LLC", "").strip()
-                except:
-                    data["basic_info"]["amc"] = eng_amc
+                # Check AMC_MAP first for common families
+                amc_found = False
+                for en, ko in AMC_MAP.items():
+                    if en.lower() in eng_amc.lower():
+                        data["basic_info"]["amc"] = ko
+                        amc_found = True
+                        break
+                
+                if not amc_found:
+                    try:
+                        kor_amc = GoogleTranslator(source='en', target='ko').translate(eng_amc)
+                        data["basic_info"]["amc"] = kor_amc.replace("Inc.", "").replace("LLC", "").strip()
+                    except:
+                        data["basic_info"]["amc"] = eng_amc
             else:
                 data["basic_info"]["amc"] = "알 수 없음"
                 
@@ -356,8 +372,9 @@ def get_etf_detail(symbol: str):
             wise_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_sym}"
             wise_resp = requests.get(wise_url, headers=headers, timeout=7)
             if wise_resp.status_code == 200:
-                # Try to detect encoding or default to utf-8
-                wise_resp.encoding = 'utf-8' 
+                # Detect encoding automatically or fallback to euc-kr
+                if wise_resp.encoding.lower() == 'iso-8859-1':
+                    wise_resp.encoding = 'euc-kr'
                 wise_html = wise_resp.text
                 
                 # 3.1 Basic Info from 'product_summary_data' JS variable

@@ -1,0 +1,22 @@
+import sys
+import os
+
+# Add backend to path to import
+sys.path.append(os.path.join(os.getcwd(), 'backend'))
+
+from etf_detail import get_etf_detail
+
+def check_holdings(symbol):
+    result = get_etf_detail(symbol)
+    if result["status"] == "success":
+        data = result["data"]
+        print(f"ETF Name: {data.get('name')}")
+        print(f"Basic Info: {data.get('basic_info')}")
+        print(f"Holdings (Count: {len(data.get('holdings', []))}):")
+        for h in data.get('holdings', [])[:10]:
+            print(f"  - {h['name']}: {h['weight']}")
+    else:
+        print(f"Failed: {result.get('message')}")
+
+if __name__ == "__main__":
+    check_holdings("069500")

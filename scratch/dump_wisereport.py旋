@@ -1,0 +1,16 @@
+import requests
+
+def dump_wisereport(symbol):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://finance.naver.com/"
+    }
+    url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={symbol}"
+    resp = requests.get(url, headers=headers, timeout=10)
+    # Write to file
+    with open("scratch/wisereport_dump.html", "w", encoding="utf-8") as f:
+        f.write(resp.text)
+    print(f"Dumped WiseReport to scratch/wisereport_dump.html (Status: {resp.status_code})")
+
+if __name__ == "__main__":
+    dump_wisereport("069500")

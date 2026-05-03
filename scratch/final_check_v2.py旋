@@ -1,0 +1,28 @@
+import sys
+import os
+import json
+
+# Add backend to path to import
+sys.path.append(os.path.join(os.getcwd(), 'backend'))
+
+from etf_detail import get_etf_detail
+
+def check_holdings(symbol):
+    result = get_etf_detail(symbol)
+    if result["status"] == "success":
+        data = result["data"]
+        subset = {
+            "name": data.get("name"),
+            "basic_info": data.get("basic_info"),
+            "holdings": data.get("holdings")
+        }
+        output = json.dumps(subset, ensure_ascii=False, indent=2)
+        # Write to file instead of printing to console
+        with open("scratch/final_output.json", "w", encoding="utf-8") as f:
+            f.write(output)
+        print("Wrote result to scratch/final_output.json")
+    else:
+        print(f"Error: {result.get('message')}")
+
+if __name__ == "__main__":
+    check_holdings("069500")

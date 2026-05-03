@@ -1,0 +1,73 @@
+{
+  "name": "KODEX 200",
+  "basic_info": {
+    "ter": "0.15%",
+    "amc": "삼성자산운용(ETF)",
+    "aum": "21조 9,042억",
+    "launch_date": "2002-10-14",
+    "index": "코스피 200",
+    "dividend_yield": "0.83%"
+  },
+  "holdings": [
+    {
+      "name": "삼성전자",
+      "weight": "30.94%"
+    },
+    {
+      "name": "SK하이닉스",
+      "weight": "21.43%"
+    },
+    {
+      "name": "SK스퀘어",
+      "weight": "2.34%"
+    },
+    {
+      "name": "현대차",
+      "weight": "2.18%"
+    },
+    {
+      "name": "두산에너빌리티",
+      "weight": "1.66%"
+    },
+    {
+      "name": "KB금융",
+      "weight": "1.55%"
+    },
+    {
+      "name": "삼성전기",
+      "weight": "1.40%"
+    },
+    {
+      "name": "한화에어로스페이스",
+      "weight": "1.39%"
+    },
+    {
+      "name": "삼성SDI",
+      "weight": "1.28%"
+    },
+    {
+      "name": "신한지주",
+      "weight": "1.24%"
+    },
+    {
+      "name": "기아",
+      "weight": "1.12%"
+    },
+    {
+      "name": "하나금융지주",
+      "weight": "0.97%"
+    },
+    {
+      "name": "POSCO홀딩스",
+      "weight": "0.94%"
+    },
+    {
+      "name": "셀트리온",
+      "weight": "0.91%"
+    },
+    {
+      "name": "NAVER",
+      "weight": "0.87%"
+    }
+  ]
+}
