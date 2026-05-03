@@ -139,7 +139,8 @@ async def startup_event():
                 # 다음 주기까지 대기 (주기를 2분으로 늘려 차단 방지)
                 await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
 
-        asyncio.create_task(ranking_cache_warmer())
+        # [Temporarily Disabled] Cache Warmer causing deadlock on some environments
+        # asyncio.create_task(ranking_cache_warmer())
 
     asyncio.create_task(gradual_background_startup())
 
