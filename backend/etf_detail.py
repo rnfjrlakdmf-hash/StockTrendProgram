@@ -400,8 +400,14 @@ def get_etf_detail(symbol: str):
                                 h_name = h_item.get("STK_NM_KOR")
                                 h_weight = h_item.get("ETF_WEIGHT")
                                 if h_name and h_name != "원화현금":
+                                    # Handle None or empty weights for overseas holdings in KR ETFs
                                     w_val = safe_to_float(h_weight)
-                                    w_str = f"{w_val:.2f}%" if w_val > 0 else "0.00%"
+                                    if w_val > 0:
+                                        w_str = f"{w_val:.2f}%"
+                                    else:
+                                        # Force 0.00% so frontend can apply "Top Holding" logic
+                                        w_str = "0.00%"
+                                    
                                     data["holdings"].append({"name": h_name, "weight": w_str})
                                     if len(data["holdings"]) >= 15: break
                         except: pass
