@@ -1087,14 +1087,20 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
                 return []
             gn = GoogleNews(lang=lang, region=region, period=period)
             gn.search(query)
+            # 페이징 처리를 통해 50개(약 5페이지) 정도의 뉴스를 가져옵니다.
+            for i in range(2, 6):
+                try:
+                    gn.get_page(i)
+                except:
+                    break
             return gn.results()
 
         raw_results = []
         try:
-            # Run in thread with timeout
+            # Run in thread with timeout (increased to 15s for multiple pages)
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(_exec_google_search)
-                raw_results = future.result(timeout=5) # 5초 타임아웃
+                raw_results = future.result(timeout=15)
         except concurrent.futures.TimeoutError:
             print(f"[News] Google News Timeout for '{query}'")
             # Timeout -> Fallback
