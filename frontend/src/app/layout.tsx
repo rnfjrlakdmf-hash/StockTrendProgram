@@ -60,6 +60,10 @@ export default function RootLayout({
       <head />
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>
+          {/* EMERGENCY DEPLOYMENT VERIFIER */}
+          <div className="fixed top-0 left-0 w-full bg-yellow-500 text-black text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest">
+            LIVE UPDATE v3.7.25-FINAL-BOOST ACTIVE
+          </div>
           <div className="flex min-h-screen">
             <Sidebar />
             <main className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">

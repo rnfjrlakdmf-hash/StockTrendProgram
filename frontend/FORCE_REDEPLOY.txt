@@ -1,0 +1,3 @@
+FORCE REDEPLOY TRIGGER: 2026-05-05 18:09:00
+Version: v3.7.25-FINAL-BOOST
+Reason: Watchlist button interaction fix persistence.
