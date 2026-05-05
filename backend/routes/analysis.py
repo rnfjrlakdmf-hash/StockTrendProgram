@@ -360,13 +360,14 @@ async def stock_news_period(symbol: str, period: str = Query("1d")):
             # 글로벌 종목은 영어 뉴스 비중이 높으므로 언어 설정 조정 가능
             # 여기서는 우선 쿼리를 종목명 + 심볼로 강화
             search_query = f"{name} {symbol} stock"
-            news = await asyncio.to_thread(fetch_google_news, search_query, lang='en', region='US', period=period)
+            news = await asyncio.to_thread(fetch_google_news, search_query, lang='en', region='US', period='30d')
             
             # 만약 영어 뉴스 결과가 너무 적으면 한국어 뉴스도 시도 (선택 사항)
             if not news:
-                news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period=period)
+                news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period='30d')
         else:
-            news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period=period)
+            from korea_data import get_integrated_stock_news
+            news = await asyncio.to_thread(get_integrated_stock_news, symbol=symbol, name=name, days=30)
             
         return {"status": "success", "data": news}
     except Exception as e:
