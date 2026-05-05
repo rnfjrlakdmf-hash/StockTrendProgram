@@ -25,7 +25,7 @@ interface CleanStockListProps {
     items: CleanStockItem[];
     onItemClick?: (symbol: string) => void;
     onDelete?: (symbol: string) => void;
-    onAlertClick?: (symbol: string, currentPrice: number) => void;
+    onAlertClick?: (symbol: string, currentPrice: number, addedPrice?: number) => void;
     isLoading?: boolean;
 }
 
@@ -135,7 +135,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         e.preventDefault();
                                         e.stopPropagation();
                                         const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
-                                        onAlertClick(item.symbol, parseFloat(rawPrice));
+                                        onAlertClick(item.symbol, parseFloat(rawPrice), item.added_price);
                                     }}
                                     className="p-3.5 bg-blue-600 text-white rounded-2xl transition-all active:scale-50 cursor-pointer shadow-2xl flex items-center justify-center border-2 border-yellow-400 hover:ring-4 hover:ring-blue-400"
                                     title="방어막 설정"

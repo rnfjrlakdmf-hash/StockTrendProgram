@@ -29,7 +29,7 @@ export default function WatchlistPage() {
     const { user, isLoading: isAuthLoading } = useAuth();
     
     // Alert Modal State
-    const [alertStock, setAlertStock] = useState<{ symbol: string; price: number } | null>(null);
+    const [alertStock, setAlertStock] = useState<{ symbol: string; price: number; addedPrice?: number } | null>(null);
 
     // Alerts List States
     const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -320,7 +320,7 @@ export default function WatchlistPage() {
                                     })}
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
                                     onDelete={handleRemoveItem}
-                                    onAlertClick={(symbol, price) => { setAlertStock({ symbol, price }); }}
+                                    onAlertClick={(symbol, price, addedPrice) => { setAlertStock({ symbol, price, addedPrice }); }}
                                 />
                             </div>
                         )}
@@ -575,7 +575,7 @@ export default function WatchlistPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
                     <div className="relative w-full max-w-lg">
                         <button onClick={() => setAlertStock(null)} className="absolute -top-12 right-0 p-2 text-gray-400 hover:text-white transition-colors"><X className="w-8 h-8" /></button>
-                        <PriceAlertSetup symbol={alertStock.symbol} currentPrice={alertStock.price} />
+                        <PriceAlertSetup symbol={alertStock.symbol} currentPrice={alertStock.price} buyPrice={alertStock.addedPrice} />
                     </div>
                 </div>
             )}

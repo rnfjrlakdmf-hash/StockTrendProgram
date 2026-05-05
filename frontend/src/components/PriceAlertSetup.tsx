@@ -220,7 +220,6 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                 checked={stopLossEnabled}
                                 onChange={(e) => setStopLossEnabled(e.target.checked)}
                                 className="w-5 h-5 rounded"
-                                disabled={mode === 'shield' && !buyPrice}
                             />
                             <div className="flex items-center gap-2">
                                 <TrendingDown className="w-5 h-5 text-blue-400" />
@@ -265,7 +264,6 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                 checked={takeProfitEnabled}
                                 onChange={(e) => setTakeProfitEnabled(e.target.checked)}
                                 className="w-5 h-5 rounded"
-                                disabled={mode === 'shield' && !buyPrice}
                             />
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-5 h-5 text-red-400" />
