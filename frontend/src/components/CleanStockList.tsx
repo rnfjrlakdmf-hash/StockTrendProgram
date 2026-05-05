@@ -126,36 +126,42 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
                         </div>
 
-                        {/* Actions (Isolated Absolute Layer) */}
-                        <div className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 z-50 pointer-events-auto">
+                        {/* Actions (Isolated Absolute Layer - Debug Version) */}
+                        <div className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 z-[9999]">
                             {onAlertClick && (
                                 <div 
                                     role="button"
+                                    onPointerDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
+                                        // alert("방패 버튼 클릭됨!"); // DEBUG
                                         const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
                                         onAlertClick(item.symbol, parseFloat(rawPrice));
                                     }}
-                                    className="p-3 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded-xl transition-all active:scale-90 border border-blue-500/30 cursor-pointer shadow-xl backdrop-blur-md"
+                                    className="p-3 bg-blue-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center"
+                                    style={{ pointerEvents: 'auto' }}
                                     title="방어막 설정"
                                 >
-                                    <Shield className="w-5 h-5" />
+                                    <Shield className="w-6 h-6" />
                                 </div>
                             )}
                             
                             {onDelete && (
                                 <div 
                                     role="button"
+                                    onPointerDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
+                                        // alert("삭제 버튼 클릭됨!"); // DEBUG
                                         onDelete(item.symbol);
                                     }}
-                                    className="p-3 bg-red-600/10 hover:bg-red-600 text-gray-400 hover:text-white rounded-xl transition-all active:scale-90 border border-white/10 hover:border-red-500 cursor-pointer shadow-xl backdrop-blur-md"
+                                    className="p-3 bg-red-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center"
+                                    style={{ pointerEvents: 'auto' }}
                                     title="삭제"
                                 >
-                                    <Trash2 className="w-5 h-5" />
+                                    <Trash2 className="w-6 h-6" />
                                 </div>
                             )}
                         </div>
