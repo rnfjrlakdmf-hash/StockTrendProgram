@@ -88,7 +88,31 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     price={item.price}
                                     className={`text-[21px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
                                 />
-                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg`}>
+                                
+                                {/* Entry Price & Yield Display */}
+                                {item.added_price && item.added_price > 0 && (
+                                    <div className="flex flex-col items-end mt-1">
+                                        <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+                                            <span className="bg-gray-800 px-1 rounded text-[9px]">진입가</span>
+                                            <span className="font-mono">{item.added_price.toLocaleString()}원</span>
+                                        </div>
+                                        <div className={`text-[12px] font-black flex items-center gap-0.5 ${
+                                            (() => {
+                                                const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                const yieldVal = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
+                                                return yieldVal > 0 ? 'text-red-400' : yieldVal < 0 ? 'text-blue-400' : 'text-gray-400';
+                                            })()
+                                        }`}>
+                                            {(() => {
+                                                const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                const yieldVal = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
+                                                return `${yieldVal > 0 ? '+' : ''}${yieldVal.toFixed(2)}%`;
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg mt-1`}>
                                     <span translate="no">
                                         {(() => {
                                             const rawChange = String(item.change || '');
