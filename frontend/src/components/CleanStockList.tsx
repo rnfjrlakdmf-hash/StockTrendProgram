@@ -139,7 +139,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
                                         onAlertClick(item.symbol, parseFloat(rawPrice));
                                     }}
-                                    className="p-3 bg-blue-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center"
+                                    className="p-3 bg-blue-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center border-2 border-yellow-400"
                                     style={{ pointerEvents: 'auto' }}
                                     title="방어막 설정"
                                 >
@@ -157,7 +157,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         // alert("삭제 버튼 클릭됨!"); // DEBUG
                                         onDelete(item.symbol);
                                     }}
-                                    className="p-3 bg-red-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center"
+                                    className="p-3 bg-red-600 text-white rounded-xl transition-all active:scale-75 cursor-pointer shadow-2xl flex items-center justify-center border-2 border-yellow-400"
                                     style={{ pointerEvents: 'auto' }}
                                     title="삭제"
                                 >
