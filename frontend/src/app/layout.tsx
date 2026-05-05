@@ -11,9 +11,7 @@ import FCMWrapper from "@/components/FCMWrapper";
 
 
 
-// ... (in return JSX)
-{/* Global FCM Token Manager (Disabled for Debugging Crash) */ }
-{/* <FCMTokenManager /> */ }
+
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
