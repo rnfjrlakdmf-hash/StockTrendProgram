@@ -57,13 +57,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Google AdSense - 회원님의 ID로 나중에 교체 필요 */}
-        <Script
+        {/* Google AdSense - 최신 방식보다 크롤러가 더 잘 찾는 기본 방식으로 변경 */}
+        <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
           crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        ></script>
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>
