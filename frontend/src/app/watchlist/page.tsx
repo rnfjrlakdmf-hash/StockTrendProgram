@@ -6,6 +6,7 @@ import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
+import AdBanner from "@/components/AdBanner";
 import { useAuth } from "@/context/AuthContext";
 import { isFreeModeEnabled } from "@/lib/adminMode";
 

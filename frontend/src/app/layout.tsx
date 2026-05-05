@@ -56,7 +56,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        {/* Google AdSense - 회원님의 ID로 나중에 교체 필요 */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
+        />
+      </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>
           {/* EMERGENCY DEPLOYMENT VERIFIER */}
