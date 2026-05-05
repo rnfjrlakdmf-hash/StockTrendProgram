@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Shield, TrendingDown, TrendingUp, Target, Bell, X, Crosshair } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
+import { useAuth } from "@/context/AuthContext";
 
 interface PriceAlertSetupProps {
     symbol: string;
@@ -12,6 +13,7 @@ interface PriceAlertSetupProps {
 }
 
 export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quantity }: PriceAlertSetupProps) {
+    const { user } = useAuth();
     const [mode, setMode] = useState<'shield' | 'price' | 'sniper'>('shield');
     // Sniper Alert State
     const [sniperType, setSniperType] = useState<string>("RSI_OVERSOLD");
@@ -42,7 +44,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
         setMessage("");
 
         try {
-            const userId = localStorage.getItem("user_id") || "guest";
+            const userId = user?.id || (user as any)?.uid || "guest";
             const alerts = [];
 
             if (mode === 'sniper') {
