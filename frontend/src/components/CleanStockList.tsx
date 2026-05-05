@@ -134,19 +134,23 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 </div>
                             </div>
 
-                            {/* Actions (Hidden on tiny mobile, visible from sm up) */}
-                            <div className="hidden sm:flex items-center gap-1.5 bg-white/5 rounded-xl p-1 border border-white/5">
+                            {/* Actions (Enhanced for better hit area and visibility) */}
+                            <div 
+                                className="flex items-center gap-1 bg-white/10 rounded-xl p-1 border border-white/10 relative z-30 shadow-lg cursor-default"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 {onAlertClick && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const numericPrice = parseFloat(item.price.replace(/,/g, ''));
+                                            const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
+                                            const numericPrice = parseFloat(rawPrice);
                                             onAlertClick(item.symbol, numericPrice);
                                         }}
-                                        className="p-2.5 text-blue-400/80 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all active:scale-95"
-                                        title="방어막(알림) 설정"
+                                        className="p-3 text-blue-400 hover:text-white hover:bg-blue-500 rounded-lg transition-all active:scale-95"
+                                        title="방어막 설정"
                                     >
-                                        <Shield className="w-4.5 h-4.5" />
+                                        <Shield className="w-5 h-5" />
                                     </button>
                                 )}
                                 
@@ -156,10 +160,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             e.stopPropagation();
                                             onDelete(item.symbol);
                                         }}
-                                        className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                                        className="p-3 text-gray-400 hover:text-white hover:bg-red-500 rounded-lg transition-all active:scale-95"
                                         title="삭제"
                                     >
-                                        <Trash2 className="w-4.5 h-4.5" />
+                                        <Trash2 className="w-5 h-5" />
                                     </button>
                                 )}
                             </div>
