@@ -7,6 +7,7 @@ export interface CleanStockItem {
     name: string;
     price: string;
     change: string; // "+1.5%" or "-0.2%" or "0%"
+    change_percent?: string; // Percent value for fallback
     change_price?: string; // Optional absolute change value
     isRealtime?: boolean;
     unit?: string;
