@@ -97,7 +97,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
 
             // API 호출
             for (const alert of alerts) {
-                const endpoint = mode === 'sniper' ? `${API_BASE_URL}/api/alerts` : `${API_BASE_URL}/api/alerts/price`;
+                const endpoint = `${API_BASE_URL}/api/alerts`;
                 const res = await fetch(endpoint, {
                     method: "POST",
                     headers: {
