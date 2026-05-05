@@ -73,8 +73,11 @@ export default function WatchlistPage() {
     };
 
     const fetchAlerts = async () => {
+        if (!user) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/alerts`);
+            const res = await fetch(`${API_BASE_URL}/api/alerts`, {
+                headers: { "X-User-ID": user.id || (user as any).uid }
+            });
             const json = await res.json();
             if (json.status === "success") {
                 const sorted = json.data.sort((a: Alert, b: Alert) => b.id - a.id);
@@ -98,9 +101,12 @@ export default function WatchlistPage() {
     };
 
     const runAlertCheck = async () => {
+        if (!user) return;
         setAlertsLoading(true);
         try {
-            await fetch(`${API_BASE_URL}/api/alerts/check`);
+            await fetch(`${API_BASE_URL}/api/alerts/check`, {
+                headers: { "X-User-ID": user.id || (user as any).uid }
+            });
             await fetchAlerts();
         } catch (err) {
             console.error(err);
