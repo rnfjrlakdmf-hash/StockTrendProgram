@@ -66,6 +66,7 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
     import pandas as pd
     import re
     try:
+        symbol = symbol.strip().upper()
         if re.match(r'^\d{6}$', symbol):
             try:
                 ticker = yf.Ticker(f"{symbol}.KS")
@@ -77,7 +78,9 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
         else:
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period=range)
-        if hist.empty: return {"status": "success", "data": []}
+        
+        # [Fix] Return error status so turbo_cache ignores this empty response.
+        if hist.empty: return {"status": "error", "message": "No data found", "data": []}
         hist['PrevClose'] = hist['Close'].shift(1)
         hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
         hist['ChangeVal'] = hist['Close'] - hist['PrevClose']
