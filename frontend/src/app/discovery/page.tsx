@@ -27,31 +27,9 @@ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 
-// [WebSocket Integration] Real-time Price Updates
-// Replaces the old 5-second polling interval
-/* REMOVED BAD BLOCK
-        // Flash effect can be handled by CSS animations if needed, 
-        // but React re-render will update values immediately.
-        setStock(prev => {
-            if (!prev) return null;
-            // Avoid update if price hasn't changed to prevent unnecessary re-renders
-            if (prev.price === realtimeData.price) return prev;
-
-            return {
-                ...prev,
-                price: realtimeData.price,
-                change: realtimeData.change
-            };
-        });
-    }
-*/
-
-/* REMOVED: Legacy Polling Logic
-useEffect(() => {
-   // ...
-}, [stock?.symbol]); 
-*/
 import { getTickerFromKorean } from "@/lib/stockMapping";
+
+// [WebSocket Integration] Real-time Price Updates
 
 
 interface StockData {
