@@ -99,14 +99,14 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         <div className={`text-[12px] font-black flex items-center gap-0.5 ${
                                             (() => {
                                                 const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                const yieldVal = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
-                                                return yieldVal > 0 ? 'text-red-400' : yieldVal < 0 ? 'text-blue-400' : 'text-gray-400';
+                                                const diff = curP - (item.added_price || 0);
+                                                return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
                                             })()
                                         }`}>
                                             {(() => {
                                                 const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                const yieldVal = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
-                                                return `${yieldVal > 0 ? '+' : ''}${yieldVal.toFixed(2)}%`;
+                                                const diff = curP - (item.added_price || 0);
+                                                return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
                                             })()}
                                         </div>
                                     </div>
