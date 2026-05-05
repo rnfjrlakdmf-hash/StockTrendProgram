@@ -24,12 +24,16 @@ app = FastAPI(
     description="최적의 안정성과 속도를 위해 모든 군더더기를 제거한 원상 복구 버전"
 )
 
-# [CORS Policy]
+# [Strict CORS Policy for Security]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://stock-trend-program.vercel.app",
+        "https://stocktrendprogram-production.up.railway.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
