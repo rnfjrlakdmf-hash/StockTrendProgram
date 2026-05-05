@@ -97,9 +97,15 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
     const data = React.useMemo(() => {
         if (!rawData) return null;
         
+        // [Fix] Extract full_data from detailed wrapper if it exists (Domestic format)
+        let processedData = rawData;
+        if (rawData.detailed && rawData.detailed.full_data) {
+            processedData = rawData.detailed.full_data;
+        }
+
         // If it's already in the correct format (Domestic), return as is
-        if (Object.values(rawData).some(v => v && typeof v === 'object' && 'dates' in v)) {
-            return rawData as Record<string, FinancialMetric>;
+        if (Object.values(processedData).some((v: any) => v && typeof v === 'object' && 'dates' in v)) {
+            return processedData as Record<string, FinancialMetric>;
         }
 
         // If it's in the Global format (from yfinance), transform it

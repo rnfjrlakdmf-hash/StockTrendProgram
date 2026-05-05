@@ -118,7 +118,7 @@ export default function PatternPage() {
 
         try {
             const ticker = getTickerFromKorean(symbolToSearch).toUpperCase();
-            const res = await fetch(`${API_BASE_URL}/api/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}&t=${Date.now()}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}&t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 setResult(json.data);
@@ -209,10 +209,10 @@ export default function PatternPage() {
                         y: [d.open, d.high, d.low, d.close]
                     }))
                 },
-                { name: 'MA5', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma5[i] })) },
-                { name: 'MA20', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma20[i] })) },
-                { name: 'MA60', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma60[i] })) },
-                { name: 'MA120', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma120[i] })) }
+                { name: '5일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma5[i] })) },
+                { name: '20일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma20[i] })) },
+                { name: '60일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma60[i] })) },
+                { name: '120일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma120[i] })) }
             ];
         }
     }, [result?.history, chartType, movingAverages]);
@@ -338,10 +338,10 @@ export default function PatternPage() {
                         <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
                         
                         <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
-                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">MA5</span> <span class="font-mono text-gray-300">${ma5 ? Math.round(ma5).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">MA20</span> <span class="font-mono text-gray-300">${ma20 ? Math.round(ma20).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">MA60</span> <span class="font-mono text-gray-300">${ma60 ? Math.round(ma60).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">MA120</span> <span class="font-mono text-gray-300">${ma120 ? Math.round(ma120).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">5일선</span> <span class="font-mono text-gray-300">${ma5 ? Math.round(ma5).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">20일선</span> <span class="font-mono text-gray-300">${ma20 ? Math.round(ma20).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">60일선</span> <span class="font-mono text-gray-300">${ma60 ? Math.round(ma60).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">120일선</span> <span class="font-mono text-gray-300">${ma120 ? Math.round(ma120).toLocaleString() : '-'}</span></div>
                         </div>
                     </div>
                 `;
@@ -624,10 +624,10 @@ export default function PatternPage() {
                                     <>
                                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
                                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#22c55e]" /><span>MA5</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#ef4444]" /><span>MA20</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#f97316]" /><span>MA60</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#a855f7]" /><span>MA120</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#22c55e]" /><span>5일선</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#ef4444]" /><span>20일선</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#f97316]" /><span>60일선</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#a855f7]" /><span>120일선</span></div>
                                     </>
                                 ) : (
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-0.5 bg-emerald-500" /><span>종가 추세선</span></div>

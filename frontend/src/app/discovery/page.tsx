@@ -194,7 +194,18 @@ const formatChangeDisplay = (val: any) => {
     
     // Remove existing signs for clean formatting
     let cleanText = str.replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
-    if (!cleanText.includes('%')) cleanText = `${cleanText}%`;
+    
+    // [Safety] If absolute numeric value is huge and no % was present, it's likely a price change (not pct).
+    // In that case, we should try to avoid showing it as a percentage if it's over 500.
+    if (!str.includes('%')) {
+        const absVal = Math.abs(parseFloat(cleanText.replace(/,/g, '')));
+        if (absVal > 500) {
+            // If it's a huge number and didn't have %, we show it as is (no %) or just return a default
+            // But usually we want a percentage here.
+            return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
+        }
+        cleanText = `${cleanText}%`;
+    }
     
     // [Updated] Standard KOR Colors: Red-500 (Up), Blue-500 (Down)
     if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `▲ ${cleanText}` };
@@ -355,7 +366,7 @@ function DiscoveryContent() {
             if (!stock?.symbol) return;
             setNewsLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/` + encodeURIComponent(stock.symbol) + `/news?period=` + newsPeriod);
+                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/` + encodeURIComponent(stock.symbol) + `/news`);
                 const json = await res.json();
                 if (json.status === "success") {
                     setPeriodNews(json.data);
@@ -367,7 +378,7 @@ function DiscoveryContent() {
             }
         };
         if (activeTab === 'news') fetchPeriodNews();
-    }, [newsPeriod, stock?.symbol, activeTab]);
+    }, [stock?.symbol, activeTab]);
 
     // [WebSocket Integration] Real-time Price Updates
     // Replaces the old 5-second polling interval
@@ -418,14 +429,14 @@ function DiscoveryContent() {
     useEffect(() => {
         const fetchSearchResults = async () => {
             const query = searchInput.trim();
-            if (query.length < 2) {
+            if (!query) {
                 setSearchResults([]);
                 setShowResults(false);
                 return;
             }
 
             try {
-                console.log("[Search] Fetching suggestions for:", query);
+                // Remove console log to avoid cluttering in instant search
                 const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(query)}&_t=${Date.now()}`);
                 const data = await res.json();
                 if (data.status === 'success' && Array.isArray(data.data)) {
@@ -437,7 +448,8 @@ function DiscoveryContent() {
             }
         };
 
-        const timer = setTimeout(fetchSearchResults, 150);
+        // 타자 치는 즉시 반응하도록 대기 시간을 30ms로 대폭 단축 (거의 0초에 수렴)
+        const timer = setTimeout(fetchSearchResults, 30);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
@@ -1164,20 +1176,37 @@ function DiscoveryContent() {
                                             */}
 
 
-                                            {/* [New] 3-Line Rationale */}
+                                            {/* [New] 3-Line Rationale with Beginner Terms Guide */}
                                             {stock.rationale && stock.rationale.supply && (
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                                        <div className="text-blue-400 font-bold mb-1 flex items-center gap-2"><span>✅ 수급 (Supply)</span></div>
-                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.supply}</span></div>
-                                                    </div>
-                                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                                        <div className="text-purple-400 font-bold mb-1 flex items-center gap-2"><span>🔥 모멘텀 (Momentum)</span></div>
-                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.momentum}</span></div>
-                                                    </div>
-                                                    <div className="bg-white/5 p-4 rounded-xl border border-red-500/30">
-                                                        <div className="text-red-400 font-bold mb-1 flex items-center gap-2"><span>⚠️ 리스크 (Risk)</span></div>
-                                                        <div className="text-sm text-gray-200"><span>{stock.rationale.risk}</span></div>
+                                                <div className="mb-6 space-y-3">
+                                                    {/* 용어 설명 토글 버튼 */}
+                                                    <details className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                                                        <summary className="flex items-center gap-2 p-3 cursor-pointer text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
+                                                            <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                                                <Info className="w-4 h-4" />
+                                                            </div>
+                                                            <span>주식 초보자를 위한 용어 쉽게 이해하기 (클릭)</span>
+                                                        </summary>
+                                                        <div className="p-4 pt-2 text-sm text-gray-300 space-y-3 border-t border-white/5 bg-black/20 leading-relaxed">
+                                                            <p><strong className="text-blue-400">✅ 수급 (Supply):</strong> <span className="text-gray-400">"지금 이 주식을 누가 열정적으로 사고 있나?"</span><br/>외국인이나 기관 등 돈이 많은 큰손들이 이 주식을 많이 담고 있다면 수급이 좋다고 해요. 그만큼 인기몰이 중이라는 뜻이죠!</p>
+                                                            <p><strong className="text-purple-400">🔥 모멘텀 (Momentum):</strong> <span className="text-gray-400">"앞으로 주가가 오를 만한 착한 소식이나 에너지가 있나?"</span><br/>신제품 대박, 역대급 실적 달성 등 앞으로 주가를 강하게 끌어올릴 만한 원동력을 나타내요.</p>
+                                                            <p><strong className="text-red-400">⚠️ 리스크 (Risk):</strong> <span className="text-gray-400">"투자하기 전 조심해야 할 위험 요소는 무엇인가?"</span><br/>회사에 나쁜 소식이 있거나, 주가가 너무 비싼 상태 등 주가가 떨어질 수 있는 불안 요소들을 짚어줘요.</p>
+                                                        </div>
+                                                    </details>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-lg">
+                                                            <div className="text-blue-400 font-bold mb-1 flex items-center gap-2"><span>✅ 수급 (Supply)</span></div>
+                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.supply}</span></div>
+                                                        </div>
+                                                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-lg">
+                                                            <div className="text-purple-400 font-bold mb-1 flex items-center gap-2"><span>🔥 모멘텀 (Momentum)</span></div>
+                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.momentum}</span></div>
+                                                        </div>
+                                                        <div className="bg-white/5 p-4 rounded-xl border border-red-500/30 shadow-lg">
+                                                            <div className="text-red-400 font-bold mb-1 flex items-center gap-2"><span>⚠️ 리스크 (Risk)</span></div>
+                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.risk}</span></div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1193,27 +1222,7 @@ function DiscoveryContent() {
                                                     <TrendingUp className="h-6 w-6 text-yellow-400" /> 관련 뉴스/공시
                                                 </h4>
                                                 
-                                                {/* [New] Period Filter Bar */}
-                                                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-end">
-                                                    {[
-                                                        { id: '1d', label: '당일' },
-                                                        { id: '3m', label: '3개월' },
-                                                        { id: '6m', label: '6개월' },
-                                                        { id: '1y', label: '1년' }
-                                                    ].map((p) => (
-                                                        <button
-                                                            key={p.id}
-                                                            onClick={() => setNewsPeriod(p.id)}
-                                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                                                newsPeriod === p.id 
-                                                                ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20' 
-                                                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                                            }`}
-                                                        >
-                                                            {p.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
+
                                             </div>
 
                                             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
@@ -1291,21 +1300,22 @@ function DiscoveryContent() {
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
                                                         {dailyPricesData && Array.isArray(dailyPricesData) && dailyPricesData.length > 0 ? (
-                                                            dailyPricesData.map((day, idx) => (
-                                                                <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                                    <td className="py-3 px-2 text-gray-300 font-mono text-sm">
-                                                                        <span>{toKoreanDate(day.date)}</span>
-                                                                    </td>
-                                                                    <td className="py-3 px-2 font-mono font-bold">
-                                                                        <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span></span>
-                                                                    </td>
-                                                                    <td className={`py-3 px-2 font-mono font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                        <span>
-                                                                            <span>{day.change > 0 ? '▲' : day.change < 0 ? '▼' : null}</span>
-                                                                            <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
-                                                                            <span className="text-[10px] ml-1 opacity-70">({day.change > 0 ? '+' : ''}{day.change.toFixed(2)}%)</span>
-                                                                        </span>
-                                                                    </td>
+                                                                 const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
+                                                                 return (
+                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                                     <td className="py-3 px-2 text-gray-300 font-mono text-sm">
+                                                                         <span>{toKoreanDate(day.date)}</span>
+                                                                     </td>
+                                                                     <td className="py-3 px-2 font-mono font-bold">
+                                                                         <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span></span>
+                                                                     </td>
+                                                                     <td className={`py-3 px-2 font-mono font-bold ${safeChange > 0 ? 'text-red-400' : safeChange < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                                         <span>
+                                                                             <span>{safeChange > 0 ? '▲' : safeChange < 0 ? '▼' : null}</span>
+                                                                             <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
+                                                                             <span className="text-[10px] ml-1 opacity-70">({safeChange > 0 ? '+' : ''}{safeChange.toFixed(2)}%)</span>
+                                                                         </span>
+                                                                     </td>
                                                                     <td className="py-3 px-2 text-gray-400 font-mono text-sm">
                                                                         <span>{day.open.toLocaleString()}</span>
                                                                     </td>

@@ -14,7 +14,7 @@ function DisclosureTable({ symbol }: { symbol: string }) {
             setLoading(true);
             try {
                 const cleanSymbol = symbol.replace('.KS', '').replace('.KQ', '');
-                const url = `${API_BASE_URL}/api/stock/${encodeURIComponent(cleanSymbol)}/disclosures?period=${period}`;
+                const url = `${API_BASE_URL}/api/analysis/stock/${encodeURIComponent(cleanSymbol)}/disclosures?period=${period}`;
                 
                 const res = await fetch(url);
                 const json = await res.json();

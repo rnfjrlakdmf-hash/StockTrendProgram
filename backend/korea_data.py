@@ -322,7 +322,19 @@ def gather_naver_stock_data(symbol: str):
                     direction = -1
                 
                 change_val = int(blind_tags[0].text.replace(',', '')) * direction
-                change_pct_str = f"{float(blind_tags[1].text)*direction:.2f}%"
+                
+                # [Reliability Fix] Recalculate percentage from price and change_val 
+                # instead of relying on scraped strings which often pick up change_val as %
+                prev_close_calc = price - change_val
+                if prev_close_calc != 0:
+                    calc_pct = (change_val / prev_close_calc) * 100
+                    change_pct_str = f"{calc_pct:+.2f}%"
+                else:
+                    change_pct_str = "0.00%"
+                
+                # [Safety] Double-check magnitude
+                if abs(float(change_pct_str.replace('%', ''))) > 500:
+                    change_pct_str = "0.00%"
 
         # Previous Close
         prev_close_tag = soup.select_one("td.first span.blind")
@@ -352,7 +364,18 @@ def gather_naver_stock_data(symbol: str):
                             direction = -1
                         
                         nxt_change_val = int(nxt_blind_tags[0].text.replace(',', '')) * direction
-                        nxt_change_pct = f"{float(nxt_blind_tags[1].text)*direction:.2f}%"
+                        
+                        # [Reliability Fix] Recalculate NXT percentage
+                        nxt_prev_close = nxt_price - nxt_change_val
+                        if nxt_prev_close != 0:
+                            nxt_calc_pct = (nxt_change_val / nxt_prev_close) * 100
+                            nxt_change_pct = f"{nxt_calc_pct:+.2f}%"
+                        else:
+                            nxt_change_pct = "0.00%"
+                        
+                        # [Safety]
+                        if abs(float(nxt_change_pct.replace('%', ''))) > 500:
+                            nxt_change_pct = "0.00%"
                         
                     nxt_data = {
                         "price": nxt_price,
@@ -714,7 +737,8 @@ def gather_naver_stock_data(symbol: str):
             "code": code,
             "sector": sector_name, # Added Sector
             "price": price,
-            "change": change_val,
+            "change": change_pct_str,
+            "change_val": change_val,
             "change_percent": change_pct_str,
             "prev_close": prev_close,
             "market_cap_str": market_cap_str,
@@ -828,6 +852,10 @@ def get_naver_daily_prices(symbol: str):
                 change_percent = 0.0
                 if prev_close != 0:
                     change_percent = (diff / prev_close) * 100
+                
+                # [Safety] Magnitude check for daily history changes
+                if abs(change_percent) > 500:
+                    change_percent = 0.0
                 
                 history.append({
                     "date": date,

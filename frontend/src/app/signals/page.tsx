@@ -1,5 +1,5 @@
 "use client";
-// [Deployment Trigger] Force Redraw - 2026-04-23 17:03
+// [Deployment Trigger] v3.7.13-FINAL-FIX-2026-05-04
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,10 +31,28 @@ export default function SignalsPage() {
 function SignalsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    // Vercel 강제 Dynamic 렌더링 (캐시 방지) 트리거
     const forceDynamic = searchParams.get('refresh');
 
     const [activeTab, setActiveTab] = useState<"signals" | "heatmap" | "supply" | "calendar">("signals");
+
+    // [v5.9.0] 전역 트렌드 컬러 유틸리티 (일관된 시각적 경험 제공)
+    const getTrendStyle = (value: string | number | undefined, changeStr?: string) => {
+        const rawValue = String(value || "0");
+        const num = parseFloat(rawValue.replace(/[^0-9.-]/g, ''));
+        const str = changeStr || rawValue;
+        
+        const isUp = num > 0 || str.includes('+') || (num === 0 && !str.includes('-') && parseFloat(str) > 0);
+        const isDown = num < 0 || str.includes('-') || (num === 0 && str.includes('-'));
+        
+        return {
+            isUp,
+            isDown,
+            color: isUp ? 'text-rose-500' : isDown ? 'text-sky-500' : 'text-gray-400',
+            bg: isUp ? 'bg-rose-500/10' : isDown ? 'bg-sky-500/10' : 'bg-gray-500/10',
+            border: isUp ? 'border-rose-500/20' : isDown ? 'border-sky-500/20' : 'border-gray-500/20',
+            icon: isUp ? '▲' : isDown ? '▼' : '●'
+        };
+    };
 
     const tabs = [
         { id: "signals" as const, label: "시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
@@ -192,7 +210,9 @@ function SignalsFeedTab({ router }: { router: any }) {
                     <div className="flex items-center gap-2 mb-3">
                         <Zap className="w-5 h-5 text-yellow-400" />
                         <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">실시간 주요 공시 인사이트</h4>
-                        <span className="ml-auto text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">LIVE 스캔 중</span>
+                        <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/40 uppercase tracking-tighter">
+                            v3.7.18-WATCHLIST
+                        </span>
                     </div>
                     <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                         {riskAlerts.map((alert, idx) => {
@@ -329,8 +349,13 @@ function SignalsFeedTab({ router }: { router: any }) {
                                         <div className="flex items-center gap-4 bg-white/5 rounded-xl p-3">
                                             <span className="text-2xl font-black">{briefing.price.price !== "N/A" ? briefing.price.price : ""}</span>
                                             {briefing.price.change_pct !== "N/A" && (
-                                                <span className={`text-sm font-bold ${parseFloat(briefing.price.change_pct) >= 0 ? "text-red-400" : "text-blue-400"}`}>
-                                                    {briefing.price.change_pct.includes('%') ? briefing.price.change_pct : `${briefing.price.change_pct}%`}
+                                                <span className={`text-sm font-bold ${parseFloat(String(briefing.price.change_pct).replace(/[^0-9.-]/g, '')) >= 0 ? "text-red-400" : "text-blue-400"}`}>
+                                                    {(() => {
+                                                        const raw = String(briefing.price.change_pct || '0%');
+                                                        const val = Math.abs(parseFloat(raw.replace(/[+%\-▲▼,]/g, '')));
+                                                        if (val > 500) return '0.00%';
+                                                        return raw.includes('%') ? raw : `${raw}%`;
+                                                    })()}
                                                 </span>
                                             )}
                                         </div>
@@ -573,6 +598,7 @@ function MarketInsightsTab({ router }: { router: any }) {
 
 // ============ TAB 4: CALENDAR ============
 function CalendarTab({ router }: { router: any }) {
+    const { user } = useAuth();
     // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
     const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
 
@@ -594,6 +620,7 @@ function CalendarTab({ router }: { router: any }) {
     // 공모주(IPO) 데이터
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
+
 
     // 경제지표 데이터 fetch (글로벌 일정)
     useEffect(() => {
@@ -768,18 +795,28 @@ function CalendarTab({ router }: { router: any }) {
                         ) : globalAssets && globalAssets.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {globalAssets.map((asset: any, i: number) => {
-                                    const isUp = parseFloat(asset.change_val || 0) > 0;
-                                    const isDown = parseFloat(asset.change_val || 0) < 0;
+                                    // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
+                                    const changeStr = String(asset.change || "");
+                                    const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
+                                    const isDown = changeStr.startsWith('-') || parseFloat(changeStr) < 0;
+                                    
+                                    const colorClass = isUp ? 'text-rose-500' : isDown ? 'text-sky-500' : 'text-gray-400';
+                                    const bgColorClass = isUp ? 'bg-rose-500/10' : isDown ? 'bg-sky-500/10' : 'bg-gray-500/10';
+                                    const borderClass = isUp ? 'border-rose-500/20' : isDown ? 'border-sky-500/20' : 'border-gray-500/20';
+
                                     return (
-                                        <div key={i} className="bg-black/20 rounded-xl p-3 border border-white/5 flex flex-col justify-between">
-                                            <div className="text-[10px] text-gray-400 font-bold mb-1">{asset.event_kr}</div>
-                                            <div className="text-sm font-black text-white">{asset.actual}</div>
-                                            <div className={`text-[10px] font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                {asset.change}
+                                        <div key={i} className={`bg-black/40 rounded-xl p-3 border ${borderClass} flex flex-col justify-between hover:bg-white/5 transition-all group shadow-lg shadow-black/20`}>
+                                            <div className="text-[10px] text-gray-500 font-bold mb-1 group-hover:text-gray-300 transition-colors">{asset.event_kr}</div>
+                                            <div className={`text-base font-black ${colorClass} tracking-tighter leading-tight`}>
+                                                {asset.actual}
+                                            </div>
+                                            <div className={`text-[10px] font-bold flex items-center gap-1 mt-1.5 ${bgColorClass} ${colorClass} w-max px-2 py-0.5 rounded-full border ${borderClass}`}>
+                                                {isUp ? '▲' : isDown ? '▼' : '●'} {changeStr || "-"}
                                             </div>
                                         </div>
                                     )
                                 })}
+
                             </div>
                         ) : (
                             <div className="text-center py-4 text-gray-500 text-xs">
@@ -838,8 +875,8 @@ function CalendarTab({ router }: { router: any }) {
             {mainTab === "earndiv" && (
                 <div className="space-y-4">
                     <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📈 실적</button>
-                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 배당</button>
+                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📈 전체 실적 달력</button>
+                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 전체 배당 달력</button>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -866,17 +903,88 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                     </div>
 
-                    <h4 className="font-bold text-sm text-gray-400">다가오는 일정</h4>
-                    {earndivLoading ? <div className="text-center py-6"><RefreshCw className="w-5 h-5 animate-spin mx-auto text-gray-500" /></div>
-                        : filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10).map((ev, i) => {
-                            const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
-                            return (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 cursor-pointer flex justify-between items-center" onClick={() => router.push(`/discovery?q=${ev.symbol}`)}>
-                                    <div className="flex items-center gap-2"><span className="text-lg">{icon(ev.type)}</span><div><span className="font-bold text-sm">{ev.name}</span><span className="text-gray-500 text-xs ml-1">{ev.symbol}</span><p className="text-[10px] text-gray-400">{ev.detail}</p></div></div>
-                                    <div className="text-right"><div className="text-xs font-mono text-gray-400">{ev.date}</div><span className={`text-xs font-bold ${dDay <= 3 ? "text-red-400" : dDay <= 7 ? "text-yellow-400" : "text-gray-400"}`}>{dDay > 0 ? `D-${dDay}` : dDay === 0 ? "오늘" : `D+${Math.abs(dDay)}`}</span></div>
-                                </div>
-                            );
-                        })}
+                    <h4 className="font-bold text-sm text-gray-400 mb-3 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-blue-400" /> 다가오는 주요 일정 (실시간 탐지)
+                    </h4>
+                    {earndivLoading ? (
+                        <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-500 mb-2" />
+                            <p className="text-sm text-gray-500 font-medium">최신 공시 데이터를 스캔하고 있습니다...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-2.5">
+                            {filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12).map((ev, i) => {
+                                const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
+                                return (
+                                    <div key={i} 
+                                        className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group flex items-start gap-4"
+                                        onClick={() => {
+                                            if (ev.link) window.open(ev.link, '_blank');
+                                            else router.push(`/discovery?q=${ev.symbol}`);
+                                        }}
+                                    >
+                                        <div className={`p-3 rounded-2xl ${ev.type === 'earnings' ? 'bg-blue-500/10 text-blue-400' : 'bg-green-500/10 text-green-400'} shrink-0 group-hover:scale-110 transition-transform`}>
+                                            <span className="text-xl">{icon(ev.type)}</span>
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-black text-sm text-white group-hover:text-blue-400 transition-colors">{ev.name}</span>
+                                                <span className="text-xs font-mono text-gray-500" translate="no">{ev.symbol}</span>
+                                                {(ev.is_dart || (ev.symbol && /^\d{6}$/.test(ev.symbol))) && (
+                                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-yellow-500 text-black border border-white/50 flex items-center gap-0.5 shadow-[0_0_15px_rgba(234,179,8,0.4)]">
+                                                        <FileText className="w-2.5 h-2.5" /> DART 공식
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed bg-white/5 p-2 rounded-xl border border-white/5 font-medium">
+                                                {ev.detail && ev.detail !== "실적 발표 (예정)" ? (
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Zap className="w-3 h-3 text-yellow-400" />
+                                                        {ev.detail}
+                                                    </span>
+                                                ) : ev.summary ? (
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Activity className="w-3 h-3 text-blue-400" />
+                                                        {ev.summary}
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1.5 text-gray-400">
+                                                        <div className="w-1.5 h-1.5 bg-gray-500/50 rounded-full" />
+                                                        {dDay > 7 ? "현재 확정 공시 대기 중이며, 발표 당일 수치를 즉시 분석합니다." : "발표 임박! 공시가 올라오는 즉시 배당금 및 실적 수치를 띄워드립니다."}
+                                                    </span>
+                                                )}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {ev.link && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                                                        <ExternalLink className="w-3 h-3" /> 공시 원문
+                                                    </div>
+                                                )}
+                                                {ev.is_dart && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                                        <FileText className="w-3 h-3" /> 실시간 분석 완료
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right shrink-0">
+                                            <div className="text-[11px] font-mono font-bold text-gray-500 mb-1">{ev.date}</div>
+                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg border shadow-sm ${
+                                                dDay <= 0 ? "bg-rose-500 text-white border-rose-400 animate-pulse" : 
+                                                dDay <= 3 ? "bg-rose-500/10 text-rose-400 border-rose-500/30" : 
+                                                dDay <= 7 ? "bg-orange-500/10 text-orange-400 border-orange-500/30" : 
+                                                "bg-gray-500/10 text-gray-400 border-gray-500/30"
+                                            }`}>
+                                                {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "TODAY" : `D+${Math.abs(dDay)}`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -21,6 +21,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [helpTerm, setHelpTerm] = useState<string | null>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -121,6 +122,9 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                     color="from-blue-500/20 to-indigo-500/20"
                     isPositive={investorSummary ? investorSummary.sums.inst > 0 : false}
                     isNegative={investorSummary ? investorSummary.sums.inst < 0 : false}
+                    onInfoClick={() => setHelpTerm(helpTerm === 'supply' ? null : 'supply')}
+                    showHelp={helpTerm === 'supply'}
+                    helpText="📈 수급이란? 기관이나 외국인이 얼마나 사고 있는지 보는 거예요. 큰손들이 많이 사면 주가가 오를 가능성이 커져요!"
                 />
                 <SummaryCard 
                     title="외인 수급 (5일)" 
@@ -130,6 +134,9 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                     color="from-purple-500/20 to-fuchsia-500/20"
                     isPositive={investorSummary ? investorSummary.sums.frgn > 0 : false}
                     isNegative={investorSummary ? investorSummary.sums.frgn < 0 : false}
+                    onInfoClick={() => setHelpTerm(helpTerm === 'supply_frgn' ? null : 'supply_frgn')}
+                    showHelp={helpTerm === 'supply_frgn'}
+                    helpText="🌍 외국인 수급: 해외 투자자들이 이 주식을 얼마나 좋아하는지 보여줘요. 외국인이 꾸준히 사면 우량한 주식인 경우가 많아요!"
                 />
             </div>
 
@@ -144,7 +151,22 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                             <BarChart3 className="w-5 h-5 text-indigo-400" />
                         </div>
                         <h3 className="text-lg font-black text-white tracking-tight">퀀트 팩터 분석 (5축)</h3>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setHelpTerm(helpTerm === 'momentum' ? null : 'momentum'); }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors ml-auto"
+                        >
+                            <Info className="w-4 h-4 text-slate-400" />
+                        </button>
                     </div>
+                    
+                    {helpTerm === 'momentum' && (
+                        <div className="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl animate-in zoom-in-95 duration-200">
+                            <p className="text-xs text-indigo-300 leading-relaxed font-medium">
+                                <span className="font-black">📈 모멘텀이란?</span> 주가가 얼마나 "기세 좋게" 오르고 있는지를 말해요. 
+                                점수가 높을수록 현재 상승 흐름이 강하다는 뜻이에요!
+                            </p>
+                        </div>
+                    )}
                     
                     <div className="h-[250px] w-full flex items-center justify-center relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -227,11 +249,26 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                                 <Shield className="w-5 h-5 text-rose-400" />
                             </div>
                             <h3 className="text-lg font-black text-white tracking-tight">재무 건강도 진단</h3>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setHelpTerm(helpTerm === 'risk' ? null : 'risk'); }}
+                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                <Info className="w-4 h-4 text-slate-400" />
+                            </button>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${health?.z_score?.color === 'green' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                             {health?.z_score?.zone} ZONE
                         </div>
                     </div>
+
+                    {helpTerm === 'risk' && (
+                        <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl animate-in zoom-in-95 duration-200">
+                            <p className="text-xs text-rose-300 leading-relaxed font-medium">
+                                <span className="font-black">⚠️ 리스크란?</span> 회사가 돈을 못 갚아서 망할 위험이 있는지 보는 거예요. 
+                                <span className="text-emerald-400"> SAFE ZONE</span>이면 안심해도 좋고, <span className="text-red-400"> DISTRESS</span>면 주의해야 해요!
+                            </p>
+                        </div>
+                    )}
 
                     <div className="space-y-4 relative">
                         <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
@@ -293,13 +330,27 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
     );
 }
 
-function SummaryCard({ title, value, subValue, icon, color, isPositive, isNegative }: any) {
+function SummaryCard({ title, value, subValue, icon, color, isPositive, isNegative, onInfoClick, showHelp, helpText }: any) {
     return (
-        <div className={`bg-gradient-to-br ${color} border border-white/5 rounded-3xl p-5 shadow-lg group hover:scale-[1.02] transition-all`}>
+        <div className={`bg-gradient-to-br ${color} border border-white/5 rounded-3xl p-5 shadow-lg group hover:scale-[1.02] transition-all relative`}>
             <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">{title}</span>
+                <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">{title}</span>
+                    {onInfoClick && (
+                        <button onClick={(e) => { e.stopPropagation(); onInfoClick(); }}>
+                            <Info className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+                        </button>
+                    )}
+                </div>
                 <div className="opacity-70 group-hover:opacity-100 transition-opacity">{icon}</div>
             </div>
+
+            {showHelp && (
+                <div className="absolute inset-0 bg-slate-900/95 z-10 rounded-3xl p-5 flex items-center justify-center animate-in fade-in duration-200 border border-white/10" onClick={(e) => { e.stopPropagation(); onInfoClick(); }}>
+                    <p className="text-[11px] text-white leading-relaxed font-medium text-center italic">{helpText}</p>
+                </div>
+            )}
+
             <div className={`text-2xl font-black text-white flex items-center gap-1 ${isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : ''}`}>
                 {value}
                 {isPositive && <ArrowUpRight className="w-4 h-4" />}

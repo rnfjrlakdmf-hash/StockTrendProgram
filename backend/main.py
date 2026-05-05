@@ -87,7 +87,20 @@ async def startup_event():
             asyncio.create_task(price_alert_monitor.start())
         except: pass
 
-        # 3. 전광판 지수 상시 정찰대 (15초마다 미리 수집하여 0초 응답 달성)
+        # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
+        try:
+            from scheduler_service import start_scheduler
+            start_scheduler()
+        except: pass
+
+        # 5. 공시 및 시간별 브리핑 스케줄러 시작
+        try:
+            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop
+            asyncio.create_task(disclosure_scheduler_loop())
+            asyncio.create_task(hourly_briefing_scheduler_loop())
+        except: pass
+
+        # 6. 전광판 지수 상시 정찰대 (15초마다 미리 수집하여 0초 응답 달성)
         async def market_ticker_warmer():
             from stock_data import get_market_data
             print("[Turbo] Market Ticker Warmer Service Started.")

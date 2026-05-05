@@ -512,6 +512,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "price_krw": f"{float(str(naver_info['price']).replace(',', '')):,.0f}" if isinstance(naver_info['price'], (int, float, str)) and str(naver_info['price']).replace(',','').replace('.','').isdigit() else str(naver_info['price']),
                     "currency": "KRW",
                     "change": naver_info.get('change_percent', '0.00%'),
+                    "change_percent": naver_info.get('change_percent', '0.00%'),
                     "summary": generate_stock_summary(naver_info, news_data),
                     "sector": "Domestic Stock",
                     "financials": {
@@ -1047,6 +1048,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "name": symbol,
                 "price": price_str,
                 "change": f"{change_pct:+.2f}%",
+                "change_percent": f"{change_pct:+.2f}%",
                 "up": change_pct >= 0,
                 "currency": "USD" if is_us_stock else "KRW"
             }

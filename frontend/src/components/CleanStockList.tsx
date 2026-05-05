@@ -89,6 +89,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             const current = parseFloat(String(item.price || "0").replace(/,/g, ""));
                                             if (isNaN(current) || current <= 0) return null;
                                             const profitRate = ((current - item.added_price) / item.added_price) * 100;
+                                            
+                                            // [Safety] Hide if the rate is absurdly high (likely data error) or added_price is suspicious
+                                            if (Math.abs(profitRate) > 1000 || item.added_price < 1) return null;
+                                            
                                             const isPlus = profitRate > 0;
                                             return (
                                                 <span className={`text-[10px] font-black ${isPlus ? 'text-red-400' : 'text-blue-400'}`}>
@@ -111,7 +115,21 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 />
                                 <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg shadow-black/20`}>
                                     <span translate="no">
-                                        {isPositive ? '▲' : isNegative ? '▼' : ''}{String(item.change || '').replace(/[+%\-▲▼]/g, '')}%
+                                        {(() => {
+                                            const rawChange = String(item.change || '');
+                                            const isPct = rawChange.includes('%');
+                                            const numericVal = Math.abs(parseFloat(rawChange.replace(/[+%\-▲▼,]/g, '')));
+                                            
+                                            // [Safety] If value is huge (> 500), it's likely an error.
+                                            // Fallback to 0.00% or change_percent if available.
+                                            const cleanValue = (numericVal > 500) 
+                                                ? (item.change_percent || '0.00%') 
+                                                : rawChange;
+                                            
+                                            // Ensure we don't double % or symbols if cleanValue already has them
+                                            const finalDisplay = cleanValue.replace(/[+%\-▲▼]/g, '');
+                                            return `${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
+                                        })()}
                                     </span>
                                 </div>
                             </div>

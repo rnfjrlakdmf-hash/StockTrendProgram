@@ -1,0 +1,20 @@
+
+import requests
+import json
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+def check_indices():
+    url = "https://stocktrendprogram-production.up.railway.app/api/market/indices"
+    keywords = ["KOSPI", "KOSDAQ", "S&P", "나스닥", "NASDAQ", "다우", "환율", "달러", "국고채", "WTI", "유가", "금", "Gold", "비트코인"]
+    res = requests.get(url)
+    data = res.json()
+    if data['status'] == 'success':
+        for item in data['data']:
+            name = item.get('event_kr', '')
+            if any(k in name for k in keywords):
+                print(f"MATCH: {name}")
+
+if __name__ == "__main__":
+    check_indices()

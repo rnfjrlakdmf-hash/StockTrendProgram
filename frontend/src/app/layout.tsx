@@ -57,6 +57,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head />
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>
           <div className="flex min-h-screen">

@@ -1,0 +1,14 @@
+
+import requests
+import json
+
+def check_indices():
+    url = "https://stocktrendprogram-production.up.railway.app/api/market/indices"
+    res = requests.get(url)
+    data = res.json()
+    if data['status'] == 'success':
+        for item in data['data']:
+            print(f"Name: {item.get('event_kr')}")
+
+if __name__ == "__main__":
+    check_indices()

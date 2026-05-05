@@ -81,14 +81,20 @@ def create_watchlist(req: WatchlistRequest, response: Response, x_user_id: str =
         
         user_id = x_user_id or "guest"
         
-        # 추가 시점의 가격 가져오기
+        # 추가 시점의 가격 가져오기 (보다 견고한 파싱)
         current_price = 0
         try:
             quote = get_simple_quote(req.symbol)
             if quote and quote.get('price'):
-                p_str = str(quote['price']).replace(',', '')
-                current_price = float(p_str)
-        except: pass
+                # 숫자가 아닌 문자(통화기호 등) 제거 후 파싱
+                import re
+                p_raw = str(quote['price']).replace(',', '')
+                p_clean = re.sub(r'[^0-9.]', '', p_raw)
+                if p_clean:
+                    current_price = float(p_clean)
+        except Exception as e:
+            print(f"[Watchlist-Price-Fetch-Error] {e}")
+
         
         success = add_watchlist(user_id, req.symbol, current_price)
         if success:

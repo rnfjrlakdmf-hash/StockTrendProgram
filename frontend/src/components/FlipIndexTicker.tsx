@@ -55,21 +55,23 @@ export default function FlipIndexTicker() {
                 // [v5.8.0] 필터링 개선: 지수뿐만 아니라 수급, 통계, 매크로 지표를 통합적으로 표시
                 const coreIndices = json.data.filter((item: any) => {
                     const name = item.event_kr || "";
-                    const cat = item.category || "";
                     
-                    // 핵심 지수 (KOSPI, S&P 500 등)
-                    const isIndex = name.includes("지수") || name.includes("KOSPI") || name.includes("KOSDAQ") || 
-                                    name.includes("S&P") || name.includes("NASDAQ") || name.includes("다우존스");
+                    // [v5.8.7] 백엔드 실데이터 기반 정밀 매칭 (공백/특수문자 포함)
+                    const isTarget = 
+                        name.includes("KOSPI") || 
+                        name.includes("KOSDAQ") || 
+                        name.includes("S&P") || 
+                        name.includes("NASDAQ") || 
+                        name.includes("다우") || 
+                        name.includes("USD") || 
+                        name.includes("환율") || 
+                        name.includes("국고채") || 
+                        name.includes("WTI") || 
+                        name.includes("금") || 
+                        name.includes("비트코인") ||
+                        name.includes("BTC");
                     
-                    // 시장 동향 (수급, 통계)
-                    const isMarketStat = name.includes("[수급]") || name.includes("[통계]");
-                    
-                    // 매크로 지표 (환율, 금리, 원자재)
-                    const isMacro = cat.includes("외환") || cat.includes("금리") || cat.includes("원자재") || cat.includes("가상자산");
-                    
-                    const isStock = item.category?.includes("대형주") || item.category?.includes("핵심주") || item.category?.includes("미국주");
-                    
-                    return (isIndex || isMarketStat || isMacro) && !isStock;
+                    return isTarget;
                 }).map((item: any) => {
                     // 기호 결정 최적화
                     let icon = "📈";
@@ -130,7 +132,7 @@ export default function FlipIndexTicker() {
                 .ticker-content-h {
                     display: flex;
                     width: max-content;
-                    animation: ticker-h 60s linear infinite;
+                    animation: ticker-h 30s linear infinite;
                     will-change: transform;
                 }
                 .ticker-content-h:hover {

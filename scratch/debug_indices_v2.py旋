@@ -1,0 +1,24 @@
+
+import requests
+import json
+import sys
+
+# Set encoding for Windows terminal
+sys.stdout.reconfigure(encoding='utf-8')
+
+def check_indices():
+    url = "https://stocktrendprogram-production.up.railway.app/api/market/indices"
+    try:
+        res = requests.get(url)
+        data = res.json()
+        if data['status'] == 'success':
+            print("--- API Index Names ---")
+            for item in data['data']:
+                name = item.get('event_kr', '')
+                cat = item.get('category', '')
+                print(f"[{cat}] {name}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    check_indices()

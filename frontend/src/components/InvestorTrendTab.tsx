@@ -114,22 +114,24 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
 
     return (
         <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-right-4 duration-300">
-            {/* 기간 선택 필터 */}
-            <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10">
-                <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-indigo-400" />
-                    <span className="text-sm font-bold text-gray-300 mr-2">누적 기간</span>
-                    <div className="flex items-center gap-1.5">
-                        <PeriodButton val={1} label="당일 (실시간)" />
-                        <PeriodButton val={5} label="5일" />
-                        <PeriodButton val={20} label="1개월" />
-                        <PeriodButton val={60} label="3개월" />
-                        <PeriodButton val={120} label="6개월" />
-                        <PeriodButton val={250} label="1년" />
+            {/* 기간 선택 필터 (해외 종목 주요 주주는 기간 설정이 불필요하므로 숨김) */}
+            {apiResponse?.type !== 'global_institutional' && (
+                <div className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/10">
+                    <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-indigo-400" />
+                        <span className="text-sm font-bold text-gray-300 mr-2">누적 기간</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <PeriodButton val={1} label="당일 (실시간)" />
+                            <PeriodButton val={5} label="5일" />
+                            <PeriodButton val={20} label="1개월" />
+                            <PeriodButton val={60} label="3개월" />
+                            <PeriodButton val={120} label="6개월" />
+                            <PeriodButton val={250} label="1년" />
+                        </div>
                     </div>
+                    {isLoading && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
                 </div>
-                {isLoading && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
-            </div>
+            )}
 
             {/* 거래원 정보 (Brokerage) - Domestic Only */}
             {apiResponse?.type !== 'global_institutional' && (
@@ -179,23 +181,74 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <Globe className="w-6 h-6 text-blue-400" />
                         <div>
                             <div className="font-bold text-blue-300">해외 종목 주요 주주 현황</div>
-                            <div className="text-xs text-gray-400">{apiResponse.message}</div>
+                            <div className="text-xs text-gray-400">{apiResponse.message || '해외 종목은 일일 매매동향 대신 주요 기관 보유 현황을 제공합니다.'}</div>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(apiResponse.trend || []).map((holder: any, i: number) => (
-                            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center hover:bg-white/10 transition-colors">
-                                <div>
-                                    <div className="font-bold text-gray-200">{holder.name}</div>
-                                    <div className="text-[10px] text-gray-500">Reported: {holder.date}</div>
+                        {(apiResponse.trend || []).map((holder: any, i: number) => {
+                            // 글로벌 주요 자산운용사/투자은행 한글 해석
+                            const holderTranslations: Record<string, string> = {
+                                'Vanguard': '뱅가드 그룹 (Vanguard)',
+                                'Blackrock': '블랙록 (BlackRock)',
+                                'State Street': '스테이트 스트리트 (State Street)',
+                                'FMR': '피델리티 자산운용 (FMR)',
+                                'Geode Capital': '지오드 캐피탈 (Geode)',
+                                'Price (T.Rowe)': '티로우프라이스 (T. Rowe Price)',
+                                'Morgan Stanley': '모건 스탠리 (Morgan Stanley)',
+                                'JPMORGAN CHASE': 'JP모건 체이스 (JPMorgan)',
+                                'Capital World': '캐피탈 그룹 (Capital World)',
+                                'Capital International': '캐피탈 그룹 (Capital Int.)',
+                                'Bank Of America': '뱅크오브아메리카 (BofA)',
+                                'Wellington': '웰링턴 매니지먼트 (Wellington)',
+                                'Northern Trust': '노던 트러스트 (Northern Trust)',
+                                'Citigroup': '씨티그룹 (Citigroup)',
+                                'Goldman Sachs': '골드만삭스 (Goldman Sachs)',
+                                'Bank of New York Mellon': 'BNY 멜론 (BNY Mellon)',
+                                'Sanders Capital': '샌더스 캐피탈 (Sanders Capital)',
+                                'Fisher Asset Management': '피셔 애셋 매니지먼트 (Fisher)',
+                                'Van Eck': '반에크 자산운용 (Van Eck)',
+                                'Renaissance Technologies': '르네상스 테크놀로지 (Renaissance)',
+                                'Invesco': '인베스코 (Invesco)',
+                                'Charles Schwab': '찰스 슈왑 (Charles Schwab)'
+                            };
+                            
+                            let translatedName = holder.name;
+                            for (const [eng, kor] of Object.entries(holderTranslations)) {
+                                if (holder.name.toUpperCase().includes(eng.toUpperCase())) {
+                                    translatedName = kor;
+                                    break;
+                                }
+                            }
+
+                            const isPercentNA = !holder.percent || holder.percent === 'N/A' || holder.percent === 'NaN%';
+
+                            return (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center hover:bg-white/10 transition-colors group">
+                                    <div>
+                                        <div className="font-bold text-gray-200 group-hover:text-blue-300 transition-colors">
+                                            {translatedName}
+                                        </div>
+                                        {translatedName !== holder.name && (
+                                            <div className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[150px]">({holder.name})</div>
+                                        )}
+                                        <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" /> Reported: {holder.date || '최근'}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        {isPercentNA ? (
+                                            <div className="text-sm font-bold text-gray-500">지분율 미상</div>
+                                        ) : (
+                                            <div className="text-lg font-black text-indigo-400">{holder.percent}</div>
+                                        )}
+                                        <div className="text-xs text-gray-400 font-mono mt-0.5">
+                                            {formatNumber(holder.shares)}<span className="text-[10px] text-gray-500 ml-1">주</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-lg font-black text-indigo-400">{holder.percent}</div>
-                                    <div className="text-[10px] text-gray-500 font-mono">{holder.shares.toLocaleString()} Shares</div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

@@ -35,7 +35,7 @@ export default function SupplyChainPage() {
         setData(null);
         // setScenarioData(null); // Do not clear scenario when searching company
         try {
-            const res = await fetch(`${API_BASE_URL}/api/supply-chain/${searchInput.toUpperCase()}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/${searchInput.toUpperCase()}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 setData(json.data);
@@ -58,7 +58,7 @@ export default function SupplyChainPage() {
         setNodeLoading(true);
         setNodeDetail(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/supply-chain/detail/${encodeURIComponent(node.ticker || node.id)}?name=${encodeURIComponent(node.label)}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/detail/${encodeURIComponent(node.ticker || node.id)}?name=${encodeURIComponent(node.label)}`);
             const json = await res.json();
             if (json.status === "success") {
                 setNodeDetail(json.data);

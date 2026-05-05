@@ -1,26 +1,27 @@
 import { Capacitor } from '@capacitor/core';
 
 // API Base URL
-// Web/Server: Use current hostname (supports localhost, 0.0.0.0, and local IP)
-// Android Emulator: "http://10.0.2.2:8000" (via Capacitor detection)
-// More robust check for Android environment (including WebView)
-const isAndroid = typeof window !== 'undefined' && (
-    Capacitor.getPlatform() === 'android' ||
-    /Android/i.test(navigator.userAgent)
-);
 
 let apiBase = "";
 
-if (isAndroid) {
-  apiBase = "http://10.0.2.2:8000";
-} else {
-  if (typeof window !== 'undefined') {
-    // Client-side: use localhost for local dev, otherwise relative to current host
-    apiBase = window.location.hostname === 'localhost' ? "http://localhost:8000" : "";
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+    // 로컬 개발 환경
+    apiBase = "http://" + hostname + ":8000";
+  } else if (/Android/i.test(navigator.userAgent) && (hostname === '' || hostname === 'localhost')) {
+    // 안드로이드 에뮬레이터 (특수 케이스)
+    apiBase = "http://10.0.2.2:8000";
   } else {
-    // Server-side (SSR/SSG): use environment variable or fallback to Railway
-    apiBase = process.env.BACKEND_URL || "https://stocktrendprogram-production.up.railway.app";
+    // 일반 모바일 브라우저 및 운영 환경
+    apiBase = ""; 
   }
+} else {
+  // 서버 사이드 (Build/SSR)
+  apiBase = process.env.BACKEND_URL || "https://stocktrendprogram-production.up.railway.app";
 }
+
+export const API_BASE_URL = apiBase;
 
 

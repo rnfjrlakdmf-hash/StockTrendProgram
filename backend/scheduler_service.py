@@ -2,113 +2,137 @@ import time
 import threading
 from datetime import datetime
 import pytz
-from db_manager import get_db_connection, get_user_portfolio, get_all_fcm_tokens
-from stock_data import get_simple_quote
+from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
+from stock_data import get_simple_quote, get_korean_stock_name
+from firebase_config import send_multicast_notification, initialize_firebase
 
 def is_korean_stock(symbol: str) -> bool:
     """숫자 6자리면 한국 주식으로 판단"""
     return symbol.isdigit() and len(symbol) == 6
 
-def calculate_portfolio_performance(user_id: str):
-    """사용자의 시장별 수익률 계산"""
-    portfolio = get_user_portfolio(user_id)
-    if not portfolio:
+def calculate_watchlist_performance(user_id: str, market: str):
+    """사용자의 관심종목 시장별 오늘의 수익 현황 계산"""
+    watchlist = get_watchlist(user_id)
+    if not watchlist:
         return None
     
-    kr_summary = {"total_buy": 0, "total_current": 0, "count": 0}
-    us_summary = {"total_buy": 0, "total_current": 0, "count": 0}
+    items_perf = []
+    total_daily_change_pct = 0
+    count = 0
     
-    for item in portfolio:
-        symbol = item['symbol']
-        buy_price = float(item['price'])
-        quantity = float(item['quantity'])
+    for row in watchlist:
+        symbol = row[0]
+        added_price = float(row[1] or 0)
         
-        if buy_price <= 0 or quantity <= 0:
-            continue
+        # 시장 필터링
+        is_kr = is_korean_stock(symbol)
+        if market == "KR" and not is_kr: continue
+        if market == "US" and is_kr: continue
             
         quote = get_simple_quote(symbol)
         if not quote:
             continue
             
         current_price = float(str(quote.get('price', 0)).replace(',', ''))
+        daily_change_pct = float(str(quote.get('change', '0')).replace('%', '').replace('+', ''))
         
-        buy_total = buy_price * quantity
-        curr_total = current_price * quantity
-        
-        if is_korean_stock(symbol):
-            kr_summary["total_buy"] += buy_total
-            kr_summary["total_current"] += curr_total
-            kr_summary["count"] += 1
-        else:
-            us_summary["total_buy"] += buy_total
-            us_summary["total_current"] += curr_total
-            us_summary["count"] += 1
+        # 추가 시점 대비 수익률 (있는 경우만)
+        added_perf = None
+        if added_price > 0:
+            added_perf = ((current_price - added_price) / added_price) * 100
             
-    return {"kr": kr_summary, "us": us_summary}
+        items_perf.append({
+            "symbol": symbol,
+            "name": get_korean_stock_name(symbol) or symbol,
+            "current_price": current_price,
+            "daily_change": daily_change_pct,
+            "added_perf": added_perf
+        })
+        
+        total_daily_change_pct += daily_change_pct
+        count += 1
+            
+    if count == 0:
+        return None
+        
+    return {
+        "avg_daily_change": total_daily_change_pct / count,
+        "items": items_perf,
+        "count": count
+    }
 
 def send_closing_notification(market: str):
-    """시장 마감 알림 발송 로직"""
-    print(f"[Scheduler] Running {market} market closing notification...")
+    """시장 마감 리포트 발송 로직"""
+    initialize_firebase()
+    print(f"[Scheduler] Generating {market} market closing report...")
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    # 포트폴리오를 가진 유니크한 사용자 목록 추출
-    cursor.execute("SELECT DISTINCT user_id FROM user_portfolio")
+    # 관심종목을 가진 사용자 목록 추출
+    cursor.execute("SELECT DISTINCT user_id FROM watchlist")
     user_ids = [row[0] for row in cursor.fetchall()]
     conn.close()
     
     for user_id in user_ids:
-        perf = calculate_portfolio_performance(user_id)
+        perf = calculate_watchlist_performance(user_id, market)
         if not perf:
             continue
             
-        summary = perf.get(market.lower())
-        if summary and summary["count"] > 0:
-            total_buy = summary["total_buy"]
-            total_curr = summary["total_current"]
-            profit = total_curr - total_buy
-            yield_pct = (profit / total_buy) * 100
-            
-            market_name = "국내" if market == "KR" else "미국"
-            title = f"[{market_name} 장마감] 오늘의 비서 리포트 📊"
-            
-            # 수익금 콤마 포맷팅
-            profit_str = f"{profit:+,.0f}원" if market == "KR" else f"${profit:+,.2f} (약 {profit*1350:+,.0f}원)"
-            
-            body = f"오늘 {market_name} 주식 수익은 {profit_str}입니다. (수익률 {yield_pct:+.2f}%) 주인님, 정말 수고 많으셨습니다! 💰"
-            
-            # 실제 FCM 발송 로직 (추후 연동)
-            print(f"[Push Notification to {user_id}]: {title} - {body}")
+        avg_change = perf["avg_daily_change"]
+        count = perf["count"]
+        
+        market_name = "국내" if market == "KR" else "미국"
+        title = f"[{market_name} 장마감] 관심종목 결산 리포트 📊"
+        
+        # 상위 종목 하나 추출
+        best_item = max(perf["items"], key=lambda x: x["daily_change"])
+        
+        emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
+        body = f"오늘 {market_name} 관심종목({count}개)은 평균 {avg_change:+.2f}% {emoji} 변동했습니다.\n"
+        body += f"가장 많이 오른 종목은 {best_item['name']}({best_item['daily_change']:+.2f}%)입니다. 수고하셨습니다! 💰"
+        
+        # FCM 토큰 가져오기
+        tokens_data = get_user_fcm_tokens(user_id)
+        if tokens_data:
+            tokens = [t['token'] for t in tokens_data]
+            send_multicast_notification(
+                tokens=tokens,
+                title=title,
+                body=body,
+                data={"url": "/watchlist", "type": "closing_report"}
+            )
+            print(f"[Scheduler] Report sent to {user_id} ({len(tokens)} devices)")
 
 def run_market_scheduler():
     """시장별 마감 시각을 감시하는 메인 스케줄러 루프"""
     kst = pytz.timezone('Asia/Seoul')
+    initialize_firebase()
     
     while True:
         try:
             now = datetime.now(kst)
-            day_of_week = now.weekday() # 0:월, 4:금, 5:토, 6:일
+            day_of_week = now.weekday() # 0:월, 4:금
             
-            # 평일만 작동 (0~4)
+            # 평일만 작동
             if day_of_week <= 4:
-                # 1. 한국 시장 마감 알림 (오후 3:40)
+                # 1. 한국 시장 마감 리포트 (오후 3:40)
                 if now.hour == 15 and now.minute == 40:
                     send_closing_notification("KR")
-                    time.sleep(60) # 중복 발송 방지
+                    time.sleep(60)
                 
-                # 2. 미국 시장 마감 알림 (오전 8:00)
-                if now.hour == 8 and now.minute == 0:
+                # 2. 미국 시장 마감 리포트 (오전 6:10)
+                if now.hour == 6 and now.minute == 10:
                     send_closing_notification("US")
                     time.sleep(60)
             
-            time.sleep(30) # 30초마다 체크
+            time.sleep(30)
             
         except Exception as e:
-            print(f"[Scheduler] CRITICAL ERROR: {e}")
+            print(f"[Scheduler] Error: {e}")
             time.sleep(60)
 
 def start_scheduler():
     """백그라운드 스레드에서 스케줄러 시작"""
     thread = threading.Thread(target=run_market_scheduler, daemon=True)
     thread.start()
-    print("[Scheduler] Smart Market Notification Service Started (KST Based)")
+    print("[Scheduler] Closing Report Service Started (Watchlist Based)")
