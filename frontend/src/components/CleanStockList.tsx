@@ -55,7 +55,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                         onClick={() => onItemClick && onItemClick(item.symbol)}
                     >
                         {/* Left Side: Name, Symbol, Badge, Reason */}
-                        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                        <div className="flex flex-col gap-1.5 min-w-0 flex-1 relative z-0">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[19px] md:text-[21px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight" suppressHydrationWarning>
                                     <span>{item.name}</span>
@@ -86,13 +86,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <span className="text-[10px] text-gray-500">관심 등록가: {item.added_price.toLocaleString()}</span>
                                         {(() => {
-                                            const current = parseFloat(String(item.price || "0").replace(/,/g, ""));
+                                            const current = parseFloat(String(item.price || "0").replace(/[^0-9.]/g, ""));
                                             if (isNaN(current) || current <= 0) return null;
                                             const profitRate = ((current - item.added_price) / item.added_price) * 100;
-                                            
-                                            // [Safety] Hide if the rate is absurdly high (likely data error) or added_price is suspicious
                                             if (Math.abs(profitRate) > 1000 || item.added_price < 1) return null;
-                                            
                                             const isPlus = profitRate > 0;
                                             return (
                                                 <span className={`text-[10px] font-black ${isPlus ? 'text-red-400' : 'text-blue-400'}`}>
@@ -105,28 +102,20 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
                         </div>
 
-                        {/* Right Side: Price & Change & Actions */}
-                        <div className="flex items-center gap-5 shrink-0 ml-4">
+                        {/* Right Side: Price & Change & Actions (Higher Z-Index) */}
+                        <div className="flex items-center gap-4 shrink-0 ml-4 relative z-20">
                             {/* Price & Change */}
-                            <div className="flex flex-col items-end gap-1.5 min-w-[90px] md:min-w-[110px]">
+                            <div className="flex flex-col items-end gap-1 min-w-[100px] md:min-w-[120px]">
                                 <BlinkingPrice
                                     price={item.price}
                                     className={`text-[21px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
                                 />
-                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg shadow-black/20`}>
+                                <div className={`flex items-center gap-1 text-[13px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2.5 py-0.5 rounded-full shadow-lg`}>
                                     <span translate="no">
                                         {(() => {
                                             const rawChange = String(item.change || '');
-                                            const isPct = rawChange.includes('%');
                                             const numericVal = Math.abs(parseFloat(rawChange.replace(/[+%\-▲▼,]/g, '')));
-                                            
-                                            // [Safety] If value is huge (> 500), it's likely an error.
-                                            // Fallback to 0.00% or change_percent if available.
-                                            const cleanValue = (numericVal > 500) 
-                                                ? (item.change_percent || '0.00%') 
-                                                : rawChange;
-                                            
-                                            // Ensure we don't double % or symbols if cleanValue already has them
+                                            const cleanValue = (numericVal > 500) ? (item.change_percent || '0.00%') : rawChange;
                                             const finalDisplay = cleanValue.replace(/[+%\-▲▼]/g, '');
                                             return `${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
                                         })()}
@@ -134,37 +123,35 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 </div>
                             </div>
 
-                            {/* Actions (Enhanced for better hit area and visibility) */}
-                            <div 
-                                className="flex items-center gap-1 bg-white/10 rounded-xl p-1 border border-white/10 relative z-30 shadow-lg cursor-default"
-                                onClick={(e) => e.stopPropagation()}
-                            >
+                            {/* Actions (Standalone Container) */}
+                            <div className="flex items-center gap-1 pointer-events-auto">
                                 {onAlertClick && (
-                                    <button
+                                    <div 
+                                        role="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
-                                            const numericPrice = parseFloat(rawPrice);
-                                            onAlertClick(item.symbol, numericPrice);
+                                            onAlertClick(item.symbol, parseFloat(rawPrice));
                                         }}
-                                        className="p-3 text-blue-400 hover:text-white hover:bg-blue-500 rounded-lg transition-all active:scale-95"
+                                        className="p-3 text-blue-400 hover:text-white hover:bg-blue-600 rounded-xl transition-all active:scale-95 bg-white/5 border border-white/10 cursor-pointer shadow-lg"
                                         title="방어막 설정"
                                     >
                                         <Shield className="w-5 h-5" />
-                                    </button>
+                                    </div>
                                 )}
                                 
                                 {onDelete && (
-                                    <button
+                                    <div 
+                                        role="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onDelete(item.symbol);
                                         }}
-                                        className="p-3 text-gray-400 hover:text-white hover:bg-red-500 rounded-lg transition-all active:scale-95"
+                                        className="p-3 text-gray-400 hover:text-white hover:bg-red-600 rounded-xl transition-all active:scale-95 bg-white/5 border border-white/10 cursor-pointer shadow-lg"
                                         title="삭제"
                                     >
                                         <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
