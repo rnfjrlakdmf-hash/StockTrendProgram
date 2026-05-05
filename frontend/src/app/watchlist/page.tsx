@@ -91,12 +91,22 @@ export default function WatchlistPage() {
     };
 
     const handleDeleteAlert = async (id: number) => {
+        if (!user) return;
         if (!confirm("알림을 삭제하시겠습니까?")) return;
         try {
-            await fetch(`${API_BASE_URL}/api/alerts/${id}`, { method: 'DELETE' });
-            setAlerts(prev => prev.filter(a => a.id !== id));
+            const res = await fetch(`${API_BASE_URL}/api/alerts/${id}`, { 
+                method: 'DELETE',
+                headers: { "X-User-ID": user.id || (user as any).uid }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                setAlerts(prev => prev.filter(a => a.id !== id));
+            } else {
+                alert("삭제에 실패했습니다: " + json.message);
+            }
         } catch (error) {
             console.error(error);
+            alert("삭제 중 오류가 발생했습니다.");
         }
     };
 
