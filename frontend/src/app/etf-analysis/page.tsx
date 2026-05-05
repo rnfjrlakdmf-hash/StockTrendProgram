@@ -583,10 +583,10 @@ function EtfAnalysisContent() {
                                                                     <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
                                                                     
                                                                     <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
-                                                                        <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">MA5</span> <span class="font-mono text-gray-300">${formatPrice(item.ma5)}</span></div>
-                                                                        <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">MA20</span> <span class="font-mono text-gray-300">${formatPrice(item.ma20)}</span></div>
-                                                                        <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">MA60</span> <span class="font-mono text-gray-300">${formatPrice(item.ma60)}</span></div>
-                                                                        <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">MA120</span> <span class="font-mono text-gray-300">${formatPrice(item.ma120)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">5일 이평선</span> <span class="font-mono text-gray-300">${formatPrice(item.ma5)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">20일 이평선</span> <span class="font-mono text-gray-300">${formatPrice(item.ma20)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">60일 이평선</span> <span class="font-mono text-gray-300">${formatPrice(item.ma60)}</span></div>
+                                                                        <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">120일 이평선</span> <span class="font-mono text-gray-300">${formatPrice(item.ma120)}</span></div>
                                                                     </div>
                                                                 </div>
                                                             `;

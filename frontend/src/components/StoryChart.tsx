@@ -140,28 +140,28 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                 y: [d.open || 0, d.high || 0, d.low || 0, d.close || 0]
             }))
         }, {
-            name: 'MA5',
+            name: '5일 이평선',
             type: 'line',
             data: chartData.map((d, i) => ({
                 x: new Date(d.date).getTime(),
                 y: movingAverages?.ma5?.[i] ?? null
             }))
         }, {
-            name: 'MA20',
+            name: '20일 이평선',
             type: 'line',
             data: chartData.map((d, i) => ({
                 x: new Date(d.date).getTime(),
                 y: movingAverages?.ma20?.[i] ?? null
             }))
         }, {
-            name: 'MA60',
+            name: '60일 이평선',
             type: 'line',
             data: chartData.map((d, i) => ({
                 x: new Date(d.date).getTime(),
                 y: movingAverages?.ma60?.[i] ?? null
             }))
         }, {
-            name: 'MA120',
+            name: '120일 이평선',
             type: 'line',
             data: chartData.map((d, i) => ({
                 x: new Date(d.date).getTime(),
@@ -526,10 +526,10 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             <div className="flex flex-wrap gap-4 mb-4 text-[10px] md:text-xs">
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#22c55e]" /><span>MA5</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#ef4444]" /><span>MA20</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#f97316]" /><span>MA60</span></div>
-                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#a855f7]" /><span>MA120</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#22c55e]" /><span>5일 이평선</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#ef4444]" /><span>20일 이평선</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#f97316]" /><span>60일 이평선</span></div>
+                <div className="flex items-center gap-1.5"><div className="h-0.5 w-4 bg-[#a855f7]" /><span>120일 이평선</span></div>
             </div>
 
             {/* Main Chart Case */}
