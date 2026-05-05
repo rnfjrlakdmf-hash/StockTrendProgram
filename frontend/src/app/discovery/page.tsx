@@ -1278,36 +1278,38 @@ function DiscoveryContent() {
                                                     </thead>
                                                     <tbody className="divide-y divide-white/5">
                                                         {dailyPricesData && Array.isArray(dailyPricesData) && dailyPricesData.length > 0 ? (
-                                                                 const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
-                                                                 return (
-                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                                     <td className="py-3 px-2 text-gray-300 font-mono text-sm">
-                                                                         <span>{toKoreanDate(day.date)}</span>
-                                                                     </td>
-                                                                     <td className="py-3 px-2 font-mono font-bold">
-                                                                         <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{day.close.toLocaleString()}</span></span>
-                                                                     </td>
-                                                                     <td className={`py-3 px-2 font-mono font-bold ${safeChange > 0 ? 'text-red-400' : safeChange < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                         <span>
-                                                                             <span>{safeChange > 0 ? '▲' : safeChange < 0 ? '▼' : null}</span>
-                                                                             <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
-                                                                             <span className="text-[10px] ml-1 opacity-70">({safeChange > 0 ? '+' : ''}{safeChange.toFixed(2)}%)</span>
-                                                                         </span>
-                                                                     </td>
-                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                        <span>{day.open.toLocaleString()}</span>
-                                                                    </td>
-                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                        <span className="text-red-400/80">{day.high.toLocaleString()}</span>
-                                                                    </td>
-                                                                    <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                        <span className="text-blue-400/80">{day.low.toLocaleString()}</span>
-                                                                    </td>
-                                                                    <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
-                                                                        <span>{day.volume.toLocaleString()}</span>
-                                                                    </td>
-                                                                </tr>
-                                                            ))
+                                                            dailyPricesData.map((day: any, idx: number) => {
+                                                                const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
+                                                                return (
+                                                                    <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                                        <td className="py-3 px-2 text-gray-300 font-mono text-sm">
+                                                                            <span>{toKoreanDate(day.date)}</span>
+                                                                        </td>
+                                                                        <td className="py-3 px-2 font-mono font-bold">
+                                                                            <span>{stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}</span>
+                                                                        </td>
+                                                                        <td className={`py-3 px-2 font-mono font-bold ${safeChange > 0 ? 'text-red-400' : safeChange < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span>{safeChange > 0 ? '▲' : safeChange < 0 ? '▼' : null}</span>
+                                                                                <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
+                                                                                <span className="text-[10px] ml-1 opacity-70">({safeChange > 0 ? '+' : ''}{safeChange.toFixed(2)}%)</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                            <span>{day.open.toLocaleString()}</span>
+                                                                        </td>
+                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                            <span className="text-red-400/80">{day.high.toLocaleString()}</span>
+                                                                        </td>
+                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
+                                                                            <span className="text-blue-400/80">{day.low.toLocaleString()}</span>
+                                                                        </td>
+                                                                        <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
+                                                                            <span>{day.volume.toLocaleString()}</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })
                                                         ) : (
                                                             <tr>
                                                                 <td colSpan={7} className="py-4 text-center text-gray-500">일일 시세 데이터 없음</td>
