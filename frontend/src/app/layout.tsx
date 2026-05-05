@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import ClosingBanner from "@/components/ClosingBanner";
@@ -83,6 +84,7 @@ export default function RootLayout({
             <FCMWrapper />
           </div>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
