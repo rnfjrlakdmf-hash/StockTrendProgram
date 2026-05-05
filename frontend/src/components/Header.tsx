@@ -100,11 +100,12 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                         {title}
                         <span className="text-[10px] font-black bg-yellow-500 text-black px-2 py-0.5 rounded-md border-2 border-white uppercase tracking-tighter shadow-[0_0_20px_rgba(234,179,8,0.8)]">
-                            v3.7.20-FIXED
+                            v3.7.25-FINAL-BOOST
                         </span>
                     </h1>
                     {subtitle && (
                         <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block">
+                            <span className="text-[10px] text-gray-500 font-mono text-center">v3.7.22-ULTRABOLT</span>
                             {subtitle}
                         </p>
                     )}
