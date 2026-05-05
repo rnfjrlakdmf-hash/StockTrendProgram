@@ -10,9 +10,10 @@ interface PriceAlertSetupProps {
     currentPrice: number;
     buyPrice?: number;
     quantity?: number;
+    alertsCount?: number;
 }
 
-export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quantity }: PriceAlertSetupProps) {
+export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quantity, alertsCount }: PriceAlertSetupProps) {
     const { user } = useAuth();
     const [mode, setMode] = useState<'shield' | 'price' | 'sniper'>('shield');
     // Sniper Alert State
@@ -35,6 +36,11 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
     const [message, setMessage] = useState("");
 
     const handleActivate = async () => {
+        if (!user?.is_pro && (alertsCount || 0) >= 3) {
+            setMessage("👑 일반 회원은 최대 3개까지만 알림을 등록할 수 있습니다. 프리미엄으로 업그레이드하세요!");
+            return;
+        }
+
         if (mode !== 'sniper' && !stopLossEnabled && !takeProfitEnabled && !targetPriceEnabled) {
             setMessage("최소 하나의 알림을 활성화해주세요.");
             return;
@@ -160,10 +166,16 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                         지정가 (₩)
                     </button>
                     <button
-                        onClick={() => setMode('sniper')}
+                        onClick={() => {
+                            if (!user?.is_pro) {
+                                setMessage("👑 스나이퍼 모드는 프리미엄 회원 전용 기능입니다.");
+                                return;
+                            }
+                            setMode('sniper');
+                        }}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'sniper' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                     >
-                        스나이퍼
+                        {user?.is_pro ? '스나이퍼' : '👑 스나이퍼'}
                     </button>
                 </div>
             </div>
@@ -308,12 +320,18 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                             <input
                                 type="checkbox"
                                 checked={targetPriceEnabled}
-                                onChange={(e) => setTargetPriceEnabled(e.target.checked)}
+                                onChange={(e) => {
+                                    if (e.target.checked && !user?.is_pro) {
+                                        setMessage("👑 최종 목표가 설정은 프리미엄 회원 전용 기능입니다.");
+                                        return;
+                                    }
+                                    setTargetPriceEnabled(e.target.checked);
+                                }}
                                 className="w-5 h-5 rounded"
                             />
                             <div className="flex items-center gap-2">
                                 <Target className="w-5 h-5 text-blue-400" />
-                                <span className="text-white font-bold">최종 목표가 (Target)</span>
+                                <span className="text-white font-bold">{user?.is_pro ? '최종 목표가 (Target)' : '👑 최종 목표가 (Target)'}</span>
                             </div>
                         </label>
 
