@@ -595,10 +595,10 @@ function DiscoveryContent() {
                         {/* Search / Hero Section */}
                         <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 shadow-xl overflow-visible">
                             <div className="relative z-20 max-w-2xl">
-                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md"><span>종목 데이터 분석 (AI Analysis)</span></h2>
+                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">종목 데이터 분석 (AI Analysis)</h2>
                                 <p className="text-gray-200 mb-4 text-sm md:text-base">
-                                    <span><span>종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.</span><br />
-                                    <span className="text-xs text-gray-400"><span>예시: AAPL, 삼성전자 (테마 검색 불가)</span></span></span>
+                                    종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.<br />
+                                    <span className="text-xs text-gray-400">예시: AAPL, 삼성전자 (테마 검색 불가)</span>
                                 </p>
 
                                 <div className="flex gap-2">
