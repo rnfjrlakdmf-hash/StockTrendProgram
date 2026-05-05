@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stock-trend-program.vercel.app/sitemap.xml
