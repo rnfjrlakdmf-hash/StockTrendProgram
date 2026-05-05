@@ -360,7 +360,13 @@ export default function Sidebar() {
                         </div>
                     ) : (
                         <button
-                            onClick={() => setShowLoginModal(true)}
+                            onClick={() => {
+                                if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+                                    window.location.href = "/login";
+                                } else {
+                                    setShowLoginModal(true);
+                                }
+                            }}
                             className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
                         >
                             <UserCheck className="w-4 h-4" />
