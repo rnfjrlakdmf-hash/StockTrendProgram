@@ -27,7 +27,7 @@ export default function AdBanner({
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" // 회원님의 ID로 교체 필요
+        data-ad-client="ca-pub-9471404163603833"
         data-ad-slot={dataAdSlot}
         data-ad-format={dataAdFormat}
         data-full-width-responsive={dataFullWidthResponsive.toString()}

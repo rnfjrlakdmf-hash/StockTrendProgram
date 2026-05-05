@@ -60,7 +60,7 @@ export default function RootLayout({
         {/* Google AdSense - 회원님의 ID로 나중에 교체 필요 */}
         <Script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
           crossOrigin="anonymous"
           strategy="lazyOnload"
         />
