@@ -519,7 +519,7 @@ export default function SupplyChainPage() {
                                     * AI 분석은 참고용이며 투자 판단의 책임은 본인에게 있습니다.
                                 </div>
                                 <a 
-                                    href={`/stock-analysis?symbol=${selectedNode.ticker || selectedNode.id}`}
+                                    href={`/analysis?symbol=${selectedNode.ticker || selectedNode.id}`}
                                     className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm font-bold transition-colors"
                                 >
                                     종목 상세 페이지 <ExternalLink className="w-4 h-4" />

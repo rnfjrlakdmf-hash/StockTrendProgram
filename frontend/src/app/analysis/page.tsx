@@ -32,6 +32,15 @@ function AnalysisContent() {
     const [symbol, setSymbol] = useState("");
     const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer">("quant");
 
+    // [New] URL Sync
+    useEffect(() => {
+        if (urlSymbol && mounted) {
+            setSymbol(urlSymbol);
+            // Trigger search for current active tab
+            setTimeout(() => handleGlobalSearch(activeTab), 100);
+        }
+    }, [urlSymbol, mounted]);
+
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
     const [quantLoading, setQuantLoading] = useState(false);
