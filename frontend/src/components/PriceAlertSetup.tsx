@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, TrendingDown, TrendingUp, Target, Bell, X, Crosshair } from "lucide-react";
+import { Shield, TrendingDown, TrendingUp, Target, Bell, X, Crosshair, Zap, Loader2, Crown, AlertCircle, Info, Play } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import RewardAdModal from "./RewardAdModal";
 
 interface PriceAlertSetupProps {
     symbol: string;
@@ -34,10 +35,26 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [showAd, setShowAd] = useState(false);
 
     const handleActivate = async () => {
         if (!user?.is_pro && (alertsCount || 0) >= 3) {
-            setMessage("👑 일반 회원은 최대 3개까지만 알림을 등록할 수 있습니다. 프리미엄으로 업그레이드하세요!");
+            setMessage("👑 일반 회원은 알림을 3개까지만 등록할 수 있습니다.");
+            setShowAd(true);
+            return;
+        }
+
+        // Pro check for Sniper
+        if (mode === 'sniper' && !user?.is_pro) {
+            setMessage("👑 스나이퍼 모드는 프리미엄 전용 기능입니다.");
+            setShowAd(true);
+            return;
+        }
+
+        // Pro check for Target Price
+        if (targetPriceEnabled && !user?.is_pro) {
+            setMessage("👑 최종 목표가 설정은 프리미엄 전용 기능입니다.");
+            setShowAd(true);
             return;
         }
 
@@ -368,6 +385,16 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                 {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Bell className="w-5 h-5" />}
                 {mode === 'sniper' ? '스나이퍼 감시 시작' : mode === 'shield' ? '방어막 가동하기' : '알림 등록하기'}
             </button>
+
+            {showAd && (
+                <RewardAdModal 
+                    onClose={() => setShowAd(false)} 
+                    onSuccess={() => {
+                        setMessage("🎉 1시간 무료 Pro 권한이 활성화되었습니다! 다시 시도해 보세요.");
+                        setShowAd(false);
+                    }} 
+                />
+            )}
         </div>
     );
 }

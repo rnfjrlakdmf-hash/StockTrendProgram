@@ -49,6 +49,7 @@ def init_db():
             name TEXT,
             picture TEXT,
             is_pro BOOLEAN DEFAULT 0,
+            pro_expires_at TIMESTAMP, -- [NEW] Pro trial expiration
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             free_trial_count INTEGER DEFAULT 2,
             kis_app_key TEXT,
@@ -64,6 +65,16 @@ def init_db():
         print("Migrating users table (adding free_trial_count)...")
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN free_trial_count INTEGER DEFAULT 2")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
+    # [Migration] Add pro_expires_at if not exists
+    try:
+        cursor.execute("SELECT pro_expires_at FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding pro_expires_at)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN pro_expires_at TIMESTAMP")
         except Exception as e:
             print(f"Migration Warning: {e}")
 

@@ -76,7 +76,7 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
 
 @router.post("/use-trial")
 def use_trial(req: UseTrialRequest):
-    """1시간 무료 이용권 사용 API"""
+    """1시간 무료 이용권 사용 API (기존 방식)"""
     try:
         from db_manager import decrement_free_trial
         new_count = decrement_free_trial(req.user_id)
@@ -84,6 +84,17 @@ def use_trial(req: UseTrialRequest):
             return {"status": "success", "new_count": new_count}
     except: pass
     return {"status": "error", "message": "Trial update failed"}
+
+@router.post("/activate-trial")
+def activate_trial(req: UseTrialRequest):
+    """광고 시청 후 1시간 Pro 활성화 API (신규 방식)"""
+    try:
+        from db_manager import activate_pro_trial
+        expires_at = activate_pro_trial(req.user_id, hours=1)
+        if expires_at:
+            return {"status": "success", "expires_at": expires_at}
+    except: pass
+    return {"status": "error", "message": "Pro activation failed"}
 
 @router.post("/settings")
 def update_settings(req: UserSettingsRequest):
