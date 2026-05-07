@@ -288,10 +288,12 @@ function AnalysisContent() {
                                                         return isNaN(Number(val)) ? "0" : Number(val).toLocaleString();
                                                     })()}
                                                 </span>
-                                                <span className="text-sm font-medium">
+                                                <span className="text-sm medium">
                                                     {(() => {
+                                                        // [Final Solution] Purge ALL possible duplicate labels from ANY source
                                                         const raw = String(stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00%");
-                                                        return raw; // Backend already provided the correct label
+                                                        const clean = raw.replace(/\[정규\]/g, "").replace(/\[야간\]/g, "").trim();
+                                                        return `[정규] ${clean}`;
                                                     })()}
                                                     {stockInfo.details?.nxt_data && (
                                                         <span className="ml-3 text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(99,102,241,0.3)] border border-indigo-500/20">
