@@ -10,6 +10,28 @@
       "nudges": 0,
       "priority": "normal",
       "preAlarmsSent": []
+    },
+    {
+      "id": "20260507090428-p5v0",
+      "title": "유튜브 영상 제작 및 업로드 프로세스 확인",
+      "description": "작업을 해서 유투브에 영상을 올려주는것도 가능해?",
+      "owner": "agent",
+      "createdAt": "2026-05-07T09:04:28.893Z",
+      "status": "in_progress",
+      "nudges": 0,
+      "priority": "normal",
+      "preAlarmsSent": []
+    },
+    {
+      "id": "20260507090607-du29",
+      "title": "작업 가능 범위 상세 안내",
+      "description": "간단한것만 가능한거야?",
+      "owner": "agent",
+      "createdAt": "2026-05-07T09:06:07.455Z",
+      "status": "in_progress",
+      "nudges": 0,
+      "priority": "normal",
+      "preAlarmsSent": []
     }
   ]
 }
