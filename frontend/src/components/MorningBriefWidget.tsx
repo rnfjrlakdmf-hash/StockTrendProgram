@@ -259,7 +259,7 @@ export default function MorningBriefWidget() {
         
         // 날짜 데이터 추출 및 정규화 (KST 기준)
         // b.kst_date는 백엔드에서 '+9 hours' 처리된 YYYY-MM-DD 형식임
-        const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
+        const datePart = (b.kst_date || (b as any).created_at || "").split(/[ T]/)[0];
         
         // 1. 선택된 날짜와 정확히 일치하는 경우 (Strict Match)
         if (datePart === selectedDate) return true;
@@ -275,7 +275,7 @@ export default function MorningBriefWidget() {
     const systemTimeline = (timeline || []).filter(b => {
         if (b.user_id !== 'SYSTEM') return false;
         if (!selectedDate) return false;
-        const datePart = (b.kst_date || b.created_at || "").split(/[ T]/)[0];
+        const datePart = (b.kst_date || (b as any).created_at || "").split(/[ T]/)[0];
         // [Strict Match Only] 사용자가 선택한 날짜의 기록만 정직하게 노출
         return datePart === selectedDate;
     });
@@ -560,7 +560,7 @@ export default function MorningBriefWidget() {
                                 <div className="absolute left-1.5 md:left-2.5 top-3 bottom-0 w-[1px] bg-gradient-to-b from-emerald-500/40 via-white/5 to-transparent"></div>
 
                                 {(uniqueSystemTimeline && uniqueSystemTimeline.length > 0) ? uniqueSystemTimeline.map((brief, idx) => {
-                                    const date = brief?.created_at ? new Date(brief.created_at) : new Date();
+                                    const date = (brief as any)?.created_at ? new Date((brief as any).created_at) : new Date();
                                     // [Precision] 정시 브리핑은 분 단위를 절삭하여 00으로 강제 표시 (히스토리 일관성 확보)
                                     const timeLabel = brief.category === 'PERIODIC' 
                                         ? `${date.getHours()}:00` 

@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, DollarSign, RefreshCw, Droplet, Maximize2, X, Loader2, TrendingUp, Activity } from 'lucide-react';
 import { API_BASE_URL } from "@/lib/config";
-import CleanStockList, { CleanStockItem } from './CleanStockList';
+import CleanStockList, { CleanStockItem as OriginalCleanStockItem } from './CleanStockList';
+
+// [Fix] Extend interface to include 'unit' which is missing in the original definition
+interface CleanStockItem extends OriginalCleanStockItem {
+    unit?: string;
+}
 
 interface MarketIndicatorsProps {
     limit?: number; // Optional limit for items to display (default: all or 10)
