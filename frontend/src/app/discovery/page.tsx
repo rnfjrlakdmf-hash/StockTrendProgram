@@ -186,13 +186,11 @@ const formatChangeDisplay = (val: any) => {
         cleanText = `${cleanText}%`;
     }
     
-    const prefix = label ? `${label} ` : "";
-    
     // [Updated] Standard KOR Colors: Red-500 (Up), Blue-500 (Down)
-    if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `${prefix}▲ ${cleanText}` };
-    if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: `${prefix}▼ ${cleanText}` };
+    if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `▲ ${cleanText}` };
+    if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: `▼ ${cleanText}` };
     
-    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: `${prefix}${cleanText}` };
+    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: `${cleanText}` };
 };
 
 // Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
@@ -799,7 +797,6 @@ function DiscoveryContent() {
                                                 )}
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorText} ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorBg}`}>
                                                     <span>
-                                                        {!String(stock.change).includes('[정규]') && "[정규] "}
                                                         {formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}
                                                     </span>
                                                 </span>

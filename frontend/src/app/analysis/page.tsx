@@ -290,7 +290,6 @@ function AnalysisContent() {
                                                 </span>
                                                 <span className="text-sm font-medium">
                                                     {(() => {
-                                                        // [Final Solution] Purge ALL possible duplicate labels from ANY source
                                                         const raw = String(stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00%");
                                                         const clean = raw.replace(/\[정규\]/g, "").replace(/\[야간\]/g, "").trim();
                                                         return `[정규] ${clean}`;
