@@ -32,15 +32,6 @@ function AnalysisContent() {
     const [symbol, setSymbol] = useState("");
     const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer">("quant");
 
-    // [New] URL Sync
-    useEffect(() => {
-        if (urlSymbol && mounted) {
-            setSymbol(urlSymbol);
-            // Trigger search for current active tab
-            setTimeout(() => handleGlobalSearch(activeTab), 100);
-        }
-    }, [urlSymbol, mounted]);
-
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
     const [quantLoading, setQuantLoading] = useState(false);
@@ -292,12 +283,12 @@ function AnalysisContent() {
                                                 <span className="text-lg">{stockInfo.change?.toLocaleString() || "0"}</span>
                                                 {/* [Fix] Prevent (undefined%) display */}
                                                 <span className="text-sm">
-                                                    {(() => {
-                                                        const rate = parseFloat(String(stockInfo.change_rate || "0"));
-                                                        const sign = rate > 0 ? "▲" : rate < 0 ? "▼" : "";
-                                                        const plus = rate > 0 ? "+" : "";
-                                                        return `${sign} ${plus}${stockInfo.change_rate || "0.00"}%`;
-                                                    })()}
+                                                    {stockInfo.change || "0.00%"}
+                                                    {stockInfo.details?.nxt_data && (
+                                                        <span className="ml-2 text-indigo-400 opacity-80">
+                                                            [야간] {stockInfo.details.nxt_data.change_pct}
+                                                        </span>
+                                                    )}
                                                 </span>
                                             </div>
                                         </div>

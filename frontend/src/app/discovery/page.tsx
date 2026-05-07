@@ -159,37 +159,40 @@ const formatChangeDisplay = (val: any) => {
         return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
     }
     
+    // [New] Preserve labels like [정규], [야간]
+    const labelMatch = str.match(/^(\[[^\]]+\])/);
+    const label = labelMatch ? labelMatch[1] : "";
+    
     // Improved Parsing: Check markers OR numerical value
     const isNegExplicit = str.includes('-') || str.includes('▼') || str.includes('하락');
     const isPosExplicit = str.includes('+') || str.includes('▲') || str.includes('상승');
     
-    const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+    const num = parseFloat(str.replace(/\[[^\]]+\]/g, '').replace(/[^\d.-]/g, ''));
     if (isNaN(num)) return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: str };
-    if (num === 0) return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
+    if (num === 0) return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: label ? `${label} 0.00%` : '0.00%' };
 
     const isPos = isPosExplicit || (!isNegExplicit && num > 0);
     const isNeg = isNegExplicit || (!isPosExplicit && num < 0);
     
-    // Remove existing signs for clean formatting
-    let cleanText = str.replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
+    // Remove existing signs and labels for clean formatting
+    let cleanText = str.replace(/\[[^\]]+\]/g, '').replace(/[+▼▲-]/g, '').replace('하락', '').replace('상승', '').trim();
     
     // [Safety] If absolute numeric value is huge and no % was present, it's likely a price change (not pct).
-    // In that case, we should try to avoid showing it as a percentage if it's over 500.
     if (!str.includes('%')) {
         const absVal = Math.abs(parseFloat(cleanText.replace(/,/g, '')));
         if (absVal > 500) {
-            // If it's a huge number and didn't have %, we show it as is (no %) or just return a default
-            // But usually we want a percentage here.
-            return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: '0.00%' };
+            return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: label ? `${label} 0.00%` : '0.00%' };
         }
         cleanText = `${cleanText}%`;
     }
     
-    // [Updated] Standard KOR Colors: Red-500 (Up), Blue-500 (Down)
-    if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `▲ ${cleanText}` };
-    if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: `▼ ${cleanText}` };
+    const prefix = label ? `${label} ` : "";
     
-    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: cleanText };
+    // [Updated] Standard KOR Colors: Red-500 (Up), Blue-500 (Down)
+    if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: `${prefix}▲ ${cleanText}` };
+    if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: `${prefix}▼ ${cleanText}` };
+    
+    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: `${prefix}${cleanText}` };
 };
 
 // Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
@@ -795,7 +798,10 @@ function DiscoveryContent() {
                                                     </span>
                                                 )}
                                                 <span className={`font-bold px-2 py-1 md:px-3 md:py-1 rounded-lg text-base md:text-lg ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorText} ${formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).colorBg}`}>
-                                                    <span>{formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}</span>
+                                                    <span>
+                                                        {!String(stock.change).includes('[정규]') && "[정규] "}
+                                                        {formatChangeWithAmountDisplay(stock.change, stock.price, stock.details?.prev_close, undefined, stock.currency).text}
+                                                    </span>
                                                 </span>
                                                 {/* [New] Market Status Badge with Green Light */}
                                                 {stock.details?.market_status && (

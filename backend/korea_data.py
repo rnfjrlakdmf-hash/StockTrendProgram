@@ -14,8 +14,11 @@ from stock_names import STOCK_MAP
 
 # [Config]
 HEADER = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Referer": "https://finance.naver.com/"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://stock.naver.com/",
+    "Origin": "https://stock.naver.com"
 }
 
 
@@ -219,7 +222,8 @@ search_korean_stock_symbol = search_stock_code # Alias
 @turbo_cache(ttl_seconds=30)
 def gather_naver_stock_data(symbol: str):
     """
-    Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials) in ONE request.
+    Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials).
+    [v6.0.0] Uses new JSON APIs as primary sources for Domestic Stocks.
     """
     try:
         code = symbol.split('.')[0]
@@ -228,548 +232,181 @@ def gather_naver_stock_data(symbol: str):
         if len(code) != 6:
             return None
             
+        # Initialize variables
+        price = 0
+        name = symbol
+        market_type = "KS"
+        per = eps = dvr = pbr = bps = None
+        est_per = est_eps = dp_share = None
+        year_high = year_low = None
+        open_val = high_val = low_val = volume_val = None
+        description = ""
+        market_status = "Unknown"
+        change_pct_str = "0.00%"
+        change_val = 0
+        nxt_data = None
+        sector_name = "Unknown"
+        market_cap_str = "N/A"
+
+        # 1. New Detail API (Primary for Financials)
+        try:
+            detail_url = f"https://stock.naver.com/api/domestic/detail/{code}/detail?codeType=KRX"
+            d_res = requests.get(detail_url, headers=HEADER, timeout=5)
+            if d_res.status_code == 200:
+                d_data = d_res.json()
+                
+                # Extract Metrics
+                def to_f(v):
+                    if v is None or v == "": return None
+                    try: return float(str(v).replace(',', ''))
+                    except: return None
+
+                per = to_f(d_data.get('per'))
+                eps = to_f(d_data.get('eps'))
+                pbr = to_f(d_data.get('pbr'))
+                bps = to_f(d_data.get('bps'))
+                # Naver Detail API dividendRate is often in %
+                dvr = to_f(d_data.get('dividendRate'))
+                if dvr is not None: dvr = dvr / 100.0
+                
+                est_per = to_f(d_data.get('estimatedPer'))
+                est_eps = to_f(d_data.get('estimatedEps'))
+                
+                year_high = to_f(d_data.get('week52HighPrice'))
+                year_low = to_f(d_data.get('week52LowPrice'))
+                
+                name = d_data.get('stockName', name)
+                print(f"[gather_naver_stock_data] New Detail API success for {code}")
+        except Exception as e:
+            print(f"[gather_naver_stock_data] Detail API failed: {e}")
+
+        # 2. Integration Price API (Primary for Price/Status)
+        try:
+            p_url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={code}"
+            p_res = requests.get(p_url, headers=HEADER, timeout=5)
+            if p_res.status_code == 200:
+                p_root = p_res.json()
+                item = p_root.get('domesticKrx', {}).get(code)
+                if item:
+                    m_info = item.get('overMarketPriceInfo', {})
+                    price = float(str(m_info.get('overPrice') or item.get('closePrice', '0')).replace(',', ''))
+                    
+                    # [Fix] Fetch stock name from Price API
+                    name = item.get('stockName', name)
+                    
+                    pct = float(m_info.get('fluctuationsRatio') or item.get('fluctuationsRatio', '0'))
+                    change_pct_str = f"{pct:+.2f}%"
+                    change_val = int(str(m_info.get('fluctuations') or item.get('compareToPreviousClosePrice', '0')).replace(',', ''))
+                    
+                    open_val = to_f(item.get('openPrice'))
+                    high_val = to_f(item.get('highPrice'))
+                    low_val = to_f(item.get('lowPrice'))
+                    volume_val = to_f(item.get('accumulatedTradingVolume'))
+                    
+                    status_raw = m_info.get('overMarketStatus') or item.get('marketStatus')
+                    if status_raw == 'OPEN': market_status = "장중"
+                    elif status_raw == 'CLOSE': market_status = "장마감"
+                    
+                    if item.get('marketType') == 'KOSPI': market_type = 'KS'
+                    elif item.get('marketType') == 'KOSDAQ': market_type = 'KQ'
+                    
+                    # NXT Data
+                    nxt_item = p_root.get('domesticNxt', {}).get(code)
+                    if nxt_item:
+                        nxt_price = to_f(nxt_item.get('closePrice'))
+                        if nxt_price:
+                            nxt_pct = float(nxt_item.get('fluctuationsRatio', 0))
+                            nxt_data = {
+                                "price": nxt_price,
+                                "change_val": int(str(nxt_item.get('compareToPreviousClosePrice', '0')).replace(',', '')),
+                                "change_pct": f"{nxt_pct:+.2f}%"
+                            }
+                    print(f"[gather_naver_stock_data] New Price API success for {code}")
+        except Exception as e:
+            print(f"[gather_naver_stock_data] Price API failed: {e}")
+
+        # 3. Fallback/Legacy Scraping for Description & Extras
         url = f"https://finance.naver.com/item/main.naver?code={code}"
         res = requests.get(url, headers=HEADER, timeout=10)
-        if res.status_code != 200:
-            print(f"[gather_naver_stock_data] HTTP Error {res.status_code} for {code}")
-            return None
-        
-        content = res.content
-        
-        html = None
         decoded_str = decode_safe(res)
-        if 'cop_analysis' in decoded_str and ('매출액' in decoded_str or '영업이익' in decoded_str):
-            html = decoded_str
-            print(f"[gather_naver_stock_data] Decoded with decode_safe SUCCESS")
+        soup = BeautifulSoup(decoded_str, 'html.parser')
         
-        if not html:
-            # Final manual loop if decode_safe wasn't enough for this specific page
-            for enc in ['cp949', 'euc-kr', 'utf-8']:
-                try:
-                    candidate_html = content.decode(enc, 'ignore')
-                    if 'cop_analysis' in candidate_html and ('매출액' in candidate_html or '영업이익' in candidate_html):
-                        html = candidate_html
-                        break
-                except: continue
+        # [Fallback Name] If still code, try legacy scraping for name
+        if name == symbol or name == code:
+            title_tag = soup.select_one("div.wrap_company h2 a") or soup.select_one("div.h_company h2 a")
+            if title_tag: name = title_tag.text.strip()
         
-        if not html:
-            html = decoded_str or content.decode('utf-8', 'ignore')
-        
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Name
-        name_tag = soup.select_one(".wrap_company h2 a")
-        if not name_tag:
-            print(f"[gather_naver_stock_data] Name tag not found for {code}. Page structure might have changed.")
-            return None
-        name = name_tag.text.strip()
-        
-        # Market Type (KOSPI/KOSDAQ)
-        market_img = soup.select_one(".wrap_company img")
-        market_type = "KS" # Default
-        if market_img:
-            alt = market_img.get('alt', '')
-            if '코스닥' in alt:
-                market_type = 'KQ'
-            elif '코스피' in alt:
-                market_type = 'KS'
-                
-        # [Fix] Company Description - 네이버 금융 기업개요 탭 스크래핑 (모바일 API /overview 폐지 대응)
-        description = ""
+        # [Description]
         try:
             co_url = f"https://finance.naver.com/item/coinfo.naver?code={code}&target=corp"
             co_res = requests.get(co_url, headers=HEADER, timeout=4)
             co_html = co_res.content.decode('euc-kr', errors='replace')
             co_soup = BeautifulSoup(co_html, 'html.parser')
-            # 기업개요: p 태그에서 실제 회사 소개 문장만 추출
             desc_parts = []
             paras = co_soup.select("p")
             for p in paras:
                 t = p.text.strip()
-                # 30자 이상이고 마케팅/법률 면책문구가 아닌 텍스트만 수집
                 if (30 < len(t) < 300
                         and '네이버파이낸셜' not in t
                         and 'PER' not in t and 'PBR' not in t
                         and '코스피' not in t and '코스닥' not in t
                         and '시가총액' not in t and '외국인' not in t):
                     desc_parts.append(t)
-                    if len(desc_parts) >= 3:  # 최대 3문장
-                        break
+                    if len(desc_parts) >= 3: break
             description = " ".join(desc_parts)
-        except Exception as e:
-            print(f"[CompanyDesc] 기업개요 수집 실패 ({code}): {e}")
+        except: pass
 
+        # [Sector Fallback]
+        try:
+            sector_tag = soup.select_one("h4.h_sub.sub_tit7 a")
+            if sector_tag: sector_name = sector_tag.text.strip()
+        except: pass
 
-        # Price
-        no_today = soup.select_one("p.no_today span.blind")
-        if not no_today:
-            return None
-        price = int(no_today.text.replace(',', ''))
-        
-        # Change
-        ex_day = soup.select_one(".no_exday")
-        change_val = 0
-        change_pct_str = "0.00%"
-        
-        if ex_day:
-            blind_tags = ex_day.select("span.blind")
-            if len(blind_tags) >= 2:
-                # 0: change value, 1: percentage
-                # Check direction (上升/下降)
-                ico = ex_day.select_one("span.ico")
-                direction = 1
-                if ico and "하락" in ico.text:
-                    direction = -1
-                
-                change_val = int(blind_tags[0].text.replace(',', '')) * direction
-                
-                # [Reliability Fix] Recalculate percentage from price and change_val 
-                # instead of relying on scraped strings which often pick up change_val as %
-                prev_close_calc = price - change_val
-                if prev_close_calc != 0:
-                    calc_pct = (change_val / prev_close_calc) * 100
-                    change_pct_str = f"{calc_pct:+.2f}%"
-                else:
-                    change_pct_str = "0.00%"
-                
-                # [Safety] Double-check magnitude
-                if abs(float(change_pct_str.replace('%', ''))) > 500:
-                    change_pct_str = "0.00%"
+        # [Market Cap Fallback]
+        mc = soup.select_one("#_market_sum")
+        if mc: market_cap_str = mc.text.strip().replace(",", "") + "원"
 
         # Previous Close
-        prev_close_tag = soup.select_one("td.first span.blind")
         prev_close = price - change_val
-        if prev_close_tag:
-            prev_close = int(prev_close_tag.text.replace(',', ''))
-
-        # [Fix] NXT 데이터를 먼저 가져와야 market_status 체크에 사용할 수 있음
-        # [New] NXT (Nextrade) After Market Data - MUST come before market_status check
-        nxt_data = None
-        nxt_area = soup.select_one("#rate_info_nxt")
-        if nxt_area:
-            try:
-                nxt_price_tag = nxt_area.select_one(".no_today .blind")
-                if nxt_price_tag:
-                    nxt_price = int(nxt_price_tag.text.strip().replace(',', ''))
-                    
-                    # Extract NXT change and percentage
-                    nxt_blind_tags = nxt_area.select(".no_exday .blind")
-                    nxt_change_val = 0
-                    nxt_change_pct = "0.00%"
-                    
-                    if len(nxt_blind_tags) >= 2:
-                        ico = nxt_area.select_one("span.ico")
-                        direction = 1
-                        if ico and "하락" in ico.text:
-                            direction = -1
-                        
-                        nxt_change_val = int(nxt_blind_tags[0].text.replace(',', '')) * direction
-                        
-                        # [Reliability Fix] Recalculate NXT percentage
-                        nxt_prev_close = nxt_price - nxt_change_val
-                        if nxt_prev_close != 0:
-                            nxt_calc_pct = (nxt_change_val / nxt_prev_close) * 100
-                            nxt_change_pct = f"{nxt_calc_pct:+.2f}%"
-                        else:
-                            nxt_change_pct = "0.00%"
-                        
-                        # [Safety]
-                        if abs(float(nxt_change_pct.replace('%', ''))) > 500:
-                            nxt_change_pct = "0.00%"
-                        
-                    nxt_data = {
-                        "price": nxt_price,
-                        "change_val": nxt_change_val,
-                        "change_pct": nxt_change_pct
-                    }
-            except Exception as e:
-                print(f"NXT Scraping Error for {symbol}: {e}")
-
-        # [New] Market Status (In-session, Closed, After-Market)
-        market_status = "Unknown"
-        # 1. Look for text in description
-        status_tag = soup.select_one(".description")
-        if status_tag:
-            text = status_tag.get_text()
-            # Use raw bytes check if text is still messy, or just common keywords
-            if "장중" in text or "실시간" in text: market_status = "장중"
-            elif "장마감" in text or "정규장종료" in text: market_status = "장마감"
         
-        # 2. Pattern Match via ICON alt text (Naver uses images for status)
-        if market_status == "Unknown":
-            st_img = soup.select_one("img[alt*='장중'], img[alt*='장마감'], img[alt*='실시간']")
-            if st_img:
-                alt = st_img.get('alt', '')
-                if "장중" in alt or "실시간" in alt: market_status = "장중"
-                elif "장마감" in alt: market_status = "장마감"
-        
-        # 3. Fallback via ID / time
-        if market_status == "Unknown":
-            st = soup.select_one("#time")
-            if st:
-                if "장중" in st.text: market_status = "장중"
-                elif "마감" in st.text: market_status = "장마감"
-        
-        # 4. If all fails but price exists, default to "장중" if hour is 9-16 (KST)
-        if market_status == "Unknown" and price > 0:
-            now_kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-            # Standard Market: 09:00 ~ 15:30 (KST)
-            current_min = now_kst.hour * 100 + now_kst.minute
-            if now_kst.weekday() < 5 and 900 <= current_min < 1530:
-                 market_status = "장중"
-            elif now_kst.weekday() < 5 and current_min >= 1530:
-                 market_status = "장마감"
-        
-        # 4. Ultimate Fallback: keyword scan in HTML
-        if market_status == "Unknown":
-            if "장중" in html[:10000]: market_status = "장중"
-            elif "장마감" in html[:10000]: market_status = "장마감"
-        
-        # [Fix] Additional check for NXT status (Force to KST UTC+9)
-        from datetime import datetime, timedelta, timezone
-        kst = timezone(timedelta(hours=9))
-        now_kst = datetime.now(kst)
-        current_time = now_kst.hour * 100 + now_kst.minute
-        
-        # Nextrade (NXT) After Market: 15:40 ~ 20:00 (KR Time)
-        is_nxt_active = (1540 <= current_time <= 2000)
-        
-        # If we have NXT data and it's NXT active hours, prioritize it
-        if nxt_area and is_nxt_active:
-            market_status = "야간거래(NXT)"
-            
-        # [Extra] Sector (Upjong)
-        sector_name = "Unknown"
-        try:
-            # Look for "Same Sector" link
-            # Structure: <h4 class="h_sub sub_tit7"><em><a href="...">Sector Name</a></em></h4>
-            sector_tag = soup.select_one("h4.h_sub.sub_tit7 a")
-            if sector_tag:
-                sector_name = sector_tag.text.strip()
-            else:
-                # Fallback: Look for WICS or other labels
-                h4s = soup.select("h4")
-                for h4 in h4s:
-                    if "업종" in h4.text:
-                        a_tag = h4.select_one("a")
-                        if a_tag:
-                            sector_name = a_tag.text.strip()
-                            break
-        except: pass
-
-        # Extra details (Robust Scraping v2.7.3)
-        market_cap_str = ""
-        try:
-            mc = soup.select_one("#_market_sum")
-            if not mc:
-                # Fallback: Search for label text in any TH or TD
-                for tag in soup.find_all(['th', 'td', 'em']):
-                    txt = tag.text.strip()
-                    if "시가총액" in txt and len(txt) < 10:
-                        # Value is often in the next sibling or a nested span
-                        val_tag = tag.find_next_sibling(['td', 'span', 'em'])
-                        if val_tag:
-                            mc = val_tag
-                            break
-            
-            if mc:
-                raw = mc.text.strip()
-                # Advanced Clean Up (v2.7.5) - 1,102조 2,366억원 대응
-                # Remove commas and handle spaces
-                c1 = raw.replace(",", "").strip()
-                
-                # Intelligent Unit Parser (Handle strings like "1,102조 2,366억원")
-                # Remove commas but keep numbers and Jo/Uk/Won
-                raw_clean = raw.replace(",", "").strip()
-                market_cap_str = raw_clean
-                if not market_cap_str.endswith("원"):
-                    market_cap_str += "원"
-        except Exception as sce:
-            print(f"Market Cap Scraping Error: {sce}")
-            market_cap_str = "N/A"
-        
-        # Initialize variables (None instead of 0.0 to distinguish 'not found')
-        per = None
-        eps = None
-        dvr = None
-        pbr = None
-        bps = None
-        est_per = None
-        est_eps = None
-        dp_share = None
-        year_high = None
-        year_low = None
-        
-        # ID-based scraping (Backup)
-        open_val = high_val = low_val = volume_val = None
-        try:
-            p = soup.select_one("#_per")
-            if p and p.text.strip().replace(',', '').replace('배', '') not in ["N/A", "-"]: 
-                per = float(p.text.strip().replace(',', '').replace('배', ''))
-        except: pass
-        
-        try:
-            e = soup.select_one("#_eps")
-            if e and e.text.strip().replace(',', '').replace('원', '') not in ["N/A", "-"]: 
-                eps = float(e.text.strip().replace(',', '').replace('원', ''))
-        except: pass
-
-        try:
-            p = soup.select_one("#_pbr")
-            if p and p.text.strip().replace(',', '').replace('배', '') not in ["N/A", "-"]: 
-                pbr = float(p.text.strip().replace(',', '').replace('배', ''))
-        except: pass
-        
-        try:
-            d = soup.select_one("#_dvr")
-            if d and d.text.strip().replace(',', '').replace('%', '') not in ["N/A", "-"]: 
-                dvr = float(d.text.strip().replace(',', '').replace('%', '')) / 100.0
-        except: pass
-        
-        try:
-            # New Robust OHLCV parsing: Aggregate by TD
-            no_info_area = soup.select_one(".no_info")
-            if no_info_area:
-                tds = no_info_area.select("td")
-                for td in tds:
-                    txt = td.text.strip()
-                    # Find the primary value (usually in .blind)
-                    blind = td.select_one(".blind")
-                    if not blind: continue
-                    
-                    val_str = blind.text.strip().replace(',', '')
-                    if not val_str or not val_str.replace('.', '', 1).isdigit(): continue
-                    val = int(float(val_str))
-                    
-                    if "시가" in txt: open_val = val
-                    elif "고가" in txt: high_val = val
-                    elif "저가" in txt: low_val = val
-                    elif "거래량" in txt: volume_val = val
-
-            # Fallback to old index-based if above failed
-            if open_val is None:
-                rate_info = soup.select(".no_info .blind")
-                if len(rate_info) >= 8: 
-                     high_val = int(rate_info[1].text.replace(',', ''))
-                     volume_val = int(rate_info[3].text.replace(',', ''))
-                     open_val = int(rate_info[4].text.replace(',', ''))
-                     low_val = int(rate_info[5].text.replace(',', ''))
-        except: pass
-
-        # [Scraping Improvement] Parse by Table Labels (Robust)
-        info_tables = soup.select("table")
-        
-        for tbl in info_tables:
-            # Skip the main price table we just processed
-            if 'no_info' in tbl.get('class', []): continue
-            rows = tbl.select("tr")
-            for row in rows:
-                th = row.select_one("th")
-                if not th: continue
-                
-                label = th.text.strip()
-                label_clean = re.sub(r'\s+', '', label) # normalized label
-                
-                td = row.select_one("td")
-                if not td: continue
-                val_text = td.text.strip().replace(',', '').replace('l', ' ').replace('|', ' ')
-                
-                try:
-                    nums = re.findall(r'[-+]?\d*\.\d+|\d+', val_text)
-                    if not nums: continue
-                    
-                    nums_f = []
-                    for n in nums:
-                        try: nums_f.append(float(n))
-                        except: pass
-                    
-                    if not nums_f: continue
-
-                    # 1. Skip Sector-only rows for Stock main stats
-                    # Example label: "동일업종 PER" -> Skip for main stock per
-                    if "업종" in label_clean:
-                        continue
-
-                    # 2. BPS/PBR pair (Fix: Naver often swaps labels/values, use magnitude)
-                    if "BPS" in label_clean and "PBR" in label_clean:
-                        if len(nums_f) >= 2:
-                             # Generally BPS > 100 and PBR < 100 (for most stocks)
-                             # In "BPS l PBR", Naver normally puts BPS first.
-                             # But let's be safe.
-                             v1, v2 = nums_f[0], nums_f[1]
-                             if v1 > v2: # 724 > 0.79 -> v1 is bps
-                                 bps, pbr = v1, v2
-                             else:
-                                 pbr, bps = v1, v2
-                        elif len(nums_f) == 1:
-                             # Guess based on magnitude if only one found
-                             if nums_f[0] > 100: bps = nums_f[0]
-                             else: pbr = nums_f[0]
-
-                    elif "BPS" in label_clean:
-                         bps = nums_f[0]
-                    elif "PBR" in label_clean:
-                         pbr = nums_f[0]
-
-                    # 3. PER/EPS pair (Standard ordering is PER then EPS)
-                    elif "PER" in label_clean and "EPS" in label_clean:
-                         is_est = "추정" in label or "컨센서스" in label or "(E)" in label
-                         if len(nums_f) >= 2:
-                             p_val = nums_f[0]
-                             e_val = nums_f[1]
-                             if is_est:
-                                 est_per = p_val
-                                 est_eps = e_val
-                             else:
-                                 per = p_val
-                                 eps = e_val
-                         elif len(nums_f) == 1:
-                             # If stock has negative EPS, PER is often N/A. The found number is likely EPS.
-                             val = nums_f[0]
-                             if is_est: est_eps = val
-                             else: eps = val
-
-                    # 4. Dividend (Exclude Yield explanation)
-                    elif "주당배당금" in label_clean and "수익률" not in label_clean:
-                         dp_share = int(nums_f[0])
-                         
-                    # 5. 52 Week (Handle both high/low in one if both labels present)
-                    elif "52" in label_clean:
-                        if "최고" in label_clean and "최저" in label_clean and len(nums_f) >= 2:
-                             year_high = int(nums_f[0])
-                             year_low = int(nums_f[1])
-                        elif "최고" in label_clean:
-                             year_high = int(nums_f[0])
-                        elif "최저" in label_clean:
-                             year_low = int(nums_f[0])
-                        elif len(nums_f) >= 2: # No explicit labels but has 2 numbers
-                             year_high = int(nums_f[0])
-                             year_low = int(nums_f[1])
-                         
-                except: continue
-        
-        # [Debug] Verify Scraped Data
-        # print(f"[Scraper] {code} ({name}) - PER:{per} PBR:{pbr} EPS:{eps} EstPER:{est_per}")
-
-        # [Fallback] If weekend/market closed and OHLC are 0 or None, try to get from daily history
-        if volume_val in [0, None] or open_val in [0, None]:
-            try:
-                daily = get_naver_daily_prices(symbol)
-                if daily and len(daily) > 0:
-                    latest = daily[0] # Most recent day
-                    if volume_val in [0, None]: volume_val = latest.get('volume', 0)
-                    if open_val in [0, None]: open_val = latest.get('open', 0)
-                    if high_val in [0, None]: high_val = latest.get('high', 0)
-                    if low_val in [0, None]: low_val = latest.get('low', 0)
-            except: pass
-
-        # [New] Parse Detailed Financial Data (cop_analysis) to avoid multiple requests
-        fin_data = {}
-        fin_summary = {}
-        detailed_success = False
-        try:
-            cop_analysis = soup.select_one("div.section.cop_analysis")
-            if cop_analysis:
-                date_headers = cop_analysis.select("thead tr:nth-child(2) th")
-                dates = [th.text.strip() for th in date_headers]
-                f_rows = cop_analysis.select("tbody tr")
-                
-                for r in f_rows:
-                    r_th = r.select_one("th")
-                    if not r_th: continue
-                    r_title = r_th.text.strip()
-                    cells = r.select("td")
-                    f_values = [c.text.strip().replace(',', '') for c in cells]
-                    
-                    def _s_float(v):
-                        try:
-                            v = v.replace('%', '')
-                            if not v or v == '-' or v == 'N/A': return None
-                            return float(v)
-                        except: return None
-                        
-                    r_title_clean = r_title.replace(" ", "").replace("\n", "").replace("\t", "")
-                    # [Fix] Robust Mapping: Use keys that are less likely to break with encoding, 
-                    # and prioritize longer matches to distinguish 'operating_income' from 'operating_margin'.
-                    mapping = [
-                        ("매출액", "revenue"), ("매출", "revenue"),
-                        ("영업이익률", "operating_margin"), ("영업이익", "operating_income"),
-                        ("순이익률", "net_income_margin"), ("당기순이익", "net_income"), ("순이익", "net_income"),
-                        ("ROE", "roe"), ("ROA", "roa"),
-                        ("부채비율", "debt_ratio"), ("부채", "debt_ratio"),
-                        ("당좌비율", "quick_ratio"), ("당좌", "quick_ratio"),
-                        ("유보율", "reserve_ratio"), ("유보", "reserve_ratio"),
-                        ("유동비율", "current_ratio"), ("유동", "current_ratio"),
-                        ("자산회전율", "asset_turnover"), ("매출총이익률", "gross_margin"),
-                        ("EPS", "eps"), ("BPS", "bps"), ("PER", "per"), ("PBR", "pbr"),
-                        ("주당배당금", "dps"), ("배당금", "dps"),
-                        ("시가배당률", "dividend_yield"), ("배당률", "dividend_yield"),
-                        ("배당성향", "payout_ratio")
-                    ]
-
-                    key = None
-                    for k, target_key in mapping:
-                        if k in r_title_clean:
-                            key = target_key
-                            break
-                    
-                    if key and key not in fin_data: # Avoid double assignment
-                        fin_data[key] = {"dates": dates, "values": [_s_float(v) for v in f_values]}
-                
-                for k, v in fin_data.items():
-                    annual_values = v["values"][:4]
-                    quarterly_values = v["values"][4:]
-                    valid_annual = [val for val in annual_values if val is not None]
-                    if valid_annual: fin_summary[k] = valid_annual[-1] 
-                    else:
-                        valid_quarterly = [val for val in quarterly_values if val is not None]
-                        if valid_quarterly: fin_summary[k] = valid_quarterly[-1]
-                
-                detailed_success = True
-        except Exception as e:
-            print(f"Internal Financial Parse Error: {e}")
+        # [Fix] Add labels to prevent user confusion
+        labeled_change_pct = f"[정규] {change_pct_str}"
+        if nxt_data and nxt_data.get('change_pct'):
+            nxt_data['change_pct_labeled'] = f"[야간] {nxt_data['change_pct']}"
 
         # [Result Builder]
-        res = {
+        res_data = {
             "name": name,
             "description": description,
             "market_type": market_type,
             "code": code,
-            "sector": sector_name, # Added Sector
+            "sector": sector_name,
             "price": price,
-            "change": change_pct_str,
+            "change": labeled_change_pct,
             "change_val": change_val,
-            "change_percent": change_pct_str,
+            "change_percent": labeled_change_pct,
             "prev_close": prev_close,
             "market_cap_str": market_cap_str,
             "per": per,
             "pbr": pbr,
             "eps": eps,
+            "bps": bps,
             "dvr": dvr,
-            "bps": bps, 
-            "dp_share": dp_share, 
-            "est_per": est_per, 
+            "est_per": est_per,
             "est_eps": est_eps,
-            "year_high": year_high, 
+            "dp_share": dp_share,
+            "year_high": year_high,
             "year_low": year_low,
-            "market_status": market_status,
-            "nxt_data": nxt_data,
             "open": open_val,
             "day_high": high_val,
             "day_low": low_val,
             "volume": volume_val,
-            # [Added] Unified detailed dict
-            "detailed_financials": {
-                "full_data": fin_data,
-                "summary": fin_summary,
-                "success": detailed_success
-            }
+            "market_status": market_status,
+            "nxt_data": nxt_data
         }
-
-        return res
-        
+        return res_data
     except Exception as e:
-        print(f"Naver Info Error: {e}")
+        print(f"[gather_naver_stock_data] Critical Failure for {symbol}: {e}")
         return None
 
 @turbo_cache(ttl_seconds=3600)
@@ -1383,62 +1020,67 @@ def get_integrated_stock_news(symbol: str = "", name: str = "", query: str = "",
 
 def get_naver_stock_info(symbol: str):
     """
-    네이버 모바일 API를 사용하여 국내 및 해외 주식 시세를 통합 수집합니다.
-    야후 파이낸스 차단 상황을 완벽하게 보완합니다.
+    네이버 통합 API를 사용하여 국내 및 해외 주식 시세를 수집합니다.
+    [v6.0.0] New Integration API Support for Domestic Stocks.
     """
     symbol = symbol.upper()
     # 국내 주식 코드 처리 (005930.KS -> 005930)
     clean_code = re.sub(r'[^0-9A-Z]', '', symbol.split('.')[0])
     
-    # 1. 국내 주식 시도
+    # 1. 국내 주식 시도 (New Integration API)
     if len(clean_code) == 6 and clean_code.isdigit():
         try:
-            url = f"https://api.stock.naver.com/stock/{clean_code}/basic"
-            res = requests.get(url, headers=HEADER, timeout=3)
+            # [v6.0.1] New path for domestic stocks
+            url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={clean_code}"
+            res = requests.get(url, headers=HEADER, timeout=5)
             if res.status_code == 200:
-                data = res.json()
-                price = data.get('closePrice', '0').replace(',', '')
-                if price and float(price) > 0:
-                    pct = data.get('fluctuationsRatio', '0')
-                    # [v5.7.0] Detailed fields for ranking enrichment
-                    change_val = str(data.get('compareToPreviousClosePrice', '0')).replace(',', '')
-                    rf_name = data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED')
+                data_root = res.json()
+                # Domestic KRX structure
+                item = data_root.get('domesticKrx', {}).get(clean_code)
+                if item:
+                    # price is in 'overMarketPriceInfo' or top level if open
+                    m_info = item.get('overMarketPriceInfo', {})
+                    price_str = m_info.get('overPrice') or item.get('closePrice', '0')
+                    price = float(str(price_str).replace(',', ''))
                     
-                    return {
-                        "symbol": symbol,
-                        "name": data.get('stockName', symbol),
-                        "price": f"{float(price):,.0f}",
-                        "change": f"{float(pct):+.2f}%",
-                        "change_val": change_val,
-                        "risefall_name": rf_name,
-                        "up": float(pct) >= 0 or rf_name == 'RISING',
-                        "currency": "KRW"
-                    }
-        except: pass
+                    if price > 0:
+                        pct = float(m_info.get('fluctuationsRatio') or item.get('fluctuationsRatio', '0'))
+                        change_val = str(m_info.get('fluctuations') or item.get('compareToPreviousClosePrice', '0')).replace(',', '')
+                        rf_name = m_info.get('fluctuationsType') or item.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED')
+                        
+                        return {
+                            "symbol": symbol,
+                            "name": item.get('stockName', symbol),
+                            "price": f"{price:,.0f}",
+                            "change": f"[정규] {pct:+.2f}%",
+                            "change_val": change_val,
+                            "risefall_name": rf_name,
+                            "up": pct >= 0 or rf_name == 'RISING',
+                            "currency": "KRW"
+                        }
+        except Exception as e:
+            print(f"[get_naver_stock_info] Domestic New API failed: {e}")
 
-    # 2. 해외 주식 시도 (접미사 지원 확장: 일본 .T, 홍콩 .HK, 베트남 .VN 등)
+    # 2. 해외 주식 시도 (api.stock.naver.com - Still works for overseas)
     suffixes = ['', '.O', '.N', '.A', '.T', '.HK', '.VN', '.SH', '.SZ']
     
     # 전달된 심볼에 이미 점이 포함되어 있다면 해당 심볼로 먼저 시도
     if '.' in symbol:
         try:
             url = f"https://api.stock.naver.com/stock/{symbol}/basic"
-            res = requests.get(url, headers=HEADER, timeout=7) # Increased timeout
+            res = requests.get(url, headers=HEADER, timeout=7)
             if res.status_code == 200:
                 data = res.json()
                 if data.get('closePrice'):
                     price = data.get('closePrice', '0').replace(',', '')
                     pct = data.get('fluctuationsRatio', '0')
-                    
-                    # Format: 2 decimals for symbols with dots (Foreign) or letters
-                    # [v5.7.5] Refined foreign check: Has dot or has Latin letters (not just any alpha)
                     is_foreign = '.' in symbol or bool(re.search(r'[A-Za-z]', symbol))
                     
                     return {
                         "symbol": symbol,
                         "name": data.get('stockName', symbol),
                         "price": f"{float(price):,.2f}" if is_foreign else f"{float(price):,.0f}",
-                        "change": f"{float(pct):+.2f}%",
+                        "change": f"[정규] {float(pct):+.2f}%",
                         "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
                         "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
                         "up": float(pct) >= 0,
@@ -1446,10 +1088,10 @@ def get_naver_stock_info(symbol: str):
                     }
         except: pass
 
-    # 접미사 프로빙 루프
+    # 접미사 프로빙 루프 (해외주식용)
     for suffix in suffixes:
         test_symbol = clean_code + suffix
-        if test_symbol == symbol: continue # 이미 시도함
+        if test_symbol == symbol: continue
         try:
             url = f"https://api.stock.naver.com/stock/{test_symbol}/basic"
             res = requests.get(url, headers=HEADER, timeout=7)
@@ -1469,7 +1111,7 @@ def get_naver_stock_info(symbol: str):
                     }
         except: continue
             
-    # 3. 최후의 수단: 기존 스크래핑 엔진 (비상용)
+    # 3. 최후의 수단: 기존 스크래핑 엔진 (상세 재무 지표를 포함하므로 비상용/상세조회용으로 유지)
     return gather_naver_stock_data(symbol)
 
 def robust_name(name):

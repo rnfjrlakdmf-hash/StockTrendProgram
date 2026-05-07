@@ -1047,8 +1047,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "symbol": symbol,
                 "name": symbol,
                 "price": price_str,
-                "change": f"{change_pct:+.2f}%",
-                "change_percent": f"{change_pct:+.2f}%",
+                "change": f"[정규] {change_pct:+.2f}%",
+                "change_percent": f"[정규] {change_pct:+.2f}%",
                 "up": change_pct >= 0,
                 "currency": "USD" if is_us_stock else "KRW"
             }

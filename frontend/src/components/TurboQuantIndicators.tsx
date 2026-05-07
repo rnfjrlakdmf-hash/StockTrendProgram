@@ -258,7 +258,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             >
                                 {FIN_GUBUN_MAP.map(opt => (
                                     <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                                        <span>{opt.label}</span>
+                                        {opt.label}
                                     </option>
                                 ))}
                             </select>

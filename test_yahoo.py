@@ -1,16 +1,24 @@
 
-import sys
-import os
-sys.path.append(os.path.abspath("backend"))
-
-from stock_data import search_yahoo_finance
+import yfinance as yf
+import json
 
 def test_yahoo():
-    keywords = ["Hanwha Ocean", "한화오션", "042660.KS"]
-    for k in keywords:
-        print(f"Searching Yahoo for: {k}")
-        res = search_yahoo_finance(k)
-        print(f"Result: {res}")
+    codes = ["005930.KS", "010140.KS"]
+    for code in codes:
+        print(f"Testing Yahoo Finance for: {code}")
+        try:
+            ticker = yf.Ticker(code)
+            # Use fast_info to avoid heavy info fetch
+            price = ticker.fast_info.last_price
+            prev_close = ticker.fast_info.previous_close
+            print(f"Price: {price}")
+            print(f"Prev Close: {prev_close}")
+            if price and prev_close:
+                change = (price - prev_close) / prev_close * 100
+                print(f"Change: {change:+.2f}%")
+        except Exception as e:
+            print(f"Failed for {code}: {e}")
+        print("-" * 30)
 
 if __name__ == "__main__":
     test_yahoo()
