@@ -453,29 +453,31 @@ function DiscoveryContent() {
         setShowResults(false);
 
         try {
-            // [Fix] Like AnalysisPage, resolve Korean names to tickers first
+            // [Speed Optimization] Use local mapping first to avoid unnecessary API calls
             let targetSymbol = query;
-            const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
-
-            if (isKorean) {
-                console.log("[Search] Korean query detected. Resolving ticker...");
-                const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
-                const searchRes = await fetch(searchUrl, { cache: 'no-store' });
-                if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
-                
-                const searchJson = await searchRes.json();
-                console.log("[Search] Search API result:", searchJson);
-
-                if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                    const found = searchJson.data[0];
-                    targetSymbol = found.symbol || found.code || targetSymbol;
-                    console.log("[Search] Resolved ticker:", targetSymbol);
-                } else {
-                    console.warn("[Search] No mapping found for:", query);
-                    setStock(null);
-                    setLoading(false);
-                    setError(`'${query}'에 대한 검색 결과가 없습니다.`);
-                    return;
+            const localTicker = getTickerFromKorean(targetSymbol);
+            
+            if (localTicker !== targetSymbol) {
+                targetSymbol = localTicker;
+                console.log("[Search] Resolved instantly via local mapping:", targetSymbol);
+            } else {
+                const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
+                if (isKorean) {
+                    console.log("[Search] Korean query detected. Resolving ticker via API...");
+                    const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
+                    const searchRes = await fetch(searchUrl, { cache: 'no-store' });
+                    if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
+                    
+                    const searchJson = await searchRes.json();
+                    if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
+                        const found = searchJson.data[0];
+                        targetSymbol = found.symbol || found.code || targetSymbol;
+                    } else {
+                        setStock(null);
+                        setLoading(false);
+                        setError(`'${query}'에 대한 검색 결과가 없습니다.`);
+                        return;
+                    }
                 }
             }
 

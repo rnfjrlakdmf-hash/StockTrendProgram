@@ -18,6 +18,7 @@ import {
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
 import AdBanner from "@/components/AdBanner";
+import { getTickerFromKorean } from "@/lib/stockMapping";
 
 
 // [v4.9.5] Deep-Sector-Matrix Analysis Dashboard
@@ -85,7 +86,13 @@ function AnalysisContent() {
         let targetSymbol = symbol.trim();
         if (!targetSymbol) return;
 
-        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
+        // [Speed Optimization] Use local mapping first
+        const localTicker = getTickerFromKorean(targetSymbol);
+        if (localTicker !== targetSymbol) {
+            targetSymbol = localTicker;
+            setSymbol(targetSymbol);
+            console.log("[Search] Resolved instantly via local mapping:", targetSymbol);
+        } else if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
                 const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}`;
