@@ -27,7 +27,7 @@ def test_full_flow(symbol):
         print("Score:", result.get('score'))
         print("Summary:", result.get('analysis_summary'))
         
-        if "일시적인" in str(result.get('analysis_summary', '')):
+        if "?�시?�인" in str(result.get('analysis_summary', '')):
              print("\n!!! ERROR DETECTED IN SUMMARY !!!")
              
     except Exception as e:

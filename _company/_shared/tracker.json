@@ -1,0 +1,15 @@
+{
+  "tasks": [
+    {
+      "id": "20260507084406-0pgz",
+      "title": "24시간 가동 서버 연결 방법 안내",
+      "description": "어떻게 하면 연결이 가능하지?",
+      "owner": "agent",
+      "createdAt": "2026-05-07T08:44:06.594Z",
+      "status": "in_progress",
+      "nudges": 0,
+      "priority": "normal",
+      "preAlarmsSent": []
+    }
+  ]
+}

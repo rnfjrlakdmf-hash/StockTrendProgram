@@ -24,13 +24,13 @@ if __name__ == "__main__":
     
     # Test cases
     targets = [
-        "삼성전자", # Should be in static or dynamic
-        "한화오션", # User complained about this before
-        "LG에너지솔루션",
+        "?�성?�자", # Should be in static or dynamic
+        "?�화?�션", # User complained about this before
+        "LG?�너지?�루??,
         "금양", # Popular erratic stock
-        "없는종목123", # Should fail
-        "TIGER 미국나스닥100", # ETF
-        "Kodex 레버리지" # ETF
+        "?�는종목123", # Should fail
+        "TIGER 미국?�스??00", # ETF
+        "Kodex ?�버리�?" # ETF
     ]
     
     for t in targets:

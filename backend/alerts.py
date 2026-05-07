@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 
 ALERTS_FILE = "alerts.json"
-TELEGRAM_TOKEN = "8177986686:AAEk89GeI327ftFLgGN8IZHnUQJK9TiArV0"
+TELEGRAM_TOKEN = "8771605551:AAHY9lewbnAXtvoXsOGDotKLStL-hW3yGRM"
 
 def load_alerts():
     if not os.path.exists(ALERTS_FILE):

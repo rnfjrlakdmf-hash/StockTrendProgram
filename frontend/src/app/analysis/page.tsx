@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
+import AdBanner from "@/components/AdBanner";
 
 
 // [v4.9.5] Deep-Sector-Matrix Analysis Dashboard
@@ -123,7 +124,7 @@ function AnalysisContent() {
         if (!sym) return;
         setStockLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}?v=${new Date().getTime()}`);
             const json = await res.json();
             if (json.status === "success") setStockInfo(json.data.stock_info);
         } catch (err) { console.error(err); }
@@ -280,12 +281,20 @@ function AnalysisContent() {
                                                 {(parseFloat(String(stockInfo.change_rate || "0")) > 0) ? <TrendingUp className="w-4 h-4" /> : 
                                                  (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? <TrendingDown className="w-4 h-4" /> : 
                                                  <span className="w-4 h-4 flex items-center justify-center">-</span>}
-                                                <span className="text-lg">{stockInfo.change?.toLocaleString() || "0"}</span>
-                                                {/* [Fix] Prevent (undefined%) display */}
-                                                <span className="text-sm">
-                                                    {stockInfo.change || "0.00%"}
+                                                <span className="text-lg font-bold mr-2">
+                                                    {(() => {
+                                                        // Extract ONLY numbers and common separators for price change amount
+                                                        const val = String(stockInfo.change_val || "0").replace(/[^0-9.-]/g, "");
+                                                        return isNaN(Number(val)) ? "0" : Number(val).toLocaleString();
+                                                    })()}
+                                                </span>
+                                                <span className="text-sm font-medium">
+                                                    {(() => {
+                                                        const raw = String(stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00%");
+                                                        return raw; // Backend already provided the correct label
+                                                    })()}
                                                     {stockInfo.details?.nxt_data && (
-                                                        <span className="ml-2 text-indigo-400 opacity-80">
+                                                        <span className="ml-3 text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(99,102,241,0.3)] border border-indigo-500/20">
                                                             [야간] {stockInfo.details.nxt_data.change_pct}
                                                         </span>
                                                     )}
@@ -335,6 +344,9 @@ function AnalysisContent() {
                         </div>
                     </button>
                 </div>
+
+                {/* AdSense Placement (Main Analysis Top) */}
+                <AdBanner adSlot="7781033256" />
 
                 <div className="sticky top-4 z-40 flex justify-center py-2 bg-black/50 backdrop-blur-md rounded-2xl border border-white/5">
                     <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full max-w-2xl">

@@ -13,6 +13,6 @@ def test_search(keyword):
     print(f"Result for '{keyword}': {result}")
 
 if __name__ == "__main__":
-    test_search("삼성중공업")
-    test_search("카카오")
+    test_search("?�성중공??)
+    test_search("카카??)
     test_search("UnknownStockName123")

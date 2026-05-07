@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Telegram Notify — small wrapper that sends a message to your Telegram bot.
+"""Telegram Notify ??small wrapper that sends a message to your Telegram bot.
 
 Two modes:
-  1. No CLI arg → sends a connectivity test ("✅ 텔레그램 연결 정상").
-  2. With CLI arg(s) → sends those as the message body. Other tools can call
+  1. No CLI arg ??sends a connectivity test ("???�레그램 ?�결 ?�상").
+  2. With CLI arg(s) ??sends those as the message body. Other tools can call
      this script to push their summaries.
 
-telegram_v3 — Secretary's tools/telegram_setup.json is the canonical
-UI-managed home (input via Skills ⚙️). Falls back to legacy config.md
+telegram_v3 ??Secretary's tools/telegram_setup.json is the canonical
+UI-managed home (input via Skills ?�️). Falls back to legacy config.md
 and finally to youtube_account.json so older setups keep working."""
 import os, json, sys, time, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ACCOUNT = os.path.join(HERE, "youtube_account.json")
-# tools/ → youtube/ → _agents/ → brain root
+# tools/ ??youtube/ ??_agents/ ??brain root
 BRAIN_ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 SECRETARY_TOOL_JSON = os.path.join(BRAIN_ROOT, "_agents", "secretary", "tools", "telegram_setup.json")
 SECRETARY_CFG = os.path.join(BRAIN_ROOT, "_agents", "secretary", "config.md")
@@ -34,10 +34,10 @@ def _resolve_telegram():
             with open(SECRETARY_CFG, "r", encoding="utf-8") as f:
                 txt = f.read()
             if not token:
-                m = re.search(r"TELEGRAM_BOT_TOKEN\s*[:：=]\s*([A-Za-z0-9:_\-]+)", txt)
+                m = re.search(r"TELEGRAM_BOT_TOKEN\s*[:�?]\s*([A-Za-z0-9:_\-]+)", txt)
                 if m: token = m.group(1).strip()
             if not chat:
-                m = re.search(r"TELEGRAM_CHAT_ID\s*[:：=]\s*(-?\d+)", txt)
+                m = re.search(r"TELEGRAM_CHAT_ID\s*[:�?]\s*(-?\d+)", txt)
                 if m: chat = m.group(1).strip()
         except Exception:
             pass
@@ -54,21 +54,21 @@ def _resolve_telegram():
 def main():
     token, chat = _resolve_telegram()
     if not token or not chat:
-        print("❌ TELEGRAM_BOT_TOKEN 또는 TELEGRAM_CHAT_ID를 못 찾았어요.")
-        print("   권장: 비서(Secretary) 클릭 → Skills → 📨 텔레그램 연결 ⚙️ → 폼에 입력")
-        print("   봇 만들기: Telegram → @BotFather → /newbot")
-        print("   chat_id: 봇에 메시지 1회 → https://api.telegram.org/bot<TOKEN>/getUpdates 에서 chat.id 확인")
+        print("??TELEGRAM_BOT_TOKEN ?�는 TELEGRAM_CHAT_ID�?�?찾았?�요.")
+        print("   권장: 비서(Secretary) ?�릭 ??Skills ???�� ?�레그램 ?�결 ?�️ ???�에 ?�력")
+        print("   �?만들�? Telegram ??@BotFather ??/newbot")
+        print("   chat_id: 봇에 메시지 1????https://api.telegram.org/bot<TOKEN>/getUpdates ?�서 chat.id ?�인")
         sys.exit(1)
 
     if len(sys.argv) > 1:
         body = " ".join(sys.argv[1:])
     else:
-        body = f"✅ 텔레그램 연결 정상 — {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n비서(Secretary) 또는 YouTube 도구가 이 채널로 보고를 보낼 수 있습니다."
+        body = f"???�레그램 ?�결 ?�상 ??{time.strftime('%Y-%m-%d %H:%M:%S')}\n\n비서(Secretary) ?�는 YouTube ?�구가 ??채널�?보고�?보낼 ???�습?�다."
 
     try:
         import requests
     except ImportError:
-        print("❌ pip install requests")
+        print("??pip install requests")
         sys.exit(1)
     try:
         r = requests.post(
@@ -77,11 +77,11 @@ def main():
             timeout=15,
         )
         r.raise_for_status()
-        print(f"✅ 전송 OK ({len(body)}자)")
+        print(f"???�송 OK ({len(body)}??")
     except Exception as e:
-        print(f"❌ 전송 실패: {e}")
+        print(f"???�송 ?�패: {e}")
         if "Bad Request" in str(e):
-            print("   chat_id가 정확한지, 봇과 한 번이라도 대화를 시작했는지 확인하세요.")
+            print("   chat_id가 ?�확?��?, 봇과 ??번이?�도 ?�?��? ?�작?�는지 ?�인?�세??")
         sys.exit(1)
 
 if __name__ == "__main__":

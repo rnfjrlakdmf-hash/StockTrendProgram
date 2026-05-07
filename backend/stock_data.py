@@ -511,8 +511,11 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "price": f"{float(str(naver_info['price']).replace(',', '')):,.0f}" if isinstance(naver_info['price'], (int, float, str)) and str(naver_info['price']).replace(',','').replace('.','').isdigit() else str(naver_info['price']),
                     "price_krw": f"{float(str(naver_info['price']).replace(',', '')):,.0f}" if isinstance(naver_info['price'], (int, float, str)) and str(naver_info['price']).replace(',','').replace('.','').isdigit() else str(naver_info['price']),
                     "currency": "KRW",
-                    "change": naver_info.get('change_percent', '0.00%'),
-                    "change_percent": naver_info.get('change_percent', '0.00%'),
+                    "change": str(naver_info.get('change_percent', '0.00%')),
+                    "change_percent": str(naver_info.get('change_percent', '0.00%')),
+                    "change_val": str(naver_info.get('change_val', '0')).replace('[정규]', '').strip(),
+                    "change_rate": str(naver_info.get('change_rate', '0.00')).replace('[정규]', '').strip(),
+                    "final_labeled_change": str(naver_info.get('change_percent', '0.00%')),
                     "summary": generate_stock_summary(naver_info, news_data),
                     "sector": "Domestic Stock",
                     "financials": {
@@ -553,8 +556,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "health_data": health_data  # Pass full health data for UI components
                 }
 
-                # Update Cache
-                STOCK_DATA_CACHE[symbol] = (final_data, time.time())
+                # Update Cache (v2.0.0 Force Clear)
+                STOCK_DATA_CACHE[f"v2_{symbol}"] = (final_data, time.time())
                 return final_data
 
         except Exception as e:
@@ -1047,8 +1050,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "symbol": symbol,
                 "name": symbol,
                 "price": price_str,
-                "change": f"[정규] {change_pct:+.2f}%",
-                "change_percent": f"[정규] {change_pct:+.2f}%",
+                "change": f"{change_pct:+.2f}%",
+                "change_percent": f"{change_pct:+.2f}%",
                 "up": change_pct >= 0,
                 "currency": "USD" if is_us_stock else "KRW"
             }

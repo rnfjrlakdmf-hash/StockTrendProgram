@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
+import AdBanner from "@/components/AdBanner";
 import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
@@ -754,6 +755,9 @@ function DiscoveryContent() {
                     </div>
                 ) : stock && (
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+                        {/* AdSense Placement (Search Results Top) */}
+                        <AdBanner adSlot="3412955102" />
+                        
                         {/* Back Button */}
                         <button
                             onClick={() => { setStock(null); setSearchInput(""); }}
@@ -1208,13 +1212,6 @@ function DiscoveryContent() {
                                                 
 
                                             </div>
-
-                                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                                                {newsLoading ? (
-                                                    <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                                        <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
-                                                        <p className="text-gray-400 text-sm">실시간 뉴스를 집계하고 있습니다...</p>
-                                                    </div>
                                                 ) : (Array.isArray(periodNews) && periodNews.length > 0) || (stock?.news && Array.isArray(stock.news) && stock.news.length > 0) ? (
                                                     (Array.isArray(periodNews) && periodNews.length > 0 ? periodNews : (stock?.news || [])).map((n: any, idx: number) => (
                                                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer" onClick={() => window.open(n.link, '_blank')}>

@@ -1,0 +1,7 @@
+{
+  "LLM_ENGINE": "ollama",
+  "OLLAMA_URL": "http://127.0.0.1:11434",
+  "DEFAULT_MODEL": "gemma3:latest",
+  "RETRY_COUNT": 3,
+  "TIMEOUT": 60
+}

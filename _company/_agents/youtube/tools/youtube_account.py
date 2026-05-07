@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""YouTube Account / Channels — shared config for every YouTube tool.
+"""YouTube Account / Channels ??shared config for every YouTube tool.
 
 This script doesn't fetch anything by itself. It's listed in the agent panel
-so you can click ⚙️ once and fill in your API key, channel, watched
-channels, etc. — and every other tool will read from here.
+so you can click ?�️ once and fill in your API key, channel, watched
+channels, etc. ??and every other tool will read from here.
 
 Running it just prints a sanity-check report so you can confirm the values
 are loaded correctly (without leaking the full API key)."""
@@ -19,28 +19,28 @@ def load():
 def main():
     cfg = load()
     api = (cfg.get("YOUTUBE_API_KEY") or "").strip()
-    masked = (api[:4] + "…" + api[-3:]) if len(api) >= 8 else ("(빈 값)" if not api else "(짧음)")
-    print("─── YouTube 계정 / 채널 설정 ───")
-    print(f"  API 키            : {masked}")
-    print(f"  내 채널 핸들       : {cfg.get('MY_CHANNEL_HANDLE') or '(없음)'}")
-    print(f"  내 채널 ID        : {cfg.get('MY_CHANNEL_ID') or '(없음)'}")
+    masked = (api[:4] + "?? + api[-3:]) if len(api) >= 8 else ("(�?�?" if not api else "(짧음)")
+    print("?�?�?� YouTube 계정 / 채널 ?�정 ?�?�?�")
+    print(f"  API ??           : {masked}")
+    print(f"  ??채널 ?�들       : {cfg.get('MY_CHANNEL_HANDLE') or '(?�음)'}")
+    print(f"  ??채널 ID        : {cfg.get('MY_CHANNEL_ID') or '(?�음)'}")
     watched = cfg.get('WATCHED_CHANNELS') or []
-    print(f"  감시 채널 ({len(watched)}개) : {', '.join(watched) if watched else '(없음)'}")
+    print(f"  감시 채널 ({len(watched)}�? : {', '.join(watched) if watched else '(?�음)'}")
     competitors = cfg.get('COMPETITOR_CHANNELS') or []
-    print(f"  경쟁 채널 ({len(competitors)}개): {', '.join(competitors) if competitors else '(없음)'}")
+    print(f"  경쟁 채널 ({len(competitors)}�?: {', '.join(competitors) if competitors else '(?�음)'}")
     tg_bot = (cfg.get('TELEGRAM_BOT_TOKEN') or '').strip()
     tg_chat = (cfg.get('TELEGRAM_CHAT_ID') or '').strip()
     if tg_bot and tg_chat:
-        print(f"  텔레그램          : 연결됨 (chat {tg_chat})")
+        print(f"  ?�레그램          : ?�결??(chat {tg_chat})")
     else:
-        print(f"  텔레그램          : 미설정 (보고 알림 비활성)")
+        print(f"  ?�레그램          : 미설??(보고 ?�림 비활??")
     print(f"  Ollama URL        : {cfg.get('OLLAMA_URL') or 'http://127.0.0.1:11434'}")
-    print(f"  분석 모델          : {cfg.get('MODEL') or '(자동 선택)'}")
+    print(f"  분석 모델          : {cfg.get('MODEL') or '(?�동 ?�택)'}")
     if not api:
-        print("\n⚠️  API 키가 비어있어요. 다른 도구들이 동작하지 않습니다.")
-        print("   발급: https://console.cloud.google.com/ → YouTube Data API v3")
+        print("\n?�️  API ?��? 비어?�어?? ?�른 ?�구?�이 ?�작?��? ?�습?�다.")
+        print("   발급: https://console.cloud.google.com/ ??YouTube Data API v3")
         sys.exit(1)
-    print("\n✅ 공유 설정 로드 OK. 다른 도구들이 이 값을 자동으로 사용합니다.")
+    print("\n??공유 ?�정 로드 OK. ?�른 ?�구?�이 ??값을 ?�동?�로 ?�용?�니??")
 
 if __name__ == "__main__":
     main()

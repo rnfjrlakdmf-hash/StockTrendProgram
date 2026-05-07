@@ -7,6 +7,5 @@
   "business": "gemma3:latest",
   "secretary": "gemma3:latest",
   "editor": "gemma3:latest",
-  "writer": "gemma3:latest",
-  "researcher": "gemma3:latest"
+  "writer": "gemma3:latest"
 }

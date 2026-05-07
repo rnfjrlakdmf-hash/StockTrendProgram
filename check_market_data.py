@@ -15,9 +15,9 @@ def check_data():
     found_dxy = False
     if "world_exchange" in data:
         for item in data["world_exchange"]:
-            if "달러" in item["name"] or "Index" in item["name"]:
+            if "?�러" in item["name"] or "Index" in item["name"]:
                 print(f"Found: {item}")
-                if "달러" in item["name"] and "인덱스" in item["name"]:
+                if "?�러" in item["name"] and "?�덱?? in item["name"]:
                     found_dxy = True
     
     if not found_dxy:

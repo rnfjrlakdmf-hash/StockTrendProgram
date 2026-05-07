@@ -71,7 +71,7 @@ async def read_stock(symbol: str, skip_ai: bool = False):
 
 @router.get("/pro/summary/{symbol}")
 def read_pro_summary(symbol: str):
-    cache_key = f"pro_summary_{symbol}"
+    cache_key = f"pro_summary_v3_{symbol}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
     

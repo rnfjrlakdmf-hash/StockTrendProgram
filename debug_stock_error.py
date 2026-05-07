@@ -10,10 +10,10 @@ try:
     import traceback
     import json
 
-    print("--- [DEBUG] Testing '삼성전자' (Auto-resolve) ---")
+    print("--- [DEBUG] Testing '?�성?�자' (Auto-resolve) ---")
     try:
         # Simulate exactly what the API does
-        result = get_stock_info("삼성전자", skip_ai=True)
+        result = get_stock_info("?�성?�자", skip_ai=True)
         
         if result:
             print("[SUCCESS] Data fetched:")
