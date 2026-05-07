@@ -248,7 +248,7 @@ function AnalysisContent() {
                     <div className="flex justify-between items-center mt-2">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
                         <span className="bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(244,63,94,0.5)] border border-rose-400/30 animate-pulse">
-                            FINAL-ULTRA-FIX v5.0.0-STABLE
+                            FINAL-ULTRA-FIX v5.0.1-STABLE
                         </span>
                     </div>
                 </div>
@@ -288,7 +288,7 @@ function AnalysisContent() {
                                                         return isNaN(Number(val)) ? "0" : Number(val).toLocaleString();
                                                     })()}
                                                 </span>
-                                                <span className="text-sm medium">
+                                                <span className="text-sm font-medium">
                                                     {(() => {
                                                         // [Final Solution] Purge ALL possible duplicate labels from ANY source
                                                         const raw = String(stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00%");
