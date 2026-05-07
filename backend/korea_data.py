@@ -1058,7 +1058,11 @@ def get_naver_stock_info(symbol: str):
                             "change_percent": f"[정규] {pct:+.2f}%",
                             "risefall_name": rf_name,
                             "up": pct >= 0 or rf_name == 'RISING',
-                            "currency": "KRW"
+                            "currency": "KRW",
+                            "nxt_data": {
+                                "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
+                                "change_pct": f"{float(m_info.get('fluctuationsRatio', 0)):+.2f}%"
+                            } if m_info.get('overPrice') else None
                         }
         except Exception as e:
             print(f"[get_naver_stock_info] Domestic New API failed: {e}")
