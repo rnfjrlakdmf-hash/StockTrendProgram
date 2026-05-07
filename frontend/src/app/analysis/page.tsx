@@ -124,7 +124,7 @@ function AnalysisContent() {
         if (!sym) return;
         setStockLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}?v=${new Date().getTime()}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}?v5=true&t=${new Date().getTime()}`);
             const json = await res.json();
             if (json.status === "success") setStockInfo(json.data.stock_info);
         } catch (err) { console.error(err); }
@@ -247,8 +247,8 @@ function AnalysisContent() {
                     </div>
                     <div className="flex justify-between items-center mt-2">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
-                        <span className="bg-red-500/10 text-red-400 text-[9px] font-black px-2 py-0.5 rounded border border-red-500/20">
-                            Deep-Sector-Matrix v4.9.5 PRECISION-SYNC
+                        <span className="bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(244,63,94,0.5)] border border-rose-400/30 animate-pulse">
+                            FINAL-ULTRA-FIX v5.0.0-STABLE
                         </span>
                     </div>
                 </div>
