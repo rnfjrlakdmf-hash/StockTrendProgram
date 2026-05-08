@@ -67,8 +67,8 @@ export default function RootLayout({
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>
           {/* EMERGENCY DEPLOYMENT VERIFIER */}
-          <div className="fixed top-0 left-0 w-full bg-yellow-500 text-black text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest">
-            LIVE UPDATE v3.7.25-FINAL-BOOST ACTIVE
+          <div className="fixed top-0 left-0 w-full bg-emerald-500 text-black text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest">
+            LIVE UPDATE v5.2.1-ULTRA-RESILIENT ACTIVE
           </div>
           <div className="flex min-h-screen">
             <Sidebar />
