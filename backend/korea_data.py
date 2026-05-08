@@ -1603,14 +1603,51 @@ def get_stock_financials(symbol: str):
                         raise Exception(f"Failed to fetch page: {resp.status_code}")
                 except Exception as ex:
                     print(f"Fallback scraping failed: {ex}")
-                    detailed = {
-                        "success": True,
-                        "summary": {
-                            "per": res.get("per", "N/A"), "pbr": res.get("pbr", "N/A"), "roe": res.get("roe", "N/A"),
-                            "revenue": "N/A", "operating_income": "N/A", "net_income": "N/A", "debt_ratio": "N/A"
-                        },
-                        "full_data": {}, "annual": [], "quarterly": []
-                    }
+                    
+                    # [Nuclear Fallback] Try Yahoo Finance for Korean stocks if Naver is totally blocked
+                    try:
+                        import yfinance as yf
+                        # Samsung -> 005930.KS (Try both .KS and .KQ)
+                        code = symbol.split('.')[0]
+                        ticker = f"{code}.KS"
+                        t = yf.Ticker(ticker)
+                        info = t.info
+                        if not info or 'marketCap' not in info:
+                            ticker = f"{code}.KQ"
+                            t = yf.Ticker(ticker)
+                            info = t.info
+                        
+                        if info and 'marketCap' in info:
+                            mcap = info.get('marketCap', 0)
+                            summary = {
+                                "per": str(info.get('trailingPE', 'N/A')),
+                                "pbr": str(info.get('priceToBook', 'N/A')),
+                                "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
+                                "revenue": f"{info.get('totalRevenue', 0) / 1e8:.0f}억" if info.get('totalRevenue') else "N/A",
+                                "operating_income": f"{info.get('operatingCashflow', 0) / 1e8:.0f}억" if info.get('operatingCashflow') else "N/A",
+                                "net_income": "N/A", "debt_ratio": f"{info.get('debtToEquity', 0):.2f}%"
+                            }
+                            
+                            # Minimal full_data to unblock UI
+                            full_data = {}
+                            for k, v in summary.items():
+                                full_data[k] = {"dates": ["최근"], "values": [v]}
+                                
+                            detailed = {
+                                "success": True, "summary": summary, "full_data": full_data, "annual": [], "quarterly": []
+                            }
+                        else:
+                            raise Exception("Yahoo Finance also failed")
+                    except Exception as yf_ex:
+                        print(f"Yahoo fallback also failed: {yf_ex}")
+                        detailed = {
+                            "success": True,
+                            "summary": {
+                                "per": res.get("per", "N/A"), "pbr": res.get("pbr", "N/A"), "roe": res.get("roe", "N/A"),
+                                "revenue": "N/A", "operating_income": "N/A", "net_income": "N/A", "debt_ratio": "N/A"
+                            },
+                            "full_data": {}, "annual": [], "quarterly": []
+                        }
             
         financials = {
             "market_cap": res.get("market_cap_str", "N/A"),
