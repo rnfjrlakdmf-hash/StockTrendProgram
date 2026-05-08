@@ -62,6 +62,19 @@ app.include_router(user_router, prefix="/api", tags=["User"])
 app.include_router(signals_router, prefix="/api", tags=["Signals"])
 app.include_router(alerts_router, prefix="/api", tags=["Alerts"])
 
+import traceback
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = f"Global Exception: {str(exc)}\n{traceback.format_exc()}"
+    print(error_msg)
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "message": str(exc), "traceback": traceback.format_exc()}
+    )
+
 # [Backward Compatibility] Support old ETF detail path to fix 404 while frontend redeploys
 @app.get("/api/etf-detail/{symbol}", tags=["Compatibility"])
 async def legacy_etf_detail(symbol: str):
