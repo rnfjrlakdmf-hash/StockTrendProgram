@@ -1466,20 +1466,62 @@ def get_stock_financials(symbol: str):
             
         # Domestic Stock Logic (Naver)
         res = gather_naver_stock_data(symbol)
-        if not res or not res.get("detailed_financials", {}).get("success"):
+        if not res:
             return {"per": "N/A", "pbr": "N/A", "success": False}
             
-        summary = res["detailed_financials"]["summary"]
-        
+        # [Fix] Manually fetch detailed indicators if they are missing
+        detailed = res.get("detailed_financials")
+        if not detailed or not detailed.get("success"):
+            # Try to fetch using the dedicated indicators function
+            ind_data = get_korean_investment_indicators(symbol)
+            if ind_data and ind_data.get("status") == "success":
+                # Transform to the expected structure
+                headers = ind_data.get("headers", [])
+                indicators = ind_data.get("indicators", [])
+                
+                # Extract summary metrics from indicators
+                summary = {
+                    "per": res.get("per", "N/A"),
+                    "pbr": res.get("pbr", "N/A"),
+                    "roe": res.get("roe", "N/A"),
+                    "revenue": "N/A",
+                    "operating_income": "N/A",
+                    "net_income": "N/A",
+                    "debt_ratio": "N/A"
+                }
+                
+                # Fill summary from indicators if available
+                for ind in indicators:
+                    name = ind.get("name", "")
+                    vals = ind.get("values", {})
+                    latest_h = headers[-1] if headers else None
+                    if not latest_h: continue
+                    
+                    val = vals.get(latest_h, "N/A")
+                    if "매출액" in name: summary["revenue"] = val
+                    elif "영업이익" in name: summary["operating_income"] = val
+                    elif "당기순이익" in name: summary["net_income"] = val
+                    elif "부채비율" in name: summary["debt_ratio"] = val
+                    elif "ROE" in name: summary["roe"] = val
+                
+                detailed = {
+                    "success": True,
+                    "summary": summary,
+                    "annual": [], # For now, just fix the summary to unblock
+                    "quarterly": []
+                }
+            else:
+                return {"per": "N/A", "pbr": "N/A", "success": False}
+            
         financials = {
             "market_cap": res.get("market_cap_str", "N/A"),
-            "per": str(summary.get('per', 'N/A')),
-            "pbr": str(summary.get('pbr', 'N/A')),
-            "roe": summary.get('roe'),
-            "revenue": summary.get('revenue'),
-            "operating_income": summary.get('operating_income'),
-            "debt_ratio": summary.get('debt_ratio'),
-            "detailed": res["detailed_financials"]
+            "per": str(detailed["summary"].get('per', 'N/A')),
+            "pbr": str(detailed["summary"].get('pbr', 'N/A')),
+            "roe": detailed["summary"].get('roe'),
+            "revenue": detailed["summary"].get('revenue'),
+            "operating_income": detailed["summary"].get('operating_income'),
+            "debt_ratio": detailed["summary"].get('debt_ratio'),
+            "detailed": detailed
         }
         return financials
     except Exception as e:
