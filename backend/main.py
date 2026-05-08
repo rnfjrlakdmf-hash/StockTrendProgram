@@ -77,8 +77,11 @@ async def startup_event():
     # 1. 필수 DB 초기화 (비동기 처리로 부팅 속도 극대화)
     try:
         from db_manager import init_db
+        from utils.briefing_store import init_briefing_table
         await asyncio.to_thread(init_db)
-    except: pass
+        await asyncio.to_thread(init_briefing_table)
+    except Exception as e:
+        print(f"[Startup] DB Init Warning: {e}")
 
     # 2. 배경 서비스는 서버가 완전히 안정화되고 입구가 열린 40초 뒤에 아주 천천히 깨웁니다.
     async def gradual_background_startup():
