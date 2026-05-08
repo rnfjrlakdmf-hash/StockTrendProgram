@@ -2776,19 +2776,26 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         session.headers.update(HEADER)
         
         # Step 1: Parent Frame에 접속하여 보안 토큰(encparam) 추출
-        frame_url = f"https://navercomp.wisereport.co.kr/v2/company/c1040001.aspx?cmp_cd={code}"
+        # [Fix] c1040001.aspx 대신 가장 안정적인 c1010001.aspx(기업개요)에서 encparam을 추출합니다.
+        frame_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}"
         res_frame = session.get(frame_url, timeout=7)
         html_frame = decode_safe(res_frame)
         
-        # encparam: '...' 형태의 토큰 추출
-        match = re.search(r"encparam\s*:\s*'([^']+)'", html_frame)
+        # encparam: '...' 형태의 토큰 추출 (다양한 패턴 대응)
+        match = re.search(r"encparam\s*[:=]\s*'([^']+)'", html_frame)
         if not match:
-            # Fallback search if the regex above fails
-            match = re.search(r"encparam\s*=\s*'([^']+)'", html_frame)
+            # [Secondary Fallback] find in all script blocks
+            match = re.search(r"encparam\s*[:=]\s*\"([^\"]+)\"", html_frame)
             
         if not match:
             print(f"Failed to find encparam for {code}")
-            return {"status": "empty", "message": "해당 종목의 데이터 토큰을 찾을 수 없습니다. (ETF 등 재무제표 미존재 종목일 수 있음)"}
+            # [Ultra Fallback] If still not found, try the old URL just in case
+            old_url = f"https://navercomp.wisereport.co.kr/v2/company/c1040001.aspx?cmp_cd={code}"
+            res_old = session.get(old_url, timeout=5)
+            match = re.search(r"encparam\s*[:=]\s*'([^']+)'", decode_safe(res_old))
+            
+        if not match:
+            return {"status": "empty", "message": "해당 종목의 데이터 토큰을 찾을 수 없습니다."}
         
         encparam = match.group(1)
 
