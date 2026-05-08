@@ -1323,147 +1323,153 @@ def get_stock_financials(symbol: str):
     import yfinance as yf
     import math
     
+    # Check if it's a US/Global stock
+    is_global = False
     try:
-        # Check if it's a US/Global stock
         is_global = bool(re.search(r'[A-Za-z]', symbol)) and not symbol.endswith(('.KS', '.KQ'))
+    except:
+        pass
         
-        if is_global:
+    if is_global:
+        try:
+            # Global Stock Logic (yfinance) - Using safer fast_info where possible
+            ticker_name = symbol.split('.')[0]
+            t = yf.Ticker(ticker_name)
+            
+            # [Fix] info is slow and can trigger rate limits/errors, try fast_info first
+            info = {}
             try:
-                # Global Stock Logic (yfinance) - Using safer fast_info where possible
-                ticker_name = symbol.split('.')[0]
-                t = yf.Ticker(ticker_name)
-                
-                # [Fix] info is slow and can trigger rate limits/errors, try fast_info first
-                info = {}
-                try:
-                    info = t.info # Still need for some fields
-                except: pass
-                
-                # Format to match Korean data structure with aggressive fallbacks
-                mcap = info.get('marketCap') or 0
-                financials = {
-                    "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A",
-                    "per": str(info.get('trailingPE', 'N/A')),
-                    "pbr": str(info.get('priceToBook', 'N/A')),
-                    "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
-                    "revenue": 'N/A',
-                    "net_income": 'N/A',
-                    "total_assets": 'N/A',
-                    "operating_income": 'N/A',
-                    "debt_ratio": 'N/A'
-                }
-                
-                # Fetch Financial Statements
-                try:
-                    income_stmt = t.income_stmt
-                    if not income_stmt.empty:
-                        # yfinance uses different labels sometimes, check common ones
-                        rev_keys = ['Total Revenue', 'Revenue']
-                        for rk in rev_keys:
-                            if rk in income_stmt.index:
-                                rev = income_stmt.loc[rk].iloc[0]
-                                financials['revenue'] = f"{rev:,.0f}"
-                                break
-                                
-                        ni_keys = ['Net Income', 'Net Income Common Stockholders']
-                        for nk in ni_keys:
-                            if nk in income_stmt.index:
-                                ni = income_stmt.loc[nk].iloc[0]
-                                financials['net_income'] = f"{ni:,.0f}"
-                                break
-                                
-                        oi_keys = ['Operating Income', 'EBIT']
-                        for ok in oi_keys:
-                            if ok in income_stmt.index:
-                                oi = income_stmt.loc[ok].iloc[0]
-                                financials['operating_income'] = f"{oi:,.0f}"
-                                break
-                except: pass
+                info = t.info # Still need for some fields
+            except: pass
+            
+            # Format to match Korean data structure with aggressive fallbacks
+            mcap = info.get('marketCap') or 0
+            financials = {
+                "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A",
+                "per": str(info.get('trailingPE', 'N/A')),
+                "pbr": str(info.get('priceToBook', 'N/A')),
+                "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
+                "revenue": 'N/A',
+                "net_income": 'N/A',
+                "total_assets": 'N/A',
+                "operating_income": 'N/A',
+                "debt_ratio": 'N/A'
+            }
+            
+            # Fetch Financial Statements
+            try:
+                income_stmt = t.income_stmt
+                if not income_stmt.empty:
+                    # yfinance uses different labels sometimes, check common ones
+                    rev_keys = ['Total Revenue', 'Revenue']
+                    for rk in rev_keys:
+                        if rk in income_stmt.index:
+                            rev = income_stmt.loc[rk].iloc[0]
+                            financials['revenue'] = f"{rev:,.0f}"
+                            break
+                            
+                    ni_keys = ['Net Income', 'Net Income Common Stockholders']
+                    for nk in ni_keys:
+                        if nk in income_stmt.index:
+                            ni = income_stmt.loc[nk].iloc[0]
+                            financials['net_income'] = f"{ni:,.0f}"
+                            break
+                            
+                    oi_keys = ['Operating Income', 'EBIT']
+                    for ok in oi_keys:
+                        if ok in income_stmt.index:
+                            oi = income_stmt.loc[ok].iloc[0]
+                            financials['operating_income'] = f"{oi:,.0f}"
+                            break
+            except: pass
 
-                try:
-                    balance_sheet = t.balance_sheet
-                    if not balance_sheet.empty:
-                        as_keys = ['Total Assets']
-                        for ak in as_keys:
-                            if ak in balance_sheet.index:
-                                assets = balance_sheet.loc[ak].iloc[0]
-                                financials['total_assets'] = f"{assets:,.0f}"
-                                break
-                                
-                        # Debt to Equity
-                        if 'Total Liab' in balance_sheet.index and 'Total Stockholder Equity' in balance_sheet.index:
-                            liab = balance_sheet.loc['Total Liab'].iloc[0]
-                            equity = balance_sheet.loc['Total Stockholder Equity'].iloc[0]
-                            if equity != 0:
-                                financials['debt_ratio'] = f"{(liab / equity) * 100:.2f}%"
-                except: pass
-                
-                # If operating_income still N/A, try info
-                if financials['operating_income'] == 'N/A':
-                    financials['operating_income'] = info.get('operatingCashflow', 'N/A')
-                
-                if financials['debt_ratio'] == 'N/A':
-                    financials['debt_ratio'] = info.get('debtToEquity', 'N/A')
+            try:
+                balance_sheet = t.balance_sheet
+                if not balance_sheet.empty:
+                    as_keys = ['Total Assets']
+                    for ak in as_keys:
+                        if ak in balance_sheet.index:
+                            assets = balance_sheet.loc[ak].iloc[0]
+                            financials['total_assets'] = f"{assets:,.0f}"
+                            break
+                            
+                    # Debt to Equity
+                    if 'Total Liab' in balance_sheet.index and 'Total Stockholder Equity' in balance_sheet.index:
+                        liab = balance_sheet.loc['Total Liab'].iloc[0]
+                        equity = balance_sheet.loc['Total Stockholder Equity'].iloc[0]
+                        if equity != 0:
+                            financials['debt_ratio'] = f"{(liab / equity) * 100:.2f}%"
+            except: pass
+            
+            # If operating_income still N/A, try info
+            if financials['operating_income'] == 'N/A':
+                financials['operating_income'] = info.get('operatingCashflow', 'N/A')
+            
+            if financials['debt_ratio'] == 'N/A':
+                financials['debt_ratio'] = info.get('debtToEquity', 'N/A')
 
-                # Populate Detailed History (Annual / Quarterly)
-                annual_data = []
-                quarterly_data = []
-                
-                # Helper to get value from dataframe safely
-                def get_val(df, key, col):
-                    if df.empty or key not in df.index or col not in df.columns:
-                        return 0
-                    val = df.loc[key, col]
-                    import pandas as pd
-                    if pd.isna(val): return 0
-                    return float(val)
+            # Populate Detailed History (Annual / Quarterly)
+            annual_data = []
+            quarterly_data = []
+            
+            # Helper to get value from dataframe safely
+            def get_val(df, key, col):
+                if df.empty or key not in df.index or col not in df.columns:
+                    return 0
+                val = df.loc[key, col]
+                import pandas as pd
+                if pd.isna(val): return 0
+                return float(val)
 
-                try:
-                    # Annual
-                    for i, date in enumerate(income_stmt.columns[:4]):
-                        d_str = str(date.year)
-                        
-                        # Get assets from balance sheet if available
-                        assets = get_val(balance_sheet, 'Total Assets', date)
-                        
-                        annual_data.append({
+            try:
+                # Annual
+                for i, date in enumerate(income_stmt.columns[:4]):
+                    d_str = str(date.year)
+                    
+                    # Get assets from balance sheet if available
+                    assets = get_val(balance_sheet, 'Total Assets', date)
+                    
+                    annual_data.append({
+                        "date": d_str,
+                        "revenue": get_val(income_stmt, 'Total Revenue', date),
+                        "operating_income": get_val(income_stmt, 'Operating Income', date),
+                        "net_income": get_val(income_stmt, 'Net Income', date),
+                        "total_assets": assets
+                    })
+                    
+                # Quarterly
+                q_stmt = t.quarterly_income_stmt
+                if not q_stmt.empty:
+                    for i, date in enumerate(q_stmt.columns[:4]):
+                        d_str = f"{date.year}.{((date.month-1)//3)+1}Q"
+                        quarterly_data.append({
                             "date": d_str,
-                            "revenue": get_val(income_stmt, 'Total Revenue', date),
-                            "operating_income": get_val(income_stmt, 'Operating Income', date),
-                            "net_income": get_val(income_stmt, 'Net Income', date),
-                            "total_assets": assets
+                            "revenue": get_val(q_stmt, 'Total Revenue', date),
+                            "operating_income": get_val(q_stmt, 'Operating Income', date),
+                            "net_income": get_val(q_stmt, 'Net Income', date)
                         })
-                        
-                    # Quarterly
-                    q_stmt = t.quarterly_income_stmt
-                    if not q_stmt.empty:
-                        for i, date in enumerate(q_stmt.columns[:4]):
-                            d_str = f"{date.year}.{((date.month-1)//3)+1}Q"
-                            quarterly_data.append({
-                                "date": d_str,
-                                "revenue": get_val(q_stmt, 'Total Revenue', date),
-                                "operating_income": get_val(q_stmt, 'Operating Income', date),
-                                "net_income": get_val(q_stmt, 'Net Income', date)
-                            })
-                except Exception as e:
-                    print(f"Global financials detailed error: {e}")
-
-                financials.update({
-                    "detailed": {
-                        "success": True,
-                        "summary": {
-                            "per": info.get('trailingPE', 'N/A'),
-                            "pbr": info.get('priceToBook', 'N/A'),
-                            "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A'
-                        },
-                        "annual": annual_data,
-                        "quarterly": quarterly_data
-                    }
-                })
-                return financials
             except Exception as e:
-                print(f"Global info fetch error for {symbol}: {e}")
-                # Return empty detailed structure so frontend doesn't crash
+                print(f"Global financials detailed error: {e}")
+
+            financials.update({
+                "detailed": {
+                    "success": True,
+                    "summary": {
+                        "per": info.get('trailingPE', 'N/A'),
+                        "pbr": info.get('priceToBook', 'N/A'),
+                        "roe": info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A'
+                    },
+                    "annual": annual_data,
+                    "quarterly": quarterly_data
+                }
+            })
+            return financials
+        except Exception as e:
+            print(f"Global info fetch error for {symbol}: {e}")
+            # Fall through to domestic if global logic fails for a numeric symbol
+            if not any(c.isalpha() for c in symbol):
+                pass
+            else:
                 return {
                     "per": "N/A", "pbr": "N/A", "success": False,
                     "detailed": { "success": False, "annual": [], "quarterly": [], "summary": {"per": "N/A", "pbr": "N/A", "roe": "N/A"} }
