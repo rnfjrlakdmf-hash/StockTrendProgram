@@ -522,7 +522,7 @@ function DiscoveryContent() {
 
                 // 3. Fetch Financial Highlights
                 setFinancialsLoading(true);
-                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}/financials?t=${Date.now()}`)
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}/financials?t=${Date.now()}&v=5.2.7`)
                     .then(res => res.json())
                     .then(resJson => {
                         if (resJson.status === "success") {
