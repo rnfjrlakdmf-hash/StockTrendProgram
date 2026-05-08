@@ -289,7 +289,7 @@ function DiscoveryContent() {
     const [easyMode, setEasyMode] = useState(false);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
-    const [financialHighlights, setFinancialHighlights] = useState<any[]>([]);
+    const [financialHighlights, setFinancialHighlights] = useState<any | null>(null);
     const [financialsLoading, setFinancialsLoading] = useState(false);
     const [dividendData, setDividendData] = useState<any>(null);
     const [healthData, setHealthData] = useState<any>(null);
@@ -526,7 +526,7 @@ function DiscoveryContent() {
                     .then(res => res.json())
                     .then(resJson => {
                         if (resJson.status === "success") {
-                            setFinancialHighlights(resJson.data || []);
+                            setFinancialHighlights(resJson.data);
                         }
                     })
                     .catch(() => { })
