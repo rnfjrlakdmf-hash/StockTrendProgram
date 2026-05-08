@@ -1539,21 +1539,67 @@ def get_stock_financials(symbol: str):
                     "quarterly": []
                 }
             else:
-                # [Last Resort] Fallback to base metrics if indicators fetch fails
-                detailed = {
-                    "success": True,
-                    "summary": {
-                        "per": res.get("per", "N/A"),
-                        "pbr": res.get("pbr", "N/A"),
-                        "roe": res.get("roe", "N/A"),
-                        "revenue": "N/A",
-                        "operating_income": "N/A",
-                        "net_income": "N/A",
-                        "debt_ratio": "N/A"
-                    },
-                    "full_data": {},
-                    "annual": [], "quarterly": []
-                }
+                # [Critical Fallback] If indicators fetch fails, try to scrape the main page table directly
+                try:
+                    import pandas as pd
+                    code = symbol.split('.')[0]
+                    # Direct scraping from the main finance page (No encparam needed)
+                    url = f"https://finance.naver.com/item/main.naver?code={code}"
+                    tables = pd.read_html(url, encoding='cp949')
+                    
+                    # Find the financial summary table (usually the one with '매출액')
+                    fin_df = None
+                    for df in tables:
+                        if '주요재무정보' in str(df.columns) or '매출액' in str(df.index) or '매출액' in str(df.values):
+                            fin_df = df
+                            break
+                    
+                    if fin_df is not None:
+                        # Clean and format the dataframe
+                        if isinstance(fin_df.columns, pd.MultiIndex):
+                            fin_df.columns = fin_df.columns.get_level_values(-1)
+                        
+                        cols = [str(c) for c in fin_df.columns[1:]]
+                        rows = fin_df.iloc[:, 0].values
+                        
+                        summary = {
+                            "per": res.get("per", "N/A"),
+                            "pbr": res.get("pbr", "N/A"),
+                            "roe": res.get("roe", "N/A"),
+                            "revenue": "N/A", "operating_income": "N/A", "debt_ratio": "N/A"
+                        }
+                        
+                        full_data = {}
+                        mapping = {
+                            "매출액": "revenue", "영업이익": "operating_income", 
+                            "당기순이익": "net_income", "ROE": "roe", 
+                            "부채비율": "debt_ratio", "PER": "per", "PBR": "pbr"
+                        }
+                        
+                        for i, row_name in enumerate(rows):
+                            row_name = str(row_name)
+                            for k, v in mapping.items():
+                                if k in row_name:
+                                    vals = [str(v) for v in fin_df.iloc[i, 1:]]
+                                    full_data[v] = {"dates": cols, "values": vals}
+                                    if v in summary and len(vals) > 0:
+                                        summary[v] = vals[-1] # Latest value
+                        
+                        detailed = {
+                            "success": True, "summary": summary, "full_data": full_data, "annual": [], "quarterly": []
+                        }
+                    else:
+                        raise Exception("Main table not found")
+                except Exception as ex:
+                    print(f"Fallback scraping failed: {ex}")
+                    detailed = {
+                        "success": True,
+                        "summary": {
+                            "per": res.get("per", "N/A"), "pbr": res.get("pbr", "N/A"), "roe": res.get("roe", "N/A"),
+                            "revenue": "N/A", "operating_income": "N/A", "net_income": "N/A", "debt_ratio": "N/A"
+                        },
+                        "full_data": {}, "annual": [], "quarterly": []
+                    }
             
         financials = {
             "market_cap": res.get("market_cap_str", "N/A"),
