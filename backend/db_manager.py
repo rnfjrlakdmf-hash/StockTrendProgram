@@ -6,12 +6,11 @@ from datetime import datetime
 # Production (Railway): Set DB_PATH=/data/stock_app.db (with Volume mounted at /data)
 # Development: Falls back to local directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# [Vercel-Fix] Redirect DB to /tmp if in read-only Vercel environment
-if os.environ.get("VERCEL"):
-    DB_FILE = "/tmp/stock_app.db"
-    # Ensure /tmp exists (though it always does on Vercel)
-    if not os.path.exists(DB_FILE):
-        print(f"[Vercel] DB will be initialized at {DB_FILE}")
+# [Production-Fix] Redirect DB to /tmp if in read-only/ephemeral environments
+if os.environ.get("VERCEL") or os.environ.get("RAILWAY_STATIC_URL") or os.environ.get("PORT"):
+    # If DB_PATH is explicitly set (e.g. Volume mounted), use it. Otherwise use /tmp
+    DB_FILE = os.environ.get("DB_PATH", "/tmp/stock_app.db")
+    print(f"[Production] Database path: {DB_FILE}")
 else:
     DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 

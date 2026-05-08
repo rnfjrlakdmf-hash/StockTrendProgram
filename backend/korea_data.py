@@ -600,9 +600,7 @@ def get_naver_theme_rank():
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": "https://finance.naver.com/"}
         res = requests.get(url, headers=headers, timeout=5)
-        # Force encoding for Naver Finance
-        res.encoding = 'cp949'
-        html = res.text
+        html = decode_safe(res)
         if not html:
             return [{"name": "전선", "change": "+5.2%"},
                     {"name": "반도체", "change": "+3.1%"}]
@@ -613,17 +611,26 @@ def get_naver_theme_rank():
         rows = soup.select("table.type_1 tr")
 
         for row in rows:
+            # col_type1 contains the theme name link
             name_tag = row.select_one("td.col_type1 a")
             if not name_tag:
                 name_tag = row.select_one("td.col_type_1 a")
 
             if name_tag:
                 theme_name = name_tag.text.strip()
-                # 등락률 찾기 (보통 4번째 td)
+                # Use robust_name to ensure clean string
+                theme_name = theme_name.replace('\u200b', '').strip()
+                
+                # 등락률 찾기 (2번째 td - col_type2)
                 tds = row.select("td")
                 change_val = "0.00%"
-                if len(tds) >= 4:
-                    change_val = tds[3].text.strip()
+                if len(tds) >= 2:
+                    # Look for col_type2 specifically or the second td
+                    change_node = row.select_one("td.col_type2")
+                    if change_node:
+                        change_val = change_node.text.strip()
+                    else:
+                        change_val = tds[1].text.strip()
 
                 themes.append({
                     "name": theme_name,
@@ -2032,9 +2039,14 @@ def get_korean_market_indices():
             soup = BeautifulSoup(decode_safe(res), 'html.parser')
 
             val_node = soup.select_one("#now_value")
+            # Fallback for now_value if nested
+            if not val_node:
+                val_node = soup.select_one(".quotient #now_value")
 
             # KOSPI/KOSDAQ common
             change_node = soup.select_one("#change_value_and_rate")
+            if not change_node:
+                change_node = soup.select_one(".quotient #change_value_and_rate")
 
             val = val_node.text.strip() if val_node else "0"
             percent = "0.00%"
@@ -2042,17 +2054,22 @@ def get_korean_market_indices():
             direction = "Equal"
 
             if change_node:
-                txt = change_node.text.strip().replace('\n', '')
+                txt = change_node.text.strip().replace('\n', '').replace('\t', '')
                 import re
+                # Extract percentage like +0.11% or -1.23%
                 p_match = re.search(r'([+-]?\d+\.\d+%)', txt)
                 if p_match:
                     percent = p_match.group(1)
-                change = txt.split('%')[0].split()[-1] if '%' in txt else "0"
-                if len(txt.split()) > 0:
-                    change = txt.split()[0]
-                if "+" in txt or "상승" in txt:
+                
+                # Extract numeric change value
+                # Usually txt is like "7.95 +0.11%상승"
+                parts = txt.split()
+                if parts:
+                    change = parts[0]
+                
+                if "+" in txt or "상승" in txt or "up" in str(change_node.get('class', [])):
                     direction = "Up"
-                elif "-" in txt or "하락" in txt:
+                elif "-" in txt or "하락" in txt or "dn" in str(change_node.get('class', [])):
                     direction = "Down"
             else:
                 # KOSPI200 Fallback
@@ -2511,7 +2528,7 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                     "date": today_str,
                     "close": current_price,
                     "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
-                    "change": 0.0,  # Approximate
+                    "change": 0.0,
                     "volume": 0,
                     "institution": latest_live.get("institution", 0),
                     "foreigner": latest_live.get("foreigner", 0),

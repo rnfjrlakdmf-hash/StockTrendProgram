@@ -7,7 +7,10 @@ from typing import Dict, Any
 
 # DB 경로 설정 (db_manager.py와 동기화)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
+if os.environ.get("VERCEL") or os.environ.get("RAILWAY_STATIC_URL") or os.environ.get("PORT"):
+    DB_FILE = os.environ.get("DB_PATH", "/tmp/stock_app.db")
+else:
+    DB_FILE = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "stock_app.db"))
 
 def get_db():
     return sqlite3.connect(DB_FILE, timeout=30)
