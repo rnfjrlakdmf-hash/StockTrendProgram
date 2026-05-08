@@ -1646,7 +1646,13 @@ def get_stock_financials(symbol: str):
                                 "per": res.get("per", "N/A"), "pbr": res.get("pbr", "N/A"), "roe": res.get("roe", "N/A"),
                                 "revenue": "N/A", "operating_income": "N/A", "net_income": "N/A", "debt_ratio": "N/A"
                             },
-                            "full_data": {}, "annual": [], "quarterly": []
+                            "full_data": {
+                                "per": {"dates": ["현재"], "values": [res.get("per", "N/A")]},
+                                "pbr": {"dates": ["현재"], "values": [res.get("pbr", "N/A")]},
+                                "eps": {"dates": ["현재"], "values": [res.get("eps", "N/A")]},
+                                "bps": {"dates": ["현재"], "values": [res.get("bps", "N/A")]}
+                            }, 
+                            "annual": [], "quarterly": []
                         }
             
         financials = {
