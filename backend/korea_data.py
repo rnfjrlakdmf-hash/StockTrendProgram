@@ -152,8 +152,8 @@ def search_stock_code(keyword: str):
     # 2. Naver Finance Auto-Complete API (Official mapping service)
     try:
         print(f"[Search Tier 2] Trying Naver AC API for '{keyword_clean}'...")
-        ac_url = f"https://ac.finance.naver.com/ac?q={
-            urllib.parse.quote(keyword_clean)}&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111"
+        encoded_keyword = urllib.parse.quote(keyword_clean)
+        ac_url = f"https://ac.finance.naver.com/ac?q={encoded_keyword}&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111"
         res_ac = requests.get(
             ac_url,
             headers=headers,
