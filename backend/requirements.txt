@@ -2,6 +2,7 @@
 fastapi
 uvicorn[standard]
 pandas
+numpy
 google-generativeai
 python-multipart
 requests

@@ -556,8 +556,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "health_data": health_data  # Pass full health data for UI components
                 }
 
-                # Update Cache (v2.0.0 Force Clear)
-                STOCK_DATA_CACHE[f"v2_{symbol}"] = (final_data, time.time())
+                # Update Cache (v3.0.0 Force Clear to fix data corruption)
+                STOCK_DATA_CACHE[f"v3_{symbol}"] = (final_data, time.time())
                 return final_data
 
         except Exception as e:

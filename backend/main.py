@@ -45,7 +45,12 @@ async def log_requests(request, call_next):
     return response
 
 # [Route Registration]
-UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+# [Vercel-Fix] Redirect uploads to /tmp if in read-only environment
+if os.environ.get("VERCEL"):
+    UPLOADS_DIR = "/tmp/uploads"
+else:
+    UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 app.include_router(system_router, prefix="/api/system", tags=["System"])

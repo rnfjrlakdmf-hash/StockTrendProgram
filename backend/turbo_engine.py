@@ -159,6 +159,9 @@ class TurboEngine:
 # 전역 엔진 인스턴스 (앱 전체에서 공유)
 turbo_engine = TurboEngine()
 
+# [Global] Cache Versioning to force invalidation
+CACHE_VERSION = "v5"
+
 def turbo_cache(ttl_seconds: int = 300):
     """
     터보 엔진 기반 캐싱 데코레이터.
@@ -167,7 +170,7 @@ def turbo_cache(ttl_seconds: int = 300):
     def decorator(func):
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
-            key_parts = [func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
+            key_parts = [CACHE_VERSION, func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
             cache_key = ":".join(key_parts)
             
             cached_data = turbo_engine.get_cache(cache_key)
@@ -181,7 +184,7 @@ def turbo_cache(ttl_seconds: int = 300):
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            key_parts = [func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
+            key_parts = [CACHE_VERSION, func.__name__] + [str(a) for a in args] + [f"{k}={v}" for k, v in sorted(kwargs.items())]
             cache_key = ":".join(key_parts)
             
             cached_data = turbo_engine.get_cache(cache_key)

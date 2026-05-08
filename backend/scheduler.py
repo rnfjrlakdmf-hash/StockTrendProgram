@@ -8,7 +8,11 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 # State File to track processed disclosures
-STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disclosure_state.json")
+# [Vercel-Fix] State file must be in /tmp
+if os.environ.get("VERCEL"):
+    STATE_FILE = "/tmp/disclosure_state.json"
+else:
+    STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disclosure_state.json")
 
 def load_state():
     if os.path.exists(STATE_FILE):

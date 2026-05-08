@@ -5,7 +5,11 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-ALERTS_FILE = "alerts.json"
+# [Vercel-Fix] alerts.json must be in /tmp
+if os.environ.get("VERCEL"):
+    ALERTS_FILE = "/tmp/alerts.json"
+else:
+    ALERTS_FILE = "alerts.json"
 TELEGRAM_TOKEN = "8771605551:AAHY9lewbnAXtvoXsOGDotKLStL-hW3yGRM"
 
 def load_alerts():
