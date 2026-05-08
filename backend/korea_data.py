@@ -216,8 +216,8 @@ def search_stock_code(keyword: str):
     try:
         print(
             f"[Search Tier 4] Trying Yahoo Finance Fallback for '{keyword_clean}'...")
-        yurl = f"https://query2.finance.yahoo.com/v1/finance/search?q={
-            urllib.parse.quote(keyword_clean)}&lang=ko-KR"
+        encoded_keyword = urllib.parse.quote(keyword_clean)
+        yurl = f"https://query2.finance.yahoo.com/v1/finance/search?q={encoded_keyword}&lang=ko-KR"
         res_y = requests.get(yurl, headers=headers, timeout=5)
         ydata = res_y.json()
         if ydata.get('quotes'):
@@ -376,8 +376,7 @@ def gather_naver_stock_data(symbol: str):
                                             '0')).replace(
                                         ',',
                                         '')),
-                                "change_pct": f"{
-                                    nxt_pct:+.2f}%"}
+                                "change_pct": f"{nxt_pct:+.2f}%"}
                     print(
                         f"[gather_naver_stock_data] New Price API success for {code}")
         except Exception as e:
@@ -573,7 +572,7 @@ def get_naver_daily_prices(symbol: str):
                 history.append({
                     "date": date,
                     "close": close,
-                    "change": change_percent,
+                    "change": f"{float(change_percent):.2f}%",
                     "change_val": diff,
                     "open": open_p,
                     "high": high,
@@ -597,7 +596,7 @@ def get_naver_theme_rank():
     try:
         url = "https://finance.naver.com/sise/theme.naver"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/120.0.0.0",
             "Referer": "https://finance.naver.com/"}
         res = requests.get(url, headers=headers, timeout=5)
         html = decode_safe(res)
@@ -723,11 +722,9 @@ def get_naver_market_index_data():
             if idx["type"] == "world":
                 url = f"https://api.stock.naver.com/index/{idx['code']}/basic"
             elif idx["type"] == "dom":
-                url = f"https://m.stock.naver.com/front-api/realTime/marketPrice?itemCodes={
-                    idx['code']}&endType=index&stockType=domestic"
+                url = f"https://m.stock.naver.com/front-api/realTime/marketPrice?itemCodes={idx['code']}&endType=index&stockType=domestic"
             else:
-                url = f"https://m.stock.naver.com/api/index/{
-                    idx['code']}/basic"
+                url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
 
             res = requests.get(url, headers=HEADER, timeout=5)
             if res.status_code == 200:
@@ -750,9 +747,7 @@ def get_naver_market_index_data():
                 is_rate = "금리" in idx["label"] or "TY10" in idx["code"]
                 try:
                     price_val = float(price)
-                    val_formatted = f"{
-                        price_val:.4f}%" if is_rate else f"{
-                        price_val:,.2f}"
+                    val_formatted = f"{price_val:.4f}%" if is_rate else f"{price_val:,.2f}"
                 except BaseException:
                     val_formatted = price
 
@@ -1246,11 +1241,8 @@ def get_naver_stock_info(symbol: str):
                         "name": data.get(
                             'stockName',
                             symbol),
-                        "price": f"{
-                            float(price):,.2f}" if is_foreign else f"{
-                            float(price):,.0f}",
-                        "change": f"[정규] {
-                            float(pct):+.2f}%",
+                        "price": f"{float(price):,.2f}" if is_foreign else f"{float(price):,.0f}",
+                        "change": f"[정규] {float(pct):+.2f}%",
                         "change_val": str(
                             data.get(
                                 'compareToPreviousClosePrice',
@@ -1285,10 +1277,8 @@ def get_naver_stock_info(symbol: str):
                         "name": data.get(
                             'stockName',
                             test_symbol),
-                        "price": f"{
-                            float(price):,.2f}",
-                        "change": f"{
-                            float(pct):+.2f}%",
+                        "price": f"{float(price):,.2f}",
+                        "change": f"{float(pct):+.2f}%",
                         "change_val": str(
                             data.get(
                                 'compareToPreviousClosePrice',
@@ -1342,7 +1332,7 @@ def fetch_naver_ranking_data(nation: str, order_type: str) -> list:
     from concurrent.futures import ThreadPoolExecutor
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/120.0.0.0',
         'Referer': 'https://stock.naver.com/',
         'Accept': 'application/json'}
 
@@ -1551,11 +1541,7 @@ def get_stock_financials(symbol: str):
             # Format to match Korean data structure with aggressive fallbacks
             mcap = info.get('marketCap') or 0
             financials = {
-                "market_cap": f"{
-                    mcap /
-                    1e12:.2f}T" if mcap > 1e12 else f"{
-                    mcap /
-                    1e9:.2f}B" if mcap > 0 else "N/A",
+                "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else (f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A"),
                 "per": str(
                     info.get(
                         'trailingPE',
@@ -1618,9 +1604,7 @@ def get_stock_financials(symbol: str):
                         liab = balance_sheet.loc['Total Liab'].iloc[0]
                         equity = balance_sheet.loc['Total Stockholder Equity'].iloc[0]
                         if equity != 0:
-                            financials['debt_ratio'] = f"{
-                                (
-                                    liab / equity) * 100:.2f}%"
+                            financials['debt_ratio'] = f"{(liab / equity) * 100:.2f}%"
             except BaseException:
                 pass
 
@@ -1889,8 +1873,7 @@ def get_stock_financials(symbol: str):
                                 "Main financial table not found in HTML")
                     else:
                         raise Exception(
-                            f"Failed to fetch page: {
-                                resp.status_code}")
+                            f"Failed to fetch page: {resp.status_code}")
                 except Exception as ex:
                     print(f"Fallback scraping failed: {ex}")
 
@@ -1921,19 +1904,10 @@ def get_stock_financials(symbol: str):
                                 "roe": info.get(
                                     'returnOnEquity',
                                     0) * 100 if info.get('returnOnEquity') else 'N/A',
-                                "revenue": f"{
-                                    info.get(
-                                        'totalRevenue',
-                                        0) / 1e8:.0f}억" if info.get('totalRevenue') else "N/A",
-                                "operating_income": f"{
-                                        info.get(
-                                            'operatingCashflow',
-                                            0) / 1e8:.0f}억" if info.get('operatingCashflow') else "N/A",
+                                "revenue": f"{info.get('totalRevenue', 0) / 1e8:.0f}억" if info.get('totalRevenue') else "N/A",
+                                "operating_income": f"{info.get('operatingCashflow', 0) / 1e8:.0f}억" if info.get('operatingCashflow') else "N/A",
                                 "net_income": "N/A",
-                                "debt_ratio": f"{
-                                                info.get(
-                                                    'debtToEquity',
-                                                    0):.2f}%"}
+                                "debt_ratio": f"{info.get('debtToEquity', 0):.2f}%"}
 
                             # Minimal full_data to unblock UI
                             full_data = {}
