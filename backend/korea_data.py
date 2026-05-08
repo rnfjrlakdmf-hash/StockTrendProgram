@@ -1511,10 +1511,31 @@ def get_stock_financials(symbol: str):
                     elif "부채비율" in name or "θñ" in name: summary["debt_ratio"] = val
                     elif "ROE" in name: summary["roe"] = val
                 
+                # [Fix] Map to full_data structure for the detailed table
+                full_data = {}
+                for ind in indicators:
+                    name = str(ind.get("name", ""))
+                    # Map Naver names to our internal keys for the table
+                    internal_key = None
+                    if "매출액" in name or "⸮" in name: internal_key = "revenue"
+                    elif "영업이익" in name or "÷" in name: internal_key = "operating_income"
+                    elif "당기순이익" in name or "籢" in name: internal_key = "net_income"
+                    elif "ROE" in name: internal_key = "roe"
+                    elif "부채비율" in name or "θñ" in name: internal_key = "debt_ratio"
+                    elif "PER" in name: internal_key = "per"
+                    elif "PBR" in name: internal_key = "pbr"
+                    
+                    if internal_key:
+                        full_data[internal_key] = {
+                            "dates": headers,
+                            "values": [ind["values"].get(h) for h in headers]
+                        }
+
                 detailed = {
                     "success": True,
                     "summary": summary,
-                    "annual": [], # For now, just fix the summary to unblock
+                    "full_data": full_data,
+                    "annual": [], 
                     "quarterly": []
                 }
             else:
@@ -1530,6 +1551,7 @@ def get_stock_financials(symbol: str):
                         "net_income": "N/A",
                         "debt_ratio": "N/A"
                     },
+                    "full_data": {},
                     "annual": [], "quarterly": []
                 }
             
