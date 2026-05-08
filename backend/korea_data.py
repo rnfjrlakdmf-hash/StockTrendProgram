@@ -1472,7 +1472,11 @@ def get_stock_financials(symbol: str):
         # Domestic Stock Logic (Naver)
         res = gather_naver_stock_data(symbol)
         if not res:
-            return {"per": "N/A", "pbr": "N/A", "success": False}
+            print(f"[get_stock_financials] Warning: gather_naver_stock_data failed for {symbol}. Proceeding to fallbacks.")
+            res = {
+                "market_cap_str": "N/A", "per": "N/A", "pbr": "N/A", "roe": "N/A",
+                "revenue": "N/A", "operating_income": "N/A", "net_income": "N/A", "debt_ratio": "N/A"
+            }
             
         # [Fix] Manually fetch detailed indicators if they are missing
         detailed = res.get("detailed_financials")
