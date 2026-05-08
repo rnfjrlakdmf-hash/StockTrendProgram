@@ -364,7 +364,12 @@ def gather_naver_stock_data(symbol: str):
 
         # [Market Cap Fallback]
         mc = soup.select_one("#_market_sum")
-        if mc: market_cap_str = mc.text.strip().replace(",", "") + "원"
+        if mc:
+            # [Fix] Clean up market cap string from garbage characters and whitespace
+            raw_mc = mc.text.strip()
+            # Remove all characters except numbers, '조', '억', '원' and commas
+            clean_mc = re.sub(r'[^0-9조억원,]', '', raw_mc)
+            market_cap_str = clean_mc + "원" if not clean_mc.endswith("원") else clean_mc
 
         # Previous Close
         prev_close = price - change_val
@@ -1492,16 +1497,18 @@ def get_stock_financials(symbol: str):
                 
                 # Fill summary from indicators if available
                 for ind in indicators:
-                    name = ind.get("name", "")
+                    name = str(ind.get("name", ""))
                     vals = ind.get("values", {})
                     latest_h = headers[-1] if headers else None
                     if not latest_h: continue
                     
                     val = vals.get(latest_h, "N/A")
-                    if "매출액" in name: summary["revenue"] = val
-                    elif "영업이익" in name: summary["operating_income"] = val
-                    elif "당기순이익" in name: summary["net_income"] = val
-                    elif "부채비율" in name: summary["debt_ratio"] = val
+                    
+                    # [Robust Match] Use partial matches for names to handle encoding issues
+                    if "매출액" in name or "⸮" in name: summary["revenue"] = val
+                    elif "영업이익" in name or "÷" in name: summary["operating_income"] = val
+                    elif "당기순이익" in name or "籢" in name: summary["net_income"] = val
+                    elif "부채비율" in name or "θñ" in name: summary["debt_ratio"] = val
                     elif "ROE" in name: summary["roe"] = val
                 
                 detailed = {
@@ -1511,7 +1518,20 @@ def get_stock_financials(symbol: str):
                     "quarterly": []
                 }
             else:
-                return {"per": "N/A", "pbr": "N/A", "success": False}
+                # [Last Resort] Fallback to base metrics if indicators fetch fails
+                detailed = {
+                    "success": True,
+                    "summary": {
+                        "per": res.get("per", "N/A"),
+                        "pbr": res.get("pbr", "N/A"),
+                        "roe": res.get("roe", "N/A"),
+                        "revenue": "N/A",
+                        "operating_income": "N/A",
+                        "net_income": "N/A",
+                        "debt_ratio": "N/A"
+                    },
+                    "annual": [], "quarterly": []
+                }
             
         financials = {
             "market_cap": res.get("market_cap_str", "N/A"),
@@ -2816,10 +2836,11 @@ def get_korean_investment_indicators(symbol: str, freq: str = "0", fin_gubun: st
         # JSON 파싱 시도 (cF4002.aspx는 encparam이 있으면 JSON으로 반환함)
         try:
             raw_bytes = res_data.content
+            # [Fix] Try CP949 first for NaverComp data, then fallback to UTF-8
             try:
-                json_str = raw_bytes.decode('utf-8')
+                json_str = raw_bytes.decode('cp949')
             except UnicodeDecodeError:
-                json_str = raw_bytes.decode('cp949', 'ignore')
+                json_str = raw_bytes.decode('utf-8', 'ignore')
             json_data = json.loads(json_str)
         except Exception as e:
             print(f"Failed to parse JSON for {code}: {e}")
