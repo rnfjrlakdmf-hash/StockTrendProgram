@@ -3701,9 +3701,7 @@ def get_market_insights_data():
                 "name": name,
                 "symbol": symbol,
                 "value": value_display,
-                "amount": f"{
-                    val_num /
-                    100000000:,.0f}억" if val_num > 0 else "0억"}
+                "amount": f"{val_num / 100000000:,.0f}억" if val_num > 0 else "0억"}
         else:
             vol_num = 0
             try:
