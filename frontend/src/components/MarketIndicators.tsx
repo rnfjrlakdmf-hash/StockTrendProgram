@@ -99,7 +99,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
             
             const priceVal = item.price;
             const changeVal = parseFloat(String(item.change || 0));
-            const changeStr = `${changeVal > 0 ? '+' : ''}${changeVal.toFixed(2)}%`;
+            const changeStr = `${changeVal > 0 ? '+' : ''}${Number(changeVal || 0).toFixed(2)}%`;
 
             // [New] KRW Conversion Logic
             let krwPrice = "";

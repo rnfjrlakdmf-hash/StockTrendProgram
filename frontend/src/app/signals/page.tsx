@@ -495,7 +495,7 @@ function HeatmapTab({ router }: { router: any }) {
                                         {item.name || item.theme}
                                     </div>
                                     <span className={`${item.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
-                                        {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
+                                        {item.change > 0 ? '+' : ''}{Number(item.change || 0).toFixed(2)}%
                                     </span>
                                 </div>
 

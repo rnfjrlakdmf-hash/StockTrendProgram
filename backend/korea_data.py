@@ -467,12 +467,10 @@ def gather_naver_stock_data(symbol: str):
         # [Market Cap Fallback]
         mc = soup.select_one("#_market_sum")
         if mc:
-            # [Fix] Clean up market cap string from garbage characters and whitespace
+            # [Fix] Robust cleaning for Korean characters and numbers
             raw_mc = mc.text.strip()
-            # Remove all characters except numbers, '조', '억', '원' and commas
-            # [Fix] Use precomposed Unicode escapes for '조', '억', '원'
-            clean_mc = re.sub(r'[^0-9\uc870\uc5b5\uc6d0,]', '', raw_mc)
-            market_cap_str = clean_mc + "원" if not clean_mc.endswith("\uc6d0") else clean_mc
+            clean_mc = "".join([c for c in raw_mc if c.isdigit() or c in ['\uc870', '\uc5b5', '\uc6d0', ',']])
+            market_cap_str = clean_mc + "\uc6d0" if not clean_mc.endswith("\uc6d0") else clean_mc
 
         # [Session Logic v7.2]
         # We use the prices extracted from the Integration API above.
@@ -1768,279 +1766,104 @@ def get_stock_financials(symbol: str):
                 "net_income": "N/A",
                 "debt_ratio": "N/A"}
 
-        # [Fix] Manually fetch detailed indicators if they are missing
-        detailed = res.get("detailed_financials")
-        if not detailed or not detailed.get("success"):
-            # Try to fetch using the dedicated indicators function
-            ind_data = get_korean_investment_indicators(symbol)
-            if ind_data and ind_data.get("status") == "success":
-                # Transform to the expected structure
-                headers = ind_data.get("headers", [])
-                indicators = ind_data.get("indicators", [])
-
-                # Extract summary metrics from indicators
-                summary = {
-                    "per": res.get("per", "N/A"),
-                    "pbr": res.get("pbr", "N/A"),
-                    "roe": res.get("roe", "N/A"),
-                    "revenue": "N/A",
-                    "operating_income": "N/A",
-                    "net_income": "N/A",
-                    "debt_ratio": "N/A"
-                }
-
-                # Fill summary from indicators if available
-                for ind in indicators:
-                    name = str(ind.get("name", ""))
-                    vals = ind.get("values", {})
-                    latest_h = headers[-1] if headers else None
-                    if not latest_h:
-                        continue
-
-                    val = vals.get(latest_h, "N/A")
-
-                    # [Robust Match] Use partial matches for names to handle encoding issues
-                    if "매출액" in name or "⸮" in name:
-                        summary["revenue"] = val
-                    elif "영업이익" in name or "÷" in name:
-                        summary["operating_income"] = val
-                    elif "당기순이익" in name or "籢" in name:
-                        summary["net_income"] = val
-                    elif "부채비율" in name or "θñ" in name:
-                        summary["debt_ratio"] = val
-                    elif "ROE" in name:
-                        summary["roe"] = val
-
-                # [Fix] Map to full_data structure for the detailed table
-                full_data = {}
-                for ind in indicators:
-                    name = str(ind.get("name", ""))
-                    # Map Naver names to our internal keys for the table
-                    internal_key = None
-                    if "매출액" in name or "⸮" in name:
-                        internal_key = "revenue"
-                    elif "영업이익" in name or "÷" in name:
-                        internal_key = "operating_income"
-                    elif "당기순이익" in name or "籢" in name:
-                        internal_key = "net_income"
-                    elif "ROE" in name:
-                        internal_key = "roe"
-                    elif "부채비율" in name or "θñ" in name:
-                        internal_key = "debt_ratio"
-                    elif "PER" in name:
-                        internal_key = "per"
-                    elif "PBR" in name:
-                        internal_key = "pbr"
-
-                    if internal_key:
-                        full_data[internal_key] = {
-                            "dates": headers,
-                            "values": [ind["values"].get(h) for h in headers]
+        detailed = { "success": False, "summary": {}, "full_data": {} }
+        code = symbol.split('.')[0]
+        
+        # 1. Primary: HTML Scrape (Main Page)
+        try:
+            from bs4 import BeautifulSoup
+            url = f"https://finance.naver.com/item/main.naver?code={code}"
+            resp = requests.get(url, headers=HEADER, timeout=7)
+            if resp.ok:
+                soup = BeautifulSoup(resp.content.decode('euc-kr', 'ignore'), 'html.parser')
+                # Find the '기업실적분석' section
+                section = soup.select_one('div.section.cop_analysis')
+                if section:
+                    table = section.find('table')
+                    if table:
+                        import pandas as pd
+                        import io
+                        df = pd.read_html(io.StringIO(str(table)))[0]
+                        if isinstance(df.columns, pd.MultiIndex):
+                            df.columns = df.columns.get_level_values(-1)
+                        
+                        headers = [str(c).strip() for c in df.columns[1:]]
+                        clean_headers = []
+                        for h in headers:
+                            h = h.replace('\n','').strip()
+                            if '.' in h:
+                                pts = h.split('.')
+                                clean_headers.append(f"{pts[0]}/{pts[1]}")
+                            else: clean_headers.append(h)
+                            
+                        mapping = {
+                            "매출액": "revenue", "영업이익": "operating_income", "당기순이익": "net_income",
+                            "영업이익률": "operating_margin", "순이익률": "net_income_margin", "ROE": "roe",
+                            "부채비율": "debt_ratio", "당좌비율": "quick_ratio", "유보율": "reserve_ratio",
+                            "EPS": "eps", "PER": "per", "BPS": "bps", "PBR": "pbr"
                         }
+                        
+                        for _, row in df.iterrows():
+                            label = str(row.iloc[0]).strip()
+                            key = next((v for k, v in mapping.items() if k in label), None)
+                            if key:
+                                vals = []
+                                for rv in row.values[1:]:
+                                    try:
+                                        v_s = str(rv).replace(',', '').strip()
+                                        if v_s in ["", "-", "nan"]: vals.append(None)
+                                        else: vals.append(float(v_s))
+                                    except: vals.append(None)
+                                detailed["full_data"][key] = { "dates": clean_headers, "values": vals }
+                                # Use latest non-None value for summary
+                                for v in reversed(vals):
+                                    if v is not None:
+                                        detailed["summary"][key] = v
+                                        break
+                        detailed["success"] = True
+        except Exception as e:
+            print(f"Primary Scrape Error for {symbol}: {e}")
 
-                detailed = {
-                    "success": True,
-                    "summary": summary,
-                    "full_data": full_data,
-                    "annual": [],
-                    "quarterly": []
-                }
-            else:
-                # [Critical Fallback] If indicators fetch fails, try to scrape the main page table directly
-                try:
-                    import pandas as pd
-                    import io
-                    code = symbol.split('.')[0]
-                    # Direct scraping from the main finance page (No encparam
-                    # needed)
-                    url = f"https://finance.naver.com/item/main.naver?code={code}"
-
-                    # [Fix] Use requests with HEADER to avoid being blocked by Naver
-                    resp = requests.get(url, headers=HEADER, timeout=5)
-                    if resp.ok:
-                        # Use io.StringIO to pass the HTML to pandas
-                        tables = pd.read_html(io.StringIO(resp.text))
-
-                        # Find the financial summary table (usually the one with
-                        # '매출액')
-                        fin_df = None
-                        for df in tables:
-                            # Naver's table often has '주요재무정보' in columns or '매출액'
-                            # in index
-                            if any('매출액' in str(val)
-                                   for val in df.values.flatten()):
-                                fin_df = df
-                                break
-
-                        if fin_df is not None:
-                            # Clean and format the dataframe
-                            # Standardize columns (Naver often uses
-                            # multi-index)
-                            if isinstance(fin_df.columns, pd.MultiIndex):
-                                fin_df.columns = fin_df.columns.get_level_values(
-                                    -1)
-
-                            cols = [str(c) for c in fin_df.columns[1:]]
-                            rows = fin_df.iloc[:, 0].values
-
-                            summary = {
-                                "per": res.get(
-                                    "per",
-                                    "N/A"),
-                                "pbr": res.get(
-                                    "pbr",
-                                    "N/A"),
-                                "roe": res.get(
-                                    "roe",
-                                    "N/A"),
-                                "revenue": "N/A",
-                                "operating_income": "N/A",
-                                "debt_ratio": "N/A"}
-
-                            full_data = {}
-                            mapping = {
-                                "매출액": "revenue",
-                                "영업이익": "operating_income",
-                                "당기순이익": "net_income",
-                                "ROE": "roe",
-                                "부채비율": "debt_ratio",
-                                "PER": "per",
-                                "PBR": "pbr"}
-
-                            for i, row_name in enumerate(rows):
-                                row_name = str(row_name)
-                                for k, v in mapping.items():
-                                    if k in row_name:
-                                        # Handle Naver table values
-                                        vals = [str(val).replace(',', '').replace(
-                                            'nan', '-').strip() for val in fin_df.iloc[i, 1:]]
-                                        full_data[v] = {
-                                            "dates": cols, "values": vals}
-                                        if v in summary and len(
-                                                vals) > 0 and vals[-1] != '-':
-                                            # Latest value
-                                            summary[v] = vals[-1]
-
-                            detailed = {
-                                "success": True,
-                                "summary": summary,
-                                "full_data": full_data,
-                                "annual": [],
-                                "quarterly": []}
-                        else:
-                            raise Exception(
-                                "Main financial table not found in HTML")
-                    else:
-                        raise Exception(
-                            f"Failed to fetch page: {resp.status_code}")
-                except Exception as ex:
-                    print(f"Fallback scraping failed: {ex}")
-
-                    # [Nuclear Fallback] Try Yahoo Finance for Korean stocks if Naver is totally blocked
-                    try:
-                        import yfinance as yf
-                        # Samsung -> 005930.KS (Try both .KS and .KQ)
-                        code = symbol.split('.')[0]
-                        ticker = f"{code}.KS"
-                        t = yf.Ticker(ticker)
-                        info = t.info
-                        if not info or 'marketCap' not in info:
-                            ticker = f"{code}.KQ"
-                            t = yf.Ticker(ticker)
-                            info = t.info
-
-                        if info and 'marketCap' in info:
-                            mcap = info.get('marketCap', 0)
-                            summary = {
-                                "per": str(
-                                    info.get(
-                                        'trailingPE',
-                                        'N/A')),
-                                "pbr": str(
-                                    info.get(
-                                        'priceToBook',
-                                        'N/A')),
-                                "roe": info.get(
-                                    'returnOnEquity',
-                                    0) * 100 if info.get('returnOnEquity') else 'N/A',
-                                "revenue": f"{info.get('totalRevenue', 0) / 1e8:.0f}억" if info.get('totalRevenue') else "N/A",
-                                "operating_income": f"{info.get('operatingCashflow', 0) / 1e8:.0f}억" if info.get('operatingCashflow') else "N/A",
-                                "net_income": "N/A",
-                                "debt_ratio": f"{info.get('debtToEquity', 0):.2f}%"}
-
-                            # Minimal full_data to unblock UI
-                            full_data = {}
-                            for k, v in summary.items():
-                                full_data[k] = {"dates": ["최근"], "values": [v]}
-
-                            detailed = {
-                                "success": True,
-                                "summary": summary,
-                                "full_data": full_data,
-                                "annual": [],
-                                "quarterly": []}
-                        else:
-                            raise Exception("Yahoo Finance also failed")
-                    except Exception as yf_ex:
-                        print(f"Yahoo fallback also failed: {yf_ex}")
-                        detailed = {
-                            "success": True,
-                            "summary": {
-                                "per": res.get(
-                                    "per",
-                                    "N/A"),
-                                "pbr": res.get(
-                                    "pbr",
-                                    "N/A"),
-                                "roe": res.get(
-                                    "roe",
-                                    "N/A"),
-                                "revenue": "N/A",
-                                "operating_income": "N/A",
-                                "net_income": "N/A",
-                                "debt_ratio": "N/A"},
-                            "full_data": {
-                                "per": {
-                                    "dates": ["현재"],
-                                    "values": [
-                                        res.get(
-                                            "per",
-                                            "N/A")]},
-                                "pbr": {
-                                    "dates": ["현재"],
-                                    "values": [
-                                        res.get(
-                                            "pbr",
-                                            "N/A")]},
-                                "eps": {
-                                    "dates": ["현재"],
-                                    "values": [
-                                        res.get(
-                                            "eps",
-                                            "N/A")]},
-                                "bps": {
-                                    "dates": ["현재"],
-                                    "values": [
-                                        res.get(
-                                            "bps",
-                                            "N/A")]}},
-                            "annual": [],
-                            "quarterly": []}
+        # 2. Secondary: WiseReport Backup (Multi-Report Fallback)
+        if not detailed["success"] or len(detailed["full_data"]) < 5:
+            for rpt_type in ["3", "1"]: # Try Indicators then Financials
+                wr_data = get_korean_investment_indicators(symbol, rpt=rpt_type)
+                if wr_data and wr_data.get("status") == "success":
+                    headers = wr_data["headers"]
+                    # Robust mapping for both types
+                    wr_map = { 
+                        "211500": "roe", "222100": "per", "222400": "pbr", 
+                        "211000": "revenue", "111000": "revenue", 
+                        "211200": "operating_income", "113000": "operating_income",
+                        "211300": "net_income", "115000": "net_income"
+                    }
+                    for ind in wr_data["indicators"]:
+                        key = wr_map.get(ind["accode"])
+                        if key and key not in detailed["full_data"]:
+                            vals = [ind["values"].get(h) for h in headers]
+                            detailed["full_data"][key] = { "dates": headers, "values": vals }
+                            # Use latest non-None value for summary
+                            for v in reversed(vals):
+                                if v is not None:
+                                    detailed["summary"][key] = v
+                                    break
+                    detailed["success"] = True
+                if len(detailed["full_data"]) >= 8: break
 
         financials = {
+            "status": "success",
+            "symbol": symbol,
             "market_cap": res.get("market_cap_str", "N/A"),
-            "per": str(detailed["summary"].get('per', 'N/A')),
-            "pbr": str(detailed["summary"].get('pbr', 'N/A')),
-            "roe": detailed["summary"].get('roe'),
-            "revenue": detailed["summary"].get('revenue'),
-            "operating_income": detailed["summary"].get('operating_income'),
-            "debt_ratio": detailed["summary"].get('debt_ratio'),
+            "per": str(detailed["summary"].get('per', res.get("per", 'N/A'))),
+            "pbr": str(detailed["summary"].get('pbr', res.get("pbr", 'N/A'))),
+            "roe": detailed["summary"].get('roe', res.get("roe", 'N/A')),
+            "revenue": detailed["summary"].get('revenue', 'N/A'),
             "detailed": detailed
         }
         return financials
     except Exception as e:
-        print(f"Financials crawl error for {symbol}: {e}")
-        return {"per": "N/A", "pbr": "N/A", "success": False}
+        print(f"Financials error for {symbol}: {e}")
+        return { "status": "error", "message": str(e), "per": "N/A", "pbr": "N/A" }
 
 
 def get_korean_market_indices():
@@ -3870,3 +3693,45 @@ def get_naver_economy_calendar():
         print(f"[EconomyCalendar] API Processing Error: {e}")
 
     return events
+
+def get_korean_investment_indicators(symbol: str, freq: str = "0", rpt: str = "3"):
+    """
+    Naver WiseReport (cF4002.aspx) 실시간 데이터 크롤링
+    freq: '0'(연간), '1'(분기)
+    rpt: '1'(재무제표), '2'(재무상태표), '3'(투자지표)
+    """
+    try:
+        code = symbol.split('.')[0]
+        import requests, re, json
+        HEADER = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+        frame_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}"
+        res_frame = requests.get(frame_url, headers=HEADER, timeout=7)
+        match = re.search(r"encparam:\s*'([^']*)'", res_frame.text)
+        if not match: return None
+        encparam = match.group(1)
+        data_url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&frq={freq}&rpt={rpt}&finGubun=MAIN&encparam={encparam}"
+        res_data = requests.get(data_url, headers={"Referer": frame_url, "User-Agent": HEADER["User-Agent"]}, timeout=7)
+        try: json_data = res_data.json()
+        except: json_data = json.loads(res_data.content.decode('utf-8', 'ignore'))
+        headers = []
+        for h in json_data.get("YYMM", []):
+            clean_h = re.sub(r'<[^>]*>', '', h).replace("\n", "").replace("\t", "").strip()
+            match = re.search(r'(\d{4}/\d{2})', clean_h)
+            if match:
+                hdr = match.group(1)
+                if "(E)" in clean_h: hdr += "(E)"
+                headers.append(hdr)
+            else: headers.append(None)
+        indicators = []
+        for row in json_data.get("DATA", []):
+            name, accode, vals = str(row.get("ACC_NM", "")).strip(), str(row.get("ACCODE", "")), {}
+            for i, h in enumerate(headers):
+                if h:
+                    v = row.get(f"DATA{i+1}")
+                    try: vals[h] = float(str(v).replace(',', '')) if v is not None and str(v).strip() not in ["", "-"] else None
+                    except: vals[h] = None
+            indicators.append({"name": name, "accode": accode, "values": vals})
+        return {"status": "success", "headers": [h for h in headers if h], "indicators": indicators}
+    except Exception as e:
+        print(f"WiseReport error for {symbol}: {e}")
+        return None

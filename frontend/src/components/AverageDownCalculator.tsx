@@ -262,7 +262,7 @@ export default function AverageDownCalculator() {
                             </div>
                             <div>
                                 <span className="text-gray-400">손실률:</span>
-                                <span className="text-red-400 font-mono ml-2">{result.current.loss_rate.toFixed(2)}%</span>
+                                <span className="text-red-400 font-mono ml-2">{Number(result.current.loss_rate || 0).toFixed(2)}%</span>
                             </div>
                         </div>
                     </div>
@@ -283,7 +283,7 @@ export default function AverageDownCalculator() {
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">평단가 하락:</span>
                                 <span className="text-green-400 font-mono">
-                                    ↓ {result.result.avg_price_reduction.toLocaleString()}원 ({result.result.avg_price_reduction_rate.toFixed(2)}%)
+                                    ↓ {result.result.avg_price_reduction.toLocaleString()}원 ({Number(result.result.avg_price_reduction_rate || 0).toFixed(2)}%)
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
@@ -298,7 +298,7 @@ export default function AverageDownCalculator() {
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-300">손익분기점:</span>
                                     <span className="text-yellow-400 font-bold font-mono">
-                                        {result.result.breakeven_price.toLocaleString()}원 (+{result.result.breakeven_rate.toFixed(2)}%)
+                                        {result.result.breakeven_price.toLocaleString()}원 (+{Number(result.result.breakeven_rate || 0).toFixed(2)}%)
                                     </span>
                                 </div>
                             </div>
@@ -340,7 +340,7 @@ export default function AverageDownCalculator() {
                                 <div>
                                     <span className="text-gray-400">손익분기:</span>
                                     <span className="text-yellow-400 font-mono ml-2">
-                                        +{scenario.result.breakeven_rate.toFixed(2)}%
+                                        +{Number(scenario.result.breakeven_rate || 0).toFixed(2)}%
                                     </span>
                                 </div>
                             </div>
