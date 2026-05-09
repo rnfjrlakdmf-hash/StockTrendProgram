@@ -38,7 +38,8 @@ async def read_stock(symbol: str, skip_ai: bool = False):
     import unicodedata
     symbol = urllib.parse.unquote(symbol).strip()
     symbol = unicodedata.normalize('NFC', symbol)
-    cache_key = f"stock_full_{symbol}_{skip_ai}"
+    from turbo_engine import CACHE_VERSION
+    cache_key = f"{CACHE_VERSION}_stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
     
@@ -71,7 +72,8 @@ async def read_stock(symbol: str, skip_ai: bool = False):
 
 @router.get("/pro/summary/{symbol}")
 def read_pro_summary(symbol: str):
-    cache_key = f"pro_summary_v3_{symbol}"
+    from turbo_engine import CACHE_VERSION
+    cache_key = f"{CACHE_VERSION}_pro_summary_v3_{symbol}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
     

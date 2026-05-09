@@ -358,8 +358,8 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                         axisLine={false}
                                         tickLine={false}
                                         tickFormatter={(value) => {
-                                            if (Math.abs(value) >= 100000) return `${(value / 1000000).toFixed(1)}M`;
-                                            if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                                            if (Math.abs(value) >= 100000) return `${Number(value / 1000000).toFixed(1)}M`;
+                                            if (Math.abs(value) >= 1000) return `${Number(value / 1000).toFixed(0)}K`;
                                             return value.toString();
                                         }}
                                         dx={-10}
@@ -465,7 +465,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                                 <span>{day.diff > 0 ? '▲' : day.diff < 0 ? '▼' : ''} {formatNumber(Math.abs(day.diff))}</span>
                                             </td>
                                             <td className={`px-4 py-4 text-right font-bold ${day.change > 0 ? 'text-red-400' : day.change < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                <span>{day.change > 0 ? '+' : ''}{day.change.toFixed(2)}%</span>
+                                                <span>{day.change > 0 ? '+' : ''}{Number(day.change || 0).toFixed(2)}%</span>
                                             </td>
                                             <td className="px-4 py-4 text-right text-gray-400 text-xs">
                                                 <span>{formatNumber(day.volume)}</span>
@@ -480,7 +480,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                                 <span>{formatNumber(day.foreign_holdings)}</span>
                                             </td>
                                             <td className="px-4 py-4 text-right text-gray-300 font-bold">
-                                                <span>{((day.foreign_ratio ?? 0) as number).toFixed(2)}%</span>
+                                                <span>{Number(day.foreign_ratio || 0).toFixed(2)}%</span>
                                             </td>
                                         </tr>
                                     ))}

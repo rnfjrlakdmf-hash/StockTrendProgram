@@ -543,6 +543,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                         "dividend_rate": naver_info.get('dp_share'),
                         "health_score": health_data.get("score"),
                         "market_status": naver_info.get('market_status'),
+                        "regular_close": naver_info.get('regular_close'),
                         "nxt_data": naver_info.get('nxt_data')
                     },
                     "daily_prices": daily_data,

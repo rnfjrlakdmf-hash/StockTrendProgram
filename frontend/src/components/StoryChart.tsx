@@ -102,7 +102,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                 }
                 const slice = data.slice(i - window + 1, i + 1);
                 const sum = slice.reduce((a, b) => a + b, 0);
-                results.push(Number((sum / window).toFixed(2)));
+                results.push(Number((Number(sum || 0) / window).toFixed(2)));
             }
             return results;
         };
@@ -401,8 +401,8 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             labels: {
                 show: true,
                 formatter: (val: number) => {
-                    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-                    if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+                    if (val >= 1000000) return Number(val / 1000000).toFixed(1) + 'M';
+                    if (val >= 1000) return Number(val / 1000).toFixed(1) + 'K';
                     return val.toString();
                 }
             }
@@ -596,7 +596,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                                         {story.change !== 0 && (
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded ${story.change > 0 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
                                                 }`}>
-                                                {story.change > 0 ? '▲' : '▼'}{Math.abs(story.change).toFixed(1)}%
+                                                {story.change > 0 ? '▲' : '▼'}{Number(Math.abs(story.change || 0)).toFixed(1)}%
                                             </span>
                                         )}
                                     </div>
@@ -647,7 +647,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             {selectedStory.change !== 0 && (
                                 <div className={`flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-full text-xs ${selectedStory.change > 0 ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'}`}>
                                     {selectedStory.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                    {selectedStory.change > 0 ? '+' : ''}{selectedStory.change.toFixed(1)}%
+                                    {selectedStory.change > 0 ? '+' : ''}{Number(selectedStory.change || 0).toFixed(1)}%
                                 </div>
                             )}
                         </div>

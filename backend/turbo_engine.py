@@ -160,7 +160,7 @@ class TurboEngine:
 turbo_engine = TurboEngine()
 
 # [Global] Cache Versioning to force invalidation
-CACHE_VERSION = "v5"
+CACHE_VERSION = "v8"
 
 def turbo_cache(ttl_seconds: int = 300):
     """

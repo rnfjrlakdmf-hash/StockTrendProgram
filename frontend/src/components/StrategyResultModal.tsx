@@ -95,13 +95,13 @@ export default function StrategyResultModal({ isOpen, onClose, results, strategy
                                         />
                                         <IndicatorBox 
                                             label="PER" 
-                                            value={`${stock.per.toFixed(1)}배`} 
+                                            value={`${Number(stock.per || 0).toFixed(1)}배`} 
                                             icon={<BarChart3 size={14} className="text-green-400" />}
                                             color="from-green-500/20"
                                         />
                                         <IndicatorBox 
                                             label="배당률" 
-                                            value={`${stock.dividend_yield.toFixed(1)}%`} 
+                                            value={`${Number(stock.dividend_yield || 0).toFixed(1)}%`} 
                                             icon={<Coins size={14} className="text-yellow-400" />}
                                             color="from-yellow-500/20"
                                         />

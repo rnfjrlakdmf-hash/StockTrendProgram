@@ -330,29 +330,68 @@ def gather_naver_stock_data(symbol: str):
                 item = p_root.get('domesticKrx', {}).get(code)
                 if item:
                     m_info = item.get('overMarketPriceInfo', {})
-                    price = float(str(m_info.get('overPrice') or item.get(
-                        'closePrice', '0')).replace(',', ''))
+                    # [v7.1.0] Distinct price extraction
+                    # regular_close should be the current regular session price
+                    reg_price = float(str(item.get('currentPrice') or item.get('closePrice') or '0').replace(',', ''))
+                    over_price = float(str(m_info.get('overPrice', '0')).replace(',', '')) if m_info else 0
+
+                    # [v7.1.2] Regular Close fallback for off-hours
+                    # If we are in NXT or After-hours, 'currentPrice' might be the after-hours price.
+                    # We verify against daily prices to get the true 15:30 regular close.
+                    market_status_raw = item.get('marketStatus', '')
+                    if market_status_raw != 'OPEN' or over_price > 0:
+                        try:
+                            # We can get the last regular close from daily prices
+                            # This avoids NXT price contaminating the KRX price card
+                            d_history = get_naver_daily_prices(code)
+                            if d_history and len(d_history) > 0:
+                                reg_price = float(d_history[0].get('close', reg_price))
+                        except:
+                            pass
+                    
+                    # Main 'price' field will be the LATEST available price for backward compatibility,
+                    # but we will rely on regular_close for the UI separation.
+                    price = over_price if over_price > 0 else reg_price
+                    regular_close = reg_price
 
                     # [Fix] Fetch stock name from Price API
                     name = item.get('stockName', name)
 
-                    pct = float(
-                        m_info.get('fluctuationsRatio') or item.get(
-                            'fluctuationsRatio', '0'))
-                    change_pct_str = f"{pct:+.2f}%"
-                    change_val = int(str(m_info.get('fluctuations') or item.get(
-                        'compareToPreviousClosePrice', '0')).replace(',', ''))
+                    # [v7.1.1] Session-aware changes
+                    # Regular change (vs yesterday)
+                    reg_change_val = int(str(item.get('compareToPreviousClosePrice', '0')).replace(',', ''))
+                    reg_change_pct = float(item.get('fluctuationsRatio', '0'))
+                    
+                    # Over-hours change (vs today's regular close)
+                    over_change_val = int(str(m_info.get('fluctuations', '0')).replace(',', '')) if m_info else 0
+                    over_change_pct = float(m_info.get('fluctuationsRatio', '0')) if m_info else 0
+
+                    change_pct_str = f"{reg_change_pct:+.2f}%"
+                    change_val = reg_change_val
 
                     open_val = to_f(item.get('openPrice'))
                     high_val = to_f(item.get('highPrice'))
                     low_val = to_f(item.get('lowPrice'))
                     volume_val = to_f(item.get('accumulatedTradingVolume'))
 
-                    status_raw = m_info.get(
-                        'overMarketStatus') or item.get('marketStatus')
-                    if status_raw == 'OPEN':
+                    # [v7.0.0] Refined Session Detection
+                    reg_status = item.get('marketStatus')
+                    over_status = m_info.get('overMarketStatus') if m_info else 'CLOSE'
+                    
+                    import datetime
+                    now_dt = datetime.datetime.now()
+                    is_weekend = now_dt.weekday() >= 5
+                    
+                    if is_weekend:
+                        market_status = "휴장 (주말)"
+                    elif reg_status == 'OPEN':
                         market_status = "장중"
-                    elif status_raw == 'CLOSE':
+                    elif over_status == 'OPEN':
+                        market_status = "시간외 거래 중"
+                    elif nxt_data and nxt_data.get('price'):
+                        # [v7.0.1] Detect NXT active status
+                        market_status = "야간거래(NXT) 진행 중"
+                    else:
                         market_status = "장마감"
 
                     if item.get('marketType') == 'KOSPI':
@@ -376,7 +415,7 @@ def gather_naver_stock_data(symbol: str):
                                             '0')).replace(
                                         ',',
                                         '')),
-                                "change_pct": f"{nxt_pct:+.2f}%"}
+                                "change_pct": nxt_pct}
                     print(
                         f"[gather_naver_stock_data] New Price API success for {code}")
         except Exception as e:
@@ -435,13 +474,30 @@ def gather_naver_stock_data(symbol: str):
             clean_mc = re.sub(r'[^0-9\uc870\uc5b5\uc6d0,]', '', raw_mc)
             market_cap_str = clean_mc + "원" if not clean_mc.endswith("\uc6d0") else clean_mc
 
-        # Previous Close
-        prev_close = price - change_val
+        # [Session Logic v7.2]
+        # We use the prices extracted from the Integration API above.
+        regular_close = reg_price
+        
+        # Determine the "Active" session and promote its price/change to the main fields
+        if nxt_data and nxt_data.get('price') and market_status and ("NXT" in market_status or "야간거래" in market_status):
+            # Promote NXT (18:00 - 23:50)
+            price = nxt_data['price']
+            labeled_change_pct = nxt_data.get('change_pct_labeled', f"[야간] {nxt_data.get('change_pct')}")
+            change_val = nxt_data.get('change_val', 0)
+        elif over_price > 0:
+            # Promote After-hours (15:30 - 18:00)
+            price = over_price
+            labeled_change_pct = f"[시간외] {over_change_pct:+.2f}%"
+            change_val = over_change_val
+        else:
+            # Regular Session (09:00 - 15:30)
+            price = reg_price
+            labeled_change_pct = f"[정규] {reg_change_pct:+.2f}%"
+            change_val = reg_change_val
 
-        # [Fix] Add labels to prevent user confusion
-        labeled_change_pct = f"[정규] {change_pct_str}"
+        # Add labels to nxt_data if present
         if nxt_data and nxt_data.get('change_pct'):
-            nxt_data['change_pct_labeled'] = f"[야간] {nxt_data['change_pct']}"
+            nxt_data['change_pct_labeled'] = f"[야간] {nxt_data['change_pct']}%" if '%' not in str(nxt_data['change_pct']) else f"[야간] {nxt_data['change_pct']}"
 
         # [Result Builder]
         res_data = {
@@ -454,7 +510,8 @@ def gather_naver_stock_data(symbol: str):
             "change": labeled_change_pct,
             "change_val": change_val,
             "change_percent": labeled_change_pct,
-            "prev_close": prev_close,
+            "prev_close": price - change_val,
+            "regular_close": regular_close,
             "market_cap_str": market_cap_str,
             "per": per,
             "pbr": pbr,
@@ -471,6 +528,8 @@ def gather_naver_stock_data(symbol: str):
             "day_low": low_val,
             "volume": volume_val,
             "market_status": market_status,
+            "regular_change_pct": reg_change_pct,
+            "regular_change_val": reg_change_val,
             "nxt_data": nxt_data
         }
         return res_data
@@ -572,7 +631,7 @@ def get_naver_daily_prices(symbol: str):
                 history.append({
                     "date": date,
                     "close": close,
-                    "change": f"{float(change_percent):.2f}%",
+                    "change": float(change_percent),
                     "change_val": diff,
                     "open": open_p,
                     "high": high,
@@ -754,7 +813,7 @@ def get_naver_market_index_data():
                 return {
                     "label": idx["label"],
                     "value": val_formatted,
-                    "change": f"{float(pct):+.2f}%",
+                    "change": float(pct),
                     "up": float(pct) >= 0
                 }
         except Exception as e:
@@ -829,7 +888,7 @@ def get_naver_global_stock_data(symbol: str):
                         "symbol": symbol,
                         "name": name,
                         "price": f"{float(price):,.2f}",
-                        "change": f"{float(pct):+.2f}%",
+                        "change": float(pct),
                         "up": float(pct) >= 0
                     }
         except BaseException:
@@ -986,7 +1045,7 @@ def get_top_market_cap_stocks(limit=10):
                     "name": name,
                     "code": code,
                     "price": f"{float(price):,.0f}원",
-                    "change": f"{float(change_pct):+.2f}%"
+                    "change": float(change_pct)
                 })
                 count += 1
         except Exception as e:
@@ -1205,16 +1264,16 @@ def get_naver_stock_info(symbol: str):
                             "symbol": symbol,
                             "name": item.get('stockName', symbol),
                             "price": f"{price:,.0f}",
-                            "change": f"{pct:+.2f}%",
+                            "change": float(pct),
                             "change_val": change_val,
                             "change_rate": f"{pct:+.2f}",
-                            "change_percent": f"{pct:+.2f}%",
+                            "change_percent": float(pct),
                             "risefall_name": rf_name,
                             "up": pct >= 0 or rf_name == 'RISING',
                             "currency": "KRW",
                             "nxt_data": {
                                 "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
-                                "change_pct": f"{float(m_info.get('fluctuationsRatio', 0)):+.2f}%"
+                                "change_pct": float(m_info.get('fluctuationsRatio', 0))
                             } if m_info.get('overPrice') else None
                         }
         except Exception as e:
@@ -1242,7 +1301,7 @@ def get_naver_stock_info(symbol: str):
                             'stockName',
                             symbol),
                         "price": f"{float(price):,.2f}" if is_foreign else f"{float(price):,.0f}",
-                        "change": f"[정규] {float(pct):+.2f}%",
+                        "change": float(pct),
                         "change_val": str(
                             data.get(
                                 'compareToPreviousClosePrice',
@@ -1278,7 +1337,7 @@ def get_naver_stock_info(symbol: str):
                             'stockName',
                             test_symbol),
                         "price": f"{float(price):,.2f}",
-                        "change": f"{float(pct):+.2f}%",
+                        "change": float(pct),
                         "change_val": str(
                             data.get(
                                 'compareToPreviousClosePrice',

@@ -308,7 +308,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                             tickLine={false} 
                                             axisLine={false}
                                             tickFormatter={(val) => {
-                                                if (Math.abs(val) >= 100) return `${(val/100).toFixed(0)}억`;
+                                                if (Math.abs(val) >= 100) return `${Number(val/100).toFixed(0)}억`;
                                                 return val;
                                             }}
                                         />

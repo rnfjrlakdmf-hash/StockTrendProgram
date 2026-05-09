@@ -10,6 +10,18 @@ export default function NaverTopWidget() {
     const [rankType, setRankType] = useState<RankType>('quant');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isNxtTime, setIsNxtTime] = useState(false);
+
+    useEffect(() => {
+        // [Auto-switch] Detect NXT hours (18:00 - 23:50 KST)
+        const now = new Date();
+        const hour = now.getHours();
+        
+        if (hour >= 18 && hour <= 23) {
+            setMarket('nxt');
+            setIsNxtTime(true);
+        }
+    }, []);
 
     useEffect(() => {
         let ignore = false;

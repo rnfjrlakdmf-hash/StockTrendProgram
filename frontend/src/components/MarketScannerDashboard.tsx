@@ -130,7 +130,7 @@ export default function MarketScannerDashboard() {
                             className="bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-1000 ease-out flex items-center justify-center"
                         >
                             {upPct > 12 && (
-                                <span className="text-[9px] font-black text-white/90 drop-shadow">{upPct.toFixed(0)}%</span>
+                                <span className="text-[9px] font-black text-white/90 drop-shadow">{Number(upPct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                         <div
@@ -138,7 +138,7 @@ export default function MarketScannerDashboard() {
                             className="bg-gray-600/60 transition-all duration-1000 ease-out delay-100 flex items-center justify-center"
                         >
                             {samePct > 8 && (
-                                <span className="text-[9px] font-black text-gray-300/80">{samePct.toFixed(0)}%</span>
+                                <span className="text-[9px] font-black text-gray-300/80">{Number(samePct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                         <div
@@ -146,7 +146,7 @@ export default function MarketScannerDashboard() {
                             className="bg-gradient-to-l from-blue-500 to-indigo-400 transition-all duration-1000 ease-out delay-200 flex items-center justify-center"
                         >
                             {downPct > 12 && (
-                                <span className="text-[9px] font-black text-white/90 drop-shadow">{downPct.toFixed(0)}%</span>
+                                <span className="text-[9px] font-black text-white/90 drop-shadow">{Number(downPct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                     </div>

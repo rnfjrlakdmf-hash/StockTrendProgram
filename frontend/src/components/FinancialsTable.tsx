@@ -53,17 +53,17 @@ function formatValue(val: any, format: string, unit: string, currency?: string):
 
     if (format === 'number') {
         if (currency === 'USD') {
-            if (Math.abs(num) >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
-            if (Math.abs(num) >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+            if (Math.abs(num) >= 1000000000) return `$${Number(num / 1000000000).toFixed(1)}B`;
+            if (Math.abs(num) >= 1000000) return `$${Number(num / 1000000).toFixed(1)}M`;
             return `$${num.toLocaleString()}`;
         }
         if (unit === '억원') {
-            if (Math.abs(num) >= 10000) return `${(num / 10000).toFixed(1)}조`;
+            if (Math.abs(num) >= 10000) return `${Number(num / 10000).toFixed(1)}조`;
             return num.toLocaleString();
         }
     }
-    if (format === 'percent') return `${num.toFixed(1)}%`;
-    if (format === 'ratio') return `${num.toFixed(2)}배`;
+    if (format === 'percent') return `${Number(num).toFixed(1)}%`;
+    if (format === 'ratio') return `${Number(num).toFixed(2)}배`;
     return num.toLocaleString();
 }
 
