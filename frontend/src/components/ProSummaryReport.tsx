@@ -116,7 +116,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                 />
                 <SummaryCard 
                     title="기관 수급 (5일)" 
-                    value={investorSummary ? (investorSummary.sums.inst > 0 ? `+${(investorSummary.sums.inst/1000).toFixed(0)}k` : `${(investorSummary.sums.inst/1000).toFixed(0)}k`) : "N/A"} 
+                    value={investorSummary ? (investorSummary.sums.inst > 0 ? `+${Number(investorSummary.sums.inst/1000 || 0).toFixed(0)}k` : `${Number(investorSummary.sums.inst/1000 || 0).toFixed(0)}k`) : "N/A"} 
                     subValue="최근 5거래일 합산"
                     icon={<Briefcase className="w-5 h-5 text-blue-400" />}
                     color="from-blue-500/20 to-indigo-500/20"
@@ -128,7 +128,7 @@ export default function ProSummaryReport({ symbol }: ProSummaryReportProps) {
                 />
                 <SummaryCard 
                     title="외인 수급 (5일)" 
-                    value={investorSummary ? (investorSummary.sums.frgn > 0 ? `+${(investorSummary.sums.frgn/1000).toFixed(0)}k` : `${(investorSummary.sums.frgn/1000).toFixed(0)}k`) : "N/A"} 
+                    value={investorSummary ? (investorSummary.sums.frgn > 0 ? `+${Number(investorSummary.sums.frgn/1000 || 0).toFixed(0)}k` : `${Number(investorSummary.sums.frgn/1000 || 0).toFixed(0)}k`) : "N/A"} 
                     subValue="최근 5거래일 합산"
                     icon={<Globe className="w-5 h-5 text-purple-400" />}
                     color="from-purple-500/20 to-fuchsia-500/20"
