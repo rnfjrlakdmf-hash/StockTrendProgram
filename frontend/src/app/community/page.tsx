@@ -327,7 +327,7 @@ function CommunityContent() {
                                     </div>
                                     <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center gap-2">
                                         <Sparkles className="w-3 h-3 text-blue-400" />
-                                        <span className="text-[10px] font-bold text-blue-300">AI 심리 요약: {sentiment.score.toFixed(0)}점</span>
+                                        <span className="text-[10px] font-bold text-blue-300">AI 심리 요약: {Number(sentiment.score || 0).toFixed(0)}점</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar scroll-smooth">
@@ -457,7 +457,7 @@ function CommunityContent() {
                                             <div className="flex items-center gap-3">
                                                 <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center gap-2">
                                                     <Sparkles className="w-3 h-3 text-blue-400" />
-                                                    <span className="text-[10px] font-bold text-blue-300">심리: {stockSentiment.score.toFixed(0)}점</span>
+                                                    <span className="text-[10px] font-bold text-blue-300">심리: {Number(stockSentiment.score || 0).toFixed(0)}점</span>
                                                 </div>
                                                 <button
                                                     onClick={() => router.push(`/discovery?q=${encodeURIComponent(targetSymbol)}`)}
@@ -688,7 +688,7 @@ function CommunityContent() {
                                     <div className="flex items-end justify-between mb-1">
                                         <span className="text-xs text-gray-400 font-bold">집단 심리 지표</span>
                                         <span className={`text-2xl font-black ${sentiment.score > 50 ? 'text-green-400' : 'text-rose-400'}`}>
-                                            {sentiment.score.toFixed(0)} <small className="text-sm opacity-60">pts</small>
+                                            {Number(sentiment.score || 0).toFixed(0)} <small className="text-sm opacity-60">pts</small>
                                         </span>
                                     </div>
                                     <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/10">
@@ -720,7 +720,7 @@ function CommunityContent() {
                                     <div className="flex items-end justify-between">
                                         <span className="text-xs text-gray-400 font-bold">현재 심리 지표</span>
                                         <span className={`text-2xl font-black ${stockSentiment.score > 50 ? 'text-green-400' : 'text-rose-400'}`}>
-                                            {stockSentiment.score.toFixed(0)} <small className="text-sm opacity-60">pts</small>
+                                            {Number(stockSentiment.score || 0).toFixed(0)} <small className="text-sm opacity-60">pts</small>
                                         </span>
                                     </div>
                                     <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/10">
