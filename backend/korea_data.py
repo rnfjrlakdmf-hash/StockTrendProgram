@@ -374,6 +374,31 @@ def gather_naver_stock_data(symbol: str):
                     low_val = to_f(item.get('lowPrice'))
                     volume_val = to_f(item.get('accumulatedTradingVolume'))
 
+                    # NXT Data (야간거래: 18:00 ~ 23:50) - 먼저 추출해야 market_status 판별에 사용 가능
+                    nxt_item = p_root.get('domesticNxt', {}).get(code)
+                    if nxt_item:
+                        nxt_price = to_f(nxt_item.get('closePrice'))
+                        if nxt_price:
+                            nxt_pct = float(nxt_item.get('fluctuationsRatio', 0))
+                            nxt_data = {
+                                "price": nxt_price,
+                                "change_val": int(str(nxt_item.get('compareToPreviousClosePrice', '0')).replace(',', '')),
+                                "change_pct": nxt_pct,
+                                "change_pct_str": f"{nxt_pct:+.2f}%"
+                            }
+
+                    # [Fix] after_market_data: overMarketPriceInfo를 프론트엔드에 노출
+                    after_market_data = None
+                    if m_info and over_price > 0:
+                        after_market_data = {
+                            "price": over_price,
+                            "change_val": over_change_val,
+                            "change_pct": over_change_pct,
+                            "change_pct_str": f"{over_change_pct:+.2f}%",
+                            "session_type": m_info.get('tradingSessionType', 'AFTER_MARKET'),
+                            "status": m_info.get('overMarketStatus', 'CLOSE')
+                        }
+
                     # [v7.0.0] Refined Session Detection
                     reg_status = item.get('marketStatus')
                     over_status = m_info.get('overMarketStatus') if m_info else 'CLOSE'
@@ -399,25 +424,7 @@ def gather_naver_stock_data(symbol: str):
                     elif item.get('marketType') == 'KOSDAQ':
                         market_type = 'KQ'
 
-                    # NXT Data
-                    nxt_item = p_root.get('domesticNxt', {}).get(code)
-                    if nxt_item:
-                        nxt_price = to_f(nxt_item.get('closePrice'))
-                        if nxt_price:
-                            nxt_pct = float(nxt_item.get(
-                                'fluctuationsRatio', 0))
-                            nxt_data = {
-                                "price": nxt_price,
-                                "change_val": int(
-                                    str(
-                                        nxt_item.get(
-                                            'compareToPreviousClosePrice',
-                                            '0')).replace(
-                                        ',',
-                                        '')),
-                                "change_pct": nxt_pct}
-                    print(
-                        f"[gather_naver_stock_data] New Price API success for {code}")
+                    print(f"[gather_naver_stock_data] New Price API success for {code} | after_market={after_market_data is not None} | nxt={nxt_data is not None}")
         except Exception as e:
             print(f"[gather_naver_stock_data] Price API failed: {e}")
 
@@ -528,7 +535,8 @@ def gather_naver_stock_data(symbol: str):
             "market_status": market_status,
             "regular_change_pct": reg_change_pct,
             "regular_change_val": reg_change_val,
-            "nxt_data": nxt_data
+            "nxt_data": nxt_data,
+            "after_market_data": after_market_data  # [Fix] 시간외/NXT 데이터를 프론트에 노출
         }
         return res_data
     except Exception as e:

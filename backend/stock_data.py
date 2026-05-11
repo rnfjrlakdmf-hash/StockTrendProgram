@@ -518,6 +518,11 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "final_labeled_change": str(naver_info.get('change_percent', '0.00%')),
                     "summary": generate_stock_summary(naver_info, news_data),
                     "sector": "Domestic Stock",
+                    # [Fix] 최상위에 market 상태 데이터 노출 (Discovery 페이지 직접 접근)
+                    "market_status": naver_info.get('market_status', '장마감'),
+                    "nxt_data": naver_info.get('nxt_data'),
+                    "after_market_data": naver_info.get('after_market_data'),
+                    "regular_close": naver_info.get('regular_close'),
                     "financials": {
                         "pe_ratio": naver_info.get('per'),
                         "pbr": naver_info.get('pbr'),
@@ -544,7 +549,8 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                         "health_score": health_data.get("score"),
                         "market_status": naver_info.get('market_status'),
                         "regular_close": naver_info.get('regular_close'),
-                        "nxt_data": naver_info.get('nxt_data')
+                        "nxt_data": naver_info.get('nxt_data'),
+                        "after_market_data": naver_info.get('after_market_data')
                     },
                     "daily_prices": daily_data,
                     "news": news_data,
