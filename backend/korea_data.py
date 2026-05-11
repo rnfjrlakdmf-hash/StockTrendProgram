@@ -1775,7 +1775,8 @@ def get_stock_financials(symbol: str):
             url = f"https://finance.naver.com/item/main.naver?code={code}"
             resp = requests.get(url, headers=HEADER, timeout=7)
             if resp.ok:
-                soup = BeautifulSoup(resp.content.decode('euc-kr', 'ignore'), 'html.parser')
+                # [Fix] 네이버 금융은 UTF-8 + EUC-KR 혼용 → resp.content(바이트) 직접 파싱
+                soup = BeautifulSoup(resp.content, 'html.parser')
                 # Find the '기업실적분석' section
                 section = soup.select_one('div.section.cop_analysis')
                 if section:
@@ -1784,34 +1785,62 @@ def get_stock_financials(symbol: str):
                         import pandas as pd
                         import io
                         df = pd.read_html(io.StringIO(str(table)))[0]
+                        
+                        # [Fix] MultiIndex에서 날짜 헤더는 레벨 1에 있음 (레벨0=그룹, 레벨1=날짜, 레벨2=IFRS결)
+                        # get_level_values(-1)는 마지막 레벨(IFRS결)만 가져와서 날짜가 사라지는 버그
                         if isinstance(df.columns, pd.MultiIndex):
-                            df.columns = df.columns.get_level_values(-1)
+                            if df.columns.nlevels >= 3:
+                                # 레벨1에서 날짜 추출 (예: '2023.12', '2024.12(E)' 등)
+                                date_headers = list(df.columns.get_level_values(1))
+                            elif df.columns.nlevels == 2:
+                                date_headers = list(df.columns.get_level_values(0))
+                            else:
+                                date_headers = [str(c) for c in df.columns]
+                            df.columns = date_headers
                         
                         headers = [str(c).strip() for c in df.columns[1:]]
                         clean_headers = []
                         for h in headers:
                             h = h.replace('\n','').strip()
-                            if '.' in h:
-                                pts = h.split('.')
-                                clean_headers.append(f"{pts[0]}/{pts[1]}")
-                            else: clean_headers.append(h)
+                            # (E) 예상치 표시 보존, 날짜 형식 변환
+                            is_estimate = '(E)' in h
+                            h_clean = h.replace('(E)', '').strip()
+                            if '.' in h_clean:
+                                pts = h_clean.split('.')
+                                formatted = f"{pts[0]}/{pts[1]}"
+                                if is_estimate:
+                                    formatted += '(E)'
+                                clean_headers.append(formatted)
+                            else:
+                                clean_headers.append(h)
                             
-                        mapping = {
-                            "매출액": "revenue", "영업이익": "operating_income", "당기순이익": "net_income",
-                            "영업이익률": "operating_margin", "순이익률": "net_income_margin", "ROE": "roe",
-                            "부채비율": "debt_ratio", "당좌비율": "quick_ratio", "유보율": "reserve_ratio",
-                            "EPS": "eps", "PER": "per", "BPS": "bps", "PBR": "pbr"
-                        }
+                        # [Fix] 매핑 순서 중요: 더 구체적인 키를 먼저 체크해야 충돌 방지
+                        # 예: "영업이익률"이 "영업이익" 보다 먼저 체크되어야 함
+                        mapping = [
+                            ("영업이익률", "operating_margin"),
+                            ("순이익률", "net_income_margin"),
+                            ("당기순이익", "net_income"),
+                            ("매출액", "revenue"),
+                            ("영업이익", "operating_income"),
+                            ("부채비율", "debt_ratio"),
+                            ("당좌비율", "quick_ratio"),
+                            ("유보율", "reserve_ratio"),
+                            ("ROE", "roe"),
+                            ("EPS", "eps"),
+                            ("PER", "per"),
+                            ("BPS", "bps"),
+                            ("PBR", "pbr"),
+                        ]
                         
                         for _, row in df.iterrows():
                             label = str(row.iloc[0]).strip()
-                            key = next((v for k, v in mapping.items() if k in label), None)
+                            key = next((v for k, v in mapping if k in label), None)
                             if key:
                                 vals = []
                                 for rv in row.values[1:]:
                                     try:
                                         v_s = str(rv).replace(',', '').strip()
-                                        if v_s in ["", "-", "nan"]: vals.append(None)
+                                        if v_s in ["", "-", "nan", "NaN", "None"]: vals.append(None)
                                         else: vals.append(float(v_s))
                                     except: vals.append(None)
                                 detailed["full_data"][key] = { "dates": clean_headers, "values": vals }
@@ -1820,7 +1849,10 @@ def get_stock_financials(symbol: str):
                                     if v is not None:
                                         detailed["summary"][key] = v
                                         break
-                        detailed["success"] = True
+                        
+                        print(f"[Financials] Scraped {len(detailed['full_data'])} metrics for {symbol}: {list(detailed['full_data'].keys())}")
+                        if len(detailed["full_data"]) >= 3:
+                            detailed["success"] = True
         except Exception as e:
             print(f"Primary Scrape Error for {symbol}: {e}")
 
