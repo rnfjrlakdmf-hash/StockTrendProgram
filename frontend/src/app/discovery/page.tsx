@@ -798,8 +798,19 @@ function DiscoveryContent() {
                                                     : <span><span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">$</span>{stock.regular_close || stock.price}</span>}
                                             </span>
 
-                                            <div className={`px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border border-white/5 ${formatChangeWithAmountDisplay(stock.regular_change_pct || "", stock.regular_close || stock.price, undefined, stock.regular_change_val, stock.currency).colorBg} ${formatChangeWithAmountDisplay(stock.regular_change_pct || "", stock.regular_close || stock.price, undefined, stock.regular_change_val, stock.currency).colorText}`}>
-                                                {formatChangeWithAmountDisplay(stock.regular_change_pct || "", stock.regular_close || stock.price, undefined, stock.regular_change_val, stock.currency).text}
+                                            <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
+                                                Number(String(stock.regular_change_val || '0').replace(/,/g, '')) > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                Number(String(stock.regular_change_val || '0').replace(/,/g, '')) < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                'bg-gray-500/10 border-white/10 text-gray-400'
+                                            }`}>
+                                                <span className="flex items-center gap-1">
+                                                    {Number(String(stock.regular_change_val || '0').replace(/,/g, '')) > 0 ? '▲' : 
+                                                     Number(String(stock.regular_change_val || '0').replace(/,/g, '')) < 0 ? '▼' : ''}
+                                                    {Math.abs(Number(String(stock.regular_change_val || '0').replace(/,/g, ''))).toLocaleString()}
+                                                </span>
+                                                <span className="text-sm md:text-base font-bold opacity-80 ml-1">
+                                                    ({stock.regular_change_pct || '0.00%'})
+                                                </span>
                                             </div>
 
                                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
@@ -841,19 +852,32 @@ function DiscoveryContent() {
                                                                     : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
                                                             ).replace(/,/g, '')).toLocaleString()}
                                                         </span>
-                                                        <span className={`text-sm md:text-base font-bold mb-1 ${
+                                                        <div className={`flex items-center gap-1.5 font-bold mb-1 ${
                                                             ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                 ? (stock.nxt_data?.change_val || 0) 
-                                                                : (stock.after_market_data?.change_val || 0)) > 0 ? 'text-red-400' : 
+                                                                : (stock.after_market_data?.change_val || 0)) > 0 ? 'text-rose-400' : 
                                                             ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                 ? (stock.nxt_data?.change_val || 0) 
                                                                 : (stock.after_market_data?.change_val || 0)) < 0 ? 'text-blue-400' : 
                                                             'text-gray-400'
                                                         }`}>
-                                                            {(stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                ? (stock.nxt_data?.change_pct || "0.00%") 
-                                                                : (stock.after_market_data?.change_pct || stock.nxt_data?.change_pct || "0.00%")}
-                                                        </span>
+                                                            <span className="text-sm">
+                                                                {((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                    ? (stock.nxt_data?.change_val || 0) 
+                                                                    : (stock.after_market_data?.change_val || 0)) > 0 ? '▲' : 
+                                                                 ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                    ? (stock.nxt_data?.change_val || 0) 
+                                                                    : (stock.after_market_data?.change_val || 0)) < 0 ? '▼' : ''}
+                                                                {Math.abs((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                    ? (stock.nxt_data?.change_val || 0) 
+                                                                    : (stock.after_market_data?.change_val || 0)).toLocaleString()}
+                                                            </span>
+                                                            <span className="text-xs opacity-80">
+                                                                ({(stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                    ? (stock.nxt_data?.change_pct_str || stock.nxt_data?.change_pct || "0.00%") 
+                                                                    : (stock.after_market_data?.change_pct_str || stock.after_market_data?.change_pct || "0.00%")})
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
