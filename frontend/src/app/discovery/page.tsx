@@ -142,6 +142,18 @@ const TERM_EXPLANATIONS: Record<string, string> = {
     "PEG": "성장성 대비 주가가 싼지 비싼지 보는 지표예요. 낮을수록 좋아요!",
 };
 
+// 거래소 이름을 한글로 변환하는 헬퍼
+const getExchangeLabel = (symbol: string): { code: string; exchange: string; color: string } => {
+    if (!symbol) return { code: symbol, exchange: '', color: 'text-gray-400' };
+    if (symbol.includes('.KS')) return { code: symbol.replace('.KS', ''), exchange: '코스피', color: 'text-blue-400' };
+    if (symbol.includes('.KQ')) return { code: symbol.replace('.KQ', ''), exchange: '코스닥', color: 'text-emerald-400' };
+    if (symbol.includes('.O'))  return { code: symbol.replace('.O', ''), exchange: '나스닥', color: 'text-purple-400' };
+    if (symbol.includes('.N'))  return { code: symbol.replace('.N', ''), exchange: 'NYSE', color: 'text-amber-400' };
+    if (symbol.includes('.A'))  return { code: symbol.replace('.A', ''), exchange: '아멕스', color: 'text-orange-400' };
+    if (/^[A-Z]{1,5}$/.test(symbol)) return { code: symbol, exchange: '나스닥/NYSE', color: 'text-purple-400' };
+    return { code: symbol, exchange: '', color: 'text-gray-400' };
+};
+
 function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, isEasyMode: boolean }) {
     if (!isEasyMode) return <div className="text-gray-400 text-xs mb-1">{label}</div>;
 
@@ -786,8 +798,13 @@ function DiscoveryContent() {
                                     <div className="flex-1">
                                         <h3 className="text-3xl md:text-5xl font-black flex flex-wrap items-center gap-4 text-white mb-6">
                                             <span>{stock.name}</span>
-                                            <span className="text-xl md:text-2xl text-gray-400 font-bold opacity-60">
-                                                <span>{stock.symbol}</span>
+                                            <span className="text-xl md:text-2xl text-gray-400 font-bold opacity-60 flex items-center gap-2">
+                                                <span>{getExchangeLabel(stock.symbol).code}</span>
+                                                {getExchangeLabel(stock.symbol).exchange && (
+                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 ${getExchangeLabel(stock.symbol).color}`}>
+                                                        {getExchangeLabel(stock.symbol).exchange}
+                                                    </span>
+                                                )}
                                             </span>
                                         </h3>
 
@@ -799,17 +816,32 @@ function DiscoveryContent() {
                                             </span>
 
                                             <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
-                                                Number(String(stock.regular_change_val || '0').replace(/,/g, '')) > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                Number(String(stock.regular_change_val || '0').replace(/,/g, '')) < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                'bg-gray-500/10 border-white/10 text-gray-400'
+                                                (() => {
+                                                    const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                    return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                           val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                           'bg-gray-500/10 border-white/10 text-gray-400';
+                                                })()
                                             }`}>
                                                 <span className="flex items-center gap-1">
-                                                    {Number(String(stock.regular_change_val || '0').replace(/,/g, '')) > 0 ? '▲' : 
-                                                     Number(String(stock.regular_change_val || '0').replace(/,/g, '')) < 0 ? '▼' : ''}
-                                                    {Math.abs(Number(String(stock.regular_change_val || '0').replace(/,/g, ''))).toLocaleString()}
+                                                    {(() => {
+                                                        const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                        return val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                    })()}
+                                                    {Math.abs(Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString()}
                                                 </span>
                                                 <span className="text-sm md:text-base font-bold opacity-80 ml-1">
-                                                    ({stock.regular_change_pct || '0.00%'})
+                                                    ({(() => {
+                                                        const pct = stock.regular_change_pct;
+                                                        if (!pct || pct === 0 || pct === '0.00%') {
+                                                            // change_percent fallback: 퍼센트 문자열에서 숫자 추출
+                                                            const raw = String(stock.change_percent || stock.change || '0.00%');
+                                                            const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                            return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
+                                                        }
+                                                        const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
+                                                        return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+                                                    })()})
                                                 </span>
                                             </div>
 
