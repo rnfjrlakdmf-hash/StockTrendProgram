@@ -10,7 +10,7 @@ def is_v_garbled(s):
     """
     if not s or not isinstance(s, str): return False 
     # Check for common garbled character markers
-    if "\ufffd" in s or "" in s or "â" in s: return True
+    if "\ufffd" in s or "\x00" in s or "â" in s: return True
     if not s.strip() or s == "null" or s == "None": return True
     
     # If the string is mostly composed of '?' or other weird chars
