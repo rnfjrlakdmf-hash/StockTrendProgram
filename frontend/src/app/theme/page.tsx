@@ -408,7 +408,6 @@ export default function ThemePage() {
                                             name: stock.name,
                                             price: stock.price || quote?.price || "-",
                                             change: stock.change || quote?.change || "-",
-                                            quantGrade: stock.quant_grade, // [New] Quant Grade integration
                                             // [New] Real/Fake Badge Logic
                                             badge: stock.is_real ?
                                                 { label: "찐수혜", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50", icon: "🥇", reason: stock.reason } :
@@ -438,7 +437,6 @@ export default function ThemePage() {
                                             name: stock.name,
                                             price: stock.price || quote?.price || "-",
                                             change: stock.change || quote?.change || "-",
-                                            quantGrade: stock.quant_grade, // [New] Quant Grade integration
                                             // [New] Real/Fake Badge Logic
                                             badge: stock.is_real ?
                                                 { label: "찐수혜", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50", icon: "🥇", reason: stock.reason } :

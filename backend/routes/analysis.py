@@ -175,19 +175,9 @@ async def read_theme(keyword: str):
                 sym = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
                 s["symbol"] = sym
         
-        # [Improvement] Parallelize price and quant fetching
-        q_task = asyncio.to_thread(get_simple_quote, sym)
-        
-        # [Quant Mode Integration]
-        from pro_analysis import get_quant_scorecard
-        quant_task = asyncio.to_thread(get_quant_scorecard, sym)
-        
-        q, scorecard = await asyncio.gather(q_task, quant_task)
-        
+        q = await asyncio.to_thread(get_simple_quote, sym)
         if q: 
             s.update({"price": q.get("price"), "change": q.get("change")})
-        if scorecard and "grade" in scorecard:
-            s.update({"quant_grade": scorecard.get("grade")})
 
     if stocks:
         await asyncio.gather(*(process_stock(s) for s in stocks))
