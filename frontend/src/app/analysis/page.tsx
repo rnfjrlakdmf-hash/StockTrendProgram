@@ -32,6 +32,13 @@ function AnalysisContent() {
     }, []);
 
     const [symbol, setSymbol] = useState("");
+
+    // [Fix] URL 파라미터로 전달된 심볼 자동 로딩
+    useEffect(() => {
+        if (urlSymbol && urlSymbol !== symbol) {
+            setSymbol(urlSymbol);
+        }
+    }, [urlSymbol]);
     const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer">("quant");
 
     // Quant State
