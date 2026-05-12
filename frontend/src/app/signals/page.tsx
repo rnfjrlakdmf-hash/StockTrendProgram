@@ -659,7 +659,7 @@ function CalendarTab({ router }: { router: any }) {
                     const assets = globalJson.data || [];
                     const indices = indicesJson.data || [];
                     
-                    // 모든 원본 데이터를 하나로 합침 (indices 우선, assets 보조)
+                    // 모든 원본 데이터를 하나로 합침
                     const allData = [...(Array.isArray(indices) ? indices : []), ...(Array.isArray(assets) ? assets : [])];
                     
                     // [v5.6.0] 핵심 시장 지표만 추출 (대형주/개별종목은 카테고리 기반으로 철저히 배제)
@@ -689,26 +689,13 @@ function CalendarTab({ router }: { router: any }) {
                             .replace("(공포지수)", "")
                             .replace("DOW JONES", "다우존스")
                             .replace("💵 ", "").replace("💰 ", "").replace("🛢️ ", "").replace("🏗️ ", "")
-                            .split(" (")[0]
+                            .split("(")[0].trim()
                     }));
                     
-                    // [Fix] 강화된 중복 제거: 이름을 정규화하여 의미상 동일한 항목 감지
-                    const normalizeKey = (name: string) => name
-                        .replace(/\[한국\]\s*/g, '')         // [한국] 접두사 제거
-                        .replace(/\s*(지수|선물|환율)\s*/g, '') // 공통 접미사 제거
-                        .replace(/🏢|🌐|💹|📈|🇰🇷|🇺🇸/g, '')  // 이모지 제거
-                        .replace(/\s+/g, ' ')
-                        .trim()
-                        .toUpperCase();
-
-                    const seen = new Map<string, boolean>();
-                    const uniqueData = filteredData.filter((item) => {
-                        const key = normalizeKey(item.event_kr);
-                        if (seen.has(key)) return false;
-                        seen.set(key, true);
-                        return true;
-                    });
-
+                    // 중복 제거 (이름 기준, 공백 모두 제거한 키값 활용)
+                    const uniqueData = filteredData.filter((item, index, self) =>
+                        index === self.findIndex((t) => t.event_kr.replace(/\s+/g, '') === item.event_kr.replace(/\s+/g, ''))
+                    );
                     
                     if (uniqueData.length > 0) {
                         setGlobalAssets(uniqueData);
