@@ -679,22 +679,28 @@ function CalendarTab({ router }: { router: any }) {
                             name.includes("WTI") || name.includes("금") || 
                             name.includes("은") || name.includes("구리") || 
                             name.includes("환율") || name.includes("달러") ||
-                            name.includes("금리")
+                            name.includes("금리") || name.includes("은행")
                         );
-                    }).map((item: any) => ({
-                        ...item,
-                        // 화면 표시용 이름 정제
-                        event_kr: item.event_kr
-                            .replace("[글로벌] ", "")
-                            .replace("(공포지수)", "")
+                    }).map((item: any) => {
+                        // 화면 표시용 이름 정제 (중복 제거를 위해 [한국], [글로벌] 등 제거)
+                        let cleanName = item.event_kr
+                            .replace(/\[.*?\]/g, "") // 모든 [텍스트] 제거
+                            .replace(/\(공포지수\)/g, "")
                             .replace("DOW JONES", "다우존스")
-                            .replace("💵 ", "").replace("💰 ", "").replace("🛢️ ", "").replace("🏗️ ", "")
-                            .split("(")[0].trim()
-                    }));
+                            .replace(/[💵💰🛢️🏗️]/g, "")
+                            .replace(/지수/g, "") // "KOSPI 지수" -> "KOSPI" 통일
+                            .split("(")[0].trim();
+                            
+                        return {
+                            ...item,
+                            event_kr: cleanName,
+                            _dedupKey: cleanName.replace(/\s+/g, '') // 공백 모두 제거한 비교용 키
+                        };
+                    });
                     
-                    // 중복 제거 (이름 기준, 공백 모두 제거한 키값 활용)
+                    // 중복 제거 (정제된 키 기준)
                     const uniqueData = filteredData.filter((item, index, self) =>
-                        index === self.findIndex((t) => t.event_kr.replace(/\s+/g, '') === item.event_kr.replace(/\s+/g, ''))
+                        index === self.findIndex((t) => t._dedupKey === item._dedupKey)
                     );
                     
                     if (uniqueData.length > 0) {
