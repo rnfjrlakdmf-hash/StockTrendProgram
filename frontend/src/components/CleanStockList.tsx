@@ -18,6 +18,7 @@ export interface CleanStockItem {
         icon: string;
         reason?: string;
     };
+    quantGrade?: string; // S, A, B, C, D
     added_price?: number; // Price when added to watchlist
 }
 
@@ -75,6 +76,20 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] md:text-[11px] font-bold border shrink-0 ${item.badge.color}`}>
                                             <span>{item.badge.icon}</span>
                                             <span>{item.badge.label}</span>
+                                        </div>
+                                    )}
+                                    {/* Quant Grade Badge */}
+                                    {item.quantGrade && (
+                                        <div 
+                                            className={`flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-md text-[11px] md:text-[12px] font-black shadow-lg shrink-0
+                                                ${item.quantGrade === 'S' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white border border-purple-400/50' : 
+                                                  item.quantGrade === 'A' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border border-blue-400/50' : 
+                                                  item.quantGrade === 'B' ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border border-emerald-400/50' : 
+                                                  item.quantGrade === 'C' ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border border-orange-400/50' : 
+                                                  'bg-gradient-to-br from-red-500 to-rose-600 text-white border border-red-400/50'}`}
+                                            title="AI 퀀트 등급"
+                                        >
+                                            {item.quantGrade}
                                         </div>
                                     )}
                                 </div>
