@@ -705,11 +705,22 @@ def get_naver_theme_rank():
                     else:
                         change_val = tds[1].text.strip()
 
-                themes.append({
-                    "name": theme_name,
-                    "change": change_val,
-                    "is_new": "new" in (row.get("class") or [])
-                })
+                # [Improvement] Filter out highly similar themes to avoid redundancy
+                is_duplicate = False
+                clean_name = re.sub(r'\(.*?\)', '', theme_name).strip() # Remove parenthesis for comparison
+                for existing in themes:
+                    existing_clean = re.sub(r'\(.*?\)', '', existing['name']).strip()
+                    # If the core names match, or one is a subset of another (e.g. Corona vs Corona Diagnostic)
+                    if (clean_name in existing_clean or existing_clean in clean_name) and (len(clean_name) > 2 and len(existing_clean) > 2):
+                        is_duplicate = True
+                        break
+                
+                if not is_duplicate:
+                    themes.append({
+                        "name": theme_name,
+                        "change": change_val,
+                        "is_new": "new" in (row.get("class") or [])
+                    })
 
             if len(themes) >= 20:
                 break
