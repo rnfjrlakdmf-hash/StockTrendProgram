@@ -42,10 +42,16 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
         <div className="flex flex-col divide-y divide-white/5">
             {items.map((item) => {
                 const changeStr = item.change ? String(item.change) : "";
-                const changeNum = parseFloat(changeStr.replace(/[+%▼▲]/g, ""));
+                // Extract label like [정규], [야간] if present
+                const labelMatch = changeStr.match(/^(\[[^\]]+\])\s*/);
+                const label = labelMatch ? labelMatch[1] + " " : "";
                 
-                const isPositive = changeStr.startsWith('+') || (changeNum > 0 && !changeStr.startsWith('-'));
-                const isNegative = changeStr.startsWith('-') || changeNum < 0;
+                // Remove label for number parsing
+                const cleanStrForParse = changeStr.replace(/^\[[^\]]+\]\s*/, "");
+                const changeNum = parseFloat(cleanStrForParse.replace(/[+%▼▲,]/g, ""));
+                
+                const isPositive = cleanStrForParse.startsWith('+') || (changeNum > 0 && !cleanStrForParse.startsWith('-'));
+                const isNegative = cleanStrForParse.startsWith('-') || changeNum < 0;
 
                 const textColorClass = isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : 'text-gray-300';
                 
@@ -116,10 +122,18 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     <span translate="no">
                                         {(() => {
                                             const rawChange = String(item.change || '');
-                                            const numericVal = Math.abs(parseFloat(rawChange.replace(/[+%\-▲▼,]/g, '')));
-                                            const cleanValue = (numericVal > 500) ? (item.change_percent || '0.00%') : rawChange;
+                                            const cleanStrForParse = rawChange.replace(/^\[[^\]]+\]\s*/, "");
+                                            const numericVal = Math.abs(parseFloat(cleanStrForParse.replace(/[+%\-▲▼,]/g, '')));
+                                            
+                                            let cleanValue = cleanStrForParse;
+                                            if (isNaN(numericVal)) {
+                                                cleanValue = cleanStrForParse;
+                                            } else if (numericVal > 500 && item.change_percent) {
+                                                cleanValue = String(item.change_percent).replace(/^\[[^\]]+\]\s*/, "");
+                                            }
+                                            
                                             const finalDisplay = cleanValue.replace(/[+%\-▲▼]/g, '');
-                                            return `${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
+                                            return `${label}${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
                                         })()}
                                     </span>
                                 </div>

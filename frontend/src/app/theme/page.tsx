@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
-import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles } from "lucide-react";
+import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles, Info, X } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
 
 export default function ThemePage() {
@@ -15,6 +15,7 @@ export default function ThemePage() {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState("");
     const [quotes, setQuotes] = useState<Record<string, any>>({});
+    const [showHelp, setShowHelp] = useState(false);
 
     const handleAnalyze = async (overrideKeyword?: any) => {
         const searchKeyword = typeof overrideKeyword === 'string' ? overrideKeyword : keyword;
@@ -127,9 +128,18 @@ export default function ThemePage() {
 
                 {/* Search Hero */}
                 <div className="text-center space-y-6 py-10">
-                    <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-orange-400 to-red-400">
-                        What's Trending Now? (v2.6)
-                    </h2>
+                    <div className="flex items-center justify-center gap-2">
+                        <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-orange-400 to-red-400">
+                            What's Trending Now? (v2.6)
+                        </h2>
+                        <button 
+                            onClick={() => setShowHelp(true)}
+                            className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                            title="화면 설명 보기"
+                        >
+                            <Info className="w-5 h-5" />
+                        </button>
+                    </div>
                     <p className="text-gray-400 text-lg">
                         관심있는 테마 키워드를 입력하면<br className="md:hidden" /> AI가 대장주와 리스크를 분석해드립니다.
                     </p>
@@ -187,6 +197,74 @@ export default function ThemePage() {
                 {error && (
                     <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-200 text-center">
                         {error}
+                    </div>
+                )}
+
+                {/* Help Modal */}
+                {showHelp && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-zinc-900 border border-white/10 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl">
+                            <button 
+                                onClick={() => setShowHelp(false)}
+                                className="absolute right-4 top-4 p-2 text-gray-400 hover:text-white bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            
+                            <h3 className="text-2xl font-black text-white mb-6 flex items-center gap-2">
+                                <Info className="w-6 h-6 text-orange-400" />
+                                화면 설명서
+                            </h3>
+                            
+                            <div className="space-y-6 text-sm text-gray-300 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                                <div>
+                                    <h4 className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-2">⏰ 거래 시간별 주가 표시</h4>
+                                    <ul className="space-y-3 mt-3">
+                                        <li className="flex items-start gap-2">
+                                            <span className="font-mono text-xs bg-gray-800 px-1.5 py-0.5 rounded shrink-0 mt-0.5">[정규]</span>
+                                            <span><strong>정규장 (09:00 ~ 15:30)</strong> 동안 형성된 종가를 의미합니다. 장이 마감된 이후에도 정규장 기준 등락률을 고정하여 보여줍니다.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="font-mono text-xs bg-gray-800 px-1.5 py-0.5 rounded shrink-0 mt-0.5">[시간외]</span>
+                                            <span><strong>시간외 단일가 (16:00 ~ 18:00)</strong> 거래에서 발생한 주가 등락률입니다. 정규장 마감 이후의 호재/악재를 반영합니다.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="font-mono text-xs bg-gray-800 px-1.5 py-0.5 rounded shrink-0 mt-0.5">[야간]</span>
+                                            <span><strong>NXT 야간거래 (18:00 ~ 23:50)</strong> 거래에서 발생한 주가 등락률입니다.</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-2">🏅 종목 뱃지 설명</h4>
+                                    <ul className="space-y-3 mt-3">
+                                        <li className="flex items-start gap-2">
+                                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 bg-yellow-500/20 text-yellow-400 border-yellow-500/50 mt-0.5">
+                                                <span>🥇</span><span>찐수혜</span>
+                                            </div>
+                                            <span>테마와 <strong>실제적인 사업 연관성이나 매출</strong>이 발생하고 있는 진짜 수혜주입니다.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 bg-gray-500/20 text-gray-400 border-gray-500/50 mt-0.5">
+                                                <span>💩</span><span>주의</span>
+                                            </div>
+                                            <span>실질적인 사업 연관성이 없거나 단순한 <strong>단기 테마 편승(루머)</strong>일 가능성이 높은 주의 종목입니다.</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-2">⏳ 테마 라이프사이클 시계</h4>
+                                    <p className="mb-2">AI가 분석한 현재 테마의 진행 단계를 시계로 표현합니다.</p>
+                                    <ul className="space-y-2 text-xs">
+                                        <li><span className="text-blue-400 font-bold">오전 (태동기):</span> 주목받기 시작하는 초기 단계. 잠재력이 높으나 불확실성도 큽니다.</li>
+                                        <li><span className="text-red-400 font-bold">점심 (성장/과열):</span> 시장의 관심이 집중되며 가격이 급등하는 구간. 변동성이 극대화됩니다.</li>
+                                        <li><span className="text-orange-400 font-bold">저녁 (성숙기):</span> 대장주 위주로 자리가 잡히며 상승 탄력이 둔화되는 시기.</li>
+                                        <li><span className="text-gray-400 font-bold">밤 (쇠퇴기):</span> 테마의 재료가 소멸되어 가격이 제자리로 돌아가는 소외 구간.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
