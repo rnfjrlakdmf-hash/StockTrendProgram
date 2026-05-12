@@ -3,6 +3,9 @@ import re
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+CACHE_US_ETFS = {"data": [], "timestamp": 0}
+CACHE_US_ETFS_DURATION = 300
+
 def is_v_garbled(s):
     """
     [v3.9.4-Fixed] Centralized Whitelist Validator.
