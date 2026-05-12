@@ -6,13 +6,7 @@ import ClosingBanner from "@/components/ClosingBanner";
 import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
-
-
 import FCMWrapper from "@/components/FCMWrapper";
-
-
-
-
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
@@ -55,20 +49,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* Google AdSense - 최신 방식보다 크롤러가 더 잘 찾는 기본 방식으로 변경 */}
-        <script
+        {/* Google AdSense 게시자 ID 메타 힌트 */}
+        <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
+      </head>
+      <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+        {/* Google AdSense - Next.js Script 컴포넌트 (afterInteractive: 페이지 로드 후 삽입) */}
+        <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
           crossOrigin="anonymous"
-        ></script>
-      </head>
-      <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+          strategy="afterInteractive"
+        />
+
         <AuthProvider>
           {/* EMERGENCY DEPLOYMENT VERIFIER */}
           <div className="fixed top-0 left-0 w-full bg-fuchsia-600 text-white text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest shadow-lg">
-            LIVE UPDATE v5.2.7-ULTIMATE-RESTORATION ACTIVE
+            LIVE UPDATE v5.2.8-ADSENSE-COMPLIANCE ACTIVE
           </div>
           <div className="flex min-h-screen">
             <Sidebar />
@@ -82,7 +80,7 @@ export default function RootLayout({
               {/* Closing Report Banner */}
               <ClosingBanner />
 
-              {/* Site Footer - 정책 링크 (AdSense 요건) */}
+              {/* Site Footer - AdSense 정책 준수 필수 링크 */}
               <footer className="border-t border-white/5 mt-8 px-6 py-6 text-center">
                 <p className="text-gray-600 text-xs mb-2">
                   ⚠️ 본 서비스에서 제공하는 정보는 투자 참고용이며 투자 권유가 아닙니다. 투자의 최종 책임은 본인에게 있습니다.
@@ -95,7 +93,6 @@ export default function RootLayout({
                   <span>© 2025 AI Stock Analyst</span>
                 </div>
               </footer>
-
 
               {/* Global Progress Watcher */}
               <GlobalProgressWatcher />
