@@ -73,7 +73,19 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
     }, [apiResponse]);
 
     const brokerage = apiResponse?.brokerage || { sell: [], buy: [], foreign_estimate: null };
-    const latestData = (trendData && trendData.length > 0) ? trendData[trendData.length - 1] : null;
+
+    // [Fix] 당일 미집계(institution=0, foreigner=0, retail=0)인 경우 직전 거래일 데이터 사용
+    const latestData = useMemo(() => {
+        if (!trendData || trendData.length === 0) return null;
+        // 역순으로 순회하며 실제 데이터(0이 아닌)가 있는 가장 최신 날짜 선택
+        for (let i = trendData.length - 1; i >= 0; i--) {
+            const d = trendData[i];
+            if ((d.institution !== 0) || (d.foreigner !== 0) || (d.retail !== 0)) {
+                return d;
+            }
+        }
+        return trendData[trendData.length - 1]; // 모든 데이터가 0이면 최신 날짜라도 반환
+    }, [trendData]);
 
     const maxValue = useMemo(() => {
         if (trendData.length === 0) return 0;
