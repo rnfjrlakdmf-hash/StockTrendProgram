@@ -87,7 +87,7 @@ def read_pro_summary(symbol: str):
         f2 = executor.submit(get_financial_health, symbol)
         f3 = executor.submit(get_naver_investor_data, symbol, 20)
         f4 = executor.submit(gather_naver_stock_data, symbol)
-        f5 = executor.submit(get_korean_investment_indicators, symbol, "0", "IFRSL", "1")
+        f5 = executor.submit(get_korean_investment_indicators, symbol, "0", "1")
         q_d, h_d, i_r, s_d, ind_r = f1.result(), f2.result(), f3.result(), f4.result(), f5.result()
     
     fin_charts = []
@@ -253,7 +253,7 @@ def stock_financials(symbol: str):
 def stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "1"):
     from korea_data import get_korean_investment_indicators
     try:
-        raw_data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+        raw_data = get_korean_investment_indicators(symbol, freq=freq, rpt=category)
         if raw_data and raw_data.get("status") == "success":
             headers = raw_data.get("headers", [])
             indicators = raw_data.get("indicators", [])
