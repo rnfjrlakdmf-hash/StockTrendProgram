@@ -287,56 +287,66 @@ function AnalysisContent() {
                                                     "text-white"
                                                 }`} 
                                             />
-                                            <div className="flex items-center gap-2 font-bold flex-wrap">
-                                                {/* Price Change Amount */}
-                                                <span className={`text-xl font-black tracking-tight ${
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-red-400" : 
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-400" : 
-                                                    "text-gray-400"
+                                            <div className="flex flex-col gap-2 mt-1">
+                                                {/* Regular Market */}
+                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm bg-white/5 border ${
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "border-red-500/20 text-red-400" : 
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "border-blue-500/20 text-blue-400" : 
+                                                    "border-gray-500/20 text-gray-400"
                                                 }`}>
-                                                    {(() => {
-                                                        const rate = parseFloat(String(stockInfo.change_rate || "0"));
-                                                        const isPos = rate > 0;
-                                                        const isNeg = rate < 0;
-                                                        // Extract ONLY numbers and strip negative signs
-                                                        let valStr = String(stockInfo.change_val || "0").replace(/[^0-9.]/g, "");
-                                                        let valNum = Number(valStr);
-                                                        if (isNaN(valNum)) valNum = 0;
-                                                        return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
-                                                    })()}
-                                                </span>
-                                                
-                                                {/* Regular Market Rate */}
-                                                <span className={`text-sm font-bold bg-white/10 px-2.5 py-0.5 rounded-full shadow-sm ${
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-red-400" : 
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-400" : 
-                                                    "text-gray-400"
-                                                }`}>
-                                                    {(() => {
-                                                        const rate = parseFloat(String(stockInfo.change_rate || "0"));
-                                                        const isPos = rate > 0;
-                                                        const isNeg = rate < 0;
-                                                        let raw = String(stockInfo.change_rate || stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00").replace(/[^0-9.]/g, "");
-                                                        return `[정규] ${isPos ? '▲' : isNeg ? '▼' : ''}${raw}%`;
-                                                    })()}
-                                                </span>
-
-                                                {/* After-Hours Rate (if exists) */}
-                                                {stockInfo.details?.nxt_data && (
-                                                    <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.3)] border ${
-                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) > 0) ? "text-red-400 bg-red-500/10 border-red-500/20" : 
-                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) < 0) ? "text-blue-400 bg-blue-500/10 border-blue-500/20" : 
-                                                        "text-gray-400 bg-gray-500/10 border-gray-500/20"
-                                                    }`}>
+                                                    <span className="text-xs font-bold text-gray-400 mr-1 bg-black/40 px-1.5 py-0.5 rounded">정규장</span>
+                                                    <span className="text-lg font-black tracking-tight font-mono">
                                                         {(() => {
-                                                            const nxtValStr = String(stockInfo.details.nxt_data.change_pct);
-                                                            const rate = parseFloat(nxtValStr.replace(/[^0-9.-]/g, ""));
+                                                            const rate = parseFloat(String(stockInfo.change_rate || "0"));
                                                             const isPos = rate > 0;
                                                             const isNeg = rate < 0;
-                                                            const raw = nxtValStr.replace(/[^0-9.]/g, "");
-                                                            return `[야간] ${isPos ? '▲' : isNeg ? '▼' : ''}${raw}%`;
+                                                            let valStr = String(stockInfo.change_val || "0").replace(/[^0-9.]/g, "");
+                                                            let valNum = Number(valStr);
+                                                            if (isNaN(valNum)) valNum = 0;
+                                                            return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
                                                         })()}
                                                     </span>
+                                                    <span className="text-sm font-bold opacity-80 ml-1">
+                                                        {(() => {
+                                                            const rate = parseFloat(String(stockInfo.change_rate || "0"));
+                                                            const isPos = rate > 0;
+                                                            const isNeg = rate < 0;
+                                                            let raw = String(stockInfo.change_rate || stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00").replace(/[^0-9.]/g, "");
+                                                            return `(${isPos ? '+' : isNeg ? '-' : ''}${raw}%)`;
+                                                        })()}
+                                                    </span>
+                                                </div>
+
+                                                {/* After-Hours Market */}
+                                                {stockInfo.details?.nxt_data && (
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-[0_0_10px_rgba(99,102,241,0.2)] border ${
+                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) > 0) ? "bg-red-500/10 border-red-500/30 text-red-400" : 
+                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) < 0) ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : 
+                                                        "bg-gray-500/10 border-gray-500/30 text-gray-400"
+                                                    }`}>
+                                                        <span className="text-xs font-bold text-indigo-300 mr-1 bg-indigo-900/40 px-1.5 py-0.5 rounded">야간거래 (NXT)</span>
+                                                        <span className="text-lg font-black tracking-tight font-mono">
+                                                            {(() => {
+                                                                const nxtValStr = String(stockInfo.details.nxt_data.change_val || "0");
+                                                                const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
+                                                                const isPos = rate > 0;
+                                                                const isNeg = rate < 0;
+                                                                let valStr = nxtValStr.replace(/[^0-9.]/g, "");
+                                                                let valNum = Number(valStr);
+                                                                if (isNaN(valNum)) valNum = 0;
+                                                                return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
+                                                            })()}
+                                                        </span>
+                                                        <span className="text-sm font-bold opacity-80 ml-1">
+                                                            {(() => {
+                                                                const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
+                                                                const isPos = rate > 0;
+                                                                const isNeg = rate < 0;
+                                                                const raw = String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.]/g, "");
+                                                                return `(${isPos ? '+' : isNeg ? '-' : ''}${raw}%)`;
+                                                            })()}
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
