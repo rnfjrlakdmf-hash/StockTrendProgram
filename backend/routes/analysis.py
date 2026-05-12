@@ -150,29 +150,38 @@ def get_stock_risk(symbol: str):
     return {"status": "success", "data": analyze_stock_risk(symbol)}
 
 @router.get("/theme/{keyword:path}")
+@turbo_cache(ttl_seconds=3600)
 async def read_theme(keyword: str):
     # Lazy Imports
     from ai_analysis import analyze_theme
     from stock_data import get_simple_quote, search_stock_code
     
     result = await asyncio.to_thread(analyze_theme, keyword)
-    if result:
-        for s in result.get("leaders", []) + result.get("followers", []):
-            original_sym = s.get("symbol")
-            name = s.get("name")
-            
-            # [Fix] LLMs often hallucinate tickers. Verify/Resolve the correct ticker using the name.
-            sym = original_sym
-            if name:
-                resolved = await asyncio.to_thread(search_stock_code, name)
-                if resolved:
-                    # search_stock_code returns '005930.KS', we just want the code part for Naver
-                    sym = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
-                    s["symbol"] = sym
-            
-            q = get_simple_quote(sym)
-            if q: 
-                s.update({"price": q.get("price"), "change": q.get("change")})
+    if not result:
+        return {"status": "error", "message": "테마 분석 실패"}
+        
+    stocks = result.get("leaders", []) + result.get("followers", [])
+    
+    # [Improvement] Parallelize price fetching for significantly faster loading
+    async def process_stock(s):
+        original_sym = s.get("symbol")
+        name = s.get("name")
+        sym = original_sym
+        
+        # [Fix] LLMs often hallucinate tickers. Verify/Resolve the correct ticker using the name.
+        if name:
+            resolved = await asyncio.to_thread(search_stock_code, name)
+            if resolved:
+                sym = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
+                s["symbol"] = sym
+        
+        q = await asyncio.to_thread(get_simple_quote, sym)
+        if q: 
+            s.update({"price": q.get("price"), "change": q.get("change")})
+
+    if stocks:
+        await asyncio.gather(*(process_stock(s) for s in stocks))
+        
     return {"status": "success", "data": result}
     
 @router.get("/chart/patterns/{ticker}")
