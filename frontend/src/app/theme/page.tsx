@@ -415,6 +415,7 @@ export default function ThemePage() {
                                         };
                                     })}
                                     onItemClick={(sym) => router.push(`/discovery?q=${sym}`)}
+                                    hideLabels={true}
                                 />
                             </div>
 
@@ -443,6 +444,7 @@ export default function ThemePage() {
                                         };
                                     })}
                                     onItemClick={(sym) => router.push(`/discovery?q=${sym}`)}
+                                    hideLabels={true}
                                 />
                             </div>
                         </div>

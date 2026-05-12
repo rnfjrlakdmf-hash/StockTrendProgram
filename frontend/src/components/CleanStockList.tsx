@@ -27,9 +27,10 @@ interface CleanStockListProps {
     onDelete?: (symbol: string) => void;
     onAlertClick?: (symbol: string, currentPrice: number, addedPrice?: number) => void;
     isLoading?: boolean;
+    hideLabels?: boolean;
 }
 
-export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, isLoading = false }: CleanStockListProps) {
+export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, isLoading = false, hideLabels = false }: CleanStockListProps) {
     if (isLoading && items.length === 0) {
         return <div className="p-4 text-center text-gray-500 text-sm">로딩중...</div>;
     }
@@ -133,7 +134,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             }
                                             
                                             const finalDisplay = cleanValue.replace(/[+%\-▲▼]/g, '');
-                                            return `${label}${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
+                                            return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
                                         })()}
                                     </span>
                                 </div>
