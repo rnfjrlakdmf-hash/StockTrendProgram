@@ -283,6 +283,15 @@ def gather_naver_stock_data(symbol: str):
         nxt_data = None
         sector_name = "Unknown"
         market_cap_str = "N/A"
+        
+        # [Fix] Initialize these to prevent UnboundLocalError if API fails
+        reg_price = 0
+        over_price = 0
+        reg_change_val = 0
+        reg_change_pct = 0.0
+        over_change_val = 0
+        over_change_pct = 0.0
+        after_market_data = None
 
         # 1. New Detail API (Primary for Financials)
         try:

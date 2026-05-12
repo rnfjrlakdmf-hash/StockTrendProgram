@@ -153,13 +153,26 @@ def get_stock_risk(symbol: str):
 async def read_theme(keyword: str):
     # Lazy Imports
     from ai_analysis import analyze_theme
-    from stock_data import get_simple_quote
+    from stock_data import get_simple_quote, search_stock_code
     
     result = await asyncio.to_thread(analyze_theme, keyword)
     if result:
         for s in result.get("leaders", []) + result.get("followers", []):
-            q = get_simple_quote(s.get("symbol"))
-            if q: s.update({"price": q.get("price"), "change": q.get("change")})
+            original_sym = s.get("symbol")
+            name = s.get("name")
+            
+            # [Fix] LLMs often hallucinate tickers. Verify/Resolve the correct ticker using the name.
+            sym = original_sym
+            if name:
+                resolved = await asyncio.to_thread(search_stock_code, name)
+                if resolved:
+                    # search_stock_code returns '005930.KS', we just want the code part for Naver
+                    sym = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
+                    s["symbol"] = sym
+            
+            q = get_simple_quote(sym)
+            if q: 
+                s.update({"price": q.get("price"), "change": q.get("change")})
     return {"status": "success", "data": result}
     
 @router.get("/chart/patterns/{ticker}")
