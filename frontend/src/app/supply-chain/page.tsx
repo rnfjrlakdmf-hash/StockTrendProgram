@@ -215,9 +215,12 @@ export default function SupplyChainPage() {
                                                                 </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
-                                                                    <span className={`text-xs font-mono ml-2 ${node.change_value > 0 ? "text-red-400" : "text-blue-400"}`}>
-                                                                        {node.change_display}
-                                                                    </span>
+                                                                    <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
+                                                                        <span className="text-gray-300">{node.price_display}</span>
+                                                                        <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                                            {node.change_display}
+                                                                        </span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             {/* Relation Label & Weight */}
@@ -239,7 +242,7 @@ export default function SupplyChainPage() {
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
-                                                        <div className="absolute -top-4 -right-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
+                                                        <div className="absolute bottom-full right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
                                                             <div className="text-[9px] font-normal opacity-90 leading-none mt-0.5 max-w-[80px] truncate">
                                                                 {node.event.name}
@@ -379,9 +382,12 @@ export default function SupplyChainPage() {
                                                             </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
-                                                                <span className={`text-xs font-mono mr-2 ${node.change_value > 0 ? "text-red-400" : "text-blue-400"}`}>
-                                                                    {node.change_display}
-                                                                </span>
+                                                                <div className="flex items-center justify-end gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap mt-1">
+                                                                    <span className="text-gray-300">{node.price_display}</span>
+                                                                    <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                                        {node.change_display}
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                             <div className={`text-xs mt-1 flex items-center gap-1 ${isArtery ? 'text-blue-300 font-bold' : 'text-gray-500'}`}>
                                                                 {isArtery && <span className="text-[10px] bg-blue-900/50 px-1 rounded">Major Deal</span>}
@@ -402,7 +408,7 @@ export default function SupplyChainPage() {
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
-                                                        <div className="absolute -top-4 -left-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
+                                                        <div className="absolute bottom-full left-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
                                                             <div className="text-[9px] font-normal opacity-90 leading-none mt-0.5 max-w-[80px] truncate">
                                                                 {node.event.name}
