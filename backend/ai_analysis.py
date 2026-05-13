@@ -607,6 +607,12 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                     price = yt.fast_info.last_price
                     prev = yt.fast_info.previous_close
                     
+                    if not price or not prev:
+                        hist = yt.history(period="5d")
+                        if len(hist) >= 2:
+                            price = float(hist['Close'].iloc[-1])
+                            prev = float(hist['Close'].iloc[-2])
+                    
                     if price and prev:
                         change = ((price - prev) / prev) * 100
                         curr = "₩" if ".KS" in ticker_sym or ".KQ" in ticker_sym else "$"
@@ -624,6 +630,13 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                     yt = yf.Ticker(ticker_sym)
                     price = yt.fast_info.last_price
                     prev = yt.fast_info.previous_close
+                    
+                    if not price or not prev:
+                        hist = yt.history(period="5d")
+                        if len(hist) >= 2:
+                            price = float(hist['Close'].iloc[-1])
+                            prev = float(hist['Close'].iloc[-2])
+
                     if price and prev:
                         change = ((price - prev) / prev) * 100
                         comm["price_display"] = f"${price:,.2f}"
