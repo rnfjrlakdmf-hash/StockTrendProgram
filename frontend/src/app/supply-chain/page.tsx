@@ -124,7 +124,7 @@ export default function SupplyChainPage() {
                             <div className="flex flex-wrap justify-center gap-8 py-6">
                                 {data.commodities.map((comm: any, idx: number) => (
                                     <div key={idx} className={`relative group cursor-pointer flex flex-col items-center`}>
-                                        <div className={`w-36 h-36 rounded-full border-4 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-transform transform group-hover:scale-110 ${comm.type === 'Benefit' ? 'border-green-500 shadow-green-500/30' : 'border-red-500 shadow-red-500/30'
+                                        <div className={`w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-transform transform group-hover:scale-110 ${comm.type === 'Benefit' ? 'border-green-500 shadow-green-500/30' : 'border-red-500 shadow-red-500/30'
                                             }`}>
                                             <div className="text-2xl mb-1">
                                                 {comm.type === 'Benefit' ? '📈' : '⚠️'}
@@ -178,7 +178,7 @@ export default function SupplyChainPage() {
                         </div>
 
                         {/* Visualization Canvas */}
-                        <div className="relative min-h-[600px] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden p-6 md:p-10 flex flex-col lg:flex-row justify-between items-center lg:items-stretch gap-8">
+                        <div className="relative min-h-[600px] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden p-4 sm:p-6 md:p-10 flex flex-col lg:flex-row justify-between items-center lg:items-stretch gap-8">
 
                             {/* Decorative Lines */}
                             <svg className="hidden lg:block absolute inset-0 pointer-events-none opacity-30 z-0">
@@ -195,7 +195,7 @@ export default function SupplyChainPage() {
 
                             {/* Left: Suppliers */}
                             <div className="z-10 w-full lg:w-1/3 flex flex-col justify-center">
-                                <div className="p-6 rounded-2xl border border-dashed border-green-500/30 bg-green-500/5 backdrop-blur-sm">
+                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-green-500/30 bg-green-500/5 backdrop-blur-sm">
                                     <h3 className="text-green-400 font-bold mb-4 flex items-center gap-2">공급사 (Suppliers) <ArrowRight className="w-4 h-4" /></h3>
                                     <div className="space-y-6">
                                         {(data.nodes || []).filter((n: any) => n.group === 'supplier').map((node: any) => {
@@ -209,7 +209,7 @@ export default function SupplyChainPage() {
                                                             <div className="flex justify-between items-center">
                                                                 <span 
                                                                     onClick={() => handleNodeClick(node)}
-                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer hover:underline decoration-green-500/50 underline-offset-4"
+                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer hover:underline decoration-green-500/50 underline-offset-4 text-sm md:text-base"
                                                                 >
                                                                     {node.label}
                                                                 </span>
@@ -324,7 +324,7 @@ export default function SupplyChainPage() {
                             {/* Right: Customers & Competitors */}
                             <div className="z-10 w-full lg:w-1/3 flex flex-col justify-between gap-6">
                                 {/* Competitors */}
-                                <div className="p-6 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 backdrop-blur-sm">
+                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 backdrop-blur-sm">
                                     <h3 className="text-red-400 font-bold mb-4 flex items-center justify-end gap-2">경쟁사 (Rivals) <div className="w-2 h-2 rounded-full bg-red-500"></div></h3>
                                     <div className="space-y-6">
                                         {(data.nodes || []).filter((n: any) => n.group === 'competitor').map((node: any) => (
@@ -332,7 +332,7 @@ export default function SupplyChainPage() {
                                                 <div className="flex items-center justify-end gap-3">
                                                     <span 
                                                         onClick={() => handleNodeClick(node)}
-                                                        className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base hover:underline decoration-red-500/50 underline-offset-4"
+                                                        className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-red-500/50 underline-offset-4"
                                                     >
                                                         {node.label}
                                                     </span>
@@ -364,7 +364,7 @@ export default function SupplyChainPage() {
                                 </div>
 
                                 {/* Customers */}
-                                <div className="p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm text-right">
+                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm text-right">
                                     <h3 className="text-blue-400 font-bold mb-4 flex items-center justify-end gap-2"><ArrowRight className="w-4 h-4" /> 고객사 (Clients)</h3>
                                     <div className="space-y-6">
                                         {(data.nodes || []).filter((n: any) => n.group === 'customer').map((node: any) => {
@@ -376,7 +376,7 @@ export default function SupplyChainPage() {
                                                         <div className="flex-1 flex flex-col items-end">
                                                             <span 
                                                                 onClick={() => handleNodeClick(node)}
-                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-lg md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
+                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
                                                             >
                                                                 {node.label}
                                                             </span>
