@@ -34,18 +34,23 @@ function EtfAnalysisContent() {
     const [etfData, setEtfData] = useState<any>(null);
     const [autoRefresh, setAutoRefresh] = useState(false);
 
-    const isUs = etfData?.symbol && /^[A-Za-z]+$/.test(etfData.symbol);
+    // Check if symbol contains letters (US ETFs have letters, KR ETFs are numbers like 069500)
+    const isUs = etfData?.symbol ? /[a-zA-Z]/.test(etfData.symbol) : false;
 
     const renderCurrency = (val: string | number | undefined) => {
-        if (!val || val === 'N/A' || val === '0') return val || '0';
-        const strVal = String(val).replace(/[+-]/g, '').replace(/원/g, '').replace(/,/g, '');
+        if (!val || val === 'N/A') return isUs ? '$0.00' : '0원';
+        
+        const strVal = String(val).replace(/[+-]/g, '').replace(/원/g, '').replace(/,/g, '').replace(/\$/g, '');
         const numVal = parseFloat(strVal);
         
-        if (isUs && etfData?.exchange_rate) {
-            const krwVal = Math.round(numVal * etfData.exchange_rate);
-            return `$${numVal.toLocaleString()} (${krwVal.toLocaleString()}원)`;
+        if (isNaN(numVal)) return String(val);
+
+        if (isUs) {
+            const exRate = etfData?.exchange_rate || 1350; // Fallback to 1350 KRW/USD if missing
+            const krwVal = Math.round(numVal * exRate);
+            return `$${numVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${krwVal.toLocaleString()}원)`;
         }
-        return isUs ? `$${numVal.toLocaleString()}` : `${numVal.toLocaleString()}원`;
+        return `${numVal.toLocaleString()}원`;
     };
 
     const formatToKoreanDate = (dateStr: string) => {
@@ -65,31 +70,35 @@ function EtfAnalysisContent() {
     const formatRichAUM = (val: string) => {
         if (!val || val === 'N/A') return 'N/A';
         
-        if (isUs && etfData?.exchange_rate) {
-            // Case: "$450,231.50M" or "$450B"
+        if (isUs) {
             const numStr = val.replace(/[^0-9.]/g, '');
             let baseNum = parseFloat(numStr);
             if (isNaN(baseNum)) return val;
 
-            let displayStr = val;
+            const exRate = etfData?.exchange_rate || 1350; // Estimate 1350 KRW/USD if missing
             let krwLabel = "";
 
-            // Simple conversion for US AUM (heuristic)
             if (val.includes('B')) {
-                // Billion USD to KRW Jo/Uk
-                const totalInUk = Math.round(baseNum * etfData.exchange_rate * 0.01); // 1B USD is ~1.35T KRW
+                // Billion USD
+                const totalInUk = Math.round(baseNum * exRate * 0.01);
                 const jo = Math.floor(totalInUk / 10000);
                 const uk = totalInUk % 10000;
                 krwLabel = jo > 0 ? `약 ${jo}조 ${uk.toLocaleString()}억 원` : `약 ${uk.toLocaleString()}억 원`;
             } else if (val.includes('M')) {
-                const totalInUk = Math.round((baseNum / 1000) * etfData.exchange_rate * 0.01);
+                // Million USD
+                const totalInUk = Math.round((baseNum / 1000) * exRate * 0.01);
                 krwLabel = `약 ${totalInUk.toLocaleString()}억 원`;
             } else {
-                // Direct USD
-                const totalKrw = baseNum * etfData.exchange_rate;
-                if (totalKrw >= 100000000) {
-                    const uk = Math.round(totalKrw / 100000000);
+                // Direct USD (e.g. $58,790,612,992)
+                const totalKrw = baseNum * exRate;
+                const jo = Math.floor(totalKrw / 1000000000000);
+                const uk = Math.floor((totalKrw % 1000000000000) / 100000000);
+                if (jo > 0) {
+                    krwLabel = `약 ${jo}조 ${uk > 0 ? uk.toLocaleString() + '억 ' : ''}원`;
+                } else if (uk > 0) {
                     krwLabel = `약 ${uk.toLocaleString()}억 원`;
+                } else {
+                    krwLabel = `약 ${Math.round(totalKrw).toLocaleString()}원`;
                 }
             }
             return krwLabel ? `${val} (${krwLabel})` : val;

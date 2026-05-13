@@ -199,6 +199,19 @@ def get_etf_detail(symbol: str):
             current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
             nav_price = info.get("navPrice", 0)
             
+            hist = ticker.history(period="1y")
+            
+            if not hist.empty:
+                if len(hist) >= 2:
+                    current_price = float(hist['Close'].iloc[-1])
+                    prev_close = float(hist['Close'].iloc[-2])
+                    change = current_price - prev_close
+                    change_pct = (change / prev_close) * 100
+                    data["market_data"]["change"] = f"{change:+.2f}"
+                    data["market_data"]["change_percent"] = f"{change_pct:+.2f}"
+                elif not current_price:
+                    current_price = float(hist['Close'].iloc[-1])
+
             data["market_data"]["price"] = f"{current_price:,.2f}"
             data["market_data"]["nav"] = f"{nav_price:,.2f}" if nav_price else "N/A"
             
@@ -212,12 +225,12 @@ def get_etf_detail(symbol: str):
             data["market_data"]["high52w"] = f"{info.get('fiftyTwoWeekHigh', 0):,.2f}"
             data["market_data"]["low52w"] = f"{info.get('fiftyTwoWeekLow', 0):,.2f}"
             
-            hist = ticker.history(period="1y")
-            hist['ma5'] = hist['Close'].rolling(window=5).mean()
-            hist['ma20'] = hist['Close'].rolling(window=20).mean()
-            hist['ma60'] = hist['Close'].rolling(window=60).mean()
-            hist['ma120'] = hist['Close'].rolling(window=120).mean()
-            hist = hist.tail(252) # Keep max 252 days for chart
+            if not hist.empty:
+                hist['ma5'] = hist['Close'].rolling(window=5).mean()
+                hist['ma20'] = hist['Close'].rolling(window=20).mean()
+                hist['ma60'] = hist['Close'].rolling(window=60).mean()
+                hist['ma120'] = hist['Close'].rolling(window=120).mean()
+                hist = hist.tail(252) # Keep max 252 days for chart
             
             data["chart_data"] = [
                 {
