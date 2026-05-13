@@ -102,10 +102,10 @@ def get_etf_detail(symbol: str):
     
     if is_us:
         try:
-            ticker = yf.Ticker(symbol)
+            ticker = yf.Ticker(clean_sym)
             info = ticker.info
             
-            eng_name = info.get("shortName", symbol)
+            eng_name = info.get("shortName", clean_sym)
             # Try stock_data dictionary first
             try:
                 from stock_data import GLOBAL_KOREAN_NAMES
@@ -178,7 +178,7 @@ def get_etf_detail(symbol: str):
             
             idx_name = info.get('underlyingIndexName') or info.get('indexName')
             if not idx_name:
-                idx_name = ETF_INDEX_MAP.get(symbol.upper())
+                idx_name = ETF_INDEX_MAP.get(clean_sym.upper())
                 
             if not idx_name:
                 summary = info.get('longBusinessSummary', '')
@@ -261,7 +261,7 @@ def get_etf_detail(symbol: str):
             
             for key, peers in PEER_GROUPS.items():
                 if key in name_upper or key in summary_upper:
-                    found_group = [p for p in peers if p["symbol"] != symbol.upper()]
+                    found_group = [p for p in peers if p["symbol"] != clean_sym.upper()]
                     if found_group:
                         data["similar_etfs"] = found_group
                         break
