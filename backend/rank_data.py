@@ -959,8 +959,8 @@ def get_etf_ranking(market="KR", category=None):
                         return {
                             "symbol": q.get("symbol", sym),
                             "name": q.get("name", sym),
-                            "price": q.get("price", "0.00"),
-                            "change": q.get("change", "0.00%"),
+                            "price": str(q.get("price", "0.00")),
+                            "change": str(q.get("change", "0.00%")),
                             "change_percent": float(str(q.get("change", "0")).replace('%', '').replace('+', '') or 0),
                             "volume": str(q.get("volume", "0"))
                         }

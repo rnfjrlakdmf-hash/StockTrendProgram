@@ -22,14 +22,16 @@ interface EtfRankingWidgetProps {
 }
 
 export default function EtfRankingWidget({ data, loading, market, filterKeyword }: EtfRankingWidgetProps) {
-    const isPositive = (val: string | undefined) => {
-        if (!val) return false;
-        return val.includes('▲') || val.includes('+') || (!val.includes('▼') && !val.includes('-') && val !== '0' && val !== '0%');
+    const isPositive = (val: string | number | undefined) => {
+        if (val === undefined || val === null) return false;
+        const strVal = String(val);
+        return strVal.includes('▲') || strVal.includes('+') || (!strVal.includes('▼') && !strVal.includes('-') && strVal !== '0' && strVal !== '0%');
     };
     
-    const isNegative = (val: string | undefined) => {
-        if (!val) return false;
-        return val.includes('▼') || val.includes('-');
+    const isNegative = (val: string | number | undefined) => {
+        if (val === undefined || val === null) return false;
+        const strVal = String(val);
+        return strVal.includes('▼') || strVal.includes('-');
     };
 
     const formatPrice = (val: string | number | undefined) => {
