@@ -510,6 +510,51 @@ def analyze_earnings_impact(symbol: str, news_list: list) -> Dict[str, Any]:
         print(f"Earnings Analysis Error: {e}")
         return None
 
+def analyze_node_detail(symbol: str, name: str) -> Dict[str, Any]:
+    """
+    공급망 지도에서 특정 기업 노드를 클릭했을 때 보여줄 상세 분석(리포트) 데이터를 AI로 생성합니다.
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if not API_KEY:
+        return {
+            "summary": f"{name} ({symbol})의 모의 상세 분석 데이터입니다.",
+            "news_analysis": [
+                "글로벌 공급망 재편으로 인한 주요 영향을 받고 있습니다.",
+                "핵심 부품 및 소재의 확보 경쟁이 심화되는 추세입니다.",
+                "최근 기술 혁신 및 신규 시장 진입을 위한 R&D 투자를 확대 중입니다."
+            ],
+            "themes": ["#모의데이터", "#API미설정"],
+            "analysis_point": "이 데이터는 데모용 모의 데이터입니다."
+        }
+
+    prompt = f"""
+    Provide a detailed strategic analysis for the company '{name}' (Ticker: {symbol}).
+    Current Date: {today}
+
+    Focus on their role in the global supply chain, recent major news, and investment insights.
+    All responses MUST be in Korean.
+
+    Response Format (JSON):
+    {{
+        "summary": "1~2 문장으로 요약된 회사의 현재 상태와 핵심 경쟁력 (Korean)",
+        "news_analysis": [
+            "최근 주요 뉴스나 업계 동향에 대한 분석 포인트 1 (구체적으로 작성)",
+            "최근 주요 뉴스나 업계 동향에 대한 분석 포인트 2 (구체적으로 작성)",
+            "최근 주요 뉴스나 업계 동향에 대한 분석 포인트 3 (구체적으로 작성)"
+        ],
+        "themes": ["#관련테마1", "#관련테마2", "#관련테마3"],
+        "analysis_point": "투자자나 전략가가 주의 깊게 봐야 할 1~2 문장의 핵심 통찰(Insight)"
+    }}
+    """
+    
+    try:
+        response = generate_with_retry(prompt, json_mode=True)
+        return json.loads(response.text)
+    except Exception as e:
+        print(f"Node Detail Analysis Error: {e}")
+        return None
+
 def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     """
     특정 기업의 공급망(Supply Chain) 및 경쟁 관계를 분석하여
