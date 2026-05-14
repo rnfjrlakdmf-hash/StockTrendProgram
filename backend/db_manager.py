@@ -248,8 +248,17 @@ def decrement_free_trial(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        # Decrease only if > 0
-        cursor.execute("UPDATE users SET free_trial_count = free_trial_count - 1 WHERE id = ? AND free_trial_count > 0", (user_id,))
+        # Decrease only if > 0 and add 1 hour to pro_expires_at
+        cursor.execute("""
+            UPDATE users 
+            SET free_trial_count = free_trial_count - 1,
+                is_pro = 1,
+                pro_expires_at = CASE 
+                    WHEN pro_expires_at IS NULL OR pro_expires_at < datetime('now') THEN datetime('now', '+1 hour')
+                    ELSE datetime(pro_expires_at, '+1 hour')
+                END
+            WHERE id = ? AND free_trial_count > 0
+        """, (user_id,))
         if cursor.rowcount > 0:
             conn.commit()
             # Fetch new count

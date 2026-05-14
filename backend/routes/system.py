@@ -143,28 +143,29 @@ def update_user_pro(req: ProToggleRequest):
     else:
         return {"status": "error", "message": "Failed to update status."}
 
-@router.post("/auth/start-trial")
-def enable_pro_trial(x_user_id: str = Header(None)):
-    """[User] 7일 무료 평가판 활성화"""
+@router.post("/auth/use-ticket")
+def use_free_ticket_route(x_user_id: str = Header(None)):
+    """[User] 1시간 무료 이용권 사용"""
     if not x_user_id:
         return {"status": "error", "message": "로그인이 필요합니다."}
         
-    from db_manager import start_pro_trial, get_user
+    from db_manager import get_user, decrement_free_trial
     
     # 1. Check if user exists
     user = get_user(x_user_id)
     if not user:
         return {"status": "error", "message": "존재하지 않는 회원입니다."}
         
-    # 2. Check if already PRO (we can block if they are already PRO or already used trial)
+    # 2. Check if already PRO
     if user.get("is_pro") and user.get("pro_expires_at") is None:
         return {"status": "error", "message": "이미 무제한 PRO 계정입니다!"}
         
-    success = start_pro_trial(x_user_id)
-    if success:
-        return {"status": "success", "message": "🎉 7일간의 PRO 평가판이 시작되었습니다!"}
+    # 3. Decrement ticket
+    new_count = decrement_free_trial(x_user_id)
+    if new_count >= 0:
+        return {"status": "success", "message": "1시간 이용권이 적용되었습니다!", "remaining": new_count}
     else:
-        return {"status": "error", "message": "평가판 활성화에 실패했습니다."}
+        return {"status": "error", "message": "무료 이용권이 부족합니다."}
 
 class FCMTokenRequest(BaseModel):
     token: str

@@ -495,6 +495,41 @@ export default function Sidebar() {
                                 />
                             </div>
 
+                            {user && user.free_trial_count !== undefined && user.free_trial_count > 0 && (
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch(`${API_BASE_URL}/api/auth/use-ticket`, {
+                                                method: "POST",
+                                                headers: { "X-User-ID": user.id }
+                                            });
+                                            const data = await res.json();
+                                            if (data.status === "success") {
+                                                // Sync frontend rewardExpiry
+                                                const now = Date.now();
+                                                let baseTime = now;
+                                                const currentExpiry = localStorage.getItem("rewardExpiry");
+                                                if (currentExpiry && parseInt(currentExpiry) > now) {
+                                                    baseTime = parseInt(currentExpiry);
+                                                }
+                                                localStorage.setItem("rewardExpiry", (baseTime + 60 * 60 * 1000).toString());
+                                                
+                                                alert(data.message);
+                                                setShowProModal(false);
+                                                window.location.reload();
+                                            } else {
+                                                alert(data.message);
+                                            }
+                                        } catch (e) {
+                                            alert("서버 통신 오류가 발생했습니다.");
+                                        }
+                                    }}
+                                    className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold text-white text-sm mb-3 transition-colors flex items-center justify-center gap-2 border border-white/20"
+                                >
+                                    🎁 1시간 PRO 무료 이용권 사용하기 (남은 횟수: {user.free_trial_count}번)
+                                </button>
+                            )}
+
                             <button
                                 onClick={async () => {
                                     try {

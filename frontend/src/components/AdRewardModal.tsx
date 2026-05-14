@@ -17,8 +17,8 @@ interface AdModalProps {
 export default function AdRewardModal({ isOpen, onClose, onReward, featureName }: AdModalProps) {
     const [isLoadingAd, setIsLoadingAd] = useState(false);
     const [progress, setProgress] = useState(0); // 현재 시청 횟수
-    const targetCount = 2; // 목표 시청 횟수 (고정)
-    const targetRewardTime = 60; // 보상 시간 (60분)
+    const targetCount = 5; // 목표 시청 횟수 (고정)
+    const targetRewardTime = 30; // 보상 시간 (30분)
     const [exchangeRate, setExchangeRate] = useState<number>(1450);
 
     // 실제 애드몹 광고 단위 ID
