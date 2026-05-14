@@ -483,10 +483,10 @@ def gather_naver_stock_data(symbol: str):
         # [Market Cap Fallback]
         mc = soup.select_one("#_market_sum")
         if mc:
-            # [Fix] Robust cleaning for Korean characters and numbers
-            raw_mc = mc.text.strip()
-            clean_mc = "".join([c for c in raw_mc if c.isdigit() or c in ['\uc870', '\uc5b5', '\uc6d0', ',']])
-            market_cap_str = clean_mc + "\uc6d0" if not clean_mc.endswith("\uc6d0") else clean_mc
+            # [Fix] Preserve units like '조', '억' by only removing whitespace and newlines
+            market_cap_str = re.sub(r'[\s\n\t]+', '', mc.text.strip())
+            if not market_cap_str.endswith("원"):
+                market_cap_str += "원"
 
         # [Session Logic v7.2]
         # We use the prices extracted from the Integration API above.
