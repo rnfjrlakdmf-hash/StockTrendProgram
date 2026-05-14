@@ -703,6 +703,20 @@ def test_push_notification(type: str = "generic"):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/debug/tokens")
+def get_debug_tokens():
+    """임시: 등록된 토큰 확인 엔드포인트"""
+    from db_manager import get_db_connection
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM fcm_tokens")
+        rows = cursor.fetchall()
+        conn.close()
+        return {"status": "success", "count": len(rows), "tokens": [dict(r) for r in rows]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/scanner")
 def read_market_scanner():
     """오늘의 증시 스캐너 데이터 (상승/하락 종목 수 및 특이 공시)"""
