@@ -24,6 +24,7 @@ import CompanyAnalysisScore from "@/components/CompanyAnalysisScore";
 import InvestorTrendTab from "@/components/InvestorTrendTab";
 import OverhangTab from "@/components/OverhangTab";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
+import MarketNewsWidget from "@/components/MarketNewsWidget";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 
@@ -679,6 +680,11 @@ function DiscoveryContent() {
                         {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}
                         <div className="w-full">
                             <MarketScannerDashboard />
+                        </div>
+
+                        {/* 신규: 시장 지수 뉴스 위젯 */}
+                        <div className="w-full">
+                            <MarketNewsWidget />
                         </div>
                     </div>
                 )}

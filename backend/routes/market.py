@@ -8,6 +8,44 @@ from turbo_engine import turbo_cache, turbo_engine
 
 router = APIRouter()
 
+@router.get("/news")
+@turbo_cache(ttl_seconds=300)
+def get_market_news():
+    import requests
+    import concurrent.futures
+    
+    def fetch_category(cat):
+        url = f"https://m.stock.naver.com/api/news/list?category={cat}&pageSize=5"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        try:
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                return [
+                    {
+                        "title": item.get("tit", "").replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">"),
+                        "link": f"https://m.stock.naver.com/investment/news/article/{item.get('oid')}/{item.get('aid')}",
+                        "publisher": item.get("ohnm"),
+                        "time": item.get("dt", "")[:8],
+                    } for item in data
+                ]
+        except: pass
+        return []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        f_kr = executor.submit(fetch_category, "mainnews")
+        f_us = executor.submit(fetch_category, "global")
+        
+    return {
+        "status": "success",
+        "data": {
+            "domestic": f_kr.result(),
+            "global": f_us.result()
+        }
+    }
+
 @router.get("/indices")
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
