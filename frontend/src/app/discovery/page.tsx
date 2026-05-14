@@ -463,8 +463,10 @@ function DiscoveryContent() {
             }
         };
 
-        // 타자 치는 즉시 반응하도록 대기 시간을 30ms로 대폭 단축 (거의 0초에 수렴)
-        const timer = setTimeout(fetchSearchResults, 30);
+        };
+
+        // 타자 치는 동안 불필요한 API 호출을 막기 위해 디바운스 시간 최적화 (30ms -> 400ms)
+        const timer = setTimeout(fetchSearchResults, 400);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
