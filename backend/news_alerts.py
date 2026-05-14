@@ -58,13 +58,10 @@ class NewsAlertMonitor:
                 symbol_users[symbol] = []
             symbol_users[symbol].append(user_id)
             
-        # 2. 각 심볼별로 네이버 뉴스 확인
+        # 2. 각 심볼별로 뉴스 확인
         for symbol, users in symbol_users.items():
-            # 미국 주식은 포맷이 다르므로 일단 한국 주식(숫자 6자리)만 지원
-            if not symbol.isdigit() or len(symbol) != 6:
-                continue
-                
             await self.check_symbol_news(symbol, users)
+            await asyncio.sleep(2)  # 구글/네이버 차단 방지를 위한 2초 대기
             
         # 첫 번째 실행 완료 마킹 (초기화)
         if self.is_first_run:
@@ -73,50 +70,87 @@ class NewsAlertMonitor:
 
     async def check_symbol_news(self, symbol: str, users: List[str]):
         """특정 종목의 최신 뉴스 1건을 확인하고 변경 시 알림 발송"""
+        from stock_data import get_korean_stock_name, fetch_google_news, GLOBAL_KOREAN_NAMES
+        
+        stock_name = get_korean_stock_name(symbol) or GLOBAL_KOREAN_NAMES.get(symbol, symbol)
+        
         def _fetch_news():
+            news_items = []
+            
+            # 1. 네이버 뉴스 (한국 주식인 경우만)
+            if symbol.isdigit() and len(symbol) == 6:
+                try:
+                    url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=1"
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    res = requests.get(url, headers=headers, timeout=5)
+                    data = res.json()
+                    if data and len(data) > 0 and 'items' in data[0] and len(data[0]['items']) > 0:
+                        item = data[0]['items'][0]
+                        news_items.append({
+                            'id': item.get('articleId'),
+                            'title': item.get('title'),
+                            'publisher': item.get('officeName', '네이버 뉴스'),
+                            'source': 'naver'
+                        })
+                except: pass
+                
+            # 2. 구글 뉴스 (모든 주식)
             try:
-                url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=1"
-                headers = {'User-Agent': 'Mozilla/5.0'}
-                res = requests.get(url, headers=headers, timeout=5)
-                data = res.json()
-                if data and len(data) > 0 and 'items' in data[0] and len(data[0]['items']) > 0:
-                    return data[0]['items'][0]
-                return None
-            except Exception as e:
-                return None
+                # 검색어 최적화: "삼성전자 주식" 또는 "애플 주식"
+                search_query = f"{stock_name} 주식" if not stock_name.endswith('주식') else stock_name
+                g_news = fetch_google_news(search_query)
+                if g_news and len(g_news) > 0:
+                    top_g = g_news[0]
+                    news_items.append({
+                        'id': top_g.get('link'),  # 구글 뉴스는 링크를 고유 ID로 사용
+                        'title': top_g.get('title'),
+                        'publisher': top_g.get('publisher', '구글 뉴스'),
+                        'source': 'google'
+                    })
+            except: pass
+            
+            return news_items
 
-        news_item = await asyncio.to_thread(_fetch_news)
-        if not news_item:
+        fetched_news = await asyncio.to_thread(_fetch_news)
+        if not fetched_news:
             return
             
-        article_id = news_item.get('articleId')
-        if not article_id:
-            return
-            
-        # 첫 실행이면 상태만 기록하고 알림 발송 안함 (폭탄 방지)
+        # 첫 실행이면 상태만 기록하고 알림 발송 안함
         if self.is_first_run:
-            self.last_seen_articles[symbol] = article_id
+            for item in fetched_news:
+                key = f"{symbol}_{item['source']}"
+                self.last_seen_articles[key] = item['id']
             return
             
-        # 새로운 기사인 경우!
-        if self.last_seen_articles.get(symbol) != article_id:
-            self.last_seen_articles[symbol] = article_id
+        # 새로운 기사 확인 및 알림 발송
+        for item in fetched_news:
+            key = f"{symbol}_{item['source']}"
+            article_id = item['id']
             
-            # 푸시 알림 발송
-            await self.send_news_push(symbol, news_item, users)
+            if not article_id:
+                continue
+                
+            if self.last_seen_articles.get(key) != article_id:
+                self.last_seen_articles[key] = article_id
+                
+                # 푸시 알림 발송 (네이버/구글 중복을 완벽히 피하기는 어렵지만, 소스가 다르면 발송)
+                await self.send_news_push(symbol, stock_name, item, users)
             
-    async def send_news_push(self, symbol: str, news_item: dict, users: List[str]):
+    async def send_news_push(self, symbol: str, stock_name: str, news_item: dict, users: List[str]):
         """유저들에게 새로운 뉴스 푸시 알림 발송"""
         try:
             from firebase_config import send_multicast_notification
             from db_manager import get_user_fcm_tokens
             
-            stock_name = get_korean_stock_name(symbol) or symbol
             title = news_item.get('title', '새로운 소식')
-            office_name = news_item.get('officeName', '뉴스')
+            office_name = news_item.get('publisher', '뉴스')
+            source = news_item.get('source', '')
+            
+            # 소스에 따른 이모지 변경
+            source_icon = "🌍" if source == 'google' else "🇰🇷"
             
             # FCM 알림 메시지 구성
-            push_title = f"📰 {stock_name} 속보!"
+            push_title = f"{source_icon} {stock_name} 속보!"
             push_body = f"[{office_name}] {title}"
             
             # 발송할 토큰 모두 수집
