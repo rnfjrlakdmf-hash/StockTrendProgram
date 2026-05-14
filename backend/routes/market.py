@@ -13,8 +13,9 @@ router = APIRouter()
 def get_market_news():
     import requests
     import concurrent.futures
+    import sys
     
-    def fetch_category(cat):
+    def fetch_naver_category(cat):
         url = f"https://m.stock.naver.com/api/news/list?category={cat}&pageSize=5"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -34,9 +35,24 @@ def get_market_news():
         except: pass
         return []
 
+    def fetch_global_category():
+        try:
+            from stock_data import fetch_google_news
+            news_list = fetch_google_news("미국 증시 경제", "ko", "KR")
+            return [
+                {
+                    "title": item.get("title", ""),
+                    "link": item.get("link", ""),
+                    "publisher": item.get("publisher", ""),
+                    "time": item.get("published", "")[:10]
+                } for item in news_list[:5]
+            ]
+        except:
+            return []
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        f_kr = executor.submit(fetch_category, "mainnews")
-        f_us = executor.submit(fetch_category, "global")
+        f_kr = executor.submit(fetch_naver_category, "mainnews")
+        f_us = executor.submit(fetch_global_category)
         
     return {
         "status": "success",
