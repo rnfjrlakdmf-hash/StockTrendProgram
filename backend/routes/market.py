@@ -659,6 +659,29 @@ def get_korean_ipo():
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.get("/test-push")
+def test_push_notification():
+    """푸시 알림 테스트용 엔드포인트"""
+    try:
+        from firebase_config import send_multicast_notification
+        from db_manager import get_all_fcm_tokens
+        
+        # 저장된 모든 토큰 가져오기
+        tokens = get_all_fcm_tokens()
+        if not tokens:
+            return {"status": "error", "message": "등록된 기기(토큰)가 없습니다. 먼저 브라우저에서 알림을 허용해주세요."}
+            
+        result = send_multicast_notification(
+            tokens=tokens,
+            title="🔔 시스템 테스트 알림",
+            body="유저님! 정상적으로 푸시 알림이 연결되었습니다. 앞으로 관심종목 시세/뉴스 알림이 이곳으로 도착합니다!",
+            data={"url": "/"}
+        )
+        return {"status": "success", "message": f"{len(tokens)}개 기기에 발송 완료!", "result": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/scanner")
 def read_market_scanner():
     """오늘의 증시 스캐너 데이터 (상승/하락 종목 수 및 특이 공시)"""
