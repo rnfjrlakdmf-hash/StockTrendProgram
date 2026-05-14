@@ -615,9 +615,37 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                     
                     if price and prev:
                         change = ((price - prev) / prev) * 100
-                        curr = "₩" if ".KS" in ticker_sym or ".KQ" in ticker_sym else "$"
                         
-                        node["price_display"] = f"{curr}{price:,.0f}" if curr == "₩" else f"{curr}{price:,.2f}"
+                        try:
+                            currency = getattr(yt.fast_info, 'currency', 'USD')
+                        except:
+                            currency = 'USD'
+                            
+                        if ".KS" in ticker_sym or ".KQ" in ticker_sym:
+                            currency = "KRW"
+                            
+                        ex_rates = {"USD": 1350, "JPY": 9, "HKD": 175, "EUR": 1450, "TWD": 42, "CNY": 190, "KRW": 1}
+                        curr_symbols = {"USD": "$", "JPY": "¥", "HKD": "HK$", "EUR": "€", "TWD": "NT$", "CNY": "¥", "KRW": "₩"}
+                        
+                        rate = ex_rates.get(currency, 1350)
+                        curr_sym = curr_symbols.get(currency, "$")
+                        
+                        if currency == "KRW":
+                            node["price_display"] = f"₩{price:,.0f}"
+                        else:
+                            krw_est = int(price * rate)
+                            krw_man = krw_est // 10000
+                            krw_uk = krw_est // 100000000
+                            
+                            if krw_uk > 0:
+                                krw_str = f"{krw_uk}억 {krw_man % 10000}만원" if krw_man % 10000 > 0 else f"{krw_uk}억원"
+                            elif krw_man > 0:
+                                krw_str = f"{krw_man:,}만원"
+                            else:
+                                krw_str = f"{krw_est:,}원"
+                                
+                            node["price_display"] = f"{curr_sym}{price:,.2f} (약 {krw_str})"
+                            
                         node["change_display"] = f"{change:+.2f}%"
                         node["change_value"] = change
                 except: pass
@@ -639,7 +667,12 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
 
                     if price and prev:
                         change = ((price - prev) / prev) * 100
-                        comm["price_display"] = f"${price:,.2f}"
+                        
+                        krw_est = int(price * 1350)
+                        krw_man = krw_est // 10000
+                        krw_str = f"{krw_man:,}만원" if krw_man > 0 else f"{krw_est:,}원"
+                        
+                        comm["price_display"] = f"${price:,.2f} (약 {krw_str})"
                         comm["change_display"] = f"{change:+.2f}%"
                         comm["change_value"] = change
                 except: pass
