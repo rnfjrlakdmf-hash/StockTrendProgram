@@ -47,6 +47,19 @@ export default function MarketNewsWidget() {
 
     if (!news) return null;
 
+    const getNewsBadge = (title: string) => {
+        const goodKeywords = ['무상증자', '수주', '계약', '흑자', '상향', '배당', '공급', '특허', '자사주', '최대실적', '돌파', '상한가', '영업익', '영업이익', '↑', '급등', 'MOU', '체결'];
+        const badKeywords = ['유상증자', '하향', '적자', '횡령', '배임', '소송', '상장폐지', '정지', '지연', '해지', '처분', '블록딜', '하한가', '급락', '↓', '매각'];
+        
+        if (goodKeywords.some(k => title.includes(k))) {
+            return <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 text-[9px] rounded border border-red-500/20 font-black tracking-widest">호재</span>;
+        }
+        if (badKeywords.some(k => title.includes(k))) {
+            return <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] rounded border border-blue-500/20 font-black tracking-widest">악재</span>;
+        }
+        return <span className="px-1.5 py-0.5 bg-gray-500/10 text-gray-400 text-[9px] rounded border border-gray-500/20 font-black tracking-widest">특징</span>;
+    };
+
     const renderNewsList = (items: NewsItem[], title: string, icon: React.ReactNode, theme: string) => (
         <div className="flex-1 bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 p-5 shadow-lg">
             <h3 className={`text-sm font-bold flex items-center gap-2 mb-4 ${theme}`}>
@@ -65,7 +78,10 @@ export default function MarketNewsWidget() {
                             {item.title}
                         </h4>
                         <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono">
-                            <span>{item.publisher}</span>
+                            <div className="flex items-center gap-2">
+                                <span>{item.publisher}</span>
+                                {getNewsBadge(item.title)}
+                            </div>
                             <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                     </a>

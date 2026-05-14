@@ -180,6 +180,19 @@ export default function MarketScannerDashboard() {
         );
     };
 
+    const getNewsBadge = (title: string) => {
+        const goodKeywords = ['무상증자', '수주', '계약', '흑자', '상향', '배당', '공급', '특허', '자사주', '최대실적', '돌파', '상한가', '영업익', '영업이익', '↑', '급등', 'MOU', '체결'];
+        const badKeywords = ['유상증자', '하향', '적자', '횡령', '배임', '소송', '상장폐지', '정지', '지연', '해지', '처분', '블록딜', '하한가', '급락', '↓', '매각'];
+        
+        if (goodKeywords.some(k => title.includes(k))) {
+            return <span className="ml-2 px-1.5 py-0.5 bg-red-500/10 text-red-400 text-[9px] rounded border border-red-500/20 font-black tracking-widest">호재</span>;
+        }
+        if (badKeywords.some(k => title.includes(k))) {
+            return <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] rounded border border-blue-500/20 font-black tracking-widest">악재</span>;
+        }
+        return <span className="ml-2 px-1.5 py-0.5 bg-gray-500/10 text-gray-400 text-[9px] rounded border border-gray-500/20 font-black tracking-widest">특징</span>;
+    };
+
     return (
         <div className="space-y-4 mt-8">
             {/* 종합 시장 체감 온도 카드 */}
@@ -278,9 +291,12 @@ export default function MarketScannerDashboard() {
                                     className="block p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-white/10 transition-all group"
                                 >
                                     <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-1">
-                                        <span className="text-amber-400/70 font-bold px-1.5 py-0.5 bg-amber-400/10 rounded-md">
-                                            {item.press}
-                                        </span>
+                                        <div className="flex items-center">
+                                            <span className="text-amber-400/70 font-bold px-1.5 py-0.5 bg-amber-400/10 rounded-md">
+                                                {item.press}
+                                            </span>
+                                            {getNewsBadge(item.title)}
+                                        </div>
                                         <span className="text-gray-600">{item.date}</span>
                                     </div>
                                     <h4 className="text-xs font-bold text-gray-300 group-hover:text-amber-300 leading-snug transition-colors">
