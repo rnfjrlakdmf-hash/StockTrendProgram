@@ -112,12 +112,33 @@ export function showNotification(title: string, options?: NotificationOptions) {
 
     if (Notification.permission === 'granted') {
         try {
-            new Notification(title, {
-                icon: '/icon.png',
-                badge: '/badge.png',
-                vibrate: [200, 100, 200],
-                ...options
-            } as any);
+            // [Fix] Mobile Chrome requires Service Worker to show notifications
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        icon: '/icon.png',
+                        badge: '/badge.png',
+                        vibrate: [200, 100, 200],
+                        ...options
+                    } as any).catch(e => {
+                        console.error("SW Notification Error:", e);
+                        // Fallback to Desktop API if SW fails
+                        new Notification(title, {
+                            icon: '/icon.png',
+                            badge: '/badge.png',
+                            vibrate: [200, 100, 200],
+                            ...options
+                        } as any);
+                    });
+                });
+            } else {
+                new Notification(title, {
+                    icon: '/icon.png',
+                    badge: '/badge.png',
+                    vibrate: [200, 100, 200],
+                    ...options
+                } as any);
+            }
         } catch (e) {
             console.error("Notification Error:", e);
         }
