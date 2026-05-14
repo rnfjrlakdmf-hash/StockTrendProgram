@@ -7,13 +7,13 @@ class BackgroundIndexer:
     def __init__(self):
         self.is_running = False
         self.last_run = 0
-        self.status = "INITIALIZING"
+        self.status = "initializing"
         self.indexed_count = 0
 
     async def run_forever(self):
         print("[BackgroundIndexer] Starting global stock indexing service...")
         self.is_running = True
-        self.status = "RUNNING"
+        self.status = "running"
         
         while self.is_running:
             try:

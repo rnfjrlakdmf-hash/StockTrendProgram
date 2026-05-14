@@ -5,7 +5,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface IndexingStatus {
-    status: "idle" | "running" | "done" | "error";
+    status: "idle" | "running" | "done" | "error" | "initializing";
     market: string | null;
     page: number;
     total_pages: number;
@@ -90,6 +90,7 @@ export default function GlobalProgressWatcher() {
 
                         <span className="font-bold text-sm text-white">
                             {status?.status === "running" ? "주식 데이터 동기화 중..." :
+                                status?.status === "initializing" ? "엔진 초기화 중..." :
                                 status?.status === "done" ? "동기화 완료!" : "오류 발생"}
                         </span>
                     </div>
