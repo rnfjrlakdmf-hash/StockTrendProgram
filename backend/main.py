@@ -112,6 +112,9 @@ async def startup_event():
             from price_alerts import price_alert_monitor, create_price_alerts_tables
             await asyncio.to_thread(create_price_alerts_tables)
             asyncio.create_task(price_alert_monitor.start())
+            
+            from news_alerts import news_alert_monitor
+            asyncio.create_task(news_alert_monitor.start())
         except: pass
 
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
