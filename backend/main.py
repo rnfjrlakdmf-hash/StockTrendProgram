@@ -30,7 +30,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "https://stock-trend-program.vercel.app",
-        "https://stocktrendprogram-production.up.railway.app"
+        "https://stocktrendprogram-production.up.railway.app",
+        "https://stock-trend-program.co.kr",
+        "https://www.stock-trend-program.co.kr"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
