@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://stock-trend-program.vercel.app/sitemap.xml
+Sitemap: https://stock-trend-program.co.kr/sitemap.xml
