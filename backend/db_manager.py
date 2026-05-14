@@ -204,21 +204,34 @@ def create_user_if_not_exists(user_data):
         conn.close()
 
 def get_user(user_id):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Fetch free_trial_count too (added to schema)
-        # Note: If accessing old DB file without migration, fetch might fail unless we handled migration in init
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
+            is_pro = bool(row[4])
+            pro_expires_at = row[6]
+            
+            # 만료 기간이 지났으면 Pro 권한 회수
+            if is_pro and pro_expires_at:
+                try:
+                    expires_dt = datetime.strptime(pro_expires_at, "%Y-%m-%d %H:%M:%S")
+                    if datetime.utcnow() > expires_dt:
+                        is_pro = False
+                        cursor.execute("UPDATE users SET is_pro = 0 WHERE id = ?", (user_id,))
+                        conn.commit()
+                except Exception as e:
+                    print(f"Date parse error: {e}")
+            
             return {
                 "id": row[0],
                 "email": row[1],
                 "name": row[2],
                 "picture": row[3],
-                "is_pro": bool(row[4]),
-                "free_trial_count": row[5] if row[5] is not None else 2
+                "is_pro": is_pro,
+                "free_trial_count": row[5] if row[5] is not None else 2,
+                "pro_expires_at": pro_expires_at
             }
         return None
     except Exception as e:
@@ -275,11 +288,31 @@ def toggle_user_pro_status(user_id: str, is_pro: bool):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE users SET is_pro = ? WHERE id = ?", (1 if is_pro else 0, user_id))
+        # 영구 Pro (만료일 없음)
+        cursor.execute("UPDATE users SET is_pro = ?, pro_expires_at = NULL WHERE id = ?", (1 if is_pro else 0, user_id))
         conn.commit()
         return cursor.rowcount > 0
     except Exception as e:
         print(f"Toggle Pro Error: {e}")
+        return False
+    finally:
+        conn.close()
+
+def start_pro_trial(user_id: str):
+    """사용자 7일 평가판 시작"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 이미 이전에 평가판을 썼는지 확인하기 위한 간단한 로직 (원한다면 추가 가능)
+        # 지금은 그냥 언제든 7일 부여하도록 작성 (수정 가능)
+        cursor.execute(
+            "UPDATE users SET is_pro = 1, pro_expires_at = datetime('now', '+7 days') WHERE id = ?", 
+            (user_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Start Trial Error: {e}")
         return False
     finally:
         conn.close()
