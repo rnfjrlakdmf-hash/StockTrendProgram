@@ -38,15 +38,18 @@ def calculate_watchlist_performance(user_id: str, market: str):
         
         # 추가 시점 대비 수익률 (있는 경우만)
         added_perf = None
+        price_diff = None
         if added_price > 0:
             added_perf = ((current_price - added_price) / added_price) * 100
+            price_diff = current_price - added_price
             
         items_perf.append({
             "symbol": symbol,
             "name": get_korean_stock_name(symbol) or symbol,
             "current_price": current_price,
             "daily_change": daily_change_pct,
-            "added_perf": added_perf
+            "added_perf": added_perf,
+            "price_diff": price_diff
         })
         
         total_daily_change_pct += daily_change_pct
@@ -84,12 +87,29 @@ def send_closing_notification(market: str):
         market_name = "국내" if market == "KR" else "미국"
         title = f"[{market_name} 장마감] 관심종목 결산 리포트 📊"
         
-        # 상위 종목 하나 추출
+        # 상위 종목 하나 추출 (오늘 기준)
         best_item = max(perf["items"], key=lambda x: x["daily_change"])
+        
+        # 총 수익(등록 시점 대비) 기준 상위 종목
+        items_with_perf = [item for item in perf["items"] if item.get("added_perf") is not None]
         
         emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
         body = f"오늘 {market_name} 관심종목({count}개)은 평균 {avg_change:+.2f}% {emoji} 변동했습니다.\n"
-        body += f"가장 많이 오른 종목은 {best_item['name']}({best_item['daily_change']:+.2f}%)입니다. 수고하셨습니다! 💰"
+        
+        if items_with_perf:
+            best_all_time = max(items_with_perf, key=lambda x: x["added_perf"])
+            diff_amount = best_all_time["price_diff"]
+            
+            # 화폐 단위 처리 (미국 주식 소수점 처리)
+            if market == "KR":
+                diff_str = f"{diff_amount:+,.0f}원"
+            else:
+                diff_str = f"{diff_amount:+.2f}달러"
+                
+            body += f"\n🏆 나의 최고 효자종목: {best_all_time['name']}\n"
+            body += f"등록 당시 평단가 대비 {diff_str} ({best_all_time['added_perf']:+.2f}%) 올랐습니다! 💰"
+        else:
+            body += f"오늘 가장 많이 오른 종목은 {best_item['name']}({best_item['daily_change']:+.2f}%)입니다. 수고하셨습니다! 💰"
         
         # FCM 토큰 가져오기
         tokens_data = get_user_fcm_tokens(user_id)
