@@ -463,8 +463,6 @@ function DiscoveryContent() {
             }
         };
 
-        };
-
         // 타자 치는 동안 불필요한 API 호출을 막기 위해 디바운스 시간 최적화 (30ms -> 400ms)
         const timer = setTimeout(fetchSearchResults, 400);
         return () => clearTimeout(timer);
