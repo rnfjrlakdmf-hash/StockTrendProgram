@@ -23,6 +23,7 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
 
     // 실제 애드몹 광고 단위 ID
     const AD_UNIT_ID = "ca-app-pub-7277484268448269/6753236218";
+    const [simulatedTimeLeft, setSimulatedTimeLeft] = useState(0);
 
     useEffect(() => {
         if (isOpen) {
@@ -72,11 +73,31 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
                 .catch(err => console.error(err));
         }
 
+        }
+
         // Cleanup listeners on close/unmount
         return () => {
             (AdMob as any).removeAllListeners().catch(() => { });
         };
     }, [isOpen]);
+
+    // 웹 모의 광고(타이머) 처리
+    useEffect(() => {
+        if (simulatedTimeLeft > 0) {
+            const timer = setTimeout(() => {
+                setSimulatedTimeLeft(prev => prev - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (simulatedTimeLeft === 0 && isLoadingAd) {
+            // 타이머가 0이 되고, 아직 로딩 상태라면 광고 시청 완료 처리
+            setIsLoadingAd(false);
+            setProgress(prev => {
+                const next = prev + 1;
+                handleAdDismissed(next);
+                return next;
+            });
+        }
+    }, [simulatedTimeLeft]);
 
     const handleAdDismissed = (currentProgress: number) => {
         if (currentProgress >= targetCount) {
@@ -118,9 +139,9 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
             await AdMob.showRewardVideoAd();
 
         } catch (error) {
-            console.error("Ad Show Error:", error);
-            setIsLoadingAd(false);
-            alert("광고를 불러오는 중 오류가 발생했습니다.");
+            console.warn("AdMob Not Available, falling back to Web Simulation:", error);
+            // 웹 (PWA/Chrome) 환경이거나 모듈 에러 시 대체 5초 스폰서 타이머 실행
+            setSimulatedTimeLeft(5);
         }
     };
 
@@ -157,7 +178,12 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
                     (현재 진행: {progress}/{targetCount})
                 </p>
 
-                {isLoadingAd ? (
+                {isLoadingAd && simulatedTimeLeft > 0 ? (
+                    <div className="w-full bg-gray-800 rounded-xl p-8 flex flex-col items-center justify-center gap-3 mb-6">
+                        <div className="text-4xl font-black text-yellow-400 mb-2 animate-bounce">{simulatedTimeLeft}</div>
+                        <span className="text-gray-300 text-sm">스폰서 메시지 시청 중... (웹 전용)</span>
+                    </div>
+                ) : isLoadingAd ? (
                     <div className="w-full bg-gray-800 rounded-xl p-8 flex flex-col items-center justify-center gap-3 mb-6">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                         <span className="text-gray-300 text-sm">광고를 불러오는 중입니다...</span>
