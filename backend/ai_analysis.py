@@ -409,7 +409,9 @@ def analyze_theme(theme_keyword: str):
        - Provide 'phase' (Morning/Noon/Evening/Night) and 'time' (e.g., "07:00").
        - Provide short 'comment' (e.g., "지금은 파티가 끝나는 시간입니다.").
     3. List 3 'Leaders' (대장주) and 3 'Followers' (부대장주).
-       - **PRIORITIZE KOREAN STOCKS**.
+       - **PRIORITIZE LISTED KOREAN STOCKS (KOSPI/KOSDAQ)**.
+       - **DO NOT include unlisted companies (like Kurly, Oasis, K-Bank) unless specifically asked.**
+       - If a company is delisted (like Meritz Fire), DO NOT include it.
     4. **[New] Real vs Fake Detector**: For EACH stock, determine if it's a REAL beneficiary or FAKE (Hype only).
        - 'is_real': true if >10% revenue comes from this theme or core tech exists.
        - 'is_real': false if just news/rumors without logic.
@@ -693,7 +695,17 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                         
                     node["change_display"] = f"{change:+.2f}%"
                     node["change_value"] = change
-            except: pass
+
+                    # [Fix] Safety Filter: If Korean stock price is suspiciously low (e.g., < 10 KRW) or missing, mark as invalid
+                    if currency == "KRW" and price < 10:
+                         node["price_display"] = "N/A"
+                         node["invalid"] = True
+                else:
+                    node["price_display"] = "N/A"
+                    node["invalid"] = True
+            except: 
+                node["price_display"] = "N/A"
+                node["invalid"] = True
 
         def enrich_comm(comm):
             ticker_sym = comm.get("ticker")
@@ -723,7 +735,17 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
             futures = [executor.submit(enrich_node, node) for node in data.get("nodes", [])]
             futures.extend([executor.submit(enrich_comm, comm) for comm in data.get("commodities", [])])
+            
+            # [Fix] Also enrich leaders and followers
+            futures.extend([executor.submit(enrich_node, s) for s in data.get("leaders", [])])
+            futures.extend([executor.submit(enrich_node, s) for s in data.get("followers", [])])
+            
             concurrent.futures.wait(futures)
+
+        # [Fix] Final Filter: Remove nodes/stocks that failed validation (delisted or unlisted)
+        data["leaders"] = [s for s in data.get("leaders", []) if not s.get("invalid")]
+        data["followers"] = [s for s in data.get("followers", []) if not s.get("invalid")]
+        data["nodes"] = [n for n in data.get("nodes", []) if not n.get("invalid")]
         # 3. Ensure array properties exist to prevent frontend crashes
         data["nodes"] = data.get("nodes") or []
         data["links"] = data.get("links") or []
