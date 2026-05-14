@@ -67,7 +67,7 @@ export default function FCMTokenManager() {
 
     const registerTokenToBackend = async (token: string) => {
         const userId = localStorage.getItem('user_id') || 'guest';
-        const res = await fetch(`${API_BASE_URL}/api/fcm/register`, {
+        const res = await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
