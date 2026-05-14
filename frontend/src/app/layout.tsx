@@ -52,11 +52,11 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <head>
         {/* Google AdSense 게시자 ID 메타 힌트 */}
-        <meta name="google-adsense-account" content="ca-pub-7277484268448269" />
+        <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
         {/* 애드센스 심사용 스크립트를 head에 배치하여 크롤러 인식률 극대화 */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7277484268448269"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
           crossOrigin="anonymous"
         ></script>
       </head>
