@@ -687,7 +687,7 @@ function CalendarTab({ router }: { router: any }) {
                             .replace(/\[.*?\]/g, "") // 모든 [텍스트] 제거
                             .replace(/\(공포지수\)/g, "")
                             .replace("DOW JONES", "다우존스")
-                            .replace(/[💵💰🛢️🏗️]/g, "")
+                            .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, "") // 모든 이모지 제거 (중복 필터링을 위함)
                             .replace(/지수/g, "") // "KOSPI 지수" -> "KOSPI" 통일
                             .split("(")[0].trim();
                             
