@@ -594,88 +594,91 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         # [New] Enrich with Real-time Stock Data (Nodes & Commodities)
         import yfinance as yf
         
-        # 1. Enrich Nodes
-        for node in data.get("nodes", []):
+        import concurrent.futures
+
+        def enrich_node(node):
             ticker_sym = node.get("ticker")
-            if ticker_sym:
-                try:
-                    # Clean ticker
-                    if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
-                    if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
+            if not ticker_sym: return
+            try:
+                if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
+                if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
+                
+                yt = yf.Ticker(ticker_sym)
+                price = getattr(yt.fast_info, 'last_price', None)
+                prev = getattr(yt.fast_info, 'previous_close', None)
+                
+                if not price or not prev:
+                    hist = yt.history(period="5d")
+                    if len(hist) >= 2:
+                        price = float(hist['Close'].iloc[-1])
+                        prev = float(hist['Close'].iloc[-2])
+                
+                if price and prev:
+                    change = ((price - prev) / prev) * 100
                     
-                    yt = yf.Ticker(ticker_sym)
-                    price = yt.fast_info.last_price
-                    prev = yt.fast_info.previous_close
+                    try:
+                        currency = getattr(yt.fast_info, 'currency', 'USD')
+                    except:
+                        currency = 'USD'
+                        
+                    if ".KS" in ticker_sym or ".KQ" in ticker_sym:
+                        currency = "KRW"
+                        
+                    ex_rates = {"USD": 1350, "JPY": 9, "HKD": 175, "EUR": 1450, "TWD": 42, "CNY": 190, "KRW": 1}
+                    curr_symbols = {"USD": "$", "JPY": "¥", "HKD": "HK$", "EUR": "€", "TWD": "NT$", "CNY": "¥", "KRW": "₩"}
                     
-                    if not price or not prev:
-                        hist = yt.history(period="5d")
-                        if len(hist) >= 2:
-                            price = float(hist['Close'].iloc[-1])
-                            prev = float(hist['Close'].iloc[-2])
+                    rate = ex_rates.get(currency, 1350)
+                    curr_sym = curr_symbols.get(currency, "$")
                     
-                    if price and prev:
-                        change = ((price - prev) / prev) * 100
-                        
-                        try:
-                            currency = getattr(yt.fast_info, 'currency', 'USD')
-                        except:
-                            currency = 'USD'
-                            
-                        if ".KS" in ticker_sym or ".KQ" in ticker_sym:
-                            currency = "KRW"
-                            
-                        ex_rates = {"USD": 1350, "JPY": 9, "HKD": 175, "EUR": 1450, "TWD": 42, "CNY": 190, "KRW": 1}
-                        curr_symbols = {"USD": "$", "JPY": "¥", "HKD": "HK$", "EUR": "€", "TWD": "NT$", "CNY": "¥", "KRW": "₩"}
-                        
-                        rate = ex_rates.get(currency, 1350)
-                        curr_sym = curr_symbols.get(currency, "$")
-                        
-                        if currency == "KRW":
-                            node["price_display"] = f"₩{price:,.0f}"
-                        else:
-                            krw_est = int(price * rate)
-                            krw_man = krw_est // 10000
-                            krw_uk = krw_est // 100000000
-                            
-                            if krw_uk > 0:
-                                krw_str = f"{krw_uk}억 {krw_man % 10000}만원" if krw_man % 10000 > 0 else f"{krw_uk}억원"
-                            elif krw_man > 0:
-                                krw_str = f"{krw_man:,}만원"
-                            else:
-                                krw_str = f"{krw_est:,}원"
-                                
-                            node["price_display"] = f"{curr_sym}{price:,.2f} (약 {krw_str})"
-                            
-                        node["change_display"] = f"{change:+.2f}%"
-                        node["change_value"] = change
-                except: pass
-
-        # 2. Enrich Commodities (Oil, etc.)
-        for comm in data.get("commodities", []):
-            ticker_sym = comm.get("ticker")
-            if ticker_sym:
-                try:
-                    yt = yf.Ticker(ticker_sym)
-                    price = yt.fast_info.last_price
-                    prev = yt.fast_info.previous_close
-                    
-                    if not price or not prev:
-                        hist = yt.history(period="5d")
-                        if len(hist) >= 2:
-                            price = float(hist['Close'].iloc[-1])
-                            prev = float(hist['Close'].iloc[-2])
-
-                    if price and prev:
-                        change = ((price - prev) / prev) * 100
-                        
-                        krw_est = int(price * 1350)
+                    if currency == "KRW":
+                        node["price_display"] = f"₩{price:,.0f}"
+                    else:
+                        krw_est = int(price * rate)
                         krw_man = krw_est // 10000
-                        krw_str = f"{krw_man:,}만원" if krw_man > 0 else f"{krw_est:,}원"
+                        krw_uk = krw_est // 100000000
                         
-                        comm["price_display"] = f"${price:,.2f} (약 {krw_str})"
-                        comm["change_display"] = f"{change:+.2f}%"
-                        comm["change_value"] = change
-                except: pass
+                        if krw_uk > 0:
+                            krw_str = f"{krw_uk}억 {krw_man % 10000}만원" if krw_man % 10000 > 0 else f"{krw_uk}억원"
+                        elif krw_man > 0:
+                            krw_str = f"{krw_man:,}만원"
+                        else:
+                            krw_str = f"{krw_est:,}원"
+                            
+                        node["price_display"] = f"{curr_sym}{price:,.2f} (약 {krw_str})"
+                        
+                    node["change_display"] = f"{change:+.2f}%"
+                    node["change_value"] = change
+            except: pass
+
+        def enrich_comm(comm):
+            ticker_sym = comm.get("ticker")
+            if not ticker_sym: return
+            try:
+                yt = yf.Ticker(ticker_sym)
+                price = getattr(yt.fast_info, 'last_price', None)
+                prev = getattr(yt.fast_info, 'previous_close', None)
+                
+                if not price or not prev:
+                    hist = yt.history(period="5d")
+                    if len(hist) >= 2:
+                        price = float(hist['Close'].iloc[-1])
+                        prev = float(hist['Close'].iloc[-2])
+
+                if price and prev:
+                    change = ((price - prev) / prev) * 100
+                    krw_est = int(price * 1350)
+                    krw_man = krw_est // 10000
+                    krw_str = f"{krw_man:,}만원" if krw_man > 0 else f"{krw_est:,}원"
+                    
+                    comm["price_display"] = f"${price:,.2f} (약 {krw_str})"
+                    comm["change_display"] = f"{change:+.2f}%"
+                    comm["change_value"] = change
+            except: pass
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+            futures = [executor.submit(enrich_node, node) for node in data.get("nodes", [])]
+            futures.extend([executor.submit(enrich_comm, comm) for comm in data.get("commodities", [])])
+            concurrent.futures.wait(futures)
         # 3. Ensure array properties exist to prevent frontend crashes
         data["nodes"] = data.get("nodes") or []
         data["links"] = data.get("links") or []
