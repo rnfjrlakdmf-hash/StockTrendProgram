@@ -497,36 +497,6 @@ export default function Sidebar() {
 
                             <button
                                 onClick={async () => {
-                                    if (!user) {
-                                        alert("로그인이 필요합니다. 먼저 로그인해주세요.");
-                                        setShowProModal(false);
-                                        return;
-                                    }
-                                    try {
-                                        const res = await fetch(`${API_BASE_URL}/api/auth/start-trial`, {
-                                            method: "POST",
-                                            headers: { "X-User-ID": user.id }
-                                        });
-                                        const data = await res.json();
-                                        if (data.status === "success") {
-                                            localStorage.setItem("isPro", "true");
-                                            alert(data.message);
-                                            setShowProModal(false);
-                                            window.location.reload();
-                                        } else {
-                                            alert(data.message);
-                                        }
-                                    } catch (e) {
-                                        alert("서버 통신 오류가 발생했습니다.");
-                                    }
-                                }}
-                                className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold text-white text-sm mb-3 transition-colors flex items-center justify-center gap-2 border border-white/20"
-                            >
-                                🎁 7일 PRO 무료 평가판 시작하기
-                            </button>
-
-                            <button
-                                onClick={async () => {
                                     try {
                                         await requestPayment(() => {
                                             localStorage.setItem("isPro", "true");
