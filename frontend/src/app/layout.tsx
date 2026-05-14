@@ -12,11 +12,11 @@ import FCMWrapper from "@/components/FCMWrapper";
 export const metadata: Metadata = {
   title: "AI Stock Analyst - 실시간 주식 시세 분석",
   description: "AI 기반 실시간 주식 시장 데이터 분석 서비스. 본 정보는 투자 참고용이며 투자 권유가 아닙니다.",
-  metadataBase: new URL('https://stock-trend-program.vercel.app'),
+  metadataBase: new URL('https://stock-trend-program.co.kr'),
   openGraph: {
     title: "AI Stock Analyst",
     description: "인공지능 기반 실시간 주식 시장 데이터 분석 서비스",
-    url: 'https://stock-trend-program.vercel.app',
+    url: 'https://stock-trend-program.co.kr',
     siteName: 'AI Stock Analyst',
     images: [
       {
