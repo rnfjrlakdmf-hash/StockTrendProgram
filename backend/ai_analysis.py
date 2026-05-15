@@ -409,9 +409,10 @@ def analyze_theme(theme_keyword: str):
        - Provide 'phase' (Morning/Noon/Evening/Night) and 'time' (e.g., "07:00").
        - Provide short 'comment' (e.g., "지금은 파티가 끝나는 시간입니다.").
     3. List 3 'Leaders' (대장주) and 3 'Followers' (부대장주).
-       - **PRIORITIZE LISTED KOREAN STOCKS (KOSPI/KOSDAQ)**.
-       - **DO NOT include unlisted companies (like Kurly, Oasis, K-Bank) unless specifically asked.**
-       - If a company is delisted (like Meritz Fire), DO NOT include it.
+       - **ONLY INCLUDE CURRENTLY TRADABLE KOREAN STOCKS (KOSPI/KOSDAQ)**.
+       - **STRICTLY EXCLUDE UNLISTED COMPANIES (e.g., Kurly, Oasis, K-Bank, Viva Republica)**.
+       - **STRICTLY EXCLUDE DELISTED OR SUSPENDED COMPANIES (e.g., Meritz Fire, Ssangyong C&E)**.
+       - **Ensure EVERY recommended stock has a valid 6-digit KRX ticker symbol.**
     4. **[New] Real vs Fake Detector**: For EACH stock, determine if it's a REAL beneficiary or FAKE (Hype only).
        - 'is_real': true if >10% revenue comes from this theme or core tech exists.
        - 'is_real': false if just news/rumors without logic.
