@@ -40,13 +40,13 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
     const [tabView, setTabView] = useState<'chart' | 'table'>('chart');
     const [period, setPeriod] = useState<number>(20);
 
-    const fetchData = async () => {
+    const fetchData = async (showLoading = true) => {
         if (!symbol) return;
-        setIsLoading(true);
+        if (showLoading) setIsLoading(true);
         setError(false);
         try {
             const sym = encodeURIComponent(symbol);
-            const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${sym}/investor?period=${period}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${sym}/investor?period=${period}&t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success") {
                 setApiResponse(json.data);
@@ -57,12 +57,20 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
             console.error("Investor trend fetch error:", err);
             setError(true);
         } finally {
-            setIsLoading(false);
+            if (showLoading) setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        fetchData(true);
+
+        // [New] Auto-refresh every 30 seconds for real-time investor trend updates
+        const interval = setInterval(() => {
+            console.log("[InvestorTrend] Auto-refreshing data...");
+            fetchData(false); // Don't show full loading UI during background refresh
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, [symbol, period]);
 
     const trendData: InvestorData[] = useMemo(() => {
