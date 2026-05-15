@@ -701,10 +701,12 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                          node["price_display"] = "N/A"
                          node["invalid"] = True
                 else:
-                    node["price_display"] = "N/A"
+                    # [Fix] If price or prev is missing, it's invalid
+                    node["price_display"] = "확인불가"
                     node["invalid"] = True
-            except: 
-                node["price_display"] = "N/A"
+            except Exception as e: 
+                print(f"[enrich_node] Error for {ticker_sym}: {e}")
+                node["price_display"] = "확인불가"
                 node["invalid"] = True
 
         def enrich_comm(comm):
