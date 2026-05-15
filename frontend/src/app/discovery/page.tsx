@@ -354,9 +354,9 @@ function DiscoveryContent() {
 
     // Fetch daily prices when tab is active and range changes
     useEffect(() => {
-        const fetchDailyPrices = async () => {
+        const fetchDailyPrices = async (showLoading = true) => {
             if (!stock?.symbol) return;
-            setDailyLoading(true);
+            if (showLoading) setDailyLoading(true);
             try {
                 const res = await fetch(`${API_BASE_URL}/api/market/stock/${encodeURIComponent(stock.symbol)}/daily-history?range=${dailyRange}&t=${Date.now()}`);
                 const json = await res.json();
@@ -366,11 +366,21 @@ function DiscoveryContent() {
             } catch (err) {
                 console.error("Daily price fetch error:", err);
             } finally {
-                setDailyLoading(false);
+                if (showLoading) setDailyLoading(false);
             }
         };
 
-        if (activeTab === 'daily') fetchDailyPrices();
+        if (activeTab === 'daily') {
+            fetchDailyPrices(true);
+            
+            // [New] Auto-refresh every 30 seconds for real-time daily price updates
+            const interval = setInterval(() => {
+                console.log("[Discovery] Auto-refreshing daily prices...");
+                fetchDailyPrices(false); // Don't show loading spinner during auto-refresh for smoother UX
+            }, 30000);
+            
+            return () => clearInterval(interval);
+        }
     }, [dailyRange, stock?.symbol, activeTab]);
 
     // [New] Effect to fetch period-based news
