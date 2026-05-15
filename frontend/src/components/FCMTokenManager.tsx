@@ -15,6 +15,7 @@ export default function FCMTokenManager() {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
     const [isVisible, setIsVisible] = useState(true);
 
@@ -26,22 +27,13 @@ export default function FCMTokenManager() {
         const currentPermission = getNotificationPermission();
         setPermission(currentPermission);
 
-
         // 로컬 스토리지에서 등록 상태 확인
         const isRegistered = localStorage.getItem('fcm_registered') === 'true';
         setRegistered(isRegistered);
 
-        // [Auto Sync] 권한이 이미 있다면 백엔드에 토큰 갱신 (DB 누락 방지)
-        if (currentPermission === 'granted') {
-            syncTokenToServer();
-        }
-
         // 포그라운드 메시지 리스너
         onForegroundMessage((payload) => {
             console.log('[FCM] Received foreground message:', payload);
-
-
-
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
 
@@ -51,6 +43,14 @@ export default function FCMTokenManager() {
             });
         });
     }, []);
+
+    // [Auto Sync] 사용자가 변경되거나 권한이 허용되면 토큰 갱신
+    useEffect(() => {
+        const currentPermission = getNotificationPermission();
+        if (currentPermission === 'granted') {
+            syncTokenToServer();
+        }
+    }, [user]);
 
     const syncTokenToServer = async () => {
         try {
@@ -66,7 +66,9 @@ export default function FCMTokenManager() {
     };
 
     const registerTokenToBackend = async (token: string) => {
-        const userId = localStorage.getItem('user_id') || 'guest';
+        // useAuth의 user가 있으면 우선 사용, 없으면 localStorage 확인
+        const userId = user?.id || localStorage.getItem('user_id') || 'guest';
+        console.log("[FCM] Registering token for user:", userId);
         const res = await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
             method: 'POST',
             headers: {
@@ -107,8 +109,9 @@ export default function FCMTokenManager() {
                 });
 
                 // [Debug] Success Alert with strict details
-                alert(`✅ 서버 연결 성공!\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.\n다시 백엔드에서 테스트를 진행해주세요.`);
-                console.log("[FCM] Registered to:", API_BASE_URL, "Token:", token);
+                const currentUserId = user?.id || localStorage.getItem('user_id') || 'guest';
+                alert(`✅ 서버 연결 성공!\n(ID: ${currentUserId})\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.\n다시 백엔드에서 테스트를 진행해주세요.`);
+                console.log("[FCM] Registered to:", API_BASE_URL, "User:", currentUserId, "Token:", token);
 
             } else {
                 alert(`❌ 서버 등록 실패\n(API: ${API_BASE_URL})\n\n응답: ${data.message}`);

@@ -105,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const serverUser = { ...data.user };
                     setUser(serverUser);
                     localStorage.setItem("stock_user", JSON.stringify(serverUser));
+                    localStorage.setItem("user_id", serverUser.id);
                     if (data.token) localStorage.setItem("stock_token", data.token);
                 }
             }
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         setUser(null);
         localStorage.removeItem("stock_user");
+        localStorage.removeItem("user_id");
         localStorage.removeItem("stock_token");
         window.location.href = "/";
     };
