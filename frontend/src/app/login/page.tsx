@@ -44,7 +44,6 @@ export default function MobileLoginPage() {
     };
 
     const googleLogin = useGoogleLogin({
-        flow: "implicit",
         ux_mode: "redirect",
         redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
         onSuccess: handleGoogleSuccess,

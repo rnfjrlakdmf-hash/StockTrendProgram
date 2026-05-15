@@ -612,8 +612,8 @@ export default function PortfolioPage() {
                                     <span className="font-bold text-xs text-white">
                                       {(() => {
                                         if (event.name && event.name !== event.symbol) return event.name;
-                                        // Fallback: search in current items if name is missing
-                                        const found = items.find(it => it.symbol === event.symbol);
+                                        // Fallback: search in current holdings if name is missing
+                                        const found = holdings.find(it => it.symbol === event.symbol);
                                         return found?.name || event.symbol;
                                       })()}
                                     </span>

@@ -61,6 +61,12 @@ interface StockData {
         momentum: string;
         risk: string;
     };
+    regular_close?: number;
+    regular_change_pct?: number;
+    regular_change_val?: number;
+    market_status?: string;
+    change_val?: number;
+    change_percent?: number;
     details?: {
         prev_close: number;
         open: number;
