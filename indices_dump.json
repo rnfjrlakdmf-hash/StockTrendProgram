@@ -1,0 +1,712 @@
+[
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "S&P 500",
+    "actual": "7,444.25",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 0.58,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] KOSDAQ 지수",
+    "actual": "1,165.77",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": -0.95,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "프랑스 CAC 40",
+    "actual": "8,007.97",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 0.35,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] KOSPI 지수",
+    "actual": "7,853.70",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 0.12,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "NASDAQ",
+    "actual": "26,402.34",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 1.2,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "DOW JONES",
+    "actual": "49,693.20",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": -0.14,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "NASDAQ 100",
+    "actual": "29,366.94",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 1.04,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "VIX(공포지수)",
+    "actual": "17.87",
+    "category": "📉 공포지수",
+    "impact": "high",
+    "change": -0.67,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "독일 DAX",
+    "actual": "24,136.81",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 0.76,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "영국 FTSE 100",
+    "actual": "10,325.35",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": 0.58,
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미국 USD 환율",
+    "actual": "1,493.60",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "0.28",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "유럽 EUR 환율",
+    "actual": "1,749.68",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "0.29",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "일본 JPY 환율",
+    "actual": "945.53",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "0.22",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "중국 CNY 환율",
+    "actual": "220.14",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "0.31",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "달러인덱스 환율",
+    "actual": "98.48",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "-0.05",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "유로/달러",
+    "actual": "1.1707",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "-0.24",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "달러/일본 엔",
+    "actual": "157.8200",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "0.18",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "영국 파운드/달러",
+    "actual": "1.3522",
+    "category": "💵 외환",
+    "impact": "high",
+    "change": "-0.09",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "WTI",
+    "actual": "101.55",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.52",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "브렌트유",
+    "actual": "106.05",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.40",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "RBOB 가솔린",
+    "actual": "3.4692",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-0.05",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "난방유",
+    "actual": "3.9711",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.11",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "경유",
+    "actual": "2,005.90",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-0.01",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "휘발유",
+    "actual": "2,011.58",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "고급휘발유",
+    "actual": "2,435.25",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "두바이유",
+    "actual": "102.35",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-1.36",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미니 크루드 오일",
+    "actual": "101.03",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-1.13",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미니 난방유",
+    "actual": "3.97",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-4.62",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "가스오일",
+    "actual": "1,191.50",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-1.30",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "천연가스",
+    "actual": "2.86",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.74",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미니 천연가스",
+    "actual": "2.87",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.70",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "국제 금",
+    "actual": "4,682.00",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-0.52",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "국내 금",
+    "actual": "223,330",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-0.53",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "은",
+    "actual": "87.21",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-2.42",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "구리(선물)",
+    "actual": "6.5660",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-1.69",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "백금",
+    "actual": "2,149.80",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-2.16",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "팔라듐",
+    "actual": "1,513.50",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-1.44",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "철광석",
+    "actual": "111.28",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "구리(현물)",
+    "actual": "14,109.48",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "1.08",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "알루미늄 합금",
+    "actual": "3,225.00",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "납",
+    "actual": "2,012.88",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "0.46",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "아연",
+    "actual": "3,509.37",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "-0.41",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "니켈",
+    "actual": "18,984.42",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "1.23",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "주석",
+    "actual": "55,959.00",
+    "category": "💰 원자재",
+    "impact": "high",
+    "change": "2.21",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미국 국채 10년",
+    "actual": "4.4630",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-0.36",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "한국 국채 10년",
+    "actual": "4.0450",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-0.37",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "일본 국채 10년",
+    "actual": "2.5970",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "0.58",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "독일 국채 10년",
+    "actual": "3.0880",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-0.64",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "중국 국채 10년",
+    "actual": "1.7530",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-6.01",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "미국연방준비은행",
+    "actual": "3.75",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "한국은행",
+    "actual": "2.50",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "유럽중앙은행",
+    "actual": "2.15",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "영국은행",
+    "actual": "3.75",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "일본은행",
+    "actual": "0.75",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "콜금리 (1일)",
+    "actual": "2.524",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-2.28",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "CD금리 (91일)",
+    "actual": "2.810",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "COFIX 신규취급액",
+    "actual": "2.810",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-0.35",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "COFIX 잔액",
+    "actual": "2.850",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "0.00",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "COFIX 신잔액",
+    "actual": "2.450",
+    "category": "📊 금리/채권",
+    "impact": "high",
+    "change": "-0.80",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "Unknown",
+    "actual": "117351000",
+    "category": "₿ 가상자산",
+    "impact": "high",
+    "change": "-0.43",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[수급] 🧾 코스피 투자자",
+    "actual": "외인:0억 / 기관:0억",
+    "category": "⚖️ 수급 동향",
+    "impact": "high",
+    "change": "개인:0억",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[통계] 📉 코스피 등락 종목",
+    "actual": "상승:0 / 하락:0",
+    "category": "📊 시장 통계",
+    "impact": "high",
+    "change": "보합:0",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[수급] 🧾 코스닥 투자자",
+    "actual": "외인:0억 / 기관:0억",
+    "category": "⚖️ 수급 동향",
+    "impact": "high",
+    "change": "개인:0억",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[통계] 📉 코스닥 등락 종목",
+    "actual": "상승:0 / 하락:0",
+    "category": "📊 시장 통계",
+    "impact": "high",
+    "change": "보합:0",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 🏦 KOSPI 지수",
+    "actual": "7,854.14",
+    "category": "🏦 주가지수",
+    "impact": "high",
+    "change": "+0.13%",
+    "change_val": 0.13
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 🏦 KOSDAQ 지수",
+    "actual": "1,165.97",
+    "category": "🏦 주가지수",
+    "impact": "high",
+    "change": "-0.93%",
+    "change_val": -0.93
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 🏦 코스피200 지수",
+    "actual": "1,222.55",
+    "category": "🏦 주가지수",
+    "impact": "high",
+    "change": "+0.20%",
+    "change_val": 0.2
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 📋 한국 기준금리",
+    "actual": "3.25%",
+    "category": "📋 채권 / 금리",
+    "impact": "medium",
+    "change": "0.00%p",
+    "change_val": 0.0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 📋 CD금리(91일)",
+    "actual": "2.81%",
+    "category": "📋 채권 / 금리",
+    "impact": "medium",
+    "change": "0.00%p",
+    "change_val": 0.0
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 📋 콜 금리",
+    "actual": "2.52%",
+    "category": "📋 채권 / 금리",
+    "impact": "medium",
+    "change": "-0.06%p",
+    "change_val": -0.06
+  },
+  {
+    "date": "2026-05-14",
+    "time": "실시간",
+    "event_kr": "[한국] 📋 국고채 (3년)",
+    "actual": "3.63%",
+    "category": "📋 채권 / 금리",
+    "impact": "medium",
+    "change": "-0.04%p",
+    "change_val": -0.04
+  }
+]

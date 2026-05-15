@@ -73,8 +73,6 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
                 .catch(err => console.error(err));
         }
 
-        }
-
         // Cleanup listeners on close/unmount
         return () => {
             (AdMob as any).removeAllListeners().catch(() => { });

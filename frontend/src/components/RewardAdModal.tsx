@@ -41,7 +41,12 @@ export default function RewardAdModal({ onClose, onSuccess }: RewardAdModalProps
             if (data.status === 'success') {
                 // Update local auth state to reflect Pro status
                 if (login) {
-                    await login(user.id || (user as any).uid, user.email || "");
+                    await login({
+                        id: user.id || (user as any).uid,
+                        email: user.email || "",
+                        name: user.name || "",
+                        picture: user.picture || ""
+                    });
                 }
                 setStep('completed');
             }
