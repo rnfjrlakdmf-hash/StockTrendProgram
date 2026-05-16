@@ -180,11 +180,11 @@ def register_fcm_token(req: FCMTokenRequest, x_user_id: str = Header(None)):
     try:
         success = save_fcm_token(user_id, req.token, req.device_type, req.device_name)
         if success:
-            return {"status": "success", "message": "푸시 알림이 활성화되었습니다."}
+            return {"status": "success", "message": "푸시 알림이 활성화되었습니다.", "user_id": user_id}
         else:
-            return {"status": "error", "message": "토큰 등록 실패"}
+            return {"status": "error", "message": "토큰 등록 실패", "user_id": user_id}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "user_id": user_id}
 
 class FCMTestRequest(BaseModel):
     token: Optional[str] = None
@@ -205,15 +205,15 @@ def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
         tokens = [t['token'] for t in user_tokens]
     
     if not tokens:
-        return {"status": "error", "message": "등록된 기기가 없습니다."}
+        return {"status": "error", "message": f"등록된 기기가 없습니다. (ID: {user_id})"}
         
     title = "[Test] Connection Verified"
-    body = "System is working perfectly with Zero-Wait Architecture!"
+    body = f"System is working perfectly for user {user_id}!"
     try:
         if len(tokens) == 1:
             result = send_push_notification(tokens[0], title, body)
         else:
             result = send_multicast_notification(tokens, title, body)
-        return {"status": "success", "count": len(tokens), "result": result}
+        return {"status": "success", "count": len(tokens), "user_id": user_id, "result": result}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "user_id": user_id}
