@@ -162,8 +162,8 @@ def run_market_scheduler():
             day_of_week = now.weekday()
             
             if day_of_week <= 4:
-                # [오전 08:30] 장전 브리핑
-                if now.hour == 8 and now.minute == 30:
+                # [오전 08:00] 장전 브리핑 (기존 08:30에서 1시간 전으로 변경)
+                if now.hour == 8 and now.minute == 0:
                     asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                     time.sleep(60)
 
@@ -177,8 +177,8 @@ def run_market_scheduler():
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # [오후 22:30] 미국 장전 브리핑
-                if now.hour == 22 and now.minute == 30:
+                # [오후 21:30] 미국 장전 브리핑 (기존 22:30에서 1시간 전으로 변경)
+                if now.hour == 21 and now.minute == 30:
                     asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                     time.sleep(60)
                 
