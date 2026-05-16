@@ -194,8 +194,9 @@ def simple_fcm_test():
     return {"status": "success", "message": "Simple FCM Test OK"}
 
 @router.get("/fcm/test")
+@router.post("/fcm/test")
 def test_fcm_notification(x_user_id: str = Header(None)):
-    """FCM 테스트 알림 발송 (GET으로 변경하여 422 에러 원천 차단)"""
+    """FCM 테스트 알림 발송 (GET/POST 모두 허용하여 405 에러 방지)"""
     # Lazy Imports
     from firebase_config import send_push_notification, send_multicast_notification
     from db_manager import get_user_fcm_tokens
