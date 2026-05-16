@@ -107,40 +107,43 @@ export function getNotificationPermission(): NotificationPermission {
  */
 export function showNotification(title: string, options?: NotificationOptions) {
     if (typeof window === 'undefined' || !('Notification' in window)) {
+        console.warn('[Notification] Browser does not support notifications');
         return;
     }
 
-    if (Notification.permission === 'granted') {
-        try {
-            // [Fix] Mobile Chrome requires Service Worker to show notifications
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(registration => {
+    if (Notification.permission !== 'granted') {
+        console.warn('[Notification] Permission not granted');
+        return;
+    }
+
+    try {
+        // [Debug] Add alert for local testing feedback
+        if (options?.tag === 'local-test') {
+            console.log('[Notification] Local test triggered');
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(registration => {
+                if (registration) {
                     registration.showNotification(title, {
                         icon: '/icon.png',
                         badge: '/badge.png',
                         vibrate: [200, 100, 200],
                         ...options
-                    } as any).catch(e => {
-                        console.error("SW Notification Error:", e);
-                        // Fallback to Desktop API if SW fails
-                        new Notification(title, {
-                            icon: '/icon.png',
-                            badge: '/badge.png',
-                            vibrate: [200, 100, 200],
-                            ...options
-                        } as any);
+                    } as any).catch(err => {
+                        console.error('[Notification] SW Error:', err);
+                        // Fallback
+                        new Notification(title, options);
                     });
-                });
-            } else {
-                new Notification(title, {
-                    icon: '/icon.png',
-                    badge: '/badge.png',
-                    vibrate: [200, 100, 200],
-                    ...options
-                } as any);
-            }
-        } catch (e) {
-            console.error("Notification Error:", e);
+                } else {
+                    // Fallback if no SW registered yet
+                    new Notification(title, options);
+                }
+            });
+        } else {
+            new Notification(title, options);
         }
+    } catch (e) {
+        console.error("[Notification] Fatal Error:", e);
     }
 }

@@ -249,6 +249,7 @@ export default function FCMTokenManager() {
                                                 </button>
                                                 <button 
                                                     onClick={() => {
+                                                        alert('🔔 로컬 테스트 버튼이 클릭되었습니다. 휴대폰 상단을 확인해 주세요!');
                                                         showNotification('🔔 로컬 알림 테스트', {
                                                             body: '휴대폰 알림 설정이 정상적으로 되어 있습니다!',
                                                             tag: 'local-test'
@@ -257,7 +258,7 @@ export default function FCMTokenManager() {
                                                     className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
                                                 >
                                                     <Bell className="w-3 h-3" />
-                                                    로컬 테스트
+                                                    로컬 테스트 (v2)
                                                 </button>
                                             </div>
                                         </div>
