@@ -84,15 +84,16 @@ class MorningBriefingService:
         # 메시지 구성
         title = f"⚖️ {stock_name} 장전 밸런스 브리핑"
         
-        # 호재/악재 텍스트 구성
-        pros_list = analysis.get('pros', [])[:3]
-        cons_list = analysis.get('cons', [])[:3]
+        # 호재/악재 텍스트 구성 (2:2 압축)
+        pros_list = analysis.get('pros', [])[:2]
+        cons_list = analysis.get('cons', [])[:2]
         
         pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
         cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
-        ai_opinion = analysis.get('ai_opinion', '데이터를 기반으로 신중한 투자 판단이 필요합니다.')
+        ai_opinion = analysis.get('ai_opinion', '신중한 투자 판단 필요')
         
-        body = f"{pros_str}\n{cons_str}\n\n🤖 AI 한줄평: {ai_opinion}\n⚠️ 투자 책임은 본인에게 있습니다."
+        # 모바일 알림창 크기에 맞게 초압축
+        body = f"{pros_str}\n{cons_str}\n🤖 {ai_opinion}\n⚠️ 투자책임은 본인에게 있습니다."
 
         # 알림 발송
         send_multicast_notification(
@@ -137,25 +138,25 @@ class MorningBriefingService:
         return list(set(headlines)) # 중복 제거
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 3개, 악재 3개 추출"""
+        """AI를 사용해 호재 2개, 악재 2개 추출 (모바일 최적화)"""
         prompt = f"""
-        Analyze the recent news headlines for {name} ({symbol}) and categorize them into 3 Positives (Pros) and 3 Negatives (Cons).
-        Provide a 1-sentence AI opinion on the overall sentiment.
+        Analyze the recent news headlines for {name} ({symbol}) and categorize them into 2 Positives (Pros) and 2 Negatives (Cons).
+        Provide a 1-sentence AI opinion.
+        
+        CRITICAL RULES:
+        - Each point MUST be shorter than 25 Korean characters. (Extremely concise)
+        - All text must be in Korean.
+        - Return 2 Pros and 2 Cons only.
         
         Headlines:
         {json.dumps(headlines[:20], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Positive point 1", "Positive point 2", "Positive point 3"],
-            "cons": ["Negative point 1", "Negative point 2", "Negative point 3"],
-            "ai_opinion": "Overall summary in 1 sentence (Korean)"
+            "pros": ["Concise positive 1", "Concise positive 2"],
+            "cons": ["Concise negative 1", "Concise negative 2"],
+            "ai_opinion": "1-sentence summary (Korean)"
         }}
-        
-        Rules:
-        - All text must be in Korean.
-        - If there are fewer than 3 points, provide what's available.
-        - Focus on impact on stock price.
         """
         
         try:
