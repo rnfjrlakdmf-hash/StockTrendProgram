@@ -21,27 +21,31 @@ export default function FCMTokenManager() {
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
+        // [Critical] Explicit Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then((registration) => {
+                    console.log('[FCM] Service Worker registered:', registration.scope);
+                })
+                .catch((err) => {
+                    console.error('[FCM] Service Worker registration failed:', err);
+                });
+        }
+
         const safePermission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
         console.log("FCMTokenManager Mounted! Permission:", safePermission);
-
-        // 현재 권한 상태 확인
+        
+        // ... rest of the existing logic ...
         const currentPermission = getNotificationPermission();
         setPermission(currentPermission);
-
-        // 로컬 스토리지에서 등록 상태 확인
         const isRegistered = localStorage.getItem('fcm_registered') === 'true';
         setRegistered(isRegistered);
 
-        // 포그라운드 메시지 리스너
         onForegroundMessage((payload) => {
             console.log('[FCM] Received foreground message:', payload);
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
-
-            showNotification(title, {
-                body,
-                data: payload.data
-            });
+            showNotification(title, { body, data: payload.data });
         });
     }, []);
 
