@@ -218,68 +218,15 @@ export default function FCMTokenManager() {
                                     <div className="space-y-2">
                                         <div className="grid grid-cols-1 gap-2">
                                             <button 
-                                                onClick={handleTestPush}
+                                                onClick={handleEnableNotifications}
                                                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
                                             >
-                                                <Zap className="w-3.5 h-3.5 fill-current" /> 
-                                                테스트 알림 발송
+                                                <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> 
+                                                알림 연결 갱신 (Sync)
                                             </button>
-
-                                            <button 
-                                                onClick={async () => {
-                                                    setLoading(true);
-                                                    try {
-                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/morning-test`, {
-                                                            headers: { 'X-User-Id': user?.id || localStorage.getItem('user_id') || 'guest' }
-                                                        });
-                                                        const data = await res.json();
-                                                        if (data.status === 'success') {
-                                                            alert(`✅ ${data.message}`);
-                                                        } else {
-                                                            alert(`❌ 실패: ${data.message}`);
-                                                        }
-                                                    } catch (err) {
-                                                        alert(`❌ 오류: ${err}`);
-                                                    } finally {
-                                                        setLoading(false);
-                                                    }
-                                                }}
-                                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-purple-500/20"
-                                            >
-                                                <div className="flex items-center gap-1.5">
-                                                    <span>✨</span>
-                                                    <span>AI 모닝 브리핑 테스트</span>
-                                                </div>
-                                            </button>
-
-                                            <button 
-                                                onClick={async () => {
-                                                    setLoading(true);
-                                                    try {
-                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/delayed-test`, {
-                                                            headers: { 'X-User-Id': user?.id || localStorage.getItem('user_id') || 'guest' }
-                                                        });
-                                                        const data = await res.json();
-                                                        alert(`✅ ${data.message}`);
-                                                    } catch (err) {
-                                                        alert(`❌ 오류: ${err}`);
-                                                    } finally {
-                                                        setLoading(false);
-                                                    }
-                                                }}
-                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-xs"
-                                            >
-                                                <span>⏰</span>
-                                                <span>10초 뒤 테스트 (앱 종료 테스트용)</span>
-                                            </button>
-                                            
-                                            <button 
-                                                onClick={handleEnableNotifications}
-                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-xs"
-                                            >
-                                                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
-                                                연결 갱신 (Sync)
-                                            </button>
+                                            <p className="text-[10px] text-gray-500 text-center mt-1">
+                                                기기 변경이나 알림 미수신 시 위 버튼을 눌러주세요.
+                                            </p>
                                         </div>
                                     </div>
                                 )}
