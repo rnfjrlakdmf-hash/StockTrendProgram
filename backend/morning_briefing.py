@@ -134,27 +134,26 @@ class MorningBriefingService:
         return list(set(headlines))
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 3개, 악재 3개 추출 (준법/객관성 극대화 버전)"""
+        """AI를 사용해 호재 3개, 악재 3개 추출 (초보자 친화 + 준법 버전)"""
         prompt = f"""
-        Extract 3 factual 'Upward Factors' and 3 'Downward Risks' for {name} ({symbol}) based on news.
+        Extract 3 factual 'Upward Factors' and 3 'Downward Risks' for {name} ({symbol}).
+        Make it very easy to understand for beginners. Use plain Korean (쉬운 우리말).
         
-        STRICT LEGAL & COMPLIANCE RULES:
-        1. NEVER use subjective or directive words: "긍정적", "부정적", "호재", "악재", "관리 필요", "주의", "매수", "전망 좋음".
-        2. Use ONLY neutral, factual nouns and descriptors:
-           - Instead of "긍정적 영향", use "수익 개선 요인" or "성장 동력 확인".
-           - Instead of "부정적", use "비용 상승 리스크" or "단기 부담 요인".
-        3. FOCUS ON FACTS: Include numbers, dates, and specific event names.
-        4. AI Opinion MUST be a "Neutral Data Summary" (e.g., "다수의 수주 소식과 원가 상승 리스크가 공존함").
-        5. All text in Korean, max 30 chars per line.
+        STRICT RULES:
+        1. NO subjective/directive words: "긍정적", "부정적", "관리 필요", "추천", "주의".
+        2. NO difficult jargon: Instead of "컨센서스 상회", use "시장 예상보다 높은 실적".
+           Instead of "수익성 악화", use "벌어들이는 돈이 줄어드는 리스크".
+        3. Explain the 'WHY' simply: "환율이 올라서 수출 이익이 늘어나는 요인" (Factual & Easy).
+        4. Neutral summary: Max 30 chars. All text in Korean.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Objective Factor 1", "Objective Factor 2", "Objective Factor 3"],
-            "cons": ["Objective Risk 1", "Objective Risk 2", "Objective Risk 3"],
-            "ai_opinion": "Neutral factual summary"
+            "pros": ["Simple factual factor 1", "Simple factual factor 2", "Simple factual factor 3"],
+            "cons": ["Simple factual risk 1", "Simple factual risk 2", "Simple factual risk 3"],
+            "ai_opinion": "Easy neutral summary"
         }}
         """
         
