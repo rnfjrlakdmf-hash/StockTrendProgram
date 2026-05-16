@@ -161,33 +161,33 @@ def run_market_scheduler():
             now = datetime.now(kst)
             day_of_week = now.weekday()
             
-            if day_of_week <= 4:
-                # [오전 08:00] 장전 브리핑 (기존 08:30에서 1시간 전으로 변경)
-                if now.hour == 8 and now.minute == 0:
-                    asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
-                    time.sleep(60)
+            # [매일 발송] AI 모닝 브리핑 (주말/공휴일 포함 뉴스 요약)
+            if now.hour == 8 and now.minute == 0:
+                asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                time.sleep(60)
+            
+            if now.hour == 21 and now.minute == 30:
+                asyncio.run(morning_briefing_service.run_daily_briefing("US"))
+                time.sleep(60)
 
-                # [오전 09:05] 국내 장시작 시가 알림
+            # [평일만 발송] 가격 알림 (월~금)
+            if day_of_week <= 4:
+                # 오전 09:05 국내 장시작 시가 알림
                 if now.hour == 9 and now.minute == 5:
                     send_opening_notification("KR")
                     time.sleep(60)
 
-                # [오후 15:40] 국내 장마감 종가 리포트
+                # 오후 15:40 국내 장마감 종가 리포트
                 if now.hour == 15 and now.minute == 40:
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # [오후 21:30] 미국 장전 브리핑 (기존 22:30에서 1시간 전으로 변경)
-                if now.hour == 21 and now.minute == 30:
-                    asyncio.run(morning_briefing_service.run_daily_briefing("US"))
-                    time.sleep(60)
-                
-                # [오후 23:35] 미국 장시작 시가 알림 (서머타임 미고려)
+                # 오후 23:35 미국 장시작 시가 알림 (서머타임 미고려)
                 if now.hour == 23 and now.minute == 35:
                     send_opening_notification("US")
                     time.sleep(60)
 
-                # [오전 06:10] 미국 장마감 종가 리포트
+                # 오전 06:10 미국 장마감 종가 리포트
                 if now.hour == 6 and now.minute == 10:
                     send_closing_notification("US")
                     time.sleep(60)
