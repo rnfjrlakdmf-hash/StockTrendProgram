@@ -134,28 +134,27 @@ class MorningBriefingService:
         return list(set(headlines))
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 3개, 악재 3개 추출 (정보량 강화 & 법적 방어 버전)"""
+        """AI를 사용해 호재 3개, 악재 3개 추출 (준법/객관성 극대화 버전)"""
         prompt = f"""
-        Analyze recent news for {name} ({symbol}).
-        Identify 3 Pros and 3 Cons.
+        Extract 3 factual 'Upward Factors' and 3 'Downward Risks' for {name} ({symbol}) based on news.
         
-        STRICT RULES:
-        1. Each point: 20-30 Korean characters. Include SPECIFIC data/numbers if available.
-           (e.g. "2분기 영업이익 20% 증가 및 역대 최대 실적 달성")
-        2. AI opinion: 20-30 Korean characters. 
-           - Focus ONLY on "Data Sentiment Summary" (데이터 기반 심리 요약).
-           - NEVER use directive language like "지켜봐야 함", "매수 추천", "주의 요망".
-           - Use objective summaries like "호재와 리스크가 공존하는 흐름", "뉴스 심리지수 85점의 긍정적 추세".
-        3. All text in Korean.
+        STRICT LEGAL & COMPLIANCE RULES:
+        1. NEVER use subjective or directive words: "긍정적", "부정적", "호재", "악재", "관리 필요", "주의", "매수", "전망 좋음".
+        2. Use ONLY neutral, factual nouns and descriptors:
+           - Instead of "긍정적 영향", use "수익 개선 요인" or "성장 동력 확인".
+           - Instead of "부정적", use "비용 상승 리스크" or "단기 부담 요인".
+        3. FOCUS ON FACTS: Include numbers, dates, and specific event names.
+        4. AI Opinion MUST be a "Neutral Data Summary" (e.g., "다수의 수주 소식과 원가 상승 리스크가 공존함").
+        5. All text in Korean, max 30 chars per line.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Detailed point with data 1", "Detailed point with data 2", "Detailed point with data 3"],
-            "cons": ["Detailed point with data 1", "Detailed point with data 2", "Detailed point with data 3"],
-            "ai_opinion": "Objective data sentiment summary"
+            "pros": ["Objective Factor 1", "Objective Factor 2", "Objective Factor 3"],
+            "cons": ["Objective Risk 1", "Objective Risk 2", "Objective Risk 3"],
+            "ai_opinion": "Neutral factual summary"
         }}
         """
         
