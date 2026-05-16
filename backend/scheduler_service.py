@@ -37,55 +37,56 @@ def is_market_holiday(market: str) -> bool:
     return False
 
 def calculate_watchlist_performance(user_id: str, market: str):
-    """사용자의 관심종목 시장별 오늘의 수익 현황 계산"""
+    """사용자의 관심종목 시장별 오늘의 수익 현황 및 누적 수익 합계 계산"""
     watchlist = get_watchlist(user_id)
-    if not watchlist:
-        return None
+    if not watchlist: return None
     
     items_perf = []
-    total_daily_change_pct = 0
+    total_daily_change = 0
+    total_profit_amt = 0 # 누적 수익금 합계
     count = 0
     
     for row in watchlist:
-        symbol = row[0]
+        sym = row[0]
         added_price = float(row[1] or 0)
         
-        # 시장 필터링
-        is_kr = is_korean_stock(symbol)
-        if market == "KR" and not is_kr: continue
-        if market == "US" and is_kr: continue
-            
-        quote = get_simple_quote(symbol)
-        if not quote:
+        is_kr = is_korean_stock(sym)
+        if (market == "KR" and not is_kr) or (market == "US" and is_kr):
             continue
             
-        current_price = float(str(quote.get('price', 0)).replace(',', ''))
-        daily_change_pct = float(str(quote.get('change', '0')).replace('%', '').replace('+', ''))
+        quote = get_simple_quote(sym)
+        if not quote: continue
         
-        # 추가 시점 대비 수익률 (있는 경우만)
-        added_perf = None
-        price_diff = None
-        if added_price > 0:
-            added_perf = ((current_price - added_price) / added_price) * 100
-            price_diff = current_price - added_price
+        try:
+            curr_p = float(str(quote.get('price', 0)).replace(',', ''))
+            change_p = float(str(quote.get('change', '0')).replace('%', '').replace('+', ''))
             
-        items_perf.append({
-            "symbol": symbol,
-            "name": get_korean_stock_name(symbol) or symbol,
-            "current_price": current_price,
-            "daily_change": daily_change_pct,
-            "added_perf": added_perf,
-            "price_diff": price_diff
-        })
-        
-        total_daily_change_pct += daily_change_pct
-        count += 1
+            item = {
+                "symbol": sym,
+                "name": get_korean_stock_name(sym) or sym,
+                "current_price": curr_p,
+                "daily_change": change_p,
+                "added_price": added_price
+            }
             
-    if count == 0:
-        return None
+            # 등록 시점 대비 수익 계산 (1주 기준)
+            if added_price and added_price > 0:
+                diff = curr_p - added_price
+                perf_pct = (diff / added_price) * 100
+                item["price_diff"] = diff
+                item["added_perf"] = perf_pct
+                total_profit_amt += diff # 누적 수익금 합산
+                
+            items_perf.append(item)
+            total_daily_change += change_p
+            count += 1
+        except: continue
         
+    if count == 0: return None
+    
     return {
-        "avg_daily_change": total_daily_change_pct / count,
+        "avg_daily_change": total_daily_change / count,
+        "total_profit_amt": total_profit_amt,
         "items": items_perf,
         "count": count
     }
@@ -180,6 +181,8 @@ def send_closing_notification(market: str):
         market_summary = base_str + "\n" + " | ".join(extra_list[:2]) + "\n\n"
         
         avg_change = perf["avg_daily_change"]
+        total_profit = perf.get("total_profit_amt", 0)
+        unit = "원" if market == "KR" else "$"
         market_name = "국내" if market == "KR" else "미국"
         emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
         title = f"🌕 {market_name} 장마감 리포트 {emoji}"
@@ -194,7 +197,8 @@ def send_closing_notification(market: str):
                 line += f" [{diff:+,2.0f}]"
             price_list.append(line)
             
-        body = market_summary + f"내 관심종목 평균: {avg_change:+.2f}%\n" + "\n".join(price_list)
+        profit_str = f"💰 총 누적 수익: {total_profit:+,.0f}{unit}\n" if total_profit != 0 else ""
+        body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
         
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
