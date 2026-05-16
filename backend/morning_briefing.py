@@ -81,7 +81,7 @@ class MorningBriefingService:
             return
 
         # 메시지 구성
-        title = f"⚖️ {stock_name} 3:3 브리핑"
+        title = f"⚖️ {stock_name} AI 마켓 밸런스 브리핑"
         
         # 호재/악재 텍스트 구성 (3:3 초압축)
         pros_list = analysis.get('pros', [])[:3]
@@ -134,14 +134,18 @@ class MorningBriefingService:
         return list(set(headlines))
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 3개, 악재 3개 추출 (초압축 15자 규칙)"""
+        """AI를 사용해 호재 3개, 악재 3개 추출 (정보량 강화 & 법적 방어 버전)"""
         prompt = f"""
         Analyze recent news for {name} ({symbol}).
         Identify 3 Pros and 3 Cons.
         
         STRICT RULES:
-        1. Each point MUST be UNDER 15 Korean characters. (e.g. "실적 개선 및 배당 확대")
-        2. AI opinion MUST be UNDER 20 Korean characters.
+        1. Each point: 20-30 Korean characters. Include SPECIFIC data/numbers if available.
+           (e.g. "2분기 영업이익 20% 증가 및 역대 최대 실적 달성")
+        2. AI opinion: 20-30 Korean characters. 
+           - Focus ONLY on "Data Sentiment Summary" (데이터 기반 심리 요약).
+           - NEVER use directive language like "지켜봐야 함", "매수 추천", "주의 요망".
+           - Use objective summaries like "호재와 리스크가 공존하는 흐름", "뉴스 심리지수 85점의 긍정적 추세".
         3. All text in Korean.
         
         Headlines:
@@ -149,9 +153,9 @@ class MorningBriefingService:
         
         Response Format (JSON):
         {{
-            "pros": ["Point 1", "Point 2", "Point 3"],
-            "cons": ["Point 1", "Point 2", "Point 3"],
-            "ai_opinion": "Short summary"
+            "pros": ["Detailed point with data 1", "Detailed point with data 2", "Detailed point with data 3"],
+            "cons": ["Detailed point with data 1", "Detailed point with data 2", "Detailed point with data 3"],
+            "ai_opinion": "Objective data sentiment summary"
         }}
         """
         
