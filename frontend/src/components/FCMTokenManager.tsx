@@ -222,13 +222,30 @@ export default function FCMTokenManager() {
                                             <Zap className="w-3.5 h-3.5 fill-current" /> 
                                             테스트 알림 발송
                                         </button>
-                                        <button 
-                                            onClick={handleEnableNotifications}
-                                            className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5"
-                                        >
-                                            <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
-                                            연결 갱신 (Sync)
-                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button 
+                                                onClick={handleEnableNotifications}
+                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5"
+                                            >
+                                                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
+                                                동기화
+                                            </button>
+                                            <button 
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    try {
+                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/simple-test`);
+                                                        const data = await res.json();
+                                                        alert(`📡 연결 확인: ${data.message || '성공'} (Status: ${res.status})`);
+                                                    } catch (err) {
+                                                        alert(`❌ 연결 확인 실패: ${err}`);
+                                                    }
+                                                }}
+                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-[10px]"
+                                            >
+                                                접속 체크
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

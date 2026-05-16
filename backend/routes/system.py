@@ -189,6 +189,10 @@ def register_fcm_token(req: FCMTokenRequest, x_user_id: str = Header(None)):
 class FCMTestRequest(BaseModel):
     token: Optional[str] = None
 
+@router.get("/fcm/simple-test")
+def simple_fcm_test():
+    return {"status": "success", "message": "Simple FCM Test OK"}
+
 @router.post("/fcm/test")
 def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
     """FCM 테스트 알림 발송"""
