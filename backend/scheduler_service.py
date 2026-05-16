@@ -134,16 +134,23 @@ def send_closing_notification(market: str):
     initialize_firebase()
     print(f"[Scheduler] Generating {market} market closing report...")
     
-    # 시장 지수 수집
+    # 시장 지수 및 원자재 수집
     market_summary = ""
     try:
+        # 공통 원자재 (WTI, 금, 구리)
+        oil = get_simple_quote("CL=F")
+        gold = get_simple_quote("GC=F")
+        copper = get_simple_quote("HG=F")
+        commodity_str = f"🛢️ 유가: {oil.get('price')}({oil.get('change')}) | ✨ 금: {gold.get('price')}\n" \
+                        f"🏗️ 구리: {copper.get('price')}({copper.get('change')})\n"
+
         if market == "KR":
             kospi = get_simple_quote("KOSPI")
             kosdaq = get_simple_quote("KOSDAQ")
             fx = get_simple_quote("USDKRW")
             market_summary = f"📊 코스피: {kospi.get('price')} ({kospi.get('change')})\n" \
                              f"📊 코스닥: {kosdaq.get('price')} ({kosdaq.get('change')})\n" \
-                             f"💵 환율: {fx.get('price')}원\n\n"
+                             f"💵 환율: {fx.get('price')}원\n" + commodity_str + "\n"
         else:
             # 미국 지수 (다우, S&P500, 나스닥)
             dow = get_simple_quote("^DJI")
@@ -151,7 +158,7 @@ def send_closing_notification(market: str):
             nasdaq = get_simple_quote("^IXIC")
             market_summary = f"🇺🇸 다우: {dow.get('price')} ({dow.get('change')})\n" \
                              f"🇺🇸 S&P500: {sp500.get('price')} ({sp500.get('change')})\n" \
-                             f"🇺🇸 나스닥: {nasdaq.get('price')} ({nasdaq.get('change')})\n\n"
+                             f"🇺🇸 나스닥: {nasdaq.get('price')} ({nasdaq.get('change')})\n" + commodity_str + "\n"
     except: pass
 
     conn = get_db_connection()
