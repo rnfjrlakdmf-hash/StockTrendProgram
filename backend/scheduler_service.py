@@ -130,10 +130,30 @@ def send_opening_notification(market: str):
             send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
 
 def send_closing_notification(market: str):
-    """시장 마감 리포트 발송 로직 (가격 포함)"""
+    """시장 마감 리포트 발송 로직 (지수 요약 포함)"""
     initialize_firebase()
     print(f"[Scheduler] Generating {market} market closing report...")
     
+    # 시장 지수 수집
+    market_summary = ""
+    try:
+        if market == "KR":
+            kospi = get_simple_quote("KOSPI")
+            kosdaq = get_simple_quote("KOSDAQ")
+            fx = get_simple_quote("USDKRW")
+            market_summary = f"📊 코스피: {kospi.get('price')} ({kospi.get('change')})\n" \
+                             f"📊 코스닥: {kosdaq.get('price')} ({kosdaq.get('change')})\n" \
+                             f"💵 환율: {fx.get('price')}원\n\n"
+        else:
+            # 미국 지수 (다우, S&P500, 나스닥)
+            dow = get_simple_quote("^DJI")
+            sp500 = get_simple_quote("^GSPC")
+            nasdaq = get_simple_quote("^IXIC")
+            market_summary = f"🇺🇸 다우: {dow.get('price')} ({dow.get('change')})\n" \
+                             f"🇺🇸 S&P500: {sp500.get('price')} ({sp500.get('change')})\n" \
+                             f"🇺🇸 나스닥: {nasdaq.get('price')} ({nasdaq.get('change')})\n\n"
+    except: pass
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT DISTINCT user_id FROM watchlist")
@@ -150,23 +170,20 @@ def send_closing_notification(market: str):
         
         title = f"🌕 {market_name} 장마감 리포트 {emoji}"
         
-        # 상세 가격 리스트 생성 (총 수익 정보 포함)
+        # 상세 가격 리스트 생성
         price_list = []
-        for item in perf["items"][:8]: # 가독성을 위해 8개로 조정
+        for item in perf["items"][:8]:
             change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
             line = f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.1f}%)"
-            
-            # 등록 시점 대비 수익 정보가 있는 경우 추가
             if item.get('price_diff') is not None:
                 diff = item['price_diff']
                 perf_pct = item['added_perf']
                 unit = "원" if market == "KR" else "$"
                 sign = "+" if diff > 0 else ""
                 line += f" [{sign}{diff:,.0f}{unit}, {perf_pct:+.1f}%]"
-            
             price_list.append(line)
             
-        body = f"평균 수익률: {avg_change:+.2f}%\n" + "\n".join(price_list)
+        body = market_summary + f"내 관심종목 평균: {avg_change:+.2f}%\n" + "\n".join(price_list)
         if len(perf["items"]) > 8:
             body += f"\n외 {len(perf['items'])-8}개 더 있음"
         
