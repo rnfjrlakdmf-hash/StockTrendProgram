@@ -129,16 +129,14 @@ export default function FCMTokenManager() {
     const handleTestPush = async (e: React.MouseEvent) => {
         e.stopPropagation();
         setLoading(true);
-        const userId = user?.id || localStorage.getItem('user_id') || 'guest';
+        const userId = String(user?.id || localStorage.getItem('user_id') || 'guest');
         
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/test`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-User-Id': userId
-                },
-                body: JSON.stringify({})
+                }
             });
             const data = await res.json();
             console.log("[FCM-Test] Response:", data);

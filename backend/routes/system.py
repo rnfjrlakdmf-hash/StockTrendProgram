@@ -193,20 +193,16 @@ class FCMTestRequest(BaseModel):
 def simple_fcm_test():
     return {"status": "success", "message": "Simple FCM Test OK"}
 
-@router.post("/fcm/test")
-def test_fcm_notification(req: FCMTestRequest, x_user_id: str = Header(None)):
-    """FCM 테스트 알림 발송"""
+@router.get("/fcm/test")
+def test_fcm_notification(x_user_id: str = Header(None)):
+    """FCM 테스트 알림 발송 (GET으로 변경하여 422 에러 원천 차단)"""
     # Lazy Imports
     from firebase_config import send_push_notification, send_multicast_notification
     from db_manager import get_user_fcm_tokens
     
     user_id = x_user_id if x_user_id else "guest"
-    tokens = []
-    if req.token:
-        tokens = [req.token]
-    else:
-        user_tokens = get_user_fcm_tokens(user_id)
-        tokens = [t['token'] for t in user_tokens]
+    user_tokens = get_user_fcm_tokens(user_id)
+    tokens = [t['token'] for t in user_tokens]
     
     if not tokens:
         return {"status": "error", "message": f"등록된 기기가 없습니다. (ID: {user_id})"}
