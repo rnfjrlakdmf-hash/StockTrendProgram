@@ -214,36 +214,52 @@ export default function FCMTokenManager() {
                                 
                                 {!loading && (
                                     <div className="space-y-2">
-                                        <button 
-                                            onClick={handleTestPush}
-                                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
-                                        >
-                                            <Zap className="w-3.5 h-3.5 fill-current" /> 
-                                            테스트 알림 발송
-                                        </button>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-1 gap-2">
                                             <button 
-                                                onClick={handleEnableNotifications}
-                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5"
+                                                onClick={handleTestPush}
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
                                             >
-                                                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
-                                                동기화
+                                                <Zap className="w-3.5 h-3.5 fill-current" /> 
+                                                서버 테스트 (실제 발송)
                                             </button>
-                                            <button 
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    try {
-                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/simple-test`);
-                                                        const data = await res.json();
-                                                        alert(`📡 연결 확인: ${data.message || '성공'} (Status: ${res.status})`);
-                                                    } catch (err) {
-                                                        alert(`❌ 연결 확인 실패: ${err}`);
-                                                    }
-                                                }}
-                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-[10px]"
-                                            >
-                                                접속 체크
-                                            </button>
+                                            
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button 
+                                                    onClick={handleEnableNotifications}
+                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
+                                                >
+                                                    <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
+                                                    동기화
+                                                </button>
+                                                <button 
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            const res = await fetch(`${API_BASE_URL}/api/system/fcm/simple-test`);
+                                                            const data = await res.json();
+                                                            alert(`📡 연결 확인: ${data.message || '성공'} (Status: ${res.status})`);
+                                                        } catch (err) {
+                                                            alert(`❌ 연결 확인 실패: ${err}`);
+                                                        }
+                                                    }}
+                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
+                                                >
+                                                    <Check className="w-3 h-3" />
+                                                    접속 체크
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        showNotification('🔔 로컬 알림 테스트', {
+                                                            body: '휴대폰 알림 설정이 정상적으로 되어 있습니다!',
+                                                            tag: 'local-test'
+                                                        });
+                                                    }}
+                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
+                                                >
+                                                    <Bell className="w-3 h-3" />
+                                                    로컬 테스트
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
