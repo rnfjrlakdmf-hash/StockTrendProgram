@@ -124,15 +124,25 @@ def send_closing_notification(market: str):
         
         title = f"🌕 {market_name} 장마감 리포트 {emoji}"
         
-        # 상세 가격 리스트 생성
+        # 상세 가격 리스트 생성 (총 수익 정보 포함)
         price_list = []
-        for item in perf["items"][:10]: # 최대 10개
+        for item in perf["items"][:8]: # 가독성을 위해 8개로 조정
             change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
-            price_list.append(f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.2f}%)")
+            line = f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.1f}%)"
             
-        body = f"평균 수익률: {avg_change:+.2f}%\n\n" + "\n".join(price_list)
-        if len(perf["items"]) > 10:
-            body += f"\n외 {len(perf['items'])-10}개 더 있음"
+            # 등록 시점 대비 수익 정보가 있는 경우 추가
+            if item.get('price_diff') is not None:
+                diff = item['price_diff']
+                perf_pct = item['added_perf']
+                unit = "원" if market == "KR" else "$"
+                sign = "+" if diff > 0 else ""
+                line += f" [{sign}{diff:,.0f}{unit}, {perf_pct:+.1f}%]"
+            
+            price_list.append(line)
+            
+        body = f"평균 수익률: {avg_change:+.2f}%\n" + "\n".join(price_list)
+        if len(perf["items"]) > 8:
+            body += f"\n외 {len(perf['items'])-8}개 더 있음"
         
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
