@@ -145,9 +145,7 @@ export default function FCMTokenManager() {
             const data = await res.json();
             console.log("[FCM-Test] Response:", data);
 
-            if (data.status === 'success') {
-                alert('🔔 테스트 알림이 발송되었습니다!\n잠시 후 기기를 확인해 주세요.');
-            } else {
+            if (res.status !== 200 || data.status !== 'success') {
                 const errMsg = data.message || data.error || '상세 사유 없음';
                 const errDetail = data.user_id ? `(ID: ${data.user_id})` : '';
                 alert(`❌ 테스트 발송 실패: ${errMsg} ${errDetail}\n(Status: ${res.status})`);
@@ -221,50 +219,19 @@ export default function FCMTokenManager() {
                                         <div className="grid grid-cols-1 gap-2">
                                             <button 
                                                 onClick={handleTestPush}
-                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
                                             >
                                                 <Zap className="w-3.5 h-3.5 fill-current" /> 
-                                                서버 테스트 (실제 발송)
+                                                테스트 알림 발송
                                             </button>
                                             
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <button 
-                                                    onClick={handleEnableNotifications}
-                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
-                                                >
-                                                    <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
-                                                    동기화
-                                                </button>
-                                                <button 
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        try {
-                                                            const res = await fetch(`${API_BASE_URL}/api/system/fcm/simple-test`);
-                                                            const data = await res.json();
-                                                            alert(`📡 연결 확인: ${data.message || '성공'} (Status: ${res.status})`);
-                                                        } catch (err) {
-                                                            alert(`❌ 연결 확인 실패: ${err}`);
-                                                        }
-                                                    }}
-                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
-                                                >
-                                                    <Check className="w-3 h-3" />
-                                                    접속 체크
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        alert('🔔 로컬 테스트 버튼이 클릭되었습니다. 휴대폰 상단을 확인해 주세요!');
-                                                        showNotification('🔔 로컬 알림 테스트', {
-                                                            body: '휴대폰 알림 설정이 정상적으로 되어 있습니다!',
-                                                            tag: 'local-test'
-                                                        });
-                                                    }}
-                                                    className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border border-white/5 text-[9px]"
-                                                >
-                                                    <Bell className="w-3 h-3" />
-                                                    로컬 테스트 (v2)
-                                                </button>
-                                            </div>
+                                            <button 
+                                                onClick={handleEnableNotifications}
+                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-xs"
+                                            >
+                                                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
+                                                연결 갱신 (Sync)
+                                            </button>
                                         </div>
                                     </div>
                                 )}
