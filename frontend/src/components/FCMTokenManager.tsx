@@ -215,7 +215,32 @@ export default function FCMTokenManager() {
                                 </p>
                                 
                                 {!loading && (
-                                    <div className="space-y-2">
+                                    <div className="space-y-4">
+                                        {/* 가이드 섹션 */}
+                                        <div className="bg-white/5 rounded-xl p-3 space-y-3 border border-white/5">
+                                            <div className="flex items-start gap-2.5">
+                                                <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs">✨</div>
+                                                <div>
+                                                    <p className="text-white font-bold text-[11px]">AI 마켓 브리핑 (08:00)</p>
+                                                    <p className="text-gray-400 text-[10px] leading-relaxed">내 종목의 핵심 뉴스만 쏙쏙! 호재와 악재를 3:3으로 분석한 팩트 요약본이 매일 아침 배달됩니다.</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2.5">
+                                                <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">☀️</div>
+                                                <div>
+                                                    <p className="text-white font-bold text-[11px]">장시작/마감 리포트</p>
+                                                    <p className="text-gray-400 text-[10px] leading-relaxed">평일 09:05(시가) 및 15:40(종가) 알림! 환율, 유가, 지수와 내 종목 수익률을 한 번에 정리해 드립니다.</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2.5">
+                                                <div className="bg-green-500/20 p-1.5 rounded-lg text-green-400 text-xs">💰</div>
+                                                <div>
+                                                    <p className="text-white font-bold text-[11px]">수익금 자동 추적</p>
+                                                    <p className="text-gray-400 text-[10px] leading-relaxed">관심 종목을 별표(☆)로 담은 시점부터의 누적 수익을 계산합니다. 미국 주식은 원화로 자동 환산됩니다.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="grid grid-cols-1 gap-2">
                                             <button 
                                                 onClick={handleEnableNotifications}
