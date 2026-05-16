@@ -187,6 +187,21 @@ def send_closing_notification(market: str):
         emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
         title = f"🌕 {market_name} 장마감 리포트 {emoji}"
         
+        # 수익금 문자열 생성 (미국장은 원화 환산 추가)
+        if total_profit != 0:
+            if market == "US":
+                fx_rate = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                profit_krw = total_profit * fx_rate
+                # 원화는 만원 단위로 가독성 있게 표시 (10,000원 이상일 때)
+                if abs(profit_krw) >= 10000:
+                    profit_str = f"💰 총 누적 수익: {total_profit:+,.2f}{unit} (약 {profit_krw/10000:+,.1f}만원)\n"
+                else:
+                    profit_str = f"💰 총 누적 수익: {total_profit:+,.2f}{unit} ({profit_krw:+,.0f}원)\n"
+            else:
+                profit_str = f"💰 총 누적 수익: {total_profit:+,.0f}{unit}\n"
+        else:
+            profit_str = ""
+
         # 상세 리스트
         price_list = []
         for item in perf["items"][:8]:
@@ -197,7 +212,6 @@ def send_closing_notification(market: str):
                 line += f" [{diff:+,2.0f}]"
             price_list.append(line)
             
-        profit_str = f"💰 총 누적 수익: {total_profit:+,.0f}{unit}\n" if total_profit != 0 else ""
         body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
         
         tokens_data = get_user_fcm_tokens(user_id)
