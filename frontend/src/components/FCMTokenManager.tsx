@@ -137,7 +137,8 @@ export default function FCMTokenManager() {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-User-Id': userId
-                }
+                },
+                body: JSON.stringify({})
             });
             const data = await res.json();
             console.log("[FCM-Test] Response:", data);
