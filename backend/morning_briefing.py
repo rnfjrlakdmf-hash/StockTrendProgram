@@ -67,13 +67,12 @@ class MorningBriefingService:
                     print(f"[MorningBriefing] Error for {symbol}: {e}")
 
     async def analyze_and_send(self, user_id: str, tokens: List[str], symbol: str):
-        """종목별 뉴스 분석 및 알림 발송"""
+        """종목별 뉴스 분석 및 알림 발송 (3:3 초압축 버전)"""
         stock_name = get_korean_stock_name(symbol) or GLOBAL_KOREAN_NAMES.get(symbol, symbol)
         
         # 뉴스 수집
         news_list = await self.fetch_latest_news(symbol, stock_name)
         if not news_list:
-            print(f"[MorningBriefing] No news for {stock_name}")
             return
 
         # AI 분석 (3 호재 / 3 악재)
@@ -82,18 +81,18 @@ class MorningBriefingService:
             return
 
         # 메시지 구성
-        title = f"⚖️ {stock_name} 장전 밸런스 브리핑"
+        title = f"⚖️ {stock_name} 3:3 브리핑"
         
-        # 호재/악재 텍스트 구성 (2:2 압축)
-        pros_list = analysis.get('pros', [])[:2]
-        cons_list = analysis.get('cons', [])[:2]
+        # 호재/악재 텍스트 구성 (3:3 초압축)
+        pros_list = analysis.get('pros', [])[:3]
+        cons_list = analysis.get('cons', [])[:3]
         
         pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
         cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
-        ai_opinion = analysis.get('ai_opinion', '신중한 투자 판단 필요')
+        ai_opinion = analysis.get('ai_opinion', '신중한 판단 필요')
         
-        # 모바일 알림창 크기에 맞게 초압축
-        body = f"{pros_str}\n{cons_str}\n🤖 {ai_opinion}\n⚠️ 투자책임은 본인에게 있습니다."
+        # 알림창 최적화 (여백 최소화)
+        body = f"{pros_str}\n{cons_str}\n🤖 {ai_opinion}\n⚠️ 본 정보는 참고용입니다."
 
         # 알림 발송
         send_multicast_notification(
@@ -106,7 +105,7 @@ class MorningBriefingService:
                 "url": f"/discovery?symbol={symbol}"
             }
         )
-        print(f"[MorningBriefing] Sent briefing for {stock_name} to {user_id}")
+        print(f"[MorningBriefing] Sent 3:3 briefing for {stock_name} to {user_id}")
 
     async def fetch_latest_news(self, symbol: str, stock_name: str) -> List[str]:
         """최신 뉴스 헤드라인 수집"""
@@ -115,16 +114,14 @@ class MorningBriefingService:
         # 한국 주식 (네이버)
         if symbol.isdigit() and len(symbol) == 6:
             try:
-                url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=10"
+                url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=15"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
                 data = res.json()
-                # 네이버 뉴스 API 응답 구조 확인 (리스트 형태)
                 if isinstance(data, list):
                     for group in data:
                         for item in group.get('items', []):
                             headlines.append(item.get('title'))
-            except Exception as e:
-                print(f"[MorningBriefing] Naver News Error: {e}")
+            except: pass
             
         # 구글 뉴스 (공통)
         try:
@@ -132,30 +129,29 @@ class MorningBriefingService:
             if g_news:
                 for n in g_news[:10]:
                     headlines.append(n.get('title'))
-        except Exception as e:
-            print(f"[MorningBriefing] Google News Error: {e}")
+        except: pass
         
-        return list(set(headlines)) # 중복 제거
+        return list(set(headlines))
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 2개, 악재 2개 추출 (모바일 최적화)"""
+        """AI를 사용해 호재 3개, 악재 3개 추출 (초압축 15자 규칙)"""
         prompt = f"""
-        Analyze the recent news headlines for {name} ({symbol}) and categorize them into 2 Positives (Pros) and 2 Negatives (Cons).
-        Provide a 1-sentence AI opinion.
+        Analyze recent news for {name} ({symbol}).
+        Identify 3 Pros and 3 Cons.
         
-        CRITICAL RULES:
-        - Each point MUST be shorter than 25 Korean characters. (Extremely concise)
-        - All text must be in Korean.
-        - Return 2 Pros and 2 Cons only.
+        STRICT RULES:
+        1. Each point MUST be UNDER 15 Korean characters. (e.g. "실적 개선 및 배당 확대")
+        2. AI opinion MUST be UNDER 20 Korean characters.
+        3. All text in Korean.
         
         Headlines:
-        {json.dumps(headlines[:20], ensure_ascii=False)}
+        {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Concise positive 1", "Concise positive 2"],
-            "cons": ["Concise negative 1", "Concise negative 2"],
-            "ai_opinion": "1-sentence summary (Korean)"
+            "pros": ["Point 1", "Point 2", "Point 3"],
+            "cons": ["Point 1", "Point 2", "Point 3"],
+            "ai_opinion": "Short summary"
         }}
         """
         
