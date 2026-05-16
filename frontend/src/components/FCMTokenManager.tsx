@@ -8,7 +8,8 @@
 import { useEffect, useState } from "react";
 import { requestFCMToken, onForegroundMessage, getNotificationPermission, showNotification } from "@/lib/firebase";
 import { API_BASE_URL } from "@/lib/config";
-import { Bell, BellOff, Check } from "lucide-react";
+import { Bell, BellOff, Check, Zap, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 
 export default function FCMTokenManager() {
@@ -125,6 +126,33 @@ export default function FCMTokenManager() {
         }
     };
 
+    const handleTestPush = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setLoading(true);
+        const userId = user?.id || localStorage.getItem('user_id') || 'guest';
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/fcm/test`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                }
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert('🔔 테스트 알림이 발송되었습니다!\n잠시 후 기기를 확인해 주세요.');
+            } else {
+                alert(`❌ 테스트 발송 실패: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Test push failed:', error);
+            alert('❌ 서버 연결 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // [Fix] Listen for global event from layout banner
     useEffect(() => {
         const handleOpenRequest = () => {
@@ -163,15 +191,25 @@ export default function FCMTokenManager() {
                         </div>
 
                         {/* Hover Tooltip (Smooth Appearance) */}
-                        <div className="absolute bottom-full right-0 mb-3 w-max max-w-[200px] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
-                            <div className="bg-[#1a1a1a]/90 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-xs">
-                                <p className="text-white font-bold mb-0.5 flex items-center gap-1.5">
+                        <div className="absolute bottom-full right-0 mb-3 w-max max-w-[220px] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                            <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-4 shadow-2xl text-xs">
+                                <p className="text-white font-bold mb-1 flex items-center gap-1.5">
                                     <span className={`w-1.5 h-1.5 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`}></span>
                                     {loading ? '연결 재설정 중...' : '실시간 알림 수신 중'}
                                 </p>
-                                <p className="text-gray-400 font-medium">
-                                    {loading ? '잠시만 기다려주세요.' : '클릭하여 연결을 갱신할 수 있습니다.'}
+                                <p className="text-gray-400 font-medium mb-3 leading-relaxed">
+                                    {loading ? '잠시만 기다려주세요.' : '정상적으로 연결되었습니다. 버튼을 눌러 테스트해보세요.'}
                                 </p>
+                                
+                                {!loading && (
+                                    <button 
+                                        onClick={handleTestPush}
+                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
+                                    >
+                                        <Zap className="w-3.5 h-3.5 fill-current" /> 
+                                        테스트 알림 발송
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
