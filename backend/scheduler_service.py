@@ -10,6 +10,32 @@ def is_korean_stock(symbol: str) -> bool:
     """숫자 6자리면 한국 주식으로 판단"""
     return symbol.isdigit() and len(symbol) == 6
 
+def is_market_holiday(market: str) -> bool:
+    """국가별 주요 시장 휴장일 여부 확인 (2024-2025 주요 공휴일)"""
+    now = datetime.now(pytz.timezone('Asia/Seoul'))
+    date_str = now.strftime('%m-%d')
+    
+    # 공통 휴장일 (신정, 성탄절)
+    if date_str in ['01-01', '12-25']:
+        return True
+        
+    if market == "KR":
+        # 한국 주요 휴장일 (2024-2025 고정/추정)
+        kr_holidays = [
+            '03-01', '04-10', '05-01', '05-05', '05-06', '06-06', 
+            '08-15', '10-03', '10-09'
+        ]
+        # 설날/추석 등은 변동이 심해 매년 업데이트 필요하지만 주요 국경일 위주로 우선 차단
+        return date_str in kr_holidays
+    else:
+        # 미국 주요 휴장일
+        us_holidays = [
+            '01-15', '02-19', '03-29', '05-27', '06-19', 
+            '07-04', '09-02', '11-28'
+        ]
+        return date_str in us_holidays
+    return False
+
 def calculate_watchlist_performance(user_id: str, market: str):
     """사용자의 관심종목 시장별 오늘의 수익 현황 계산"""
     watchlist = get_watchlist(user_id)
@@ -172,23 +198,23 @@ def run_market_scheduler():
 
             # [평일만 발송] 가격 알림 (월~금)
             if day_of_week <= 4:
-                # 오전 09:05 국내 장시작 시가 알림
-                if now.hour == 9 and now.minute == 5:
+                # 오전 09:05 국내 장시작 시가 알림 (휴장일 제외)
+                if now.hour == 9 and now.minute == 5 and not is_market_holiday("KR"):
                     send_opening_notification("KR")
                     time.sleep(60)
 
-                # 오후 15:40 국내 장마감 종가 리포트
-                if now.hour == 15 and now.minute == 40:
+                # 오후 15:40 국내 장마감 종가 리포트 (휴장일 제외)
+                if now.hour == 15 and now.minute == 40 and not is_market_holiday("KR"):
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # 오후 23:35 미국 장시작 시가 알림 (서머타임 미고려)
-                if now.hour == 23 and now.minute == 35:
+                # 오후 23:35 미국 장시작 시가 알림 (휴장일 제외)
+                if now.hour == 23 and now.minute == 35 and not is_market_holiday("US"):
                     send_opening_notification("US")
                     time.sleep(60)
 
-                # 오전 06:10 미국 장마감 종가 리포트
-                if now.hour == 6 and now.minute == 10:
+                # 오전 06:10 미국 장마감 종가 리포트 (휴장일 제외)
+                if now.hour == 6 and now.minute == 10 and not is_market_holiday("US"):
                     send_closing_notification("US")
                     time.sleep(60)
             
