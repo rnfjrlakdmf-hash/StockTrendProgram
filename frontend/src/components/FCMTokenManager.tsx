@@ -165,20 +165,22 @@ export default function FCMTokenManager() {
 
     // [Enhancement] Premium UI Design for Notification Status
 
+    const [showMenu, setShowMenu] = useState(false);
+
     // Connected State (Minimal & Sleek)
     if (permission === 'granted' && registered) {
         return (
             <div suppressHydrationWarning>
                 <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-bottom-5 fade-in duration-700">
-                    <div className="group relative flex items-center justify-center">
+                    <div className="relative flex items-center justify-center group">
                         {/* Pulse Effect */}
                         <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl group-hover:bg-blue-500/30 transition-all duration-500 scale-150 animate-pulse"></div>
 
                         {/* Status Badge */}
                         <div
-                            onClick={handleEnableNotifications}
+                            onClick={() => setShowMenu(!showMenu)}
                             className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-3 rounded-full hover:scale-105 transition-transform cursor-pointer shadow-2xl relative overflow-hidden active:scale-95"
-                            title="클릭하여 연결 상태 새로고침"
+                            title="클릭하여 테스트 알림 및 상태 확인"
                         >
                             {/* Shiny Gradient Border */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -190,9 +192,15 @@ export default function FCMTokenManager() {
                             )}
                         </div>
 
-                        {/* Hover Tooltip (Smooth Appearance) */}
-                        <div className="absolute bottom-full right-0 mb-3 w-max max-w-[220px] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
-                            <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-4 shadow-2xl text-xs">
+                        {/* Hover/Click Tooltip (Smooth Appearance) */}
+                        <div className={`absolute bottom-full right-0 mb-3 w-max max-w-[220px] transition-all duration-300 ${showMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto'}`}>
+                            <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-4 shadow-2xl text-xs relative">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
+                                    className="absolute top-2 right-2 text-gray-600 hover:text-white p-1"
+                                >
+                                    ✕
+                                </button>
                                 <p className="text-white font-bold mb-1 flex items-center gap-1.5">
                                     <span className={`w-1.5 h-1.5 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`}></span>
                                     {loading ? '연결 재설정 중...' : '실시간 알림 수신 중'}
