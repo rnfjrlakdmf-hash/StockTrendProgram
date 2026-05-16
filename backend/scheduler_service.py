@@ -130,36 +130,23 @@ def send_opening_notification(market: str):
             send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
 
 def send_closing_notification(market: str):
-    """시장 마감 리포트 발송 로직 (지수 요약 포함)"""
+    """시장 마감 리포트 발송 로직 (사용자 맞춤형 지능형 지수 포함)"""
     initialize_firebase()
-    print(f"[Scheduler] Generating {market} market closing report...")
+    print(f"[Scheduler] Generating personalized {market} market closing report...")
     
-    # 시장 지수 및 원자재 수집
-    market_summary = ""
-    try:
-        # 공통 원자재 (WTI, 금, 구리)
-        oil = get_simple_quote("CL=F")
-        gold = get_simple_quote("GC=F")
-        copper = get_simple_quote("HG=F")
-        commodity_str = f"🛢️ 유가: {oil.get('price')}({oil.get('change')}) | ✨ 금: {gold.get('price')}\n" \
-                        f"🏗️ 구리: {copper.get('price')}({copper.get('change')})\n"
-
-        if market == "KR":
-            kospi = get_simple_quote("KOSPI")
-            kosdaq = get_simple_quote("KOSDAQ")
-            fx = get_simple_quote("USDKRW")
-            market_summary = f"📊 코스피: {kospi.get('price')} ({kospi.get('change')})\n" \
-                             f"📊 코스닥: {kosdaq.get('price')} ({kosdaq.get('change')})\n" \
-                             f"💵 환율: {fx.get('price')}원\n" + commodity_str + "\n"
-        else:
-            # 미국 지수 (다우, S&P500, 나스닥)
-            dow = get_simple_quote("^DJI")
-            sp500 = get_simple_quote("^GSPC")
-            nasdaq = get_simple_quote("^IXIC")
-            market_summary = f"🇺🇸 다우: {dow.get('price')} ({dow.get('change')})\n" \
-                             f"🇺🇸 S&P500: {sp500.get('price')} ({sp500.get('change')})\n" \
-                             f"🇺🇸 나스닥: {nasdaq.get('price')} ({nasdaq.get('change')})\n" + commodity_str + "\n"
-    except: pass
+    # 공통 기본 지표 캐싱
+    common_indices = {
+        "KOSPI": get_simple_quote("KOSPI"),
+        "KOSDAQ": get_simple_quote("KOSDAQ"),
+        "DOW": get_simple_quote("^DJI"),
+        "NASDAQ": get_simple_quote("^IXIC"),
+        "SOX": get_simple_quote("^SOX"), # 반도체
+        "TNX": get_simple_quote("^TNX"), # 금리
+        "OIL": get_simple_quote("CL=F"), # 유가
+        "GOLD": get_simple_quote("GC=F"), # 금
+        "FX": get_simple_quote("USDKRW"), # 환율
+        "TSLA": get_simple_quote("TSLA")  # 2차전지/전기차 대장주
+    }
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -170,29 +157,54 @@ def send_closing_notification(market: str):
     for user_id in user_ids:
         perf = calculate_watchlist_performance(user_id, market)
         if not perf: continue
+        
+        # 사용자 관심 종목 분석 (섹터 파악)
+        symbols = [item['symbol'] for item in perf["items"]]
+        
+        # 맞춤 지표 선정 로직
+        user_summary_list = []
+        
+        # 1. 반도체 비중 확인 (삼전, 하닉, 엔비디아 등)
+        if any(s in ['005930', '000660', 'NVDA', 'AMD', 'TSM'] for s in symbols):
+            sox = common_indices["SOX"]
+            user_summary_list.append(f"💻 반도체지수: {sox.get('change')}")
             
+        # 2. 2차전지/성장주 비중 확인 (에코프로, 테슬라 등)
+        if any(s in ['247540', '086520', '373220', 'TSLA', 'RIVN'] for s in symbols):
+            tsla = common_indices["TSLA"]
+            user_summary_list.append(f"🔋 테슬라/전기차: {tsla.get('change')}")
+            
+        # 3. 금융/기술주 비중 확인 (금리 민감)
+        if any(s in ['055550', '105560', 'AAPL', 'MSFT', 'AMZN'] for s in symbols):
+            tnx = common_indices["TNX"]
+            user_summary_list.append(f"📈 美 국채금리: {tnx.get('price')}")
+
+        # 부족한 경우 기본 지표 추가 (환율, 유가 등)
+        if len(user_summary_list) < 3:
+            fx = common_indices["FX"]
+            user_summary_list.append(f"💵 환율: {fx.get('price')}원")
+        if len(user_summary_list) < 3:
+            oil = common_indices["OIL"]
+            user_summary_list.append(f"🛢️ 유가: {oil.get('change')}")
+
+        market_summary = "📊 맞춤 지표: " + " | ".join(user_summary_list[:3]) + "\n\n"
+        
         avg_change = perf["avg_daily_change"]
         market_name = "국내" if market == "KR" else "미국"
         emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
-        
         title = f"🌕 {market_name} 장마감 리포트 {emoji}"
         
-        # 상세 가격 리스트 생성
+        # 상세 리스트 구성
         price_list = []
         for item in perf["items"][:8]:
             change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
             line = f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.1f}%)"
             if item.get('price_diff') is not None:
                 diff = item['price_diff']
-                perf_pct = item['added_perf']
-                unit = "원" if market == "KR" else "$"
-                sign = "+" if diff > 0 else ""
-                line += f" [{sign}{diff:,.0f}{unit}, {perf_pct:+.1f}%]"
+                line += f" [{diff:+,2.0f}]" # 공간 절약을 위해 수익금만 표시
             price_list.append(line)
             
-        body = market_summary + f"내 관심종목 평균: {avg_change:+.2f}%\n" + "\n".join(price_list)
-        if len(perf["items"]) > 8:
-            body += f"\n외 {len(perf['items'])-8}개 더 있음"
+        body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + "\n".join(price_list)
         
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
