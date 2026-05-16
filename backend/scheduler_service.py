@@ -124,7 +124,10 @@ def send_closing_notification(market: str):
             print(f"[Scheduler] Report sent to {user_id} ({len(tokens)} devices)")
 
 def run_market_scheduler():
-    """시장별 마감 시각을 감시하는 메인 스케줄러 루프"""
+    """시장별 마감 시각 및 장전 브리핑 시각을 감시하는 메인 스케줄러 루프"""
+    import asyncio
+    from morning_briefing import morning_briefing_service
+    
     kst = pytz.timezone('Asia/Seoul')
     initialize_firebase()
     
@@ -135,12 +138,24 @@ def run_market_scheduler():
             
             # 평일만 작동
             if day_of_week <= 4:
-                # 1. 한국 시장 마감 리포트 (오후 3:40)
+                # [NEW] 1. 한국 시장 장전 브리핑 (오전 08:30)
+                if now.hour == 8 and now.minute == 30:
+                    print("[Scheduler] Triggering KR Morning Briefing...")
+                    asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                    time.sleep(60)
+
+                # 2. 한국 시장 마감 리포트 (오후 3:40)
                 if now.hour == 15 and now.minute == 40:
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # 2. 미국 시장 마감 리포트 (오전 6:10)
+                # [NEW] 3. 미국 시장 장전 브리핑 (오후 22:30 - 서머타임 미고려 기준)
+                if now.hour == 22 and now.minute == 30:
+                    print("[Scheduler] Triggering US Morning Briefing...")
+                    asyncio.run(morning_briefing_service.run_daily_briefing("US"))
+                    time.sleep(60)
+
+                # 4. 미국 시장 마감 리포트 (오전 6:10)
                 if now.hour == 6 and now.minute == 10:
                     send_closing_notification("US")
                     time.sleep(60)
@@ -155,4 +170,4 @@ def start_scheduler():
     """백그라운드 스레드에서 스케줄러 시작"""
     thread = threading.Thread(target=run_market_scheduler, daemon=True)
     thread.start()
-    print("[Scheduler] Closing Report Service Started (Watchlist Based)")
+    print("[Scheduler] All Services Started (Closing Report + Morning Briefing)")

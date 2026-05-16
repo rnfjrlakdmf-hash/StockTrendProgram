@@ -218,3 +218,27 @@ def test_fcm_notification(x_user_id: str = Header(None)):
         return {"status": "success", "count": len(tokens), "user_id": user_id, "result": result}
     except Exception as e:
         return {"status": "error", "message": str(e), "user_id": user_id}
+@router.get("/fcm/morning-test")
+async def manual_morning_briefing_test(x_user_id: str = Header(None)):
+    """[Test] 현재 유저의 관심종목에 대해 호재/악재 브리핑을 강제로 발송합니다."""
+    from morning_briefing import morning_briefing_service
+    from db_manager import get_user_fcm_tokens, get_watchlist
+    
+    user_id = x_user_id if x_user_id else "guest"
+    tokens_data = get_user_fcm_tokens(user_id)
+    tokens = [t['token'] for t in tokens_data]
+    
+    if not tokens:
+        return {"status": "error", "message": "등록된 FCM 토큰이 없습니다."}
+        
+    watchlist = get_watchlist(user_id)
+    if not watchlist:
+        return {"status": "error", "message": "관심종목이 없습니다."}
+        
+    # 첫 번째 종목만 테스트로 발송
+    symbol = watchlist[0][0]
+    try:
+        await morning_briefing_service.analyze_and_send(user_id, tokens, symbol)
+        return {"status": "success", "message": f"{symbol} 종목 브리핑 발송 완료", "user_id": user_id}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

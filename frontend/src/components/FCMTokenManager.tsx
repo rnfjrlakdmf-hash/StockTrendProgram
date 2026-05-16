@@ -224,6 +224,33 @@ export default function FCMTokenManager() {
                                                 <Zap className="w-3.5 h-3.5 fill-current" /> 
                                                 테스트 알림 발송
                                             </button>
+
+                                            <button 
+                                                onClick={async () => {
+                                                    setLoading(true);
+                                                    try {
+                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/morning-test`, {
+                                                            headers: { 'X-User-Id': user?.id || localStorage.getItem('user_id') || 'guest' }
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.status === 'success') {
+                                                            alert(`✅ ${data.message}`);
+                                                        } else {
+                                                            alert(`❌ 실패: ${data.message}`);
+                                                        }
+                                                    } catch (err) {
+                                                        alert(`❌ 오류: ${err}`);
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }}
+                                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-purple-500/20"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>✨</span>
+                                                    <span>AI 모닝 브리핑 테스트</span>
+                                                </div>
+                                            </button>
                                             
                                             <button 
                                                 onClick={handleEnableNotifications}
