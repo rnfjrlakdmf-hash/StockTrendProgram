@@ -251,6 +251,27 @@ export default function FCMTokenManager() {
                                                     <span>AI 모닝 브리핑 테스트</span>
                                                 </div>
                                             </button>
+
+                                            <button 
+                                                onClick={async () => {
+                                                    setLoading(true);
+                                                    try {
+                                                        const res = await fetch(`${API_BASE_URL}/api/system/fcm/delayed-test`, {
+                                                            headers: { 'X-User-Id': user?.id || localStorage.getItem('user_id') || 'guest' }
+                                                        });
+                                                        const data = await res.json();
+                                                        alert(`✅ ${data.message}`);
+                                                    } catch (err) {
+                                                        alert(`❌ 오류: ${err}`);
+                                                    } finally {
+                                                        setLoading(false);
+                                                    }
+                                                }}
+                                                className="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5 text-xs"
+                                            >
+                                                <span>⏰</span>
+                                                <span>10초 뒤 테스트 (앱 종료 테스트용)</span>
+                                            </button>
                                             
                                             <button 
                                                 onClick={handleEnableNotifications}

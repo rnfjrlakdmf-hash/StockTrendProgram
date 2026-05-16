@@ -242,3 +242,32 @@ async def manual_morning_briefing_test(x_user_id: str = Header(None)):
         return {"status": "success", "message": f"{symbol} 종목 브리핑 발송 완료", "user_id": user_id}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+@router.get("/fcm/delayed-test")
+async def delayed_fcm_test(x_user_id: str = Header(None)):
+    """[Test] 10초 뒤에 테스트 알림을 발송하여 앱 종료 후 수신 여부를 확인합니다."""
+    import asyncio
+    from firebase_config import send_multicast_notification
+    from db_manager import get_user_fcm_tokens
+    
+    user_id = x_user_id if x_user_id else "guest"
+    tokens_data = get_user_fcm_tokens(user_id)
+    tokens = [t['token'] for t in tokens_data]
+    
+    if not tokens:
+        return {"status": "error", "message": "등록된 기기가 없습니다."}
+        
+    # 10초 대기 (유저가 앱을 끌 시간을 줌)
+    async def _send_later():
+        await asyncio.sleep(10)
+        send_multicast_notification(
+            tokens=tokens,
+            title="⏰ 10초 지연 알림 성공!",
+            body="웹을 끈 상태에서도 알림이 정상적으로 도착했습니다.",
+            data={"type": "test_delayed"}
+        )
+        print(f"[Test] Delayed push sent to {user_id}")
+
+    # 백그라운드 태스크로 실행하고 응답은 즉시 반환
+    asyncio.create_task(_send_later())
+    
+    return {"status": "success", "message": "10초 뒤에 알림이 발송됩니다. 지금 바로 웹을 종료해 보세요!"}
