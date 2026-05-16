@@ -64,67 +64,82 @@ def calculate_watchlist_performance(user_id: str, market: str):
         "count": count
     }
 
+def send_opening_notification(market: str):
+    """시장 시작 시가 알림 발송"""
+    initialize_firebase()
+    print(f"[Scheduler] Sending {market} market opening prices...")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT user_id FROM watchlist")
+    user_ids = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    
+    for user_id in user_ids:
+        watchlist = get_watchlist(user_id)
+        if not watchlist: continue
+        
+        items_info = []
+        for row in watchlist:
+            symbol = row[0]
+            if is_korean_stock(symbol) and market == "US": continue
+            if not is_korean_stock(symbol) and market == "KR": continue
+            
+            quote = get_simple_quote(symbol)
+            if quote:
+                price = quote.get('price', 0)
+                name = get_korean_stock_name(symbol) or symbol
+                items_info.append(f"• {name}: {price}")
+        
+        if not items_info: continue
+        
+        market_name = "국내" if market == "KR" else "미국"
+        title = f"☀️ {market_name} 장시작! 시가 알림"
+        body = f"오늘 {market_name} 관심종목 시가입니다.\n\n" + "\n".join(items_info[:10])
+        if len(items_info) > 10:
+            body += f"\n외 {len(items_info)-10}개 더 있음"
+            
+        tokens_data = get_user_fcm_tokens(user_id)
+        if tokens_data:
+            send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
+
 def send_closing_notification(market: str):
-    """시장 마감 리포트 발송 로직"""
+    """시장 마감 리포트 발송 로직 (가격 포함)"""
     initialize_firebase()
     print(f"[Scheduler] Generating {market} market closing report...")
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    # 관심종목을 가진 사용자 목록 추출
     cursor.execute("SELECT DISTINCT user_id FROM watchlist")
     user_ids = [row[0] for row in cursor.fetchall()]
     conn.close()
     
     for user_id in user_ids:
         perf = calculate_watchlist_performance(user_id, market)
-        if not perf:
-            continue
+        if not perf: continue
             
         avg_change = perf["avg_daily_change"]
-        count = perf["count"]
-        
         market_name = "국내" if market == "KR" else "미국"
-        title = f"[{market_name} 장마감] 관심종목 결산 리포트 📊"
-        
-        # 상위 종목 하나 추출 (오늘 기준)
-        best_item = max(perf["items"], key=lambda x: x["daily_change"])
-        
-        # 총 수익(등록 시점 대비) 기준 상위 종목
-        items_with_perf = [item for item in perf["items"] if item.get("added_perf") is not None]
-        
         emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
-        body = f"오늘 {market_name} 관심종목({count}개)은 평균 {avg_change:+.2f}% {emoji} 변동했습니다.\n"
         
-        if items_with_perf:
-            best_all_time = max(items_with_perf, key=lambda x: x["added_perf"])
-            diff_amount = best_all_time["price_diff"]
+        title = f"🌕 {market_name} 장마감 리포트 {emoji}"
+        
+        # 상세 가격 리스트 생성
+        price_list = []
+        for item in perf["items"][:10]: # 최대 10개
+            change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
+            price_list.append(f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.2f}%)")
             
-            # 화폐 단위 처리 (미국 주식 소수점 처리)
-            if market == "KR":
-                diff_str = f"{diff_amount:+,.0f}원"
-            else:
-                diff_str = f"{diff_amount:+.2f}달러"
-                
-            body += f"\n🏆 나의 최고 효자종목: {best_all_time['name']}\n"
-            body += f"등록 당시 평단가 대비 {diff_str} ({best_all_time['added_perf']:+.2f}%) 올랐습니다! 💰"
-        else:
-            body += f"오늘 가장 많이 오른 종목은 {best_item['name']}({best_item['daily_change']:+.2f}%)입니다. 수고하셨습니다! 💰"
+        body = f"평균 수익률: {avg_change:+.2f}%\n\n" + "\n".join(price_list)
+        if len(perf["items"]) > 10:
+            body += f"\n외 {len(perf['items'])-10}개 더 있음"
         
-        # FCM 토큰 가져오기
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
-            tokens = [t['token'] for t in tokens_data]
-            send_multicast_notification(
-                tokens=tokens,
-                title=title,
-                body=body,
-                data={"url": "/watchlist", "type": "closing_report"}
-            )
-            print(f"[Scheduler] Report sent to {user_id} ({len(tokens)} devices)")
+            send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
 
 def run_market_scheduler():
-    """시장별 마감 시각 및 장전 브리핑 시각을 감시하는 메인 스케줄러 루프"""
+    """시장별 이벤트 감시 메인 루프"""
     import asyncio
     from morning_briefing import morning_briefing_service
     
@@ -134,28 +149,35 @@ def run_market_scheduler():
     while True:
         try:
             now = datetime.now(kst)
-            day_of_week = now.weekday() # 0:월, 4:금
+            day_of_week = now.weekday()
             
-            # 평일만 작동
             if day_of_week <= 4:
-                # [NEW] 1. 한국 시장 장전 브리핑 (오전 08:30)
+                # [오전 08:30] 장전 브리핑
                 if now.hour == 8 and now.minute == 30:
-                    print("[Scheduler] Triggering KR Morning Briefing...")
                     asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                     time.sleep(60)
 
-                # 2. 한국 시장 마감 리포트 (오후 3:40)
+                # [오전 09:05] 국내 장시작 시가 알림
+                if now.hour == 9 and now.minute == 5:
+                    send_opening_notification("KR")
+                    time.sleep(60)
+
+                # [오후 15:40] 국내 장마감 종가 리포트
                 if now.hour == 15 and now.minute == 40:
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # [NEW] 3. 미국 시장 장전 브리핑 (오후 22:30 - 서머타임 미고려 기준)
+                # [오후 22:30] 미국 장전 브리핑
                 if now.hour == 22 and now.minute == 30:
-                    print("[Scheduler] Triggering US Morning Briefing...")
                     asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                     time.sleep(60)
+                
+                # [오후 23:35] 미국 장시작 시가 알림 (서머타임 미고려)
+                if now.hour == 23 and now.minute == 35:
+                    send_opening_notification("US")
+                    time.sleep(60)
 
-                # 4. 미국 시장 마감 리포트 (오전 6:10)
+                # [오전 06:10] 미국 장마감 종가 리포트
                 if now.hour == 6 and now.minute == 10:
                     send_closing_notification("US")
                     time.sleep(60)
@@ -170,4 +192,4 @@ def start_scheduler():
     """백그라운드 스레드에서 스케줄러 시작"""
     thread = threading.Thread(target=run_market_scheduler, daemon=True)
     thread.start()
-    print("[Scheduler] All Services Started (Closing Report + Morning Briefing)")
+    print("[Scheduler] All Intelligence Services Started")
