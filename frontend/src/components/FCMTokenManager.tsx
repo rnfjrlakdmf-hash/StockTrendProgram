@@ -210,13 +210,22 @@ export default function FCMTokenManager() {
                                 </p>
                                 
                                 {!loading && (
-                                    <button 
-                                        onClick={handleTestPush}
-                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
-                                    >
-                                        <Zap className="w-3.5 h-3.5 fill-current" /> 
-                                        테스트 알림 발송
-                                    </button>
+                                    <div className="space-y-2">
+                                        <button 
+                                            onClick={handleTestPush}
+                                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
+                                        >
+                                            <Zap className="w-3.5 h-3.5 fill-current" /> 
+                                            테스트 알림 발송
+                                        </button>
+                                        <button 
+                                            onClick={handleEnableNotifications}
+                                            className="w-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 border border-white/5"
+                                        >
+                                            <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
+                                            연결 갱신 (Sync)
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
