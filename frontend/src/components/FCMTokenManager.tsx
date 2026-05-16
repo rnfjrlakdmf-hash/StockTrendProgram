@@ -140,14 +140,18 @@ export default function FCMTokenManager() {
                 }
             });
             const data = await res.json();
+            console.log("[FCM-Test] Response:", data);
+
             if (data.status === 'success') {
                 alert('🔔 테스트 알림이 발송되었습니다!\n잠시 후 기기를 확인해 주세요.');
             } else {
-                alert(`❌ 테스트 발송 실패: ${data.message}`);
+                const errMsg = data.message || data.error || '상세 사유 없음';
+                const errDetail = data.user_id ? `(ID: ${data.user_id})` : '';
+                alert(`❌ 테스트 발송 실패: ${errMsg} ${errDetail}\n(Status: ${res.status})`);
             }
         } catch (error) {
-            console.error('Test push failed:', error);
-            alert('❌ 서버 연결 오류가 발생했습니다.');
+            console.error('[FCM-Test] Request failed:', error);
+            alert(`❌ 서버 연결 오류 발생\n\n상세: ${error}\nAPI: ${API_BASE_URL}`);
         } finally {
             setLoading(false);
         }
