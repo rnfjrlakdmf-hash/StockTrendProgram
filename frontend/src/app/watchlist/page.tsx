@@ -479,10 +479,15 @@ export default function WatchlistPage() {
                             </div>
 
                             {showSettings && (
-                                <div className="grid md:grid-cols-2 gap-6 p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl animate-in zoom-in-95">
-                                    <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
-                                        <h3 className="font-bold flex items-center gap-2 text-blue-300"><Bell className="w-4 h-4" /> 웹 푸시 알림</h3>
-                                        <p className="text-xs text-gray-500 leading-relaxed">브라우저 알림으로 가격 변동 소식을 즉시 받아볼 수 있습니다.</p>
+                                <div className="p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl animate-in zoom-in-95 max-w-xl mx-auto">
+                                    <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4 text-center">
+                                        <div className="mx-auto bg-blue-500/25 p-3 rounded-2xl w-fit">
+                                            <Bell className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white">실시간 모바일 웹 푸시 알림 설정</h3>
+                                        <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">
+                                            브라우저 알림 권한을 승인하여 주식 가격 돌파 알림, 실시간 공시 및 아침/저녁 리포트를 핸드폰 화면에서 1초 만에 실시간으로 받아보세요.
+                                        </p>
                                         <button
                                             onClick={async () => {
                                                 const { requestFCMToken } = await import("@/lib/firebase");
@@ -493,30 +498,12 @@ export default function WatchlistPage() {
                                                         headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id || (user as any).uid },
                                                         body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
                                                     });
-                                                    alert("✅ 설정 완료!");
+                                                    alert("✅ 실시간 푸시 알림이 성공적으로 등록되었습니다!");
                                                 }
                                             }}
-                                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all"
+                                            className="w-full max-w-xs mx-auto py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl transition-all shadow-lg active:scale-95 text-sm"
                                         >
-                                            🔔 푸시 알림 활성화
-                                        </button>
-                                    </div>
-                                    <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
-                                        <h3 className="font-bold flex items-center gap-2 text-yellow-500"><Zap className="w-4 h-4" /> 텔레그램 연동</h3>
-                                        <div className="text-sm font-mono bg-white/5 p-3 rounded-lg text-gray-300">ID: {chatId || "미설정"}</div>
-                                        <button
-                                            onClick={async () => {
-                                                const res = await fetch(`${API_BASE_URL}/api/auth/telegram/recent-users`);
-                                                const json = await res.json();
-                                                if (json.data?.length > 0) {
-                                                    localStorage.setItem("telegram_chat_id", json.data[0].id);
-                                                    setChatId(json.data[0].id);
-                                                    alert("✅ 연결 성공!");
-                                                } else { alert("@rnfjrlAlarm_bot 에게 먼저 메시지를 보내주세요."); }
-                                            }}
-                                            className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold rounded-xl transition-all"
-                                        >
-                                            🔄 연결 상태 확인
+                                            🔔 푸시 알림 활성화하기
                                         </button>
                                     </div>
                                 </div>
