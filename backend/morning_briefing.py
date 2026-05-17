@@ -138,23 +138,27 @@ class MorningBriefingService:
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
         """AI를 사용해 호재 3개, 악재 3개 추출 (초보자 친화 + 준법 버전)"""
         prompt = f"""
-        Extract 3 factual 'Upward Factors' and 3 'Downward Risks' for {name} ({symbol}).
-        Make it very easy to understand for beginners. Use plain Korean (쉬운 우리말).
+        Extract up to 3 factual 'Upward Factors' (호재) and 3 'Downward Risks' (악재) for the company '{name}' ({symbol}) based ONLY on the provided news headlines.
         
-        STRICT RULES:
-        1. NO subjective/directive words: "긍정적", "부정적", "관리 필요", "추천", "주의".
-        2. NO difficult jargon: Instead of "컨센서스 상회", use "시장 예상보다 높은 실적".
-           Instead of "수익성 악화", use "벌어들이는 돈이 줄어드는 리스크".
-        3. Explain the 'WHY' simply: "환율이 올라서 수출 이익이 늘어나는 요인" (Factual & Easy).
-        4. Neutral summary: Max 30 chars. All text in Korean.
+        STRICT RELEVANCE RULES:
+        1. Only include news that is directly and specifically about the company '{name}'.
+        2. Absolutely ignore news about other companies (e.g. if the target company is '{name}', ignore news about '대성산업' or '와이제이링크').
+        3. Absolutely ignore news about regions or unrelated terms (e.g. if the target company is '서남', ignore news about '서남아시아' or '서남 수협').
+        4. If there are not enough valid news headlines for '{name}', return fewer factors (e.g. 1 or 2 items, or empty list if none). Do not hallucinate or make up news.
+        
+        STRICT LEGAL & COMPLIANCE RULES:
+        1. NEVER recommend buying, selling, or holding. Avoid directive/subjective words: "추천", "주의", "매수 권장", "손절", "관리 필요", "긍정적", "부정적".
+        2. Keep all descriptions strictly neutral, factual, and objective.
+        3. Explain in plain Korean (쉬운 우리말) for beginners. Avoid difficult financial jargon (e.g. instead of "컨센서스 상회", use "시장 예상보다 높은 실적").
+        4. Neutral summary (ai_opinion): Max 30 characters.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Simple factual factor 1", "Simple factual factor 2", "Simple factual factor 3"],
-            "cons": ["Simple factual risk 1", "Simple factual risk 2", "Simple factual risk 3"],
+            "pros": ["Simple factual factor 1", "Simple factual factor 2", ...],
+            "cons": ["Simple factual risk 1", "Simple factual risk 2", ...],
             "ai_opinion": "Easy neutral summary"
         }}
         """
