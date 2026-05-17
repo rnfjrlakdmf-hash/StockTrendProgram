@@ -271,8 +271,9 @@ def send_daily_analytics_report():
         cursor.execute("""
             SELECT f.token 
             FROM fcm_tokens f
-            JOIN users u ON f.user_id = u.id
+            LEFT JOIN users u ON f.user_id = u.id
             WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
+               OR f.user_id IN ('110418985320259217419', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
         """)
         tokens = [row[0] for row in cursor.fetchall()]
     except Exception as e:

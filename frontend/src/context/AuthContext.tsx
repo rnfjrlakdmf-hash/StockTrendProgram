@@ -32,7 +32,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const storedUser = localStorage.getItem("stock_user");
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
+                
+                // [Self-Healing] Silent background sync to ensure the backend DB 'users' table is populated
+                fetch(`${API_BASE_URL}/api/auth/google`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: parsedUser.id,
+                        email: parsedUser.email,
+                        name: parsedUser.name,
+                        picture: parsedUser.picture || ""
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success" && data.user) {
+                        localStorage.setItem("stock_user", JSON.stringify(data.user));
+                        localStorage.setItem("user_id", data.user.id);
+                    }
+                })
+                .catch(err => console.warn("Silent background user sync failed:", err));
             }
         } catch (e) {
             localStorage.removeItem("stock_user");
