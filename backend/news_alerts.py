@@ -102,12 +102,18 @@ class NewsAlertMonitor:
                 g_news = fetch_google_news(search_query)
                 if g_news and len(g_news) > 0:
                     top_g = g_news[0]
-                    news_items.append({
-                        'id': top_g.get('link'),  # 구글 뉴스는 링크를 고유 ID로 사용
-                        'title': top_g.get('title'),
-                        'publisher': top_g.get('publisher', '구글 뉴스'),
-                        'source': 'google'
-                    })
+                    g_title = top_g.get('title', '')
+                    
+                    # 관련성 필터: 종목명이 제목에 명시적으로 포함되어 있을 때만 발송 (타기업 뉴스 혼입 차단)
+                    if stock_name in g_title:
+                        news_items.append({
+                            'id': top_g.get('link'),  # 구글 뉴스는 링크를 고유 ID로 사용
+                            'title': g_title,
+                            'publisher': top_g.get('publisher', '구글 뉴스'),
+                            'source': 'google'
+                        })
+                    else:
+                        print(f"[NewsAlert] Filtered out irrelevant Google News for {stock_name}: {g_title}")
             except: pass
             
             return news_items
