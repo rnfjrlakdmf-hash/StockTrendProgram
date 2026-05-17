@@ -20,13 +20,18 @@ export default function AdBanner({
     fullWidthResponsive = true 
 }: AdBannerProps) {
     useEffect(() => {
+        // [v1.0.1] Bulletproof dynamic SPA initialization
+        // Prevents React Strict Mode double-push mismatch (TagError)
         try {
-            // @ts-ignore
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            const uninitialized = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status])');
+            if (uninitialized.length > 0) {
+                // @ts-ignore
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            }
         } catch (err) {
-            console.error("AdSense error:", err);
+            console.warn("AdSense push warning (safe fallback):", err);
         }
-    }, []);
+    }, [adSlot]);
 
     return (
         <div className="w-full my-6 overflow-hidden rounded-xl bg-white/5 border border-white/10 p-2 text-center">
