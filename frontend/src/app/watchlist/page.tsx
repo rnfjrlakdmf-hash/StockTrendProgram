@@ -35,8 +35,6 @@ export default function WatchlistPage() {
     // Alerts List States
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [alertsLoading, setAlertsLoading] = useState(true);
-    const [showSettings, setShowSettings] = useState(false);
-    const [chatId, setChatId] = useState("");
 
     // CB Disclosure State
     const [cbAlerts, setCbAlerts] = useState<any[]>([]);
@@ -472,42 +470,11 @@ export default function WatchlistPage() {
                                     <button onClick={runAlertCheck} className="p-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition-all">
                                         <RefreshCw className={`w-5 h-5 ${alertsLoading ? 'animate-spin' : ''}`} />
                                     </button>
-                                    <button onClick={() => setShowSettings(!showSettings)} className={`p-3 rounded-xl border transition-all ${showSettings ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-400'}`}>
-                                        <Settings2 className="w-5 h-5" />
-                                    </button>
+
                                 </div>
                             </div>
 
-                            {showSettings && (
-                                <div className="p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl animate-in zoom-in-95 max-w-xl mx-auto">
-                                    <div className="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4 text-center">
-                                        <div className="mx-auto bg-blue-500/25 p-3 rounded-2xl w-fit">
-                                            <Bell className="w-6 h-6 text-blue-400" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-white">실시간 모바일 웹 푸시 알림 설정</h3>
-                                        <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">
-                                            브라우저 알림 권한을 승인하여 주식 가격 돌파 알림, 실시간 공시 및 아침/저녁 리포트를 핸드폰 화면에서 1초 만에 실시간으로 받아보세요.
-                                        </p>
-                                        <button
-                                            onClick={async () => {
-                                                const { requestFCMToken } = await import("@/lib/firebase");
-                                                const token = await requestFCMToken();
-                                                if (token) {
-                                                    await fetch(`${API_BASE_URL}/api/fcm/register`, {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id || (user as any).uid },
-                                                        body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
-                                                    });
-                                                    alert("✅ 실시간 푸시 알림이 성공적으로 등록되었습니다!");
-                                                }
-                                            }}
-                                            className="w-full max-w-xs mx-auto py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl transition-all shadow-lg active:scale-95 text-sm"
-                                        >
-                                            🔔 푸시 알림 활성화하기
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+
 
                             <div className="grid gap-3">
                                 {alerts.length === 0 ? (
