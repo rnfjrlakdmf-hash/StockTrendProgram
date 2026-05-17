@@ -139,18 +139,29 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
         hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
         hist['ChangeVal'] = hist['Close'] - hist['PrevClose']
         hist_desc = hist.sort_index(ascending=False)
-        # Drop the oldest day since it has no PrevClose, resulting in 0 change
-        if len(hist_desc) > 0:
-            hist_desc = hist_desc.iloc[:-1]
-            
+        
+        # [Fix V6.0] NEVER drop the oldest day! Dropping it causes severe data loss for newly listed IPO stocks 
+        # (e.g. Poled 476850 May 14 listing date was lost) and unnecessarily deletes the first day of any requested range.
+        
         res = []
         for date, row in hist_desc.iterrows():
             if pd.isna(row['Close']): continue
+            
+            # Calculate change: use standard interday change, or fallback to intraday change relative to Open if PrevClose is missing (oldest day/IPO day)
+            change_pct = 0.0
+            change_val = 0.0
+            if pd.notna(row['ChangePct']):
+                change_pct = float(row['ChangePct'])
+                change_val = float(row['ChangeVal'])
+            elif 'Open' in row and pd.notna(row['Open']) and row['Open'] > 0:
+                change_pct = ((float(row['Close']) - float(row['Open'])) / float(row['Open'])) * 100
+                change_val = float(row['Close']) - float(row['Open'])
+
             res.append({
                 "date": date.strftime("%Y-%m-%d"),
                 "close": float(row['Close']),
-                "change": float(row['ChangePct']) if pd.notna(row['ChangePct']) else 0.0,
-                "change_val": float(row['ChangeVal']) if pd.notna(row['ChangeVal']) else 0.0,
+                "change": change_pct,
+                "change_val": change_val,
                 "volume": int(row['Volume']) if pd.notna(row['Volume']) else 0,
                 "open": float(row['Open']) if 'Open' in row and pd.notna(row['Open']) else 0.0,
                 "high": float(row['High']) if 'High' in row and pd.notna(row['High']) else 0.0,
