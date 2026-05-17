@@ -211,7 +211,7 @@ export default function FCMTokenManager() {
                                     {loading ? '연결 재설정 중...' : '실시간 알림 수신 중'}
                                 </p>
                                 <p className="text-gray-400 font-medium mb-3 leading-relaxed">
-                                    {loading ? '잠시만 기다려주세요.' : '정상적으로 연결되었습니다. 버튼을 눌러 테스트해보세요.'}
+                                    {loading ? '잠시만 기다려주세요.' : '정상적으로 연결되었습니다. 실시간으로 최신 속보와 가격 알림을 수신합니다.'}
                                 </p>
                                 
                                 {!loading && (
@@ -241,19 +241,13 @@ export default function FCMTokenManager() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="w-full">
                                             <button 
                                                 onClick={handleEnableNotifications}
                                                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] shadow-lg shadow-blue-500/20"
                                             >
                                                 <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
                                                 알림 갱신 (Sync)
-                                            </button>
-                                            <button 
-                                                onClick={handleTestPush}
-                                                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] border border-white/10"
-                                            >
-                                                🎈 테스트 발송
                                             </button>
                                         </div>
                                         <p className="text-[10px] text-gray-500 text-center mt-1">
