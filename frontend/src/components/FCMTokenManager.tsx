@@ -241,18 +241,24 @@ export default function FCMTokenManager() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-2">
+                                        <div className="grid grid-cols-2 gap-2">
                                             <button 
                                                 onClick={handleEnableNotifications}
-                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/20"
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] shadow-lg shadow-blue-500/20"
                                             >
-                                                <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> 
-                                                알림 연결 갱신 (Sync)
+                                                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
+                                                알림 갱신 (Sync)
                                             </button>
-                                            <p className="text-[10px] text-gray-500 text-center mt-1">
-                                                기기 변경이나 알림 미수신 시 위 버튼을 눌러주세요.
-                                            </p>
+                                            <button 
+                                                onClick={handleTestPush}
+                                                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] border border-white/10"
+                                            >
+                                                🎈 테스트 발송
+                                            </button>
                                         </div>
+                                        <p className="text-[10px] text-gray-500 text-center mt-1">
+                                            기기 변경이나 알림 미수신 시 위 버튼들을 이용해주세요.
+                                        </p>
                                     </div>
                                 )}
                             </div>
