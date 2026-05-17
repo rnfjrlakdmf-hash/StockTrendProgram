@@ -1516,9 +1516,24 @@ def fetch_naver_ranking_data(nation: str, order_type: str) -> list:
             res = requests.get(url, headers=mobile_headers, timeout=5)
             if res.status_code == 200:
                 data = res.json()
-                items = (data.get("result") or {}).get("datas") or (
-                    data.get("result") or {}).get("items") or []
-                return items if isinstance(items, list) else []
+                res_obj = data.get("result")
+                if isinstance(res_obj, list):
+                    items = res_obj
+                elif isinstance(res_obj, dict):
+                    items = res_obj.get("datas") or res_obj.get("items") or []
+                else:
+                    items = []
+                
+                # Flatten nested priceInfo if present
+                flattened = []
+                for item in items:
+                    if isinstance(item, dict):
+                        p_info = item.get("priceInfo")
+                        if isinstance(p_info, dict):
+                            flattened.append({**p_info, **item})
+                        else:
+                            flattened.append(item)
+                return flattened
 
         elif nation == "KOR":
             # Domestic Volume/Amount
