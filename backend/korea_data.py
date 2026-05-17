@@ -483,10 +483,31 @@ def gather_naver_stock_data(symbol: str):
         # [Market Cap Fallback]
         mc = soup.select_one("#_market_sum")
         if mc:
-            # [Fix] Preserve units like '조', '억' by only removing whitespace and newlines
-            market_cap_str = re.sub(r'[\s\n\t]+', '', mc.text.strip())
-            if not market_cap_str.endswith("원"):
-                market_cap_str += "원"
+            # [Fix] Naver Finance market sum is in '억원' unit.
+            # E.g. '1,581조 4,184' or '982'.
+            # We must correctly format it as '1조 5,814억원' or '982억원'.
+            raw_mc_str = re.sub(r'[\s\n\t]+', '', mc.text.strip())
+            if "조" in raw_mc_str:
+                parts = raw_mc_str.split("조")
+                jo_part = parts[0]
+                eok_part = parts[1] if len(parts) > 1 else ""
+                # Strip commas and non-digits from eok part
+                eok_part_clean = re.sub(r'[^0-9]', '', eok_part)
+                if not eok_part_clean or int(eok_part_clean) == 0:
+                    market_cap_str = f"{jo_part}조원"
+                else:
+                    try:
+                        eok_formatted = f"{int(eok_part_clean):,}"
+                    except:
+                        eok_formatted = eok_part
+                    market_cap_str = f"{jo_part}조 {eok_formatted}억원"
+            else:
+                # No '조' part, just raw eok part (e.g. '982')
+                eok_val_clean = re.sub(r'[^0-9]', '', raw_mc_str)
+                try:
+                    market_cap_str = f"{int(eok_val_clean):,}억원"
+                except:
+                    market_cap_str = f"{raw_mc_str}억원"
 
         # [Session Logic v7.2]
         # We use the prices extracted from the Integration API above.

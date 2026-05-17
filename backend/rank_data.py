@@ -668,10 +668,29 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                         p_item["price"] = q["price"]
                         if currency != "KRW": p_item["price_krw"] = f"{f_qp * rate:,.0f}"
                 except: pass
-                qc = str(q.get("change") or "0.00%")
-                if qc and qc not in ["0.00%", "0%"] and ("+" in qc or "-" in qc):
-                    if not p_item.get("change_percent") or p_item["change_percent"] in ["0.00%", "0.0%"]:
-                        p_item["change_percent"] = qc
+                
+                # [Fix] Robust zero change percent check
+                def is_zero_change(pct_str):
+                    if not pct_str: return True
+                    try:
+                        clean = str(pct_str).replace("%", "").replace("+", "").replace("-", "").replace("[정규]", "").strip()
+                        return float(clean) == 0.0
+                    except:
+                        return True
+
+                qp_pct = q.get("change_percent") or q.get("change") or "0.00%"
+                if qp_pct and not is_zero_change(qp_pct):
+                    if not p_item.get("change_percent") or is_zero_change(p_item["change_percent"]):
+                        p_item["change_percent"] = qp_pct
+
+                # Enrich absolute change value
+                qv = q.get("change_val")
+                if qv is not None:
+                    try:
+                        p_item["change_val"] = float(str(qv).replace(",", ""))
+                    except:
+                        p_item["change_val"] = qv
+
                 rf = q.get("risefall_name")
                 if rf: p_item["risefall"] = 2 if rf == 'RISING' else (5 if rf == 'FALLING' else 3)
             return p_item
