@@ -55,6 +55,41 @@ def initialize_firebase():
 
 
 
+def sanitize_notification_text(title: str, body: str):
+    """
+    모바일 화면에 맞춰 알림 글씨가 잘리지 않고 예쁘게 나오도록 자동 정돈 및 요약
+    """
+    # 1. 제목 다듬기 (최대 26글자 제한하여 잘림 방지)
+    max_title_len = 26
+    clean_title = title.strip() if title else "알림"
+    if len(clean_title) > max_title_len:
+        clean_title = clean_title[:max_title_len - 2] + ".."
+
+    # 2. 본문 다듬기 (줄 단위로 분석하여 모바일 가독성 최적화)
+    if not body:
+        return clean_title, ""
+        
+    lines = body.strip().split("\n")
+    cleaned_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        # 한 줄이 너무 길면 38자 내외로 자름
+        if len(line) > 38:
+            line = line[:36] + ".."
+        cleaned_lines.append(line)
+        
+    # 모바일 알림창 크기에 맞추어 최대 5줄까지만 허용 (나머지는 생략)
+    max_lines = 5
+    if len(cleaned_lines) > max_lines:
+        cleaned_lines = cleaned_lines[:max_lines - 1] + ["💬 상세 내용은 앱에서 확인하세요!"]
+        
+    clean_body = "\n".join(cleaned_lines)
+    return clean_title, clean_body
+
+
 def send_push_notification(
     token: str,
     title: str,
@@ -64,19 +99,12 @@ def send_push_notification(
 ) -> Dict:
     """
     FCM 푸시 알림 발송
-    
-    Args:
-        token: FCM 토큰
-        title: 알림 제목
-        body: 알림 내용
-        data: 추가 데이터 (선택)
-        image_url: 이미지 URL (선택)
-    
-    Returns:
-        {"success": bool, "response": str} or {"success": bool, "error": str}
     """
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
+    
+    # 모바일 글씨 잘림 방지를 위한 자동 정돈 적용
+    title, body = sanitize_notification_text(title, body)
     
     try:
         # 알림 메시지 구성
@@ -160,22 +188,15 @@ def send_multicast_notification(
 ) -> Dict:
     """
     여러 기기에 동시 발송
-    
-    Args:
-        tokens: FCM 토큰 리스트
-        title: 알림 제목
-        body: 알림 내용
-        data: 추가 데이터
-        image_url: 이미지 URL
-    
-    Returns:
-        {"success": bool, "success_count": int, "failure_count": int}
     """
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
     
     if not tokens:
         return {"success": False, "error": "No tokens provided"}
+        
+    # 모바일 글씨 잘림 방지를 위한 자동 정돈 적용
+    title, body = sanitize_notification_text(title, body)
     
     try:
         # 알림 메시지 구성
@@ -258,14 +279,6 @@ def send_price_alert_notification(
 ) -> Dict:
     """
     가격 알림 전용 푸시 발송
-    
-    Args:
-        tokens: FCM 토큰 리스트
-        symbol: 종목 코드
-        alert_type: 'stop_loss', 'take_profit', 'target_price'
-        current_price: 현재가
-        change_pct: 변동률
-        message: 알림 메시지
     """
     # 알림 타입별 이모지
     emoji_map = {
@@ -286,6 +299,8 @@ def send_price_alert_notification(
         "change_pct": str(change_pct),
         "url": f"/discovery?symbol={symbol}"
     }
+    
+    return send_multicast_notification(tokens, title, message, data)
     
 
 

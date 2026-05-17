@@ -209,7 +209,7 @@ def send_closing_notification(market: str):
             line = f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.1f}%)"
             if item.get('price_diff') is not None:
                 diff = item['price_diff']
-                line += f" [{diff:+,2.0f}]"
+                line += f" [{diff:+,.0f}]"
             price_list.append(line)
             
         body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
