@@ -49,7 +49,8 @@ class MorningBriefingService:
             target_symbols = []
             for row in watchlist_rows:
                 symbol = row[0]
-                is_kr = symbol.isdigit() and len(symbol) == 6
+                clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+                is_kr = clean_sym.isdigit() and len(clean_sym) == 6
                 if market_type == 'KR' and is_kr:
                     target_symbols.append(symbol)
                 elif market_type == 'US' and not is_kr:
@@ -111,10 +112,11 @@ class MorningBriefingService:
         """최신 뉴스 헤드라인 수집"""
         headlines = []
         
-        # 한국 주식 (네이버)
-        if symbol.isdigit() and len(symbol) == 6:
+        # 한국 주식 (네이버) - 접미사 제거 후 6자리 코드 추출
+        clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+        if clean_sym.isdigit() and len(clean_sym) == 6:
             try:
-                url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=15"
+                url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=15"
                 res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
                 data = res.json()
                 if isinstance(data, list):

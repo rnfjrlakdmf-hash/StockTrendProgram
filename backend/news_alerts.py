@@ -78,9 +78,10 @@ class NewsAlertMonitor:
             news_items = []
             
             # 1. 네이버 뉴스 (한국 주식인 경우만)
-            if symbol.isdigit() and len(symbol) == 6:
+            clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+            if clean_sym.isdigit() and len(clean_sym) == 6:
                 try:
-                    url = f"https://m.stock.naver.com/api/news/stock/{symbol}?pageSize=1"
+                    url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=1"
                     headers = {'User-Agent': 'Mozilla/5.0'}
                     res = requests.get(url, headers=headers, timeout=5)
                     data = res.json()

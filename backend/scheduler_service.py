@@ -7,8 +7,9 @@ from stock_data import get_simple_quote, get_korean_stock_name
 from firebase_config import send_multicast_notification, initialize_firebase
 
 def is_korean_stock(symbol: str) -> bool:
-    """숫자 6자리면 한국 주식으로 판단"""
-    return symbol.isdigit() and len(symbol) == 6
+    """숫자 6자리의 한국 주식 코드(접미사 .KS/.KQ 포함) 판별"""
+    clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+    return clean_sym.isdigit() and len(clean_sym) == 6
 
 def is_market_holiday(market: str) -> bool:
     """국가별 주요 시장 휴장일 여부 확인 (2024-2025 주요 공휴일)"""
