@@ -100,6 +100,13 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         {item.symbol}
                                     </span>
                                 </div>
+                                
+                                {item.badge?.reason && (
+                                    <div className="text-[11px] md:text-[13px] text-zinc-300 font-bold mt-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 w-fit max-w-[90%] leading-relaxed shadow-lg flex items-start gap-1.5">
+                                        <span className="text-orange-400 shrink-0 font-black">💡 수혜이유:</span>
+                                        <span className="break-all md:break-normal">{item.badge.reason}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Price Area */}
