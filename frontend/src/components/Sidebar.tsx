@@ -12,19 +12,18 @@ import LoginModal from "./LoginModal";
 import AdRewardModal from "./AdRewardModal"; // Import Modal
 
 const navigation = [
-    { name: "대시보드", href: "/", icon: LayoutDashboard },
-    { name: "시장 인텔리전스", href: "/signals", icon: Activity },
-
-    { name: "종목발굴", href: "/discovery", icon: Compass },
-    { name: "정리분석", href: "/analysis", icon: BarChart3 },
-    { name: "이슈 테마", href: "/theme", icon: Sparkles },
-    { name: "차트 분석", href: "/pattern", icon: LineChart },
-    { name: "ETF 분석", href: "/etf", icon: Activity },
-    { name: "공급망 지도", href: "/supply-chain", icon: Network },
-    { name: "커뮤니티", href: "/community", icon: Users },
-    { name: "포트폴리오", href: "/portfolio", icon: Shield },
-    { name: "MY 관심종목", href: "/watchlist", icon: Star },
-    { name: "설정 (API 연결)", href: "/settings", icon: Settings },
+    { name: "통합 대시보드", href: "/", icon: LayoutDashboard },
+    { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity },
+    { name: "AI 퀀트 종목 발굴", href: "/discovery", icon: Compass },
+    { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3 },
+    { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles },
+    { name: "AI 기술적 패턴 분석", href: "/pattern", icon: LineChart },
+    { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity },
+    { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network },
+    { name: "투자 인텔리전스 포럼", href: "/community", icon: Users },
+    { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield },
+    { name: "실시간 스마트 워치리스트", href: "/watchlist", icon: Star },
+    { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
