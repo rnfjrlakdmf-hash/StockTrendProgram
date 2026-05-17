@@ -308,7 +308,7 @@ export default function Sidebar() {
                                 {item.name}
                             </Link>
                         ))}
-                        {user?.email === "rnfjr@gmail.com" && (
+                        {(user?.email?.toLowerCase() === "rnfjr@gmail.com" || user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com") && (
                             <Link
                                 href="/admin"
                                 onClick={() => setIsMobileOpen(false)}
