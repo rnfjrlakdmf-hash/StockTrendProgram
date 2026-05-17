@@ -37,10 +37,15 @@ export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    // [Security] Minimal admin check
+    // [Security] Strict administrator check (rnfjr@gmail.com only)
     useEffect(() => {
-        if (!authLoading && !currentUser) {
-            router.push("/");
+        if (!authLoading) {
+            if (!currentUser) {
+                router.push("/");
+            } else if (currentUser.email !== "rnfjr@gmail.com") {
+                alert("🛑 접근 권한이 없습니다. 관리자 계정만 접근할 수 있는 페이지입니다.");
+                router.push("/");
+            }
         }
     }, [currentUser, authLoading]);
 
