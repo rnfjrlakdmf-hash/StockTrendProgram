@@ -59,6 +59,8 @@ def sanitize_notification_text(title: str, body: str):
     """
     모바일 및 스마트워치(애플워치/갤럭시워치) 화면에서 글씨가 잘리지 않고 
     0.1초 만에 핵심 내용을 인지할 수 있도록 타이틀과 본문을 극도로 정교하게 요약하고 다듬습니다.
+    스마트폰 및 스마트워치의 기본 확장 기능(Expandable Notification)을 해치지 않기 위해
+    서버측 강제 자르기 한계를 대폭 완화하여 사용자가 전체 텍스트를 감상할 수 있게 합니다.
     """
     clean_title = title.strip() if title else "알림"
     clean_body = body.strip() if body else ""
@@ -77,12 +79,12 @@ def sanitize_notification_text(title: str, body: str):
         stock_part = clean_title.replace("⚖️", "").replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
         clean_title = f"⚖️ AI 브리핑: {stock_part}" if stock_part else "⚖️ AI 브리핑"
 
-    # 일반 모바일 제목 길이 제한 (최대 16자 제한하여 스마트워치/폰 공통 한 줄 표시 보장)
-    max_title_len = 16
+    # 일반 모바일 제목 길이 제한 완화 (충분히 한눈에 들어오도록 40자까지 허용)
+    max_title_len = 40
     if len(clean_title) > max_title_len:
         clean_title = clean_title[:max_title_len - 2] + ".."
 
-    # 2. 본문 다듬기 (스마트워치 좁은 텍스트 영역 및 모바일 최적화)
+    # 2. 본문 다듬기 (스마트폰의 확장형 알림 지원을 위해 강제 자르기 길이 완화)
     if not clean_body:
         return clean_title, ""
         
@@ -93,9 +95,9 @@ def sanitize_notification_text(title: str, body: str):
         line = line.strip()
         if not line:
             continue
-        # 한 줄이 너무 길면 워치/모바일 가독성을 위해 24자 내외로 자동 자름 (단위/핵심 정보 보존)
-        if len(line) > 24:
-            line = line[:22] + ".."
+        # 뉴스 제목 및 속보의 전체 전달을 위해 한 줄 최대 길이를 150자로 대폭 완화 (워치/폰 확장 시 전체 감상 가능)
+        if len(line) > 150:
+            line = line[:147] + ".."
         cleaned_lines.append(line)
         
     # 스마트워치와 모바일 배너 알림 한도에 맞추어 최대 5줄까지만 허용
