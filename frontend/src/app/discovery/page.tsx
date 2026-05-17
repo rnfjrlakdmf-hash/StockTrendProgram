@@ -1659,6 +1659,65 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             if (json.status === "success") {
                 setIsWatchlisted(!isWatchlisted);
                 const userId = user.id || (user as any).uid || "guest";
+                
+                // [Auto-FCM Activation] 관심종목 등록 시 알림 권한 자동 요청 및 서버 연동
+                if (!isWatchlisted) {
+                    if (typeof window !== 'undefined' && 'Notification' in window) {
+                        const currentPerm = Notification.permission;
+                        if (currentPerm === 'default') {
+                            // 비동기로 알림 권한 및 토큰 등록 요청 (UI를 차단하지 않음)
+                            setTimeout(async () => {
+                                try {
+                                    const { requestFCMToken } = await import('@/lib/firebase');
+                                    const token = await requestFCMToken();
+                                    if (token) {
+                                        await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-User-Id': userId
+                                            },
+                                            body: JSON.stringify({
+                                                token,
+                                                device_type: 'web',
+                                                device_name: navigator.userAgent
+                                            })
+                                        });
+                                        localStorage.setItem('fcm_registered', 'true');
+                                        // Dispatch event to update FCMTokenManager indicator status
+                                        window.dispatchEvent(new CustomEvent('OPEN_FCM_REQUEST'));
+                                    }
+                                } catch (fcmErr) {
+                                    console.error('[FCM Auto-Enable] Error:', fcmErr);
+                                }
+                            }, 500);
+                        } else if (currentPerm === 'granted') {
+                            // 이미 권한이 있으면 최신 상태로 토큰 연동만 확실히 동기화
+                            setTimeout(async () => {
+                                try {
+                                    const { requestFCMToken } = await import('@/lib/firebase');
+                                    const token = await requestFCMToken();
+                                    if (token) {
+                                        await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-User-Id': userId
+                                            },
+                                            body: JSON.stringify({
+                                                token,
+                                                device_type: 'web',
+                                                device_name: navigator.userAgent
+                                            })
+                                        });
+                                        localStorage.setItem('fcm_registered', 'true');
+                                    }
+                                } catch (e) {}
+                            }, 500);
+                        }
+                    }
+                }
+                
                 alert(isWatchlisted ? "❌ 관심종목에서 삭제되었습니다." : "⭐ 관심종목에 등록되었습니다!");
                 // Dispatch event to notify Sidebar
                 window.dispatchEvent(new CustomEvent('watchlistChanged'));
