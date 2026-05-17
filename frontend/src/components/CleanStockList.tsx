@@ -22,6 +22,21 @@ export interface CleanStockItem {
     added_price?: number; // Price when added to watchlist
 }
 
+// Helper function to extract high-value keywords and format them as hashtags
+function getHashtags(reason: string): string[] {
+    if (!reason) return [];
+    const stopWords = new Set(["및", "등", "사업", "영위", "관련", "기업", "제조", "판매", "개발", "생산", "전문", "업체", "부문", "시장", "국내", "글로벌", "세계", "보유", "통해", "제공"]);
+    const rawWords = reason.split(/[\s,./\-_+&|]+/g).map(w => w.trim());
+    const words = rawWords
+        .filter(w => w.length >= 2 && !stopWords.has(w))
+        .map(w => w.replace(/[()[\]{}]/g, ''));
+    const hashtags = words.map(w => `#${w}`);
+    if (hashtags.length === 0) {
+        return [`#${reason.replace(/\s+/g, '').substring(0, 10)}`];
+    }
+    return hashtags.slice(0, 4);
+}
+
 interface CleanStockListProps {
     items: CleanStockItem[];
     onItemClick?: (symbol: string) => void;
@@ -102,9 +117,21 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 </div>
                                 
                                 {item.badge?.reason && (
-                                    <div className="text-[11px] md:text-[13px] text-zinc-300 font-bold mt-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 w-fit max-w-[90%] leading-relaxed shadow-lg flex items-start gap-1.5">
-                                        <span className="text-orange-400 shrink-0 font-black">💡 수혜이유:</span>
-                                        <span className="break-all md:break-normal">{item.badge.reason}</span>
+                                    <div className="flex flex-col gap-1.5 mt-2.5">
+                                        <div className="flex flex-wrap gap-1.5 max-w-[90%]">
+                                            {getHashtags(item.badge.reason).map((tag, idx) => (
+                                                <span 
+                                                    key={idx} 
+                                                    className="text-[10px] md:text-[12px] bg-orange-500/10 text-orange-400 border border-orange-500/25 px-2.5 py-0.5 rounded-lg font-black shadow-md hover:bg-orange-500/20 transition-all cursor-default"
+                                                    translate="no"
+                                                >
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] md:text-[11.5px] text-zinc-400 font-bold leading-normal pl-0.5">
+                                            {item.badge.reason}
+                                        </p>
                                     </div>
                                 )}
                             </div>
