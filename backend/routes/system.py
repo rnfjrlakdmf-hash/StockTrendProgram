@@ -8,6 +8,11 @@ from turbo_engine import turbo_engine
 
 router = APIRouter()
 
+def check_admin_auth(x_admin_key: Optional[str] = None, secret: Optional[str] = None):
+    admin_key = os.environ.get("ADMIN_SECRET_KEY", "StockTrendSecretAdmin2026!")
+    if (x_admin_key or secret) != admin_key:
+        raise HTTPException(status_code=403, detail="Unauthorized admin access.")
+
 # Health Check Endpoint - ULTRA Fast
 @router.get("/health")
 def health_check():
@@ -34,8 +39,9 @@ def get_system_status():
         return {"status": "error", "message": str(e)}
 
 @router.get("/admin/nuke-placeholders")
-def nuke_placeholders(view: bool = False):
+def nuke_placeholders(view: bool = False, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Admin] Force clear all stuck placeholders from SQLite or view them"""
+    check_admin_auth(x_admin_key, secret)
     from utils.briefing_store import get_db
     import json
     try:
@@ -62,8 +68,9 @@ def nuke_placeholders(view: bool = False):
         return {"status": "error", "message": str(e)}
 
 @router.get("/admin/db-status")
-def get_db_status():
+def get_db_status(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Admin] Check DB row count and path"""
+    check_admin_auth(x_admin_key, secret)
     from db_manager import DB_FILE, get_db_connection
     try:
         conn = get_db_connection()
@@ -94,8 +101,9 @@ def get_db_status():
         return {"status": "error", "message": str(e)}
 
 @router.get("/admin/raw-check")
-def raw_db_check():
+def raw_db_check(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Diagnostic] DB 내부의 실제 브리핑 데이터 상위 5개를 가공 없이 반환합니다."""
+    check_admin_auth(x_admin_key, secret)
     from db_manager import get_db_connection
     try:
         conn = get_db_connection()
@@ -117,14 +125,16 @@ def raw_db_check():
         return {"status": "error", "message": str(e)}
 
 @router.post("/admin/clear-cache")
-def clear_cache():
+def clear_cache(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Admin] Force clear all server-side cache"""
+    check_admin_auth(x_admin_key, secret)
     turbo_engine.clear_cache()
     return {"status": "ok", "message": "Cache cleared successfully"}
 
 @router.get("/admin/users")
-def read_all_users():
+def read_all_users(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Admin] 모든 회원 목록 조회"""
+    check_admin_auth(x_admin_key, secret)
     from db_manager import get_all_users
     users = get_all_users()
     return {"status": "success", "data": users}
@@ -134,8 +144,9 @@ class ProToggleRequest(BaseModel):
     is_pro: bool
 
 @router.post("/admin/users/pro")
-def update_user_pro(req: ProToggleRequest):
+def update_user_pro(req: ProToggleRequest, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
     """[Admin] 회원 PRO 상태 변경"""
+    check_admin_auth(x_admin_key, secret)
     from db_manager import toggle_user_pro_status
     success = toggle_user_pro_status(req.user_id, req.is_pro)
     if success:
