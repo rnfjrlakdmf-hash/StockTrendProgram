@@ -297,6 +297,7 @@ def gather_naver_stock_data(symbol: str):
         try:
             detail_url = f"https://stock.naver.com/api/domestic/detail/{code}/detail?codeType=KRX"
             d_res = requests.get(detail_url, headers=HEADER, timeout=5)
+            d_res.encoding = 'utf-8' # Force UTF-8 to prevent mojibake
             if d_res.status_code == 200:
                 d_data = d_res.json()
 
@@ -334,6 +335,7 @@ def gather_naver_stock_data(symbol: str):
         try:
             p_url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={code}"
             p_res = requests.get(p_url, headers=HEADER, timeout=5)
+            p_res.encoding = 'utf-8' # Force UTF-8 to prevent mojibake
             if p_res.status_code == 200:
                 p_root = p_res.json()
                 item = p_root.get('domesticKrx', {}).get(code)
@@ -368,7 +370,7 @@ def gather_naver_stock_data(symbol: str):
 
                     # [v7.1.1] Session-aware changes
                     # Regular change (vs yesterday)
-                    reg_change_val = int(str(item.get('compareToPreviousClosePrice', '0')).replace(',', ''))
+                    reg_change_val = int(str(item.get('fluctuations') or item.get('compareToPreviousClosePrice') or '0').replace(',', ''))
                     reg_change_pct = float(item.get('fluctuationsRatio', '0'))
                     
                     # Over-hours change (vs today's regular close)
@@ -428,9 +430,10 @@ def gather_naver_stock_data(symbol: str):
                     else:
                         market_status = "장마감"
 
-                    if item.get('marketType') == 'KOSPI':
+                    m_type = item.get('marketType') or item.get('stockExchangeType')
+                    if m_type == 'KOSPI':
                         market_type = 'KS'
-                    elif item.get('marketType') == 'KOSDAQ':
+                    elif m_type == 'KOSDAQ':
                         market_type = 'KQ'
 
                     print(f"[gather_naver_stock_data] New Price API success for {code} | after_market={after_market_data is not None} | nxt={nxt_data is not None}")
