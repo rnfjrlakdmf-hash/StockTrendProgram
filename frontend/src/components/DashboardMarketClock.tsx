@@ -22,12 +22,39 @@ const MARKETS: MarketTime[] = [
     { name: "영국", city: "런던", exchange: "LSE", tz: "Europe/London", openHour: 8, openMinute: 0, closeHour: 16, closeMinute: 30, flag: "🇬🇧" },
 ];
 
-const KR_HOLIDAYS = [
-    "2025-01-01", "2025-01-27", "2025-01-28", "2025-01-29",
-    "2025-03-03", "2025-05-05", "2025-05-06", "2025-06-06",
-    "2025-08-15", "2025-10-03", "2025-10-06", "2025-10-07",
-    "2025-10-08", "2025-10-09", "2025-12-25",
-];
+const FIXED_HOLIDAYS: Record<string, string[]> = {
+    "대한민국": ["01-01", "03-01", "05-01", "05-05", "06-06", "08-15", "10-03", "10-09", "12-25"],
+    "미국": ["01-01", "06-19", "07-04", "12-25"],
+    "일본": ["01-01", "01-02", "01-03", "04-29", "05-03", "05-04", "05-05", "08-11", "11-03", "11-23"],
+    "영국": ["01-01", "12-25", "12-26"]
+};
+
+const YEAR_SPECIFIC_HOLIDAYS: Record<string, string[]> = {
+    "대한민국": [
+        // 2025
+        "2025-01-27", "2025-01-28", "2025-01-29", "2025-03-03", "2025-05-06", "2025-10-06", "2025-10-07", "2025-10-08",
+        // 2026
+        "2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-25", "2026-09-24", "2026-09-25", "2026-09-26"
+    ],
+    "미국": [
+        // 2025
+        "2025-01-20", "2025-02-17", "2025-04-18", "2025-05-26", "2025-09-01", "2025-11-27",
+        // 2026
+        "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-09-07", "2026-11-26"
+    ],
+    "일본": [
+        // 2025
+        "2025-01-13", "2025-02-11", "2025-02-24", "2025-03-20", "2025-05-06", "2025-07-21", "2025-09-15", "2025-09-22", "2025-09-23", "2025-10-13", "2025-11-24",
+        // 2026
+        "2026-01-12", "2026-02-11", "2026-02-23", "2026-03-20", "2026-05-06", "2026-07-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-10-12", "2026-11-24"
+    ],
+    "영국": [
+        // 2025
+        "2025-04-18", "2025-04-21", "2025-05-05", "2025-05-26", "2025-08-25",
+        // 2026
+        "2026-04-03", "2026-04-06", "2026-05-04", "2026-05-25", "2026-08-31"
+    ]
+};
 
 export default function DashboardMarketClock() {
     const [times, setTimes] = useState<Record<string, Date>>({});
@@ -70,7 +97,7 @@ export default function DashboardMarketClock() {
     let activeMarketsCount = 0;
     const marketStatuses = MARKETS.map(m => {
         const localTime = times[m.name];
-        if (!localTime) return { ...m, isOpen: false, formattedTime: "00:00:00", formattedDate: "", progress: 0 };
+        if (!localTime) return { ...m, isOpen: false, formattedTime: "00:00:00", formattedDate: "", progress: 0, isHoliday: false };
 
         const hours = localTime.getHours();
         const minutes = localTime.getMinutes();
@@ -88,9 +115,19 @@ export default function DashboardMarketClock() {
         const month = String(localTime.getMonth() + 1).padStart(2, '0');
         const d = String(localTime.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${d}`;
+        const mmDd = `${month}-${d}`;
 
         let isHoliday = false;
-        if (m.name === "대한민국" && KR_HOLIDAYS.includes(dateStr)) {
+        
+        // 1. 고정 공휴일 체크 (MM-DD)
+        const fixedList = FIXED_HOLIDAYS[m.name] || [];
+        if (fixedList.includes(mmDd)) {
+            isHoliday = true;
+        }
+        
+        // 2. 대체 공휴일 및 변동 공휴일 체크 (YYYY-MM-DD)
+        const yearList = YEAR_SPECIFIC_HOLIDAYS[m.name] || [];
+        if (yearList.includes(dateStr)) {
             isHoliday = true;
         }
 
@@ -197,9 +234,11 @@ export default function DashboardMarketClock() {
                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
                                     m.isOpen
                                         ? 'bg-green-500/20 text-green-400 border border-green-500/30 animate-pulse'
-                                        : 'bg-white/5 text-gray-500 border border-white/5'
+                                        : m.isHoliday
+                                            ? 'bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse'
+                                            : 'bg-white/5 text-gray-500 border border-white/5'
                                 }`}>
-                                    {m.isOpen ? 'OPEN' : 'CLOSED'}
+                                    {m.isOpen ? 'OPEN' : m.isHoliday ? 'HOLIDAY' : 'CLOSED'}
                                 </span>
                             </div>
 
