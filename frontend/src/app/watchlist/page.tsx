@@ -234,7 +234,7 @@ export default function WatchlistPage() {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen space-y-8">
+        <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
