@@ -84,10 +84,6 @@ export default function RootLayout({
         />
         <AuthProvider>
           <AnalyticsTracker />
-          {/* EMERGENCY DEPLOYMENT VERIFIER */}
-          <div className="fixed top-0 left-0 w-full bg-fuchsia-600 text-white text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest shadow-lg">
-            LIVE UPDATE v5.2.8-ADSENSE-COMPLIANCE ACTIVE
-          </div>
           <div className="flex min-h-screen">
             <Sidebar />
             <main className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">

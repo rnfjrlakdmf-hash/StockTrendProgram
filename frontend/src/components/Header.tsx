@@ -99,9 +99,6 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 <div className="flex flex-col">
                     <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                         {title}
-                        <span className="text-[10px] font-black bg-yellow-500 text-black px-2 py-0.5 rounded-md border-2 border-white uppercase tracking-tighter shadow-[0_0_20px_rgba(234,179,8,0.8)]">
-                            v4.2.0-SESSION-GRID
-                        </span>
                     </h1>
                     {subtitle && (
                         <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block">
