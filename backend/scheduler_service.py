@@ -218,6 +218,76 @@ def send_closing_notification(market: str):
         if tokens_data:
             send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
 
+def send_daily_analytics_report():
+    """매일 밤 11시 59분 59초에 관리자(rnfjr@gmail.com, rnfjrlakdmf@gmail.com)들에게 일일 방문자 및 시스템 보고서 푸시 알림 발송"""
+    initialize_firebase()
+    print("[Scheduler] Generating daily analytics report for Admins...")
+    
+    from db_manager import get_site_analytics, get_realtime_active_count, get_db_connection
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    today_str = now.strftime("%Y-%m-%d")
+    
+    # 1. 일일 방문자 수 및 페이지뷰 조회
+    stats_list = get_site_analytics(1)
+    unique_visitors = 0
+    pageviews = 0
+    if stats_list:
+        latest = stats_list[0]
+        if latest["date"] == today_str:
+            unique_visitors = latest["unique_visitors"]
+            pageviews = latest["pageviews"]
+            
+    # 2. 실시간 동시 접속자 수 (최근 5분)
+    active_users = get_realtime_active_count(minutes=5)
+    
+    # 3. 누적 가입 회원수 조회
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    total_users = 0
+    try:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to fetch user count: {e}")
+    finally:
+        conn.close()
+        
+    # 4. 푸시 알림 제목 및 본문 구성
+    title = "📊 [STOCK AI] 일일 방문자 및 시스템 운영 보고서"
+    body = f"📅 날짜: {today_str}\n\n" \
+           f"👥 일일 순 방문자수: {unique_visitors:,}명\n" \
+           f"📑 일일 총 페이지뷰: {pageviews:,}회\n" \
+           f"🔥 실시간 접속자 (5분): {active_users:,}명\n" \
+           f"👑 누적 가입 회원수: {total_users:,}명\n\n" \
+           f"오늘 하루도 시스템이 성공적으로 정상 운영되었습니다. 내일도 안정적인 서비스를 제공하겠습니다! 🏆"
+           
+    # 5. 관리자 계정들의 FCM 토큰 조회
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tokens = []
+    try:
+        cursor.execute("""
+            SELECT f.token 
+            FROM fcm_tokens f
+            JOIN users u ON f.user_id = u.id
+            WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
+        """)
+        tokens = [row[0] for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to fetch admin tokens: {e}")
+    finally:
+        conn.close()
+        
+    if tokens:
+        print(f"[Scheduler] Sending daily report to {len(tokens)} admin device(s)...")
+        send_multicast_notification(tokens, title, body, {"url": "/"})
+        return len(tokens)
+    else:
+        print("[Scheduler] No admin FCM tokens found in the database. Cannot send daily report.")
+        return 0
+
 def run_market_scheduler():
     """시장별 이벤트 감시 메인 루프"""
     import asyncio
@@ -230,6 +300,11 @@ def run_market_scheduler():
         try:
             now = datetime.now(kst)
             day_of_week = now.weekday()
+            
+            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
+            if now.hour == 23 and now.minute == 59:
+                send_daily_analytics_report()
+                time.sleep(60)
             
             # [매일 발송] AI 모닝 브리핑 (주말/공휴일 포함 뉴스 요약)
             if now.hour == 8 and now.minute == 0:

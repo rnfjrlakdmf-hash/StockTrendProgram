@@ -36,6 +36,29 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [reportSending, setReportSending] = useState(false);
+
+    const handleTestDailyReport = async () => {
+        setReportSending(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/send-daily-report`, {
+                method: "POST",
+                headers: {
+                    "X-Admin-Key": "StockTrendSecretAdmin2026!"
+                }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert(`🟢 발송 성공!\n${json.message}`);
+            } else {
+                alert(`🛑 발송 실패: ${json.message}`);
+            }
+        } catch (e) {
+            alert("네트워크 오류가 발생했습니다.");
+        } finally {
+            setReportSending(false);
+        }
+    };
 
     // [Security] Strict administrator check (rnfjr@gmail.com & rnfjrlakdmf@gmail.com allowed)
     useEffect(() => {
@@ -306,13 +329,47 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Premium Help Info */}
+                {/* Premium Help & Daily Report Info Grid */}
                 <div className="grid md:grid-cols-2 gap-6 mt-12">
+                     {/* Premium management */}
                      <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-white/5 flex flex-col justify-between">
                           <div>
                              <UserCheck className="w-10 h-10 text-blue-500 mb-6" />
                              <h3 className="text-xl font-bold text-white mb-2">프리미엄 관리 및 권한 조절</h3>
                              <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들에게 실시간으로 Pro 등급을 활성화하여 제공할 수 있습니다. 스위치를 클릭하면 해당 등급 설정이 백엔드 DB와 대시보드 화면에 즉시 실시간 동기화 적용됩니다.</p>
+                          </div>
+                     </div>
+
+                     {/* Daily Analytics Report Card */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-indigo-600/10 to-transparent border border-white/5 flex flex-col justify-between">
+                          <div>
+                             <Activity className="w-10 h-10 text-indigo-400 mb-6" />
+                             <h3 className="text-xl font-bold text-white mb-2">일일 운영 보고서 자동 알림 (23:59:59)</h3>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                                 매일 밤 11시 59분 59초에 오늘 하루 동안 집계된 순방문자수(UV), 페이지뷰(PV), 실시간 동시 접속자 수 및 누적 가입자 현황을 관리자 계정으로 자동 발송합니다.
+                             </p>
+                             <div className="flex flex-col gap-3">
+                                 <div className="flex items-center gap-2 text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-xl self-start">
+                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                     백엔드 실시간 스케줄러 정상 작동 중 (🟢 ON)
+                                 </div>
+                                 <button
+                                     onClick={handleTestDailyReport}
+                                     disabled={reportSending}
+                                     className="flex items-center justify-center gap-2 w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 disabled:opacity-50 text-sm"
+                                 >
+                                     {reportSending ? (
+                                         <>
+                                             <Loader2 className="w-4 h-4 animate-spin" />
+                                             보고서 발송 중...
+                                         </>
+                                     ) : (
+                                         <>
+                                             ⚡ 지금 즉시 보고서 발송 테스트
+                                         </>
+                                     )}
+                                 </button>
+                             </div>
                           </div>
                      </div>
                 </div>

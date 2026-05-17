@@ -319,3 +319,18 @@ def get_analytics_stats(limit: int = 30, x_admin_key: Optional[str] = Header(Non
             "daily_stats": stats
         }
     }
+
+@router.post("/admin/send-daily-report")
+@router.get("/admin/send-daily-report")
+def trigger_daily_report(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 즉시 일일 보고서 푸시 알림 발송 테스트"""
+    check_admin_auth(x_admin_key, secret)
+    from scheduler_service import send_daily_analytics_report
+    try:
+        sent_count = send_daily_analytics_report()
+        return {
+            "status": "success", 
+            "message": f"일일 보고서가 수신인 기기 {sent_count}개로 성공적으로 발송되었습니다!"
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
