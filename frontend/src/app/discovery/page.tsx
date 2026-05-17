@@ -162,20 +162,24 @@ const getExchangeLabel = (symbol: string): { code: string; exchange: string; col
     return { code: symbol, exchange: '', color: 'text-gray-400' };
 };
 
-function EasyTerm({ label, term, isEasyMode }: { label: string, term: string, isEasyMode: boolean }) {
-    if (!isEasyMode) return <div className="text-gray-400 text-xs mb-1">{label}</div>;
+function EasyTerm({ label, term, isEasyMode, align = 'left' }: { label: string, term: string, isEasyMode: boolean, align?: 'left' | 'right' }) {
+    if (!isEasyMode) return <div className="text-gray-400 text-[10px] sm:text-xs mb-1 break-words">{label}</div>;
 
     const explanation = TERM_EXPLANATIONS[term];
 
     return (
-        <div className="group relative inline-flex items-center cursor-help mb-1">
-            <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-xs font-bold flex items-center gap-1">
-                {label} <span className="text-[10px] text-yellow-400 opacity-80">📋</span>
+        <div className="group relative inline-flex items-center cursor-help mb-1 max-w-full">
+            <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-[10px] sm:text-xs font-bold flex items-center gap-1 break-words leading-tight">
+                {label} <span className="text-[10px] text-yellow-400 opacity-80 shrink-0">📋</span>
             </span>
-            <div className="absolute bottom-full left-0 mb-2 w-52 p-3 bg-indigo-900/95 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md border border-white/10 leading-relaxed font-medium">
-                <span className="text-yellow-300 font-bold block mb-1"><span>💡</span> <span>{term}</span> <span>지표 풀이</span></span>
+            <div className={`absolute bottom-full mb-2 w-52 p-3 bg-[#09090b] border border-blue-500/30 text-white text-xs rounded-xl shadow-2xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xl leading-relaxed font-medium ${
+                align === 'right' ? 'right-0 left-auto' : 'left-0'
+            }`}>
+                <span className="text-yellow-400 font-bold block mb-1"><span>💡</span> <span>{term}</span> <span>지표 풀이</span></span>
                 <span>{explanation || "쉬운 설명이 준비 중이에요!"}</span>
-                <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-indigo-900/95"></div>
+                <div className={`absolute top-full -mt-1 border-4 border-transparent border-t-[#09090b] ${
+                    align === 'right' ? 'right-4 left-auto' : 'left-4'
+                }`}></div>
             </div>
         </div>
     );
@@ -1010,7 +1014,7 @@ function DiscoveryContent() {
                                                     <div className="font-bold text-white text-lg tracking-tight"><span>{stock.details?.market_cap || 'N/A'}</span></div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="거래량 (Volume)" term="거래량" isEasyMode={easyMode} />
+                                                    <EasyTerm label="거래량 (Volume)" term="거래량" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono text-white"><span>{stock.details?.volume?.toLocaleString() || 'N/A'}</span></div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
@@ -1022,7 +1026,7 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} />
+                                                    <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono text-white">
                                                         <span>{typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}</span>
                                                     </div>
@@ -1046,7 +1050,7 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
+                                                    <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono text-white">
                                                         {typeof stock.details?.forward_eps === 'number'
                                                             ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
@@ -1062,7 +1066,7 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
+                                                    <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono text-white">
                                                         {typeof stock.details?.bps === 'number'
                                                             ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
@@ -1070,7 +1074,7 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
                                                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} />
+                                                    <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono text-white">
                                                         {(typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate !== 0)
                                                             ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
