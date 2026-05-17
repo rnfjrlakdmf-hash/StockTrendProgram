@@ -28,6 +28,28 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
     
     await manager.connect(websocket, user_id)
     
+    # Guest fallback polling task
+    async def poll_fallback():
+        last_price = None
+        while True:
+            try:
+                # Only poll if there's NO active private KIS websocket session running for this user
+                if user_id not in session_manager.user_websockets:
+                    symbol = manager.subscriptions.get(websocket)
+                    if symbol:
+                        quote = await asyncio.to_thread(get_simple_quote, symbol)
+                        if quote and quote.get('price') != last_price:
+                            last_price = quote.get('price')
+                            await websocket.send_json({"type": "update", "data": quote})
+                await asyncio.sleep(10) # 10 seconds interval for guest users
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"[WS Poll Fallback] Error: {e}")
+                await asyncio.sleep(10)
+
+    polling_task = asyncio.create_task(poll_fallback())
+    
     try:
         while True:
             data = await websocket.receive_text()
@@ -42,19 +64,27 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
                 if keys:
                     manager.set_keys(websocket, keys)
                     await session_manager.start_user_session(user_id, keys, handle_user_ws_message)
+                    # Also subscribe existing symbol on the newly created KIS session
+                    symbol = manager.subscriptions.get(websocket)
+                    if symbol:
+                        await session_manager.subscribe_user_symbol(user_id, symbol)
                     await websocket.send_json({"type": "auth_success"})
             
             elif msg_type == 'subscribe':
                 symbol = message.get('symbol')
                 if symbol:
                     await manager.subscribe(websocket, symbol)
+                    # Subscribe on KIS WebSocket if user session is active
+                    await session_manager.subscribe_user_symbol(user_id, symbol)
                     # Send initial price immediately
                     initial = await asyncio.to_thread(get_simple_quote, symbol)
                     if initial:
                         await websocket.send_json({"type": "update", "data": initial})
             
             elif msg_type == 'unsubscribe':
-                pass
+                symbol = message.get('symbol')
+                if symbol:
+                    await session_manager.unsubscribe_user_symbol(user_id, symbol)
                 
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
@@ -65,3 +95,5 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str 
     except Exception as e:
         print(f"[WS] Error: {e}")
         await manager.disconnect(websocket)
+    finally:
+        polling_task.cancel()

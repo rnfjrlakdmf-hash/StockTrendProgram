@@ -9,6 +9,7 @@ import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save,
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
+import BlinkingPrice from "@/components/BlinkingPrice";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import AIDisclaimer from "@/components/AIDisclaimer";
@@ -831,10 +832,16 @@ function DiscoveryContent() {
                                         </h3>
 
                                         <div className="flex flex-wrap items-center gap-4 mb-8">
-                                            <span className="text-4xl md:text-6xl font-black text-white tabular-nums tracking-tighter">
-                                                {stock.currency === 'KRW'
-                                                    ? <span><span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">₩</span>{Number(String(stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()}</span>
-                                                    : <span><span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">$</span>{stock.regular_close || stock.price}</span>}
+                                            <span className="text-4xl md:text-6xl font-black text-white tabular-nums tracking-tighter flex items-center">
+                                                <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
+                                                    {stock.currency === 'KRW' ? '₩' : '$'}
+                                                </span>
+                                                <BlinkingPrice
+                                                    price={stock.currency === 'KRW'
+                                                        ? Number(String(stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                        : stock.regular_close || stock.price}
+                                                    className="text-white bg-transparent"
+                                                />
                                             </span>
 
                                             <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
@@ -899,12 +906,16 @@ function DiscoveryContent() {
                                                         )}
                                                     </div>
                                                     <div className="flex items-end gap-3">
-                                                        <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight">
-                                                            {stock.currency === 'KRW' ? '₩' : '$'}{Number(String(
-                                                                (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
-                                                                    : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                            ).replace(/,/g, '')).toLocaleString()}
+                                                        <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
+                                                            <span className="mr-0.5">{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                            <BlinkingPrice
+                                                                price={Number(String(
+                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                        ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
+                                                                        : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
+                                                                ).replace(/,/g, '')).toLocaleString()}
+                                                                className="text-white bg-transparent"
+                                                            />
                                                         </span>
                                                         <div className={`flex items-center gap-1.5 font-bold mb-1 ${
                                                             ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
