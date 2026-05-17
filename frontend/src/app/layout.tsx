@@ -7,6 +7,7 @@ import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
 import FCMWrapper from "@/components/FCMWrapper";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
@@ -82,6 +83,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <AuthProvider>
+          <AnalyticsTracker />
           {/* EMERGENCY DEPLOYMENT VERIFIER */}
           <div className="fixed top-0 left-0 w-full bg-fuchsia-600 text-white text-[10px] font-black text-center py-1 z-[999999] pointer-events-none uppercase tracking-widest shadow-lg">
             LIVE UPDATE v5.2.8-ADSENSE-COMPLIANCE ACTIVE

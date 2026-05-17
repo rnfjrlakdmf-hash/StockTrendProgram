@@ -282,3 +282,40 @@ async def delayed_fcm_test(x_user_id: str = Header(None)):
     asyncio.create_task(_send_later())
     
     return {"status": "success", "message": "10초 뒤에 알림이 발송됩니다. 지금 바로 웹을 종료해 보세요!"}
+
+class AnalyticsPingRequest(BaseModel):
+    visitor_id: str
+    is_pageview: bool = True
+
+@router.post("/analytics/ping")
+def ping_analytics(req: AnalyticsPingRequest):
+    """실시간 접속 핑 및 페이지뷰 기록"""
+    from db_manager import record_pageview, ping_active_user
+    
+    visitor_id = req.visitor_id.strip() if req.visitor_id else "unknown_visitor"
+    
+    # 1. 실시간 동시 접속 활성화 갱신
+    ping_active_user(visitor_id)
+    
+    # 2. 페이지뷰 기록 (최초 진입 시 True)
+    if req.is_pageview:
+        record_pageview(visitor_id)
+        
+    return {"status": "success"}
+
+@router.get("/analytics/stats")
+def get_analytics_stats(limit: int = 30, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 일일 방문자수 및 실시간 동시 접속자 통계"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import get_site_analytics, get_realtime_active_count
+    
+    stats = get_site_analytics(limit)
+    active_count = get_realtime_active_count(minutes=5)
+    
+    return {
+        "status": "success",
+        "data": {
+            "active_users_5m": active_count,
+            "daily_stats": stats
+        }
+    }

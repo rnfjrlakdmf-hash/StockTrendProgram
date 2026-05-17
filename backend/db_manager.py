@@ -173,6 +173,30 @@ def init_db():
         )
     ''')
 
+    # [Analytics] Daily Site Visitor & Pageview Counter
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS site_analytics (
+            date TEXT PRIMARY KEY,
+            pageviews INTEGER DEFAULT 0,
+            unique_visitors INTEGER DEFAULT 0
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS visitor_sessions (
+            date TEXT,
+            visitor_id TEXT,
+            PRIMARY KEY (date, visitor_id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS active_users (
+            visitor_id TEXT PRIMARY KEY,
+            last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -930,5 +954,117 @@ def get_user_tokens_by_watchlist_symbol(symbol: str) -> list:
     except Exception as e:
         print(f"[DB] Get tokens by symbol error: {e}")
         return []
+    finally:
+        conn.close()
+
+# ============================================================
+# [Analytics] Site Visitor & Pageview Tracking Methods
+# ============================================================
+
+def record_pageview(visitor_id: str):
+    """
+    KST 기준으로 일일 페이지뷰(PV) 및 순방문자수(UV)를 기록합니다.
+    """
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    today_str = now.strftime("%Y-%m-%d")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. 일일 순방문자 여부 검증 (동일 날짜에 동일 visitor_id가 없었으면 신규 순방문자)
+        cursor.execute(
+            "INSERT OR IGNORE INTO visitor_sessions (date, visitor_id) VALUES (?, ?)",
+            (today_str, visitor_id)
+        )
+        is_unique = cursor.rowcount > 0
+
+        # 2. 오늘 날짜 데이터 Row 생성 (없을 때만)
+        cursor.execute(
+            "INSERT OR IGNORE INTO site_analytics (date, pageviews, unique_visitors) VALUES (?, 0, 0)",
+            (today_str,)
+        )
+
+        # 3. 누적치 카운트 업
+        if is_unique:
+            cursor.execute(
+                "UPDATE site_analytics SET pageviews = pageviews + 1, unique_visitors = unique_visitors + 1 WHERE date = ?",
+                (today_str,)
+            )
+        else:
+            cursor.execute(
+                "UPDATE site_analytics SET pageviews = pageviews + 1 WHERE date = ?",
+                (today_str,)
+            )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[Analytics-Error] Failed to record pageview: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_site_analytics(limit: int = 30):
+    """
+    최근 N일 동안의 일일 조회수 및 순방문자수 통계를 반환합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT date, pageviews, unique_visitors FROM site_analytics ORDER BY date DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        return [
+            {"date": r[0], "pageviews": r[1], "unique_visitors": r[2]}
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"[Analytics-Error] Failed to fetch stats: {e}")
+        return []
+    finally:
+        conn.close()
+
+def ping_active_user(visitor_id: str):
+    """
+    실시간 접속 중인 유저의 마지막 활동 시각을 갱신합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT OR REPLACE INTO active_users (visitor_id, last_activity) VALUES (?, datetime('now'))",
+            (visitor_id,)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[Analytics-Error] Failed to ping active user: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_realtime_active_count(minutes: int = 5):
+    """
+    최근 N분 내에 활동 기록이 있는 실시간 동시 접속자 수를 반환합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 오래된 세션 자동 정리
+        cursor.execute(
+            "DELETE FROM active_users WHERE last_activity < datetime('now', ?)",
+            (f"-{minutes} minutes",)
+        )
+        conn.commit()
+
+        cursor.execute("SELECT COUNT(*) FROM active_users")
+        count = cursor.fetchone()[0]
+        return count
+    except Exception as e:
+        print(f"[Analytics-Error] Failed to get active count: {e}")
+        return 0
     finally:
         conn.close()
