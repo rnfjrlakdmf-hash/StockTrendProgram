@@ -153,6 +153,19 @@ export default function AdminPage() {
     const totalPV = analytics?.daily_stats?.reduce((acc, curr) => acc + curr.pageviews, 0) ?? 0;
     const totalUV = analytics?.daily_stats?.reduce((acc, curr) => acc + curr.unique_visitors, 0) ?? 0;
 
+    // 오늘 통계 계산 (KST 기준 YYYY-MM-DD 매칭)
+    const getTodayKstStr = () => {
+        const korDateStr = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+        const y = korDateStr.getFullYear();
+        const m = String(korDateStr.getMonth() + 1).padStart(2, '0');
+        const r = String(korDateStr.getDate()).padStart(2, '0');
+        return `${y}-${m}-${r}`;
+    };
+    const todayStr = getTodayKstStr();
+    const todayStat = analytics?.daily_stats?.find(stat => stat.date === todayStr) || { pageviews: 0, unique_visitors: 0 };
+    const todayPV = todayStat.pageviews;
+    const todayUV = todayStat.unique_visitors;
+
     return (
         <div className="min-h-screen bg-black text-white pb-20">
             <Header title="관리자 대시보드" subtitle={`총 ${users.length}명의 회원이 가입되어 있으며, 실시간 방문 통계를 제공합니다.`} />
@@ -160,7 +173,7 @@ export default function AdminPage() {
             <div className="max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 {/* Analytics Grid Section */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Real-time Active Users */}
                     <div className="bg-gradient-to-br from-green-500/10 via-transparent to-transparent border border-green-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-green-500/20 transition-all"></div>
@@ -179,6 +192,32 @@ export default function AdminPage() {
                             <span className="text-gray-400 font-bold">명 접속 중</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-4">최근 5분 동안 활발히 서비스를 이용하고 있는 사용자 수입니다.</p>
+                    </div>
+
+                    {/* Today's Stats (1-Day) */}
+                    <div className="bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-white">오늘의 방문 (1일)</h3>
+                            <div className="flex items-center gap-1 bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">TODAY</div>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-baseline">
+                                <span className="text-gray-400 text-xs font-bold">오늘 조회수 (PV)</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black text-blue-400">{todayPV.toLocaleString()}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">회</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-baseline border-t border-white/5 pt-2">
+                                <span className="text-gray-400 text-xs font-bold">오늘 방문자 (UV)</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black text-purple-400">{todayUV.toLocaleString()}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">명</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-4">오늘 자정(KST)부터 실시간으로 집계된 페이지 뷰와 순 방문자입니다.</p>
                     </div>
 
                     {/* Total Cumulative PV */}
