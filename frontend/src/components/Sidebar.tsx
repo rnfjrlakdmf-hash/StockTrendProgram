@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -30,6 +30,87 @@ const navigation = [
 export default function Sidebar() {
     const { user, logout } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // [New] Real-time Global Clocks State & Updater
+    const [clocks, setClocks] = useState({
+        korTime: "",
+        usaTime: "",
+        isKorOpen: false,
+        isUsaOpen: false
+    });
+
+    useEffect(() => {
+        const updateClocks = () => {
+            const now = new Date();
+            
+            // 1. Seoul Time Calculation
+            const korStr = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Seoul',
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric',
+                hour12: false
+            }).format(now);
+            const korDate = new Date(korStr);
+            const korHours = korDate.getHours();
+            const korMinutes = korDate.getMinutes();
+            const korDay = korDate.getDay();
+            
+            const korTotalMinutes = korHours * 60 + korMinutes;
+            const korOpenMinutes = 9 * 60 + 0;
+            const korCloseMinutes = 15 * 60 + 30;
+            const isKorTimeOpen = korTotalMinutes >= korOpenMinutes && korTotalMinutes < korCloseMinutes;
+            const isKorWeekday = korDay !== 0 && korDay !== 6;
+            
+            const y = korDate.getFullYear();
+            const m = String(korDate.getMonth() + 1).padStart(2, '0');
+            const d = String(korDate.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+            const KR_HOLIDAYS = [
+                "2025-01-01", "2025-01-27", "2025-01-28", "2025-01-29",
+                "2025-03-03", "2025-05-05", "2025-05-06", "2025-06-06",
+                "2025-08-15", "2025-10-03", "2025-10-06", "2025-10-07",
+                "2025-10-08", "2025-10-09", "2025-12-25"
+            ];
+            const isKorHoliday = KR_HOLIDAYS.includes(dateStr);
+            const isKorOpen = isKorTimeOpen && isKorWeekday && !isKorHoliday;
+
+            // 2. New York Time Calculation
+            const usaStr = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric',
+                hour12: false
+            }).format(now);
+            const usaDate = new Date(usaStr);
+            const usaHours = usaDate.getHours();
+            const usaMinutes = usaDate.getMinutes();
+            const usaDay = usaDate.getDay();
+            
+            const usaTotalMinutes = usaHours * 60 + usaMinutes;
+            const usaOpenMinutes = 9 * 60 + 30;
+            const usaCloseMinutes = 16 * 60 + 0;
+            const isUsaTimeOpen = usaTotalMinutes >= usaOpenMinutes && usaTotalMinutes < usaCloseMinutes;
+            const isUsaWeekday = usaDay !== 0 && usaDay !== 6;
+            const isUsaOpen = isUsaTimeOpen && isUsaWeekday;
+
+            const formatTime = (date: Date) => {
+                const hh = String(date.getHours()).padStart(2, '0');
+                const mm = String(date.getMinutes()).padStart(2, '0');
+                return `${hh}:${mm}`;
+            };
+
+            setClocks({
+                korTime: formatTime(korDate),
+                usaTime: formatTime(usaDate),
+                isKorOpen,
+                isUsaOpen
+            });
+        };
+
+        updateClocks();
+        const interval = setInterval(updateClocks, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     // [New] Global Login Modal Trigger Listener
     useEffect(() => {
@@ -289,11 +370,49 @@ export default function Sidebar() {
                     <X className="h-6 w-6" />
                 </button>
                 <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-4">
-                    <div className="flex items-center gap-2 px-2 py-4 mb-8">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 animate-pulse" />
-                        <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                            STOCK AI
-                        </span>
+                    <div className="flex flex-col gap-2.5 px-2 py-4 mb-8 border-b border-white/5 pb-5">
+                        <div className="flex items-center gap-2">
+                            {/* Dynamic spinning global globe/clock icon */}
+                            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
+                                <Globe 
+                                    className="w-4 h-4 text-blue-200" 
+                                    style={{ animation: 'spin 15s linear infinite' }}
+                                />
+                                {/* Pulsing dot indicating real-time activity */}
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black animate-ping" />
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
+                            </div>
+                            <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                                STOCK AI
+                            </span>
+                        </div>
+
+                        {/* Ultra-sleek Micro Global Clocks Grid */}
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                            {/* KOR Clock */}
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isKorOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="text-xs">🇰🇷</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">SEOUL</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.korTime}</span>
+                                    </div>
+                                </div>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                            </div>
+
+                            {/* USA Clock */}
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUsaOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="text-xs">🇺🇸</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">NEW YORK</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.usaTime}</span>
+                                    </div>
+                                </div>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                            </div>
+                        </div>
                     </div>
 
                     <nav className="space-y-2">
@@ -455,10 +574,7 @@ export default function Sidebar() {
                         </button>
                     )}
 
-                    {/* 3. Global Market Clock (Desktop only to clear massive mobile vertical height) */}
-                    <div className="hidden md:block">
-                        <MarketClock />
-                    </div>
+
 
                     {/* 4. Version info */}
                     <div className="opacity-30 text-center">
