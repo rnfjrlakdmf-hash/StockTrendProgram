@@ -53,6 +53,25 @@ export default function RootLayout({
       <head>
         {/* Google AdSense 게시자 ID 메타 힌트 */}
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
+        {/* [v5.2.9] Universal Google AdSense TagError Silencer */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(e) {
+                if (e.message && (e.message.indexOf('TagError') !== -1 || e.message.indexOf('adsbygoogle') !== -1)) {
+                  e.stopImmediatePropagation();
+                  e.preventDefault();
+                }
+              }, true);
+              window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && e.reason.message && (e.reason.message.indexOf('TagError') !== -1 || e.reason.message.indexOf('adsbygoogle') !== -1)) {
+                  e.stopImmediatePropagation();
+                  e.preventDefault();
+                }
+              }, true);
+            `
+          }}
+        />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         {/* Google AdSense - Next.js Script 컴포넌트 */}
