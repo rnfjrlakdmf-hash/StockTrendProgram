@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -12,23 +12,84 @@ import LoginModal from "./LoginModal";
 import AdRewardModal from "./AdRewardModal"; // Import Modal
 
 const navigation = [
-    { name: "통합 대시보드", href: "/", icon: LayoutDashboard },
-    { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity },
-    { name: "AI 퀀트 종목 발굴", href: "/discovery", icon: Compass },
-    { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3 },
-    { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles },
-    { name: "AI 기술적 패턴 분석", href: "/pattern", icon: LineChart },
-    { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity },
-    { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network },
-    { name: "투자 인텔리전스 포럼", href: "/community", icon: Users },
-    { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield },
-    { name: "실시간 스마트 워치리스트", href: "/watchlist", icon: Star },
-    { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings },
+    { 
+        name: "통합 대시보드", 
+        href: "/", 
+        icon: LayoutDashboard,
+        desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
+    },
+    { 
+        name: "글로벌 마켓 시그널", 
+        href: "/signals", 
+        icon: Activity,
+        desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다."
+    },
+    { 
+        name: "AI 퀀트 종목 발굴", 
+        href: "/discovery", 
+        icon: Compass,
+        desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 실시간 골라냅니다."
+    },
+    { 
+        name: "기업 펀더멘탈 분석", 
+        href: "/analysis", 
+        icon: BarChart3,
+        desc: "회사가 돈은 잘 버는지, 빚은 없는지, 부도 위험은 없는지 재무 구조를 철저히 검사해 줍니다."
+    },
+    { 
+        name: "실시간 테마 트래커", 
+        href: "/theme", 
+        icon: Sparkles,
+        desc: "오늘 하루 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다."
+    },
+    { 
+        name: "AI 기술적 패턴 분석", 
+        href: "/pattern", 
+        icon: LineChart,
+        desc: "골든크로스나 캔들 차트 모양을 AI가 자동으로 읽어 지금이 살 타이밍인지 쉽게 알려줍니다."
+    },
+    { 
+        name: "ETF 포트폴리오 분석", 
+        href: "/etf", 
+        icon: Activity,
+        desc: "개별 주식 투자가 불안할 때 시장 전체나 유망 산업 분야에 묶음 투자할 수 있는 ETF를 비교합니다."
+    },
+    { 
+        name: "글로벌 서플라이 체인", 
+        href: "/supply-chain", 
+        icon: Network,
+        desc: "이 회사는 어디서 부품을 사오고 완성품은 어디에 납품하는지, 얽힌 기업 인맥도를 지도로 보여줍니다."
+    },
+    { 
+        name: "투자 인텔리전스 포럼", 
+        href: "/community", 
+        icon: Users,
+        desc: "어떤 종목에 호재나 악재가 터졌을 때 실시간으로 다른 주주들과 소통하고 관련 공시를 공유합니다."
+    },
+    { 
+        name: "포트폴리오 자산 진단", 
+        href: "/portfolio", 
+        icon: Shield,
+        desc: "내가 산 주식들의 투자 비중을 분석하여 특정 종목에 몰리지 않고 안전하게 분산되어 있는지 진단합니다."
+    },
+    { 
+        name: "실시간 스마트 워치리스트", 
+        href: "/watchlist", 
+        icon: Star,
+        desc: "내가 찜한 종목들의 실시간 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다."
+    },
+    { 
+        name: "연동 설정 및 시스템 관리", 
+        href: "/settings", 
+        icon: Settings,
+        desc: "증권사 계좌 연동을 위한 보안 키 등록 및 화면 다크모드, 알림 등 시스템 환경을 조율합니다."
+    },
 ];
 
 export default function Sidebar() {
     const { user, logout } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
     // [New] Real-time Global Clocks State & Updater
     const [clocks, setClocks] = useState({
@@ -415,17 +476,54 @@ export default function Sidebar() {
                         </div>
                     </div>
 
-                    <nav className="space-y-2">
+                    <nav className="space-y-1.5">
                         {navigation.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setIsMobileOpen(false)}
-                                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95 group"
+                            <div 
+                                key={item.name} 
+                                className="relative group/menu flex items-center justify-between rounded-xl transition-all hover:bg-white/5 pr-2"
                             >
-                                <item.icon className="h-5 w-5 transition-colors group-hover:text-blue-400" />
-                                {item.name}
-                            </Link>
+                                <Link
+                                    href={item.href}
+                                    onClick={() => setIsMobileOpen(false)}
+                                    className="flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:text-white active:scale-98"
+                                >
+                                    <item.icon className="h-5 w-5 transition-colors group-hover/menu:text-blue-400" />
+                                    <span>{item.name}</span>
+                                </Link>
+                                
+                                {/* ℹ️ Info Trigger Button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setActiveTooltip(activeTooltip === item.name ? null : item.name);
+                                    }}
+                                    onMouseEnter={() => setActiveTooltip(item.name)}
+                                    onMouseLeave={() => setActiveTooltip(null)}
+                                    className="p-1 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
+                                    title={`${item.name} 설명 보기`}
+                                >
+                                    <HelpCircle className="h-3.5 w-3.5" />
+                                </button>
+
+                                {/* Floating Premium Glassmorphic Tooltip */}
+                                {activeTooltip === item.name && (
+                                    <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-[2000] w-64 p-3.5 rounded-2xl bg-[#09090b] border border-blue-500/30 backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-left-2 duration-150 pointer-events-none md:pointer-events-auto">
+                                        {/* Tooltip Arrow */}
+                                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-[#09090b]" />
+                                        
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-xs font-black text-blue-400 flex items-center gap-1.5">
+                                                <item.icon className="w-3.5 h-3.5" />
+                                                {item.name}
+                                            </p>
+                                            <p className="text-[10px] leading-relaxed text-gray-300 font-medium mt-1">
+                                                {item.desc}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         ))}
                         {(user?.email?.toLowerCase() === "rnfjr@gmail.com" || user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com") && (
                             <Link
