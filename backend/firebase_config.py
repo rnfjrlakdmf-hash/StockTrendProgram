@@ -57,34 +57,51 @@ def initialize_firebase():
 
 def sanitize_notification_text(title: str, body: str):
     """
-    모바일 화면에 맞춰 알림 글씨가 잘리지 않고 예쁘게 나오도록 자동 정돈 및 요약
+    모바일 및 스마트워치(애플워치/갤럭시워치) 화면에서 글씨가 잘리지 않고 
+    0.1초 만에 핵심 내용을 인지할 수 있도록 타이틀과 본문을 극도로 정교하게 요약하고 다듬습니다.
     """
-    # 1. 제목 다듬기 (최대 26글자 제한하여 잘림 방지)
-    max_title_len = 26
     clean_title = title.strip() if title else "알림"
+    clean_body = body.strip() if body else ""
+    
+    # 1. 스마트워치 및 모바일 공통 타이틀 슬림화
+    if "장시작" in clean_title:
+        market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
+        clean_title = f"☀️ 장시작: {market_name}" if market_name else "☀️ 장시작 알림"
+        
+    elif "장마감" in clean_title:
+        market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
+        emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
+        clean_title = f"🌕 장마감: {market_name} {emoji}".strip()
+        
+    elif "마켓 밸런스 브리핑" in clean_title:
+        stock_part = clean_title.replace("⚖️", "").replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
+        clean_title = f"⚖️ AI 브리핑: {stock_part}" if stock_part else "⚖️ AI 브리핑"
+
+    # 일반 모바일 제목 길이 제한 (최대 16자 제한하여 스마트워치/폰 공통 한 줄 표시 보장)
+    max_title_len = 16
     if len(clean_title) > max_title_len:
         clean_title = clean_title[:max_title_len - 2] + ".."
 
-    # 2. 본문 다듬기 (줄 단위로 분석하여 모바일 가독성 최적화)
-    if not body:
+    # 2. 본문 다듬기 (스마트워치 좁은 텍스트 영역 및 모바일 최적화)
+    if not clean_body:
         return clean_title, ""
         
-    lines = body.strip().split("\n")
+    lines = clean_body.split("\n")
     cleaned_lines = []
     
     for line in lines:
         line = line.strip()
         if not line:
             continue
-        # 한 줄이 너무 길면 38자 내외로 자름
-        if len(line) > 38:
-            line = line[:36] + ".."
+        # 한 줄이 너무 길면 워치/모바일 가독성을 위해 24자 내외로 자동 자름 (단위/핵심 정보 보존)
+        if len(line) > 24:
+            line = line[:22] + ".."
         cleaned_lines.append(line)
         
-    # 모바일 알림창 크기에 맞추어 최대 5줄까지만 허용 (나머지는 생략)
+    # 스마트워치와 모바일 배너 알림 한도에 맞추어 최대 5줄까지만 허용
     max_lines = 5
     if len(cleaned_lines) > max_lines:
-        cleaned_lines = cleaned_lines[:max_lines - 1] + ["💬 상세 내용은 앱에서 확인하세요!"]
+        cleaned_lines = cleaned_lines[:max_lines - 1] + ["💬 상세 내용은 앱에서 확인!"]
         
     clean_body = "\n".join(cleaned_lines)
     return clean_title, clean_body
@@ -103,7 +120,7 @@ def send_push_notification(
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
     
-    # 모바일 글씨 잘림 방지를 위한 자동 정돈 적용
+    # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
     
     try:
@@ -195,7 +212,7 @@ def send_multicast_notification(
     if not tokens:
         return {"success": False, "error": "No tokens provided"}
         
-    # 모바일 글씨 잘림 방지를 위한 자동 정돈 적용
+    # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
     
     try:
@@ -278,17 +295,29 @@ def send_price_alert_notification(
     message: str
 ) -> Dict:
     """
-    가격 알림 전용 푸시 발송
+    가격 알림 전용 푸시 발송 (스마트워치 완벽 대응 버전)
     """
-    # 알림 타입별 이모지
-    emoji_map = {
-        'stop_loss': '🚨',
-        'take_profit': '🎉',
-        'target_price': '🎯'
+    # 알림 타입별 이모지 및 타입명
+    alert_info = {
+        'stop_loss': ('🚨', '손절'),
+        'take_profit': ('🎉', '익절'),
+        'target_price': ('🎯', '목표')
     }
     
-    emoji = emoji_map.get(alert_type, '🔔')
-    title = f"{emoji} 가격 알림!"
+    emoji, type_name = alert_info.get(alert_type, ('🔔', '가격'))
+    
+    # 0.1초 만에 알 수 있도록 종목명을 타이틀에 포함!
+    try:
+        from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+        stock_name = get_korean_stock_name(symbol) or GLOBAL_KOREAN_NAMES.get(symbol, symbol)
+    except:
+        stock_name = symbol
+        
+    title = f"{emoji} {type_name}: {stock_name}"
+    
+    # 본문의 가독성 극대화를 위해 현재가와 변동률을 본문 맨 앞줄에 배치!
+    change_sign = "+" if change_pct > 0 else ""
+    body_message = f"📉 {current_price:,.0f}원 ({change_sign}{change_pct:.2f}%)\n{message}"
     
     # 추가 데이터
     data = {
@@ -299,8 +328,6 @@ def send_price_alert_notification(
         "change_pct": str(change_pct),
         "url": f"/discovery?symbol={symbol}"
     }
-    
-    return send_multicast_notification(tokens, title, message, data)
     
 
 
