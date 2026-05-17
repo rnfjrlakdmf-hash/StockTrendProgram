@@ -8,6 +8,7 @@ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
 import GlobalRankingWidget from "@/components/GlobalRankingWidget";
+import DashboardMarketClock from "@/components/DashboardMarketClock";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity } from "lucide-react";
 
@@ -161,6 +162,9 @@ export default function Home() {
         ) : !loading && !error && (
           // Default Dashboard Content
           <div className="space-y-8 animate-in fade-in duration-1000">
+            {/* Real-time World Clock Grid at the top */}
+            <DashboardMarketClock />
+
             {/* Morning Brief Section */}
             {/* <MorningBriefWidget /> */}
 
