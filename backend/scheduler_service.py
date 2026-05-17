@@ -260,8 +260,8 @@ def send_daily_analytics_report():
     now = datetime.now(kst)
     today_str = now.strftime("%Y-%m-%d")
     
-    # 1. 일일 방문자 수 및 페이지뷰 조회
-    stats_list = get_site_analytics(1)
+    # 1. 일일 및 30일 누적 통계 조회
+    stats_list = get_site_analytics(30)
     unique_visitors = 0
     pageviews = 0
     if stats_list:
@@ -269,6 +269,10 @@ def send_daily_analytics_report():
         if latest["date"] == today_str:
             unique_visitors = latest["unique_visitors"]
             pageviews = latest["pageviews"]
+            
+    # 30일 누적 통계 구하기
+    total_pv_30d = sum(item["pageviews"] for item in stats_list) if stats_list else 0
+    total_uv_30d = sum(item["unique_visitors"] for item in stats_list) if stats_list else 0
             
     # 2. 실시간 동시 접속자 수 (최근 5분)
     active_users = get_realtime_active_count(minutes=5)
@@ -288,8 +292,10 @@ def send_daily_analytics_report():
     # 4. 푸시 알림 제목 및 본문 구성
     title = "📊 [STOCK AI] 일일 방문자 및 시스템 운영 보고서"
     body = f"📅 날짜: {today_str}\n\n" \
-           f"👥 일일 순 방문자수: {unique_visitors:,}명\n" \
-           f"📑 일일 총 페이지뷰: {pageviews:,}회\n" \
+           f"👥 오늘 순 방문자수 (1일): {unique_visitors:,}명\n" \
+           f"📑 오늘 총 페이지뷰 (1일): {pageviews:,}회\n" \
+           f"📈 30일 누적 페이지뷰: {total_pv_30d:,}회\n" \
+           f"👥 30일 누적 순방문자: {total_uv_30d:,}명\n" \
            f"🔥 실시간 접속자 (5분): {active_users:,}명\n" \
            f"👑 누적 가입 회원수: {total_users:,}명\n\n" \
            f"오늘 하루도 시스템이 성공적으로 정상 운영되었습니다. 내일도 안정적인 서비스를 제공하겠습니다! 🏆"
