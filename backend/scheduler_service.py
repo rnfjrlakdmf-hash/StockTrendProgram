@@ -107,11 +107,13 @@ def send_opening_notification(market: str):
         if not watchlist: continue
         
         items_info = []
+        target_symbols = []
         for row in watchlist:
             symbol = row[0]
             if is_korean_stock(symbol) and market == "US": continue
             if not is_korean_stock(symbol) and market == "KR": continue
             
+            target_symbols.append(symbol)
             quote = get_simple_quote(symbol)
             if quote:
                 price = quote.get('price', 0)
@@ -120,11 +122,40 @@ def send_opening_notification(market: str):
         
         if not items_info: continue
         
+        # [실적/배당 일정 탐지 통합]
+        event_lines = []
+        if target_symbols:
+            try:
+                from routes.market import get_watchlist_events
+                symbols_str = ",".join(target_symbols)
+                res = get_watchlist_events(symbols_str)
+                if res.get("status") == "success":
+                    all_events = res.get("data", [])
+                    import datetime
+                    import pytz
+                    kst = pytz.timezone('Asia/Seoul')
+                    today_str = datetime.datetime.now(kst).strftime("%Y-%m-%d")
+                    
+                    for ev in all_events:
+                        if ev.get("date") == today_str:
+                            event_emoji = "📈" if ev.get("type") == "earnings" else "💰" if ev.get("type") == "dividend" else "🔔"
+                            detail = ev.get("detail", "")
+                            # Clean up detail string slightly for compact notification display
+                            detail = detail.replace(" (DART 확정✅)", "").replace(" (DART)", "").replace(" (yfinance)", "")
+                            event_lines.append(f"💡 {event_emoji} {ev.get('name')}: {detail}")
+            except Exception as e:
+                print(f"[Scheduler-Error] Failed to fetch events for opening notification: {e}")
+        
         market_name = "국내" if market == "KR" else "미국"
         title = f"☀️ {market_name} 장시작! 시가 알림"
         body = f"오늘 {market_name} 관심종목 시가입니다.\n\n" + "\n".join(items_info[:10])
         if len(items_info) > 10:
             body += f"\n외 {len(items_info)-10}개 더 있음"
+            
+        if event_lines:
+            body += "\n\n📅 오늘의 주요 일정:\n" + "\n".join(event_lines[:5])
+            if len(event_lines) > 5:
+                body += f"\n외 {len(event_lines)-5}개 일정 더 있음"
             
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
