@@ -308,6 +308,16 @@ export default function Sidebar() {
                                 {item.name}
                             </Link>
                         ))}
+                        {user?.email === "rnfjr@gmail.com" && (
+                            <Link
+                                href="/admin"
+                                onClick={() => setIsMobileOpen(false)}
+                                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 hover:scale-105 active:scale-95 group"
+                            >
+                                <Shield className="h-5 w-5 text-fuchsia-400 transition-colors group-hover:text-fuchsia-300" />
+                                <span>관리자 센터 👑</span>
+                            </Link>
+                        )}
                     </nav>
 
                     {/* [New] Watchlist Preview Section */}
