@@ -480,48 +480,66 @@ export default function Sidebar() {
                         {navigation.map((item) => (
                             <div 
                                 key={item.name} 
-                                className="relative group/menu flex items-center justify-between rounded-xl transition-all hover:bg-white/5 pr-2"
+                                className="relative group/menu flex flex-col rounded-xl transition-all hover:bg-white/5"
                             >
-                                <Link
-                                    href={item.href}
-                                    onClick={() => setIsMobileOpen(false)}
-                                    className="flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:text-white active:scale-98"
-                                >
-                                    <item.icon className="h-5 w-5 transition-colors group-hover/menu:text-blue-400" />
-                                    <span>{item.name}</span>
-                                </Link>
-                                
-                                {/* ℹ️ Info Trigger Button */}
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setActiveTooltip(activeTooltip === item.name ? null : item.name);
-                                    }}
-                                    onMouseEnter={() => setActiveTooltip(item.name)}
-                                    onMouseLeave={() => setActiveTooltip(null)}
-                                    className="p-1 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
-                                    title={`${item.name} 설명 보기`}
-                                >
-                                    <HelpCircle className="h-3.5 w-3.5" />
-                                </button>
+                                <div className="flex items-center justify-between pr-2 w-full">
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => setIsMobileOpen(false)}
+                                        className="flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:text-white active:scale-98"
+                                    >
+                                        <item.icon className="h-5 w-5 transition-colors group-hover/menu:text-blue-400" />
+                                        <span>{item.name}</span>
+                                    </Link>
+                                    
+                                    {/* ℹ️ Info Trigger Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTooltip(activeTooltip === item.name ? null : item.name);
+                                        }}
+                                        onMouseEnter={() => setActiveTooltip(item.name)}
+                                        onMouseLeave={() => setActiveTooltip(null)}
+                                        className="p-2 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
+                                        title={`${item.name} 설명 보기`}
+                                    >
+                                        <HelpCircle className="h-4 w-4" />
+                                    </button>
+                                </div>
 
-                                {/* Floating Premium Glassmorphic Tooltip */}
+                                {/* Floating Premium Glassmorphic Tooltip (Desktop) & Inline Accordion (Mobile) */}
                                 {activeTooltip === item.name && (
-                                    <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-[2000] w-64 p-3.5 rounded-2xl bg-[#09090b] border border-blue-500/30 backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-left-2 duration-150 pointer-events-none md:pointer-events-auto">
-                                        {/* Tooltip Arrow */}
-                                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-[#09090b]" />
-                                        
-                                        <div className="flex flex-col gap-1">
-                                            <p className="text-xs font-black text-blue-400 flex items-center gap-1.5">
-                                                <item.icon className="w-3.5 h-3.5" />
-                                                {item.name}
-                                            </p>
-                                            <p className="text-[10px] leading-relaxed text-gray-300 font-medium mt-1">
-                                                {item.desc}
-                                            </p>
+                                    <>
+                                        {/* Desktop Tooltip (Floating to the right) */}
+                                        <div className="hidden md:block absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-[2000] w-64 p-3.5 rounded-2xl bg-[#09090b] border border-blue-500/30 backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-left-2 duration-150 pointer-events-auto">
+                                            {/* Tooltip Arrow */}
+                                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-[#09090b]" />
+                                            
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-black text-blue-400 flex items-center gap-1.5">
+                                                    <item.icon className="w-3.5 h-3.5" />
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-[10px] leading-relaxed text-gray-300 font-medium mt-1">
+                                                    {item.desc}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
+
+                                        {/* Mobile Tooltip (Inline Accordion style directly below the item) */}
+                                        <div className="block md:hidden w-full px-4 pb-3 text-xs text-gray-400 animate-in slide-in-from-top-1 duration-200">
+                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
+                                                <p className="font-bold text-[10px] text-blue-400 flex items-center gap-1">
+                                                    <item.icon className="w-3 h-3" />
+                                                    {item.name}란?
+                                                </p>
+                                                <p className="text-[10px] leading-relaxed text-gray-300">
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         ))}
