@@ -16,6 +16,22 @@ export interface StockData {
         news: number;
     };
 }
+export async function fetchStockFast(symbol: string): Promise<StockData | null> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/analysis/stock/${symbol}/fast`);
+        if (!response.ok) {
+            return null;
+        }
+        const result = await response.json();
+        if (result.status === "success") {
+            return result.data;
+        }
+        return null;
+    } catch (error) {
+        console.error("Fast API Error:", error);
+        return null;
+    }
+}
 
 export async function fetchStockAnalysis(symbol: string): Promise<StockData | null> {
     try {

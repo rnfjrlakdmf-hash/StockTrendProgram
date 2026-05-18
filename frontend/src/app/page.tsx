@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
-import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData } from "@/lib/api";
+import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData, fetchStockFast } from "@/lib/api";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
@@ -25,6 +25,7 @@ export default function Home() {
   const [stockData, setStockData] = useState<StockData | null>(null);
   const [themeResult, setThemeResult] = useState<any>(null);
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
 
 
@@ -37,12 +38,22 @@ export default function Home() {
     setThemeResult(null);
     setAiAnswer(null);
 
-    // 1. Try Stock Search (주식 종목 검색)
+    // 1. Try Stock Search (주식 종목 검색) - FAST Mode first
     const ticker = getTickerFromKorean(term);
-    const data = await fetchStockAnalysis(ticker.toUpperCase());
+    const fastData = await fetchStockFast(ticker.toUpperCase());
 
-    if (data) {
-      setStockData(data);
+    if (fastData) {
+      setStockData(fastData);
+      setLoading(false); // Stop main loading instantly
+      setIsAiLoading(true); // Start AI loading spinner in widgets
+      
+      // Load AI analysis in background
+      fetchStockAnalysis(ticker.toUpperCase()).then(fullData => {
+         if (fullData) {
+             setStockData(fullData);
+         }
+         setIsAiLoading(false);
+      });
     } else {
       // 2. If Stock Search fails, Try Theme Search (테마/관련주 검색)
       // Use original term for theme search
@@ -58,8 +69,8 @@ export default function Home() {
           setError(`'${term}'에 대한 정보를 찾을 수 없습니다. 조금 더 구체적으로 질문해주세요.`);
         }
       }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -113,17 +124,34 @@ export default function Home() {
                   <Activity className="h-32 w-32 text-blue-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-300 mb-2 z-10">AI 투자 매력도</h3>
-                <GaugeChart score={stockData.score} label="종합 점수" color={stockData.score > 70 ? "#4ade80" : stockData.score > 40 ? "#facc15" : "#f87171"} />
-                <p className="text-center text-sm text-gray-400 mt-2 z-10 max-w-[200px]">
-                  종합적인 재무, 수급, 뉴스 분석을 토대로 산출된 점수입니다.
-                </p>
+                {isAiLoading ? (
+                  <div className="flex flex-col items-center justify-center py-8 z-10">
+                    <Loader2 className="h-8 w-8 text-blue-400 animate-spin mb-3" />
+                    <p className="text-xs text-gray-400 animate-pulse font-medium">AI가 다각도로 분석 중입니다...</p>
+                  </div>
+                ) : (
+                  <>
+                    <GaugeChart score={stockData.score || 0} label="종합 점수" color={(stockData.score || 0) > 70 ? "#4ade80" : (stockData.score || 0) > 40 ? "#facc15" : "#f87171"} />
+                    <p className="text-center text-sm text-gray-400 mt-2 z-10 max-w-[200px]">
+                      종합적인 재무, 수급, 뉴스 분석을 토대로 산출된 점수입니다.
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Metrics Grid */}
               <div className="rounded-3xl border border-white/5 bg-black/40 p-6 backdrop-blur-md grid grid-cols-3 gap-2">
-                <GaugeChart score={stockData.metrics.supplyDemand} label="수급" subLabel="Technical" color="#60a5fa" />
-                <GaugeChart score={stockData.metrics.financials} label="재무" subLabel="Fundamental" color="#c084fc" />
-                <GaugeChart score={stockData.metrics.news} label="심리" subLabel="Sentiment" color="#f472b6" />
+                {isAiLoading ? (
+                  <div className="col-span-3 flex items-center justify-center py-10">
+                    <Loader2 className="h-6 w-6 text-purple-400 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <GaugeChart score={stockData.metrics?.supplyDemand || 0} label="수급" subLabel="Technical" color="#60a5fa" />
+                    <GaugeChart score={stockData.metrics?.financials || 0} label="재무" subLabel="Fundamental" color="#c084fc" />
+                    <GaugeChart score={stockData.metrics?.news || 0} label="심리" subLabel="Sentiment" color="#f472b6" />
+                  </>
+                )}
               </div>
 
               {/* AI Summary */}
@@ -132,8 +160,14 @@ export default function Home() {
                   <Zap className="h-6 w-6 text-yellow-400" />
                   <h3 className="text-xl font-bold text-white">AI 브리핑</h3>
                 </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed min-h-[150px]">
-                  {stockData.summary}
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed min-h-[150px] relative">
+                  {isAiLoading && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
+                      <Loader2 className="h-6 w-6 text-yellow-400 animate-spin mb-2" />
+                      <span className="text-xs text-yellow-500/80 animate-pulse font-bold">최신 뉴스 및 실적 분석 중...</span>
+                    </div>
+                  )}
+                  {stockData.summary || "AI 분석 데이터를 불러오는 중입니다..."}
                 </div>
               </div>
             </div>
