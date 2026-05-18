@@ -109,14 +109,17 @@ class NewsAlertMonitor:
                     if data and len(data) > 0 and 'items' in data[0] and len(data[0]['items']) > 0:
                         item = data[0]['items'][0]
                         n_title = item.get('title', '')
+                        office_id = item.get('officeId', '')
+                        article_id = item.get('articleId', '')
                         
                         # [Fix] 깐깐한 필터링: 제목에 종목명이나 약어가 없으면 그룹사 공통 뉴스일 수 있으므로 차단
                         if _is_relevant(n_title):
                             news_items.append({
-                                'id': item.get('articleId'),
+                                'id': article_id,
                                 'title': n_title,
                                 'publisher': item.get('officeName', '네이버 뉴스'),
-                                'source': 'naver'
+                                'source': 'naver',
+                                'url': f"https://m.stock.naver.com/investment/news/article/{office_id}/{article_id}" if office_id and article_id else f"/discovery?symbol={symbol}"
                             })
                         else:
                             print(f"[NewsAlert] Filtered irrelevant Naver News for {stock_name}: {n_title}")
@@ -137,7 +140,8 @@ class NewsAlertMonitor:
                             'id': top_g.get('link'),  # 구글 뉴스는 링크를 고유 ID로 사용
                             'title': g_title,
                             'publisher': top_g.get('publisher', '구글 뉴스'),
-                            'source': 'google'
+                            'source': 'google',
+                            'url': top_g.get('link') or f"/discovery?symbol={symbol}"
                         })
                     else:
                         print(f"[NewsAlert] Filtered irrelevant Google News for {stock_name}: {g_title}")
@@ -214,9 +218,10 @@ class NewsAlertMonitor:
             # 소스에 따른 이모지 변경
             source_icon = "🌍" if source == 'google' else "🇰🇷"
             
-            # FCM 알림 메시지 구성
+            # 1. FCM 알림 메시지 구성
             push_title = f"{source_icon} {stock_name} 속보!"
             push_body = f"[{office_name}] {title}"
+            news_url = news_item.get('url') or f"/discovery?symbol={symbol}"
             
             # 발송할 토큰 모두 수집
             all_tokens = []
@@ -237,7 +242,7 @@ class NewsAlertMonitor:
                 data={
                     "type": "news_alert",
                     "symbol": symbol,
-                    "url": f"/discovery?symbol={symbol}"
+                    "url": news_url
                 }
             )
             
