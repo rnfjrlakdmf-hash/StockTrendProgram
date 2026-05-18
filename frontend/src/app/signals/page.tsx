@@ -75,10 +75,18 @@ function SignalsPageContent() {
                     ))}
                 </div>
 
-                {activeTab === "signals" && <SignalsFeedTab router={router} />}
-                {activeTab === "heatmap" && <HeatmapTab router={router} />}
-                {activeTab === "supply" && <MarketInsightsTab router={router} />}
-                {activeTab === "calendar" && <CalendarTab router={router} />}
+                <div className={activeTab === "signals" ? "block animate-in fade-in duration-200" : "hidden"}>
+                    <SignalsFeedTab router={router} />
+                </div>
+                <div className={activeTab === "heatmap" ? "block animate-in fade-in duration-200" : "hidden"}>
+                    <HeatmapTab router={router} />
+                </div>
+                <div className={activeTab === "supply" ? "block animate-in fade-in duration-200" : "hidden"}>
+                    <MarketInsightsTab router={router} />
+                </div>
+                <div className={activeTab === "calendar" ? "block animate-in fade-in duration-200" : "hidden"}>
+                    <CalendarTab router={router} />
+                </div>
 
                 <AIDisclaimer className="mt-8 opacity-80" />
             </div>
@@ -787,7 +795,7 @@ function CalendarTab({ router }: { router: any }) {
             </div>
 
             {/* 주요 경제 지표 서브탭 */}
-            {mainTab === "economic" && (
+            <div className={mainTab === "economic" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                 <div className="space-y-4">
                     {/* 글로벌 주요 지수 및 자산 (KOSPI/KOSDAQ 등) 복구 */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -875,11 +883,9 @@ function CalendarTab({ router }: { router: any }) {
 
 
                 </div>
-            )}
-
+            </div>
             {/* 실적/배당 서브탭 */}
-            {mainTab === "earndiv" && (
-                <div className="space-y-4">
+            <div className={mainTab === "earndiv" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                     <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
                         <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📈 전체 실적 달력</button>
                         <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 전체 배당 달력</button>
@@ -992,11 +998,8 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                     )}
                 </div>
-            )}
-
             {/* 공모주 서브탭 */}
-            {mainTab === "ipo" && (
-                <div className="space-y-3">
+            <div className={mainTab === "ipo" ? "space-y-3 block animate-in fade-in duration-200" : "hidden"}>
                     <p className="text-xs text-gray-500">한국 공모주 청약 일정 (38커뮤니케이션 제공)</p>
                     {ipoLoading ? (
                         <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
@@ -1039,8 +1042,6 @@ function CalendarTab({ router }: { router: any }) {
                             </div>
                         </div>
                     )}
-                </div>
-            )}
-        </div>
+                </div>        </div>
     );
 }

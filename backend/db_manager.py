@@ -135,10 +135,22 @@ def init_db():
             token TEXT NOT NULL UNIQUE,
             device_type TEXT,
             device_name TEXT,
+            pref_morning BOOLEAN DEFAULT 1,
+            pref_closing BOOLEAN DEFAULT 1,
+            pref_price BOOLEAN DEFAULT 1,
+            pref_news BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_morning BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_closing BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_price BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_news BOOLEAN DEFAULT 1")
+    except: pass
 
     # [NEW] User Portfolio Table (Manual Entry)
     cursor.execute('''
@@ -740,6 +752,10 @@ def create_fcm_tokens_table():
             token TEXT NOT NULL UNIQUE,
             device_type TEXT,  -- 'web', 'android', 'ios'
             device_name TEXT,
+            pref_morning BOOLEAN DEFAULT 1,
+            pref_closing BOOLEAN DEFAULT 1,
+            pref_price BOOLEAN DEFAULT 1,
+            pref_news BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -781,7 +797,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT token, device_type, device_name
+        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news
         FROM fcm_tokens
         WHERE user_id = ?
         ORDER BY last_used DESC
@@ -794,10 +810,47 @@ def get_user_fcm_tokens(user_id: str) -> list:
         {
             "token": row[0],
             "device_type": row[1],
-            "device_name": row[2]
+            "device_name": row[2],
+            "pref_morning": bool(row[3]),
+            "pref_closing": bool(row[4]),
+            "pref_price": bool(row[5]),
+            "pref_news": bool(row[6]) if len(row) > 6 else True
         }
         for row in rows
     ]
+
+def get_fcm_preferences(token: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news FROM fcm_tokens WHERE token = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {"pref_morning": bool(row[0]), "pref_closing": bool(row[1]), "pref_price": bool(row[2]), "pref_news": bool(row[3]) if len(row) > 3 else True}
+    return None
+
+def update_fcm_preferences(token: str, prefs: dict):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE fcm_tokens 
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?
+            WHERE token = ?
+        """, (
+            1 if prefs.get('pref_morning', True) else 0,
+            1 if prefs.get('pref_closing', True) else 0,
+            1 if prefs.get('pref_price', True) else 0,
+            1 if prefs.get('pref_news', True) else 0,
+            token
+        ))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Update FCM prefs error: {e}")
+        return False
+    finally:
+        conn.close()
 
 
 def delete_fcm_token(token: str):

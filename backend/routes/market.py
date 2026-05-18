@@ -729,17 +729,21 @@ def get_debug_tokens():
         return {"status": "error", "message": str(e)}
 
 @router.get("/scanner")
+@turbo_cache(ttl_seconds=30)
 def read_market_scanner():
     """오늘의 증시 스캐너 데이터 (상승/하락 종목 수 및 특이 공시)"""
     from korea_data import get_market_summary_stats, get_live_disclosures
+    import concurrent.futures
     try:
-        stats = get_market_summary_stats()
-        disclosures = get_live_disclosures()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            f_stats = executor.submit(get_market_summary_stats)
+            f_disc = executor.submit(get_live_disclosures)
+            
         return {
             "status": "success",
             "data": {
-                "stats": stats,
-                "disclosures": disclosures
+                "stats": f_stats.result(),
+                "disclosures": f_disc.result()
             }
         }
     except Exception as e:

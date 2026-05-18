@@ -8,6 +8,10 @@ import { API_BASE_URL } from "@/lib/config";
 import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles, Info, X } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
 
+// [Cache System] Ultra-fast navigation for Themes
+const THEME_CACHE: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_DURATION = 60 * 1000 * 5; // 5 minute cache
+
 export default function ThemePage() {
     const router = useRouter();
     const [keyword, setKeyword] = useState("");
@@ -23,6 +27,14 @@ export default function ThemePage() {
         
         setLoading(true);
         setError("");
+
+        // [Instant Load] Check global THEME_CACHE first
+        const cachedData = THEME_CACHE[searchKeyword];
+        if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
+            setResult(cachedData.data);
+            setLoading(false);
+            return;
+        }
 
         // Create AbortController for timeout
         const controller = new AbortController();
@@ -46,6 +58,7 @@ export default function ThemePage() {
 
             if (json.status === "success" && json.data) {
                 setResult(json.data);
+                THEME_CACHE[searchKeyword] = { data: json.data, timestamp: Date.now() };
             } else {
                 setError(json.message || "분석 정보를 불러오지 못했습니다. 키워드를 변경해보세요.");
             }
@@ -115,6 +128,24 @@ export default function ThemePage() {
         return () => clearInterval(interval);
     }, []);
 
+    // [New] Prefetch function for hover optimization
+    const prefetchTheme = async (themeName: string) => {
+        if (!themeName) return;
+        if (THEME_CACHE[themeName]) return;
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/theme/${encodeURIComponent(themeName)}`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    THEME_CACHE[themeName] = { data: json.data, timestamp: Date.now() };
+                }
+            }
+        } catch (e) {
+            console.error("Prefetch error:", e);
+        }
+    };
+
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleAnalyze();
@@ -173,6 +204,10 @@ export default function ThemePage() {
                         {trendingThemes.slice(0, 10).map((t, idx) => (
                             <button
                                 key={idx}
+                                onMouseEnter={() => {
+                                    const name = typeof t === 'string' ? t : t.name;
+                                    prefetchTheme(name);
+                                }}
                                 onClick={() => { 
                                     const name = typeof t === 'string' ? t : t.name;
                                     setKeyword(name); 

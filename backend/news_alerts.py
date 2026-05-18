@@ -223,7 +223,8 @@ class NewsAlertMonitor:
             for user_id in users:
                 tokens_data = get_user_fcm_tokens(user_id)
                 for t in tokens_data:
-                    all_tokens.append(t['token'])
+                    if t.get('pref_news', True):
+                        all_tokens.append(t['token'])
                     
             if not all_tokens:
                 return

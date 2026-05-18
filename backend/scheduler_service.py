@@ -160,7 +160,9 @@ def send_opening_notification(market: str):
             
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
-            send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
+            tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
+            if tokens:
+                send_multicast_notification(tokens, title, body, {"url": "/watchlist"})
 
 def send_closing_notification(market: str):
     """시장 마감 리포트 발송 로직 (기본 지수 + 맞춤형 지수 하이브리드)"""
@@ -248,7 +250,9 @@ def send_closing_notification(market: str):
         
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
-            send_multicast_notification([t['token'] for t in tokens_data], title, body, {"url": "/watchlist"})
+            tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
+            if tokens:
+                send_multicast_notification(tokens, title, body, {"url": "/watchlist"})
 
 def send_daily_analytics_report():
     """매일 밤 11시 59분 59초에 관리자(rnfjr@gmail.com, rnfjrlakdmf@gmail.com)들에게 일일 방문자 및 시스템 보고서 푸시 알림 발송"""

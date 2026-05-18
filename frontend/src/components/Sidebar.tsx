@@ -91,12 +91,9 @@ export default function Sidebar() {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-    // [New] Real-time Global Clocks State & Updater
     const [clocks, setClocks] = useState({
-        korTime: "",
-        usaTime: "",
-        isKorOpen: false,
-        isUsaOpen: false
+        korTime: "", usaTime: "", jpnTime: "", ukTime: "",
+        isKorOpen: false, isUsaOpen: false, isJpnOpen: false, isUkOpen: false
     });
 
     useEffect(() => {
@@ -153,6 +150,42 @@ export default function Sidebar() {
             const isUsaWeekday = usaDay !== 0 && usaDay !== 6;
             const isUsaOpen = isUsaTimeOpen && isUsaWeekday;
 
+            // 3. Tokyo Time Calculation
+            const jpnStr = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Tokyo',
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric',
+                hour12: false
+            }).format(now);
+            const jpnDate = new Date(jpnStr);
+            const jpnHours = jpnDate.getHours();
+            const jpnMinutes = jpnDate.getMinutes();
+            const jpnDay = jpnDate.getDay();
+            const jpnTotalMinutes = jpnHours * 60 + jpnMinutes;
+            const jpnOpenMinutes = 9 * 60 + 0;
+            const jpnCloseMinutes = 15 * 60 + 0;
+            const isJpnTimeOpen = jpnTotalMinutes >= jpnOpenMinutes && jpnTotalMinutes < jpnCloseMinutes;
+            const isJpnWeekday = jpnDay !== 0 && jpnDay !== 6;
+            const isJpnOpen = isJpnTimeOpen && isJpnWeekday;
+
+            // 4. London Time Calculation
+            const ukStr = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Europe/London',
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric',
+                hour12: false
+            }).format(now);
+            const ukDate = new Date(ukStr);
+            const ukHours = ukDate.getHours();
+            const ukMinutes = ukDate.getMinutes();
+            const ukDay = ukDate.getDay();
+            const ukTotalMinutes = ukHours * 60 + ukMinutes;
+            const ukOpenMinutes = 8 * 60 + 0;
+            const ukCloseMinutes = 16 * 60 + 30;
+            const isUkTimeOpen = ukTotalMinutes >= ukOpenMinutes && ukTotalMinutes < ukCloseMinutes;
+            const isUkWeekday = ukDay !== 0 && ukDay !== 6;
+            const isUkOpen = isUkTimeOpen && isUkWeekday;
+
             const formatTime = (date: Date) => {
                 const hh = String(date.getHours()).padStart(2, '0');
                 const mm = String(date.getMinutes()).padStart(2, '0');
@@ -163,8 +196,9 @@ export default function Sidebar() {
             setClocks({
                 korTime: formatTime(korDate),
                 usaTime: formatTime(usaDate),
-                isKorOpen,
-                isUsaOpen
+                jpnTime: formatTime(jpnDate),
+                ukTime: formatTime(ukDate),
+                isKorOpen, isUsaOpen, isJpnOpen, isUkOpen
             });
         };
 
@@ -472,6 +506,30 @@ export default function Sidebar() {
                                     </div>
                                 </div>
                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                            </div>
+
+                            {/* JPN Clock */}
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isJpnOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="text-xs">🇯🇵</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">TOKYO</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.jpnTime}</span>
+                                    </div>
+                                </div>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                            </div>
+
+                            {/* UK Clock */}
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUkOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="text-xs">🇬🇧</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">LONDON</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.ukTime}</span>
+                                    </div>
+                                </div>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
                             </div>
                         </div>
                     </div>

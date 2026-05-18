@@ -197,6 +197,34 @@ def register_fcm_token(req: FCMTokenRequest, x_user_id: str = Header(None)):
     except Exception as e:
         return {"status": "error", "message": str(e), "user_id": user_id}
 
+@router.get("/fcm/preferences")
+def get_preferences(token: str):
+    from db_manager import get_fcm_preferences
+    prefs = get_fcm_preferences(token)
+    if prefs is None:
+        return {"status": "error", "message": "Token not found"}
+    return {"status": "success", "data": prefs}
+
+class FCMPreferencesRequest(BaseModel):
+    token: str
+    pref_morning: bool
+    pref_closing: bool
+    pref_price: bool
+    pref_news: bool
+
+@router.post("/fcm/preferences")
+def update_preferences(req: FCMPreferencesRequest):
+    from db_manager import update_fcm_preferences
+    success = update_fcm_preferences(req.token, {
+        "pref_morning": req.pref_morning,
+        "pref_closing": req.pref_closing,
+        "pref_price": req.pref_price,
+        "pref_news": req.pref_news
+    })
+    if success:
+        return {"status": "success", "message": "Preferences updated"}
+    return {"status": "error", "message": "Update failed"}
+
 class FCMTestRequest(BaseModel):
     token: Optional[str] = None
 

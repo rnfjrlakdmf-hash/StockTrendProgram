@@ -38,7 +38,9 @@ class MorningBriefingService:
             if not tokens_data:
                 continue
             
-            tokens = [t['token'] for t in tokens_data]
+            tokens = [t['token'] for t in tokens_data if t.get('pref_morning', True)]
+            if not tokens:
+                continue
 
             # 유저의 관심종목 가져오기
             watchlist_rows = get_watchlist(user_id)

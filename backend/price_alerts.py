@@ -152,8 +152,11 @@ class PriceAlertMonitor:
             # FCM 토큰 가져오기
             tokens_data = get_user_fcm_tokens(user_id)
             
-            if not tokens_data:
-                print(f"[PriceAlert] No FCM tokens for user {user_id}")
+            # pref_price 가 True인 토큰만 필터링
+            tokens = [t['token'] for t in tokens_data if t.get('pref_price', True)]
+            
+            if not tokens:
+                print(f"[PriceAlert] No FCM tokens (or alerts disabled) for user {user_id}")
                 return
             
             # 변동률 계산
@@ -163,7 +166,6 @@ class PriceAlertMonitor:
                 change_pct = 0
             
             # 모든 기기에 발송
-            tokens = [t['token'] for t in tokens_data]
             result = send_price_alert_notification(
                 tokens=tokens,
                 symbol=alert['symbol'],

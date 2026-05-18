@@ -66,6 +66,38 @@ function AnalysisContent() {
     // UI Helpers
     const [showEasy, setShowEasy] = useState(false);
 
+    // [Cache & Autocomplete]
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
+
+    useEffect(() => {
+        if (!symbol) { setSearchResults([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(symbol)}`);
+                const json = await res.json();
+                if (json.status === "success") setSearchResults(json.data);
+            } catch (e) {}
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [symbol]);
+
+    const ANALYSIS_CACHE: Record<string, any> = useMemo(() => ({}), []);
+
+    const prefetchAnalysis = async (sym: string) => {
+        const ticker = getTickerFromKorean(sym).toUpperCase();
+        if (ANALYSIS_CACHE[ticker]?.quant) return;
+        
+        if (!ANALYSIS_CACHE[ticker]) ANALYSIS_CACHE[ticker] = {};
+        
+        try {
+            fetch(`${API_BASE_URL}/api/analysis/pro/summary/${ticker}?v5=true`)
+                .then(r => r.json()).then(j => { if (j.status === "success") ANALYSIS_CACHE[ticker].basic = j.data.stock_info; });
+            fetch(`${API_BASE_URL}/api/analysis/quant/${ticker}`)
+                .then(r => r.json()).then(j => { if (j.status === "success") { ANALYSIS_CACHE[ticker].quant = j.data; ANALYSIS_CACHE[ticker].turbo = j.turbo; } });
+        } catch(e) {}
+    };
+
     // [v1.9.0] 개별 분석 실행을 위한 타겟 심볼 상태들
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
@@ -134,46 +166,132 @@ function AnalysisContent() {
         }
     };
 
-    const fetchBasicInfo = async (sym: string) => {
+    const fetchBasicInfo = async (sym: string, isBackground = false) => {
         if (!sym) return;
-        setStockLoading(true);
+        if (!ANALYSIS_CACHE[sym]) ANALYSIS_CACHE[sym] = {};
+        
+        if (!isBackground && ANALYSIS_CACHE[sym].basic) {
+            setStockInfo(ANALYSIS_CACHE[sym].basic);
+            setStockLoading(false);
+            
+            // Background update
+            fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}?v5=true&t=${new Date().getTime()}`)
+                .then(r => r.json()).then(j => {
+                    if (j.status === "success") {
+                        ANALYSIS_CACHE[sym].basic = j.data.stock_info;
+                        setStockInfo(j.data.stock_info);
+                    }
+                });
+            return;
+        }
+        
+        if (!isBackground) setStockLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/pro/summary/${sym}?v5=true&t=${new Date().getTime()}`);
             const json = await res.json();
-            if (json.status === "success") setStockInfo(json.data.stock_info);
+            if (json.status === "success") {
+                ANALYSIS_CACHE[sym].basic = json.data.stock_info;
+                setStockInfo(json.data.stock_info);
+            }
         } catch (err) { console.error(err); }
-        finally { setStockLoading(false); }
+        finally { if (!isBackground) setStockLoading(false); }
     };
 
-    const fetchQuant = async (sym: string) => {
+    const fetchQuant = async (sym: string, isBackground = false) => {
         if (!sym) return;
-        setQuantLoading(true);
-        setIsTurbo(false);
+        if (!ANALYSIS_CACHE[sym]) ANALYSIS_CACHE[sym] = {};
+
+        if (!isBackground && ANALYSIS_CACHE[sym].quant) {
+            setQuantData(ANALYSIS_CACHE[sym].quant);
+            setIsTurbo(ANALYSIS_CACHE[sym].turbo);
+            setQuantLoading(false);
+            
+            // Background Update
+            fetch(`${API_BASE_URL}/api/analysis/quant/${sym}`)
+                .then(r => r.json()).then(j => {
+                    if (j.status === "success") {
+                        ANALYSIS_CACHE[sym].quant = j.data;
+                        ANALYSIS_CACHE[sym].turbo = j.turbo;
+                        setQuantData(j.data);
+                        setIsTurbo(j.turbo);
+                    }
+                });
+            return;
+        }
+
+        if (!isBackground) {
+            setQuantLoading(true);
+            setIsTurbo(false);
+        }
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/quant/${sym}`);
             const json = await res.json();
             if (json.status === "success") {
+                ANALYSIS_CACHE[sym].quant = json.data;
+                ANALYSIS_CACHE[sym].turbo = json.turbo;
                 setQuantData(json.data);
                 if (json.turbo) setIsTurbo(true);
             }
         } catch (err) { console.error(err); }
-        finally { setQuantLoading(false); }
+        finally { if (!isBackground) setQuantLoading(false); }
     };
 
-    const fetchFinancial = async (sym: string) => {
+    const fetchFinancial = async (sym: string, isBackground = false) => {
         if (!sym) return;
-        setFinancialLoading(true);
+        if (!ANALYSIS_CACHE[sym]) ANALYSIS_CACHE[sym] = {};
+
+        if (!isBackground && ANALYSIS_CACHE[sym].financial) {
+            setFinancialData(ANALYSIS_CACHE[sym].financial);
+            setFinancialLoading(false);
+            fetch(`${API_BASE_URL}/api/analysis/financial-health/${sym}`)
+                .then(r => r.json()).then(j => {
+                    if (j.status === "success") {
+                        ANALYSIS_CACHE[sym].financial = j.data;
+                        setFinancialData(j.data);
+                    }
+                });
+            return;
+        }
+
+        if (!isBackground) setFinancialLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/financial-health/${sym}`);
             const json = await res.json();
-            if (json.status === "success") setFinancialData(json.data);
+            if (json.status === "success") {
+                ANALYSIS_CACHE[sym].financial = json.data;
+                setFinancialData(json.data);
+            }
         } catch (err) { console.error(err); }
-        finally { setFinancialLoading(false); }
+        finally { if (!isBackground) setFinancialLoading(false); }
     };
 
-    const fetchSectorAnalysis = async (sym: string, sector_id: string | null = null) => {
+    const fetchSectorAnalysis = async (sym: string, sector_id: string | null = null, isBackground = false) => {
         if (!sym) return;
-        setSectorLoading(true);
+        if (!ANALYSIS_CACHE[sym]) ANALYSIS_CACHE[sym] = {};
+        const cacheKey = sector_id || 'default';
+        if (!ANALYSIS_CACHE[sym].sector) ANALYSIS_CACHE[sym].sector = {};
+
+        if (!isBackground && ANALYSIS_CACHE[sym].sector[cacheKey]) {
+            setSectorData(ANALYSIS_CACHE[sym].sector[cacheKey]);
+            setSectorLoading(false);
+            const activeId = ANALYSIS_CACHE[sym].sector[cacheKey].compare_sectors?.find((s: any) => s.selected)?.id;
+            if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
+            
+            // Background Update
+            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`);
+            if (sector_id) url.searchParams.append("sector_id", sector_id);
+            url.searchParams.append("v", "4.9.5");
+            url.searchParams.append("t", new Date().getTime().toString());
+            fetch(url.toString()).then(r => r.json()).then(j => {
+                if (j.status === "success") {
+                    ANALYSIS_CACHE[sym].sector[cacheKey] = j.data;
+                    setSectorData(j.data);
+                }
+            });
+            return;
+        }
+
+        if (!isBackground) setSectorLoading(true);
         try {
             const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
@@ -183,12 +301,13 @@ function AnalysisContent() {
             const res = await fetch(url.toString());
             const json = await res.json();
             if (json.status === "success") {
+                ANALYSIS_CACHE[sym].sector[cacheKey] = json.data;
                 setSectorData(json.data);
                 const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
         } catch (err) { console.error(err); }
-        finally { setSectorLoading(false); }
+        finally { if (!isBackground) setSectorLoading(false); }
     };
 
     const fetchPeer = async () => {
@@ -251,13 +370,52 @@ function AnalysisContent() {
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
                 <div className="max-w-3xl mx-auto w-full">
-                    <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-4 group-focus-within:text-indigo-400 transition-colors" />
+                    <div className="relative group max-w-2xl mx-auto w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 z-10" />
                         <input type="text" placeholder="종목코드 입력 (예: 005930, 삼성전자)"
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-5 text-base outline-none focus:ring-2 focus:ring-indigo-500/50 uppercase font-mono transition-all placeholder:text-gray-600 shadow-2xl"
-                            value={symbol} onChange={e => setSymbol(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-lg font-bold focus:outline-none transition-colors"
+                            value={symbol}
+                            onChange={(e) => {
+                                setSymbol(e.target.value);
+                                setShowResults(true);
+                            }}
+                            onFocus={() => setShowResults(true)}
+                            onBlur={() => setTimeout(() => setShowResults(false), 200)}
                             onKeyDown={e => { if (e.key === "Enter") handleGlobalSearch(activeTab); }}
                         />
+                        {/* [Autocomplete Dropdown] */}
+                        {showResults && searchResults.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                                {searchResults.map((item: any, idx: number) => (
+                                    <div
+                                        key={idx}
+                                        onMouseEnter={() => prefetchAnalysis(item.symbol)}
+                                        onClick={() => {
+                                            setSymbol(item.symbol);
+                                            setShowResults(false);
+                                            // Fake setting the value immediately
+                                            let targetSymbol = item.symbol;
+                                            switch (activeTab) {
+                                                case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
+                                                case "financial": setFinSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchFinancial(targetSymbol); break;
+                                                case "sector": 
+                                                    setSelectedSectorId(null);
+                                                    setSecSymbol(targetSymbol); 
+                                                    fetchBasicInfo(targetSymbol); 
+                                                    fetchSectorAnalysis(targetSymbol); 
+                                                    break;
+                                            }
+                                        }}
+                                        className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                    >
+                                        <div className="flex flex-col text-left">
+                                            <span className="font-bold text-white text-sm">{item.name}</span>
+                                            <span className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="flex justify-between items-center mt-2">
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
@@ -289,42 +447,56 @@ function AnalysisContent() {
                                             />
                                             <div className="flex flex-col gap-2 mt-1">
                                                 {/* Regular Market */}
-                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm bg-white/5 border ${
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "border-red-500/20 text-red-400" : 
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "border-blue-500/20 text-blue-400" : 
-                                                    "border-gray-500/20 text-gray-400"
-                                                }`}>
-                                                    <span className="text-xs font-bold text-gray-400 mr-1 bg-black/40 px-1.5 py-0.5 rounded">정규장</span>
-                                                    <span className="text-lg font-black tracking-tight font-mono">
-                                                        {(() => {
-                                                            const rate = parseFloat(String(stockInfo.change_rate || "0"));
-                                                            const isPos = rate > 0;
-                                                            const isNeg = rate < 0;
-                                                            let valStr = String(stockInfo.change_val || "0").replace(/[^0-9.]/g, "");
-                                                            let valNum = Number(valStr);
-                                                            if (isNaN(valNum)) valNum = 0;
-                                                            return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
-                                                        })()}
-                                                    </span>
-                                                    <span className="text-sm font-bold opacity-80 ml-1">
-                                                        {(() => {
-                                                            const rate = parseFloat(String(stockInfo.change_rate || "0"));
-                                                            const isPos = rate > 0;
-                                                            const isNeg = rate < 0;
-                                                            let raw = String(stockInfo.change_rate || stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0.00").replace(/[^0-9.]/g, "");
-                                                            return `(${isPos ? '+' : isNeg ? '-' : ''}${raw}%)`;
-                                                        })()}
-                                                    </span>
-                                                </div>
+                                                {(() => {
+                                                    const rawRateStr = String(stockInfo.change_rate || stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0");
+                                                    // Determine sign explicitly from string first (e.g. "+4.07%"), then fallback to numeric value
+                                                    const isPos = rawRateStr.includes('+') || (!rawRateStr.includes('-') && parseFloat(rawRateStr.replace(/[^0-9.-]/g, "")) > 0);
+                                                    const isNeg = rawRateStr.includes('-') || parseFloat(rawRateStr.replace(/[^0-9.-]/g, "")) < 0;
+                                                    
+                                                    const containerClass = isPos ? "bg-red-500/10 border-red-500/30 text-red-400" : 
+                                                                           isNeg ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : 
+                                                                           "bg-white/5 border-gray-500/20 text-gray-400";
+                                                                           
+                                                    const badgeClass = isPos ? "bg-red-500 text-white" : 
+                                                                       isNeg ? "bg-blue-500 text-white" : 
+                                                                       "bg-black/40 text-gray-400";
+
+                                                    let valStr = String(stockInfo.change_val || "0").replace(/[^0-9.]/g, "");
+                                                    let valNum = Number(valStr);
+                                                    if (isNaN(valNum)) valNum = 0;
+                                                    
+                                                    let rawRate = rawRateStr.replace(/[^0-9.]/g, "");
+
+                                                    return (
+                                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm border ${containerClass}`}>
+                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>정규장</span>
+                                                            <span className="text-lg font-black tracking-tight font-mono">
+                                                                {isPos ? '▲ ' : isNeg ? '▼ ' : ''}{valNum.toLocaleString()}
+                                                            </span>
+                                                            <span className="text-sm font-bold opacity-80 ml-1">
+                                                                ({isPos ? '+' : isNeg ? '-' : ''}{rawRate}%)
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()}
 
                                                 {/* After-Hours Market */}
                                                 {stockInfo.details?.nxt_data && (
                                                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-[0_0_10px_rgba(99,102,241,0.2)] border ${
-                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) > 0) ? "bg-red-500/10 border-red-500/30 text-red-400" : 
-                                                        (parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, "")) < 0) ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : 
-                                                        "bg-gray-500/10 border-gray-500/30 text-gray-400"
+                                                        (() => {
+                                                            const rawNxtPct = String(stockInfo.details.nxt_data.change_pct || "0");
+                                                            const isPos = rawNxtPct.includes('+') || (!rawNxtPct.includes('-') && parseFloat(rawNxtPct.replace(/[^0-9.-]/g, "")) > 0);
+                                                            const isNeg = rawNxtPct.includes('-') || parseFloat(rawNxtPct.replace(/[^0-9.-]/g, "")) < 0;
+                                                            return isPos ? "bg-red-500/10 border-red-500/30 text-red-400" : isNeg ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-gray-500/10 border-gray-500/30 text-gray-400";
+                                                        })()
                                                     }`}>
-                                                        <span className="text-xs font-bold text-indigo-300 mr-1 bg-indigo-900/40 px-1.5 py-0.5 rounded">야간거래 (NXT)</span>
+                                                        {(() => {
+                                                            const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
+                                                            const isPos = rate > 0;
+                                                            const isNeg = rate < 0;
+                                                            const badgeClass = isPos ? "bg-red-500 text-white" : isNeg ? "bg-blue-500 text-white" : "bg-indigo-900/40 text-indigo-300";
+                                                            return <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>야간거래 (NXT)</span>;
+                                                        })()}
                                                         <span className="text-lg font-black tracking-tight font-mono">
                                                             {(() => {
                                                                 const nxtValStr = String(stockInfo.details.nxt_data.change_val || "0");

@@ -31,6 +31,22 @@ export default function PatternPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [showDocent, setShowDocent] = useState(true);
 
+    // [Cache & Autocomplete]
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
+
+    useEffect(() => {
+        if (!searchInput) { setSearchResults([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(searchInput)}`);
+                const json = await res.json();
+                if (json.status === "success") setSearchResults(json.data);
+            } catch (e) {}
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
     useEffect(() => {
         setIsMounted(true);
         const stored = localStorage.getItem("showDocent");
@@ -78,6 +94,21 @@ export default function PatternPage() {
         checkStatus();
     }, []);
 
+    // [Cache Object]
+    const PATTERN_CACHE: Record<string, { data: any, timestamp: number }> = useMemo(() => ({}), []);
+
+    const prefetchPattern = async (sym: string) => {
+        const ticker = getTickerFromKorean(sym).toUpperCase();
+        if (PATTERN_CACHE[ticker]) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/chart/patterns/${ticker}?interval=1d&period=1y&t=${Date.now()}`);
+            const json = await res.json();
+            if (json.status === "success" && json.data) {
+                PATTERN_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+            }
+        } catch(e) {}
+    };
+
     const handleSearch = async (targetSymbol?: string, targetParams?: { period?: string, interval?: string }) => {
         const symbolToSearch = (typeof targetSymbol === 'string' ? targetSymbol : null) || searchInput;
         
@@ -116,11 +147,36 @@ export default function PatternPage() {
             }));
         }
 
+        const ticker = getTickerFromKorean(symbolToSearch).toUpperCase();
+
+        // [Cache Check]
+        if (isNewSearch && PATTERN_CACHE[ticker]) {
+            setResult(PATTERN_CACHE[ticker].data);
+            setLoading(false);
+            setUpdating(false);
+            
+            // Background update
+            try {
+                fetch(`${API_BASE_URL}/api/analysis/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}&t=${Date.now()}`)
+                    .then(r => r.json())
+                    .then(json => {
+                        if (json.status === "success" && json.data) {
+                            PATTERN_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+                            setResult(json.data);
+                        }
+                    });
+            } catch(e) {}
+            return;
+        }
+
         try {
             const ticker = getTickerFromKorean(symbolToSearch).toUpperCase();
             const res = await fetch(`${API_BASE_URL}/api/analysis/chart/patterns/${ticker}?interval=${intervalToUse}&period=${periodToUse}&t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
+                if (isNewSearch) {
+                    PATTERN_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+                }
                 setResult(json.data);
             } else {
                 alert("검색 결과가 없습니다. 티커를 확인해주세요.");
@@ -477,12 +533,41 @@ export default function PatternPage() {
                             <input
                                 type="text"
                                 value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchInput(e.target.value);
+                                    setShowResults(true);
+                                }}
+                                onFocus={() => setShowResults(true)}
+                                onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "종목명 또는 티커 입력 (예: 삼성전자, AAPL)"}
                                 className={`relative w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-32 text-white text-xl font-bold focus:outline-none transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={loading || isLocked}
                             />
+                            
+                            {/* [Autocomplete Dropdown] */}
+                            {showResults && searchResults.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                                    {searchResults.map((item: any, idx: number) => (
+                                        <div
+                                            key={idx}
+                                            onMouseEnter={() => prefetchPattern(item.symbol)}
+                                            onClick={() => {
+                                                setSearchInput(item.symbol);
+                                                setShowResults(false);
+                                                handleSearch(item.symbol);
+                                            }}
+                                            className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                        >
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-white text-sm">{item.name}</span>
+                                                <span className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 w-6 h-6 z-10" />
                             <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-lg font-bold transition-all disabled:opacity-50 z-10">
                                 {isLocked ? <Lock className="w-5 h-5" /> : "분석하기"}

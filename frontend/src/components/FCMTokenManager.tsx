@@ -19,6 +19,8 @@ export default function FCMTokenManager() {
     const { user } = useAuth();
 
     const [isVisible, setIsVisible] = useState(true);
+    const [currentToken, setCurrentToken] = useState<string | null>(null);
+    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true });
 
     useEffect(() => {
         // [Critical] Explicit Service Worker Registration
@@ -57,11 +59,44 @@ export default function FCMTokenManager() {
         }
     }, [user]);
 
+    const fetchPreferences = async (token: string) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+                setPrefs(data.data);
+            }
+        } catch (e) {
+            console.error('[FCM] Fetch prefs failed:', e);
+        }
+    };
+
+    const handleTogglePref = async (key: keyof typeof prefs) => {
+        if (!currentToken) return;
+        const newPrefs = { ...prefs, [key]: !prefs[key] };
+        setPrefs(newPrefs); // Optimistic UI
+        try {
+            await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token: currentToken,
+                    ...newPrefs
+                })
+            });
+        } catch (e) {
+            console.error('[FCM] Update prefs failed:', e);
+            setPrefs(prefs); // Revert on error
+        }
+    };
+
     const syncTokenToServer = async () => {
         try {
             const token = await requestFCMToken();
             if (token) {
+                setCurrentToken(token);
                 await registerTokenToBackend(token);
+                await fetchPreferences(token);
                 setRegistered(true);
                 localStorage.setItem('fcm_registered', 'true');
             }
@@ -104,6 +139,8 @@ export default function FCMTokenManager() {
             const data = await registerTokenToBackend(token);
 
             if (data.status === 'success') {
+                setCurrentToken(token);
+                await fetchPreferences(token);
                 setRegistered(true);
                 setPermission('granted');
                 localStorage.setItem('fcm_registered', 'true');
@@ -216,28 +253,74 @@ export default function FCMTokenManager() {
                                 
                                 {!loading && (
                                     <div className="space-y-4">
-                                        {/* 가이드 섹션 */}
+                                        {/* 가이드 및 설정 섹션 */}
                                         <div className="bg-white/5 rounded-xl p-3 space-y-3 border border-white/5">
-                                            <div className="flex items-start gap-2.5">
-                                                <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs">✨</div>
-                                                <div>
-                                                    <p className="text-white font-bold text-[11px]">AI 마켓 브리핑 (08:00)</p>
-                                                    <p className="text-gray-400 text-[10px] leading-relaxed">내 종목의 핵심 뉴스만 쏙쏙! 호재와 악재를 3:3으로 분석한 팩트 요약본이 매일 아침 배달됩니다.</p>
+                                            {/* AI 마켓 브리핑 */}
+                                            <div className="flex items-start justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs">✨</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">AI 마켓 브리핑 (08:00)</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">내 관심종목의 호재와 악재 요약본</p>
+                                                    </div>
                                                 </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_morning')}
+                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_morning ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_morning ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </button>
                                             </div>
-                                            <div className="flex items-start gap-2.5">
-                                                <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">☀️</div>
-                                                <div>
-                                                    <p className="text-white font-bold text-[11px]">장시작/마감 리포트</p>
-                                                    <p className="text-gray-400 text-[10px] leading-relaxed">평일 09:05(시가) 및 15:40(종가) 알림! 환율, 유가, 지수와 내 종목 수익률을 한 번에 정리해 드립니다.</p>
+                                            
+                                            {/* 장시작/마감 리포트 */}
+                                            <div className="flex items-start justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">☀️</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">장시작/마감 리포트</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">시가/종가 및 누적 수익 요약 리포트</p>
+                                                    </div>
                                                 </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_closing')}
+                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_closing ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_closing ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </button>
                                             </div>
-                                            <div className="flex items-start gap-2.5">
-                                                <div className="bg-green-500/20 p-1.5 rounded-lg text-green-400 text-xs">💰</div>
-                                                <div>
-                                                    <p className="text-white font-bold text-[11px]">수익금 자동 추적</p>
-                                                    <p className="text-gray-400 text-[10px] leading-relaxed">관심 종목을 별표(☆)로 담은 시점부터의 누적 수익을 계산합니다. 미국 주식은 원화로 자동 환산됩니다.</p>
+                                            
+                                            {/* 가격 변동 알림 */}
+                                            <div className="flex items-start justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-red-500/20 p-1.5 rounded-lg text-red-400 text-xs">🚨</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">가격 변동 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">손절, 익절, 목표가 도달 시 즉시 알림</p>
+                                                    </div>
                                                 </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_price')}
+                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_price ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_price ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </button>
+                                            </div>
+
+                                            {/* 속보 알림 */}
+                                            <div className="flex items-start justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-yellow-500/20 p-1.5 rounded-lg text-yellow-400 text-xs">⚡</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">관심종목 속보 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">내 종목 관련 중요 뉴스 및 공시 즉시 알림</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_news')}
+                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_news ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </button>
                                             </div>
                                         </div>
 

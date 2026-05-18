@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { Search, Network, Loader2, ArrowRight, X, ExternalLink, Activity } from "lucide-react";
@@ -16,13 +16,43 @@ export default function SupplyChainPage() {
     const [showAdModal, setShowAdModal] = useState(false);
     const [hasPaid, setHasPaid] = useState(false);
     
-    // [New] Node Detail Modal State
     const [selectedNode, setSelectedNode] = useState<any>(null);
     const [nodeDetail, setNodeDetail] = useState<any>(null);
     const [nodeLoading, setNodeLoading] = useState(false);
 
-    const handleSearch = async () => {
-        if (!searchInput) return;
+    // [Cache & Autocomplete]
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
+
+    useEffect(() => {
+        if (!searchInput) { setSearchResults([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(searchInput)}`);
+                const json = await res.json();
+                if (json.status === "success") setSearchResults(json.data);
+            } catch (e) {}
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    const SUPPLY_CACHE: Record<string, { data: any, timestamp: number }> = useMemo(() => ({}), []);
+
+    const prefetchSupply = async (sym: string) => {
+        const ticker = sym.toUpperCase();
+        if (SUPPLY_CACHE[ticker]) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/${ticker}`);
+            const json = await res.json();
+            if (json.status === "success" && json.data) {
+                SUPPLY_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+            }
+        } catch (e) {}
+    };
+
+    const handleSearch = async (targetSymbol?: string) => {
+        const query = (targetSymbol || searchInput).toUpperCase();
+        if (!query) return;
 
         // Check for Pro Mode or Active Reward
         const isPro = localStorage.getItem("isPro") === "true";
@@ -31,13 +61,32 @@ export default function SupplyChainPage() {
             return;
         }
 
+        // [Cache Check]
+        if (SUPPLY_CACHE[query]) {
+            setData(SUPPLY_CACHE[query].data);
+            setLoading(false);
+            
+            // Background update
+            try {
+                fetch(`${API_BASE_URL}/api/analysis/supply-chain/${query}`)
+                    .then(r => r.json())
+                    .then(json => {
+                        if (json.status === "success" && json.data) {
+                            SUPPLY_CACHE[query] = { data: json.data, timestamp: Date.now() };
+                            setData(json.data);
+                        }
+                    });
+            } catch(e) {}
+            return;
+        }
+
         setLoading(true);
         setData(null);
-        // setScenarioData(null); // Do not clear scenario when searching company
         try {
-            const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/${searchInput.toUpperCase()}`);
+            const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/${query}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
+                SUPPLY_CACHE[query] = { data: json.data, timestamp: Date.now() };
                 setData(json.data);
             }
         } catch (e) {
@@ -86,18 +135,47 @@ export default function SupplyChainPage() {
                 {/* Search Section */}
                 <div className="max-w-2xl mx-auto relative">
                     <label className="block text-sm text-gray-400 mb-2 ml-1">🏢 기업 공급망 분석</label>
-                    <div className="relative">
+                    <div className="relative z-50">
                         <input
                             type="text"
                             value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
+                            onChange={(e) => {
+                                setSearchInput(e.target.value);
+                                setShowResults(true);
+                            }}
+                            onFocus={() => setShowResults(true)}
+                            onBlur={() => setTimeout(() => setShowResults(false), 200)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="티커 입력 (예: TSLA, AAPL)..."
                             className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
                         />
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                        
+                        {/* [Autocomplete Dropdown] */}
+                        {showResults && searchResults.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                                {searchResults.map((item: any, idx: number) => (
+                                    <div
+                                        key={idx}
+                                        onMouseEnter={() => prefetchSupply(item.symbol)}
+                                        onClick={() => {
+                                            setSearchInput(item.symbol);
+                                            setShowResults(false);
+                                            handleSearch(item.symbol);
+                                        }}
+                                        className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-white text-sm">{item.name}</span>
+                                            <span className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <button
-                            onClick={handleSearch}
+                            onClick={() => handleSearch()}
                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors"
                         >
                             Map It

@@ -2954,11 +2954,6 @@ def get_market_summary_stats():
             if not area:
                 return
 
-        def extract_stats(area_class, market_key):
-            area = soup.select_one(area_class)
-            if not area:
-                return
-
             # HTML 특수문자 및 한글 깨짐에 완벽히 대응하는 후위 숫자 추출법
             # 지수 % 변동률 뒤에 항상 투자자 동향 -> 상하락 종목수가 렌더링됨
             tail_text = area.text.replace(',', '').split('%')[-1]

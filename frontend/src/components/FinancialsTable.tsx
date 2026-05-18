@@ -234,7 +234,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                 <tbody className="divide-y divide-white/5">
                                     {groupKeys.map((key) => {
                                         const config = METRIC_CONFIG[key];
-                                        const metric = data[key];
+                                        const metric = (data as any)[key];
                                         if (!config || !metric) return null;
 
                                         return (
@@ -265,7 +265,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                 </td>
 
                                                 {/* 값들 */}
-                                                {metric.values.map((val, idx) => {
+                                                {metric.values.map((val: any, idx: number) => {
                                                     const isQuarter = idx >= 4;
                                                     const isQStart = idx === 4;
                                                     const trend = getTrend(metric.values, idx);

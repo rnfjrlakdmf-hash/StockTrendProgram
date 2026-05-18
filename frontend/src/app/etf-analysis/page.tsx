@@ -146,16 +146,68 @@ function EtfAnalysisContent() {
         return () => clearInterval(interval);
     }, [autoRefresh, urlSymbol, loading, etfData]);
 
+    // [Cache & Autocomplete]
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
+
+    useEffect(() => {
+        if (!symbol) { setSearchResults([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(symbol)}`);
+                const json = await res.json();
+                if (json.status === "success") setSearchResults(json.data);
+            } catch (e) {}
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [symbol]);
+
+    const ETF_CACHE: Record<string, { data: any, timestamp: number }> = useMemo(() => ({}), []);
+
+    const prefetchEtf = async (sym: string) => {
+        const ticker = sym.toUpperCase();
+        if (ETF_CACHE[ticker]) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/etf-detail/${ticker}?t=${Date.now()}`);
+            const json = await res.json();
+            if (json.status === "success" && json.data) {
+                ETF_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+            }
+        } catch (e) {}
+    };
+
     const fetchEtfDetail = async (sym: string, isBackground = false) => {
         if (!sym) return;
+        const ticker = sym.toUpperCase();
+
+        // [Cache Check]
+        if (!isBackground && ETF_CACHE[ticker]) {
+            setEtfData(ETF_CACHE[ticker].data);
+            setLoading(false);
+            
+            // Background update
+            try {
+                fetch(`${API_BASE_URL}/api/market/etf-detail/${ticker}?t=${Date.now()}`)
+                    .then(r => r.json())
+                    .then(json => {
+                        if (json.status === "success") {
+                            ETF_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
+                            setEtfData(json.data);
+                        }
+                    });
+            } catch(e) {}
+            return;
+        }
+
         if (!isBackground) {
             setLoading(true);
             setEtfData(null);
         }
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/etf-detail/${sym}?t=${Date.now()}`);
+            const res = await fetch(`${API_BASE_URL}/api/market/etf-detail/${ticker}?t=${Date.now()}`);
             const json = await res.json();
             if (json.status === "success") {
+                if (!isBackground) ETF_CACHE[ticker] = { data: json.data, timestamp: Date.now() };
                 setEtfData(json.data);
             } else if (!isBackground) {
                 setEtfData({ error: json.message || "Failed to load ETF details" });
@@ -195,11 +247,39 @@ function EtfAnalysisContent() {
                             <input
                                 type="text"
                                 value={symbol}
-                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                                onChange={(e) => {
+                                    setSymbol(e.target.value.toUpperCase());
+                                    setShowResults(true);
+                                }}
+                                onFocus={() => setShowResults(true)}
+                                onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 onKeyDown={(e) => e.key === "Enter" && fetchEtfDetail(symbol)}
                                 placeholder="ETF 종목코드 입력 (예: 069500, SPY)"
                                 className="w-full bg-gray-900 border-2 border-gray-800 text-white rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-blue-500 focus:bg-gray-800/50 transition-all font-bold placeholder-gray-600"
                             />
+                            
+                            {/* [Autocomplete Dropdown] */}
+                            {showResults && searchResults.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                                    {searchResults.map((item: any, idx: number) => (
+                                        <div
+                                            key={idx}
+                                            onMouseEnter={() => prefetchEtf(item.symbol)}
+                                            onClick={() => {
+                                                setSymbol(item.symbol);
+                                                setShowResults(false);
+                                                fetchEtfDetail(item.symbol);
+                                            }}
+                                            className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                        >
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-white text-sm">{item.name}</span>
+                                                <span className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={() => fetchEtfDetail(symbol)}
@@ -634,6 +714,7 @@ function EtfAnalysisContent() {
                                 {['069500', '122630', '379800', '133690'].map((exSym) => (
                                     <button 
                                         key={exSym}
+                                        onMouseEnter={() => prefetchEtf(exSym)}
                                         onClick={() => { setSymbol(exSym); fetchEtfDetail(exSym); }}
                                         className="px-4 py-2 rounded-xl bg-gray-800 text-gray-400 text-xs font-bold hover:bg-gray-700 hover:text-white transition-colors"
                                     >

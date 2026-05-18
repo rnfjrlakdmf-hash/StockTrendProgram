@@ -542,6 +542,41 @@ function DiscoveryContent() {
             const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
             console.log("[Search] Fetching data for ticker:", safeTicker);
 
+            // [Instant Load] Check global STOCK_CACHE first
+            const cachedData = STOCK_CACHE[targetSymbol.toUpperCase()];
+            if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
+                console.log("[Search] Cache hit! Instant render for:", targetSymbol);
+                setStock(cachedData.data);
+                setLoading(false);
+                
+                // Then fetch the slow AI in background
+                setIsAnalyzing(true);
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`)
+                    .then(res => res.ok ? res.json() : null)
+                    .then(jsonFull => {
+                        if (jsonFull?.status === "success") {
+                            setStock(jsonFull.data);
+                            STOCK_CACHE[jsonFull.data.symbol.toUpperCase()] = { data: jsonFull.data, timestamp: Date.now() };
+                        }
+                        setIsAnalyzing(false);
+                    })
+                    .catch(() => setIsAnalyzing(false));
+
+                // Fetch Financial Highlights in background
+                setFinancialsLoading(true);
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}/financials?t=${Date.now()}&v=5.2.7`)
+                    .then(res => res.json())
+                    .then(resJson => {
+                        if (resJson.status === "success") {
+                            setFinancialHighlights(resJson.data);
+                        }
+                    })
+                    .catch(() => { })
+                    .finally(() => setFinancialsLoading(false));
+                    
+                return;
+            }
+
             // 1. FAST Fetch
             const fastUrl = `${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}&cb=${cacheBuster}&skip_ai=true`;
             const resFast = await fetch(fastUrl, { 
@@ -606,8 +641,23 @@ function DiscoveryContent() {
         if (!term) return;
         let query = term.trim();
         let ticker = getTickerFromKorean(query).toUpperCase();
-        // ... (prefetch logic kept same, or updated if needed, but keeping simple for now)
-        // For prefetch, maybe just basic info is enough?
+        
+        // Skip if already in cache
+        if (STOCK_CACHE[ticker]) return;
+
+        try {
+            const safeTicker = encodeURIComponent(ticker);
+            const fastUrl = `${API_BASE_URL}/api/analysis/stock/${safeTicker}?skip_ai=true`;
+            const resFast = await fetch(fastUrl, { cache: 'force-cache' });
+            if (!resFast.ok) return;
+            const jsonFast = await resFast.json();
+            
+            if (jsonFast.status === "success" && jsonFast.data && jsonFast.data.symbol) {
+                STOCK_CACHE[ticker] = { data: jsonFast.data, timestamp: Date.now() };
+            }
+        } catch (e) {
+            console.error("Prefetch error:", e);
+        }
     };
 
     // [Removed] Old polling logic replaced by WebSocket real-time updates (lines 180-198)
@@ -656,6 +706,7 @@ function DiscoveryContent() {
                                                 {searchResults.map((res, idx) => (
                                                     <button
                                                         key={idx}
+                                                        onMouseEnter={() => prefetchStock(res.symbol || res.code)}
                                                         onClick={() => {
                                                             setSearchInput(res.name);
                                                             setShowResults(false);
