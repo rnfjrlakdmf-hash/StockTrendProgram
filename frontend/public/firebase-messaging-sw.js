@@ -30,7 +30,6 @@ messaging.onBackgroundMessage((payload) => {
         badge: '/badge.png',
         vibrate: [200, 100, 200],
         data: payload.data,
-        requireInteraction: true,  // 사용자가 직접 닫을 때까지 유지
         tag: 'price-alert',  // 같은 태그의 알림은 하나만 표시
         actions: [
             {

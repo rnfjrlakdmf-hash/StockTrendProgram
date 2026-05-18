@@ -151,6 +151,8 @@ def init_db():
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_news BOOLEAN DEFAULT 1")
     except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watch_compact BOOLEAN DEFAULT 0")
+    except: pass
 
     # [NEW] User Portfolio Table (Manual Entry)
     cursor.execute('''
@@ -756,6 +758,7 @@ def create_fcm_tokens_table():
             pref_closing BOOLEAN DEFAULT 1,
             pref_price BOOLEAN DEFAULT 1,
             pref_news BOOLEAN DEFAULT 1,
+            pref_watch_compact BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -797,7 +800,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news
+        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact
         FROM fcm_tokens
         WHERE user_id = ?
         ORDER BY last_used DESC
@@ -814,7 +817,8 @@ def get_user_fcm_tokens(user_id: str) -> list:
             "pref_morning": bool(row[3]),
             "pref_closing": bool(row[4]),
             "pref_price": bool(row[5]),
-            "pref_news": bool(row[6]) if len(row) > 6 else True
+            "pref_news": bool(row[6]) if len(row) > 6 else True,
+            "pref_watch_compact": bool(row[7]) if len(row) > 7 else False
         }
         for row in rows
     ]
@@ -822,11 +826,11 @@ def get_user_fcm_tokens(user_id: str) -> list:
 def get_fcm_preferences(token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news FROM fcm_tokens WHERE token = ?", (token,))
+    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact FROM fcm_tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
     conn.close()
     if row:
-        return {"pref_morning": bool(row[0]), "pref_closing": bool(row[1]), "pref_price": bool(row[2]), "pref_news": bool(row[3]) if len(row) > 3 else True}
+        return {"pref_morning": bool(row[0]), "pref_closing": bool(row[1]), "pref_price": bool(row[2]), "pref_news": bool(row[3]) if len(row) > 3 else True, "pref_watch_compact": bool(row[4]) if len(row) > 4 else False}
     return None
 
 def update_fcm_preferences(token: str, prefs: dict):
@@ -835,13 +839,14 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
             1 if prefs.get('pref_closing', True) else 0,
             1 if prefs.get('pref_price', True) else 0,
             1 if prefs.get('pref_news', True) else 0,
+            1 if prefs.get('pref_watch_compact', False) else 0,
             token
         ))
         conn.commit()

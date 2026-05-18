@@ -166,8 +166,7 @@ def send_push_notification(
                 body=body,
                 icon='/icon.png',
                 badge='/badge.png',
-                vibrate=[200, 100, 200],
-                require_interaction=True
+                vibrate=[200, 100, 200]
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=data.get('url', 'https://stock-trend-program.vercel.app') if data else 'https://stock-trend-program.vercel.app'

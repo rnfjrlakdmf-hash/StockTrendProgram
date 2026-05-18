@@ -20,7 +20,7 @@ export default function FCMTokenManager() {
 
     const [isVisible, setIsVisible] = useState(true);
     const [currentToken, setCurrentToken] = useState<string | null>(null);
-    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true });
+    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true });
 
     useEffect(() => {
         // [Critical] Explicit Service Worker Registration
@@ -357,6 +357,34 @@ export default function FCMTokenManager() {
                                                         prefs.pref_news ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
                                                         <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {/* 스마트워치 요약 모드 */}
+                                            <div className="flex items-start justify-between gap-2.5 pt-1 border-t border-white/5 mt-1">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">⌚</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px] flex items-center gap-1">
+                                                            스마트워치 요약 모드
+                                                            <span className="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-bold tracking-wider">NEW</span>
+                                                        </p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">워치 화면에 최적화된 초단문 형태로 알림 수신</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_watch_compact')}
+                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_watch_compact 
+                                                            ? 'bg-gradient-to-r from-blue-400 to-indigo-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_watch_compact ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_watch_compact ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
