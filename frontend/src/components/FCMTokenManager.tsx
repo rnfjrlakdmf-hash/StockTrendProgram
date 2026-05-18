@@ -130,12 +130,6 @@ export default function FCMTokenManager() {
         try {
             const token = await requestFCMToken();
 
-            if (!token) {
-                alert('❌ 알림 권한이 거부되었습니다.\n\n브라우저 설정에서 알림 권한을 허용해주세요.');
-                setLoading(false);
-                return;
-            }
-
             const data = await registerTokenToBackend(token);
 
             if (data.status === 'success') {
@@ -159,9 +153,18 @@ export default function FCMTokenManager() {
                 alert(`❌ 서버 등록 실패\n(API: ${API_BASE_URL})\n\n응답: ${data.message}`);
                 console.error("[FCM] Server Error:", data);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[FCM] Registration failed:', error);
-            alert(`❌ 네트워크/코드 오류 발생\n\n${error}\nAPI URL: ${API_BASE_URL}`);
+            
+            if (error.message === 'PERMISSION_DENIED') {
+                alert('❌ 알림 권한이 거부되었습니다.\n\n브라우저 설정에서 알림 권한을 허용해주세요.');
+            } else if (error.message === 'TIMEOUT') {
+                alert('❌ 서버 응답 시간 초과\n\n토큰 발급 시간이 초과되었습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+            } else if (error.message === 'FCM_UNAVAILABLE') {
+                alert('❌ 시스템 오류\n\n푸시 알림을 지원하지 않는 환경이거나 브라우저입니다.');
+            } else {
+                alert(`❌ 서버 통신 오류\n\n${error.message}\n(API: ${API_BASE_URL})\n다시 시도해주시거나 관리자에게 문의해주세요.`);
+            }
         } finally {
             setLoading(false);
         }

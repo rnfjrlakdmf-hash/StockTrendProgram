@@ -47,24 +47,30 @@ function getFirebaseMessaging(): Messaging | null {
 /**
  * FCM 토큰 요청
  */
-export async function requestFCMToken(): Promise<string | null> {
+export async function requestFCMToken(): Promise<string> {
     const msg = getFirebaseMessaging();
     if (!msg) {
         console.error('[Firebase] Messaging not available');
-        return null;
+        throw new Error('FCM_UNAVAILABLE');
     }
 
     try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             console.log('[Firebase] Notification permission denied');
-            return null;
+            throw new Error('PERMISSION_DENIED');
         }
 
         const vapidKey = 'BIoE99fZeoSM68hPLzw2Rl9YTke57JByI0217I02xl4tdUt6fpILEVQezkq-fYrxx_QkhRJA8JrU5uywCdDM7Bs';
-        const tokenPromise = getToken(msg, { vapidKey });
-        const timeoutPromise = new Promise<string | null>((_, reject) =>
-            setTimeout(() => reject(new Error('FCM Token Request Timed Out')), 10000)
+        
+        let registration;
+        if ('serviceWorker' in navigator) {
+            registration = await navigator.serviceWorker.getRegistration();
+        }
+
+        const tokenPromise = getToken(msg, { vapidKey, serviceWorkerRegistration: registration });
+        const timeoutPromise = new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 10000)
         );
 
         const token = await Promise.race([tokenPromise, timeoutPromise]);
@@ -72,10 +78,10 @@ export async function requestFCMToken(): Promise<string | null> {
             console.log('[Firebase] FCM Token:', token);
             return token;
         }
-        return null;
-    } catch (error) {
+        throw new Error('UNKNOWN_ERROR');
+    } catch (error: any) {
         console.error('[Firebase] Error getting FCM token:', error);
-        return null;
+        throw error;
     }
 }
 
