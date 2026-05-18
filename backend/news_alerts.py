@@ -77,6 +77,27 @@ class NewsAlertMonitor:
         def _fetch_news():
             news_items = []
             
+            def _get_abbreviations(name):
+                abbrs = {name}
+                if name.endswith("중공업"): abbrs.add(name[:-3] + "重")
+                elif name.endswith("전자"): abbrs.update([name[:-2] + "전", name[:-2] + "電"])
+                elif name.endswith("자동차"): abbrs.add(name[:-3] + "차")
+                elif name.endswith("바이오로직스"): abbrs.add(name[:-5] + "바이오")
+                elif name == "카카오뱅크": abbrs.add("카뱅")
+                elif name == "카카오페이": abbrs.add("카페")
+                elif name == "SK하이닉스": abbrs.add("하이닉스")
+                return abbrs
+
+            valid_names = _get_abbreviations(stock_name)
+            
+            def _is_relevant(title):
+                # US tickers or general names check
+                if not stock_name: return True
+                for vn in valid_names:
+                    if vn in title:
+                        return True
+                return False
+            
             # 1. 네이버 뉴스 (한국 주식인 경우만)
             clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
             if clean_sym.isdigit() and len(clean_sym) == 6:
@@ -87,12 +108,18 @@ class NewsAlertMonitor:
                     data = res.json()
                     if data and len(data) > 0 and 'items' in data[0] and len(data[0]['items']) > 0:
                         item = data[0]['items'][0]
-                        news_items.append({
-                            'id': item.get('articleId'),
-                            'title': item.get('title'),
-                            'publisher': item.get('officeName', '네이버 뉴스'),
-                            'source': 'naver'
-                        })
+                        n_title = item.get('title', '')
+                        
+                        # [Fix] 깐깐한 필터링: 제목에 종목명이나 약어가 없으면 그룹사 공통 뉴스일 수 있으므로 차단
+                        if _is_relevant(n_title):
+                            news_items.append({
+                                'id': item.get('articleId'),
+                                'title': n_title,
+                                'publisher': item.get('officeName', '네이버 뉴스'),
+                                'source': 'naver'
+                            })
+                        else:
+                            print(f"[NewsAlert] Filtered irrelevant Naver News for {stock_name}: {n_title}")
                 except: pass
                 
             # 2. 구글 뉴스 (모든 주식)
@@ -104,8 +131,8 @@ class NewsAlertMonitor:
                     top_g = g_news[0]
                     g_title = top_g.get('title', '')
                     
-                    # 관련성 필터: 종목명이 제목에 명시적으로 포함되어 있을 때만 발송 (타기업 뉴스 혼입 차단)
-                    if stock_name in g_title:
+                    # [Fix] 구글 뉴스도 동일한 깐깐한 필터링 적용
+                    if _is_relevant(g_title):
                         news_items.append({
                             'id': top_g.get('link'),  # 구글 뉴스는 링크를 고유 ID로 사용
                             'title': g_title,
@@ -113,7 +140,7 @@ class NewsAlertMonitor:
                             'source': 'google'
                         })
                     else:
-                        print(f"[NewsAlert] Filtered out irrelevant Google News for {stock_name}: {g_title}")
+                        print(f"[NewsAlert] Filtered irrelevant Google News for {stock_name}: {g_title}")
             except: pass
             
             return news_items
