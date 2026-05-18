@@ -154,7 +154,7 @@ def get_stock_risk(symbol: str):
 async def read_theme(keyword: str):
     # Lazy Imports
     from ai_analysis import analyze_theme
-    from stock_data import get_simple_quote, search_stock_code
+    from stock_data import search_stock_code
     
     result = await asyncio.to_thread(analyze_theme, keyword)
     if not result:
@@ -162,25 +162,17 @@ async def read_theme(keyword: str):
         
     stocks = result.get("leaders", []) + result.get("followers", [])
     
-    # [Improvement] Parallelize price fetching for significantly faster loading
-    async def process_stock(s):
-        original_sym = s.get("symbol")
+    # [Improvement] Only resolve ticker names (AI hallucination fix), skip price fetching for speed.
+    # The frontend already fetches real-time prices asynchronously in a useEffect.
+    async def resolve_ticker(s):
         name = s.get("name")
-        sym = original_sym
-        
-        # [Fix] LLMs often hallucinate tickers. Verify/Resolve the correct ticker using the name.
         if name:
             resolved = await asyncio.to_thread(search_stock_code, name)
             if resolved:
-                sym = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
-                s["symbol"] = sym
-        
-        q = await asyncio.to_thread(get_simple_quote, sym)
-        if q: 
-            s.update({"price": q.get("price"), "change": q.get("change")})
+                s["symbol"] = resolved.split('.')[0] if resolved.endswith(('.KS', '.KQ')) else resolved
 
     if stocks:
-        await asyncio.gather(*(process_stock(s) for s in stocks))
+        await asyncio.gather(*(resolve_ticker(s) for s in stocks))
         
     return {"status": "success", "data": result}
     
