@@ -336,6 +336,37 @@ export default function WatchlistPage() {
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
                                     onDelete={handleRemoveItem}
                                     onAlertClick={(symbol, price, addedPrice) => { setAlertStock({ symbol, price, addedPrice }); }}
+                                    onEditAddedPrice={async (symbol, currentAddedPrice) => {
+                                        if (!user) return;
+                                        const input = prompt(`${symbol}의 실제 매수 단가를 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentAddedPrice > 0 ? currentAddedPrice.toString() : "");
+                                        if (input === null) return;
+                                        
+                                        const price = parseFloat(input.replace(/[^0-9.]/g, ''));
+                                        if (isNaN(price)) {
+                                            alert("유효한 숫자를 입력해주세요.");
+                                            return;
+                                        }
+
+                                        try {
+                                            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    "X-User-ID": user.id || (user as any).uid
+                                                },
+                                                body: JSON.stringify({ symbol, price })
+                                            });
+                                            const data = await res.json();
+                                            if (data.status === 'success') {
+                                                fetchWatchlist(); // 목록 새로고침
+                                            } else {
+                                                alert("수정에 실패했습니다.");
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                            alert("서버 오류가 발생했습니다.");
+                                        }
+                                    }}
                                 />
                             </div>
                         )}

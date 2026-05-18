@@ -7,6 +7,7 @@ router = APIRouter()
 
 class WatchlistRequest(BaseModel):
     symbol: str
+    price: Optional[float] = None
 
 class MigrateRequest(BaseModel):
     guest_id: str
@@ -83,19 +84,21 @@ def create_watchlist(req: WatchlistRequest, response: Response, x_user_id: str =
         
         # 추가 시점의 가격 가져오기 (보다 견고한 파싱)
         current_price = 0
-        try:
-            quote = get_simple_quote(req.symbol)
-            if quote and quote.get('price'):
-                # 숫자가 아닌 문자(통화기호 등) 제거 후 파싱
-                import re
-                p_raw = str(quote['price']).replace(',', '')
-                p_clean = re.sub(r'[^0-9.]', '', p_raw)
-                if p_clean:
-                    current_price = float(p_clean)
-        except Exception as e:
-            print(f"[Watchlist-Price-Fetch-Error] {e}")
+        if req.price is not None:
+            current_price = float(req.price)
+        else:
+            try:
+                quote = get_simple_quote(req.symbol)
+                if quote and quote.get('price'):
+                    # 숫자가 아닌 문자(통화기호 등) 제거 후 파싱
+                    import re
+                    p_raw = str(quote['price']).replace(',', '')
+                    p_clean = re.sub(r'[^0-9.]', '', p_raw)
+                    if p_clean:
+                        current_price = float(p_clean)
+            except Exception as e:
+                print(f"[Watchlist-Price-Fetch-Error] {e}")
 
-        
         success = add_watchlist(user_id, req.symbol, current_price)
         if success:
             from utils.briefing_store import invalidate_today_briefing

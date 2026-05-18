@@ -42,11 +42,12 @@ interface CleanStockListProps {
     onItemClick?: (symbol: string) => void;
     onDelete?: (symbol: string) => void;
     onAlertClick?: (symbol: string, currentPrice: number, addedPrice?: number) => void;
+    onEditAddedPrice?: (symbol: string, currentAddedPrice: number) => void;
     isLoading?: boolean;
     hideLabels?: boolean;
 }
 
-export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, isLoading = false, hideLabels = false }: CleanStockListProps) {
+export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, onEditAddedPrice, isLoading = false, hideLabels = false }: CleanStockListProps) {
     if (isLoading && items.length === 0) {
         return <div className="p-4 text-center text-gray-500 text-sm">로딩중...</div>;
     }
@@ -147,25 +148,41 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 />
                                 
                                 {/* Entry Price & Yield Display */}
-                                {item.added_price && item.added_price > 0 && (
-                                    <div className="flex flex-col items-end mt-0.5">
-                                        <div className="text-[9px] md:text-[10px] text-gray-500 font-bold flex items-center gap-1">
-                                            <span className="bg-gray-800 px-1 rounded text-[8px]">진입가</span>
-                                            <span className="font-mono">{item.added_price.toLocaleString()}원</span>
-                                        </div>
-                                        <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${
-                                            (() => {
-                                                const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                const diff = curP - (item.added_price || 0);
-                                                return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
-                                            })()
-                                        }`}>
-                                            {(() => {
-                                                const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                const diff = curP - (item.added_price || 0);
-                                                return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
-                                            })()}
-                                        </div>
+                                {item.added_price !== undefined && (
+                                    <div 
+                                        className="flex flex-col items-end mt-0.5 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onEditAddedPrice) onEditAddedPrice(item.symbol, item.added_price || 0);
+                                        }}
+                                        title="진입가 설정/수정"
+                                    >
+                                        {item.added_price > 0 ? (
+                                            <>
+                                                <div className="text-[9px] md:text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                                                    <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">진입가</span>
+                                                    <span className="font-mono">{item.added_price.toLocaleString()}원 <span className="text-[8px] text-gray-500">✎</span></span>
+                                                </div>
+                                                <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${
+                                                    (() => {
+                                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                        const diff = curP - (item.added_price || 0);
+                                                        return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
+                                                    })()
+                                                }`}>
+                                                    {(() => {
+                                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                        const diff = curP - (item.added_price || 0);
+                                                        return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
+                                                    })()}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-[9px] md:text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-1">
+                                                <span className="bg-gray-800 px-1 rounded text-[8px]">진입가 미설정</span>
+                                                <span className="font-mono hover:text-blue-400 transition-colors text-[9px]">입력 ✎</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
