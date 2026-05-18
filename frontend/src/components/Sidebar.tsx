@@ -568,13 +568,13 @@ export default function Sidebar() {
 
                                 {/* Universal Inline Accordion Tooltip (Fixes clipping issue on Desktop) */}
                                 {activeTooltip === item.name && (
-                                    <div className="w-full px-4 pb-3 text-xs text-gray-400 animate-in slide-in-from-top-2 duration-200 fade-in">
-                                        <div className="p-3.5 bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-500/20 rounded-xl space-y-1.5 shadow-inner">
-                                            <p className="font-bold text-[11px] text-blue-400 flex items-center gap-1.5">
+                                    <div className="w-full px-4 pb-3 text-xs animate-in slide-in-from-top-2 duration-200 fade-in">
+                                        <div className="p-3.5 bg-black/60 backdrop-blur-md border border-blue-500/40 rounded-xl space-y-1.5 shadow-lg">
+                                            <p className="font-bold text-[11px] text-blue-300 flex items-center gap-1.5">
                                                 <item.icon className="w-3.5 h-3.5" />
                                                 {item.name}란?
                                             </p>
-                                            <p className="text-[10.5px] leading-relaxed text-gray-300 font-medium">
+                                            <p className="text-[11px] leading-relaxed text-white font-semibold">
                                                 {item.desc}
                                             </p>
                                         </div>
