@@ -262,9 +262,9 @@ export default function FCMTokenManager() {
                                         {/* 가이드 및 설정 섹션 */}
                                         <div className="bg-white/5 rounded-xl p-3 space-y-3 border border-white/5">
                                             {/* AI 마켓 브리핑 */}
-                                            <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center justify-between gap-2.5">
                                                 <div className="flex items-start gap-2.5">
-                                                    <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs">✨</div>
+                                                    <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs mt-0.5">✨</div>
                                                     <div>
                                                         <p className="text-white font-bold text-[11px]">AI 마켓 브리핑 (08:00)</p>
                                                         <p className="text-gray-400 text-[10px] leading-relaxed">내 관심종목의 호재와 악재 요약본</p>
@@ -272,24 +272,24 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_morning')}
-                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
                                                         prefs.pref_morning 
                                                             ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
                                                             : 'bg-white/10 border border-white/5 hover:bg-white/20'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
                                                         prefs.pref_morning ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_morning ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_morning ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
                                             
                                             {/* 장시작/마감 리포트 */}
-                                            <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center justify-between gap-2.5">
                                                 <div className="flex items-start gap-2.5">
-                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">☀️</div>
+                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs mt-0.5">☀️</div>
                                                     <div>
                                                         <p className="text-white font-bold text-[11px]">장시작/마감 리포트</p>
                                                         <p className="text-gray-400 text-[10px] leading-relaxed">시가/종가 및 누적 수익 요약 리포트</p>
@@ -297,24 +297,24 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_closing')}
-                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
                                                         prefs.pref_closing 
                                                             ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
                                                             : 'bg-white/10 border border-white/5 hover:bg-white/20'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
                                                         prefs.pref_closing ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_closing ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_closing ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
                                             
                                             {/* 가격 변동 알림 */}
-                                            <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center justify-between gap-2.5">
                                                 <div className="flex items-start gap-2.5">
-                                                    <div className="bg-red-500/20 p-1.5 rounded-lg text-red-400 text-xs">🚨</div>
+                                                    <div className="bg-red-500/20 p-1.5 rounded-lg text-red-400 text-xs mt-0.5">🚨</div>
                                                     <div>
                                                         <p className="text-white font-bold text-[11px]">가격 변동 알림</p>
                                                         <p className="text-gray-400 text-[10px] leading-relaxed">손절, 익절, 목표가 도달 시 즉시 알림</p>
@@ -322,24 +322,24 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_price')}
-                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
                                                         prefs.pref_price 
                                                             ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
                                                             : 'bg-white/10 border border-white/5 hover:bg-white/20'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
                                                         prefs.pref_price ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_price ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_price ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
 
                                             {/* 속보 알림 */}
-                                            <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center justify-between gap-2.5">
                                                 <div className="flex items-start gap-2.5">
-                                                    <div className="bg-yellow-500/20 p-1.5 rounded-lg text-yellow-400 text-xs">⚡</div>
+                                                    <div className="bg-yellow-500/20 p-1.5 rounded-lg text-yellow-400 text-xs mt-0.5">⚡</div>
                                                     <div>
                                                         <p className="text-white font-bold text-[11px]">관심종목 속보 알림</p>
                                                         <p className="text-gray-400 text-[10px] leading-relaxed">내 종목 관련 중요 뉴스 및 공시 즉시 알림</p>
@@ -347,24 +347,24 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_news')}
-                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
                                                         prefs.pref_news 
                                                             ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
                                                             : 'bg-white/10 border border-white/5 hover:bg-white/20'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
                                                         prefs.pref_news ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
 
                                             {/* 스마트워치 요약 모드 */}
-                                            <div className="flex items-start justify-between gap-2.5 pt-1 border-t border-white/5 mt-1">
+                                            <div className="flex items-center justify-between gap-2.5 pt-1 border-t border-white/5 mt-1">
                                                 <div className="flex items-start gap-2.5">
-                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs">⌚</div>
+                                                    <div className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 text-xs mt-0.5">⌚</div>
                                                     <div>
                                                         <p className="text-white font-bold text-[11px] flex items-center gap-1">
                                                             스마트워치 요약 모드
@@ -375,16 +375,16 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_watch_compact')}
-                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
                                                         prefs.pref_watch_compact 
                                                             ? 'bg-gradient-to-r from-blue-400 to-indigo-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]' 
                                                             : 'bg-white/10 border border-white/5 hover:bg-white/20'
                                                     }`}
                                                 >
-                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
                                                         prefs.pref_watch_compact ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_watch_compact ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_watch_compact ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>
