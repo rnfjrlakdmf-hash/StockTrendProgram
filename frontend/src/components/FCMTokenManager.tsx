@@ -272,9 +272,17 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_morning')}
-                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_morning ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_morning 
+                                                            ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
                                                 >
-                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_morning ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_morning ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_morning ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
                                                 </button>
                                             </div>
                                             
@@ -289,9 +297,17 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_closing')}
-                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_closing ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_closing 
+                                                            ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
                                                 >
-                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_closing ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_closing ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_closing ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
                                                 </button>
                                             </div>
                                             
@@ -306,9 +322,17 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_price')}
-                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_price ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_price 
+                                                            ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
                                                 >
-                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_price ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_price ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_price ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
                                                 </button>
                                             </div>
 
@@ -323,9 +347,17 @@ export default function FCMTokenManager() {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTogglePref('pref_news')}
-                                                    className={`w-10 h-5 rounded-full flex items-center transition-colors px-0.5 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-600'}`}
+                                                    className={`relative w-11 h-6 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_news 
+                                                            ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
                                                 >
-                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${prefs.pref_news ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                    <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_news ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${prefs.pref_news ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
                                                 </button>
                                             </div>
                                         </div>
