@@ -140,7 +140,38 @@ class NewsAlertMonitor:
             if self.last_seen_articles.get(key) != article_id:
                 self.last_seen_articles[key] = article_id
                 
-                # 푸시 알림 발송 (네이버/구글 중복을 완벽히 피하기는 어렵지만, 소스가 다르면 발송)
+                # [Fix] 중복 속보 방지: 최근 발송된 기사 제목과 유사도(단어 중복률) 검사
+                import re
+                new_title_words = set(re.findall(r'\w+', item['title']))
+                is_duplicate = False
+                
+                if not hasattr(self, 'sent_titles'):
+                    self.sent_titles = {}
+                    
+                recent_titles = self.sent_titles.get(symbol, [])
+                for past_title in recent_titles:
+                    past_words = set(re.findall(r'\w+', past_title))
+                    if not new_title_words or not past_words: continue
+                    intersection = len(new_title_words.intersection(past_words))
+                    
+                    # 제목 내 단어의 40% 이상이 일치하면 같은 뉴스로 간주 (언론사만 다른 경우 차단)
+                    similarity = intersection / min(len(new_title_words), len(past_words))
+                    if similarity > 0.4:
+                        is_duplicate = True
+                        break
+                        
+                if is_duplicate:
+                    print(f"[NewsAlert] 중복 뉴스 알림 차단 ({stock_name}): {item['title']}")
+                    continue
+                    
+                # 최근 발송 제목 목록에 추가 (최대 10개 유지)
+                if symbol not in self.sent_titles:
+                    self.sent_titles[symbol] = []
+                self.sent_titles[symbol].append(item['title'])
+                if len(self.sent_titles[symbol]) > 10:
+                    self.sent_titles[symbol].pop(0)
+                
+                # 푸시 알림 발송
                 await self.send_news_push(symbol, stock_name, item, users)
             
     async def send_news_push(self, symbol: str, stock_name: str, news_item: dict, users: List[str]):
