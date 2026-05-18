@@ -43,3 +43,8 @@ body {
   0% { background-color: rgba(96, 165, 250, 0.4); } /* Blue-400 40% */
   100% { background-color: transparent; }
 }
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(200%) skewX(-12deg); }
+}

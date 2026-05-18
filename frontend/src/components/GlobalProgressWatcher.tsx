@@ -80,52 +80,91 @@ export default function GlobalProgressWatcher() {
     if (status?.status === "done") percent = 100;
 
     return (
-        <div className="w-full animate-in fade-in duration-500">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl backdrop-blur-md">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        {status?.status === "running" && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
-                        {status?.status === "done" && <CheckCircle2 className="w-4 h-4 text-green-400" />}
-                        {status?.status === "error" && <AlertCircle className="w-4 h-4 text-red-400" />}
+        <div className="w-full animate-in fade-in duration-700 slide-in-from-bottom-2">
+            <div className="relative overflow-hidden bg-[#0f111a]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.5)] group hover:border-white/10 transition-colors">
+                
+                {/* Background Ambient Glow */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none"></div>
 
-                        <span className="font-bold text-sm text-white">
-                            {status?.status === "running" ? "주식 데이터 동기화 중..." :
-                                status?.status === "initializing" ? "엔진 초기화 중..." :
-                                status?.status === "done" ? "동기화 완료!" : "오류 발생"}
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3 relative z-10">
+                    <div className="flex items-center gap-2.5">
+                        <div className={`p-1.5 rounded-lg ${
+                            status?.status === "running" ? "bg-blue-500/20 text-blue-400" :
+                            status?.status === "done" ? "bg-emerald-500/20 text-emerald-400" :
+                            status?.status === "error" ? "bg-red-500/20 text-red-400" : "bg-gray-500/20 text-gray-400"
+                        }`}>
+                            {status?.status === "running" && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {status?.status === "done" && <CheckCircle2 className="w-4 h-4" />}
+                            {status?.status === "error" && <AlertCircle className="w-4 h-4" />}
+                            {status?.status === "initializing" && <Loader2 className="w-4 h-4 animate-spin" />}
+                        </div>
+
+                        <span className="font-bold text-[13px] text-white tracking-wide">
+                            {status?.status === "running" ? "글로벌 마켓 데이터 동기화" :
+                                status?.status === "initializing" ? "AI 분석 엔진 초기화" :
+                                status?.status === "done" ? "데이터 동기화 완료" : "동기화 오류 발생"}
                         </span>
                     </div>
-                    <span className="text-xs font-mono text-gray-400">{percent}%</span>
+                    
+                    {/* Status Badge / Percentage */}
+                    {status?.status === "running" && (
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
+                            <span className="text-xs font-black text-blue-400">{percent}%</span>
+                        </div>
+                    )}
+                    {status?.status === "done" && (
+                        <span className="text-xs font-black text-emerald-400">100%</span>
+                    )}
                 </div>
 
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2 overflow-hidden">
+                {/* Progress Bar Container */}
+                <div className="relative w-full h-1.5 bg-gray-800/80 rounded-full mb-3 overflow-hidden shadow-inner z-10">
                     <div
-                        className={`h-full rounded-full transition-all duration-300 ${status?.status === "done" ? "bg-green-500" :
-                            status?.status === "error" ? "bg-red-500" : "bg-blue-500"
-                            }`}
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out ${
+                            status?.status === "done" ? "bg-gradient-to-r from-emerald-400 to-green-500" :
+                            status?.status === "error" ? "bg-gradient-to-r from-red-500 to-rose-600" : 
+                            "bg-gradient-to-r from-blue-500 to-indigo-500"
+                        }`}
                         style={{ width: `${percent}%` }}
-                    />
+                    >
+                        {/* Shimmer Effect inside progress bar */}
+                        {status?.status === "running" && (
+                            <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite] -skew-x-12 translate-x-[-100%]"></div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Detail Info */}
-                {status?.status === "running" && (
-                    <div className="flex justify-between text-xs text-gray-500">
-                        <span>{status?.market || "데이터 수집 준비 중..."}</span>
-                        <span>{status?.page} / {status?.total_pages || "?"} 페이지</span>
-                    </div>
-                )}
+                {/* Footer Info */}
+                <div className="relative z-10">
+                    {status?.status === "running" && (
+                        <div className="flex justify-between items-center text-[11px] font-medium text-gray-400">
+                            <span className="truncate pr-4 text-blue-200/70">
+                                {status?.market ? `수집 중: ${status.market}` : "데이터 수집 준비 중..."}
+                            </span>
+                            <span className="shrink-0 bg-white/5 px-2 py-0.5 rounded-md">
+                                {status?.page} / {status?.total_pages || "?"} Page
+                            </span>
+                        </div>
+                    )}
 
-                {status?.status === "done" && (
-                    <p className="text-xs text-gray-400">
-                        총 {status?.total_stocks}개 종목 업데이트됨
-                    </p>
-                )}
+                    {status?.status === "done" && (
+                        <p className="text-[11px] text-emerald-400/80 font-medium">
+                            ✓ 총 {status?.total_stocks?.toLocaleString() || 0}개 종목 업데이트가 성공적으로 완료되었습니다.
+                        </p>
+                    )}
 
-                {status?.status === "error" && (
-                    <p className="text-xs text-red-400 truncate">
-                        {status?.error || "알 수 없는 오류"}
-                    </p>
-                )}
+                    {status?.status === "error" && (
+                        <p className="text-[11px] text-red-400/80 font-medium truncate">
+                            {status?.error || "네트워크 불안정으로 동기화에 실패했습니다."}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );
