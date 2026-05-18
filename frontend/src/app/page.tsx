@@ -170,6 +170,29 @@ export default function Home() {
 
             {/* Global Real-time Ranking (New Premium Widget) */}
             <GlobalRankingWidget />
+
+            {/* SEO & Content Section for AdSense Crawlers (콘텐츠 부족 문제 해결용 정적 텍스트) */}
+            <div className="mt-12 bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-md">
+              <h1 className="text-2xl md:text-3xl font-black text-white mb-6">AI Stock Analyst: 실시간 주식 시장 분석 및 인공지능 테마 검색 플랫폼</h1>
+              
+              <div className="space-y-5 text-sm md:text-base text-gray-300 leading-relaxed font-medium">
+                <p>
+                  <strong>AI Stock Analyst</strong>는 급변하는 주식 시장에서 개인 투자자들이 신속하고 정확한 의사결정을 내릴 수 있도록 돕는 <strong>최첨단 인공지능 기반 실시간 주식 분석 서비스</strong>입니다. 코스피(KOSPI), 코스닥(KOSDAQ) 등 국내 주식 시장뿐만 아니라 나스닥(NASDAQ), S&P 500을 포함한 글로벌 증시의 주요 지표와 실시간 가격 변동을 모니터링하여, 방대하고 복잡한 금융 데이터를 누구나 쉽게 이해할 수 있는 직관적인 인사이트로 변환하여 제공합니다.
+                </p>
+                <p>
+                  본 플랫폼의 핵심 기능인 <strong>'이슈 테마 검색'</strong>을 활용하면 현재 주식 시장을 주도하고 있는 핫한 테마주, 관련주, 그리고 대장주를 즉각적으로 파악할 수 있습니다. AI는 단순한 종목 나열에 그치지 않고, 각 기업이 해당 테마에 편입된 구체적인 <strong>수혜 이유와 연관성(Relation Reason)</strong>을 딥러닝 알고리즘으로 분석하여 해시태그와 요약 리포트 형태로 제공합니다. 이를 통해 투자자들은 시장의 단순한 루머에 휩쓸리지 않고, 실제 펀더멘털(Fundamental)과 실적이 뒷받침되는 진짜 수혜주를 발굴해 낼 수 있습니다.
+                </p>
+                <p>
+                  또한, 메인 대시보드에 제공되는 <strong>실시간 글로벌 랭킹 위젯</strong>과 <strong>세계 증시 현황판</strong>을 통해 전 세계 금융 시장의 자금 흐름을 한눈에 파악할 수 있습니다. 외국인 및 기관의 순매수 동향, 미국 연방준비제도(Fed)의 금리 정책 변화, 빅테크 기업들의 실적 발표(Earnings Call), 그리고 각종 거시경제 지표 발표 등 글로벌 메가 이벤트가 국내 증시와 내 포트폴리오에 미치는 영향을 AI가 입체적으로 분석하여 브리핑해 드립니다.
+                </p>
+                <p>
+                  뿐만 아니라, 특정 주식 종목을 검색하면 AI가 <strong>수급(Supply & Demand), 재무 건전성(Financials), 시장 심리(News Sentiment)</strong>의 3가지 핵심 지표를 종합하여 0점부터 100점까지의 <strong>'AI 투자 매력도 종합 점수'</strong>를 산출해 직관적인 게이지 차트로 보여줍니다. 이를 바탕으로 현재 해당 주식이 과대평가되었는지, 과소평가되었는지를 판단하고 보다 체계적인 투자 전략을 수립할 수 있습니다.
+                </p>
+                <p className="text-gray-500 text-xs mt-8 pt-6 border-t border-white/10">
+                  ※ 안내사항: 본 서비스에서 제공하는 주식 시세, 테마 분석 리포트 및 AI 기반의 모든 투자 정보는 최신 자연어 처리(NLP) 기술을 활용해 실시간으로 가공된 정보입니다. 하지만 시스템 및 통신 환경에 따라 실제 시장 데이터와 시간차가 발생할 수 있으며, 제공되는 정보는 오직 투자 참고용으로만 사용되어야 합니다. 주식 거래 및 투자 판단에 대한 최종 책임은 전적으로 투자자 본인에게 있습니다. 건강하고 성공적인 투자를 위해 AI Stock Analyst를 유용한 보조 지표로 적극 활용해 보세요.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
