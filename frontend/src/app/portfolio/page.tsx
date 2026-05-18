@@ -160,20 +160,21 @@ export default function PortfolioPage() {
       });
       const json = await res.json();
       if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
-        // 현재가 동시 조회
+        // 현재가 동시 조회 (등록된 진입가가 있으면 진입가 우선)
         const newHoldings = await Promise.all(
           json.data.map(async (s: any) => {
-            let price = "0";
+            let price = s.added_price && s.added_price > 0 ? String(s.added_price) : "0";
+            let quantity = s.quantity && s.quantity > 0 ? String(s.quantity) : "1";
             let currency = "KRW";
             try {
               const qr = await fetch(`${API_BASE_URL}/api/market/quote/${encodeURIComponent(s.symbol)}`);
               const qj = await qr.json();
               if (qj.status === "success" && qj.data) {
-                price = String(safeNum(qj.data.price));
+                if (price === "0") price = String(safeNum(qj.data.price));
                 currency = qj.data.currency || "KRW";
               }
             } catch {}
-            return { symbol: s.symbol, name: s.name, price, quantity: "1", currency };
+            return { symbol: s.symbol, name: s.name, price, quantity, currency };
           })
         );
         setHoldings(newHoldings);

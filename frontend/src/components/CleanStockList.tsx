@@ -20,6 +20,7 @@ export interface CleanStockItem {
     };
     quantGrade?: string; // S, A, B, C, D
     added_price?: number; // Price when added to watchlist
+    quantity?: number; // Quantity when added to watchlist
 }
 
 // Helper function to extract high-value keywords and format them as hashtags
@@ -42,7 +43,7 @@ interface CleanStockListProps {
     onItemClick?: (symbol: string) => void;
     onDelete?: (symbol: string) => void;
     onAlertClick?: (symbol: string, currentPrice: number, addedPrice?: number) => void;
-    onEditAddedPrice?: (symbol: string, currentAddedPrice: number) => void;
+    onEditAddedPrice?: (symbol: string, currentAddedPrice: number, currentQuantity: number) => void;
     isLoading?: boolean;
     hideLabels?: boolean;
 }
@@ -148,43 +149,50 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 />
                                 
                                 {/* Entry Price & Yield Display */}
-                                {item.added_price !== undefined && (
+                                {(item.added_price !== undefined || item.quantity !== undefined) && (
                                     <div 
                                         className="flex flex-col items-end mt-0.5 cursor-pointer hover:opacity-80 transition-opacity"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (onEditAddedPrice) onEditAddedPrice(item.symbol, item.added_price || 0);
+                                            if (onEditAddedPrice) onEditAddedPrice(item.symbol, item.added_price || 0, item.quantity || 0);
                                         }}
-                                        title="진입가 설정/수정"
+                                        title="진입가 및 수량 설정/수정"
                                     >
-                                        {item.added_price > 0 ? (
+                                        {item.added_price > 0 || (item.quantity && item.quantity > 0) ? (
                                             <>
                                                 <div className="text-[9px] md:text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                                                    <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">진입가</span>
-                                                    <span className="font-mono">{item.added_price.toLocaleString()}원 <span className="text-[8px] text-gray-500">✎</span></span>
+                                                    <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">보유</span>
+                                                    <span className="font-mono">
+                                                        {(item.added_price || 0).toLocaleString()}원 
+                                                        {item.quantity && item.quantity > 0 ? ` (${item.quantity.toLocaleString()}주)` : ''} 
+                                                        <span className="text-[8px] text-gray-500 ml-1">✎</span>
+                                                    </span>
                                                 </div>
-                                                <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${
-                                                    (() => {
-                                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                        const diff = curP - (item.added_price || 0);
-                                                        return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
-                                                    })()
-                                                }`}>
-                                                    {(() => {
-                                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                        const diff = curP - (item.added_price || 0);
-                                                        return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
-                                                    })()}
-                                                </div>
+                                                {item.added_price > 0 && (
+                                                    <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${
+                                                        (() => {
+                                                            const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                            const diff = curP - (item.added_price || 0);
+                                                            return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
+                                                        })()
+                                                    }`}>
+                                                        {(() => {
+                                                            const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                            const diff = curP - (item.added_price || 0);
+                                                            return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
+                                                        })()}
+                                                    </div>
+                                                )}
                                             </>
                                         ) : (
                                             <div className="text-[9px] md:text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-1">
-                                                <span className="bg-gray-800 px-1 rounded text-[8px]">진입가 미설정</span>
+                                                <span className="bg-gray-800 px-1 rounded text-[8px]">보유 미설정</span>
                                                 <span className="font-mono hover:text-blue-400 transition-colors text-[9px]">입력 ✎</span>
                                             </div>
                                         )}
                                     </div>
                                 )}
+
 
                                 <div className={`flex items-center gap-0.5 text-[11px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2 py-0.25 rounded-full shadow-lg mt-0.5`}>
                                     <span translate="no">

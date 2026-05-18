@@ -8,6 +8,7 @@ router = APIRouter()
 class WatchlistRequest(BaseModel):
     symbol: str
     price: Optional[float] = None
+    quantity: Optional[float] = None
 
 class MigrateRequest(BaseModel):
     guest_id: str
@@ -30,12 +31,17 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
     
     from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
     data = []
-    for sym, added_p in items:
+    for row in items:
+        sym = row[0]
+        added_p = row[1] if len(row) > 1 else 0
+        qty = row[2] if len(row) > 2 else 0
+        
         name = get_korean_stock_name(sym) or GLOBAL_KOREAN_NAMES.get(sym, sym)
         data.append({
             "symbol": sym, 
             "name": name, 
-            "added_price": added_p or 0
+            "added_price": added_p or 0,
+            "quantity": qty or 0
         })
     return {"status": "success", "data": data, "user_id_echo": user_id}
 
@@ -99,7 +105,11 @@ def create_watchlist(req: WatchlistRequest, response: Response, x_user_id: str =
             except Exception as e:
                 print(f"[Watchlist-Price-Fetch-Error] {e}")
 
-        success = add_watchlist(user_id, req.symbol, current_price)
+        current_quantity = 0
+        if hasattr(req, 'quantity') and req.quantity is not None:
+            current_quantity = float(req.quantity)
+
+        success = add_watchlist(user_id, req.symbol, current_price, current_quantity)
         if success:
             from utils.briefing_store import invalidate_today_briefing
             invalidate_today_briefing(user_id)

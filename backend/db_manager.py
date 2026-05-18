@@ -111,17 +111,25 @@ def init_db():
             user_id TEXT,
             symbol TEXT,
             added_price REAL DEFAULT 0,
+            quantity REAL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, symbol)
         )
     ''')
     
-    # [Migration] Add added_price to watchlist if not exists
+    # [Migration] Add added_price and quantity to watchlist if not exists
     try:
         cursor.execute("SELECT added_price FROM watchlist LIMIT 1")
     except sqlite3.OperationalError:
         try:
             cursor.execute("ALTER TABLE watchlist ADD COLUMN added_price REAL DEFAULT 0")
+        except: pass
+
+    try:
+        cursor.execute("SELECT quantity FROM watchlist LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN quantity REAL DEFAULT 0")
         except: pass
     
 
@@ -581,14 +589,17 @@ def get_prediction_report():
         
     return report
 
-def add_watchlist(user_id: str, symbol: str, added_price: float = 0):
+def add_watchlist(user_id: str, symbol: str, added_price: float = 0, quantity: float = 0):
     conn = get_db_connection()
     try:
         u_id = user_id.strip() if user_id else "guest"
         s_sym = symbol.strip() if symbol else ""
-        conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price) VALUES (?, ?, ?)", (u_id, s_sym, added_price))
+        
+        # Check if exists to preserve created_at or other fields if doing a soft update
+        # but INSERT OR REPLACE is fine, we just include quantity.
+        conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price, quantity) VALUES (?, ?, ?, ?)", (u_id, s_sym, added_price, quantity))
         conn.commit()
-        print(f"[DB] Watchlist added: {u_id} -> {s_sym} (${added_price})")
+        print(f"[DB] Watchlist added: {u_id} -> {s_sym} (${added_price}, qty: {quantity})")
         return True
     except Exception as e:
         print(f"Error adding to watchlist: {e}")
@@ -700,7 +711,7 @@ def get_watchlist(user_id):
     u_id = user_id.strip() if user_id else "guest"
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT symbol, added_price FROM watchlist WHERE user_id = ?", (u_id,))
+    cursor.execute("SELECT symbol, added_price, quantity FROM watchlist WHERE user_id = ?", (u_id,))
     res = cursor.fetchall()
     conn.close()
     print(f"[DB_WATCHLIST] user_id='{u_id}' found {len(res)} items")

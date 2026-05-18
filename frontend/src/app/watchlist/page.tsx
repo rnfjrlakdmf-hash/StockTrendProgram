@@ -330,20 +330,30 @@ export default function WatchlistPage() {
                                             change: data ? data.change : "0%",
                                             change_percent: data ? (data.change_percent || data.change) : "0%",
                                             badge: item.badge,
-                                            added_price: item.added_price
+                                            added_price: item.added_price,
+                                            quantity: item.quantity
                                         };
                                     })}
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
                                     onDelete={handleRemoveItem}
                                     onAlertClick={(symbol, price, addedPrice) => { setAlertStock({ symbol, price, addedPrice }); }}
-                                    onEditAddedPrice={async (symbol, currentAddedPrice) => {
+                                    onEditAddedPrice={async (symbol, currentAddedPrice, currentQuantity) => {
                                         if (!user) return;
-                                        const input = prompt(`${symbol}의 실제 매수 단가를 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentAddedPrice > 0 ? currentAddedPrice.toString() : "");
-                                        if (input === null) return;
+                                        const priceInput = prompt(`${symbol}의 실제 매수 단가를 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentAddedPrice > 0 ? currentAddedPrice.toString() : "");
+                                        if (priceInput === null) return;
                                         
-                                        const price = parseFloat(input.replace(/[^0-9.]/g, ''));
+                                        const price = parseFloat(priceInput.replace(/[^0-9.]/g, ''));
                                         if (isNaN(price)) {
-                                            alert("유효한 숫자를 입력해주세요.");
+                                            alert("유효한 단가를 입력해주세요.");
+                                            return;
+                                        }
+
+                                        const qtyInput = prompt(`${symbol}의 보유 수량을 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentQuantity > 0 ? currentQuantity.toString() : "");
+                                        if (qtyInput === null) return;
+
+                                        const quantity = parseFloat(qtyInput.replace(/[^0-9.]/g, ''));
+                                        if (isNaN(quantity)) {
+                                            alert("유효한 수량을 입력해주세요.");
                                             return;
                                         }
 
@@ -354,7 +364,7 @@ export default function WatchlistPage() {
                                                     'Content-Type': 'application/json',
                                                     "X-User-ID": user.id || (user as any).uid
                                                 },
-                                                body: JSON.stringify({ symbol, price })
+                                                body: JSON.stringify({ symbol, price, quantity })
                                             });
                                             const data = await res.json();
                                             if (data.status === 'success') {

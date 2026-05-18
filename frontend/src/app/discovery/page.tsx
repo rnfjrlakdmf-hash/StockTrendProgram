@@ -1712,11 +1712,28 @@ function WatchlistButton({ symbol }: { symbol: string }) {
                 headers: { "X-User-ID": user.id || (user as any).uid || "guest" }
             };
             if (!isWatchlisted) {
+                const wantToSet = confirm("포트폴리오 연동을 위해 매수 단가와 수량을 입력하시겠습니까?\n(취소 시 기본 관심종목으로만 등록되며 단가는 현재가로 지정됩니다)");
+                let price: number | undefined = undefined;
+                let quantity: number | undefined = undefined;
+                
+                if (wantToSet) {
+                    const pInput = prompt("매수 단가를 입력하세요 (숫자만, 0입력시 초기화):");
+                    if (pInput !== null && pInput.trim() !== '') {
+                        const parsedP = parseFloat(pInput.replace(/[^0-9.]/g, ''));
+                        if (!isNaN(parsedP)) price = parsedP;
+                    }
+                    const qInput = prompt("보유 수량을 입력하세요 (숫자만):");
+                    if (qInput !== null && qInput.trim() !== '') {
+                        const parsedQ = parseFloat(qInput.replace(/[^0-9.]/g, ''));
+                        if (!isNaN(parsedQ)) quantity = parsedQ;
+                    }
+                }
+
                 options.headers = { 
                     ...options.headers,
                     'Content-Type': 'application/json' 
                 };
-                options.body = JSON.stringify({ symbol });
+                options.body = JSON.stringify({ symbol, price, quantity });
             }
 
             const res = await fetch(url, options);
