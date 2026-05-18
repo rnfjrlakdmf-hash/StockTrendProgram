@@ -553,7 +553,25 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
     # 1. Fetch Items (Unified Mobile-First API)
     from korea_data import fetch_naver_ranking_data, robust_name
-    items = fetch_naver_ranking_data(nation, order_type)
+    from rank_data import get_naver_ranking
+    
+    # [v6.3.1] Fix for KOSPI searchTop taking 14s and causing 504 Timeouts
+    if nation == "KOR" and order_type == "searchTop":
+        fast_search_items = get_naver_ranking("krx", "popular")
+        items = []
+        for i in fast_search_items:
+            items.append({
+                "itemcode": i["symbol"],
+                "itemname": i["name"],
+                "nowPrice": str(i["price"]),
+                "prevChangeRate": str(i["change_percent"]),
+                "prevChangePrice": str(i.get("change_val", 0)),
+                "upDownGb": 3 if float(i["change_percent"]) == 0 else (2 if float(i["change_percent"]) > 0 else 5),
+                "tradeVolume": 0,
+                "tradeAmount": 0
+            })
+    else:
+        items = fetch_naver_ranking_data(nation, order_type)
     
     if not items:
         return []
