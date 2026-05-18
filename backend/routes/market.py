@@ -335,11 +335,13 @@ def get_multi_quotes(symbols: str = Query(...)):
     from korea_data import get_exchange_rate
     rate = get_exchange_rate("USD")
     
-    for sym in symbol_list:
+    import concurrent.futures
+
+    def fetch_q(sym):
         try:
             data = get_simple_quote(sym)
             if data:
-                results[sym] = {
+                return sym, {
                     "price": data.get("price", "확인불가"), 
                     "change": data.get("change", "0.00%"), 
                     "up": data.get("up", True),
@@ -347,7 +349,13 @@ def get_multi_quotes(symbols: str = Query(...)):
                 }
         except Exception as e:
             print(f"[MarketAPI] Failed to get multi-quote for {sym}: {e}")
-            results[sym] = {"price": "확인불가", "change": "0.00%"}
+        return sym, {"price": "확인불가", "change": "0.00%"}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_sym = {executor.submit(fetch_q, sym): sym for sym in symbol_list}
+        for future in concurrent.futures.as_completed(future_to_sym):
+            sym, res = future.result()
+            results[sym] = res
     
     return {"status": "success", "data": results, "usd_krw": rate}
 

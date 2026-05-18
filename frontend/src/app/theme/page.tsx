@@ -32,6 +32,9 @@ export default function ThemePage() {
         const cachedData = THEME_CACHE[searchKeyword];
         if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
             setResult(cachedData.data);
+            if (cachedData.quotes) {
+                setQuotes(cachedData.quotes);
+            }
             setLoading(false);
             return;
         }
@@ -57,8 +60,28 @@ export default function ThemePage() {
             const json = await res.json();
 
             if (json.status === "success" && json.data) {
+                // Fetch quotes instantly using the multi-quote endpoint
+                let newQuotes = {};
+                const allSymbols = [
+                    ...(json.data.leaders || []).map((s: any) => s.symbol),
+                    ...(json.data.followers || []).map((s: any) => s.symbol)
+                ];
+
+                if (allSymbols.length > 0) {
+                    try {
+                        const quoteRes = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${allSymbols.join(',')}`);
+                        const quoteJson = await quoteRes.json();
+                        if (quoteJson.status === "success" && quoteJson.data) {
+                            newQuotes = quoteJson.data;
+                            setQuotes(newQuotes);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch multi quotes:", e);
+                    }
+                }
+
                 setResult(json.data);
-                THEME_CACHE[searchKeyword] = { data: json.data, timestamp: Date.now() };
+                THEME_CACHE[searchKeyword] = { data: json.data, quotes: newQuotes, timestamp: Date.now() };
             } else {
                 setError(json.message || "분석 정보를 불러오지 못했습니다. 키워드를 변경해보세요.");
             }
@@ -76,35 +99,6 @@ export default function ThemePage() {
         }
     };
 
-    // Fetch quote data when result changes
-    useEffect(() => {
-        if (!result) return;
-
-        const fetchQuotes = async () => {
-            const allSymbols = [
-                ...(result.leaders || []).map((s: any) => s.symbol),
-                ...(result.followers || []).map((s: any) => s.symbol)
-            ];
-
-            const newQuotes: Record<string, any> = {};
-
-            for (const symbol of allSymbols) {
-                try {
-                    const res = await fetch(`${API_BASE_URL}/api/market/quote/${symbol}`);
-                    const json = await res.json();
-                    if (json.status === "success" && json.data) {
-                        newQuotes[symbol] = json.data;
-                    }
-                } catch (e) {
-                    console.error(`Failed to fetch quote for ${symbol}:`, e);
-                }
-            }
-
-            setQuotes(newQuotes);
-        };
-
-        fetchQuotes();
-    }, [result]);
 
     const [trendingThemes, setTrendingThemes] = useState<any[]>([]);
 
@@ -138,7 +132,22 @@ export default function ThemePage() {
             if (res.ok) {
                 const json = await res.json();
                 if (json.status === "success" && json.data) {
-                    THEME_CACHE[themeName] = { data: json.data, timestamp: Date.now() };
+                    // Prefetch quotes as well to make it truly instant
+                    const allSymbols = [
+                        ...(json.data.leaders || []).map((s: any) => s.symbol),
+                        ...(json.data.followers || []).map((s: any) => s.symbol)
+                    ];
+                    let prefetchedQuotes = {};
+                    if (allSymbols.length > 0) {
+                        try {
+                            const quoteRes = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${allSymbols.join(',')}`);
+                            const quoteJson = await quoteRes.json();
+                            if (quoteJson.status === "success" && quoteJson.data) {
+                                prefetchedQuotes = quoteJson.data;
+                            }
+                        } catch (e) {}
+                    }
+                    THEME_CACHE[themeName] = { data: json.data, quotes: prefetchedQuotes, timestamp: Date.now() };
                 }
             }
         } catch (e) {
