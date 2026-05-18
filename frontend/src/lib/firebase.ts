@@ -65,6 +65,12 @@ export async function requestFCMToken(): Promise<string> {
         
         let registration;
         if ('serviceWorker' in navigator) {
+            // [Fix] Unregister existing SWs to clear corrupt states causing push service errors
+            const existingRegs = await navigator.serviceWorker.getRegistrations();
+            for (let reg of existingRegs) {
+                await reg.unregister();
+            }
+            
             registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             await navigator.serviceWorker.ready;
         }
