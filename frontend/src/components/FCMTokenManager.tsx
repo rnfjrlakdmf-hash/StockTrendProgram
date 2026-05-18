@@ -164,7 +164,7 @@ export default function FCMTokenManager() {
             } else if (errMsg === 'FCM_UNAVAILABLE') {
                 alert('❌ 시스템 오류\n\n푸시 알림을 지원하지 않는 환경이거나 브라우저입니다.');
             } else if (errMsg.includes('push service error') || errMsg.includes('Registration failed')) {
-                alert('❌ 브라우저 푸시 서비스 차단됨\n\n[원인]\n1. 시크릿 모드(Incognito)에서는 알림이 작동하지 않습니다.\n2. Brave 등 특정 브라우저에서는 푸시 기능이 제한됩니다.\n3. 회사망/광고차단앱이 알림 서버를 막고 있을 수 있습니다.\n\n일반 크롬(Chrome)이나 엣지(Edge) 브라우저에서 다시 시도해주세요.');
+                alert(`❌ 브라우저 푸시 서비스 차단됨\n\n[원인]\n1. 시크릿 모드(Incognito)에서는 알림이 작동하지 않습니다.\n2. Brave 등 특정 브라우저에서는 푸시 기능이 제한됩니다.\n3. 회사망/광고차단앱이 알림 서버를 막고 있을 수 있습니다.\n\n[상세 에러 내역]\n${errMsg}\n\n일반 크롬(Chrome)이나 엣지(Edge) 브라우저에서 다시 시도해주세요.`);
             } else {
                 alert(`❌ 서버 통신 오류\n\n${errMsg}\n(API: ${API_BASE_URL})\n다시 시도해주시거나 관리자에게 문의해주세요.`);
             }

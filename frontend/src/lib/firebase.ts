@@ -65,7 +65,8 @@ export async function requestFCMToken(): Promise<string> {
         
         let registration;
         if ('serviceWorker' in navigator) {
-            registration = await navigator.serviceWorker.getRegistration();
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            await navigator.serviceWorker.ready;
         }
 
         const tokenPromise = getToken(msg, { vapidKey, serviceWorkerRegistration: registration });
