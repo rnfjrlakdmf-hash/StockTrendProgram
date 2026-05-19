@@ -2662,8 +2662,15 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
     }
     if (!data) return null;
 
-    const { regular, extended, current_session, currency } = data;
+    const { regular, extended, current_session, currency, usd_krw } = data;
     const currencySymbol = currency === 'USD' ? '$' : (currency === 'KRW' ? '₩' : currency + ' ');
+    const isUSD = currency === 'USD';
+
+    // [v2] 달러 → 원화 환산 헬퍼
+    const fmtKrw = (usdPrice: number): string | null => {
+        if (!isUSD || !usd_krw || !usdPrice) return null;
+        return Math.round(usdPrice * usd_krw).toLocaleString();
+    };
 
     const isPre = extended?.session_type === 'PRE_MARKET';
     const isAfter = extended?.session_type === 'AFTER_HOURS';
@@ -2723,6 +2730,12 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                             <div className="text-2xl font-black text-white font-mono tracking-tight">
                                 {currencySymbol}{fmt(extended.price)}
                             </div>
+                            {/* [v2] 원화 환산가 */}
+                            {fmtKrw(extended.price) && (
+                                <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+                                    ≈ ₩{fmtKrw(extended.price)}
+                                </div>
+                            )}
                             <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(extended.change || 0)}`}>
                                 <span>{arrow(extended.change || 0)}{Math.abs(extended.change || 0).toFixed(2)}</span>
                                 <span className="text-xs opacity-70">({extended.change_pct > 0 ? '+' : ''}{extended.change_pct?.toFixed(2)}%)</span>
@@ -2753,6 +2766,12 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                     <div className="text-2xl font-black text-white font-mono tracking-tight">
                         {currencySymbol}{fmt(regular.price)}
                     </div>
+                    {/* [v2] 원화 환산가 */}
+                    {fmtKrw(regular.price) && (
+                        <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+                            ≈ ₩{fmtKrw(regular.price)}
+                        </div>
+                    )}
                     <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(regular.change || 0)}`}>
                         <span>{arrow(regular.change || 0)}{Math.abs(regular.change || 0).toFixed(2)}</span>
                         <span className="text-xs opacity-70">({regular.change_pct > 0 ? '+' : ''}{regular.change_pct?.toFixed(2)}%)</span>
@@ -2785,6 +2804,12 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                             <div className="text-2xl font-black text-white font-mono tracking-tight">
                                 {currencySymbol}{fmt(extended.price)}
                             </div>
+                            {/* [v2] 원화 환산가 */}
+                            {fmtKrw(extended.price) && (
+                                <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+                                    ≈ ₩{fmtKrw(extended.price)}
+                                </div>
+                            )}
                             <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(extended.change || 0)}`}>
                                 <span>{arrow(extended.change || 0)}{Math.abs(extended.change || 0).toFixed(2)}</span>
                                 <span className="text-xs opacity-70">({extended.change_pct > 0 ? '+' : ''}{extended.change_pct?.toFixed(2)}%)</span>

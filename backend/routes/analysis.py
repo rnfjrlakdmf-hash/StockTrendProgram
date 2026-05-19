@@ -75,11 +75,17 @@ def stock_extended_hours(symbol: str):
         else:
             current_session = "장마감 (Market Closed)"
         
+        # [v2] 원화 환산용 환율 추가
+        from korea_data import get_exchange_rate
+        currency_code = item.get("currencyType", "USD")
+        usd_krw = get_exchange_rate("USD") if currency_code == "USD" else None
+        
         result = {
             "symbol": item.get("symbolCode", symbol),
             "name": item.get("stockName", symbol),
             "exchange": item.get("stockExchangeType", ""),
-            "currency": item.get("currencyType", "USD"),
+            "currency": currency_code,
+            "usd_krw": usd_krw,          # ← 원화 환산용 환율 (USD 종목만)
             "current_session": current_session,
             "market_status": market_status,
             
