@@ -1056,6 +1056,15 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close else 0
             price_str = f"{current_price:,.2f}" if is_us_stock else f"{current_price:,.0f}"
 
+            # yfinance 세션 상태 추출
+            market_status = "장마감"
+            try:
+                ms = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
+                if 'PRE' in ms:              market_status = "프리마켓"
+                elif 'POST' in ms or 'AFTER' in ms: market_status = "에프터마켓"
+                elif 'REGULAR' in ms or 'OPEN' in ms: market_status = "장중"
+            except: pass
+
             return {
                 "symbol": symbol,
                 "name": symbol,
@@ -1063,7 +1072,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "change": f"{change_pct:+.2f}%",
                 "change_percent": f"{change_pct:+.2f}%",
                 "up": change_pct >= 0,
-                "currency": "USD" if is_us_stock else "KRW"
+                "currency": "USD" if is_us_stock else "KRW",
+                "market_status": market_status,
             }
     except Exception as e:
         print(f"[get_simple_quote] yfinance fallback failed for {symbol}: {e}")
@@ -1077,7 +1087,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "price": "확인불가",
                 "change": "0.00%",
                 "up": True,
-                "currency": "USD" if is_us_stock else "KRW"
+                "currency": "USD" if is_us_stock else "KRW",
+                "market_status": "장마감",
             }
         return None
     
@@ -1087,7 +1098,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         "price": "확인불가",
         "change": "0.00%",
         "up": True,
-        "currency": "USD" if is_us_stock else "KRW"
+        "currency": "USD" if is_us_stock else "KRW",
+        "market_status": "장마감",
     }
 
 

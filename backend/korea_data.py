@@ -1332,6 +1332,57 @@ def get_naver_stock_info(symbol: str):
     # 2. 해외 주식 시도 (api.stock.naver.com - Still works for overseas)
     suffixes = ['', '.O', '.N', '.A', '.T', '.HK', '.VN', '.SH', '.SZ']
 
+    def _parse_naver_foreign(data: dict, sym: str) -> dict:
+        """네이버 해외주식 basic API 응답 → 표준 quote dict 변환 (세션 정보 포함)"""
+        price_raw = data.get('closePrice', '0').replace(',', '')
+        pct = float(data.get('fluctuationsRatio', '0') or 0)
+        is_foreign = '.' in sym or bool(re.search(r'[A-Za-z]', sym))
+        price_str = f"{float(price_raw):,.2f}" if is_foreign else f"{float(price_raw):,.0f}"
+
+        # ── 세션 판별 ──────────────────────────────────────────────
+        # 네이버 API: marketStatus 값 예시
+        #   'PREOPEN'   → 프리마켓
+        #   'OPEN'      → 장중
+        #   'AFTER'     → 에프터마켓
+        #   'CLOSE'     → 장마감
+        ms_raw = str(data.get('marketStatus', '') or '').upper()
+        if 'PRE' in ms_raw:      market_status = '프리마켓'
+        elif 'AFTER' in ms_raw:  market_status = '에프터마켓'
+        elif 'OPEN' in ms_raw:   market_status = '장중'
+        else:                    market_status = '장마감'
+
+        # ── 프리마켓 정보 ──────────────────────────────────────────
+        pre = data.get('preMarketPriceInfo') or {}
+        after = data.get('afterHoursMarketPriceInfo') or {}
+
+        ext_data = pre if market_status == '프리마켓' else after
+        ext_price = None
+        ext_change = None
+        if ext_data:
+            ep_raw = str(ext_data.get('closePrice') or ext_data.get('price') or '').replace(',', '')
+            try:
+                ext_price = f"{float(ep_raw):,.2f}" if ep_raw else None
+            except: pass
+            ec_raw = ext_data.get('fluctuationsRatio') or ext_data.get('changeRate')
+            if ec_raw is not None:
+                try: ext_change = f"{float(ec_raw):+.2f}%"
+                except: pass
+
+        return {
+            "symbol": sym,
+            "name": data.get('stockName', sym),
+            "price": price_str,
+            "change": f"{pct:+.2f}%",
+            "change_percent": f"{pct:+.2f}%",
+            "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
+            "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
+            "up": pct >= 0,
+            "currency": "USD" if is_foreign else "KRW",
+            "market_status": market_status,
+            "extended_price": ext_price,
+            "extended_change": ext_change,
+        }
+
     # 전달된 심볼에 이미 점이 포함되어 있다면 해당 심볼로 먼저 시도
     if '.' in symbol:
         try:
@@ -1340,31 +1391,7 @@ def get_naver_stock_info(symbol: str):
             if res.status_code == 200:
                 data = res.json()
                 if data.get('closePrice'):
-                    price = data.get('closePrice', '0').replace(',', '')
-                    pct = data.get('fluctuationsRatio', '0')
-                    is_foreign = '.' in symbol or bool(
-                        re.search(r'[A-Za-z]', symbol))
-
-                    return {
-                        "symbol": symbol,
-                        "name": data.get(
-                            'stockName',
-                            symbol),
-                        "price": f"{float(price):,.2f}" if is_foreign else f"{float(price):,.0f}",
-                        "change": float(pct),
-                        "change_val": str(
-                            data.get(
-                                'compareToPreviousClosePrice',
-                                '0')).replace(
-                                ',',
-                                ''),
-                        "risefall_name": data.get(
-                            'compareToPreviousPrice',
-                            {}).get(
-                            'name',
-                            'UNCHANGED'),
-                        "up": float(pct) >= 0,
-                        "currency": "USD" if is_foreign else "KRW"}
+                    return _parse_naver_foreign(data, symbol)
         except BaseException:
             pass
 
@@ -1379,27 +1406,7 @@ def get_naver_stock_info(symbol: str):
             if res.status_code == 200:
                 data = res.json()
                 if data.get('closePrice'):
-                    price = data.get('closePrice', '0').replace(',', '')
-                    pct = data.get('fluctuationsRatio', '0')
-                    return {
-                        "symbol": test_symbol,
-                        "name": data.get(
-                            'stockName',
-                            test_symbol),
-                        "price": f"{float(price):,.2f}",
-                        "change": float(pct),
-                        "change_val": str(
-                            data.get(
-                                'compareToPreviousClosePrice',
-                                '0')).replace(
-                            ',',
-                            ''),
-                        "risefall_name": data.get(
-                            'compareToPreviousPrice',
-                            {}).get(
-                                    'name',
-                                    'UNCHANGED'),
-                        "up": float(pct) >= 0}
+                    return _parse_naver_foreign(data, test_symbol)
         except BaseException:
             continue
 
