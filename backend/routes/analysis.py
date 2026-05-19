@@ -22,6 +22,7 @@ def stock_company_overview(symbol: str):
         return {"status": "error", "message": str(e)}
 
 @router.get("/stock/{symbol}/extended-hours")
+@turbo_cache(ttl_seconds=10)  # [Cache] 10초 캐시: 많은 유저가 동시 접속해도 Naver API는 10초에 1회만 호출
 def stock_extended_hours(symbol: str):
     """
     [New] 해외 주식 세션별 가격 정보: 프리마켓 / 정규장 / 에프터마켓

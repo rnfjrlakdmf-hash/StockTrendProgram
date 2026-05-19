@@ -377,8 +377,9 @@ function DiscoveryContent() {
 
         fetchExtended(true); // 최초 1회 (로딩 표시)
 
-        // [Polling] 30초마다 자동 갱신 (백그라운드, 로딩 스피너 없음)
-        const interval = setInterval(() => fetchExtended(false), 30_000);
+        // [Polling] 10초마다 자동 갱신 (백그라운드, 로딩 스피너 없음)
+        // 백엔드 10초 캐시가 있어 Naver 과부하 없음
+        const interval = setInterval(() => fetchExtended(false), 10_000);
         return () => clearInterval(interval);
     }, [stock?.symbol]);
 
@@ -2601,7 +2602,7 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                 {/* 🔄 자동 갱신 인디케이터 */}
                 <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-mono">
                     <div className="w-1 h-1 rounded-full bg-blue-500/60 animate-pulse" />
-                    <span>30초 자동갱신</span>
+                    <span>10초 자동갱신</span>
                     {tickAgo && <span className="text-gray-700">· {tickAgo}</span>}
                 </div>
             </div>
