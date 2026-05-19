@@ -2574,8 +2574,8 @@ function KisRealTimeBanner() {
     const [kisConnected, setKisConnected] = useState(false);
 
     useEffect(() => {
-        // localStorage에서 KIS 키 존재 여부 확인
-        const stored = localStorage.getItem('user_kis_keys');
+        // sessionStorage에서 KIS 키 존재 여부 확인 (탭 닫으면 자동 삭제)
+        const stored = sessionStorage.getItem('user_kis_keys');
         if (stored) {
             try { JSON.parse(stored); setKisConnected(true); } catch {}
         }

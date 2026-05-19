@@ -27,8 +27,8 @@ export default function SettingsPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             setFreeMode(sessionStorage.getItem('admin_free_mode') === 'true');
-            // 저장된 KIS 키 불러오기
-            const stored = localStorage.getItem('user_kis_keys');
+            // 저장된 KIS 키 불러오기 (sessionStorage: 탭 닫으면 자동 삭제)
+            const stored = sessionStorage.getItem('user_kis_keys');
             if (stored) {
                 try {
                     const keys = JSON.parse(stored);
@@ -51,14 +51,14 @@ export default function SettingsPage() {
             kis_secret: kisSecret.trim(),
             kis_account: kisAccount.trim(),
         };
-        localStorage.setItem('user_kis_keys', JSON.stringify(keys));
+        sessionStorage.setItem('user_kis_keys', JSON.stringify(keys));
         setKisConnected(true);
-        setMsg({ type: 'success', text: '✅ KIS API 키가 저장되었습니다! 이제 실시간 시세가 활성화됩니다.' });
+        setMsg({ type: 'success', text: '✅ KIS API 키가 저장되었습니다! 탭을 닫으면 자동 삭제됩니다.' });
         setTimeout(() => setMsg(null), 4000);
     };
 
     const handleClearKis = () => {
-        localStorage.removeItem('user_kis_keys');
+        sessionStorage.removeItem('user_kis_keys');
         setKisAppKey('');
         setKisSecret('');
         setKisAccount('');
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                         </div>
 
                         <p className="text-[10px] text-gray-600 text-center">
-                            🔒 API 키는 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다
+                            🔒 API 키는 이 브라우저 세션에만 저장됩니다 (탭 닫으면 자동 삭제 · 서버 미전송)
                         </p>
                     </div>
                 </div>
