@@ -941,10 +941,20 @@ function AnalysisContent() {
                                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    {sectorSections[activeSectorTab].metrics.map((metric) => {
-                                                    const cat = (sectorData.charts || {})[metric.key];
-                                                    if (!cat) return null;
-                                                    return (
+                                                    {(() => {
+                                                        const visibleMetrics = sectorSections[activeSectorTab].metrics.filter((metric: any) => (sectorData.charts || {})[metric.key]);
+                                                        if (visibleMetrics.length === 0) {
+                                                            return (
+                                                                <div className="col-span-full py-16 text-center bg-white/5 border border-dashed border-white/10 rounded-3xl">
+                                                                    <div className="flex justify-center mb-4"><PieChart className="w-12 h-12 text-gray-600" /></div>
+                                                                    <h3 className="text-gray-400 font-bold mb-2">데이터가 제공되지 않습니다</h3>
+                                                                    <p className="text-gray-500 text-sm">해당 그룹(탭)의 섹터 분석 지표가 이 종목(또는 ETF)에는 제공되지 않습니다.<br/>다른 탭을 선택해 보세요.</p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return visibleMetrics.map((metric: any) => {
+                                                            const cat = (sectorData.charts || {})[metric.key];
+                                                            return (
                                                         <div key={metric.key} className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 hover:bg-white/[0.04] transition-all duration-500 hover:scale-[1.01] hover:border-red-500/20 group shadow-2xl">
                                                             <div className="flex items-center justify-between mb-8">
                                                                 <div className="flex items-center gap-4">
@@ -1010,7 +1020,8 @@ function AnalysisContent() {
                                                             </div>
                                                         </div>
                                                     );
-                                                })}
+                                                    });
+                                                })()}
                                                 </div>
                                             </div>
                                         </div>
