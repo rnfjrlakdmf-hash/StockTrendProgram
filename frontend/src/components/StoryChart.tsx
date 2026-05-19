@@ -216,6 +216,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
         xaxis: {
             type: 'datetime',
             labels: {
+                datetimeUTC: false, // [NEW] Fix timezone offset
                 datetimeFormatter: {
                     year: 'yyyy',
                     month: 'yyyy/MM',
@@ -395,7 +396,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
             type: 'datetime',
             axisBorder: { show: false },
             axisTicks: { show: false },
-            labels: { show: false }
+            labels: { show: false, datetimeUTC: false }
         },
         yaxis: {
             labels: {

@@ -615,6 +615,7 @@ function EtfAnalysisContent() {
                                                     xaxis: { 
                                                         type: 'datetime', 
                                                         labels: { 
+                                                            datetimeUTC: false, // [NEW] Fix timezone offset
                                                             style: { colors: '#9ca3af' },
                                                             datetimeFormatter: {
                                                                 year: 'yyyy년',

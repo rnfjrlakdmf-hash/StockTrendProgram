@@ -332,7 +332,9 @@ export default function PatternPage() {
             type: 'datetime', 
             axisBorder: { show: false }, 
             axisTicks: { show: false },
+            // [NEW] Fix timezone offset (UTC to Local Time)
             labels: {
+                datetimeUTC: false,
                 datetimeFormatter: {
                     year: 'yyyy년',
                     month: 'yyyy년 MM월',
@@ -467,6 +469,7 @@ export default function PatternPage() {
             axisBorder: { show: false }, 
             axisTicks: { show: false }, 
             labels: { 
+                datetimeUTC: false, // [NEW] Fix timezone offset
                 show: true,
                 style: { colors: '#6b7280', fontSize: '10px' },
                 datetimeFormatter: {
