@@ -188,7 +188,7 @@ export default function PortfolioPage() {
             });
           } catch {}
         }
-        alert(`관심종목 ${newHoldings.length}개를 현재가로 불러왔습니다!\n수량은 기본 1주로 설정되어 있으니 필요 시 수정해 주세요.`);
+        alert(`관심종목 ${newHoldings.length}개를 불러왔습니다!\n관심종목에서 설정하신 매수 단가와 수량이 그대로 적용되었습니다.`);
       } else {
         alert("불러올 관심종목이 없습니다.\n관심종목 페이지에서 먼저 종목을 추가해 주세요.");
       }
