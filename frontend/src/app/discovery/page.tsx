@@ -349,7 +349,9 @@ function DiscoveryContent() {
         console.log("[Discovery] Mounted. API_BASE_URL:", API_BASE_URL);
     }, []);
 
-    // [New] 해외 주식 세션별 데이터 fetch (프리마켓 / 정규장 / 에프터마켓)
+    // [New] 해외 주식 세션별 데이터 fetch (프리마켓 / 정규장 / 에프터마켓) + 30초 자동 갱신
+    const [extendedLastUpdated, setExtendedLastUpdated] = useState<number>(0);
+
     useEffect(() => {
         if (!stock?.symbol) { setExtendedHours(null); return; }
         const sym = stock.symbol;
@@ -357,12 +359,27 @@ function DiscoveryContent() {
         const isDomestic = (sym.endsWith('.KS') || sym.endsWith('.KQ') || /^\d{6}$/.test(cleanCode));
         if (isDomestic) { setExtendedHours(null); return; }
 
-        setExtendedLoading(true);
-        fetch(`${API_BASE_URL}/api/analysis/stock/${encodeURIComponent(sym)}/extended-hours`)
-            .then(r => r.json())
-            .then(d => { if (d.status === 'success') setExtendedHours(d.data); else setExtendedHours(null); })
-            .catch(() => setExtendedHours(null))
-            .finally(() => setExtendedLoading(false));
+        const fetchExtended = (showLoading = false) => {
+            if (showLoading) setExtendedLoading(true);
+            fetch(`${API_BASE_URL}/api/analysis/stock/${encodeURIComponent(sym)}/extended-hours`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'success') {
+                        setExtendedHours(d.data);
+                        setExtendedLastUpdated(Date.now()); // 갱신 시각 기록 (flash 효과용)
+                    } else {
+                        setExtendedHours(null);
+                    }
+                })
+                .catch(() => setExtendedHours(null))
+                .finally(() => { if (showLoading) setExtendedLoading(false); });
+        };
+
+        fetchExtended(true); // 최초 1회 (로딩 표시)
+
+        // [Polling] 30초마다 자동 갱신 (백그라운드, 로딩 스피너 없음)
+        const interval = setInterval(() => fetchExtended(false), 30_000);
+        return () => clearInterval(interval);
     }, [stock?.symbol]);
 
     // [New] News Period State
@@ -968,6 +985,7 @@ function DiscoveryContent() {
                                             <GlobalExtendedHoursWidget
                                                 data={extendedHours}
                                                 loading={extendedLoading}
+                                                lastUpdated={extendedLastUpdated}
                                             />
                                         )}
 
@@ -2524,7 +2542,23 @@ function StockLiveChart({ symbol }: { symbol: string }) {
 
 
 // [New] 해외 주식 프리마켓 / 정규장 / 에프터마켓 세션별 가격 위젯
-function GlobalExtendedHoursWidget({ data, loading }: { data: any; loading: boolean }) {
+function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; loading: boolean; lastUpdated?: number }) {
+    const [tickAgo, setTickAgo] = useState('');
+
+    // 마지막 갱신 시각을 "방금 전 / N초 전" 형식으로 실시간 업데이트
+    useEffect(() => {
+        if (!lastUpdated) return;
+        const tick = () => {
+            const diff = Math.floor((Date.now() - lastUpdated) / 1000);
+            if (diff < 5) setTickAgo('방금 갱신');
+            else if (diff < 60) setTickAgo(`${diff}초 전 갱신`);
+            else setTickAgo(`${Math.floor(diff / 60)}분 전 갱신`);
+        };
+        tick();
+        const id = setInterval(tick, 5000);
+        return () => clearInterval(id);
+    }, [lastUpdated]);
+
     if (loading) {
         return (
             <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 w-fit">
@@ -2551,17 +2585,25 @@ function GlobalExtendedHoursWidget({ data, loading }: { data: any; loading: bool
 
     return (
         <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* 세션 상태 배지 */}
-            <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${
-                    isRegularActive ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]' :
-                    isExtendedActive ? 'bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(192,132,252,0.6)]' :
-                    'bg-gray-600'
-                }`} />
-                <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">
-                    {current_session}
-                </span>
-                <span className="text-[10px] text-gray-600 font-mono ml-1">{data.exchange}</span>
+            {/* 세션 상태 배지 + 갱신 시각 */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                        isRegularActive ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]' :
+                        isExtendedActive ? 'bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(192,132,252,0.6)]' :
+                        'bg-gray-600'
+                    }`} />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                        {current_session}
+                    </span>
+                    <span className="text-[10px] text-gray-600 font-mono ml-1">{data.exchange}</span>
+                </div>
+                {/* 🔄 자동 갱신 인디케이터 */}
+                <div className="flex items-center gap-1.5 text-[10px] text-gray-600 font-mono">
+                    <div className="w-1 h-1 rounded-full bg-blue-500/60 animate-pulse" />
+                    <span>30초 자동갱신</span>
+                    {tickAgo && <span className="text-gray-700">· {tickAgo}</span>}
+                </div>
             </div>
 
             {/* 세션 카드 그리드 */}
