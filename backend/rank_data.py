@@ -557,21 +557,27 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
     
     # [v6.3.1] Fix for KOSPI searchTop taking 14s and causing 504 Timeouts
     if nation == "KOR" and order_type == "searchTop":
-        fast_search_items = get_naver_ranking("krx", "popular")
-        items = []
-        for i in fast_search_items:
-            items.append({
-                "itemcode": i["symbol"],
-                "itemname": i["name"],
-                "nowPrice": str(i["price"]),
-                "prevChangeRate": str(i["change_percent"]),
-                "prevChangePrice": str(i.get("change_val", 0)),
-                "upDownGb": 3 if float(i["change_percent"]) == 0 else (2 if float(i["change_percent"]) > 0 else 5),
-                "tradeVolume": 0,
-                "tradeAmount": 0
-            })
+        # Force fetching from the mobile API because lastsearch2.naver is broken/frozen
+        items = fetch_naver_ranking_data("KOR", "searchTop")
     else:
         items = fetch_naver_ranking_data(nation, order_type)
+        
+    # [Fix] PREOPEN Fallback: If quantTop/priceTop is empty during PREOPEN, fallback to marketCap
+    if not items and nation == "KOR" and order_type in ["quantTop", "priceTop"]:
+        items = fetch_naver_ranking_data(nation, "marketSum")
+        if not items:
+             # Ultimate fallback to old API format
+             items = fetch_naver_ranking_data(nation, "market_sum")
+             
+    # If still empty, use KOSPI TOP 10 as dummy fallback
+    if not items and nation == "KOR":
+        items = [
+            {"itemcode": "005930", "itemname": "삼성전자", "nowPrice": "0", "prevChangeRate": "0", "upDownGb": 3},
+            {"itemcode": "000660", "itemname": "SK하이닉스", "nowPrice": "0", "prevChangeRate": "0", "upDownGb": 3},
+            {"itemcode": "373220", "itemname": "LG에너지솔루션", "nowPrice": "0", "prevChangeRate": "0", "upDownGb": 3},
+            {"itemcode": "207940", "itemname": "삼성바이오로직스", "nowPrice": "0", "prevChangeRate": "0", "upDownGb": 3},
+            {"itemcode": "005380", "itemname": "현대차", "nowPrice": "0", "prevChangeRate": "0", "upDownGb": 3},
+        ]
     
     if not items:
         return []
@@ -583,12 +589,15 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
         if nation == "KOR":
             symbol = str(item.get("reutersCode") or item.get("symbolCode") or item.get("itemcode") or item.get("itemCode") or item.get("code") or "")
             name = repair(str(item.get("itemname") or item.get("stockName") or ""))
-            price = item.get("nowPrice") or item.get("closePrice")
+            price = item.get("nowPrice") or item.get("closePrice") or item.get("currentPrice")
             change_rate = item.get("prevChangeRate") or item.get("fluctuationsRatio")
-            change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice")
-            raw_rf = item.get("upDownGb") or 3
+            change_val = item.get("prevChangePrice") or item.get("compareToPreviousClosePrice") or item.get("fluctuations")
+            raw_rf = item.get("upDownGb") or item.get("fluctuationsType") or 3
             if isinstance(raw_rf, dict):
                 risefall = int(raw_rf.get("code", 3))
+            elif isinstance(raw_rf, str) and not raw_rf.isdigit():
+                # Handling 'RISING', 'FALLING', 'UNCHANGED'
+                risefall = 2 if 'RISING' in raw_rf else (5 if 'FALLING' in raw_rf else 3)
             else:
                 try: risefall = int(raw_rf)
                 except: risefall = 3
@@ -609,6 +618,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
         # Robust Numeric Parsing
         def safe_f(v):
+            if v is None: return 0.0
             try: return float(str(v).replace(",", "").strip())
             except: return 0.0
 
@@ -621,7 +631,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
         processed.append({
             "rank": i + 1, "symbol": symbol, "name": name,
-            "price": price if price and price != "-" else "0", 
+            "price": str(f_p) if f_p > 0 else "0", 
             "price_krw": p_krw, "change_val": change_val or 0,
             "change_percent": f"{f_cr:+.2f}%", "risefall": risefall,
             "volume": volume, "amount": amount, "market": market
@@ -657,20 +667,12 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
             s = p_item["symbol"]
             if not s or s == "-": return p_item
             
-            # [Optimization] Skip HTML scraping if we already have valid data from the JSON API!
-            price_val = str(p_item.get("price", "0")).replace(",", "")
-            has_valid_price = False
-            try:
-                if float(price_val) > 0: has_valid_price = True
-            except: pass
-            
+            # ALWAYS force get_simple_quote to prevent buggy prices from Naver Mobile API
+            # Especially since Naver Mobile API sometimes returns mocked prices during tests or preopen
+                
             current_name = p_item.get("name", "")
             has_valid_name = bool(current_name) and current_name != s and current_name != "-" and len(current_name) > 1
             
-            # Only do the heavy get_simple_quote if we are missing critical info
-            if has_valid_price and has_valid_name:
-                return p_item
-                
             # [v5.0.0] Check if name is already valid (not same as symbol, has content)
             q = get_simple_quote(s)
             if q:
