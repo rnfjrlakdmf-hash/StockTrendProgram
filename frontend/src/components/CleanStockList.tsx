@@ -20,11 +20,13 @@ export interface CleanStockItem {
     quantGrade?: string;
     added_price?: number;
     quantity?: number;
-    // [v2] 세션 배지 (원중/프리/에프터/마감)
+    // [v2] 세션 배지
     sessionBadge?: { label: string; color: string; dot: string };
-    // [v2] 확장시간 가격 (프리/에프터마쾓)
     extendedPrice?: string | number | null;
     extendedChange?: string | null;
+    // [v3] 통화 정보
+    currency?: string;          // 'USD' | 'KRW' | 'JPY' ...
+    price_krw?: string | null;  // 해외주식 원화 환산가
 }
 
 // Helper function to extract high-value keywords and format them as hashtags
@@ -157,9 +159,22 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 <BlinkingPrice
                                     price={item.price}
                                     className={`text-[18px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
+                                    prefix={item.currency && item.currency !== 'KRW' ? '$' : ''}
                                 />
 
-                                {/* [v2] 프리/에프터마쾓 확장가격 표시 */}
+                                {/* [v3] 해외주식 원화 환산가 병기 */}
+                                {item.currency && item.currency !== 'KRW' && (
+                                    <div className="flex items-center gap-1 mt-0">
+                                        {item.price_krw ? (
+                                            <span className="text-[10px] md:text-[11px] text-gray-400 font-mono font-bold">
+                                                ≈ ₩{item.price_krw}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[9px] text-gray-600 font-mono">KRW -</span>
+                                        )}
+                                    </div>
+                                )}
+
                                 {item.extendedPrice && (
                                     <div className="flex items-center gap-1 mt-0.5">
                                         <span className="text-[9px] text-indigo-400 font-black bg-indigo-500/10 border border-indigo-500/20 px-1.5 rounded">

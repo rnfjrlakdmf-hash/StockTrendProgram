@@ -331,64 +331,52 @@ def read_quote(symbol: str):
 def get_multi_quotes(symbols: str = Query(...)):
     """
     관심종목 일괄 시세 조회.
-    [v2] 해외주식 세션 정보 포함:
-      - market_status: '프리마켓' | '장중' | '에프터마켓' | '장마감'
-      - extended_price: 프리/에프터마켓 가격
-      - extended_change: 프리/에프터마켓 등락률
-      - name: 종목명
+    [v3] 개선사항:
+      - market_status: get_simple_quote에서 직접 반환 (프리마켓/장중/에프터마켓/장마감)
+      - price_krw: 해외주식 원화 환산가 ($399.75 → ₩558,xxx)
+      - extended_price / extended_change: 확장 세션 가격
     """
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     results = {}
     from stock_data import get_simple_quote
     from korea_data import get_exchange_rate
     import re
-    rate = get_exchange_rate("USD")
-    
-    import concurrent.futures
+    rate = get_exchange_rate("USD")   # 현재 USD/KRW 환율
 
-    def _detect_session(data: dict, symbol: str) -> str:
-        """심볼과 데이터 기반으로 현재 세션 판별"""
-        # 국내 주식 (6자리 숫자)
-        if re.match(r'^\d{6}$', symbol):
-            ms = data.get("market_status", "")
-            if "장중" in str(ms) or "거래" in str(ms): return "장중"
-            if "야간" in str(ms) or "시간외" in str(ms): return "시간외"
-            return "장마감"
-        # 해외 주식
-        ms = str(data.get("market_status", "")).upper()
-        if "PRE" in ms or "프리" in ms: return "프리마켓"
-        if "AFTER" in ms or "에프터" in ms or "POST" in ms: return "에프터마켓"
-        if "OPEN" in ms or "장중" in ms or "정규" in ms: return "장중"
-        # nxt_data나 after_market_data가 있으면 에프터
-        if data.get("after_market_data") or data.get("nxt_data"):
-            return "에프터마켓"
-        return "장마감"
+    import concurrent.futures
 
     def fetch_q(sym):
         try:
             data = get_simple_quote(sym)
             if data:
-                session = _detect_session(data, sym)
-                # 프리/에프터 가격 추출
-                ext_price = None
-                ext_change = None
-                if data.get("nxt_data"):
-                    nd = data["nxt_data"]
-                    ext_price = nd.get("price") or nd.get("current_price")
-                    ext_change = nd.get("change_rate") or nd.get("change")
-                elif data.get("after_market_data"):
-                    ad = data["after_market_data"]
-                    ext_price = ad.get("price") or ad.get("current_price")
-                    ext_change = ad.get("change_rate") or ad.get("change")
+                currency = data.get("currency", "KRW")
+                price_str = data.get("price", "확인불가")
+                
+                # [v3] 원화 환산가 계산 (해외 주식 전용)
+                price_krw = None
+                if currency != "KRW" and rate:
+                    try:
+                        raw = float(str(price_str).replace(",", ""))
+                        price_krw = f"{raw * rate:,.0f}"
+                    except: pass
+
+                # market_status는 get_simple_quote → _parse_naver_foreign에서 이미 설정
+                # (프리마켓/장중/에프터마켓/장마감)
+                market_status = data.get("market_status", "장마감")
+
+                # 확장 세션 가격 (get_simple_quote가 이미 채워서 반환)
+                ext_price  = data.get("extended_price")
+                ext_change = data.get("extended_change")
 
                 return sym, {
-                    "price": data.get("price", "확인불가"),
+                    "price": price_str,
                     "change": data.get("change", "0.00%"),
                     "change_percent": data.get("change_percent") or data.get("change", "0.00%"),
                     "up": data.get("up", True),
-                    "currency": data.get("currency", "KRW"),
+                    "currency": currency,
+                    "price_krw": price_krw,          # ← 신규: 원화 환산가
                     "name": data.get("name", sym),
-                    "market_status": session,
+                    "market_status": market_status,
                     "extended_price": ext_price,
                     "extended_change": ext_change,
                 }

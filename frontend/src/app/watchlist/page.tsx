@@ -418,6 +418,9 @@ export default function WatchlistPage() {
                                             // [v2] 프리/에프터 가격
                                             extendedPrice: data?.extended_price || null,
                                             extendedChange: data?.extended_change || null,
+                                            // [v3] 통화 정보 (해외주식 $ 표시 + 원화 병기)
+                                            currency: data?.currency || 'KRW',
+                                            price_krw: data?.price_krw || null,
                                         };
                                     })}
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
