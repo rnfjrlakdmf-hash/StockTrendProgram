@@ -29,14 +29,33 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
     items = get_watchlist(user_id)
     print(f"[Watchlist] Found {len(items)} items for {user_id}")
     
-    from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+    from stock_data import GLOBAL_KOREAN_NAMES
+    try:
+        from stock_names import STOCK_MAP
+        local_code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str)}
+    except Exception:
+        local_code_to_name = {}
+
     data = []
     for row in items:
         sym = row[0]
         added_p = row[1] if len(row) > 1 else 0
         qty = row[2] if len(row) > 2 else 0
         
-        name = get_korean_stock_name(sym) or GLOBAL_KOREAN_NAMES.get(sym, sym)
+        # 1. Check Global Mapping (US Stocks)
+        name = sym
+        if sym in GLOBAL_KOREAN_NAMES:
+            names = GLOBAL_KOREAN_NAMES[sym]
+            name = names[0] if isinstance(names, list) else names
+        # 2. Check Local KOR Mapping (KOSPI/KOSDAQ)
+        elif sym in local_code_to_name:
+            name = local_code_to_name[sym]
+        else:
+            # Strip suffixes for KOR search if needed
+            base_sym = sym.split(".")[0]
+            if base_sym in local_code_to_name:
+                name = local_code_to_name[base_sym]
+            
         data.append({
             "symbol": sym, 
             "name": name, 
