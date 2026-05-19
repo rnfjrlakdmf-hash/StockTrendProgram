@@ -170,17 +170,20 @@ def send_closing_notification(market: str):
     print(f"[Scheduler] Generating hybrid {market} market closing report...")
     
     # 공통 기본 지표 캐싱
+    from korea_data import get_korean_market_indices
+    kr_indices = get_korean_market_indices()
+    
     common = {
-        "KOSPI": get_simple_quote("KOSPI"),
-        "KOSDAQ": get_simple_quote("KOSDAQ"),
-        "DOW": get_simple_quote("^DJI"),
-        "NASDAQ": get_simple_quote("^IXIC"),
-        "SP500": get_simple_quote("^GSPC"),
-        "SOX": get_simple_quote("^SOX"),
-        "TNX": get_simple_quote("^TNX"),
-        "OIL": get_simple_quote("CL=F"),
-        "FX": get_simple_quote("USDKRW"),
-        "TSLA": get_simple_quote("TSLA")
+        "KOSPI": {"change": kr_indices.get("kospi", {}).get("percent", "0.00%")},
+        "KOSDAQ": {"change": kr_indices.get("kosdaq", {}).get("percent", "0.00%")},
+        "DOW": get_simple_quote("^DJI") or {},
+        "NASDAQ": get_simple_quote("^IXIC") or {},
+        "SP500": get_simple_quote("^GSPC") or {},
+        "SOX": get_simple_quote("^SOX") or {},
+        "TNX": get_simple_quote("^TNX") or {},
+        "OIL": get_simple_quote("CL=F") or {},
+        "FX": get_simple_quote("USDKRW") or {},
+        "TSLA": get_simple_quote("TSLA") or {}
     }
 
     conn = get_db_connection()
