@@ -1012,8 +1012,6 @@ function DiscoveryContent() {
                                                     loading={extendedLoading}
                                                     lastUpdated={extendedLastUpdated}
                                                 />
-                                                {/* [New] 실시간 업그레이드 안내 배너 (KIS 미연동 시만 표시) */}
-                                                <KisRealTimeBanner />
                                             </>
                                         )}
 
