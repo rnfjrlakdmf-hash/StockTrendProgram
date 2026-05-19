@@ -89,15 +89,18 @@ export function useStockSocket(symbol: string | null) {
                 startHeartbeat(ws);
 
                 // [Zero-Storage Security] Handshake Auth
+                // sessionStorage에서 KIS 키 읽기 (탭 닫으면 자동 삭제)
                 try {
-                    const storedKeys = localStorage.getItem("user_kis_keys");
+                    const storedKeys = sessionStorage.getItem("user_kis_keys");
                     if (storedKeys) {
                         const keys = JSON.parse(storedKeys);
                         ws.send(JSON.stringify({
                             type: "auth",
                             keys: keys
                         }));
-                        console.log("[WS] Secure keys transmitted to RAM session.");
+                        console.log("[WS] ✅ KIS 실시간 활성화 - 키 전송 완료 (RAM only)");
+                    } else {
+                        console.log("[WS] KIS 키 없음 → 10초 폴링 모드");
                     }
                 } catch (e) {
                     console.error("[WS] Auth Handshake Failed", e);
