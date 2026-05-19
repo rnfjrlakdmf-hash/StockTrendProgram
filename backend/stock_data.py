@@ -514,7 +514,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "change": str(naver_info.get('change_percent', '0.00%')),
                     "change_percent": str(naver_info.get('change_percent', '0.00%')),
                     "change_val": str(naver_info.get('change_val', '0')).replace('[정규]', '').strip(),
-                    "change_rate": str(naver_info.get('change_rate', '0.00')).replace('[정규]', '').strip(),
+                    "change_rate": str(naver_info.get('change_rate') or naver_info.get('regular_change_pct') or naver_info.get('change_percent', '0.00')).replace('[정규]', '').replace('[야간]', '').replace('[시간외]', '').replace('%', '').strip(),
                     "final_labeled_change": str(naver_info.get('change_percent', '0.00%')),
                     "summary": generate_stock_summary(naver_info, news_data),
                     "sector": "Domestic Stock",

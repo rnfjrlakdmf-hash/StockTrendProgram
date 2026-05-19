@@ -477,10 +477,13 @@ function AnalysisContent() {
                                                     if (isNaN(valNum)) valNum = 0;
                                                     
                                                     let rawRate = rawRateStr.replace(/[^0-9.]/g, "");
+                                                    
+                                                    let labelMatch = String(stockInfo.final_labeled_change || stockInfo.change || "").match(/\[(.*?)\]/);
+                                                    let marketLabel = labelMatch ? labelMatch[1] : "정규장";
 
                                                     return (
                                                         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm border ${containerClass}`}>
-                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>정규장</span>
+                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>{marketLabel}</span>
                                                             <span className="text-lg font-black tracking-tight font-mono">
                                                                 {isPos ? '▲ ' : isNeg ? '▼ ' : ''}{valNum.toLocaleString()}
                                                             </span>
