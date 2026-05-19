@@ -195,7 +195,7 @@ export default function PatternPage() {
         const symbol = result?.stock_info?.symbol || searchInput;
         if (symbol && result) {
             // [NEW] Optimized: Force 1d period for intraday to prevent lag
-            const isIntraday = candleInterval.includes("m") || candleInterval === "1h";
+            const isIntraday = ['1m', '5m', '30m', '60m'].includes(candleInterval);
             let periodToUse = chartType === 'line' ? linePeriod : (isIntraday ? '1d' : undefined);
             
             handleSearch(symbol, { 
@@ -693,7 +693,7 @@ export default function PatternPage() {
                                             ))}
                                             
                                             {/* Optimization Badge for Intraday */}
-                                            {(candleInterval.includes('m') || candleInterval === '60m') && (
+                                            {['1m', '5m', '30m', '60m'].includes(candleInterval) && (
                                                 <div className="ml-2 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-3 py-1.5 rounded-full animate-pulse">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                                                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Intraday Optimized (1D)</span>

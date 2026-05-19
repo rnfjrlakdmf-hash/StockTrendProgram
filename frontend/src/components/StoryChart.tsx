@@ -60,7 +60,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
 
     useEffect(() => {
         // [NEW] Adjust period if interval is intraday (Optimized: Force 1d for intraday to prevent lag)
-        const isIntraday = interval.includes("m") || interval === "1h";
+        const isIntraday = ['1m', '3m', '5m', '15m', '30m', '1h'].includes(interval);
         if (isIntraday) {
             if (period !== "1d") setPeriod("1d");
         }
@@ -254,7 +254,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                 
                 const timestamp = w.globals.seriesX[seriesIndex][dataPointIndex];
                 const date = new Date(timestamp);
-                const isIntraday = interval.includes("m") || interval === "1h";
+                const isIntraday = ['1m', '3m', '5m', '15m', '30m', '1h'].includes(interval);
                 const d = isIntraday 
                     ? `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
                     : date.toLocaleDateString();
@@ -414,7 +414,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
 
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
-        const isIntraday = interval.includes("m") || interval === "1h";
+        const isIntraday = ['1m', '3m', '5m', '15m', '30m', '1h'].includes(interval);
         
         if (isIntraday) {
             return date.toLocaleString('ko-KR', { 
@@ -506,7 +506,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                     </div>
 
                     {/* Period Selector (Hidden for Intraday to prevent lag) */}
-                    {!(interval.includes("m") || interval === "1h") && (
+                    {!['1m', '3m', '5m', '15m', '30m', '1h'].includes(interval) && (
                         <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                             {['1mo', '3mo', '6mo', '1y'].map((p) => (
                                 <button 
