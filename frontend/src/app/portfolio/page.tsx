@@ -89,6 +89,7 @@ export default function PortfolioPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
   const [usdKrw, setUsdKrw] = useState(1350);
   const { user, isLoading: authLoading } = useAuth();
 
@@ -342,20 +343,33 @@ export default function PortfolioPage() {
           <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
             <h2 className="text-sm font-bold text-gray-400 mb-3 flex items-center justify-between">
               <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> 보유 종목 입력</span>
-              {/* 관심종목 불러오기 버튼 */}
-              <button
-                onClick={syncFromWatchlist}
-                disabled={syncLoading}
-                title={!isLoggedIn ? "사이드바에서 구글 로그인 후 이용 가능합니다" : ""}
-                className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all disabled:opacity-50 border ${
-                  isLoggedIn
-                    ? "bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                    : "bg-gray-700/50 text-gray-500 border-gray-600/30 cursor-not-allowed"
-                }`}
-              >
-                {syncLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
-                {syncLoading ? "불러오는 중..." : isLoggedIn ? "⭐ 관심종목 불러오기" : "로그인 후 이용 가능"}
-              </button>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowManualInput(!showManualInput)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${
+                    showManualInput 
+                      ? "bg-blue-500/20 text-blue-400 border-blue-500/30" 
+                      : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/10"
+                  }`}
+                >
+                  <Plus className={`w-3.5 h-3.5 transition-transform ${showManualInput ? "rotate-45" : ""}`} /> 직접 추가
+                </button>
+                {/* 관심종목 불러오기 버튼 */}
+                <button
+                  onClick={syncFromWatchlist}
+                  disabled={syncLoading}
+                  title={!isLoggedIn ? "사이드바에서 구글 로그인 후 이용 가능합니다" : ""}
+                  className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all disabled:opacity-50 border ${
+                    isLoggedIn
+                      ? "bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                      : "bg-gray-700/50 text-gray-500 border-gray-600/30 cursor-not-allowed"
+                  }`}
+                >
+                  {syncLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
+                  {syncLoading ? "불러오는 중..." : isLoggedIn ? "⭐ 관심종목 불러오기" : "로그인 후 이용 가능"}
+                </button>
+              </div>
             </h2>
 
             {/* 종목 태그 */}
@@ -410,59 +424,65 @@ export default function PortfolioPage() {
               </div>
             )}
 
-            {/* 입력 행 */}
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex flex-col gap-1 relative">
-                <label className="text-[11px] text-gray-500">종목명 또는 코드</label>
-                <div className="relative">
-                  <input type="text" placeholder="예: 삼성전자, TSLA"
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 font-mono text-sm w-44"
-                    value={inputSymbol} onChange={e => setInputSymbol(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addHolding()}
-                    onBlur={() => setTimeout(() => setSuggestions([]), 200)}
-                  />
-                  {isSearching && <Loader2 className="absolute right-3 top-2.5 w-4 h-4 animate-spin text-gray-500" />}
-                </div>
-                
-                {/* 검색 제안 드롭다운 */}
-                {suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 w-64 mt-1 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
-                    {suggestions.map((s, i) => (
-                      <button key={i} onClick={() => selectSuggestion(s)}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs font-bold text-white">{s.name}</span>
-                          <span className="text-[10px] text-gray-500 font-mono">{s.symbol}</span>
-                        </div>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.market}</span>
-                      </button>
-                    ))}
+            {/* 직접 입력 영역 (토글) */}
+            {showManualInput && (
+              <div className="flex flex-wrap items-end gap-2 p-4 bg-black/20 rounded-xl border border-white/5 mb-4">
+                <div className="flex flex-col gap-1 relative">
+                  <label className="text-[11px] text-gray-500">종목명 또는 코드</label>
+                  <div className="relative">
+                    <input type="text" placeholder="예: 삼성전자, TSLA"
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 font-mono text-sm w-44"
+                      value={inputSymbol} onChange={e => setInputSymbol(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && addHolding()}
+                      onBlur={() => setTimeout(() => setSuggestions([]), 200)}
+                    />
+                    {isSearching && <Loader2 className="absolute right-3 top-2.5 w-4 h-4 animate-spin text-gray-500" />}
                   </div>
-                )}
+                  
+                  {/* 검색 제안 드롭다운 */}
+                  {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 w-64 mt-1 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
+                      {suggestions.map((s, i) => (
+                        <button key={i} onClick={() => selectSuggestion(s)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
+                          <div className="flex flex-col items-start">
+                            <span className="text-xs font-bold text-white">{s.name}</span>
+                            <span className="text-[10px] text-gray-500 font-mono">{s.symbol}</span>
+                          </div>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.market}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-gray-500">매수 단가 (원)</label>
+                  <input type="number" placeholder="자동 조회됩니다"
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-36"
+                    value={inputPrice} onChange={e => setInputPrice(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addHolding()} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-gray-500">보유 수량 (주)</label>
+                  <input type="number" placeholder="수량"
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-24"
+                    value={inputQuantity} onChange={e => setInputQuantity(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addHolding()} />
+                </div>
+                <button onClick={addHolding} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
+                  <Plus className="w-4 h-4" /> 추가
+                </button>
+                <button onClick={() => refreshPrices()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
+                  <Activity className="w-4 h-4 text-blue-400" /> 시세 갱신
+                </button>
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-gray-500">매수 단가 (원)</label>
-                <input type="number" placeholder="자동 조회됩니다"
-                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-36"
-                  value={inputPrice} onChange={e => setInputPrice(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addHolding()} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-gray-500">보유 수량 (주)</label>
-                <input type="number" placeholder="수량"
-                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-24"
-                  value={inputQuantity} onChange={e => setInputQuantity(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addHolding()} />
-              </div>
-              <button onClick={addHolding} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
-                <Plus className="w-4 h-4" /> 추가
-              </button>
-              <button onClick={() => refreshPrices()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
-                <Activity className="w-4 h-4 text-blue-400" /> 시세 갱신
-              </button>
+            )}
+
+            {/* 진단 버튼 */}
+            <div className="flex justify-end mt-4">
               <button onClick={() => runOptimization()} disabled={loading || holdings.length < 1}
-                className="ml-auto bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> 포트폴리오 진단하기</>}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 flex justify-center items-center gap-2 disabled:opacity-50 transition-all">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5" /> 포트폴리오 진단하기</>}
               </button>
             </div>
           </div>
