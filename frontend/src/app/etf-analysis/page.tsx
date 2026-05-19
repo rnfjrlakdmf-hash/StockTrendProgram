@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
@@ -434,7 +434,7 @@ function EtfAnalysisContent() {
                                                 </thead>
                                                 <tbody>
                                                     {Array.isArray(etfData.holdings) && etfData.holdings.map((h: any, i: number) => {
-                                                        const weightStr = String(h.weight || "0").replace('%','');
+                                                        const weightStr = String(h?.weight || "0").replace('%','');
                                                         const weightVal = parseFloat(weightStr) || 0;
                                                         const isZero = weightVal <= 0;
                                                         
@@ -443,7 +443,7 @@ function EtfAnalysisContent() {
                                                                 <td className="py-4 text-sm font-bold text-gray-500 w-12">{i + 1}</td>
                                                                 <td className="py-4 font-black text-gray-200">
                                                                     <div className="flex items-center justify-between mb-1">
-                                                                        <span>{h.name}</span>
+                                                                        <span>{h?.name || "N/A"}</span>
                                                                         {isZero && (
                                                                             <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">Top Holding</span>
                                                                         )}
@@ -483,12 +483,12 @@ function EtfAnalysisContent() {
                                                                 {etfData.similar_etfs.map((peer: any, idx: number) => (
                                                                     <button 
                                                                         key={idx}
-                                                                        onClick={() => { setSymbol(peer.symbol); fetchEtfDetail(peer.symbol); }}
+                                                                        onClick={() => { if(peer?.symbol) { setSymbol(peer.symbol); fetchEtfDetail(peer.symbol); } }}
                                                                         className="flex items-center justify-between p-3 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500/50 transition-all text-left group"
                                                                     >
                                                                         <div>
-                                                                            <span className="font-black text-indigo-300 text-sm">{peer.symbol}</span>
-                                                                            <p className="text-xs text-gray-400 font-bold mt-0.5 line-clamp-1">{peer.name}</p>
+                                                                            <span className="font-black text-indigo-300 text-sm">{peer?.symbol || "N/A"}</span>
+                                                                            <p className="text-xs text-gray-400 font-bold mt-0.5 line-clamp-1">{peer?.name || "N/A"}</p>
                                                                         </div>
                                                                         <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
                                                                             <svg className="w-3 h-3 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
