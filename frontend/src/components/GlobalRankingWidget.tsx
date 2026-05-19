@@ -44,6 +44,13 @@ export default function GlobalRankingWidget() {
     useEffect(() => {
         let ignore = false;
 
+        // [Fix v4.0] 탭 전환 즉시 이전 시장 데이터 초기화 (잔류 데이터 버그 방지)
+        setRankData({
+            trading_volume: [],
+            trading_amount: [],
+            popular_search: [],
+        });
+
         const fetchCategory = async (catId: CategoryType) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 60000); // 60초 타임아웃
@@ -73,11 +80,16 @@ export default function GlobalRankingWidget() {
                 );
 
                 if (!ignore) {
-                    const newData: any = {};
+                    // [Fix v4.0] prev merge 대신 완전 교체 - 이전 시장 데이터 혼입 방지
+                    const newData: Record<CategoryType, RankItem[]> = {
+                        trading_volume: [],
+                        trading_amount: [],
+                        popular_search: [],
+                    };
                     results.forEach(({ catId, data }) => {
                         newData[catId] = data;
                     });
-                    setRankData(prev => ({ ...prev, ...newData }));
+                    setRankData(newData);
                 }
             } catch (e) {
                 console.error("GlobalRankingWidget Fetch Error:", e);
