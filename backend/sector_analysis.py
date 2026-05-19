@@ -3,6 +3,7 @@ import requests
 import json
 import logging
 import re
+import datetime
 
 # [Helper] Robust Decoding
 def decode_safe(res: requests.Response) -> str:
@@ -159,8 +160,22 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 logging.error(f"Error fetching {label}: {e}")
             return None
 
+        def fetch_price_returns():
+            try:
+                import datetime
+                sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
+                if active_sector_id: sector_url += f"&sec_cd={active_sector_id}"
+                s_resp = requests.get(sector_url, headers=headers, timeout=10)
+                decoded_text = decode_safe(s_resp)
+                return json.loads(decoded_text)
+            except Exception as e:
+                logging.error(f"Error fetching Price Returns: {e}")
+                return {}
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(fetch_metric, k, l, p) for k, (l, p) in metric_procs.items()]
+            price_future = executor.submit(fetch_price_returns)
+            
             for future in concurrent.futures.as_completed(futures):
                 res = future.result()
                 if not res: continue
@@ -182,16 +197,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
 
         # 3. Handle Special 'Price Returns' (dt1) for genuine granular chart parity
         try:
-            import datetime
-            sector_url = f"https://navercomp.wisereport.co.kr/company/ajax/cF9001.aspx?cmp_cd={symbol}&data_typ=1&chartType=svg"
-            if active_sector_id: sector_url += f"&sec_cd={active_sector_id}"
-            s_resp = requests.get(sector_url, headers=headers, timeout=10)
-            try:
-                decoded_text = decode_safe(s_resp)
-                ajax_json = json.loads(decoded_text)
-            except Exception as e:
-                logging.error(f"JSON Parse Error in Price Returns: {e}")
-                ajax_json = {}
+            ajax_json = price_future.result()
                 
             dt1 = ajax_json.get("dt1", {})
             if dt1 and "TRD_DT" in dt1:
