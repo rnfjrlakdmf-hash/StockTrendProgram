@@ -154,7 +154,7 @@ function EtfAnalysisContent() {
         if (!symbol) { setSearchResults([]); return; }
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(symbol)}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(symbol)}`);
                 const json = await res.json();
                 if (json.status === "success") setSearchResults(json.data);
             } catch (e) {}

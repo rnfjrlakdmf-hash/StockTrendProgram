@@ -28,7 +28,7 @@ export default function SupplyChainPage() {
         if (!searchInput) { setSearchResults([]); return; }
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(searchInput)}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(searchInput)}`);
                 const json = await res.json();
                 if (json.status === "success") setSearchResults(json.data);
             } catch (e) {}

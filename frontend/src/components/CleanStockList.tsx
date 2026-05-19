@@ -178,6 +178,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                     }`}>
                                                         {(() => {
                                                             const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                            if (isNaN(curP)) return "로딩중...";
                                                             const perShareDiff = curP - (item.added_price || 0);
                                                             const totalDiff = perShareDiff * (item.quantity && item.quantity > 0 ? item.quantity : 1);
                                                             const pct = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;

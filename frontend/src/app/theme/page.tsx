@@ -445,7 +445,7 @@ export default function ThemePage() {
                                     </h4>
                                 </div>
                                 <CleanStockList
-                                    items={result.leaders.map((stock: any) => {
+                                    items={(result.leaders || []).map((stock: any) => {
                                         const quote = quotes[stock.symbol];
                                         return {
                                             symbol: stock.symbol,
@@ -474,7 +474,7 @@ export default function ThemePage() {
                                     </h4>
                                 </div>
                                 <CleanStockList
-                                    items={result.followers.map((stock: any) => {
+                                    items={(result.followers || []).map((stock: any) => {
                                         const quote = quotes[stock.symbol];
                                         return {
                                             symbol: stock.symbol,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
@@ -74,7 +74,7 @@ function AnalysisContent() {
         if (!symbol) { setSearchResults([]); return; }
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(symbol)}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(symbol)}`);
                 const json = await res.json();
                 if (json.status === "success") setSearchResults(json.data);
             } catch (e) {}
@@ -310,14 +310,21 @@ function AnalysisContent() {
         finally { if (!isBackground) setSectorLoading(false); }
     };
 
-    const fetchPeer = async () => {
+     const fetchPeer = async () => {
         if (!peerSymbols) return;
         setPeerLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/peer-compare?symbols=${encodeURIComponent(peerSymbols)}`);
             const json = await res.json();
-            if (json.status === "success") setPeerData(json);
-        } catch (err) { console.error(err); }
+            if (json.status === "success") {
+                setPeerData(json);
+            } else {
+                setPeerData({ status: "error", message: json.message || "동종 업계 비교 데이터를 불러오는 도중 오류가 발생했습니다." });
+            }
+        } catch (err: any) { 
+            console.error(err); 
+            setPeerData({ status: "error", message: err.message || "서버 통신에 실패했습니다. 종목코드를 다시 확인해 주세요." });
+        }
         finally { setPeerLoading(false); }
     };
 
@@ -355,8 +362,8 @@ function AnalysisContent() {
                     <polygon key={level} points={keys.map((_, i) => { const p = getPoint(i, level); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
                 ))}
                 {keys.map((_, i) => { const p = getPoint(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />; })}
-                <polygon points={keys.map((k, i) => { const p = getPoint(i, factors[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")} fill="rgba(99,102,241,0.3)" stroke="rgb(99,102,241)" strokeWidth="2" />
-                {keys.map((k, i) => { const p = getPoint(i, factors[k]?.score || 0); return <circle key={k} cx={p.x} cy={p.y} r="4" fill="rgb(129,140,248)" />; })}
+                <polygon points={keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")} fill="rgba(99,102,241,0.3)" stroke="rgb(99,102,241)" strokeWidth="2" />
+                {keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return <circle key={k} cx={p.x} cy={p.y} r="4" fill="rgb(129,140,248)" />; })}
                 {keys.map((k, i) => { const p = getPoint(i, 120); return <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="11" fontWeight="bold"> {labels[i]} </text>; })}
             </svg>
         );
@@ -602,58 +609,71 @@ function AnalysisContent() {
                             {quantLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">지표 분석 중...</p></div>
                             ) : quantData ? (
-                                <div className="space-y-6">
-                                    <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade}</div>
-                                                <div><h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3><p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p></div>
+                                quantData.error ? (
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
+                                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
+                                        <h3 className="text-lg font-bold mb-2">퀀트 분석 데이터를 불러올 수 없습니다</h3>
+                                        <p className="text-xs opacity-80 leading-relaxed mb-4">
+                                            {quantData.error}
+                                        </p>
+                                        <button onClick={() => handleGlobalSearch("quant")}
+                                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                            다시 시도
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl p-6">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade || "N/A"}</div>
+                                                    <div><h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3><p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p></div>
+                                                </div>
+                                                <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score || 0)}`}>{quantData.total_score || 0}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
                                             </div>
-                                            <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
-                                        </div>
-                                        <RadarChart factors={quantData.factors} />
-                                        <div className="mt-8 pt-6 border-t border-white/10">
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                                {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
-                                                    const factorGuide: Record<string, string> = {
-                                                        "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타내요.",
-                                                        "growth": "작년보다 매출이나 이익이 얼마나 늘었는지, 회사의 규모가 커지는 중인지 보여줘요.",
-                                                        "momentum": "사람들의 관심과 주가 상승 흐름이 얼마나 강력하게 붙었는지 측정해요.",
-                                                        "quality": "내 돈과 빌린 돈을 합쳐 얼마나 알짜배기 장사를 성실하고 효율적으로 했는지 알려줍니다.",
-                                                        "stability": "빌린 돈이 너무 많지는 않은지, 부도 위험 없이 회사가 얼마나 튼튼한지 나타내요."
-                                                    };
-                                                    return (
-                                                        <div key={key} className={`flex flex-col items-center text-center p-3 rounded-2xl transition-all ${showEasy ? "bg-white/5 ring-1 ring-indigo-500/30" : ""}`}>
-                                                            <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f.label}</span>
-                                                            <span className={`text-2xl font-black mb-1 ${getScoreColor(f.score)}`}>{f.score}</span>
-                                                            
-                                                            {/* [New] Guide Mode Explanation */}
-                                                            {showEasy && (
-                                                                <p className="text-[10px] text-indigo-300 leading-snug mt-2 mb-3 bg-indigo-500/10 p-2 rounded-lg italic">
-                                                                    {factorGuide[key] || "팩터별 세부 지표를 분석 중입니다."}
-                                                                </p>
-                                                            )}
-
-                                                            <div className="space-y-0.5 opacity-60">
-                                                                {Object.entries(f.metrics || {}).map(([mk, mv]: any) => (
-                                                                    <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
-                                                                ))}
+                                            <RadarChart factors={quantData.factors} />
+                                            <div className="mt-8 pt-6 border-t border-white/10">
+                                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                    {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
+                                                        const factorGuide: Record<string, string> = {
+                                                            "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타내요.",
+                                                            "growth": "작년보다 매출이나 이익이 얼마나 늘었는지, 회사의 규모가 커지는 중인지 보여줘요.",
+                                                            "momentum": "사람들의 관심과 주가 상승 흐름이 얼마나 강력하게 붙었는지 측정해요.",
+                                                            "quality": "내 돈과 빌린 돈을 합쳐 얼마나 알짜배기 장사를 성실하고 효율적으로 했는지 알려줍니다.",
+                                                            "stability": "빌린 돈이 너무 많지는 않은지, 부도 위험 없이 회사가 얼마나 튼튼한지 나타내요."
+                                                        };
+                                                        return (
+                                                            <div key={key} className={`flex flex-col items-center text-center p-3 rounded-2xl transition-all ${showEasy ? "bg-white/5 ring-1 ring-indigo-500/30" : ""}`}>
+                                                                <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f?.label || ""}</span>
+                                                                <span className={`text-2xl font-black mb-1 ${getScoreColor(f?.score || 0)}`}>{f?.score || 0}</span>
+                                                                
+                                                                {/* [New] Guide Mode Explanation */}
+                                                                {showEasy && (
+                                                                    <p className="text-[10px] text-indigo-300 leading-snug mt-2 mb-3 bg-indigo-500/10 p-2 rounded-lg italic">
+                                                                        {factorGuide[key] || "팩터별 세부 지표를 분석 중입니다."}
+                                                                    </p>
+                                                                )}
+ 
+                                                                <div className="space-y-0.5 opacity-60">
+                                                                    {Object.entries(f?.metrics || {}).map(([mk, mv]: any) => (
+                                                                        <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="border-t border-indigo-500/20 bg-indigo-500/5">
+                                            <TurboQuantIndicators symbol={quantSymbol || symbol} showEasy={showEasy} />
+                                        </div>
                                     </div>
-                                    <div className="border-t border-indigo-500/20 bg-indigo-500/5">
-                                        <TurboQuantIndicators symbol={quantSymbol || symbol} showEasy={showEasy} />
-                                    </div>
-                                </div>
+                                )
                             ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 5축 퀀트 분석을 시작합니다</p> </div>}
                         </div>
                     )}
-
-                    {activeTab === "financial" && (
+{activeTab === "financial" && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
@@ -668,126 +688,140 @@ function AnalysisContent() {
                             {financialLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                             ) : financialData ? (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    {showEasy && (
-                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
-                                            <div className="bg-emerald-500/20 p-2 rounded-lg h-fit">
-                                                <HelpCircle className="w-5 h-5 text-emerald-400" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
-                                                <p className="text-xs text-gray-300 leading-relaxed">
-                                                    어려운 재무 용어들을 알기 쉽게 기업의 '건강 상태'에 비유하여 설명해 드릴게요.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div><h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2><p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p></div>
-                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>{financialData.grade}</div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                            <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                <div className="flex items-center gap-2 mb-6"><Shield className="w-4 h-4 text-emerald-400" /><h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3개년 안전성 추이</h4></div>
-                                                <div className="h-[200px] w-full">
-                                                    {financialData.charts?.stability ? (
-                                                        <ResponsiveContainer width="100%" height="100%"><LineChart data={financialData.charts.stability}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="부채비율" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} /><Line type="monotone" dataKey="당좌비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer>
-                                                    ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
-                                                </div>
-                                            </div>
-                                            <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-4 h-4 text-indigo-400" /><h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3개년 수익 효율 추이</h4></div>
-                                                <div className="h-[200px] w-full">
-                                                    {financialData.charts?.profitability ? (
-                                                        <ResponsiveContainer width="100%" height="100%"><AreaChart data={financialData.charts.profitability}><defs><linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} /><Area type="monotone" dataKey="영업이익률" stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} /></AreaChart></ResponsiveContainer>
-                                                    ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                                        📐 Altman Z-Score
-                                                        {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험률</span>}
-                                                    </h4>
-                                                </div>
-                                                {showEasy && (
-                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                        당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 체력'</span>을 가진 아주 튼튼한 상태예요!
-                                                    </p>
-                                                )}
-                                                <div className="flex items-end gap-3">
-                                                    <span className="text-3xl font-black">{financialData.z_score?.value}</span>
-                                                    <span className={`text-sm font-bold pb-1 ${financialData.z_score?.color === "green" ? "text-green-400" : financialData.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
-                                                        {financialData.z_score?.zone} ZONE
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                                        <span>🏋️ Piotroski F-Score</span>
-                                                        {showEasy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span> : null}
-                                                    </h4>
-                                                </div>
-                                                {showEasy && (
-                                                    <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                        회사의 <span className="text-emerald-400 font-bold">'근육과 체지방'</span>을 봅니다. 이익은 늘고 빚은 줄었는지 9단계를 엄격히 검진한 기초체력 점수예요. 7점 이상이면 우수해요.
-                                                    </p>
-                                                )}
-                                                <div className="flex items-end gap-3">
-                                                    <span className="text-3xl font-black">{financialData.f_score?.value}</span>
-                                                    <span className="text-sm text-gray-500 pb-1">/ 9</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                financialData.error ? (
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
+                                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
+                                        <h3 className="text-lg font-bold mb-2">재무 분석 데이터를 불러올 수 없습니다</h3>
+                                        <p className="text-xs opacity-80 leading-relaxed mb-4">
+                                            {financialData.error}
+                                        </p>
+                                        <button onClick={() => handleGlobalSearch("financial")}
+                                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                            다시 시도
+                                        </button>
                                     </div>
-
-                                    {/* F-Score Details */}
-                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                        <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                            {(financialData.f_score?.details || []).map((d: string, i: number) => (
-                                                <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
-                                                    <span className="text-emerald-500">✓</span> {d}
+                                ) : (
+                                    <div className="space-y-6 animate-in fade-in duration-300">
+                                        {showEasy && (
+                                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                                <div className="bg-emerald-500/20 p-2 rounded-lg h-fit">
+                                                    <HelpCircle className="w-5 h-5 text-emerald-400" />
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Key Ratios */}
-                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                        <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            {Object.entries(financialData.ratios || {}).map(([k, v]: any) => {
-                                                const getExplanation = (key: string) => {
-                                                    if (key === "PER") return "버는 능력 대비 '현재 가격표'";
-                                                    if (key === "PBR") return "가진 자산 대비 '현재 가격표'";
-                                                    if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
-                                                    if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
-                                                    if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
-                                                    if (key === "영업이익률") return "1만원어치 팔아 얼마를 남기나";
-                                                    if (key === "매출총이익률") return "물건 떼와서 남긴 순수 마진";
-                                                    if (key === "자산회전율") return "자산을 얼마나 부지런히 굴리나";
-                                                    return "";
-                                                };
-                                                return (
-                                                    <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
-                                                        <p className="text-[10px] text-gray-500 font-bold mb-0.5">{k}</p>
-                                                        <p className="text-lg font-black text-white">{v}</p>
-                                                        {showEasy && (
-                                                            <p className="text-[10px] text-emerald-400/70 mt-1 font-medium leading-tight">
-                                                                {getExplanation(k)}
-                                                            </p>
-                                                        )}
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
+                                                    <p className="text-xs text-gray-300 leading-relaxed">
+                                                        어려운 재무 용어들을 알기 쉽게 기업의 '건강 상태'에 비유하여 설명해 드릴게요.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div><h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2><p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p></div>
+                                                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>{financialData.grade || "N/A"}</div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
+                                                    <div className="flex items-center gap-2 mb-6"><Shield className="w-4 h-4 text-emerald-400" /><h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3개년 안전성 추이</h4></div>
+                                                    <div className="h-[200px] w-full">
+                                                        {financialData?.charts?.stability && Array.isArray(financialData.charts.stability) && financialData.charts.stability.length > 0 ? (
+                                                            <ResponsiveContainer width="100%" height="100%"><LineChart data={financialData.charts.stability}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="부채비율" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} /><Line type="monotone" dataKey="당좌비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer>
+                                                        ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
                                                     </div>
-                                                );
-                                            })}
+                                                </div>
+                                                <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
+                                                    <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-4 h-4 text-indigo-400" /><h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3개년 수익 효율 추이</h4></div>
+                                                    <div className="h-[200px] w-full">
+                                                        {financialData?.charts?.profitability && Array.isArray(financialData.charts.profitability) && financialData.charts.profitability.length > 0 ? (
+                                                            <ResponsiveContainer width="100%" height="100%"><AreaChart data={financialData.charts.profitability}><defs><linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} /><Area type="monotone" dataKey="영업이익률" stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} /></AreaChart></ResponsiveContainer>
+                                                        ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                                            📐 Altman Z-Score
+                                                            {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험률</span>}
+                                                        </h4>
+                                                    </div>
+                                                    {showEasy && (
+                                                        <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                            당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 체력'</span>을 가진 아주 튼튼한 상태예요!
+                                                        </p>
+                                                    )}
+                                                    <div className="flex items-end gap-3">
+                                                        <span className="text-3xl font-black">{financialData?.z_score?.value ?? "N/A"}</span>
+                                                        <span className={`text-sm font-bold pb-1 ${financialData?.z_score?.color === "green" ? "text-green-400" : financialData?.z_score?.color === "yellow" ? "text-yellow-400" : "text-red-400"}`}>
+                                                            {financialData?.z_score?.zone ?? "N/A"} ZONE
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                                            <span>🏋️ Piotroski F-Score</span>
+                                                            {showEasy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span> : null}
+                                                        </h4>
+                                                    </div>
+                                                    {showEasy && (
+                                                        <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
+                                                            회사의 <span className="text-emerald-400 font-bold">'근육과 체지방'</span>을 봅니다. 이익은 늘고 빚은 줄었는지 9단계를 엄격히 검진한 기초체력 점수예요. 7점 이상이면 우수해요.
+                                                        </p>
+                                                    )}
+                                                    <div className="flex items-end gap-3">
+                                                        <span className="text-3xl font-black">{financialData?.f_score?.value ?? "N/A"}</span>
+                                                        <span className="text-sm text-gray-500 pb-1">/ 9</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+ 
+                                        {/* F-Score Details */}
+                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                            <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                {(Array.isArray(financialData?.f_score?.details) ? financialData.f_score.details : []).map((d: string, i: number) => (
+                                                    <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
+                                                        <span className="text-emerald-500">✓</span> {d}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+ 
+                                        {/* Key Ratios */}
+                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                            <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                {Object.entries(financialData?.ratios && typeof financialData.ratios === 'object' ? financialData.ratios : {}).map(([k, v]: any) => {
+                                                    const getExplanation = (key: string) => {
+                                                        if (key === "PER") return "버는 능력 대비 '현재 가격표'";
+                                                        if (key === "PBR") return "가진 자산 대비 '현재 가격표'";
+                                                        if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
+                                                        if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
+                                                        if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
+                                                        if (key === "영업이익률") return "1만원어치 팔아 얼마를 남기나";
+                                                        if (key === "매출총이익률") return "물건 떼와서 남긴 순수 마진";
+                                                        if (key === "자산회전율") return "자산을 얼마나 부지런히 굴리나";
+                                                        return "";
+                                                    };
+                                                    return (
+                                                        <div key={k} className="bg-black/30 rounded-2xl p-4 border border-white/5 transition-all hover:border-emerald-500/20">
+                                                            <p className="text-[10px] text-gray-500 font-bold mb-0.5">{k}</p>
+                                                            <p className="text-lg font-black text-white">{v}</p>
+                                                            {showEasy && (
+                                                                <p className="text-[10px] text-emerald-400/70 mt-1 font-medium leading-tight">
+                                                                    {getExplanation(k)}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )
                             ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p> </div>}
                         </div>
                     )}
@@ -817,20 +851,33 @@ function AnalysisContent() {
                             {sectorLoading ? (
                                 <div className="text-center py-32"><RefreshCw className="w-16 h-16 animate-spin mx-auto text-red-500 mb-6 opacity-50" /><p className="text-gray-400 font-black tracking-widest uppercase">Fetching 17-Factor Deep Matrix...</p></div>
                             ) : sectorData ? (
-                                <div className="space-y-6">
-                                    {showEasy && (
-                                        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
-                                            <div className="bg-red-500/20 p-2 rounded-lg h-fit">
-                                                <HelpCircle className="w-5 h-5 text-red-400" />
+                                sectorData.error ? (
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
+                                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
+                                        <h3 className="text-lg font-bold mb-2">섹터 분석 데이터를 불러올 수 없습니다</h3>
+                                        <p className="text-xs opacity-80 leading-relaxed mb-4">
+                                            {sectorData.error}
+                                        </p>
+                                        <button onClick={() => handleGlobalSearch("sector")}
+                                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                            다시 시도
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {showEasy && (
+                                            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex gap-3 animate-in slide-in-from-top-2">
+                                                <div className="bg-red-500/20 p-2 rounded-lg h-fit">
+                                                    <HelpCircle className="w-5 h-5 text-red-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-red-400 mb-1">초보자 가이드 모드 활성화됨 (섹터 매트릭스)</h4>
+                                                    <p className="text-xs text-gray-300 leading-relaxed">
+                                                        현재 종목이 속한 산업(섹터) 전체 평균 및 코스피/코스닥 시장 지수와 성적을 나란히 비교해 드립니다. 이를 통해 이 회사가 업계 평균보다 장사를 잘하고 있는지 직관적으로 알 수 있습니다.
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-red-400 mb-1">초보자 가이드 모드 활성화됨 (섹터 매트릭스)</h4>
-                                                <p className="text-xs text-gray-300 leading-relaxed">
-                                                    현재 종목이 속한 산업(섹터) 전체 평균 및 코스피/코스닥 시장 지수와 성적을 나란히 비교해 드립니다. 이를 통해 이 회사가 업계 평균보다 장사를 잘하고 있는지 직관적으로 알 수 있습니다.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
                                     {(() => {
                                         const sectorSections = [
                                             {
@@ -949,7 +996,7 @@ function AnalysisContent() {
                                                             
                                                             <div className="h-[300px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={cat.chart_data}>
+                                                                    <LineChart data={cat.chart_data || []}>
                                                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                                                         <XAxis dataKey="period" stroke="#4b5563" fontSize={11} tickLine={false} axisLine={false} dy={15} />
                                                                         <YAxis stroke="#4b5563" fontSize={11} tickLine={false} axisLine={false} width={40} />
@@ -970,6 +1017,7 @@ function AnalysisContent() {
                                     );
                                     })()}
                                 </div>
+                                )
                             ) : <div className="text-center py-32 bg-white/5 rounded-[3rem] border border-dashed border-white/10"><PieChart className="w-20 h-20 text-red-500/20 mx-auto mb-6" /><p className="text-gray-400 font-black tracking-[0.3em] text-sm uppercase">Sector Matrix Stand-By</p></div>}
                         </div>
                     )}
@@ -989,6 +1037,18 @@ function AnalysisContent() {
                             </div>
                             {peerLoading ? (
                                 <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">피어 데이터 분석 중...</p></div>
+                            ) : peerData?.status === "error" ? (
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
+                                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
+                                    <h3 className="text-lg font-bold mb-2">동종 업계 라이벌 비교 실패</h3>
+                                    <p className="text-xs opacity-80 leading-relaxed mb-4">
+                                        {peerData.message}
+                                    </p>
+                                    <button onClick={fetchPeer}
+                                        className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                        다시 시도
+                                    </button>
+                                </div>
                             ) : peerData?.data && peerData.data.length > 0 ? (
                                 <div className="space-y-4 animate-in fade-in duration-300">
                                     {showEasy && (

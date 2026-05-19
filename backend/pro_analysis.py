@@ -88,11 +88,18 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
             beta = info.get("beta") or 1
             name = info.get("shortName") or info.get("longName") or symbol
 
+        def safe_float(v):
+            try:
+                if v is None or str(v).strip() in ["", "-", "N/A", "NaN", "nan"]: return 0.0
+                return float(str(v).replace(",", ""))
+            except:
+                return 0.0
+
         # --- Score Logic ---
         
         # 1. Value (가치)
         value_score = 50
-        per_f = float(per) if per else 0
+        per_f = safe_float(per)
         if per_f > 0:
             if per_f < 10: value_score = 90
             elif per_f < 15: value_score = 75
@@ -100,14 +107,14 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
             elif per_f < 40: value_score = 35
             else: value_score = 15
         
-        pbr_f = float(pbr) if pbr else 0
+        pbr_f = safe_float(pbr)
         if pbr_f > 0 and pbr_f < 1:
             value_score = min(100, value_score + 15)
 
         # 2. Growth (성장)
         growth_score = 50
-        rev_g = float(revenue_growth) if revenue_growth else 0
-        earn_g = float(earnings_growth) if earnings_growth else 0
+        rev_g = safe_float(revenue_growth)
+        earn_g = safe_float(earnings_growth)
         avg_growth = (rev_g + earn_g) / 2 * 100
         if avg_growth > 30: growth_score = 90
         elif avg_growth > 15: growth_score = 75
@@ -142,8 +149,8 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
 
         # 4. Quality (수익성)
         quality_score = 50
-        roe_pct = float(roe) * 100 if roe else 0
-        margin_pct = float(margin) * 100 if margin else 0
+        roe_pct = safe_float(roe) * 100
+        margin_pct = safe_float(margin) * 100
         if roe_pct > 20 and margin_pct > 15: quality_score = 90
         elif roe_pct > 12 and margin_pct > 8: quality_score = 70
         elif roe_pct > 5: quality_score = 50
@@ -152,8 +159,8 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
 
         # 5. Stability (안정성)
         stability_score = 50
-        de_ratio = float(debt_equity) if debt_equity else 0
-        beta_f = float(beta) if beta else 1
+        de_ratio = safe_float(debt_equity)
+        beta_f = safe_float(beta) or 1.0
         if de_ratio < 50 and beta_f < 1: stability_score = 85
         elif de_ratio < 100 and beta_f < 1.3: stability_score = 65
         elif de_ratio < 200: stability_score = 45
@@ -197,6 +204,14 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
                 return float(val) if val is not None else 0
             except:
                 return 0
+
+        def safe_float(v):
+            try:
+                if v is None or str(v).strip() in ["", "-", "N/A", "NaN", "nan"]:
+                    return 0.0
+                return float(str(v).replace(",", ""))
+            except:
+                return 0.0
 
         symbol = urllib.parse.unquote(symbol)
         
@@ -420,12 +435,12 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         else: f_details.append(f"❌ ROE 부족 ({roe_val:.1f}%)")
 
         ratios = {
-            "PER": round(float(naver_data.get("per") or info.get("trailingPE") or 0), 1),
-            "PBR": round(float(naver_data.get("pbr") or info.get("priceToBook") or 0), 2),
+            "PER": round(safe_float(naver_data.get("per") or info.get("trailingPE") or 0), 1),
+            "PBR": round(safe_float(naver_data.get("pbr") or info.get("priceToBook") or 0), 2),
             "ROE": f"{roe_val:.1f}%",
             "부채비율": f"{debt_ratio:.0f}%",
             "유동비율": f"{current_ratio:.1f}",
-            "영업이익률": f"{float(nav_summary.get('operating_margin') or info.get('operatingMargins', 0)*100):.1f}%",
+            "영업이익률": f"{safe_float(nav_summary.get('operating_margin') or info.get('operatingMargins', 0)*100):.1f}%",
             "매출총이익률": f"{gross_margin:.1f}%",
             "자산회전율": f"{asset_turnover:.2f}"
         }

@@ -645,7 +645,8 @@ def get_watchlist_events(symbols: str = ""):
 
                 if results:
                     break  # 첫 번째 시도에서 데이터 나오면 KQ fallback 불필요
-            except:
+            except Exception as e:
+                print(f"[fetch_yf Error for {attempt_sym}]: {e}")
                 continue
         return results
 
@@ -656,12 +657,14 @@ def get_watchlist_events(symbols: str = ""):
         for future in as_completed(futures, timeout=20):
             try:
                 res = future.result()
+                print(f"fetch_yf result: {res}")
                 # DART에서 이미 수집된 한국 종목의 실적/배당은 yfinance로 중복 추가 안 함
                 dart_keys = {(e["symbol"], e["type"]) for e in events if e.get("source") == "DART"}
                 for r in res:
                     if (r["symbol"], r["type"]) not in dart_keys:
                         events.append(r)
-            except:
+            except Exception as e:
+                print(f"Executor Error: {e}")
                 pass
 
     # 날짜순 정렬 (과거 포함, 최근 60일 이후부터 표시)

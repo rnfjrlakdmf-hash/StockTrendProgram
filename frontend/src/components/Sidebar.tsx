@@ -606,6 +606,7 @@ export default function Sidebar() {
                                     <Link
                                         key={stock.symbol}
                                         href="/watchlist"
+                                        onClick={() => setIsMobileOpen(false)}
                                         className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
@@ -620,6 +621,7 @@ export default function Sidebar() {
                                 ))}
                                 <Link
                                     href="/watchlist"
+                                    onClick={() => setIsMobileOpen(false)}
                                     className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-2 py-1 transition-colors font-bold"
                                 >
                                     전체보기 →
