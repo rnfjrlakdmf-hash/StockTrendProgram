@@ -453,14 +453,14 @@ function DiscoveryContent() {
     }, [stock?.symbol, activeTab]);
 
     // [WebSocket Integration] Real-time Price Updates
-    // Replaces the old 5-second polling interval
+    // KIS 키 입력 시: 국내(H0STCNT0) + 해외(HDFSCNT0) 모두 실시간
+    // KIS 키 없을 시: 10초 폴링 fallback
     const { realtimeData, isConnected } = useStockSocket(stock?.symbol || null);
 
     useEffect(() => {
         if (realtimeData && stock) {
             setStock(prev => {
                 if (!prev) return null;
-                // Avoid update if price hasn't changed to prevent unnecessary re-renders
                 if (prev.price === realtimeData.price) return prev;
 
                 return {
@@ -476,8 +476,31 @@ function DiscoveryContent() {
                     details: prev.details
                 } as StockData;
             });
+
+            // [New] KIS 실시간: 해외주식 extendedHours 위젯 가격도 즉시 업데이트
+            // 폴링(10초) 대신 WebSocket 체결가로 active session 가격 덮어씀
+            if (extendedHours && realtimeData.price) {
+                const newPrice = parseFloat(String(realtimeData.price).replace(/,/g, ''));
+                if (!isNaN(newPrice)) {
+                    setExtendedHours((prev: any) => {
+                        if (!prev) return prev;
+                        const isActive = prev.market_status === 'OPEN';
+                        const extActive = prev.extended?.is_active;
+                        if (isActive) {
+                            // 정규장 실시간 업데이트
+                            return { ...prev, regular: { ...prev.regular, price: newPrice } };
+                        } else if (extActive && prev.extended) {
+                            // 장외(프리/에프터) 실시간 업데이트
+                            return { ...prev, extended: { ...prev.extended, price: newPrice } };
+                        }
+                        return prev;
+                    });
+                    setExtendedLastUpdated(Date.now());
+                }
+            }
         }
     }, [realtimeData]);
+
 
     // [New] Fetch Real-time Exchange Rate
     useEffect(() => {
