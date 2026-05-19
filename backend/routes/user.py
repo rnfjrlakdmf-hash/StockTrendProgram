@@ -29,7 +29,9 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
     items = get_watchlist(user_id)
     print(f"[Watchlist] Found {len(items)} items for {user_id}")
     
-    from stock_data import GLOBAL_KOREAN_NAMES
+    from stock_data import GLOBAL_KOREAN_NAMES, NAME_CACHE, get_korean_stock_name
+    import concurrent.futures
+
     try:
         from stock_names import STOCK_MAP
         local_code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str)}
@@ -37,31 +39,55 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
         local_code_to_name = {}
 
     data = []
+    
+    # 1단계: 로컬 맵핑 및 캐시를 통해 최대한 빨리 이름 찾기
+    missing_symbols = []
     for row in items:
         sym = row[0]
-        added_p = row[1] if len(row) > 1 else 0
-        qty = row[2] if len(row) > 2 else 0
-        
-        # 1. Check Global Mapping (US Stocks)
+        base_sym = sym.split(".")[0]
         name = sym
+        
         if sym in GLOBAL_KOREAN_NAMES:
             names = GLOBAL_KOREAN_NAMES[sym]
             name = names[0] if isinstance(names, list) else names
-        # 2. Check Local KOR Mapping (KOSPI/KOSDAQ)
         elif sym in local_code_to_name:
             name = local_code_to_name[sym]
+        elif base_sym in local_code_to_name:
+            name = local_code_to_name[base_sym]
+        elif sym in NAME_CACHE:
+            name = NAME_CACHE[sym]
         else:
-            # Strip suffixes for KOR search if needed
-            base_sym = sym.split(".")[0]
-            if base_sym in local_code_to_name:
-                name = local_code_to_name[base_sym]
-            
+            # 매핑도 없고 캐시도 없는 경우 외부 조회가 필요함
+            missing_symbols.append(sym)
+            name = sym # 일단 기본값
+
         data.append({
             "symbol": sym, 
             "name": name, 
-            "added_price": added_p or 0,
-            "quantity": qty or 0
+            "added_price": row[1] if len(row) > 1 else 0,
+            "quantity": row[2] if len(row) > 2 else 0
         })
+
+    # 2단계: 누락된 종목 이름 병렬 조회 (최초 1회만 느리고 이후엔 빠름)
+    if missing_symbols:
+        print(f"[Watchlist] Fetching names for missing symbols: {missing_symbols}")
+        def fetch_name(s):
+            try:
+                res = get_korean_stock_name(s)
+                if res: return s, res
+            except: pass
+            return s, s
+            
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(missing_symbols), 10)) as executor:
+            future_to_sym = {executor.submit(fetch_name, s): s for s in missing_symbols}
+            for future in concurrent.futures.as_completed(future_to_sym):
+                s, fetched_name = future.result()
+                NAME_CACHE[s] = fetched_name
+                # data 배열 업데이트
+                for d in data:
+                    if d["symbol"] == s:
+                        d["name"] = fetched_name
+
     return {"status": "success", "data": data, "user_id_echo": user_id}
 
 @router.get("/watchlist/closing-summary")
