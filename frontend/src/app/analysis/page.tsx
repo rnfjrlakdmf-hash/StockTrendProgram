@@ -278,7 +278,7 @@ function AnalysisContent() {
             if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             
             // Background Update
-            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`);
+            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`, window.location.origin);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
             url.searchParams.append("v", "4.9.5");
             url.searchParams.append("t", new Date().getTime().toString());
@@ -293,7 +293,7 @@ function AnalysisContent() {
 
         if (!isBackground) setSectorLoading(true);
         try {
-            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`);
+            const url = new URL(`${API_BASE_URL}/api/analysis/sector-analysis/${sym}`, window.location.origin);
             if (sector_id) url.searchParams.append("sector_id", sector_id);
             url.searchParams.append("v", "4.9.5");
             url.searchParams.append("t", new Date().getTime().toString());
