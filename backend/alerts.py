@@ -346,13 +346,44 @@ def check_daily_summary(alerts, triggered_list):
                 continue
 
             summary_lines = []
-            for sym in watchlist:
+            
+            # 수익 합계 계산용
+            total_profit_loss = 0
+            has_holdings = False
+
+            for item in watchlist:
+                sym = item[0]
+                added_p = item[1] if len(item) > 1 else 0
+                qty = item[2] if len(item) > 2 else 0
+
                 q = get_simple_quote(sym)
                 if q:
-                    # Formatting: SYMBOL: PRICE (CHANGE%)
-                    icon = "🔴" if q.get("change_percent", "").startswith("+") else "🔵"
-                    summary_lines.append(f"{icon} *{sym}*: {q.get('price')} ({q.get('change_percent')})")
+                    current_price = 0
+                    try:
+                        import re
+                        current_price = float(re.sub(r'[^0-9.]', '', str(q.get('price', '0'))))
+                    except:
+                        pass
+                        
+                    icon = "🔴" if str(q.get("change_percent", "")).startswith("+") else "🔵"
+                    
+                    # 수량과 단가가 있는 경우 총 수익 계산
+                    if added_p > 0 and qty > 0 and current_price > 0:
+                        diff = (current_price - added_p) * qty
+                        pct = ((current_price - added_p) / added_p) * 100
+                        total_profit_loss += diff
+                        has_holdings = True
+                        
+                        diff_str = f"+{int(diff):,}원" if diff > 0 else f"{int(diff):,}원"
+                        pct_str = f"+{pct:.2f}%" if pct > 0 else f"{pct:.2f}%"
+                        
+                        summary_lines.append(f"{icon} *{sym}*: {q.get('price')} (수익: {diff_str} / {pct_str})")
+                    else:
+                        summary_lines.append(f"{icon} *{sym}*: {q.get('price')} ({q.get('change_percent')})")
             
+            if has_holdings:
+                summary_lines.append(f"\n💰 *오늘의 포트폴리오 총 수익*: {'+' if total_profit_loss > 0 else ''}{int(total_profit_loss):,}원")
+
             if summary_lines:
                 summary_text = "\n".join(summary_lines)
                 trigger_alert(alert, 0, triggered_list, summary_text)

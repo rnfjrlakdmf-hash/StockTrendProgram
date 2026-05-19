@@ -178,8 +178,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                     }`}>
                                                         {(() => {
                                                             const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                            const diff = curP - (item.added_price || 0);
-                                                            return `${diff > 0 ? '+' : ''}${diff.toLocaleString()}원`;
+                                                            const perShareDiff = curP - (item.added_price || 0);
+                                                            const totalDiff = perShareDiff * (item.quantity && item.quantity > 0 ? item.quantity : 1);
+                                                            const pct = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
+                                                            return `${totalDiff > 0 ? '+' : ''}${totalDiff.toLocaleString()}원 (${pct > 0 ? '+' : ''}${pct.toFixed(2)}%)`;
                                                         })()}
                                                     </div>
                                                 )}
