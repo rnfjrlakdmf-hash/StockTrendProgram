@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
@@ -33,7 +33,7 @@ function AnalysisContent() {
 
     const [symbol, setSymbol] = useState("");
 
-    // [Fix] URL ?뚮씪誘명꽣濡??꾨떖???щ낵 ?먮룞 濡쒕뵫
+    // [Fix] URL 파라미터로 전달된 심볼 자동 로딩
     useEffect(() => {
         if (urlSymbol && urlSymbol !== symbol) {
             setSymbol(urlSymbol);
@@ -98,7 +98,7 @@ function AnalysisContent() {
         } catch(e) {}
     };
 
-    // [v1.9.0] 媛쒕퀎 遺꾩꽍 ?ㅽ뻾???꾪븳 ?寃??щ낵 ?곹깭??
+    // [v1.9.0] 개별 분석 실행을 위한 타겟 심볼 상태들
     const [quantSymbol, setQuantSymbol] = useState("");
     const [finSymbol, setFinSymbol] = useState("");
     const [secSymbol, setSecSymbol] = useState("");
@@ -109,7 +109,7 @@ function AnalysisContent() {
     useEffect(() => {
         if (!symbol || stockLoading) return;
         const targetSymbol = symbol.trim();
-        if (/[????????媛-??/.test(targetSymbol)) return;
+        if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) return;
         if (targetSymbol.length < 5) return;
 
         if (activeTab === "sector" && secSymbol !== targetSymbol) {
@@ -131,7 +131,7 @@ function AnalysisContent() {
             targetSymbol = localTicker;
             setSymbol(targetSymbol);
             console.log("[Search] Resolved instantly via local mapping:", targetSymbol);
-        } else if (/[????????媛-??/.test(targetSymbol)) {
+        } else if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol)) {
             setStockLoading(true);
             try {
                 const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}`;
@@ -141,7 +141,7 @@ function AnalysisContent() {
                     targetSymbol = json.data[0].code;
                     setSymbol(targetSymbol);
                 } else {
-                    alert(`?대떦 醫낅ぉ('${targetSymbol}')??李얠쓣 ???놁뒿?덈떎.`);
+                    alert(`해당 종목('${targetSymbol}')을 찾을 수 없습니다.`);
                     setStockLoading(false);
                     return;
                 }
@@ -319,11 +319,11 @@ function AnalysisContent() {
             if (json.status === "success") {
                 setPeerData(json);
             } else {
-                setPeerData({ status: "error", message: json.message || "?숈쥌 ?낃퀎 鍮꾧탳 ?곗씠?곕? 遺덈윭?ㅻ뒗 ?꾩쨷 ?ㅻ쪟媛 諛쒖깮?덉뒿?덈떎." });
+                setPeerData({ status: "error", message: json.message || "동종 업계 비교 데이터를 불러오는 도중 오류가 발생했습니다." });
             }
         } catch (err: any) { 
             console.error(err); 
-            setPeerData({ status: "error", message: err.message || "?쒕쾭 ?듭떊???ㅽ뙣?덉뒿?덈떎. 醫낅ぉ肄붾뱶瑜??ㅼ떆 ?뺤씤??二쇱꽭??" });
+            setPeerData({ status: "error", message: err.message || "서버 통신에 실패했습니다. 종목코드를 다시 확인해 주세요." });
         }
         finally { setPeerLoading(false); }
     };
@@ -348,7 +348,7 @@ function AnalysisContent() {
 
     const RadarChart = ({ factors }: { factors: any }) => {
         const keys = ["value", "growth", "momentum", "quality", "stability"];
-        const labels = ["媛移?, "?깆옣", "紐⑤찘?", "?섏씡??, "?덉젙??];
+        const labels = ["가치", "성장", "모멘텀", "수익성", "안정성"];
         const cx = 150, cy = 150, r = 110;
         const getPoint = (index: number, score: number) => {
             const angle = (Math.PI * 2 * index / 5) - Math.PI / 2;
@@ -373,13 +373,13 @@ function AnalysisContent() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black notranslate" translate="no">
-            <Header title="?꾨줈 遺꾩꽍" subtitle="?곗씠??湲곕컲 醫낅ぉ ?뺣? 寃吏? />
+            <Header title="프로 분석" subtitle="데이터 기반 종목 정밀 검진" />
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
                 <div className="max-w-3xl mx-auto w-full">
                     <div className="relative group max-w-2xl mx-auto w-full">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 z-10" />
-                        <input type="text" placeholder="醫낅ぉ肄붾뱶 ?낅젰 (?? 005930, ?쇱꽦?꾩옄)"
+                        <input type="text" placeholder="종목코드 입력 (예: 005930, 삼성전자)"
                             className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-lg font-bold focus:outline-none transition-colors"
                             value={symbol}
                             onChange={(e) => {
@@ -476,9 +476,9 @@ function AnalysisContent() {
 
                                                     return (
                                                         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm border ${containerClass}`}>
-                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>?뺢퇋??/span>
+                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>정규장</span>
                                                             <span className="text-lg font-black tracking-tight font-mono">
-                                                                {isPos ? '??' : isNeg ? '??' : ''}{valNum.toLocaleString()}
+                                                                {isPos ? '▲ ' : isNeg ? '▼ ' : ''}{valNum.toLocaleString()}
                                                             </span>
                                                             <span className="text-sm font-bold opacity-80 ml-1">
                                                                 ({isPos ? '+' : isNeg ? '-' : ''}{rawRate}%)
@@ -502,7 +502,7 @@ function AnalysisContent() {
                                                             const isPos = rate > 0;
                                                             const isNeg = rate < 0;
                                                             const badgeClass = isPos ? "bg-red-500 text-white" : isNeg ? "bg-blue-500 text-white" : "bg-indigo-900/40 text-indigo-300";
-                                                            return <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>?쇨컙嫄곕옒 (NXT)</span>;
+                                                            return <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>야간거래 (NXT)</span>;
                                                         })()}
                                                         <span className="text-lg font-black tracking-tight font-mono">
                                                             {(() => {
@@ -513,7 +513,7 @@ function AnalysisContent() {
                                                                 let valStr = nxtValStr.replace(/[^0-9.]/g, "");
                                                                 let valNum = Number(valStr);
                                                                 if (isNaN(valNum)) valNum = 0;
-                                                                return `${isPos ? '??' : isNeg ? '??' : ''}${valNum.toLocaleString()}`;
+                                                                return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
                                                             })()}
                                                         </span>
                                                         <span className="text-sm font-bold opacity-80 ml-1">
@@ -532,17 +532,17 @@ function AnalysisContent() {
                                     </div>
                                     <div className="flex gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                         <div className="bg-black/40 px-4 py-3 rounded-2xl border border-white/5">
-                                            <p className="mb-1 opacity-50">?쒓?珥앹븸</p>
+                                            <p className="mb-1 opacity-50">시가총액</p>
                                             <p className="text-sm text-gray-300">{stockInfo.market_cap_str || stockInfo.market_cap || "N/A"}</p>
                                         </div>
                                         {quantData && (
                                             <>
                                                 <div className="bg-white/5 px-4 py-3 rounded-2xl">
-                                                    <p className="mb-1 opacity-50">醫낇빀 ?먯닔</p>
-                                                    <p className={`text-xl ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}??/p>
+                                                    <p className="mb-1 opacity-50">종합 점수</p>
+                                                    <p className={`text-xl ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}점</p>
                                                 </div>
                                                 <div className={`px-5 py-3 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex flex-col justify-center`}>
-                                                    <p className="mb-1 opacity-70 text-black">?깃툒</p>
+                                                    <p className="mb-1 opacity-70 text-black">등급</p>
                                                     <p className="text-xl font-black text-black">{quantData.grade}</p>
                                                 </div>
                                             </>
@@ -553,7 +553,7 @@ function AnalysisContent() {
                                     <div className="mt-6 pt-6 border-t border-white/5">
                                         <div className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
                                             <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                                            湲곗뾽 媛쒖슂
+                                            기업 개요
                                         </div>
                                         <p className="text-xs text-gray-400 leading-relaxed max-h-24 overflow-y-auto pr-2 custom-scrollbar">
                                             {stockInfo.description}
@@ -568,7 +568,7 @@ function AnalysisContent() {
                         <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : ""}`} />
                         <div className="text-left leading-none">
                             <p className="text-[10px] uppercase tracking-widest mb-1 opacity-70">Guide Mode</p>
-                            <p className="text-xs">{showEasy ? <span>媛?대뱶 ?꾧린</span> : <span>媛?대뱶 耳쒓린</span>}</p>
+                            <p className="text-xs">{showEasy ? <span>가이드 끄기</span> : <span>가이드 켜기</span>}</p>
                         </div>
                     </button>
                 </div>
@@ -580,9 +580,9 @@ function AnalysisContent() {
                     <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full max-w-2xl">
                         {[
                             { id: "quant", label: "TurboQuant", icon: Zap },
-                            { id: "financial", label: "?щТ 遺꾩꽍", icon: Shield },
-                            { id: "sector", label: "?뱁꽣 遺꾩꽍", icon: PieChart },
-                            { id: "peer", label: "?숈쥌鍮꾧탳", icon: Users }
+                            { id: "financial", label: "재무 분석", icon: Shield },
+                            { id: "sector", label: "섹터 분석", icon: PieChart },
+                            { id: "peer", label: "동종비교", icon: Users }
                         ].map((tab: any) => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
@@ -598,27 +598,27 @@ function AnalysisContent() {
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-amber-500/20 rounded-lg"><Zap className="w-5 h-5 text-amber-400" /></div>
-                                    <h3 className="font-bold whitespace-nowrap">TurboQuant ?뺣? 遺꾩꽍</h3>
+                                    <h3 className="font-bold whitespace-nowrap">TurboQuant 정밀 분석</h3>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("quant")}
                                     className="px-6 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    ???濡쒕뱶
+                                    퀀트 로드
                                 </button>
                             </div>
 
                             {quantLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">吏??遺꾩꽍 以?..</p></div>
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">지표 분석 중...</p></div>
                             ) : quantData ? (
                                 quantData.error ? (
                                     <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
                                         <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
-                                        <h3 className="text-lg font-bold mb-2">???遺꾩꽍 ?곗씠?곕? 遺덈윭?????놁뒿?덈떎</h3>
+                                        <h3 className="text-lg font-bold mb-2">퀀트 분석 데이터를 불러올 수 없습니다</h3>
                                         <p className="text-xs opacity-80 leading-relaxed mb-4">
                                             {quantData.error}
                                         </p>
                                         <button onClick={() => handleGlobalSearch("quant")}
                                             className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                            ?ㅼ떆 ?쒕룄
+                                            다시 시도
                                         </button>
                                     </div>
                                 ) : (
@@ -627,7 +627,7 @@ function AnalysisContent() {
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade || "N/A"}</div>
-                                                    <div><h3 className="text-lg font-bold">5異?????뺣? 吏꾨떒</h3><p className="text-xs text-gray-500">媛??⑺꽣蹂??먯닔? ?몃? 吏?쒕? ?뺤씤?섏꽭??/p></div>
+                                                    <div><h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3><p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p></div>
                                                 </div>
                                                 <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score || 0)}`}>{quantData.total_score || 0}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
                                             </div>
@@ -636,11 +636,11 @@ function AnalysisContent() {
                                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                                     {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
                                                         const factorGuide: Record<string, string> = {
-                                                            "value": "?꾩옱 二쇨?媛 踰뚭퀬 ?덈뒗 ?덉씠???ъ궛??鍮꾪빐 ?쇱? 鍮꾩떬吏瑜??섑??댁슂.",
-                                                            "growth": "?묐뀈蹂대떎 留ㅼ텧?대굹 ?댁씡???쇰쭏???섏뿀?붿?, ?뚯궗??洹쒕え媛 而ㅼ???以묒씤吏 蹂댁뿬以섏슂.",
-                                                            "momentum": "?щ엺?ㅼ쓽 愿?ш낵 二쇨? ?곸듅 ?먮쫫???쇰쭏??媛뺣젰?섍쾶 遺숈뿀?붿? 痢≪젙?댁슂.",
-                                                            "quality": "???덇낵 鍮뚮┛ ?덉쓣 ?⑹퀜 ?쇰쭏???뚯쭨諛곌린 ?μ궗瑜??깆떎?섍퀬 ?⑥쑉?곸쑝濡??덈뒗吏 ?뚮젮以띾땲??",
-                                                            "stability": "鍮뚮┛ ?덉씠 ?덈Т 留롮????딆?吏, 遺???꾪뿕 ?놁씠 ?뚯궗媛 ?쇰쭏???쇳듉?쒖? ?섑??댁슂."
+                                                            "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타내요.",
+                                                            "growth": "작년보다 매출이나 이익이 얼마나 늘었는지, 회사의 규모가 커지는 중인지 보여줘요.",
+                                                            "momentum": "사람들의 관심과 주가 상승 흐름이 얼마나 강력하게 붙었는지 측정해요.",
+                                                            "quality": "내 돈과 빌린 돈을 합쳐 얼마나 알짜배기 장사를 성실하고 효율적으로 했는지 알려줍니다.",
+                                                            "stability": "빌린 돈이 너무 많지는 않은지, 부도 위험 없이 회사가 얼마나 튼튼한지 나타내요."
                                                         };
                                                         return (
                                                             <div key={key} className={`flex flex-col items-center text-center p-3 rounded-2xl transition-all ${showEasy ? "bg-white/5 ring-1 ring-indigo-500/30" : ""}`}>
@@ -650,7 +650,7 @@ function AnalysisContent() {
                                                                 {/* [New] Guide Mode Explanation */}
                                                                 {showEasy && (
                                                                     <p className="text-[10px] text-indigo-300 leading-snug mt-2 mb-3 bg-indigo-500/10 p-2 rounded-lg italic">
-                                                                        {factorGuide[key] || "?⑺꽣蹂??몃? 吏?쒕? 遺꾩꽍 以묒엯?덈떎."}
+                                                                        {factorGuide[key] || "팩터별 세부 지표를 분석 중입니다."}
                                                                     </p>
                                                                 )}
  
@@ -670,7 +670,7 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )
-                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" /> <p className="text-gray-500">醫낅ぉ肄붾뱶瑜??낅젰?섎㈃ 5異????遺꾩꽍???쒖옉?⑸땲??/p> </div>}
+                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 5축 퀀트 분석을 시작합니다</p> </div>}
                         </div>
                     )}
 {activeTab === "financial" && (
@@ -678,26 +678,26 @@ function AnalysisContent() {
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-emerald-500/20 rounded-lg"><Shield className="w-5 h-5 text-emerald-400" /></div>
-                                    <h3 className="font-bold whitespace-nowrap">?щТ 嫄닿컯??吏꾨떒</h3>
+                                    <h3 className="font-bold whitespace-nowrap">재무 건강도 진단</h3>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("financial")}
                                     className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    嫄닿컯??痢≪젙
+                                    건강도 측정
                                 </button>
                             </div>
                             {financialLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">?щТ ?곗씠??遺꾩꽍 以?..</p></div>
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-emerald-400 mb-3" /><p className="text-gray-500">재무 데이터 분석 중...</p></div>
                             ) : financialData ? (
                                 financialData.error ? (
                                     <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
                                         <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
-                                        <h3 className="text-lg font-bold mb-2">?щТ 遺꾩꽍 ?곗씠?곕? 遺덈윭?????놁뒿?덈떎</h3>
+                                        <h3 className="text-lg font-bold mb-2">재무 분석 데이터를 불러올 수 없습니다</h3>
                                         <p className="text-xs opacity-80 leading-relaxed mb-4">
                                             {financialData.error}
                                         </p>
                                         <button onClick={() => handleGlobalSearch("financial")}
                                             className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                            ?ㅼ떆 ?쒕룄
+                                            다시 시도
                                         </button>
                                     </div>
                                 ) : (
@@ -708,32 +708,32 @@ function AnalysisContent() {
                                                     <HelpCircle className="w-5 h-5 text-emerald-400" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-sm font-bold text-emerald-400 mb-1">珥덈낫??媛?대뱶 紐⑤뱶 ?쒖꽦?붾맖</h4>
+                                                    <h4 className="text-sm font-bold text-emerald-400 mb-1">초보자 가이드 모드 활성화됨</h4>
                                                     <p className="text-xs text-gray-300 leading-relaxed">
-                                                        ?대젮???щТ ?⑹뼱?ㅼ쓣 ?뚭린 ?쎄쾶 湲곗뾽??'嫄닿컯 ?곹깭'??鍮꾩쑀?섏뿬 ?ㅻ챸???쒕┫寃뚯슂.
+                                                        어려운 재무 용어들을 알기 쉽게 기업의 '건강 상태'에 비유하여 설명해 드릴게요.
                                                     </p>
                                                 </div>
                                             </div>
                                         )}
                                         <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-6">
                                             <div className="flex items-center justify-between mb-6">
-                                                <div><h2 className="text-2xl font-black text-white">?덉쟾??諛??щТ 嫄닿컯??吏꾨떒</h2><p className="text-gray-400 text-sm">醫낅ぉ??湲곗큹 泥대젰怨??꾧린 愿由??λ젰???뺣? ?ㅼ틪?⑸땲??</p></div>
+                                                <div><h2 className="text-2xl font-black text-white">안전성 및 재무 건강도 진단</h2><p className="text-gray-400 text-sm">종목의 기초 체력과 위기 관리 능력을 정밀 스캔합니다.</p></div>
                                                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getGradeStyle(financialData.grade)} flex items-center justify-center text-3xl font-black shadow-xl`}>{financialData.grade || "N/A"}</div>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                                 <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                    <div className="flex items-center gap-2 mb-6"><Shield className="w-4 h-4 text-emerald-400" /><h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3媛쒕뀈 ?덉쟾??異붿씠</h4></div>
+                                                    <div className="flex items-center gap-2 mb-6"><Shield className="w-4 h-4 text-emerald-400" /><h4 className="text-xs font-black uppercase tracking-widest text-emerald-300">3개년 안전성 추이</h4></div>
                                                     <div className="h-[200px] w-full">
                                                         {financialData?.charts?.stability && Array.isArray(financialData.charts.stability) && financialData.charts.stability.length > 0 ? (
-                                                            <ResponsiveContainer width="100%" height="100%"><LineChart data={financialData.charts.stability}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="遺梨꾨퉬?? stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} /><Line type="monotone" dataKey="?뱀쥖鍮꾩쑉" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer>
+                                                            <ResponsiveContainer width="100%" height="100%"><LineChart data={financialData.charts.stability}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="부채비율" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} /><Line type="monotone" dataKey="당좌비율" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} /></LineChart></ResponsiveContainer>
                                                         ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
                                                     </div>
                                                 </div>
                                                 <div className="bg-black/40 rounded-3xl p-6 border border-white/5">
-                                                    <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-4 h-4 text-indigo-400" /><h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3媛쒕뀈 ?섏씡 ?⑥쑉 異붿씠</h4></div>
+                                                    <div className="flex items-center gap-2 mb-6"><TrendingUp className="w-4 h-4 text-indigo-400" /><h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">3개년 수익 효율 추이</h4></div>
                                                     <div className="h-[200px] w-full">
                                                         {financialData?.charts?.profitability && Array.isArray(financialData.charts.profitability) && financialData.charts.profitability.length > 0 ? (
-                                                            <ResponsiveContainer width="100%" height="100%"><AreaChart data={financialData.charts.profitability}><defs><linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} /><Area type="monotone" dataKey="?곸뾽?댁씡瑜? stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} /></AreaChart></ResponsiveContainer>
+                                                            <ResponsiveContainer width="100%" height="100%"><AreaChart data={financialData.charts.profitability}><defs><linearGradient id="colorROE" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} /><XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px' }} /><Area type="monotone" dataKey="ROE" stroke="#6366f1" fillOpacity={1} fill="url(#colorROE)" strokeWidth={3} /><Area type="monotone" dataKey="영업이익률" stroke="#8b5cf6" fillOpacity={0.1} strokeWidth={2} /></AreaChart></ResponsiveContainer>
                                                         ) : <div className="h-full flex items-center justify-center text-gray-600 text-xs font-bold uppercase tracking-widest">No Trend Data</div>}
                                                     </div>
                                                 </div>
@@ -742,13 +742,13 @@ function AnalysisContent() {
                                                 <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                                            ?뱪 Altman Z-Score
-                                                            {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">遺???꾪뿕瑜?/span>}
+                                                            📐 Altman Z-Score
+                                                            {showEasy && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">부도 위험률</span>}
                                                         </h4>
                                                     </div>
                                                     {showEasy && (
                                                         <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                            ?뱀옣 ?곕윭吏??꾪뿕(遺???꾪뿕)???덈뒗吏 泥댄겕?댁슂. <span className="text-emerald-400 font-bold">3.0 ?댁긽?대㈃ '媛뺤쿋 泥대젰'</span>??媛吏??꾩＜ ?쇳듉???곹깭?덉슂!
+                                                            당장 쓰러질 위험(부도 위험)이 있는지 체크해요. <span className="text-emerald-400 font-bold">3.0 이상이면 '강철 체력'</span>을 가진 아주 튼튼한 상태예요!
                                                         </p>
                                                     )}
                                                     <div className="flex items-end gap-3">
@@ -761,13 +761,13 @@ function AnalysisContent() {
                                                 <div className="bg-black/40 rounded-2xl p-4 border border-white/10 group">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <h4 className="text-sm font-bold text-gray-100 flex items-center gap-1.5 whitespace-nowrap">
-                                                            <span>?룍截?Piotroski F-Score</span>
-                                                            {showEasy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">醫낇빀 湲곗큹泥대젰</span> : null}
+                                                            <span>🏋️ Piotroski F-Score</span>
+                                                            {showEasy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">종합 기초체력</span> : null}
                                                         </h4>
                                                     </div>
                                                     {showEasy && (
                                                         <p className="text-[11px] text-gray-400 mb-2 leading-relaxed italic">
-                                                            ?뚯궗??<span className="text-emerald-400 font-bold">'洹쇱쑁怨?泥댁?諛?</span>??遊낅땲?? ?댁씡? ?섍퀬 鍮싳? 以꾩뿀?붿? 9?④퀎瑜??꾧꺽??寃吏꾪븳 湲곗큹泥대젰 ?먯닔?덉슂. 7???댁긽?대㈃ ?곗닔?댁슂.
+                                                            회사의 <span className="text-emerald-400 font-bold">'근육과 체지방'</span>을 봅니다. 이익은 늘고 빚은 줄었는지 9단계를 엄격히 검진한 기초체력 점수예요. 7점 이상이면 우수해요.
                                                         </p>
                                                     )}
                                                     <div className="flex items-end gap-3">
@@ -780,11 +780,11 @@ function AnalysisContent() {
  
                                         {/* F-Score Details */}
                                         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                            <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score ?몃? ??ぉ</h4>
+                                            <h4 className="font-bold text-sm text-gray-300 mb-3">F-Score 세부 항목</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                                 {(Array.isArray(financialData?.f_score?.details) ? financialData.f_score.details : []).map((d: string, i: number) => (
                                                     <div key={i} className="text-xs py-2 px-3 bg-black/40 rounded-xl border border-white/5 flex items-center gap-2">
-                                                        <span className="text-emerald-500">??/span> {d}
+                                                        <span className="text-emerald-500">✓</span> {d}
                                                     </div>
                                                 ))}
                                             </div>
@@ -792,18 +792,18 @@ function AnalysisContent() {
  
                                         {/* Key Ratios */}
                                         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                                            <h4 className="font-bold text-sm text-gray-300 mb-3">?듭떖 ?щТ 鍮꾩쑉</h4>
+                                            <h4 className="font-bold text-sm text-gray-300 mb-3">핵심 재무 비율</h4>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {Object.entries(financialData?.ratios && typeof financialData.ratios === 'object' ? financialData.ratios : {}).map(([k, v]: any) => {
                                                     const getExplanation = (key: string) => {
-                                                        if (key === "PER") return "踰꾨뒗 ?λ젰 ?鍮?'?꾩옱 媛寃⑺몴'";
-                                                        if (key === "PBR") return "媛吏??먯궛 ?鍮?'?꾩옱 媛寃⑺몴'";
-                                                        if (key === "ROE") return "?ъ옄湲??鍮?'洹쇱꽦' (?뚯궗??媛?깅퉬)";
-                                                        if (key === "遺梨꾨퉬??) return "紐몃Т寃??鍮?'泥댁?諛? (鍮뚮┛ ??";
-                                                        if (key === "?좊룞鍮꾩쑉") return "吏媛???'鍮꾩긽湲? (?꾧툑 ?ъ쑀)";
-                                                        if (key === "?곸뾽?댁씡瑜?) return "1留뚯썝?댁튂 ?붿븘 ?쇰쭏瑜??④린??;
-                                                        if (key === "留ㅼ텧珥앹씠?듬쪧") return "臾쇨굔 ?쇱????④릿 ?쒖닔 留덉쭊";
-                                                        if (key === "?먯궛?뚯쟾??) return "?먯궛???쇰쭏??遺吏?고엳 援대━??;
+                                                        if (key === "PER") return "버는 능력 대비 '현재 가격표'";
+                                                        if (key === "PBR") return "가진 자산 대비 '현재 가격표'";
+                                                        if (key === "ROE") return "투자금 대비 '근성' (회사의 가성비)";
+                                                        if (key === "부채비율") return "몸무게 대비 '체지방' (빌린 돈)";
+                                                        if (key === "유동비율") return "지갑 속 '비상금' (현금 여유)";
+                                                        if (key === "영업이익률") return "1만원어치 팔아 얼마를 남기나";
+                                                        if (key === "매출총이익률") return "물건 떼와서 남긴 순수 마진";
+                                                        if (key === "자산회전율") return "자산을 얼마나 부지런히 굴리나";
                                                         return "";
                                                     };
                                                     return (
@@ -822,7 +822,7 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )
-                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" /> <p className="text-gray-500">醫낅ぉ肄붾뱶瑜??낅젰?섎㈃ ?щТ 遺꾩꽍???쒖옉?⑸땲??/p> </div>}
+                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p> </div>}
                         </div>
                     )}
 
@@ -834,7 +834,7 @@ function AnalysisContent() {
                                         <div className="p-3 bg-red-500/20 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]"><PieChart className="w-6 h-6 text-red-500" /></div>
                                         <h3 className="text-2xl font-black text-white tracking-tighter uppercase">Deep-Sector-Matrix v4.9.5</h3>
                                     </div>
-                                    <p className="text-gray-400 text-sm font-medium">???醫낅ぉ vs ?뱁꽣 ?됯퇏 vs ?쒖옣 吏??(17媛?吏??珥덉젙諛 遺꾩꽍)</p>
+                                    <p className="text-gray-400 text-sm font-medium">대상 종목 vs 섹터 평균 vs 시장 지수 (17개 지표 초정밀 분석)</p>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <select
@@ -844,7 +844,7 @@ function AnalysisContent() {
                                     >
                                         {(Array.isArray(sectorData?.compare_sectors) ? sectorData.compare_sectors : []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}</option>)}
                                     </select>
-                                    <button onClick={() => handleGlobalSearch("sector")} className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-black shadow-[0_10px_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 text-white">?곗씠??媛깆떊</button>
+                                    <button onClick={() => handleGlobalSearch("sector")} className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-black shadow-[0_10px_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 text-white">데이터 갱신</button>
                                 </div>
                             </div>
 
@@ -854,13 +854,13 @@ function AnalysisContent() {
                                 sectorData.error ? (
                                     <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
                                         <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
-                                        <h3 className="text-lg font-bold mb-2">?뱁꽣 遺꾩꽍 ?곗씠?곕? 遺덈윭?????놁뒿?덈떎</h3>
+                                        <h3 className="text-lg font-bold mb-2">섹터 분석 데이터를 불러올 수 없습니다</h3>
                                         <p className="text-xs opacity-80 leading-relaxed mb-4">
                                             {sectorData.error}
                                         </p>
                                         <button onClick={() => handleGlobalSearch("sector")}
                                             className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                            ?ㅼ떆 ?쒕룄
+                                            다시 시도
                                         </button>
                                     </div>
                                 ) : (
@@ -871,9 +871,9 @@ function AnalysisContent() {
                                                     <HelpCircle className="w-5 h-5 text-red-400" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-sm font-bold text-red-400 mb-1">珥덈낫??媛?대뱶 紐⑤뱶 ?쒖꽦?붾맖 (?뱁꽣 留ㅽ듃由?뒪)</h4>
+                                                    <h4 className="text-sm font-bold text-red-400 mb-1">초보자 가이드 모드 활성화됨 (섹터 매트릭스)</h4>
                                                     <p className="text-xs text-gray-300 leading-relaxed">
-                                                        ?꾩옱 醫낅ぉ???랁븳 ?곗뾽(?뱁꽣) ?꾩껜 ?됯퇏 諛?肄붿뒪??肄붿뒪???쒖옣 吏?섏? ?깆쟻???섎???鍮꾧탳???쒕┰?덈떎. ?대? ?듯빐 ???뚯궗媛 ?낃퀎 ?됯퇏蹂대떎 ?μ궗瑜??섑븯怨??덈뒗吏 吏곴??곸쑝濡??????덉뒿?덈떎.
+                                                        현재 종목이 속한 산업(섹터) 전체 평균 및 코스피/코스닥 시장 지수와 성적을 나란히 비교해 드립니다. 이를 통해 이 회사가 업계 평균보다 장사를 잘하고 있는지 직관적으로 알 수 있습니다.
                                                     </p>
                                                 </div>
                                             </div>
@@ -881,40 +881,40 @@ function AnalysisContent() {
                                     {(() => {
                                         const sectorSections = [
                                             {
-                                                group: "Value Analytics (媛移?遺꾩꽍)",
+                                                group: "Value Analytics (가치 분석)",
                                                 metrics: [
-                                                    { key: "PER", label: "PER (諛?" },
-                                                    { key: "PBR", label: "PBR (諛?" },
+                                                    { key: "PER", label: "PER (배)" },
+                                                    { key: "PBR", label: "PBR (배)" },
                                                     { key: "Fwd. 12M PER", label: "Fwd. 12M PER" },
                                                     { key: "Fwd. 12M PBR", label: "Fwd. 12M PBR" }
                                                 ]
                                             },
                                             {
-                                                group: "Growth Dynamics (?깆옣??遺꾩꽍)",
+                                                group: "Growth Dynamics (성장성 분석)",
                                                 metrics: [
-                                                    { key: "留ㅼ텧?≪쬆媛??, label: "留ㅼ텧??利앷???(%)" },
-                                                    { key: "?곸뾽?댁씡利앷???, label: "?곸뾽?댁씡 利앷???(%)" },
-                                                    { key: "?쒖씠?듭쬆媛??, label: "?쒖씠??利앷???(%)" }
+                                                    { key: "매출액증가율", label: "매출액 증가율 (%)" },
+                                                    { key: "영업이익증가율", label: "영업이익 증가율 (%)" },
+                                                    { key: "순이익증가율", label: "순이익 증가율 (%)" }
                                                 ]
                                             },
                                             {
-                                                group: "Profitability Engine (?섏씡??遺꾩꽍)",
+                                                group: "Profitability Engine (수익성 분석)",
                                                 metrics: [
                                                     { key: "ROE", label: "ROE (%)" },
                                                     { key: "ROA", label: "ROA (%)" },
-                                                    { key: "留ㅼ텧珥앹씠?듬쪧", label: "留ㅼ텧珥앹씠?듬쪧 (%)" },
-                                                    { key: "?곸뾽?댁씡瑜?, label: "?곸뾽?댁씡瑜?(%)" },
-                                                    { key: "?쒖씠?듬쪧", label: "?쒖씠?듬쪧 (%)" }
+                                                    { key: "매출총이익률", label: "매출총이익률 (%)" },
+                                                    { key: "영업이익률", label: "영업이익률 (%)" },
+                                                    { key: "순이익률", label: "순이익률 (%)" }
                                                 ]
                                             },
                                             {
-                                                group: "Stability & Returns (?덉젙??諛??섏씡瑜?",
+                                                group: "Stability & Returns (안정성 및 수익률)",
                                                 metrics: [
-                                                    { key: "遺梨꾨퉬??, label: "遺梨꾨퉬??(%)" },
-                                                    { key: "?좊룞鍮꾩쑉", label: "?좊룞鍮꾩쑉 (%)" },
-                                                    { key: "諛곕떦?섏씡瑜?, label: "諛곕떦?섏씡瑜?(%)" },
-                                                    { key: "諛곕떦?깊뼢", label: "諛곕떦?깊뼢 (%)" },
-                                                    { key: "二쇨??섏씡瑜?, label: "二쇨? ?섏씡瑜?(%)" }
+                                                    { key: "부채비율", label: "부채비율 (%)" },
+                                                    { key: "유동비율", label: "유동비율 (%)" },
+                                                    { key: "배당수익률", label: "배당수익률 (%)" },
+                                                    { key: "배당성향", label: "배당성향 (%)" },
+                                                    { key: "주가수익률", label: "주가 수익률 (%)" }
                                                 ]
                                             }
                                         ];
@@ -947,8 +947,8 @@ function AnalysisContent() {
                                                             return (
                                                                 <div className="col-span-full py-16 text-center bg-white/5 border border-dashed border-white/10 rounded-3xl">
                                                                     <div className="flex justify-center mb-4"><PieChart className="w-12 h-12 text-gray-600" /></div>
-                                                                    <h3 className="text-gray-400 font-bold mb-2">?곗씠?곌? ?쒓났?섏? ?딆뒿?덈떎</h3>
-                                                                    <p className="text-gray-500 text-sm">?대떦 洹몃９(?????뱁꽣 遺꾩꽍 吏?쒓? ??醫낅ぉ(?먮뒗 ETF)?먮뒗 ?쒓났?섏? ?딆뒿?덈떎.<br/>?ㅻⅨ ??쓣 ?좏깮??蹂댁꽭??</p>
+                                                                    <h3 className="text-gray-400 font-bold mb-2">데이터가 제공되지 않습니다</h3>
+                                                                    <p className="text-gray-500 text-sm">해당 그룹(탭)의 섹터 분석 지표가 이 종목(또는 ETF)에는 제공되지 않습니다.<br/>다른 탭을 선택해 보세요.</p>
                                                                 </div>
                                                             );
                                                         }
@@ -965,7 +965,7 @@ function AnalysisContent() {
                                                                     <span className="text-[10px] font-black text-gray-500 uppercase mb-1 tracking-widest">Curr FY0</span>
                                                                     <span className="text-3xl font-black text-red-500 tabular-nums drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">
                                                                         {(() => {
-                                                                            const r = Array.isArray(cat.rows) ? cat.rows.find((r: any) => r.name === "??醫낅ぉ") : null;
+                                                                            const r = Array.isArray(cat.rows) ? cat.rows.find((r: any) => r.name === "내 종목") : null;
                                                                             if (!r) return "-";
                                                                             const hds = Array.isArray(cat.headers) ? cat.headers : [];
                                                                             const isEst = hds.some((h: string) => typeof h === 'string' && (h.includes('(E)') || h.includes('(A)')));
@@ -982,23 +982,23 @@ function AnalysisContent() {
                                                                     <p className="text-xs text-red-300 font-medium leading-relaxed italic">
                                                                         {(() => {
                                                                             const k = metric.key;
-                                                                            if(k==="PER") return "?꾩옱 二쇨?媛 ?댁씡 ?鍮??쇱? 鍮꾩떬吏 ?뚮젮二쇰뒗 媛?깅퉬 吏?쒖엯?덈떎. ?낃퀎 ?됯퇏蹂대떎 ??쑝硫???됯?, ?믪쑝硫?怨좏룊媛濡?遊낅땲??";
-                                                                            if(k==="PBR") return "?뚯궗 ?먯궛(?ъ궛) ?鍮?二쇨?媛 ?쇱? 鍮꾩떬吏 蹂댁뿬以띾땲?? 蹂댄넻 1 誘몃쭔?대㈃ ?먯궛媛移섎낫???몃떎怨?遊낅땲??";
-                                                                            if(k==="Fwd. 12M PER" || k==="Fwd. 12M PBR") return "1?????덉긽?섎뒗 ?ㅼ쟻??湲곗??쇰줈 怨꾩궛??媛?깅퉬 吏?쒖엯?덈떎. 誘몃옒???≪긽 ?щ젰??蹂???李멸퀬?댁슂.";
-                                                                            if(k==="留ㅼ텧?≪쬆媛??) return "?뚯궗???명삎(臾쇨굔 ?뚮뒗 ?ㅼ??????쇰쭏???μ뫁 ?ш퀬 ?덈뒗吏 蹂댁뿬以띾땲??";
-                                                                            if(k==="?곸뾽?댁씡利앷???) return "臾쇨굔 ?붿븘???④릿 ?쒖닔??留덉쭊)???묐뀈蹂대떎 ?쇰쭏???섏뿀?붿? 遊낅땲?? ?쒖씪 以묒슂???깆옣??吏?쒖삁??";
-                                                                            if(k==="?쒖씠?듭쬆媛??) return "?멸툑 ????嫄????쇨퀬 ??二쇰㉧?덉뿉 理쒖쥌?곸쑝濡??⑤뒗 ?덉쓽 ?깆옣 ?띾룄?낅땲??";
-                                                                            if(k==="ROE") return "?????먮낯湲??쇰줈 1?꾧컙 ?쇰쭏???뚯쭨 ?μ궗瑜??덈뒗吏 (媛?깅퉬?? 蹂댁뿬以띾땲?? ?믪쓣?섎줉 ?뚮젋 踰꾪븦??醫뗭븘?댁슂.";
-                                                                            if(k==="ROA") return "鍮싰퉴吏 ?⑹튇 ?꾩껜 ?먯궛???쇰쭏??遺吏?고엳 援대졇?붿? 蹂댁뿬二쇰뒗 ?쒕룞 留덉쭊?⑥엯?덈떎.";
-                                                                            if(k==="留ㅼ텧珥앹씠?듬쪧") return "臾쇨굔 ?쇱삩 ?먭?留?鍮쇨퀬 ?쇰쭏??留덉쭊???ш쾶 ?④꺼癒밸뒗吏 蹂댁뿬以띾땲??";
-                                                                            if(k==="?곸뾽?댁씡瑜?) return "1留뚯썝?댁튂 ?붿븘??紐?泥쒖썝??吏꾩쭨濡??④린?붿?, ?뚯궗???듭떖 ?μ궗 ?ㅻ젰?낅땲??";
-                                                                            if(k==="?쒖씠?듬쪧") return "理쒖쥌 ?멸툑源뚯? ??鍮쇨퀬 ?쒖닔?섍쾶 ?⑥? 吏꾩쭨 李?留덉쭊?⑥엯?덈떎.";
-                                                                            if(k==="遺梨꾨퉬??) return "?????鍮?鍮뚮┛ ??鍮????쇰쭏??留롮?吏 遊낅땲?? 100% ?댄븯媛 ?덉쟾?섎ŉ, ?뱁꽣 ?됯퇏蹂대떎 ??쑝硫??쇳듉?⑸땲??";
-                                                                            if(k==="?좊룞鍮꾩쑉") return "1???덉뿉 媛싳븘????鍮싲낫???뱀옣 ?꾧툑??媛?ν븳 ?먯궛??留롮?吏 遊낅땲?? ?믪쓣?섎줉 遺???꾪뿕????뒿?덈떎.";
-                                                                            if(k==="諛곕떦?섏씡瑜?) return "二쇱떇???ㅺ퀬留??덉뼱???듭옣??苑귦엳??諛곕떦湲덉쓽 ?댁옄??媛숈? 媛쒕뀗?낅땲??";
-                                                                            if(k==="諛곕떦?깊뼢") return "?뚯궗媛 踰뚯뼱?ㅼ씤 ??以?紐?%瑜?二쇱＜?ㅼ뿉寃?李⑺븯寃??섎닠二쇰뒗吏 蹂댁뿬以띾땲??";
-                                                                            if(k==="二쇨??섏씡瑜?) return "?뱀젙 湲곌컙 ?숈븞 ?ㅼ젣濡?二쇨?媛 ?쇰쭏???щ옄?붿?(?뱀? ?⑥뼱議뚮뒗吏) 蹂댁뿬以띾땲??";
-                                                                            return "?대떦 吏?쒖쓽 ?뱁꽣 ?됯퇏 諛??쒖옣 吏?섏???鍮꾧탳瑜?蹂댁뿬以띾땲??";
+                                                                            if(k==="PER") return "현재 주가가 이익 대비 싼지 비싼지 알려주는 가성비 지표입니다. 업계 평균보다 낮으면 저평가, 높으면 고평가로 봅니다.";
+                                                                            if(k==="PBR") return "회사 자산(재산) 대비 주가가 싼지 비싼지 보여줍니다. 보통 1 미만이면 자산가치보다 싸다고 봅니다.";
+                                                                            if(k==="Fwd. 12M PER" || k==="Fwd. 12M PBR") return "1년 뒤 예상되는 실적을 기준으로 계산한 가성비 지표입니다. 미래의 떡상 여력을 볼 때 참고해요.";
+                                                                            if(k==="매출액증가율") return "회사의 외형(물건 파는 스케일)이 얼마나 쑥쑥 크고 있는지 보여줍니다.";
+                                                                            if(k==="영업이익증가율") return "물건 팔아서 남긴 순수익(마진)이 작년보다 얼마나 늘었는지 봅니다. 제일 중요한 성장성 지표예요!";
+                                                                            if(k==="순이익증가율") return "세금 등 뗄 거 다 떼고 내 주머니에 최종적으로 남는 돈의 성장 속도입니다.";
+                                                                            if(k==="ROE") return "내 돈(자본금)으로 1년간 얼마나 알짜 장사를 했는지 (가성비율) 보여줍니다. 높을수록 워렌 버핏이 좋아해요.";
+                                                                            if(k==="ROA") return "빚까지 합친 전체 자산을 얼마나 부지런히 굴렸는지 보여주는 활동 마진율입니다.";
+                                                                            if(k==="매출총이익률") return "물건 떼온 원가만 빼고 얼마나 마진을 크게 남겨먹는지 보여줍니다.";
+                                                                            if(k==="영업이익률") return "1만원어치 팔아서 몇 천원을 진짜로 남기는지, 회사의 핵심 장사 실력입니다.";
+                                                                            if(k==="순이익률") return "최종 세금까지 다 빼고 순수하게 남은 진짜 찐 마진율입니다.";
+                                                                            if(k==="부채비율") return "내 돈 대비 빌린 돈(빚)이 얼마나 많은지 봅니다. 100% 이하가 안전하며, 섹터 평균보다 낮으면 튼튼합니다.";
+                                                                            if(k==="유동비율") return "1년 안에 갚아야 할 빚보다 당장 현금화 가능한 자산이 많은지 봅니다. 높을수록 부도 위험이 낮습니다.";
+                                                                            if(k==="배당수익률") return "주식을 들고만 있어도 통장에 꽂히는 배당금의 이자율 같은 개념입니다.";
+                                                                            if(k==="배당성향") return "회사가 벌어들인 돈 중 몇 %를 주주들에게 착하게 나눠주는지 보여줍니다.";
+                                                                            if(k==="주가수익률") return "특정 기간 동안 실제로 주가가 얼마나 올랐는지(혹은 떨어졌는지) 보여줍니다.";
+                                                                            return "해당 지표의 섹터 평균 및 시장 지수와의 비교를 보여줍니다.";
                                                                         })()}
                                                                     </p>
                                                                 </div>
@@ -1012,9 +1012,9 @@ function AnalysisContent() {
                                                                         <YAxis stroke="#4b5563" fontSize={11} tickLine={false} axisLine={false} width={40} />
                                                                         <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '24px', fontSize: '11px', color: '#fff', boxShadow: '0 25px 60px rgba(0,0,0,0.8)' }} itemStyle={{ fontWeight: '900', padding: '4px 0' }} cursor={{ stroke: '#ffffff10', strokeWidth: 1 }} />
                                                                         <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: '900', paddingBottom: '40px' }} />
-                                                                        <Line type="monotone" dataKey="??醫낅ぉ" stroke="#ef4444" strokeWidth={6} dot={{ r: 6, strokeWidth: 3, fill: '#ef4444', stroke: '#000' }} activeDot={{ r: 10, strokeWidth: 0 }} animationDuration={2500} />
-                                                                        <Line type="monotone" dataKey="?뱁꽣 ?됯퇏" stroke="#10b981" strokeWidth={2.5} strokeDasharray="8 4" dot={{ r: 4, fill: '#10b981' }} animationDuration={2500} />
-                                                                        <Line type="monotone" dataKey="?쒖옣 吏?? stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="4 8" dot={{ r: 4, fill: '#3b82f6' }} animationDuration={2500} />
+                                                                        <Line type="monotone" dataKey="내 종목" stroke="#ef4444" strokeWidth={6} dot={{ r: 6, strokeWidth: 3, fill: '#ef4444', stroke: '#000' }} activeDot={{ r: 10, strokeWidth: 0 }} animationDuration={2500} />
+                                                                        <Line type="monotone" dataKey="섹터 평균" stroke="#10b981" strokeWidth={2.5} strokeDasharray="8 4" dot={{ r: 4, fill: '#10b981' }} animationDuration={2500} />
+                                                                        <Line type="monotone" dataKey="시장 지수" stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="4 8" dot={{ r: 4, fill: '#3b82f6' }} animationDuration={2500} />
                                                                     </LineChart>
                                                                 </ResponsiveContainer>
                                                             </div>
@@ -1038,26 +1038,26 @@ function AnalysisContent() {
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-500/20 rounded-lg"><Users className="w-5 h-5 text-purple-400" /></div>
-                                    <h3 className="font-bold">?숈쥌 ?낃퀎 鍮꾧탳</h3>
+                                    <h3 className="font-bold">동종 업계 비교</h3>
                                 </div>
-                                <button onClick={fetchPeer} className="px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">?쇱뼱 遺꾩꽍</button>
+                                <button onClick={fetchPeer} className="px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">피어 분석</button>
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex gap-4">
-                                <input type="text" placeholder="醫낅ぉ肄붾뱶 ?쇳몴濡?援щ텇 (?? 005930,000660)" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono text-white" value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)} onKeyDown={e => { if (e.key === "Enter") fetchPeer(); }} />
-                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-black text-sm text-white transition-all active:scale-95">鍮꾧탳 遺꾩꽍</button>
+                                <input type="text" placeholder="종목코드 쉼표로 구분 (예: 005930,000660)" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500 uppercase font-mono text-white" value={peerSymbols} onChange={e => setPeerSymbols(e.target.value)} onKeyDown={e => { if (e.key === "Enter") fetchPeer(); }} />
+                                <button onClick={fetchPeer} className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl font-black text-sm text-white transition-all active:scale-95">비교 분석</button>
                             </div>
                             {peerLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">?쇱뼱 ?곗씠??遺꾩꽍 以?..</p></div>
+                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-orange-400 mb-3" /><p className="text-gray-500">피어 데이터 분석 중...</p></div>
                             ) : peerData?.status === "error" ? (
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
                                     <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
-                                    <h3 className="text-lg font-bold mb-2">?숈쥌 ?낃퀎 ?쇱씠踰?鍮꾧탳 ?ㅽ뙣</h3>
+                                    <h3 className="text-lg font-bold mb-2">동종 업계 라이벌 비교 실패</h3>
                                     <p className="text-xs opacity-80 leading-relaxed mb-4">
                                         {peerData.message}
                                     </p>
                                     <button onClick={fetchPeer}
                                         className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                        ?ㅼ떆 ?쒕룄
+                                        다시 시도
                                     </button>
                                 </div>
                             ) : peerData?.data && peerData.data.length > 0 ? (
@@ -1068,10 +1068,10 @@ function AnalysisContent() {
                                                 <HelpCircle className="w-5 h-5 text-purple-400" />
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-bold text-purple-400 mb-1">珥덈낫??媛?대뱶 紐⑤뱶 ?쒖꽦?붾맖 (?숈쥌 ?낃퀎 ?쇱씠踰?鍮꾧탳)</h4>
+                                                <h4 className="text-sm font-bold text-purple-400 mb-1">초보자 가이드 모드 활성화됨 (동종 업계 라이벌 비교)</h4>
                                                 <p className="text-xs text-gray-300 leading-relaxed">
-                                                    鍮꾩듂???낆쥌?먯꽌 寃쎌웳?섎뒗 ?쇱씠踰??뚯궗?ㅺ낵 二쇱슂 ?깆쟻?쒕? ?섎????먭퀬 鍮꾧탳?⑸땲?? 
-                                                    媛?吏?쒕쭏??媛???곗뼱??1???뚯궗?먭쾶??<span className="text-[10px]">?몣</span> ?뺢????쒖떆?⑸땲??
+                                                    비슷한 업종에서 경쟁하는 라이벌 회사들과 주요 성적표를 나란히 두고 비교합니다. 
+                                                    각 지표마다 가장 뛰어난 1등 회사에게는 <span className="text-[10px]">👑</span> 왕관이 표시됩니다!
                                                 </p>
                                             </div>
                                         </div>
@@ -1081,7 +1081,7 @@ function AnalysisContent() {
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="border-b border-white/10">
-                                                    <th className="text-left py-3 px-2 text-gray-500 text-xs font-bold">吏??/th>
+                                                    <th className="text-left py-3 px-2 text-gray-500 text-xs font-bold">지표</th>
                                                     {peerData.data.map((s: any) => (
                                                         <th key={s.symbol} className="py-3 px-2 text-center">
                                                             <div className="font-black text-white">{s.name}</div>
@@ -1092,16 +1092,16 @@ function AnalysisContent() {
                                             </thead>
                                             <tbody>
                                                 {[
-                                                    { key: "market_cap_display", label: "?쒓?珥앹븸" },
-                                                    { key: "per", label: "PER (諛?" },
-                                                    { key: "pbr", label: "PBR (諛?" },
+                                                    { key: "market_cap_display", label: "시가총액" },
+                                                    { key: "per", label: "PER (배)" },
+                                                    { key: "pbr", label: "PBR (배)" },
                                                     { key: "roe", label: "ROE (%)" },
-                                                    { key: "operating_margin", label: "?곸뾽?댁씡瑜?(%)" },
-                                                    { key: "revenue_growth", label: "留ㅼ텧?깆옣瑜?(%)" },
-                                                    { key: "dividend_yield", label: "諛곕떦?섏씡瑜?(%)" },
-                                                    { key: "debt_to_equity", label: "遺梨꾨퉬??(%)" },
-                                                    { key: "beta", label: "踰좏?" },
-                                                    { key: "change_3m", label: "3媛쒖썡 ?섏씡瑜?(%)" },
+                                                    { key: "operating_margin", label: "영업이익률 (%)" },
+                                                    { key: "revenue_growth", label: "매출성장률 (%)" },
+                                                    { key: "dividend_yield", label: "배당수익률 (%)" },
+                                                    { key: "debt_to_equity", label: "부채비율 (%)" },
+                                                    { key: "beta", label: "베타" },
+                                                    { key: "change_3m", label: "3개월 수익률 (%)" },
                                                 ].map(metric => {
                                                     const values = peerData.data.map((s: any) => parseFloat(s[metric.key]) || 0);
                                                     const maxIdx = values.indexOf(Math.max(...values));
@@ -1115,16 +1115,16 @@ function AnalysisContent() {
                                                                 {showEasy && (
                                                                     <div className="text-[10px] text-purple-300/80 font-medium mt-1.5 whitespace-normal break-keep leading-tight max-w-[130px]">
                                                                         {(() => {
-                                                                            if(metric.key === "market_cap_display") return "?뚯궗???꾩껜 紐멸컪 (?ш린)";
-                                                                            if(metric.key === "per") return "?댁씡 ?鍮???됯? ?뺣룄 (??쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "pbr") return "?먯궛 ?鍮???됯? ?뺣룄 (??쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "roe") return "?먮낯(?????쇰줈 援대┛ ?댁씡瑜?(?믪쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "operating_margin") return "?ㅼ젣 ?μ궗 留덉쭊??(?믪쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "revenue_growth") return "?명삎(洹쒕え)???깆옣 ?띾룄 (?믪쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "dividend_yield") return "二쇱떇 蹂댁쑀 ??諛쏅뒗 諛곕떦 ?댁옄 (?믪쓣?섎줉 醫뗭쓬)";
-                                                                            if(metric.key === "debt_to_equity") return "媛吏????鍮?鍮싳쓽 鍮꾩쑉 (??쓣?섎줉 ?덉쟾)";
-                                                                            if(metric.key === "beta") return "?쒖옣 蹂?숈꽦 (1蹂대떎 ?믪쑝硫?怨좎쐞??怨좎닔??";
-                                                                            if(metric.key === "change_3m") return "理쒓렐 3媛쒖썡媛?二쇨? ?섏씡瑜?;
+                                                                            if(metric.key === "market_cap_display") return "회사의 전체 몸값 (크기)";
+                                                                            if(metric.key === "per") return "이익 대비 저평가 정도 (낮을수록 좋음)";
+                                                                            if(metric.key === "pbr") return "자산 대비 저평가 정도 (낮을수록 좋음)";
+                                                                            if(metric.key === "roe") return "자본(내 돈)으로 굴린 이익률 (높을수록 좋음)";
+                                                                            if(metric.key === "operating_margin") return "실제 장사 마진율 (높을수록 좋음)";
+                                                                            if(metric.key === "revenue_growth") return "외형(규모)의 성장 속도 (높을수록 좋음)";
+                                                                            if(metric.key === "dividend_yield") return "주식 보유 시 받는 배당 이자 (높을수록 좋음)";
+                                                                            if(metric.key === "debt_to_equity") return "가진 돈 대비 빚의 비율 (낮을수록 안전)";
+                                                                            if(metric.key === "beta") return "시장 변동성 (1보다 높으면 고위험/고수익)";
+                                                                            if(metric.key === "change_3m") return "최근 3개월간 주가 수익률";
                                                                             return "";
                                                                         })()}
                                                                     </div>
@@ -1139,12 +1139,12 @@ function AnalysisContent() {
                                                                             if (metric.key === "change_3m" || metric.key === "revenue_growth" || metric.key === "roe" || metric.key === "operating_margin") {
                                                                                 const nVal = parseFloat(String(val || "0"));
                                                                                 const color = nVal > 0 ? "text-red-400" : nVal < 0 ? "text-blue-400" : "text-gray-300";
-                                                                                const sign = nVal > 0 ? "?? : nVal < 0 ? "?? : "";
+                                                                                const sign = nVal > 0 ? "▲" : nVal < 0 ? "▼" : "";
                                                                                 return <span className={`${color} font-bold`}>{sign} {val ?? "N/A"}</span>;
                                                                             }
                                                                             return <span>{val ?? "N/A"}</span>;
                                                                         })()}
-                                                                        {isBest ? <span className="ml-1 text-[8px]">?몣</span> : null}
+                                                                        {isBest ? <span className="ml-1 text-[8px]">👑</span> : null}
                                                                     </td>
                                                                 );
                                                             })}
@@ -1184,8 +1184,8 @@ function AnalysisContent() {
                             ) : !peerLoading && (
                                 <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                     <Users className="w-12 h-12 text-orange-400/30 mx-auto mb-4" />
-                                    <p className="text-gray-500">鍮꾧탳??醫낅ぉ 肄붾뱶瑜??낅젰?섏꽭??/p>
-                                    <p className="text-xs text-gray-600 mt-2">理쒕? 5媛?醫낅ぉ 쨌 PER/PBR/ROE/?깆옣瑜???/p>
+                                    <p className="text-gray-500">비교할 종목 코드를 입력하세요</p>
+                                    <p className="text-xs text-gray-600 mt-2">최대 5개 종목 · PER/PBR/ROE/성장률 등</p>
                                 </div>
                             )}
                         </div>
@@ -1203,9 +1203,8 @@ function AnalysisContent() {
 
 export default function AnalysisPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black text-white flex flex-col items-center justify-center"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" /><p className="text-gray-400 font-bold">濡쒕뵫 以?..</p></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-black text-white flex flex-col items-center justify-center"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" /><p className="text-gray-400 font-bold">로딩 중...</p></div>}>
             <AnalysisContent />
         </Suspense>
     );
 }
-
