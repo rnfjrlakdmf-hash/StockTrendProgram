@@ -117,7 +117,7 @@ function EtfAnalysisContent() {
     };
 
     const getFilteredChartData = () => {
-        if (!etfData?.chart_data) return [];
+        if (!etfData?.chart_data || !Array.isArray(etfData.chart_data)) return [];
         const data = etfData.chart_data;
         if (chartRange === '1M') return data.slice(-20);
         if (chartRange === '3M') return data.slice(-60);
@@ -355,8 +355,8 @@ function EtfAnalysisContent() {
                                     </div>
                                     <div className="p-4 md:p-5 rounded-2xl md:rounded-3xl bg-indigo-900/10 border border-indigo-500/20">
                                         <TermTooltip title="괴리율 (Disparity)" content="시장가와 진짜 가치(NAV)의 오차입니다. 0에 가까울수록 좋습니다." />
-                                        <p className={`text-base md:text-lg font-black mt-1 ${etfData.market_data.disparity.includes('+') ? 'text-rose-400' : etfData.market_data.disparity.includes('-') ? 'text-blue-400' : 'text-white'}`}>
-                                            {etfData.market_data.disparity}
+                                        <p className={`text-base md:text-lg font-black mt-1 ${String(etfData.market_data.disparity || '').includes('+') ? 'text-rose-400' : String(etfData.market_data.disparity || '').includes('-') ? 'text-blue-400' : 'text-white'}`}>
+                                            {etfData.market_data.disparity || "N/A"}
                                         </p>
                                     </div>
                                     <div className="p-4 md:p-5 rounded-2xl md:rounded-3xl bg-gray-900 border border-gray-800">
@@ -422,7 +422,7 @@ function EtfAnalysisContent() {
                                         </div>
                                     </h3>
                                     <div className="flex-1 overflow-x-auto">
-                                        {etfData.holdings && etfData.holdings.length > 0 ? (
+                                        {Array.isArray(etfData.holdings) && etfData.holdings.length > 0 ? (
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
                                                     <tr className="border-b border-gray-800 text-gray-500 text-xs tracking-widest">
@@ -432,7 +432,7 @@ function EtfAnalysisContent() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {etfData.holdings.map((h: any, i: number) => {
+                                                    {Array.isArray(etfData.holdings) && etfData.holdings.map((h: any, i: number) => {
                                                         const weightStr = String(h.weight || "0").replace('%','');
                                                         const weightVal = parseFloat(weightStr) || 0;
                                                         const isZero = weightVal <= 0;
@@ -458,7 +458,7 @@ function EtfAnalysisContent() {
                                                                     {isZero ? (
                                                                         <span className="text-gray-500 text-[11px] italic">수집중</span>
                                                                     ) : (
-                                                                        h.weight.includes('%') ? h.weight : `${h.weight}%`
+                                                                        String(h.weight || '').includes('%') ? h.weight : `${h.weight}%`
                                                                     )}
                                                                 </td>
                                                             </tr>
@@ -477,7 +477,7 @@ function EtfAnalysisContent() {
                                                             이 ETF와 유사한 투자 전략을 가진 다른 주요 상품들입니다. 포트폴리오 다변화나 수수료(TER) 비교를 위해 참고해보세요.
                                                         </p>
                                                         
-                                                        {etfData.similar_etfs && etfData.similar_etfs.length > 0 ? (
+                                                        {Array.isArray(etfData.similar_etfs) && etfData.similar_etfs.length > 0 ? (
                                                             <div className="flex flex-col gap-2">
                                                                 {etfData.similar_etfs.map((peer: any, idx: number) => (
                                                                     <button 
@@ -540,10 +540,11 @@ function EtfAnalysisContent() {
                                             <BarChart2 className="w-5 h-5 text-emerald-400" />
                                             수익률 퍼포먼스
                                         </h3>
-                                        {etfData.performance && Object.keys(etfData.performance).length > 0 ? (
+                                        {etfData.performance && typeof etfData.performance === 'object' && Object.keys(etfData.performance).length > 0 ? (
                                             <div className="space-y-4">
                                                 {Object.entries(etfData.performance).map(([period, val]: [string, any], idx) => {
-                                                    const isPositive = val.includes('+') || (!val.includes('-') && parseFloat(val) > 0);
+                                                    const valStr = String(val || '');
+                                                    const isPositive = valStr.includes('+') || (!valStr.includes('-') && parseFloat(valStr) > 0);
                                                     return (
                                                         <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-gray-800/50 border border-gray-700/50">
                                                             <span className="font-bold text-gray-400 text-sm">{period.replace('수익률', '').trim()} 수익률</span>
