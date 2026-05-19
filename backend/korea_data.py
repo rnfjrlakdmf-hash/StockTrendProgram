@@ -522,7 +522,7 @@ def gather_naver_stock_data(symbol: str):
             price = nxt_data['price']
             labeled_change_pct = nxt_data.get('change_pct_labeled', f"[야간] {nxt_data.get('change_pct')}")
             change_val = nxt_data.get('change_val', 0)
-        elif over_price > 0:
+        elif over_price > 0 and (market_status == "시간외 거래 중" or "AFTER_MARKET" in str(after_market_data)):
             # Promote After-hours (15:30 - 18:00)
             price = over_price
             labeled_change_pct = f"[시간외] {over_change_pct:+.2f}%"
