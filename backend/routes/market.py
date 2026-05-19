@@ -461,8 +461,17 @@ def get_watchlist_events(symbols: str = ""):
     today_str = today.strftime("%Y-%m-%d")
 
     # --- 한국 종목 코드 / 해외 종목 코드 분리 ---
-    kr_symbols = [s for s in symbol_list if s.isdigit() and len(s) == 6]
-    us_symbols = [s for s in symbol_list if not (s.isdigit() and len(s) == 6)]
+    kr_symbols = []
+    us_symbols = []
+    kr_base_map = {}
+    
+    for s in symbol_list:
+        base_sym = s.split('.')[0]
+        if base_sym.isdigit() and len(base_sym) == 6:
+            kr_symbols.append(base_sym)
+            kr_base_map[base_sym] = s
+        else:
+            us_symbols.append(s)
 
     # =============================================
     # [1] DART API — 한국 종목 전용 (실제 공시 기반)
@@ -521,11 +530,12 @@ def get_watchlist_events(symbols: str = ""):
                         date_str = today_str
 
                     dart_link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no', '')}"
+                    original_sym = kr_base_map.get(stock_code, stock_code)
 
                     # 📈 실적 공시
                     if any(kw in title for kw in EARNINGS_KEYWORDS):
                         events.append({
-                            "symbol": stock_code,
+                            "symbol": original_sym,
                             "name": corp_name,
                             "type": "earnings",
                             "date": date_str,
@@ -538,7 +548,7 @@ def get_watchlist_events(symbols: str = ""):
                     # 💰 배당 공시
                     elif any(kw in title for kw in DIVIDEND_KEYWORDS):
                         events.append({
-                            "symbol": stock_code,
+                            "symbol": original_sym,
                             "name": corp_name,
                             "type": "dividend",
                             "date": date_str,
@@ -551,7 +561,7 @@ def get_watchlist_events(symbols: str = ""):
                     # 🔄 자사주 매입
                     elif any(kw in title for kw in BUYBACK_KEYWORDS):
                         events.append({
-                            "symbol": stock_code,
+                            "symbol": original_sym,
                             "name": corp_name,
                             "type": "buyback",
                             "date": date_str,
@@ -564,7 +574,7 @@ def get_watchlist_events(symbols: str = ""):
                     # 👤 대주주 변동
                     elif any(kw in title for kw in HOLDER_KEYWORDS):
                         events.append({
-                            "symbol": stock_code,
+                            "symbol": original_sym,
                             "name": corp_name,
                             "type": "holder",
                             "date": date_str,
