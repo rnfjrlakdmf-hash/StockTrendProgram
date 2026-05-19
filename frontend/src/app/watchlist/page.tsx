@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
@@ -168,6 +168,72 @@ export default function WatchlistPage() {
         }
     };
 
+    // [v2] 마지막 quotes 업데이트 시각
+    const [quotesRefreshing, setQuotesRefreshing] = useState(false);
+    // chatId 상태 (텔레그램 연동용)
+    const [chatId, setChatId] = useState('');
+    // 이전 가격 캐시 (가격 변동 감지용)
+    const prevPricesRef = React.useRef<Record<string, string>>({});
+
+    // ─────────────────────────────────────────────
+    // 세션 배지 헬퍼 (quotes.market_status → 배지)
+    // ─────────────────────────────────────────────
+    const getSessionBadge = (marketStatus: string, symbol: string) => {
+        const isDomestic = /^\d{6}$/.test(symbol);
+        const ms = (marketStatus || '').toLowerCase();
+
+        if (isDomestic) {
+            if (ms.includes('장중') || ms.includes('거래')) return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
+            if (ms.includes('시간외') || ms.includes('야간')) return { label: '시간외', color: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400 animate-pulse' };
+            return { label: '장마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };
+        }
+
+        if (ms.includes('프리') || ms.includes('pre')) return { label: 'PRE', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
+        if (ms.includes('에프터') || ms.includes('after') || ms.includes('post')) return { label: 'AFTER', color: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400 animate-pulse' };
+        if (ms.includes('장중') || ms.includes('open') || ms.includes('정규')) return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
+        return { label: '마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };
+    };
+
+    // ─────────────────────────────────────────────
+    // [v2] 가격 변동 감지 → 브라우저 알림 트리거
+    // ─────────────────────────────────────────────
+    const checkPriceAlerts = (newQuotes: Record<string, any>, alertsList: Alert[]) => {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        Object.entries(newQuotes).forEach(([symbol, q]) => {
+            const newPrice = parseFloat(String(q.price || '0').replace(/[^0-9.]/g, ''));
+            const oldPrice = parseFloat(prevPricesRef.current[symbol] || '0');
+            if (!oldPrice || isNaN(newPrice)) return;
+
+            // 사용자 알림 조건 체크
+            alertsList.forEach(a => {
+                if (a.symbol !== symbol || a.status === 'triggered') return;
+                if (a.type === 'PRICE' || !a.type) {
+                    const hit = a.condition === 'above' ? newPrice >= a.target_price : newPrice <= a.target_price;
+                    if (hit) {
+                        new Notification(`⚡ ${symbol} 목표가 도달!`, {
+                            body: `현재가 ${newPrice.toLocaleString()} (목표: ${a.target_price.toLocaleString()})`,
+                            icon: '/favicon.ico',
+                        });
+                    }
+                }
+            });
+
+            // 급락/급등 감지 (3% 이상 변동)
+            if (oldPrice > 0) {
+                const changePct = ((newPrice - oldPrice) / oldPrice) * 100;
+                if (Math.abs(changePct) >= 3) {
+                    const direction = changePct > 0 ? '🚀 급등' : '📉 급락';
+                    new Notification(`${direction} ${symbol}`, {
+                        body: `${changePct > 0 ? '+' : ''}${changePct.toFixed(2)}% 변동 감지 → ${newPrice.toLocaleString()}`,
+                        icon: '/favicon.ico',
+                    });
+                }
+            }
+
+            prevPricesRef.current[symbol] = String(q.price);
+        });
+    };
+
     useEffect(() => {
         setIsAdmin(isFreeModeEnabled());
         if (isAuthLoading) return;
@@ -178,10 +244,11 @@ export default function WatchlistPage() {
             const savedChatId = localStorage.getItem("telegram_chat_id");
             if (savedChatId) setChatId(savedChatId);
             
+            // [v2] 15초 → 10초로 단축, alerts 동기화 포함
             const interval = setInterval(() => {
                 fetchWatchlist();
                 fetchAlerts();
-            }, 15000);
+            }, 10000);
             // CB 알림은 5분마다 (API 부하 제한)
             const cbInterval = setInterval(fetchCbAlerts, 300000);
             return () => { clearInterval(interval); clearInterval(cbInterval); };
@@ -197,20 +264,29 @@ export default function WatchlistPage() {
 
         const fetchQuotes = async () => {
             const symbols = watchlist.map(i => i.symbol).join(",");
+            setQuotesRefreshing(true);
             try {
                 const res = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${encodeURIComponent(symbols)}`);
                 const json = await res.json();
                 if (json.status === "success") {
                     setQuotes(json.data);
                     setLastUpdated(new Date());
+                    // [v2] 가격 알림 체크
+                    checkPriceAlerts(json.data, alerts);
                 }
             } catch (e) { }
+            finally { setQuotesRefreshing(false); }
         };
         fetchQuotes();
+
+        // [v2] quotes도 10초마다 독립 폴링 (watchlist 변경과 별개)
+        const quotesTimer = setInterval(fetchQuotes, 10000);
         
         // [NEW] 실적/배당 일정도 함께 로드
         const syms = watchlist.map(i => i.symbol).join(",");
         fetchEventSchedules(syms);
+
+        return () => clearInterval(quotesTimer);
     }, [watchlist]);
 
     const handleRemoveItem = async (symbol: string) => {
@@ -240,8 +316,10 @@ export default function WatchlistPage() {
                         <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
                         MY 관심종목
                     </h1>
-                    <p className="text-gray-400 mt-2 flex items-center gap-2">
-                        <RefreshCw className="w-4 h-4" /> 실시간 시세 자동 업데이트 중 ({lastUpdated.toLocaleTimeString()})
+                    <p className="text-gray-400 mt-2 flex items-center gap-2 text-sm">
+                        <RefreshCw className={`w-4 h-4 ${quotesRefreshing ? 'animate-spin text-blue-400' : ''}`} />
+                        10초 자동 갱신 &middot; 최근 업데이트: {lastUpdated.toLocaleTimeString()}
+                        {quotesRefreshing && <span className="text-blue-400 text-xs font-bold animate-pulse">업데이트 중...</span>}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -323,15 +401,23 @@ export default function WatchlistPage() {
                                 <CleanStockList
                                     items={watchlist.map(item => {
                                         const data = quotes[item.symbol];
+                                        const sessionBadge = data?.market_status
+                                            ? getSessionBadge(data.market_status, item.symbol)
+                                            : null;
                                         return {
                                             symbol: item.symbol,
-                                            name: item.name || (data ? data.name : item.symbol),
+                                            name: item.name || (data ? (data.name || item.symbol) : item.symbol),
                                             price: data ? data.price : "-",
                                             change: data ? data.change : "0%",
                                             change_percent: data ? (data.change_percent || data.change) : "0%",
                                             badge: item.badge,
                                             added_price: item.added_price,
-                                            quantity: item.quantity
+                                            quantity: item.quantity,
+                                            // [v2] 세션 배지 (장 상태 표시)
+                                            sessionBadge: sessionBadge || undefined,
+                                            // [v2] 프리/에프터 가격
+                                            extendedPrice: data?.extended_price || null,
+                                            extendedChange: data?.extended_change || null,
                                         };
                                     })}
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}

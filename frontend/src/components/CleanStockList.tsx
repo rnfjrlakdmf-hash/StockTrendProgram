@@ -6,21 +6,25 @@ export interface CleanStockItem {
     symbol: string;
     name: string;
     price: string;
-    change: string; // "+1.5%" or "-0.2%" or "0%"
-    change_percent?: string; // Percent value for fallback
-    change_price?: string; // Optional absolute change value
+    change: string;
+    change_percent?: string;
+    change_price?: string;
     isRealtime?: boolean;
     unit?: string;
-    // [New] Verification Badge
     badge?: {
         label: string;
         color: string;
         icon: string;
         reason?: string;
     };
-    quantGrade?: string; // S, A, B, C, D
-    added_price?: number; // Price when added to watchlist
-    quantity?: number; // Quantity when added to watchlist
+    quantGrade?: string;
+    added_price?: number;
+    quantity?: number;
+    // [v2] 세션 배지 (원중/프리/에프터/마감)
+    sessionBadge?: { label: string; color: string; dot: string };
+    // [v2] 확장시간 가격 (프리/에프터마쾓)
+    extendedPrice?: string | number | null;
+    extendedChange?: string | null;
 }
 
 // Helper function to extract high-value keywords and format them as hashtags
@@ -90,6 +94,13 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     <span className="text-[16px] md:text-[21px] font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight" translate="no">
                                         {item.name}
                                     </span>
+                                    {/* [v2] 세션 배지 */}
+                                    {item.sessionBadge && (
+                                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] md:text-[10px] font-black border shrink-0 ${item.sessionBadge.color}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${item.sessionBadge.dot}`} />
+                                            {item.sessionBadge.label}
+                                        </span>
+                                    )}
                                     {item.badge && (
                                         <div className={`flex items-center gap-0.5 px-1 py-0.25 rounded text-[9px] md:text-[11px] font-bold border shrink-0 ${item.badge.color}`}>
                                             <span>{item.badge.icon}</span>
@@ -147,7 +158,29 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     price={item.price}
                                     className={`text-[18px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
                                 />
-                                
+
+                                {/* [v2] 프리/에프터마쾓 확장가격 표시 */}
+                                {item.extendedPrice && (
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <span className="text-[9px] text-indigo-400 font-black bg-indigo-500/10 border border-indigo-500/20 px-1.5 rounded">
+                                            {item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER'}
+                                        </span>
+                                        <span className={`text-[11px] font-black font-mono ${
+                                            (() => {
+                                                const chg = parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,''));
+                                                return chg > 0 ? 'text-red-400' : chg < 0 ? 'text-blue-400' : 'text-gray-400';
+                                            })()
+                                        }`}>
+                                            {item.extendedPrice}
+                                            {item.extendedChange && (
+                                                <span className="text-[9px] ml-0.5 opacity-70">
+                                                    ({parseFloat(String(item.extendedChange).replace(/[^0-9.-]/g,'')) > 0 ? '+' : ''}{item.extendedChange})
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                )}
+
                                 {/* Entry Price & Yield Display */}
                                 {(item.added_price !== undefined || item.quantity !== undefined) && (
                                     <div 
