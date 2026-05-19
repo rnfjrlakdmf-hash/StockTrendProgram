@@ -1006,11 +1006,15 @@ function DiscoveryContent() {
 
                                         {/* [New] 해외 주식 세션별 가격 위젯 (프리마켓 / 정규장 / 에프터마켓) */}
                                         {(extendedHours || extendedLoading) && (
-                                            <GlobalExtendedHoursWidget
-                                                data={extendedHours}
-                                                loading={extendedLoading}
-                                                lastUpdated={extendedLastUpdated}
-                                            />
+                                            <>
+                                                <GlobalExtendedHoursWidget
+                                                    data={extendedHours}
+                                                    loading={extendedLoading}
+                                                    lastUpdated={extendedLastUpdated}
+                                                />
+                                                {/* [New] 실시간 업그레이드 안내 배너 (KIS 미연동 시만 표시) */}
+                                                <KisRealTimeBanner />
+                                            </>
                                         )}
 
                                         {/* NXT / After-hours Card (Sub-box style, 국내 전용) */}
@@ -2563,6 +2567,73 @@ function StockLiveChart({ symbol }: { symbol: string }) {
 
 
 // Old DividendHealthTab removed in favor of FinancialsTable and direct raw_data binding
+
+// [New] KIS 실시간 안내 배너 (해외주식 조회 시, KIS 미연동 유저에게만 표시)
+function KisRealTimeBanner() {
+    const [dismissed, setDismissed] = useState(false);
+    const [kisConnected, setKisConnected] = useState(false);
+
+    useEffect(() => {
+        // localStorage에서 KIS 키 존재 여부 확인
+        const stored = localStorage.getItem('user_kis_keys');
+        if (stored) {
+            try { JSON.parse(stored); setKisConnected(true); } catch {}
+        }
+        // 이번 세션에 닫았으면 숨김
+        if (sessionStorage.getItem('kis_banner_dismissed') === 'true') {
+            setDismissed(true);
+        }
+    }, []);
+
+    if (kisConnected || dismissed) return null;
+
+    return (
+        <div className="relative mt-3 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-amber-950/40 to-orange-950/30 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* 닫기 버튼 */}
+            <button
+                onClick={() => { setDismissed(true); sessionStorage.setItem('kis_banner_dismissed', 'true'); }}
+                className="absolute top-3 right-3 text-gray-600 hover:text-gray-400 text-lg leading-none"
+            >
+                ×
+            </button>
+
+            <div className="flex items-start gap-3 pr-6">
+                {/* 아이콘 */}
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-base">⚡</span>
+                </div>
+
+                <div className="flex-1">
+                    <div className="text-sm font-black text-amber-300 mb-0.5">
+                        실시간으로 보고 싶으신가요?
+                    </div>
+                    <div className="text-[11px] text-gray-400 leading-relaxed mb-3">
+                        현재 <span className="text-amber-400 font-bold">10초 간격</span>으로 갱신 중입니다.
+                        한국투자증권 OpenAPI를 연동하면 나스닥·NYSE 체결가를 <span className="text-white font-bold">즉시 실시간</span>으로 볼 수 있습니다.
+                        <span className="text-green-400 font-bold"> 계좌 개설 + API 발급 모두 무료</span>입니다.
+                    </div>
+
+                    {/* 단계 요약 */}
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                        {['① KIS 계좌 개설', '② API 키 발급', '③ 앱 설정 입력'].map((step, i) => (
+                            <span key={i} className="text-[10px] bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded-full font-bold">
+                                {step}
+                            </span>
+                        ))}
+                        <span className="text-[10px] text-green-400 font-bold">→ 실시간 완료!</span>
+                    </div>
+
+                    <a
+                        href="/settings"
+                        className="inline-flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-black px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                        ⚙️ 설정 페이지에서 진행하기 →
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 
 // [New] 해외 주식 프리마켓 / 정규장 / 에프터마켓 세션별 가격 위젯

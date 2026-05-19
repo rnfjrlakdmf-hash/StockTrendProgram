@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle, Zap, Eye, EyeOff, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function SettingsPage() {
     const { user } = useAuth();
-    
+
     // 🔒 Hidden Admin Mode
     const [adminMode, setAdminMode] = useState(false);
     const [clickCount, setClickCount] = useState(0);
@@ -16,22 +16,62 @@ export default function SettingsPage() {
     const [freeMode, setFreeMode] = useState(false);
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    // Initialize state on client-side only
+    // [New] KIS API 키 상태
+    const [kisAppKey, setKisAppKey] = useState('');
+    const [kisSecret, setKisSecret] = useState('');
+    const [kisAccount, setKisAccount] = useState('');
+    const [showKeys, setShowKeys] = useState(false);
+    const [kisGuideOpen, setKisGuideOpen] = useState(false);
+    const [kisConnected, setKisConnected] = useState(false);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             setFreeMode(sessionStorage.getItem('admin_free_mode') === 'true');
+            // 저장된 KIS 키 불러오기
+            const stored = localStorage.getItem('user_kis_keys');
+            if (stored) {
+                try {
+                    const keys = JSON.parse(stored);
+                    setKisAppKey(keys.kis_app_key || '');
+                    setKisSecret(keys.kis_secret || '');
+                    setKisAccount(keys.kis_account || '');
+                    setKisConnected(true);
+                } catch {}
+            }
         }
     }, []);
 
+    const handleSaveKis = () => {
+        if (!kisAppKey.trim() || !kisSecret.trim() || !kisAccount.trim()) {
+            setMsg({ type: 'error', text: '모든 항목을 입력해 주세요.' });
+            return;
+        }
+        const keys = {
+            kis_app_key: kisAppKey.trim(),
+            kis_secret: kisSecret.trim(),
+            kis_account: kisAccount.trim(),
+        };
+        localStorage.setItem('user_kis_keys', JSON.stringify(keys));
+        setKisConnected(true);
+        setMsg({ type: 'success', text: '✅ KIS API 키가 저장되었습니다! 이제 실시간 시세가 활성화됩니다.' });
+        setTimeout(() => setMsg(null), 4000);
+    };
+
+    const handleClearKis = () => {
+        localStorage.removeItem('user_kis_keys');
+        setKisAppKey('');
+        setKisSecret('');
+        setKisAccount('');
+        setKisConnected(false);
+        setMsg({ type: 'success', text: '🗑️ KIS API 키가 삭제되었습니다.' });
+        setTimeout(() => setMsg(null), 3000);
+    };
+
     const handleHeaderClick = () => {
         const now = Date.now();
-        if (now - lastClickTime > 2000) {
-            setClickCount(1);
-        } else {
-            setClickCount(prev => prev + 1);
-        }
+        if (now - lastClickTime > 2000) { setClickCount(1); }
+        else { setClickCount(prev => prev + 1); }
         setLastClickTime(now);
-
         if (clickCount + 1 >= 7) {
             setAdminMode(true);
             setClickCount(0);
@@ -43,20 +83,188 @@ export default function SettingsPage() {
         const newMode = !freeMode;
         setFreeMode(newMode);
         sessionStorage.setItem('admin_free_mode', newMode.toString());
-        setMsg({
-            type: 'success',
-            text: newMode ? '🎁 무료 모드 활성화! (앱 종료 시까지 유지)' : '무료 모드 비활성화됨'
-        });
+        setMsg({ type: 'success', text: newMode ? '🎁 무료 모드 활성화! (앱 종료 시까지 유지)' : '무료 모드 비활성화됨' });
     };
+
+    const maskKey = (key: string) => key ? key.substring(0, 6) + '••••••••••••••••••••' + key.slice(-4) : '';
 
     return (
         <div className="min-h-screen text-white pb-20">
-            {/* Header: Click title for Secret Admin Mode */}
             <div onClick={handleHeaderClick} className="cursor-default select-none">
                 <Header title="설정" subtitle="앱 환경 설정" />
             </div>
 
             <div className="max-w-2xl mx-auto p-6 space-y-6">
+
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    [New] KIS 실시간 시세 연동
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className={`rounded-3xl border shadow-xl transition-all duration-300 ${kisConnected
+                    ? 'bg-gradient-to-br from-blue-950/60 to-purple-950/60 border-blue-500/40'
+                    : 'bg-white/5 border-white/10'}`}>
+
+                    {/* 헤더 */}
+                    <div className="p-6 pb-0">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${kisConnected ? 'bg-blue-500/20' : 'bg-white/5'}`}>
+                                    <Zap className={`w-5 h-5 ${kisConnected ? 'text-blue-400' : 'text-gray-500'}`} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                        실시간 시세 연동
+                                        {kisConnected && (
+                                            <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-black tracking-widest">LIVE</span>
+                                        )}
+                                    </h3>
+                                    <p className="text-xs text-gray-400">한국투자증권 OpenAPI</p>
+                                </div>
+                            </div>
+                            <div className={`w-3 h-3 rounded-full ${kisConnected ? 'bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-gray-600'}`} />
+                        </div>
+
+                        {/* 상태 메시지 */}
+                        <div className={`mt-4 p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${kisConnected
+                            ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
+                            : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'}`}>
+                            {kisConnected ? (
+                                <><CheckCircle className="w-4 h-4 shrink-0" /> 실시간 시세가 활성화되어 있습니다. 해외주식도 즉시 체결가로 업데이트됩니다.</>
+                            ) : (
+                                <><AlertTriangle className="w-4 h-4 shrink-0" /> 현재 10초 간격 갱신 중입니다. 실시간으로 보고 싶으면 아래 단계를 진행하세요.</>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 4단계 가이드 (접이식) */}
+                    <div className="px-6 pt-4">
+                        <button
+                            onClick={() => setKisGuideOpen(!kisGuideOpen)}
+                            className="w-full flex items-center justify-between py-2 text-sm font-bold text-gray-300 hover:text-white transition-colors"
+                        >
+                            <span>📋 연동 방법 보기 (4단계 · 무료)</span>
+                            {kisGuideOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+
+                        {kisGuideOpen && (
+                            <div className="pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {[
+                                    {
+                                        step: '1',
+                                        icon: '🏦',
+                                        title: '한국투자증권 계좌 개설',
+                                        desc: '앱에서 5분이면 개설 완료. 계좌 개설 비용 없음',
+                                        link: 'https://www.truefriend.com',
+                                        linkLabel: '공식 홈페이지 →',
+                                        color: 'border-blue-500/30 bg-blue-500/5'
+                                    },
+                                    {
+                                        step: '2',
+                                        icon: '🔑',
+                                        title: 'OpenAPI 포털 가입 후 앱 등록',
+                                        desc: 'App Key · App Secret 발급 (무료)',
+                                        link: 'https://apiportal.koreainvestment.com',
+                                        linkLabel: 'KIS Developers 바로가기 →',
+                                        color: 'border-purple-500/30 bg-purple-500/5'
+                                    },
+                                    {
+                                        step: '3',
+                                        icon: '✅',
+                                        title: '미국주식 실시간 시세 신청',
+                                        desc: '한국투자증권 앱 → 해외주식 메뉴에서 실시간 시세 신청 (완전 무료)',
+                                        link: null,
+                                        linkLabel: null,
+                                        color: 'border-green-500/30 bg-green-500/5'
+                                    },
+                                    {
+                                        step: '4',
+                                        icon: '⚡',
+                                        title: '아래 입력창에 키 입력 후 저장',
+                                        desc: 'App Key, App Secret, 계좌번호 입력하면 즉시 실시간 활성화',
+                                        link: null,
+                                        linkLabel: null,
+                                        color: 'border-amber-500/30 bg-amber-500/5'
+                                    },
+                                ].map((item) => (
+                                    <div key={item.step} className={`flex gap-3 p-3 rounded-xl border ${item.color}`}>
+                                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-black text-white shrink-0">
+                                            {item.step}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                                                <span>{item.icon}</span> {item.title}
+                                            </div>
+                                            <div className="text-[11px] text-gray-400 mt-0.5">{item.desc}</div>
+                                            {item.link && (
+                                                <a
+                                                    href={item.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 mt-1 font-bold"
+                                                >
+                                                    {item.linkLabel} <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 키 입력 폼 */}
+                    <div className="px-6 pb-6 space-y-3">
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold text-gray-400">API 키 입력</span>
+                            <button
+                                onClick={() => setShowKeys(!showKeys)}
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300"
+                            >
+                                {showKeys ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                {showKeys ? '숨기기' : '표시'}
+                            </button>
+                        </div>
+
+                        {[
+                            { label: 'App Key', value: kisAppKey, setter: setKisAppKey, placeholder: 'P-xxxxxxxxxxxxxxxx...' },
+                            { label: 'App Secret', value: kisSecret, setter: setKisSecret, placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxx...' },
+                            { label: '계좌번호', value: kisAccount, setter: setKisAccount, placeholder: '50123456-01 (대시 포함 또는 숫자만)' },
+                        ].map((field) => (
+                            <div key={field.label}>
+                                <label className="text-[11px] text-gray-500 font-bold mb-1 block">{field.label}</label>
+                                <input
+                                    type={showKeys ? 'text' : 'password'}
+                                    value={field.value}
+                                    onChange={(e) => field.setter(e.target.value)}
+                                    placeholder={field.placeholder}
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 font-mono"
+                                />
+                            </div>
+                        ))}
+
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                onClick={handleSaveKis}
+                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2"
+                            >
+                                <Zap className="w-4 h-4" /> 저장하고 실시간 활성화
+                            </button>
+                            {kisConnected && (
+                                <button
+                                    onClick={handleClearKis}
+                                    className="px-4 py-2.5 bg-red-900/20 hover:bg-red-900/30 text-red-400 rounded-xl text-sm border border-red-500/20 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        <p className="text-[10px] text-gray-600 text-center">
+                            🔒 API 키는 이 기기의 브라우저에만 저장되며 서버로 전송되지 않습니다
+                        </p>
+                    </div>
+                </div>
+
+
                 
                 {/* Admin Panel (Hidden by default) */}
                 {adminMode && (
