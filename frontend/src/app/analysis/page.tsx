@@ -274,7 +274,7 @@ function AnalysisContent() {
         if (!isBackground && ANALYSIS_CACHE[sym].sector[cacheKey]) {
             setSectorData(ANALYSIS_CACHE[sym].sector[cacheKey]);
             setSectorLoading(false);
-            const activeId = ANALYSIS_CACHE[sym].sector[cacheKey].compare_sectors?.find((s: any) => s.selected)?.id;
+            const activeId = Array.isArray(ANALYSIS_CACHE[sym].sector[cacheKey].compare_sectors) ? ANALYSIS_CACHE[sym].sector[cacheKey].compare_sectors.find((s: any) => s.selected)?.id : null;
             if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             
             // Background Update
@@ -303,7 +303,7 @@ function AnalysisContent() {
             if (json.status === "success") {
                 ANALYSIS_CACHE[sym].sector[cacheKey] = json.data;
                 setSectorData(json.data);
-                const activeId = json.data.compare_sectors?.find((s: any) => s.selected)?.id;
+                const activeId = Array.isArray(json.data.compare_sectors) ? json.data.compare_sectors.find((s: any) => s.selected)?.id : null;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
         } catch (err) { console.error(err); }
@@ -838,11 +838,11 @@ function AnalysisContent() {
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <select
-                                        value={selectedSectorId || (sectorData?.compare_sectors || []).find((s: any) => s.selected)?.id || ""}
+                                        value={selectedSectorId || (Array.isArray(sectorData?.compare_sectors) ? sectorData.compare_sectors : []).find((s: any) => s.selected)?.id || ""}
                                         onChange={(e) => { const newId = e.target.value; setSelectedSectorId(newId); fetchSectorAnalysis(secSymbol || symbol, newId); }}
                                         className="bg-black/80 border border-white/20 rounded-2xl px-6 py-3 text-sm font-black text-white outline-none focus:ring-4 focus:ring-red-500/30 min-w-[240px] cursor-pointer appearance-none shadow-xl"
                                     >
-                                        {(sectorData?.compare_sectors || []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}</option>)}
+                                        {(Array.isArray(sectorData?.compare_sectors) ? sectorData.compare_sectors : []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}</option>)}
                                     </select>
                                     <button onClick={() => handleGlobalSearch("sector")} className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-black shadow-[0_10px_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 text-white">데이터 갱신</button>
                                 </div>
@@ -955,10 +955,10 @@ function AnalysisContent() {
                                                                     <span className="text-[10px] font-black text-gray-500 uppercase mb-1 tracking-widest">Curr FY0</span>
                                                                     <span className="text-3xl font-black text-red-500 tabular-nums drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">
                                                                         {(() => {
-                                                                            const r = cat.rows?.find((r: any) => r.name === "내 종목");
+                                                                            const r = Array.isArray(cat.rows) ? cat.rows.find((r: any) => r.name === "내 종목") : null;
                                                                             if (!r) return "-";
-                                                                            const hds = cat.headers || [];
-                                                                            const isEst = hds.some((h: string) => h.includes('(E)') || h.includes('(A)'));
+                                                                            const hds = Array.isArray(cat.headers) ? cat.headers : [];
+                                                                            const isEst = hds.some((h: string) => typeof h === 'string' && (h.includes('(E)') || h.includes('(A)')));
                                                                             const targetIdx = isEst && hds.length > 1 ? hds.length - 2 : hds.length - 1;
                                                                             const targetH = hds[targetIdx] || "";
                                                                             return r[targetH] ?? "-";
