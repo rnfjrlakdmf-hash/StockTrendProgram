@@ -371,6 +371,17 @@ export default function PortfolioPage() {
                 </button>
               </div>
             </h2>
+            
+            {/* 로그인 유도 메시지 (비로그인 시) */}
+            {!isLoggedIn && (
+              <div className="text-[11px] sm:text-xs text-yellow-400/80 bg-yellow-500/10 px-4 py-3 rounded-xl border border-yellow-500/20 mb-4 flex gap-3 items-start">
+                <span className="text-base shrink-0">💡</span> 
+                <span className="leading-relaxed">
+                  <strong>관심종목 연동</strong>은 사이드바 하단에서 <strong>구글 로그인</strong> 후 이용할 수 있습니다.<br />
+                  로그인 없이 즉시 포트폴리오를 진단해 보시려면 우측 상단의 <strong>[직접 추가]</strong> 버튼을 이용해 주세요.
+                </span>
+              </div>
+            )}
 
             {/* 종목 태그 */}
             {holdings.length > 0 && (
