@@ -5,13 +5,14 @@ from typing import Dict, Any, List
 
 # [NEW] Import internal data crawlers for better accuracy
 try:
-    from korea_data import gather_naver_stock_data, search_stock_code
+    from korea_data import gather_naver_stock_data, search_stock_code, get_stock_financials
     from dart_financials import get_dart_financials
     from turbo_engine import turbo_engine
 except ImportError:
     # If called from specific context or standalone
     gather_naver_stock_data = None
     search_stock_code = None
+    get_stock_financials = None
     get_dart_financials = None
     turbo_engine = None
 
@@ -58,7 +59,8 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
 
         # 2. Extract Key Metrics (Prefer Naver for Korean stocks)
         if naver_data:
-            summary = naver_data.get("detailed_financials", {}).get("summary", {})
+            fin_data = get_stock_financials(symbol) if get_stock_financials else {}
+            summary = fin_data.get("detailed", {}).get("summary", {}) if isinstance(fin_data, dict) else {}
             per = naver_data.get("per") or info.get("trailingPE") or info.get("forwardPE") or 0
             pbr = naver_data.get("pbr") or info.get("priceToBook") or 0
             # Naver returns ROE/Margin as raw value (10.5 for 10.5%)
@@ -245,8 +247,8 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         info = t.info or {}
         
         # Safely extract detailed financials
-        detailed = naver_data.get("detailed_financials") if naver_data else None
-        if not detailed: detailed = {}
+        fin_data = get_stock_financials(symbol) if get_stock_financials else {}
+        detailed = fin_data.get("detailed", {}) if isinstance(fin_data, dict) else {}
         
         nav_full = detailed.get("full_data", {})
         
@@ -591,7 +593,8 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                     mc_display = f"{mc/1e12:.1f}조" if mc > 1e12 else (f"{mc/1e8:.0f}억" if mc > 1e8 else "N/A")
 
                 # --- Handle Financial Ratios (Naver Summary Prioritized) ---
-                nav_sum = naver_data.get("detailed_financials", {}).get("summary", {}) if naver_data else {}
+                fin_data = get_stock_financials(ticker_sym) if get_stock_financials else {}
+                nav_sum = fin_data.get("detailed", {}).get("summary", {}) if isinstance(fin_data, dict) else {}
                 
                 def get_val(key, yf_key, scale=1):
                     val = nav_sum.get(key)
