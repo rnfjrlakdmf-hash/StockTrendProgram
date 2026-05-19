@@ -159,7 +159,7 @@ def get_sector_analysis_data(symbol, sector_id=None):
                 logging.error(f"Error fetching {label}: {e}")
             return None
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(fetch_metric, k, l, p) for k, (l, p) in metric_procs.items()]
             for future in concurrent.futures.as_completed(futures):
                 res = future.result()

@@ -306,8 +306,12 @@ function AnalysisContent() {
                 const activeId = Array.isArray(json.data.compare_sectors) ? json.data.compare_sectors.find((s: any) => s.selected)?.id : null;
                 if (!selectedSectorId && activeId) setSelectedSectorId(activeId);
             }
-        } catch (err) { console.error(err); }
-        finally { if (!isBackground) setSectorLoading(false); }
+        } catch (err) {
+            console.error(err);
+            setSectorData({ error: "네트워크 통신 지연으로 섹터 분석 데이터를 불러오지 못했습니다. 데이터 갱신 버튼을 눌러 다시 시도해주세요." });
+        } finally { 
+            if (!isBackground) setSectorLoading(false); 
+        }
     };
 
      const fetchPeer = async () => {
