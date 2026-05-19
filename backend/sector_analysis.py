@@ -100,23 +100,22 @@ def get_sector_analysis_data(symbol, sector_id=None):
         # Master Timeline Sync Logic
         final_headers = []
 
-        for m_key, (label, proc_id) in metric_procs.items():
+        import concurrent.futures
+
+        def fetch_metric(m_key, label, proc_id):
             try:
                 url = f"https://navercomp.wisereport.co.kr/company/chart/c1090001.aspx?proc={proc_id}&cmp_cd={symbol}&data_typ=1&chartType=svg"
                 if active_sector_id: url += f"&sec_cd={active_sector_id}"
                 
                 resp = requests.get(url, headers=headers, timeout=5)
-                # Parse robustly - MUST use decode_safe to prevent mojibake
                 decoded_text = decode_safe(resp)
                 try:
                     j = json.loads(decoded_text)
                 except Exception as e:
-                    logging.error(f"JSON Parse Error: {e}")
-                    continue
+                    logging.error(f"JSON Parse Error for {label}: {e}")
+                    return None
                 
                 m_yymm = j.get("yymm", [])
-                if not final_headers and m_yymm: final_headers = m_yymm
-                
                 m_items = j.get("data", [])
                 rows = []
                 for item in m_items:
@@ -126,7 +125,6 @@ def get_sector_analysis_data(symbol, sector_id=None):
                     nm = category_map.get(gubn, "Other")
                     row = {"name": nm}
                     
-                    # [v4.9.5] Dynamic FY Alignment Logic
                     is_est = any('(E)' in x or '(A)' in x for x in m_yymm)
                     fy0_idx = len(m_yymm) - 2 if is_est and len(m_yymm) > 1 else len(m_yymm) - 1
                     if fy0_idx < 0: fy0_idx = 0
@@ -144,22 +142,43 @@ def get_sector_analysis_data(symbol, sector_id=None):
                         ent = {"period": h}
                         for r in rows: ent[r["name"]] = r.get(h) or 0.0
                         c_data.append(ent)
-                    charts[label] = {"headers": m_yymm, "rows": rows, "chart_data": c_data}
                     
-                    # Summary Table update (using the determined FY0 index)
                     fy0_idx = len(m_yymm) - 2 if (any('(E)' in x for x in m_yymm) and len(m_yymm) > 1) else len(m_yymm) - 1
                     if fy0_idx < 0: fy0_idx = 0
-                    
                     target_h = m_yymm[fy0_idx] if len(m_yymm) > fy0_idx else None
-                    for r in rows:
-                        s_r = next((x for x in summary_table if x["name"] == r["name"]), None)
-                        if not s_r:
-                            s_r = {"name": r["name"]}
-                            summary_table.append(s_r)
-                        if target_h:
-                            s_r[m_key] = r.get(target_h)
+                    
+                    return {
+                        "label": label,
+                        "m_key": m_key,
+                        "m_yymm": m_yymm,
+                        "chart_entry": {"headers": m_yymm, "rows": rows, "chart_data": c_data},
+                        "summary_rows": rows,
+                        "target_h": target_h
+                    }
             except Exception as e:
                 logging.error(f"Error fetching {label}: {e}")
+            return None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_metric, k, l, p) for k, (l, p) in metric_procs.items()]
+            for future in concurrent.futures.as_completed(futures):
+                res = future.result()
+                if not res: continue
+                
+                label = res["label"]
+                m_key = res["m_key"]
+                charts[label] = res["chart_entry"]
+                
+                if not final_headers and res["m_yymm"]:
+                    final_headers = res["m_yymm"]
+                
+                for r in res["summary_rows"]:
+                    s_r = next((x for x in summary_table if x["name"] == r["name"]), None)
+                    if not s_r:
+                        s_r = {"name": r["name"]}
+                        summary_table.append(s_r)
+                    if res["target_h"]:
+                        s_r[m_key] = r.get(res["target_h"])
 
         # 3. Handle Special 'Price Returns' (dt1) for genuine granular chart parity
         try:
