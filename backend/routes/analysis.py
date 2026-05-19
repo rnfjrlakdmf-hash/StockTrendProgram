@@ -21,6 +21,105 @@ def stock_company_overview(symbol: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/stock/{symbol}/extended-hours")
+def stock_extended_hours(symbol: str):
+    """
+    [New] 해외 주식 세션별 가격 정보: 프리마켓 / 정규장 / 에프터마켓
+    나스닥, S&P500 등 미국 주식 및 주요 해외 지수에 대응합니다.
+    """
+    import re
+    try:
+        from rank_data import get_world_stock_integration
+        
+        # 해외 종목 여부 확인
+        clean_code = symbol.split('.')[0]
+        is_domestic = len(clean_code) == 6 and clean_code.isdigit()
+        
+        if is_domestic:
+            return {"status": "error", "message": "국내 종목은 extended-hours 데이터가 제공되지 않습니다."}
+        
+        # 네이버 해외 주식 통합 API 호출
+        raw = get_world_stock_integration([symbol])
+        item = raw.get(symbol) if raw else None
+        
+        if not item:
+            return {"status": "error", "message": f"해외 주식 데이터를 찾을 수 없습니다: {symbol}"}
+        
+        over = item.get("overMarketPriceInfo") or {}
+        
+        # 세션 타입 결정
+        session_type = over.get("tradingSessionType", "")  # PRE_MARKET or AFTER_HOURS
+        over_status = over.get("overMarketStatus", "CLOSE")  # OPEN or CLOSE
+        market_status = item.get("marketStatus", "CLOSE")    # OPEN or CLOSE
+        
+        # 정규장 데이터
+        regular_price = float(item.get("currentPrice", 0))
+        regular_change = float(item.get("fluctuations", 0))
+        regular_change_pct = float(item.get("fluctuationsRatio", 0))
+        prev_close = float(item.get("lastClosePrice", regular_price - regular_change))
+        
+        # 시외 데이터 (프리마켓 또는 에프터마켓)
+        over_price = float(over.get("overPrice", 0)) if over.get("overPrice") else None
+        over_change = float(over.get("fluctuations", 0)) if over.get("fluctuations") else None
+        over_change_pct = float(over.get("fluctuationsRatio", 0)) if over.get("fluctuationsRatio") else None
+        over_update_time = over.get("localTradedAt", "")
+        
+        # 세션 라벨 결정
+        if market_status == "OPEN":
+            current_session = "장중 (Regular Hours)"
+        elif session_type == "PRE_MARKET" and over_status == "OPEN":
+            current_session = "프리마켓 (Pre-Market)"
+        elif session_type == "AFTER_HOURS" and over_status == "OPEN":
+            current_session = "에프터마켓 (After Hours)"
+        else:
+            current_session = "장마감 (Market Closed)"
+        
+        result = {
+            "symbol": item.get("symbolCode", symbol),
+            "name": item.get("stockName", symbol),
+            "exchange": item.get("stockExchangeType", ""),
+            "currency": item.get("currencyType", "USD"),
+            "current_session": current_session,
+            "market_status": market_status,
+            
+            # 정규장 (전일 기준)
+            "regular": {
+                "price": regular_price,
+                "change": regular_change,
+                "change_pct": regular_change_pct,
+                "prev_close": prev_close,
+                "open": float(item.get("openPrice", 0)) if item.get("openPrice") else None,
+                "high": float(item.get("highPrice", 0)) if item.get("highPrice") else None,
+                "low": float(item.get("lowPrice", 0)) if item.get("lowPrice") else None,
+                "volume": int(item.get("accumulatedTradingVolume", 0)) if item.get("accumulatedTradingVolume") else None,
+                "is_active": market_status == "OPEN",
+                "updated_at": item.get("localTradedAt", ""),
+            },
+            
+            # 시외 거래 (프리마켓 or 에프터마켓)
+            "extended": {
+                "price": over_price,
+                "change": over_change,
+                "change_pct": over_change_pct,
+                "session_type": session_type,   # PRE_MARKET or AFTER_HOURS
+                "status": over_status,           # OPEN or CLOSE
+                "is_active": over_status == "OPEN",
+                "updated_at": over_update_time,
+            } if over_price else None,
+            
+            # 추가 정보
+            "per": item.get("per"),
+            "pbr": item.get("pbr"),
+            "dividend_yield": item.get("dividendYieldRatio"),
+            "market_cap": item.get("marketValue"),
+        }
+        
+        return {"status": "success", "data": result}
+    except Exception as e:
+        print(f"[extended-hours] Error for {symbol}: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 @router.get("/stock/{symbol}/fast")
 async def read_stock_fast(symbol: str):
     """최적의 체감 속도를 위해 AI 분석을 생략하고 핵심 주가/재무 데이터만 즉시 반환합니다."""

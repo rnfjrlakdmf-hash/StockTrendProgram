@@ -340,10 +340,30 @@ function DiscoveryContent() {
     const [healthData, setHealthData] = useState<any>(null);
     const [dividendLoading, setDividendLoading] = useState(false);
 
+    // [New] 해외 주식 프리마켓/에프터마켓 세션별 데이터
+    const [extendedHours, setExtendedHours] = useState<any>(null);
+    const [extendedLoading, setExtendedLoading] = useState(false);
+
     useEffect(() => {
         setMounted(true);
         console.log("[Discovery] Mounted. API_BASE_URL:", API_BASE_URL);
     }, []);
+
+    // [New] 해외 주식 세션별 데이터 fetch (프리마켓 / 정규장 / 에프터마켓)
+    useEffect(() => {
+        if (!stock?.symbol) { setExtendedHours(null); return; }
+        const sym = stock.symbol;
+        const cleanCode = sym.split('.')[0];
+        const isDomestic = (sym.endsWith('.KS') || sym.endsWith('.KQ') || /^\d{6}$/.test(cleanCode));
+        if (isDomestic) { setExtendedHours(null); return; }
+
+        setExtendedLoading(true);
+        fetch(`${API_BASE_URL}/api/analysis/stock/${encodeURIComponent(sym)}/extended-hours`)
+            .then(r => r.json())
+            .then(d => { if (d.status === 'success') setExtendedHours(d.data); else setExtendedHours(null); })
+            .catch(() => setExtendedHours(null))
+            .finally(() => setExtendedLoading(false));
+    }, [stock?.symbol]);
 
     // [New] News Period State
     const [newsPeriod, setNewsPeriod] = useState('1d');
@@ -943,8 +963,16 @@ function DiscoveryContent() {
                                             </div>
                                         </div>
 
-                                        {/* NXT / After-hours Card (Sub-box style) */}
-                                        {(stock.nxt_data || stock.after_market_data) && (
+                                        {/* [New] 해외 주식 세션별 가격 위젯 (프리마켓 / 정규장 / 에프터마켓) */}
+                                        {(extendedHours || extendedLoading) && (
+                                            <GlobalExtendedHoursWidget
+                                                data={extendedHours}
+                                                loading={extendedLoading}
+                                            />
+                                        )}
+
+                                        {/* NXT / After-hours Card (Sub-box style, 국내 전용) */}
+                                        {!extendedHours && (stock.nxt_data || stock.after_market_data) && (
                                             <div className="bg-white/5 border border-white/10 rounded-3xl p-5 md:p-6 max-w-md transition-all hover:bg-white/[0.08] group relative overflow-hidden shadow-2xl">
                                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                                                     <Clock className="w-12 h-12 text-indigo-400" />
@@ -2495,3 +2523,154 @@ function StockLiveChart({ symbol }: { symbol: string }) {
 // Old DividendHealthTab removed in favor of FinancialsTable and direct raw_data binding
 
 
+// [New] 해외 주식 프리마켓 / 정규장 / 에프터마켓 세션별 가격 위젯
+function GlobalExtendedHoursWidget({ data, loading }: { data: any; loading: boolean }) {
+    if (loading) {
+        return (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 w-fit">
+                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                <span className="text-xs text-gray-400 font-bold animate-pulse">장외 시세 로딩 중...</span>
+            </div>
+        );
+    }
+    if (!data) return null;
+
+    const { regular, extended, current_session, currency } = data;
+    const currencySymbol = currency === 'USD' ? '$' : (currency === 'KRW' ? '₩' : currency + ' ');
+
+    const isPre = extended?.session_type === 'PRE_MARKET';
+    const isAfter = extended?.session_type === 'AFTER_HOURS';
+    const isRegularActive = data.market_status === 'OPEN';
+    const isExtendedActive = extended?.is_active;
+
+    const getChangeColor = (val: number) => val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-gray-400';
+    const getChangeBg = (val: number) => val > 0 ? 'bg-rose-500/10 border-rose-500/30' : val < 0 ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10';
+    const arrow = (val: number) => val > 0 ? '▲ ' : val < 0 ? '▼ ' : '';
+
+    const fmt = (n: number, decimals = 2) => n?.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+    return (
+        <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* 세션 상태 배지 */}
+            <div className="flex items-center gap-2 mb-3">
+                <div className={`w-2 h-2 rounded-full ${
+                    isRegularActive ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]' :
+                    isExtendedActive ? 'bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(192,132,252,0.6)]' :
+                    'bg-gray-600'
+                }`} />
+                <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                    {current_session}
+                </span>
+                <span className="text-[10px] text-gray-600 font-mono ml-1">{data.exchange}</span>
+            </div>
+
+            {/* 세션 카드 그리드 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                {/* ① 프리마켓 */}
+                <div className={`relative rounded-2xl border p-4 transition-all duration-300 ${
+                    isPre && isExtendedActive
+                        ? 'bg-purple-900/20 border-purple-500/40 shadow-[0_0_20px_rgba(168,85,247,0.15)]'
+                        : 'bg-white/[0.03] border-white/8 opacity-60'
+                }`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                            isPre && isExtendedActive
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'bg-white/5 text-gray-500 border border-white/10'
+                        }`}>Pre-Market</span>
+                        {isPre && isExtendedActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                        )}
+                    </div>
+                    {isPre && extended?.price ? (
+                        <>
+                            <div className="text-2xl font-black text-white font-mono tracking-tight">
+                                {currencySymbol}{fmt(extended.price)}
+                            </div>
+                            <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(extended.change || 0)}`}>
+                                <span>{arrow(extended.change || 0)}{Math.abs(extended.change || 0).toFixed(2)}</span>
+                                <span className="text-xs opacity-70">({extended.change_pct > 0 ? '+' : ''}{extended.change_pct?.toFixed(2)}%)</span>
+                            </div>
+                            <div className="text-[10px] text-gray-500 mt-1.5 font-mono">
+                                vs 전일종가 {currencySymbol}{fmt(regular.prev_close)}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-gray-600 text-xs font-bold mt-1">세션 미개장</div>
+                    )}
+                </div>
+
+                {/* ② 정규장 */}
+                <div className={`relative rounded-2xl border p-4 transition-all duration-300 ${
+                    isRegularActive
+                        ? 'bg-green-900/20 border-green-500/40 shadow-[0_0_20px_rgba(34,197,94,0.12)]'
+                        : 'bg-white/[0.03] border-white/8'
+                }`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                            isRegularActive
+                                ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                : 'bg-white/5 text-gray-400 border border-white/10'
+                        }`}>Regular Hours</span>
+                        {isRegularActive && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />}
+                    </div>
+                    <div className="text-2xl font-black text-white font-mono tracking-tight">
+                        {currencySymbol}{fmt(regular.price)}
+                    </div>
+                    <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(regular.change || 0)}`}>
+                        <span>{arrow(regular.change || 0)}{Math.abs(regular.change || 0).toFixed(2)}</span>
+                        <span className="text-xs opacity-70">({regular.change_pct > 0 ? '+' : ''}{regular.change_pct?.toFixed(2)}%)</span>
+                    </div>
+                    {(regular.high || regular.low) && (
+                        <div className="text-[10px] text-gray-500 mt-1.5 font-mono">
+                            H {currencySymbol}{fmt(regular.high)} · L {currencySymbol}{fmt(regular.low)}
+                        </div>
+                    )}
+                </div>
+
+                {/* ③ 에프터마켓 */}
+                <div className={`relative rounded-2xl border p-4 transition-all duration-300 ${
+                    isAfter && isExtendedActive
+                        ? 'bg-amber-900/20 border-amber-500/40 shadow-[0_0_20px_rgba(251,191,36,0.12)]'
+                        : 'bg-white/[0.03] border-white/8 opacity-60'
+                }`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                            isAfter && isExtendedActive
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-white/5 text-gray-500 border border-white/10'
+                        }`}>After Hours</span>
+                        {isAfter && isExtendedActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                        )}
+                    </div>
+                    {isAfter && extended?.price ? (
+                        <>
+                            <div className="text-2xl font-black text-white font-mono tracking-tight">
+                                {currencySymbol}{fmt(extended.price)}
+                            </div>
+                            <div className={`flex items-center gap-1 mt-1 text-sm font-bold ${getChangeColor(extended.change || 0)}`}>
+                                <span>{arrow(extended.change || 0)}{Math.abs(extended.change || 0).toFixed(2)}</span>
+                                <span className="text-xs opacity-70">({extended.change_pct > 0 ? '+' : ''}{extended.change_pct?.toFixed(2)}%)</span>
+                            </div>
+                            <div className="text-[10px] text-gray-500 mt-1.5 font-mono">
+                                vs 정규장 종가 {currencySymbol}{fmt(regular.price)}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-gray-600 text-xs font-bold mt-1">세션 미개장</div>
+                    )}
+                </div>
+            </div>
+
+            {/* 전일 종가 기준선 정보 */}
+            <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-gray-500 font-mono">
+                <span>전일종가 {currencySymbol}{fmt(regular.prev_close)}</span>
+                {regular.volume && <span>· 거래량 {Number(regular.volume).toLocaleString()}</span>}
+                {data.per && <span>· PER {Number(data.per).toFixed(1)}x</span>}
+                {data.dividend_yield && <span>· 배당 {(Number(data.dividend_yield) * 1).toFixed(2)}%</span>}
+            </div>
+        </div>
+    );
+}
