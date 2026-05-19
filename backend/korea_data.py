@@ -3530,7 +3530,14 @@ def get_korean_investment_indicators(
             values = {}
             # DATA1, DATA2 ... 순서대로 헤더와 매칭
             for i, h in enumerate(headers):
-                key = f"DATA{i + 1}"
+                if i < 6:
+                    key = f"DATA{i + 1}"
+                elif i == 6:
+                    key = "YYOY"
+                elif i == 7:
+                    key = "YEYOY"
+                else:
+                    key = f"DATA{i + 1}"
                 val = row.get(key)
                 # N/A 등 문자열 정리
                 try:
