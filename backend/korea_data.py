@@ -1333,50 +1333,66 @@ def get_naver_stock_info(symbol: str):
     suffixes = ['', '.O', '.N', '.A', '.T', '.HK', '.VN', '.SH', '.SZ']
 
     def _parse_naver_foreign(data: dict, sym: str) -> dict:
-        """네이버 해외주식 basic API 응답 → 표준 quote dict 변환 (세션 정보 포함)"""
+        """
+        네이버 해외주식 basic API 응답 → 표준 quote dict 변환
+        [v2 Fix] 실제 API 구조 반영:
+          - marketStatus: 정규장 상태만 (OPEN/CLOSE)
+          - overMarketPriceInfo.tradingSessionType: PRE_MARKET / AFTER_MARKET
+          - overMarketPriceInfo.overMarketStatus: OPEN / CLOSE (확장 세션 열림 여부)
+          - overMarketPriceInfo.overPrice: 확장 세션 가격
+        """
         price_raw = data.get('closePrice', '0').replace(',', '')
         pct = float(data.get('fluctuationsRatio', '0') or 0)
         is_foreign = '.' in sym or bool(re.search(r'[A-Za-z]', sym))
         price_str = f"{float(price_raw):,.2f}" if is_foreign else f"{float(price_raw):,.0f}"
 
-        # ── 세션 판별 ──────────────────────────────────────────────
-        # 네이버 API: marketStatus 값 예시
-        #   'PREOPEN'   → 프리마켓
-        #   'OPEN'      → 장중
-        #   'AFTER'     → 에프터마켓
-        #   'CLOSE'     → 장마감
-        ms_raw = str(data.get('marketStatus', '') or '').upper()
-        if 'PRE' in ms_raw:      market_status = '프리마켓'
-        elif 'AFTER' in ms_raw:  market_status = '에프터마켓'
-        elif 'OPEN' in ms_raw:   market_status = '장중'
-        else:                    market_status = '장마감'
+        # ── 세션 판별 ─────────────────────────────────────────────────
+        # 우선순위: overMarketPriceInfo (프리/에프터) → marketStatus (정규장)
+        over_info = data.get('overMarketPriceInfo') or {}
+        session_type = str(over_info.get('tradingSessionType', '') or '').upper()
+        over_status  = str(over_info.get('overMarketStatus', '') or '').upper()
+        reg_status   = str(data.get('marketStatus', '') or '').upper()
 
-        # ── 프리마켓 정보 ──────────────────────────────────────────
-        pre = data.get('preMarketPriceInfo') or {}
-        after = data.get('afterHoursMarketPriceInfo') or {}
+        if 'PRE_MARKET' in session_type and over_status == 'OPEN':
+            market_status = '프리마켓'
+        elif 'AFTER_MARKET' in session_type and over_status == 'OPEN':
+            market_status = '에프터마켓'
+        elif reg_status == 'OPEN':
+            market_status = '장중'
+        else:
+            market_status = '장마감'
 
-        ext_data = pre if market_status == '프리마켓' else after
+        # ── 확장 세션 가격 추출 ────────────────────────────────────────
         ext_price = None
         ext_change = None
-        if ext_data:
-            ep_raw = str(ext_data.get('closePrice') or ext_data.get('price') or '').replace(',', '')
+        if over_info and over_status == 'OPEN':
+            ep_raw = str(over_info.get('overPrice') or '').replace(',', '')
             try:
                 ext_price = f"{float(ep_raw):,.2f}" if ep_raw else None
             except: pass
-            ec_raw = ext_data.get('fluctuationsRatio') or ext_data.get('changeRate')
+            ec_raw = over_info.get('fluctuationsRatio')
             if ec_raw is not None:
                 try: ext_change = f"{float(ec_raw):+.2f}%"
                 except: pass
 
+        # ── 프리마켓 중이면 표시 가격을 확장가로 교체 ─────────────────
+        display_price = price_str
+        display_pct   = pct
+        if ext_price and market_status in ('프리마켓', '에프터마켓'):
+            display_price = ext_price
+            try: display_pct = float(str(over_info.get('fluctuationsRatio', pct)))
+            except: pass
+
         return {
             "symbol": sym,
             "name": data.get('stockName', sym),
-            "price": price_str,
-            "change": f"{pct:+.2f}%",
-            "change_percent": f"{pct:+.2f}%",
+            "price": display_price,           # 현재 활성 가격 (프리/에프터마켓 우선)
+            "regular_price": price_str,       # 정규장 종가
+            "change": f"{display_pct:+.2f}%",
+            "change_percent": f"{display_pct:+.2f}%",
             "change_val": str(data.get('compareToPreviousClosePrice', '0')).replace(',', ''),
             "risefall_name": data.get('compareToPreviousPrice', {}).get('name', 'UNCHANGED'),
-            "up": pct >= 0,
+            "up": display_pct >= 0,
             "currency": "USD" if is_foreign else "KRW",
             "market_status": market_status,
             "extended_price": ext_price,

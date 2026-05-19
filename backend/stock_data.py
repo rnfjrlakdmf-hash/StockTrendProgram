@@ -961,7 +961,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         print(f"Error fetching data for {symbol}: {e}")
         return None
 
-@turbo_cache(ttl_seconds=60)
+@turbo_cache(ttl_seconds=10)  # [v2] 관심종목 10초 폴링에 맞춰 단축
 def get_simple_quote(symbol: str, broker_client=None, strict=False):
     """
     고객님이 요청한 '실시간 정보' 확보를 최우선으로 합니다.
