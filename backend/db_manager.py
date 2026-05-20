@@ -252,16 +252,25 @@ def create_user_if_not_exists(user_data):
         cursor.execute("SELECT id FROM users WHERE id = ?", (user_data['id'],))
         row = cursor.fetchone()
         
+        admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+        is_admin = user_data.get('email', '').lower() in admin_emails
+        is_pro_val = 1 if is_admin else 0
+        
         if not row:
             cursor.execute('''
-                INSERT INTO users (id, email, name, picture, free_trial_count)
-                VALUES (?, ?, ?, ?, 2)
-            ''', (user_data['id'], user_data['email'], user_data['name'], user_data['picture']))
+                INSERT INTO users (id, email, name, picture, is_pro, free_trial_count)
+                VALUES (?, ?, ?, ?, ?, 2)
+            ''', (user_data['id'], user_data['email'], user_data['name'], user_data['picture'], is_pro_val))
         else:
             # Update info
-            cursor.execute('''
-                UPDATE users SET name = ?, picture = ? WHERE id = ?
-            ''', (user_data['name'], user_data['picture'], user_data['id']))
+            if is_admin:
+                cursor.execute('''
+                    UPDATE users SET name = ?, picture = ?, is_pro = 1, pro_expires_at = NULL WHERE id = ?
+                ''', (user_data['name'], user_data['picture'], user_data['id']))
+            else:
+                cursor.execute('''
+                    UPDATE users SET name = ?, picture = ? WHERE id = ?
+                ''', (user_data['name'], user_data['picture'], user_data['id']))
             
         conn.commit()
         return True
@@ -280,9 +289,14 @@ def get_user(user_id):
         if row:
             is_pro = bool(row[4])
             pro_expires_at = row[6]
+            email = row[1]
             
-            # 만료 기간이 지났으면 Pro 권한 회수
-            if is_pro and pro_expires_at:
+            # 관리자 계정은 항상 PRO 상태 유지
+            admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+            if email and email.lower() in admin_emails:
+                is_pro = True
+            # 만료 기간이 지났으면 Pro 권한 회수 (관리자 제외)
+            elif is_pro and pro_expires_at:
                 try:
                     expires_dt = datetime.strptime(pro_expires_at, "%Y-%m-%d %H:%M:%S")
                     if datetime.utcnow() > expires_dt:

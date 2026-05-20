@@ -24,6 +24,8 @@ export default function SettingsPage() {
     const [kisGuideOpen, setKisGuideOpen] = useState(false);
     const [kisConnected, setKisConnected] = useState(false);
     const [isKisCollapsed, setIsKisCollapsed] = useState(true);
+    const [isAccountCollapsed, setIsAccountCollapsed] = useState(false);
+    const [isBrokersCollapsed, setIsBrokersCollapsed] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -40,7 +42,7 @@ export default function SettingsPage() {
                     setIsKisCollapsed(true); // 이미 연동되어 있다면 접어둡니다.
                 } catch {}
             } else {
-                setIsKisCollapsed(false); // 연동되어 있지 않다면 열어둡니다.
+                setIsKisCollapsed(true); // 연동되어 있지 않아도 기본적으로 접은 상태로 유지합니다.
             }
         }
     }, []);
@@ -353,69 +355,104 @@ export default function SettingsPage() {
                 )}
 
                 {/* Account Info */}
-                <div className="bg-white/5 rounded-3xl p-8 border border-white/10 shadow-xl">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-3">
-                        <User className="w-5 h-5 text-blue-400" />
-                        계정 정보
-                    </h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
-                            <span className="text-gray-400 font-medium">로그인 상태</span>
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black tracking-widest ${user ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
-                                {user ? 'LOGGED IN' : 'GUEST'}
-                            </span>
-                        </div>
-                        {user && (
-                            <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
-                                <span className="text-gray-400 font-medium">연동 이메일</span>
-                                <span className="text-white text-sm font-bold">{user.email}</span>
+                <div className="bg-white/5 rounded-3xl border border-white/10 shadow-xl overflow-hidden transition-all duration-300">
+                    <div 
+                        onClick={() => setIsAccountCollapsed(!isAccountCollapsed)}
+                        className={`p-6 cursor-pointer select-none hover:bg-white/[0.02] active:bg-white/[0.04] transition-all flex items-center justify-between ${!isAccountCollapsed ? 'pb-3' : ''}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                                <User className="w-5 h-5 text-blue-400" />
                             </div>
-                        )}
+                            <div>
+                                <h3 className="text-lg font-black text-white">계정 정보</h3>
+                                <p className="text-xs text-gray-400">로그인 상태 및 연동 계정</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {isAccountCollapsed ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronUp className="w-5 h-5 text-gray-400" />}
+                        </div>
                     </div>
+
+                    {!isAccountCollapsed && (
+                        <div className="p-6 pt-2 space-y-4 animate-in fade-in slide-in-from-top-3 duration-250">
+                            <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
+                                <span className="text-gray-400 font-medium">로그인 상태</span>
+                                <span className={`px-4 py-1.5 rounded-full text-xs font-black tracking-widest ${user ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                    {user ? 'LOGGED IN' : 'GUEST'}
+                                </span>
+                            </div>
+                            {user && (
+                                <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
+                                    <span className="text-gray-400 font-medium">연동 이메일</span>
+                                    <span className="text-white text-sm font-bold">{user.email}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Broker Quick Links */}
-                <div className="bg-white/5 rounded-3xl p-8 border border-white/10 shadow-xl">
-                    <h3 className="text-lg font-bold mb-2 flex items-center gap-3">
-                        <Smartphone className="w-5 h-5 text-green-400" />
-                        증권사 앱 바로가기
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-6">자주 사용하는 증권사 앱을 빠르게 실행할 수 있습니다.</p>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {[
-                            { name: "토스증권", color: "from-blue-600 to-blue-800", deepLink: "supertoss://", webUrl: "https://tossinvest.com" },
-                            { name: "KB증권", color: "from-yellow-600 to-yellow-800", deepLink: "kb-mable://", webUrl: "https://www.kbsec.com" },
-                            { name: "미래에셋", color: "from-orange-600 to-orange-800", deepLink: "miraeasset-mstock://", webUrl: "https://securities.miraeasset.com" },
-                            { name: "NH나무증권", color: "from-green-600 to-green-800", deepLink: "nh-namuh://", webUrl: "https://www.nhqv.com" },
-                            { name: "삼성증권", color: "from-indigo-600 to-indigo-800", deepLink: "samsungpop://", webUrl: "https://www.samsungpop.com" },
-                            { name: "카카오페이증권", color: "from-amber-500 to-amber-700", deepLink: "kakaopaysec://", webUrl: "https://securities.kakaopay.com" },
-                        ].map((broker) => (
-                            <button
-                                key={broker.name}
-                                onClick={() => {
-                                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                    if (isMobile) {
-                                        const timeout = setTimeout(() => {
-                                            window.open(broker.webUrl, '_blank');
-                                        }, 1500);
-                                        window.location.href = broker.deepLink;
-                                        window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
-                                    } else {
-                                        window.open(broker.webUrl, '_blank');
-                                    }
-                                }}
-                                className={`bg-gradient-to-br ${broker.color} p-5 rounded-2xl text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 border border-white/10 group`}
-                            >
-                                {broker.name}
-                                <ExternalLink className="w-3 h-3 opacity-40 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                        ))}
+                <div className="bg-white/5 rounded-3xl border border-white/10 shadow-xl overflow-hidden transition-all duration-300">
+                    <div 
+                        onClick={() => setIsBrokersCollapsed(!isBrokersCollapsed)}
+                        className={`p-6 cursor-pointer select-none hover:bg-white/[0.02] active:bg-white/[0.04] transition-all flex items-center justify-between ${!isBrokersCollapsed ? 'pb-3' : ''}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                                <Smartphone className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-white">증권사 앱 바로가기</h3>
+                                <p className="text-xs text-gray-400">자주 사용하는 증권사 빠른 연결</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {isBrokersCollapsed ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronUp className="w-5 h-5 text-gray-400" />}
+                        </div>
                     </div>
 
-                    <p className="text-[10px] text-gray-600 mt-6 text-center italic">
-                        * 본 기능은 편의용 연결 도구이며, 어떠한 투자 권유나 종목 추천을 포함하지 않습니다.
-                    </p>
+                    {!isBrokersCollapsed && (
+                        <div className="p-6 pt-2 animate-in fade-in slide-in-from-top-3 duration-250">
+                            <p className="text-xs text-gray-500 mb-6">자주 사용하는 증권사 앱을 빠르게 실행할 수 있습니다.</p>
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {[
+                                    { name: "토스증권", color: "from-blue-600 to-blue-800", deepLink: "supertoss://", webUrl: "https://tossinvest.com" },
+                                    { name: "KB증권", color: "from-yellow-600 to-yellow-800", deepLink: "kb-mable://", webUrl: "https://www.kbsec.com" },
+                                    { name: "미래에셋", color: "from-orange-600 to-orange-800", deepLink: "miraeasset-mstock://", webUrl: "https://securities.miraeasset.com" },
+                                    { name: "NH나무증권", color: "from-green-600 to-green-800", deepLink: "nh-namuh://", webUrl: "https://www.nhqv.com" },
+                                    { name: "삼성증권", color: "from-indigo-600 to-indigo-800", deepLink: "samsungpop://", webUrl: "https://www.samsungpop.com" },
+                                    { name: "카카오페이증권", color: "from-amber-500 to-amber-700", deepLink: "kakaopaysec://", webUrl: "https://securities.kakaopay.com" },
+                                ].map((broker) => (
+                                    <button
+                                        key={broker.name}
+                                        onClick={() => {
+                                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                            if (isMobile) {
+                                                const timeout = setTimeout(() => {
+                                                    window.open(broker.webUrl, '_blank');
+                                                }, 1500);
+                                                window.location.href = broker.deepLink;
+                                                window.location.href = broker.deepLink;
+                                                window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
+                                            } else {
+                                                window.open(broker.webUrl, '_blank');
+                                            }
+                                        }}
+                                        className={`bg-gradient-to-br ${broker.color} p-5 rounded-2xl text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 border border-white/10 group`}
+                                    >
+                                        {broker.name}
+                                        <ExternalLink className="w-3 h-3 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                ))}
+                            </div>
+
+                            <p className="text-[10px] text-gray-600 mt-6 text-center italic">
+                                * 본 기능은 편의용 연결 도구이며, 어떠한 투자 권유나 종목 추천을 포함하지 않습니다.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="py-10 text-center space-y-2">

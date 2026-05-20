@@ -25,6 +25,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isAdminEmail = (email: string | undefined | null): boolean => {
+    if (!email) return false;
+    const lower = email.toLowerCase();
+    return lower === "rnfjr@gmail.com" || lower === "rnfjrlakdmf@gmail.com";
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const storedUser = localStorage.getItem("stock_user");
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
+                if (isAdminEmail(parsedUser.email)) {
+                    parsedUser.is_pro = true;
+                }
                 setUser(parsedUser);
                 
                 // [Self-Healing] Silent background sync to ensure the backend DB 'users' table is populated
@@ -51,8 +60,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "success" && data.user) {
-                        localStorage.setItem("stock_user", JSON.stringify(data.user));
-                        localStorage.setItem("user_id", data.user.id);
+                        const serverUser = { ...data.user };
+                        if (isAdminEmail(serverUser.email)) {
+                            serverUser.is_pro = true;
+                        }
+                        localStorage.setItem("stock_user", JSON.stringify(serverUser));
+                        localStorage.setItem("user_id", serverUser.id);
+                        setUser(prev => {
+                            if (prev && prev.id === serverUser.id) {
+                                return serverUser;
+                            }
+                            return prev;
+                        });
                     }
                 })
                 .catch(err => console.warn("Silent background user sync failed:", err));
@@ -104,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: googleUser.email,
             name: googleUser.name,
             picture: googleUser.picture || "",
-            is_pro: false,
+            is_pro: isAdminEmail(googleUser.email),
             free_trial_count: 2,
         };
         setUser(immediateUser);
@@ -127,6 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const data = await res.json();
                 if (data.status === "success" && data.user) {
                     const serverUser = { ...data.user };
+                    if (isAdminEmail(serverUser.email)) {
+                        serverUser.is_pro = true;
+                    }
                     setUser(serverUser);
                     localStorage.setItem("stock_user", JSON.stringify(serverUser));
                     localStorage.setItem("user_id", serverUser.id);
