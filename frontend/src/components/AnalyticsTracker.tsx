@@ -29,7 +29,20 @@ export default function AnalyticsTracker() {
     // 2. 페이지뷰 전송 핸들러
     const sendPing = async (isPageview: boolean) => {
         try {
+            // 관리자 계정(rnfjr@gmail.com, rnfjrlakdmf@gmail.com)은 PV/UV 수집 대상에서 제외
+            if (user?.email && (user.email === "rnfjr@gmail.com" || user.email === "rnfjrlakdmf@gmail.com")) {
+                console.log("[Analytics] Skipping analytics ping for admin user:", user.email);
+                return;
+            }
+
             const visitorId = getVisitorId();
+
+            // 관리자 고유 식별자(Google ID 등)가 visitor_id에 포함된 경우에도 수집 제외
+            if (visitorId.includes("110418985320259217419") || visitorId.includes("rnfjr@gmail.com") || visitorId.includes("rnfjrlakdmf@gmail.com")) {
+                console.log("[Analytics] Skipping analytics ping for admin visitor ID:", visitorId);
+                return;
+            }
+
             await fetch(`${API_BASE_URL}/api/system/analytics/ping`, {
                 method: "POST",
                 headers: {

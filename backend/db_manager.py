@@ -1125,6 +1125,27 @@ def record_pageview(visitor_id: str):
     now = datetime.now(kst)
     today_str = now.strftime("%Y-%m-%d")
 
+    # 관리자 조회수 집계 방지 (이메일 및 고유 Google ID 식별자)
+    admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+    admin_user_ids = {'110418985320259217419', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+    
+    visitor_clean = visitor_id.lower()
+    is_admin = False
+    
+    if any(email in visitor_clean for email in admin_emails) or \
+       any(uid in visitor_clean for uid in admin_user_ids):
+        is_admin = True
+        
+    if not is_admin and visitor_id.startswith("user_"):
+        extracted_user_id = visitor_id[5:]
+        user_info = get_user(extracted_user_id)
+        if user_info and user_info.get('email', '').lower() in admin_emails:
+            is_admin = True
+            
+    if is_admin:
+        print(f"[Analytics-Skip] Skipped recording pageview for admin visitor: {visitor_id}")
+        return True
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
