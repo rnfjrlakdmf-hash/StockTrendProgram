@@ -20,6 +20,13 @@ def read_env():
     except Exception as e:
         numpy_ver = f"Error: {e}"
 
+    git_log = "Unknown"
+    try:
+        import subprocess
+        git_log = subprocess.check_output(["git", "log", "-1", "--oneline"]).decode().strip()
+    except Exception as e:
+        git_log = f"Error: {e}"
+
     return {
         "os": platform.system(),
         "python": sys.version,
@@ -27,5 +34,7 @@ def read_env():
         "numpy": numpy_ver,
         "cwd": os.getcwd(),
         "env_keys": list(os.environ.keys()),
-        "db_path_exists": os.path.exists("/tmp/stock_app.db")
+        "db_path_exists": os.path.exists("/tmp/stock_app.db"),
+        "git_log": git_log,
+        "test_timestamp": "2026-05-20 23:38:00"
     }
