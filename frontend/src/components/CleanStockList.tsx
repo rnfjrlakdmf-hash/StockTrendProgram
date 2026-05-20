@@ -208,32 +208,60 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     >
                                         {item.added_price > 0 || (item.quantity && item.quantity > 0) ? (
                                             <>
-                                                <div className="text-[9px] md:text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                                                    <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">보유</span>
-                                                    <span className="font-mono">
-                                                        {(item.added_price || 0).toLocaleString()}원 
-                                                        {item.quantity && item.quantity > 0 ? ` (${item.quantity.toLocaleString()}주)` : ''} 
-                                                        <span className="text-[8px] text-gray-500 ml-1">✎</span>
-                                                    </span>
-                                                </div>
-                                                {item.added_price > 0 && (
-                                                    <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${
-                                                        (() => {
-                                                            const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                            const diff = curP - (item.added_price || 0);
-                                                            return diff > 0 ? 'text-red-400' : diff < 0 ? 'text-blue-400' : 'text-gray-400';
-                                                        })()
-                                                    }`}>
-                                                        {(() => {
-                                                            const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                            if (isNaN(curP)) return "로딩중...";
-                                                            const perShareDiff = curP - (item.added_price || 0);
-                                                            const totalDiff = perShareDiff * (item.quantity && item.quantity > 0 ? item.quantity : 1);
-                                                            const pct = ((curP - (item.added_price || 0)) / (item.added_price || 1)) * 100;
-                                                            return `${totalDiff > 0 ? '+' : ''}${totalDiff.toLocaleString()}원 (${pct > 0 ? '+' : ''}${pct.toFixed(2)}%)`;
-                                                        })()}
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const isUSD = item.currency && item.currency !== 'KRW';
+                                                    const currencySign = isUSD ? '$' : '';
+                                                    const currencyUnit = isUSD ? '' : '원';
+                                                    const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                    const addedP = item.added_price || 0;
+                                                    
+                                                    const perShareDiff = !isNaN(curP) ? (curP - addedP) : 0;
+                                                    const totalDiff = perShareDiff * (item.quantity && item.quantity > 0 ? item.quantity : 1);
+                                                    const pct = addedP > 0 ? ((curP - addedP) / addedP) * 100 : 0;
+                                                    
+                                                    const isDiffPositive = perShareDiff > 0;
+                                                    const isDiffNegative = perShareDiff < 0;
+                                                    const diffColorClass = isDiffPositive ? 'text-red-400' : isDiffNegative ? 'text-blue-400' : 'text-gray-400';
+
+                                                    // 해외 주식이고 환율 정보(price_krw)가 있는 경우, 원화 환산 손익도 계산
+                                                    let krwDiffStr = "";
+                                                    if (isUSD && item.price_krw && !isNaN(curP) && curP > 0) {
+                                                        const rawKrwPrice = parseFloat(String(item.price_krw).replace(/[^0-9.]/g, ''));
+                                                        if (!isNaN(rawKrwPrice)) {
+                                                            const exchangeRate = rawKrwPrice / curP;
+                                                            const totalDiffKrw = totalDiff * exchangeRate;
+                                                            krwDiffStr = ` (≈ ₩${Math.round(totalDiffKrw).toLocaleString()})`;
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <>
+                                                            <div className="text-[9px] md:text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                                                                <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">보유</span>
+                                                                <span className="font-mono">
+                                                                    {currencySign}
+                                                                    {isUSD 
+                                                                        ? addedP.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                        : addedP.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                                    {currencyUnit}
+                                                                    {item.quantity && item.quantity > 0 ? ` (${item.quantity.toLocaleString()}주)` : ''} 
+                                                                    <span className="text-[8px] text-gray-500 ml-1">✎</span>
+                                                                </span>
+                                                            </div>
+                                                            {addedP > 0 && (
+                                                                <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${diffColorClass}`}>
+                                                                    {isNaN(curP) ? "로딩중..." : (
+                                                                        `${totalDiff > 0 ? '+' : ''}${currencySign}${
+                                                                            isUSD
+                                                                                ? totalDiff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                                : totalDiff.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                                                        }${currencyUnit} (${pct > 0 ? '+' : ''}${pct.toFixed(2)}%)${krwDiffStr}`
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </>
                                         ) : (
                                             <div className="text-[9px] md:text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-1">

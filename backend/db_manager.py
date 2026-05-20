@@ -131,6 +131,28 @@ def init_db():
         try:
             cursor.execute("ALTER TABLE watchlist ADD COLUMN quantity REAL DEFAULT 0")
         except: pass
+
+    # Watchlist Backup Table (For self-healing and data protection)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS watchlist_backup (
+            user_id TEXT,
+            symbol TEXT,
+            added_price REAL DEFAULT 0,
+            quantity REAL DEFAULT 0,
+            is_deleted INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, symbol)
+        )
+    ''')
+    
+    # [Migration] Copy existing items in watchlist to watchlist_backup if not exists
+    try:
+        cursor.execute("""
+            INSERT OR IGNORE INTO watchlist_backup (user_id, symbol, added_price, quantity, is_deleted)
+            SELECT user_id, symbol, added_price, quantity, 0 FROM watchlist
+        """)
+    except Exception as e:
+        print(f"Error copying existing watchlist to backup: {e}")
     
 
     
@@ -595,11 +617,17 @@ def add_watchlist(user_id: str, symbol: str, added_price: float = 0, quantity: f
         u_id = user_id.strip() if user_id else "guest"
         s_sym = symbol.strip() if symbol else ""
         
-        # Check if exists to preserve created_at or other fields if doing a soft update
-        # but INSERT OR REPLACE is fine, we just include quantity.
+        # 1. 실제 테이블에 저장
         conn.execute("INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price, quantity) VALUES (?, ?, ?, ?)", (u_id, s_sym, added_price, quantity))
+        
+        # 2. 백업 테이블에 저장 (is_deleted = 0)
+        conn.execute("""
+            INSERT OR REPLACE INTO watchlist_backup (user_id, symbol, added_price, quantity, is_deleted, updated_at)
+            VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+        """, (u_id, s_sym, added_price, quantity))
+        
         conn.commit()
-        print(f"[DB] Watchlist added: {u_id} -> {s_sym} (${added_price}, qty: {quantity})")
+        print(f"[DB] Watchlist added & backed up: {u_id} -> {s_sym} (${added_price}, qty: {quantity})")
         return True
     except Exception as e:
         print(f"Error adding to watchlist: {e}")
@@ -612,8 +640,22 @@ def remove_watchlist(user_id, symbol):
     cursor = conn.cursor()
     u_id = user_id.strip() if user_id else "guest"
     try:
+        # 1. 실제 테이블에서 제거
         cursor.execute("DELETE FROM watchlist WHERE user_id = ? AND symbol = ?", (u_id, symbol))
+        
+        # 2. 백업 테이블에 삭제 마크 (is_deleted = 1)
+        cursor.execute("""
+            INSERT INTO watchlist_backup (user_id, symbol, is_deleted, updated_at)
+            VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, symbol) DO UPDATE SET
+                is_deleted = 1,
+                updated_at = CURRENT_TIMESTAMP
+        """, (u_id, symbol))
+        
         conn.commit()
+        print(f"[DB] Watchlist removed & backup updated: {u_id} -> {symbol}")
+    except Exception as e:
+        print(f"Error removing from watchlist: {e}")
     finally:
         conn.close()
 
@@ -705,10 +747,40 @@ def update_user_keys(user_id, app_key, secret, account):
     finally:
         conn.close()
 
+def heal_watchlist(user_id: str):
+    """
+    관심종목 백업 테이블(watchlist_backup)에서 삭제되지 않은(is_deleted = 0) 종목이
+    실제 관심종목 테이블(watchlist)에 누락되어 있다면 자동으로 복구합니다.
+    """
+    if not user_id:
+        return
+    u_id = user_id.strip()
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    try:
+        # 백업 테이블에는 존재(is_deleted = 0)하지만 실제 테이블에는 없는 종목을 찾아서 복구
+        cursor.execute("""
+            INSERT OR IGNORE INTO watchlist (user_id, symbol, added_price, quantity)
+            SELECT user_id, symbol, added_price, quantity
+            FROM watchlist_backup
+            WHERE user_id = ? AND is_deleted = 0
+        """, (u_id,))
+        if cursor.rowcount > 0:
+            print(f"[Watchlist-Healing] Restored {cursor.rowcount} missing symbols for user: {u_id}")
+            conn.commit()
+    except Exception as e:
+        print(f"[Watchlist-Healing] Error during healing: {e}")
+    finally:
+        conn.close()
+
 def get_watchlist(user_id):
     if not user_id:
         return []
     u_id = user_id.strip() if user_id else "guest"
+    
+    # 힐링 메커니즘 가동 (백업에서 복구)
+    heal_watchlist(u_id)
+    
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT symbol, added_price, quantity FROM watchlist WHERE user_id = ?", (u_id,))
@@ -718,21 +790,28 @@ def get_watchlist(user_id):
     return res
 
 def migrate_watchlist(from_id, to_id):
-    """guest 등의 임시 ID에서 실제 로그인 ID로 관심종목 이동"""
+    """guest 등의 임시 ID에서 실제 로그인 ID로 관심종목 이동 및 백업"""
     if not from_id or not to_id or from_id == to_id:
         return False
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        # 1. from_id의 종목들을 to_id로 복사 (INSERT OR IGNORE)
+        # 1. watchlist 테이블 마이그레이션 (added_price, quantity 포함 복사)
         cursor.execute("""
-            INSERT OR IGNORE INTO watchlist (user_id, symbol)
-            SELECT ?, symbol FROM watchlist WHERE user_id = ?
+            INSERT OR REPLACE INTO watchlist (user_id, symbol, added_price, quantity)
+            SELECT ?, symbol, added_price, quantity FROM watchlist WHERE user_id = ?
         """, (to_id, from_id))
         
-        # 2. 이동 완료 후 guest(from_id) 데이터 삭제
+        # 2. watchlist_backup 테이블 마이그레이션 (added_price, quantity, is_deleted 포함 복사)
+        cursor.execute("""
+            INSERT OR REPLACE INTO watchlist_backup (user_id, symbol, added_price, quantity, is_deleted)
+            SELECT ?, symbol, added_price, quantity, is_deleted FROM watchlist_backup WHERE user_id = ?
+        """, (to_id, from_id))
+        
+        # 3. 이동 완료 후 guest(from_id) 데이터 삭제
         cursor.execute("DELETE FROM watchlist WHERE user_id = ?", (from_id,))
+        cursor.execute("DELETE FROM watchlist_backup WHERE user_id = ?", (from_id,))
         
         conn.commit()
         return True
@@ -837,11 +916,18 @@ def get_user_fcm_tokens(user_id: str) -> list:
 def get_fcm_preferences(token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact FROM fcm_tokens WHERE token = ?", (token,))
+    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, user_id FROM fcm_tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
     conn.close()
     if row:
-        return {"pref_morning": bool(row[0]), "pref_closing": bool(row[1]), "pref_price": bool(row[2]), "pref_news": bool(row[3]) if len(row) > 3 else True, "pref_watch_compact": bool(row[4]) if len(row) > 4 else False}
+        return {
+            "pref_morning": bool(row[0]), 
+            "pref_closing": bool(row[1]), 
+            "pref_price": bool(row[2]), 
+            "pref_news": bool(row[3]) if len(row) > 3 else True, 
+            "pref_watch_compact": bool(row[4]) if len(row) > 4 else False,
+            "user_id": row[5] if len(row) > 5 else "guest"
+        }
     return None
 
 def update_fcm_preferences(token: str, prefs: dict):

@@ -303,11 +303,11 @@ def get_realtime_top10(market="KR", refresh=False):
                 "price": 0.0, "change": "0.00%", "change_value": 0.0, "change_percent": 0.0
             }
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(fetch_data, item) for item in symbols]
         for future in futures:
             try:
-                res = future.result(timeout=10)
+                res = future.result(timeout=3)
                 if res and res['price'] > 0: # Filter out zeros
                     results.append(res)
             except Exception as e:
@@ -715,7 +715,7 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                 if rf: p_item["risefall"] = 2 if rf == 'RISING' else (5 if rf == 'FALLING' else 3)
             return p_item
 
-        with ThreadPoolExecutor(max_workers=5) as ex:
+        with ThreadPoolExecutor(max_workers=3) as ex:
             processed = list(ex.map(enrich, processed))
 
     # 4. Padding & Cache

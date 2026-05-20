@@ -27,7 +27,7 @@ export default function WatchlistPage() {
     const [quotes, setQuotes] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const { user, isLoading: isAuthLoading } = useAuth();
+    const { user, isLoading: isAuthLoading, isMigrating } = useAuth();
     
     // Alert Modal State
     const [alertStock, setAlertStock] = useState<{ symbol: string; price: number; addedPrice?: number } | null>(null);
@@ -50,6 +50,13 @@ export default function WatchlistPage() {
 
     const fetchWatchlist = async () => {
         if (!user) return;
+        
+        // [v6.6.0] 로컬 캐시가 이미 존재한다면, 로딩 스피너를 띄우지 않고 백그라운드에서 조용히 갱신합니다.
+        const hasCache = typeof window !== 'undefined' && localStorage.getItem("cached_watchlist") !== null;
+        if (hasCache) {
+            setLoading(false);
+        }
+
         try {
             const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
                 headers: { "X-User-ID": user.id || (user as any).uid }
@@ -61,8 +68,11 @@ export default function WatchlistPage() {
                     return item;
                 });
                 setWatchlist(items);
+                // 로컬 캐시 최신화
+                localStorage.setItem("cached_watchlist", JSON.stringify(items));
             } else {
                 setWatchlist([]);
+                localStorage.removeItem("cached_watchlist");
             }
         } catch (err) {
             console.error(err);
@@ -179,7 +189,7 @@ export default function WatchlistPage() {
     // 세션 배지 헬퍼 (quotes.market_status → 배지)
     // ─────────────────────────────────────────────
     const getSessionBadge = (marketStatus: string, symbol: string) => {
-        const isDomestic = /^\d{6}$/.test(symbol);
+        const isDomestic = /^\d{6}$/.test(symbol) || symbol.endsWith('.KS') || symbol.endsWith('.KQ');
         const ms = (marketStatus || '').toLowerCase();
 
         if (isDomestic) {
@@ -236,7 +246,27 @@ export default function WatchlistPage() {
 
     useEffect(() => {
         setIsAdmin(isFreeModeEnabled());
-        if (isAuthLoading) return;
+        
+        // [v6.6.0] 하이드레이션 오류를 피하기 위해 클라이언트 사이드에서 즉시 캐시를 복구합니다.
+        if (typeof window !== 'undefined') {
+            const cachedWatchlist = localStorage.getItem("cached_watchlist");
+            const cachedQuotes = localStorage.getItem("cached_quotes");
+            if (cachedWatchlist) {
+                try {
+                    const parsed = JSON.parse(cachedWatchlist);
+                    setWatchlist(parsed);
+                    // 캐시가 유효하면 초기 로딩 스피너를 건너뜁니다.
+                    setLoading(false);
+                } catch (e) {}
+            }
+            if (cachedQuotes) {
+                try {
+                    setQuotes(JSON.parse(cachedQuotes));
+                } catch (e) {}
+            }
+        }
+
+        if (isAuthLoading || isMigrating) return;
         if (user) {
             fetchWatchlist();
             fetchAlerts();
@@ -253,11 +283,12 @@ export default function WatchlistPage() {
             const cbInterval = setInterval(fetchCbAlerts, 300000);
             return () => { clearInterval(interval); clearInterval(cbInterval); };
         } else {
+            // 캐시가 없고 비회원인 경우에만 로딩을 끕니다.
             setLoading(false);
             setWatchlist([]);
             setAlerts([]);
         }
-    }, [user, isAuthLoading]);
+    }, [user, isAuthLoading, isMigrating]);
 
     useEffect(() => {
         if (watchlist.length === 0) return;
@@ -270,6 +301,8 @@ export default function WatchlistPage() {
                 const json = await res.json();
                 if (json.status === "success") {
                     setQuotes(json.data);
+                    // [v6.6.0] 시세 캐시도 함께 최신화
+                    localStorage.setItem("cached_quotes", JSON.stringify(json.data));
                     setLastUpdated(new Date());
                     // [v2] 가격 알림 체크
                     checkPriceAlerts(json.data, alerts);
@@ -298,7 +331,17 @@ export default function WatchlistPage() {
                 method: "DELETE",
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
-            setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
+            const updatedList = watchlist.filter(item => item.symbol !== symbol);
+            setWatchlist(updatedList);
+            localStorage.setItem("cached_watchlist", JSON.stringify(updatedList));
+
+            // [v6.6.0] 시세 캐시에서도 삭제
+            setQuotes(prev => {
+                const nextQuotes = { ...prev };
+                delete nextQuotes[symbol];
+                localStorage.setItem("cached_quotes", JSON.stringify(nextQuotes));
+                return nextQuotes;
+            });
             
             // Dispatch event to sync with Sidebar
             window.dispatchEvent(new CustomEvent('watchlistChanged'));
@@ -379,10 +422,10 @@ export default function WatchlistPage() {
                 {/* 1. Quotes Tab */}
                 {activeTab === "quotes" && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        {isAuthLoading || loading ? (
+                        {isAuthLoading || isMigrating || loading ? (
                             <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                                 <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                                <p>데이터를 불러오는 중입니다...</p>
+                                <p>{isMigrating ? "관심종목을 동기화하고 있습니다. 잠시만 기다려주세요..." : "데이터를 불러오는 중입니다..."}</p>
                             </div>
                         ) : !user ? (
                             <div className="flex flex-col items-center justify-center py-32 bg-white/5 border border-dashed border-white/10 rounded-3xl text-center">

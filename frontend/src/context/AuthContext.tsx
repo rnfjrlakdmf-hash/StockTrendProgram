@@ -20,6 +20,7 @@ interface AuthContextType {
     login: (googleUser: any) => Promise<boolean>;
     logout: () => void;
     isLoading: boolean;
+    isMigrating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMigrating, setIsMigrating] = useState(false);
 
     useEffect(() => {
         try {
@@ -95,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = useCallback(async (googleUser: any): Promise<boolean> => {
+        setIsMigrating(true);
         // 1단계: 구글 정보로 즉시 로컬 상태 설정 (UI 즉각 반응)
         const immediateUser: User = {
             id: googleUser.id,
@@ -107,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(immediateUser);
         localStorage.setItem("stock_user", JSON.stringify(immediateUser));
 
-        // 2단계: 백엔드 동기화 (실패해도 로그인은 유지)
+        // 2단계: 백엔드 동기화 및 마이그레이션 순차 대기
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
@@ -131,16 +134,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         } catch (e: any) {
-            // 백엔드 실패해도 로그인은 유지 (이미 1단계에서 처리됨)
             console.warn("Backend sync failed (login still succeeded):", e.message);
         }
 
-        // 백그라운드: 관심종목 마이그레이션
-        fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ guest_id: "guest", target_id: googleUser.id }),
-        }).catch(() => {});
+        try {
+            // 관심종목 마이그레이션이 완전히 종료될 때까지 대기
+            await fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ guest_id: "guest", target_id: googleUser.id }),
+            });
+        } catch (e) {
+            console.error("Migration request failed:", e);
+        } finally {
+            setIsMigrating(false);
+        }
 
         return true; // 항상 성공
     }, []);
@@ -155,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-            <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+            <AuthContext.Provider value={{ user, login, logout, isLoading, isMigrating }}>
                 {children}
             </AuthContext.Provider>
         </GoogleOAuthProvider>

@@ -91,7 +91,7 @@ export default function PortfolioPage() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [usdKrw, setUsdKrw] = useState(1350);
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isMigrating } = useAuth();
 
   // 항상 최신 userId를 반환 - localStorage 직접 읽기로 타이밍 문제 해결
   const getUserId = useCallback(() => {
@@ -113,7 +113,7 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     const userId = getUserId();
-    if (!userId) return;
+    if (!userId || isMigrating) return;
     fetch(`${API_BASE_URL}/api/portfolio`, { headers: { "X-User-ID": userId } })
       .then(r => r.json())
       .then(json => {
@@ -124,7 +124,7 @@ export default function PortfolioPage() {
       })
       .catch(console.error);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
+  }, [user, authLoading, isMigrating]);
 
   // 실시간 시세 새로고침
   const refreshPrices = useCallback(async (targets?: any[]) => {
@@ -338,9 +338,15 @@ export default function PortfolioPage() {
 
       <div className="flex-1 p-4 md:p-6">
         <div className="max-w-5xl mx-auto flex flex-col gap-6">
-
-          {/* 입력 패널 */}
-          <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+          {authLoading || isMigrating ? (
+            <div className="flex flex-col items-center justify-center py-32 text-gray-500">
+              <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
+              <p className="text-sm font-semibold">{isMigrating ? "관심종목을 동기화하고 있습니다. 잠시만 기다려주세요..." : "사용자 정보를 확인하고 있습니다..."}</p>
+            </div>
+          ) : (
+            <>
+              {/* 입력 패널 */}
+              <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
             <h2 className="text-sm font-bold text-gray-400 mb-3 flex items-center justify-between">
               <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> 보유 종목 입력</span>
               
@@ -699,6 +705,8 @@ export default function PortfolioPage() {
                 <div className="bg-white/5 rounded-xl p-3"><div className="text-2xl mb-1">💰</div><div className="text-gray-400">배당 캘린더</div></div>
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

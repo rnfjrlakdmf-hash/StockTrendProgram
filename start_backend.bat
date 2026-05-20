@@ -1,22 +1,14 @@
 @echo off
-echo ============================================
-echo 백엔드 서버 시작
-echo ============================================
-echo.
+title [StockTrend] Backend Server - Port 8000
+cd /d "C:\Users\rnfjr\StockTrendProgram\backend"
 
-cd backend
+:START
+echo [%DATE% %TIME%] Starting backend server...
 
-echo Python 가상환경 활성화 시도...
-if exist venv\Scripts\activate.bat (
-    call venv\Scripts\activate.bat
-    echo 가상환경 활성화 성공!
-) else (
-    echo 가상환경이 없습니다. 전역 Python 사용
-)
+REM venv\Scripts\python.exe 직접 호출 (activate 불필요, PowerShell 정책 문제 우회)
+venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 echo.
-echo 서버 시작 중...
-echo.
-python main.py
-
-pause
+echo [%DATE% %TIME%] Backend server stopped. Restarting in 5 seconds...
+timeout /t 5 /nobreak >nul
+goto START

@@ -1729,7 +1729,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
 }
 
 function WatchlistButton({ symbol }: { symbol: string }) {
-    const { user } = useAuth();
+    const { user, isMigrating } = useAuth();
     const [isWatchlisted, setIsWatchlisted] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -1738,6 +1738,10 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             if (!user) {
                 setLoading(false);
                 setIsWatchlisted(false);
+                return;
+            }
+            if (isMigrating) {
+                setLoading(true);
                 return;
             }
             try {
@@ -1765,12 +1769,16 @@ function WatchlistButton({ symbol }: { symbol: string }) {
             }
         };
         checkWatchlist();
-    }, [symbol, user]);
+    }, [symbol, user, isMigrating]);
 
     const toggleWatchlist = async () => {
         console.log("[Watchlist] Toggling symbol:", symbol, "isWatchlisted:", isWatchlisted);
         if (!user) {
             alert("관심종목 기능은 로그인이 필요합니다.");
+            return;
+        }
+        if (isMigrating) {
+            alert("관심종목을 동기화하고 있습니다. 잠시만 기다려주세요.");
             return;
         }
         if (loading) return;

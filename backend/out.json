@@ -1,0 +1,715 @@
+{
+  "status": "success",
+  "data": [
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] KOSDAQ \uc9c0\uc218",
+      "actual": "1,084.36",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": -2.41,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "S&P 500",
+      "actual": "7,403.05",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": -0.07,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "NASDAQ",
+      "actual": "26,090.73",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": -0.51,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] KOSPI \uc9c0\uc218",
+      "actual": "7,271.66",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": -3.25,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc601\uad6d FTSE 100",
+      "actual": "10,393.18",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": 0.67,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "NASDAQ 100",
+      "actual": "28,994.37",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": -0.45,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub3c5\uc77c DAX",
+      "actual": "24,660.30",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": 1.45,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "DOW JONES",
+      "actual": "49,686.12",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": 0.32,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ud504\ub791\uc2a4 CAC 40",
+      "actual": "8,070.99",
+      "category": "\ud83c\udf0d \uae00\ub85c\ubc8c \uc9c0\uc218",
+      "impact": "high",
+      "change": 1.05,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "VIX(\uacf5\ud3ec\uc9c0\uc218)",
+      "actual": "17.88",
+      "category": "\ud83d\udcc9 \uacf5\ud3ec\uc9c0\uc218",
+      "impact": "high",
+      "change": 0.34,
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\uad6d USD \ud658\uc728",
+      "actual": "1,506.50",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.97",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc720\ub7fd EUR \ud658\uc728",
+      "actual": "1,752.51",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.74",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc77c\ubcf8 JPY \ud658\uc728",
+      "actual": "947.16",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.81",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc911\uad6d CNY \ud658\uc728",
+      "actual": "221.37",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.87",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub2ec\ub7ec\uc778\ub371\uc2a4 \ud658\uc728",
+      "actual": "99.15",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "-0.05",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc720\ub85c/\ub2ec\ub7ec",
+      "actual": "1.1654",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.25",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub2ec\ub7ec/\uc77c\ubcf8 \uc5d4",
+      "actual": "158.7900",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.02",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc601\uad6d \ud30c\uc6b4\ub4dc/\ub2ec\ub7ec",
+      "actual": "1.3431",
+      "category": "\ud83d\udcb5 \uc678\ud658",
+      "impact": "high",
+      "change": "0.83",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "WTI",
+      "actual": "103.12",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-1.21",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ube0c\ub80c\ud2b8\uc720",
+      "actual": "109.97",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-1.90",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "RBOB \uac00\uc194\ub9b0",
+      "actual": "3.5688",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-1.45",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub09c\ubc29\uc720",
+      "actual": "3.9655",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-1.10",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uacbd\uc720",
+      "actual": "2,006.14",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.01",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ud718\ubc1c\uc720",
+      "actual": "2,011.37",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.00",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uace0\uae09\ud718\ubc1c\uc720",
+      "actual": "2,437.12",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.04",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub450\ubc14\uc774\uc720",
+      "actual": "105.78",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "1.33",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\ub2c8 \ud06c\ub8e8\ub4dc \uc624\uc77c",
+      "actual": "104.38",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "3.32",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\ub2c8 \ub09c\ubc29\uc720",
+      "actual": "4.12",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "1.53",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uac00\uc2a4\uc624\uc77c",
+      "actual": "1,193.50",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "2.71",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ucc9c\uc5f0\uac00\uc2a4",
+      "actual": "3.02",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "2.16",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\ub2c8 \ucc9c\uc5f0\uac00\uc2a4",
+      "actual": "3.03",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "2.20",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uad6d\uc81c \uae08",
+      "actual": "4,560.00",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.04",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uad6d\ub0b4 \uae08",
+      "actual": "218,710",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.16",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc740",
+      "actual": "76.86",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-0.76",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uad6c\ub9ac(\uc120\ubb3c)",
+      "actual": "6.2810",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-0.55",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubc31\uae08",
+      "actual": "1,983.50",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.31",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ud314\ub77c\ub4d0",
+      "actual": "1,416.00",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-0.35",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ucca0\uad11\uc11d",
+      "actual": "110.54",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.00",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uad6c\ub9ac(\ud604\ubb3c)",
+      "actual": "13,532.18",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.22",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc54c\ub8e8\ubbf8\ub284 \ud569\uae08",
+      "actual": "3,225.00",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.00",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub0a9",
+      "actual": "1,985.66",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.10",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc544\uc5f0",
+      "actual": "3,507.50",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "-0.33",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub2c8\ucf08",
+      "actual": "18,366.16",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.34",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc8fc\uc11d",
+      "actual": "52,310.00",
+      "category": "\ud83d\udcb0 \uc6d0\uc790\uc7ac",
+      "impact": "high",
+      "change": "0.18",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\uad6d \uad6d\ucc44 10\ub144",
+      "actual": "4.6010",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-0.48",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ud55c\uad6d \uad6d\ucc44 10\ub144",
+      "actual": "4.2150",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-0.38",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc77c\ubcf8 \uad6d\ucc44 10\ub144",
+      "actual": "2.7960",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "2.04",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ub3c5\uc77c \uad6d\ucc44 10\ub144",
+      "actual": "3.1470",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-0.44",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc911\uad6d \uad6d\ucc44 10\ub144",
+      "actual": "1.7400",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-5.33",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ubbf8\uad6d\uc5f0\ubc29\uc900\ube44\uc740\ud589",
+      "actual": "3.75",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ud55c\uad6d\uc740\ud589",
+      "actual": "2.50",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc720\ub7fd\uc911\uc559\uc740\ud589",
+      "actual": "2.15",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc601\uad6d\uc740\ud589",
+      "actual": "3.75",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\uc77c\ubcf8\uc740\ud589",
+      "actual": "0.75",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "\ucf5c\uae08\ub9ac (1\uc77c)",
+      "actual": "2.524",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "-0.11",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "CD\uae08\ub9ac (91\uc77c)",
+      "actual": "2.810",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "0.00",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "COFIX \uc2e0\uaddc\ucde8\uae09\uc561",
+      "actual": "2.890",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "2.84",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "COFIX \uc794\uc561",
+      "actual": "2.870",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "0.70",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "COFIX \uc2e0\uc794\uc561",
+      "actual": "2.490",
+      "category": "\ud83d\udcca \uae08\ub9ac/\ucc44\uad8c",
+      "impact": "high",
+      "change": "1.63",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "Unknown",
+      "actual": "114737000",
+      "category": "\u20bf \uac00\uc0c1\uc790\uc0b0",
+      "impact": "high",
+      "change": "0.36",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\uc218\uae09] \ud83e\uddfe \ucf54\uc2a4\ud53c \ud22c\uc790\uc790",
+      "actual": "\uc678\uc778:0\uc5b5 / \uae30\uad00:0\uc5b5",
+      "category": "\u2696\ufe0f \uc218\uae09 \ub3d9\ud5a5",
+      "impact": "high",
+      "change": "\uac1c\uc778:0\uc5b5",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud1b5\uacc4] \ud83d\udcc9 \ucf54\uc2a4\ud53c \ub4f1\ub77d \uc885\ubaa9",
+      "actual": "\uc0c1\uc2b9:0 / \ud558\ub77d:0",
+      "category": "\ud83d\udcca \uc2dc\uc7a5 \ud1b5\uacc4",
+      "impact": "high",
+      "change": "\ubcf4\ud569:0",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\uc218\uae09] \ud83e\uddfe \ucf54\uc2a4\ub2e5 \ud22c\uc790\uc790",
+      "actual": "\uc678\uc778:0\uc5b5 / \uae30\uad00:0\uc5b5",
+      "category": "\u2696\ufe0f \uc218\uae09 \ub3d9\ud5a5",
+      "impact": "high",
+      "change": "\uac1c\uc778:0\uc5b5",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud1b5\uacc4] \ud83d\udcc9 \ucf54\uc2a4\ub2e5 \ub4f1\ub77d \uc885\ubaa9",
+      "actual": "\uc0c1\uc2b9:0 / \ud558\ub77d:0",
+      "category": "\ud83d\udcca \uc2dc\uc7a5 \ud1b5\uacc4",
+      "impact": "high",
+      "change": "\ubcf4\ud569:0",
+      "change_val": 0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83c\udfe6 KOSPI \uc9c0\uc218",
+      "actual": "7,271.66",
+      "category": "\ud83c\udfe6 \uc8fc\uac00\uc9c0\uc218",
+      "impact": "high",
+      "change": "-3.25%",
+      "change_val": -3.25
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83c\udfe6 KOSDAQ \uc9c0\uc218",
+      "actual": "1,084.36",
+      "category": "\ud83c\udfe6 \uc8fc\uac00\uc9c0\uc218",
+      "impact": "high",
+      "change": "-2.41%",
+      "change_val": -2.41
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83c\udfe6 \ucf54\uc2a4\ud53c200 \uc9c0\uc218",
+      "actual": "1,132.42",
+      "category": "\ud83c\udfe6 \uc8fc\uac00\uc9c0\uc218",
+      "impact": "high",
+      "change": "-3.32%",
+      "change_val": -3.32
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83d\udccb \ud55c\uad6d \uae30\uc900\uae08\ub9ac",
+      "actual": "3.25%",
+      "category": "\ud83d\udccb \ucc44\uad8c / \uae08\ub9ac",
+      "impact": "medium",
+      "change": "0.00%p",
+      "change_val": 0.0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83d\udccb CD\uae08\ub9ac(91\uc77c)",
+      "actual": "2.81%",
+      "category": "\ud83d\udccb \ucc44\uad8c / \uae08\ub9ac",
+      "impact": "medium",
+      "change": "0.00%p",
+      "change_val": 0.0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83d\udccb \ucf5c \uae08\ub9ac",
+      "actual": "2.52%",
+      "category": "\ud83d\udccb \ucc44\uad8c / \uae08\ub9ac",
+      "impact": "medium",
+      "change": "0.00%p",
+      "change_val": 0.0
+    },
+    {
+      "date": "2026-05-19",
+      "time": "\uc2e4\uc2dc\uac04",
+      "event_kr": "[\ud55c\uad6d] \ud83d\udccb \uad6d\uace0\ucc44 (3\ub144)",
+      "actual": "3.75%",
+      "category": "\ud83d\udccb \ucc44\uad8c / \uae08\ub9ac",
+      "impact": "medium",
+      "change": "0.00%p",
+      "change_val": 0.0
+    }
+  ]
+}

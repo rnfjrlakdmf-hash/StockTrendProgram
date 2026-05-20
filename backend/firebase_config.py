@@ -189,11 +189,24 @@ def send_push_notification(
         return {"success": True, "response": response}
     
     except messaging.UnregisteredError:
-        print(f"[Firebase] Token is invalid or unregistered")
+        print(f"[Firebase] Token is invalid or unregistered. Deleting from DB.")
+        try:
+            from db_manager import delete_fcm_token
+            delete_fcm_token(token)
+        except Exception as e:
+            print(f"[Firebase] Failed to delete invalid token from DB: {e}")
         return {"success": False, "error": "Invalid token"}
     
     except Exception as e:
         print(f"[Firebase] Push failed: {e}")
+        # check if it is related to invalid/unregistered token
+        err_str = str(e).lower()
+        if "unregistered" in err_str or "notregistered" in err_str or "invalid" in err_str:
+            try:
+                from db_manager import delete_fcm_token
+                delete_fcm_token(token)
+            except Exception as delete_err:
+                print(f"[Firebase] Failed to delete token on catch-all: {delete_err}")
         return {"success": False, "error": str(e)}
 
 
@@ -270,9 +283,24 @@ def send_multicast_notification(
                 )
                 messaging.send(msg)
                 success_count += 1
+            except messaging.UnregisteredError:
+                failure_count += 1
+                print(f"[Firebase] Token {idx} is unregistered. Deleting from DB.")
+                try:
+                    from db_manager import delete_fcm_token
+                    delete_fcm_token(token)
+                except Exception as e:
+                    print(f"[Firebase] Failed to delete unregistered token from DB: {e}")
             except Exception as token_err:
                 failure_count += 1
                 print(f"[Firebase] Failed to send to token {idx}: {token_err}")
+                err_str = str(token_err).lower()
+                if "unregistered" in err_str or "notregistered" in err_str or "invalid" in err_str:
+                    try:
+                        from db_manager import delete_fcm_token
+                        delete_fcm_token(token)
+                    except Exception as e:
+                        print(f"[Firebase] Failed to delete token on catch-all: {e}")
         
         print(f"[Firebase] Sent: {success_count}/{len(tokens)} successful")
         

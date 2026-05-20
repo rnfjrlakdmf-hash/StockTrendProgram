@@ -149,19 +149,16 @@ async def startup_event():
 
         print("[Background] All services active.")
 
-        # 4. [v5.4.0] 개선된 글로벌 랭킹 캐시 워밍업 (Semaphore 도입)
+        # 4. [v5.4.0] 개선된 글로벌 랭킹 캐시 워밍업 (Safe Sequential Mode)
         async def ranking_cache_warmer():
-            print("[Turbo] Global Ranking Cache Warmer Started.")
+            # 소켓 레벨의 타임아웃을 3.0초로 설정하여 외부 통신 무한 대기 방지 (데드락 예방 핵심)
+            import socket
+            socket.setdefaulttimeout(3.0)
+            
+            print("[Turbo] Global Ranking Cache Warmer Started in Safe Mode.")
             from rank_data import get_global_ranking, get_naver_ranking, crawl_naver_movers, get_etf_ranking
             from korea_data import get_market_insights_data
             
-            # 동시 실행 수를 3개로 제한 (Naver 차단 방지 및 스레드 폭주 방지)
-            sem = asyncio.Semaphore(3)
-            
-            async def semaphore_task(func, *args):
-                async with sem:
-                    return await asyncio.to_thread(func, *args)
- 
             combos = [
                 ("KOSPI", "trading_volume"),
                 ("KOSPI", "trading_amount"),
@@ -172,29 +169,37 @@ async def startup_event():
             while True:
                 start_time = time.time()
                 try:
-                    tasks = []
+                    # [Safety Fix] 스레드 폭주 및 데드락을 방지하기 위해 병렬(gather) 실행 대신
+                    # 0.5초의 텀을 두고 하나씩 안전하게 캐시를 갱신합니다. (1vCPU 최적화)
                     for market, cat in combos:
-                        tasks.append(semaphore_task(get_global_ranking, market, cat))
+                        await asyncio.to_thread(get_global_ranking, market, cat)
+                        await asyncio.sleep(0.5)
                     
-                    # [Added] ETF Ranking Warm-up (Priority)
-                    tasks.append(semaphore_task(get_etf_ranking, "KR"))
-                    tasks.append(semaphore_task(get_etf_ranking, "US"))
+                    # ETF 랭킹 워밍업
+                    await asyncio.to_thread(get_etf_ranking, "KR")
+                    await asyncio.sleep(0.5)
+                    await asyncio.to_thread(get_etf_ranking, "US")
+                    await asyncio.sleep(0.5)
                     
-                    tasks.append(semaphore_task(get_market_insights_data))
-                    tasks.append(semaphore_task(get_naver_ranking, "krx", "quant"))
-                    tasks.append(semaphore_task(crawl_naver_movers))
+                    # 국내 인사이트 요약 데이터
+                    await asyncio.to_thread(get_market_insights_data)
+                    await asyncio.sleep(0.5)
                     
-                    await asyncio.gather(*tasks, return_exceptions=True)
+                    # 거래 상위 랭킹 및 변동주 크롤러 기동
+                    await asyncio.to_thread(get_naver_ranking, "krx", "quant")
+                    await asyncio.sleep(0.5)
+                    await asyncio.to_thread(crawl_naver_movers)
+                    
                     duration = time.time() - start_time
                     print(f"[Turbo] Cache Warm-up Completed in {duration:.1f}s.")
                 except Exception as e:
                     print(f"[Turbo] Cache Warmer Critical Error: {e}")
                 
-                # 다음 주기까지 대기 (주기를 2분으로 늘려 차단 방지)
+                # 다음 주기까지 대기 (주기 2분 유지)
                 await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
 
-        # [Temporarily Disabled] Cache Warmer causing deadlock on some environments
-        # asyncio.create_task(ranking_cache_warmer())
+        # [v6.5.0] Safe Mode로 개선되어 활성화
+        asyncio.create_task(ranking_cache_warmer())
 
     asyncio.create_task(gradual_background_startup())
 

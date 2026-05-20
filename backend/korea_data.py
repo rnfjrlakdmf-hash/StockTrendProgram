@@ -1310,6 +1310,23 @@ def get_naver_stock_info(symbol: str):
                         rf_name = m_info.get('fluctuationsType') or item.get(
                             'compareToPreviousPrice', {}).get('name', 'UNCHANGED')
 
+                        # [v7.0.0] Refined Session Detection for marketStatus
+                        reg_status = item.get('marketStatus')
+                        over_status = m_info.get('overMarketStatus') if m_info else 'CLOSE'
+                        
+                        import datetime
+                        now_dt = datetime.datetime.now()
+                        is_weekend = now_dt.weekday() >= 5
+                        
+                        if is_weekend:
+                            market_status = "휴장 (주말)"
+                        elif reg_status == 'OPEN':
+                            market_status = "장중"
+                        elif over_status == 'OPEN':
+                            market_status = "시간외 거래 중"
+                        else:
+                            market_status = "장마감"
+
                         return {
                             "symbol": symbol,
                             "name": item.get('stockName', symbol),
@@ -1321,6 +1338,7 @@ def get_naver_stock_info(symbol: str):
                             "risefall_name": rf_name,
                             "up": pct >= 0 or rf_name == 'RISING',
                             "currency": "KRW",
+                            "market_status": market_status,
                             "nxt_data": {
                                 "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
                                 "change_pct": float(m_info.get('fluctuationsRatio', 0))

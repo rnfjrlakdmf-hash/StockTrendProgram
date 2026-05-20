@@ -59,6 +59,20 @@ export default function FCMTokenManager() {
         }
     }, [user]);
 
+    // [Tab Focus Sync] 탭이 활성화될 때 토큰 상태 및 소유권 자동 검증 (최적화되어 패스)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                const currentPermission = getNotificationPermission();
+                if (currentPermission === 'granted') {
+                    syncTokenToServer();
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [user]);
+
     const fetchPreferences = async (token: string) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
@@ -95,8 +109,32 @@ export default function FCMTokenManager() {
             const token = await requestFCMToken();
             if (token) {
                 setCurrentToken(token);
-                await registerTokenToBackend(token);
-                await fetchPreferences(token);
+                const currentUserId = user?.id || localStorage.getItem('user_id') || 'guest';
+                
+                // 1. 서버에서 기존 토큰 정보 조회 (소유주 확인)
+                const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
+                const data = await res.json();
+                
+                let needRegister = true;
+                if (data.status === 'success' && data.data) {
+                    setPrefs(data.data);
+                    // 이미 현재 로그인한 유저로 등록되어 있다면 추가 등록 API 요청(DB 쓰기)을 생략
+                    if (data.data.user_id === currentUserId) {
+                        needRegister = false;
+                        console.log("[FCM] Token is already registered to the correct user:", currentUserId);
+                    }
+                }
+                
+                if (needRegister) {
+                    const regResult = await registerTokenToBackend(token);
+                    if (regResult.status === 'success') {
+                        console.log("[FCM] Registered token to backend successfully for user:", currentUserId);
+                        await fetchPreferences(token);
+                    } else {
+                        console.error("[FCM] Registration failed:", regResult.message);
+                    }
+                }
+                
                 setRegistered(true);
                 localStorage.setItem('fcm_registered', 'true');
             }

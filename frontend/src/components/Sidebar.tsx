@@ -87,7 +87,7 @@ const navigation = [
 ];
 
 export default function Sidebar() {
-    const { user, logout } = useAuth();
+    const { user, logout, isMigrating } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -332,7 +332,7 @@ export default function Sidebar() {
     // [New] Watchlist Synchronizer
     useEffect(() => {
         const fetchWatchlist = async () => {
-            if (!user) {
+            if (!user || isMigrating) {
                 setWatchlistPreview([]);
                 return;
             }
@@ -355,7 +355,7 @@ export default function Sidebar() {
         // Listen for internal changes (Discovery page toggle)
         window.addEventListener('watchlistChanged', fetchWatchlist);
         return () => window.removeEventListener('watchlistChanged', fetchWatchlist);
-    }, [user]);
+    }, [user, isMigrating]);
 
     const [freeTrialCount, setFreeTrialCount] = useState(0);
     const [isLoadingTrial, setIsLoadingTrial] = useState(false);

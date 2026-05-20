@@ -65,22 +65,42 @@ export async function requestFCMToken(): Promise<string> {
         
         let registration;
         if ('serviceWorker' in navigator) {
-            // [Fix] Unregister existing SWs to clear corrupt states causing push service errors
-            const existingRegs = await navigator.serviceWorker.getRegistrations();
-            for (let reg of existingRegs) {
-                await reg.unregister();
+            const regs = await navigator.serviceWorker.getRegistrations();
+            const fcmReg = regs.find(r => r.active && r.active.scriptURL.includes('firebase-messaging-sw.js'));
+            if (fcmReg) {
+                registration = fcmReg;
+                console.log('[Firebase] Using existing FCM Service Worker registration');
+            } else {
+                console.log('[Firebase] Registering new FCM Service Worker');
+                registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                await navigator.serviceWorker.ready;
             }
-            
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            await navigator.serviceWorker.ready;
         }
 
-        const tokenPromise = getToken(msg, { vapidKey, serviceWorkerRegistration: registration });
-        const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-        );
+        const getFCMTokenWithTimeout = async (reg: any, attempt = 1): Promise<string> => {
+            try {
+                const tokenPromise = getToken(msg, { vapidKey, serviceWorkerRegistration: reg });
+                const timeoutPromise = new Promise<string>((_, reject) =>
+                    setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+                );
+                return await Promise.race([tokenPromise, timeoutPromise]);
+            } catch (err: any) {
+                // 첫 번째 시도에서 실패/시간 초과가 발생한 경우 서비스 워커 초기화 후 재시도
+                if (attempt === 1 && 'serviceWorker' in navigator) {
+                    console.warn('[Firebase] Token request failed, clearing service workers and retrying...', err);
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (let r of regs) {
+                        await r.unregister();
+                    }
+                    const newReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                    await navigator.serviceWorker.ready;
+                    return await getFCMTokenWithTimeout(newReg, 2);
+                }
+                throw err;
+            }
+        };
 
-        const token = await Promise.race([tokenPromise, timeoutPromise]);
+        const token = await getFCMTokenWithTimeout(registration);
         if (token) {
             console.log('[Firebase] FCM Token:', token);
             return token;
