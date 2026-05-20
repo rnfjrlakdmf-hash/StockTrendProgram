@@ -54,6 +54,14 @@ export default function RootLayout({
       <head>
         {/* Google AdSense 게시자 ID 메타 힌트 */}
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
+        
+        {/* Google AdSense 공식 스크립트 (크롤러 검증용 HTML Head 고정형) */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
+          crossOrigin="anonymous"
+        />
+
         {/* [v5.2.9] Universal Google AdSense TagError Silencer */}
         <script
           dangerouslySetInnerHTML={{
@@ -75,13 +83,6 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
-        {/* Google AdSense - Next.js Script 컴포넌트 */}
-        <Script
-          id="adsense-init"
-          strategy="afterInteractive"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
-          crossOrigin="anonymous"
-        />
         <AuthProvider>
           <AnalyticsTracker />
           <div className="flex min-h-screen">
