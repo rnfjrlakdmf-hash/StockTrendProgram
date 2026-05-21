@@ -339,7 +339,11 @@ class NewsAlertMonitor:
 
             push_title = f"{source_icon} {display_name} 속보!"
             push_body = f"[{office_name}] {title}"
-            news_url = news_item.get('url') or f"/discovery?symbol={symbol}"
+
+            # 클릭 시 이동할 URL: 항상 종목발굴 페이지로 (clean symbol 사용)
+            clean_symbol = symbol.split('.')[0] if '.' in symbol else symbol
+            discovery_url = f"/discovery?symbol={clean_symbol}"
+            news_url = news_item.get('url') or discovery_url
 
             # 발송할 토큰 모두 수집
             all_tokens = []
@@ -359,11 +363,13 @@ class NewsAlertMonitor:
                 body=push_body,
                 data={
                     "type": "news_alert",
-                    "symbol": str(symbol),
-                    "url": str(news_url),
+                    "symbol": str(clean_symbol),
+                    "url": str(discovery_url),        # 클릭 시 종목발굴 페이지로 이동
+                    "news_url": str(news_url),         # 실제 뉴스 URL (참조용)
                     "is_global": str(not is_korean).lower()
                 }
             )
+
 
             if result.get('success'):
                 market_type = "해외" if not is_korean else "국내"

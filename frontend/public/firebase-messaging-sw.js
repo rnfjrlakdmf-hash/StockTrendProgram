@@ -24,17 +24,20 @@ messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Background message received:', payload);
 
     const notificationTitle = payload.notification?.title || '새 알림';
+    const symbol = payload.data?.symbol || '';
     const notificationOptions = {
         body: payload.notification?.body || '',
         icon: '/icon.png',
         badge: '/badge.png',
         vibrate: [200, 100, 200],
         data: payload.data,
-        tag: 'price-alert',  // 같은 태그의 알림은 하나만 표시
+        // 종목별로 태그 분리 → 같은 종목 알림은 덮어쓰기, 다른 종목은 각각 표시
+        tag: symbol ? `stock-alert-${symbol}` : 'stock-alert',
+        renotify: true,
         actions: [
             {
                 action: 'view',
-                title: '확인하기'
+                title: '종목 보기 📈'
             },
             {
                 action: 'close',
@@ -56,28 +59,36 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    // URL 가져오기
-    const url = event.notification.data?.url || '/discovery';
-    const fullUrl = new URL(url, self.location.origin).href;
+    // 종목발굴 페이지 URL 가져오기
+    const data = event.notification.data || {};
+    const targetUrl = data.url || '/discovery';
+    const fullUrl = new URL(targetUrl, self.location.origin).href;
+    const baseOrigin = self.location.origin;
 
     // 앱 열기 또는 포커스
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
-                // 이미 열려있는 창이 있으면 포커스
-                for (const client of clientList) {
-                    if (client.url === fullUrl && 'focus' in client) {
-                        return client.focus();
-                    }
+                // 이미 열려있는 앱 창 찾기 (같은 도메인이면 OK)
+                const existingClient = clientList.find(client =>
+                    client.url.startsWith(baseOrigin)
+                );
+
+                if (existingClient && 'focus' in existingClient) {
+                    // 이미 열린 창이 있으면 포커스 + 해당 종목 페이지로 이동
+                    return existingClient.focus().then(() => {
+                        existingClient.navigate(fullUrl);
+                    });
                 }
 
-                // 없으면 새 창 열기
+                // 열린 창 없으면 새 창 열기
                 if (clients.openWindow) {
                     return clients.openWindow(fullUrl);
                 }
             })
     );
 });
+
 
 // Service Worker 설치
 self.addEventListener('install', (event) => {

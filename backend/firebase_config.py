@@ -258,12 +258,18 @@ def send_multicast_notification(
         )
         
         # Web 설정
+        click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
+        if click_url and not click_url.startswith('http'):
+            click_url = f'https://stock-trend-program.co.kr{click_url}'
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
                 icon='/icon.png',
                 badge='/badge.png'
+            ),
+            fcm_options=messaging.WebpushFCMOptions(
+                link=click_url
             )
         )
         
