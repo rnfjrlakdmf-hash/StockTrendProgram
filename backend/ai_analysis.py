@@ -851,9 +851,9 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # Use gemini-2.5-pro for better instruction following on forced scenarios
+        # Use gemini-1.5-pro-latest for better instruction following on forced scenarios
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-2.5-flash", "gemini-2.5-pro"] if target_symbol else None
+        models = ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"] if target_symbol else None
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)
