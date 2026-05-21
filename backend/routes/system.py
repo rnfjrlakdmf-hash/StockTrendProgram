@@ -235,7 +235,10 @@ def simple_fcm_test():
     return {"status": "success", "message": "Simple FCM Test OK"}
 
 @router.get("/fcm/diagnose")
-def diagnose_fcm(x_user_id: str = Header(None)):
+def diagnose_fcm(x_user_id: str = Header(None), user_id_param: str = Query(None, alias="user_id")):
+    # URL ?user_id=xxx 로도 접근 가능하게
+    if user_id_param:
+        x_user_id = user_id_param
     """
     [진단] FCM 알림 파이프라인 전체를 한 번에 점검합니다.
     - DB에 FCM 토큰이 있는지
