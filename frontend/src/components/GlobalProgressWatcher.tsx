@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "@/lib/config";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface IndexingStatus {
     status: "idle" | "running" | "done" | "error" | "initializing";
@@ -16,6 +17,7 @@ interface IndexingStatus {
 export default function GlobalProgressWatcher() {
     const [status, setStatus] = useState<IndexingStatus | null>(null);
     const [visible, setVisible] = useState(false);
+    const { user } = useAuth();
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -60,6 +62,13 @@ export default function GlobalProgressWatcher() {
     }, [visible]);
 
     // [Updated] Always show a small indicator or the full panel
+    const isAdmin = user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com" || user?.email?.toLowerCase() === "rnfjr@gmail.com";
+
+    // 일반 사용자는 아예 아무것도 보이지 않도록 렌더링 중단
+    if (!isAdmin) {
+        return null;
+    }
+
     if (!status) {
         return (
             <div className="w-full opacity-60">
