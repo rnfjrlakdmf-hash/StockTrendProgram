@@ -12,9 +12,9 @@ from stock_data import get_korean_stock_name
 class NewsAlertMonitor:
     def __init__(self):
         self.running = False
-        self.check_interval = 300  # 5분(300초)마다 체크
-        self.last_seen_articles = {}  # {symbol: last_article_id}
-        self.is_first_run = True
+        self.check_interval = 120  # [Fix] 2분마다 체크 (기존 5분에서 단축)
+        self.last_seen_articles = {}  # {symbol_source: last_article_id}
+        self.sent_titles = {}  # {symbol: [title1, title2, ...]}
 
     async def start(self):
         """뉴스 모니터링 시작"""
@@ -62,11 +62,6 @@ class NewsAlertMonitor:
         for symbol, users in symbol_users.items():
             await self.check_symbol_news(symbol, users)
             await asyncio.sleep(2)  # 구글/네이버 차단 방지를 위한 2초 대기
-            
-        # 첫 번째 실행 완료 마킹 (초기화)
-        if self.is_first_run:
-            self.is_first_run = False
-            print("[NewsAlert] First run complete (initialized states)")
 
     async def check_symbol_news(self, symbol: str, users: List[str]):
         """특정 종목의 최신 뉴스 1건을 확인하고 변경 시 알림 발송"""
@@ -152,56 +147,48 @@ class NewsAlertMonitor:
         fetched_news = await asyncio.to_thread(_fetch_news)
         if not fetched_news:
             return
-            
-        # 첫 실행이면 상태만 기록하고 알림 발송 안함
-        if self.is_first_run:
-            for item in fetched_news:
-                key = f"{symbol}_{item['source']}"
-                self.last_seen_articles[key] = item['id']
-            return
-            
+
+        # [BugFix] is_first_run 로직 제거 - 서버 재시작 후에도 새 뉴스 즉시 발송
         # 새로운 기사 확인 및 알림 발송
         for item in fetched_news:
             key = f"{symbol}_{item['source']}"
             article_id = item['id']
-            
+
             if not article_id:
                 continue
-                
+
             if self.last_seen_articles.get(key) != article_id:
                 self.last_seen_articles[key] = article_id
-                
+
                 # [Fix] 중복 속보 방지: 최근 발송된 기사 제목과 유사도(단어 중복률) 검사
                 import re
                 new_title_words = set(re.findall(r'\w+', item['title']))
                 is_duplicate = False
-                
-                if not hasattr(self, 'sent_titles'):
-                    self.sent_titles = {}
-                    
+
                 recent_titles = self.sent_titles.get(symbol, [])
                 for past_title in recent_titles:
                     past_words = set(re.findall(r'\w+', past_title))
                     if not new_title_words or not past_words: continue
                     intersection = len(new_title_words.intersection(past_words))
-                    
-                    # 제목 내 단어의 40% 이상이 일치하면 같은 뉴스로 간주 (언론사만 다른 경우 차단)
+
+                    # 제목 내 단어의 40% 이상이 일치하면 같은 뉴스로 간주
                     similarity = intersection / min(len(new_title_words), len(past_words))
                     if similarity > 0.4:
                         is_duplicate = True
                         break
-                        
+
                 if is_duplicate:
                     print(f"[NewsAlert] 중복 뉴스 알림 차단 ({stock_name}): {item['title']}")
                     continue
-                    
+
                 # 최근 발송 제목 목록에 추가 (최대 10개 유지)
                 if symbol not in self.sent_titles:
                     self.sent_titles[symbol] = []
                 self.sent_titles[symbol].append(item['title'])
                 if len(self.sent_titles[symbol]) > 10:
                     self.sent_titles[symbol].pop(0)
-                
+
+                print(f"[NewsAlert] New article detected for {stock_name}: {item['title']}")
                 # 푸시 알림 발송
                 await self.send_news_push(symbol, stock_name, item, users)
             
@@ -241,8 +228,8 @@ class NewsAlertMonitor:
                 body=push_body,
                 data={
                     "type": "news_alert",
-                    "symbol": symbol,
-                    "url": news_url
+                    "symbol": str(symbol),      # [BugFix] Firebase data 값은 반드시 str
+                    "url": str(news_url)
                 }
             )
             

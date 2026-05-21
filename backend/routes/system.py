@@ -207,10 +207,11 @@ def get_preferences(token: str):
 
 class FCMPreferencesRequest(BaseModel):
     token: str
-    pref_morning: bool
-    pref_closing: bool
-    pref_price: bool
-    pref_news: bool
+    pref_morning: bool = True
+    pref_closing: bool = True
+    pref_price: bool = True
+    pref_news: bool = True
+    pref_watch_compact: bool = False  # [BugFix] 누락됐던 필드 추가
 
 @router.post("/fcm/preferences")
 def update_preferences(req: FCMPreferencesRequest):
@@ -219,7 +220,8 @@ def update_preferences(req: FCMPreferencesRequest):
         "pref_morning": req.pref_morning,
         "pref_closing": req.pref_closing,
         "pref_price": req.pref_price,
-        "pref_news": req.pref_news
+        "pref_news": req.pref_news,
+        "pref_watch_compact": req.pref_watch_compact  # [BugFix] 저장 반영
     })
     if success:
         return {"status": "success", "message": "Preferences updated"}
@@ -231,6 +233,105 @@ class FCMTestRequest(BaseModel):
 @router.get("/fcm/simple-test")
 def simple_fcm_test():
     return {"status": "success", "message": "Simple FCM Test OK"}
+
+@router.get("/fcm/diagnose")
+def diagnose_fcm(x_user_id: str = Header(None)):
+    """
+    [진단] FCM 알림 파이프라인 전체를 한 번에 점검합니다.
+    - DB에 FCM 토큰이 있는지
+    - 관심종목이 있는지
+    - watchlist <-> fcm_tokens 조인이 성공하는지
+    - Firebase Admin SDK가 초기화됐는지
+    """
+    import firebase_admin
+    from db_manager import get_db_connection
+
+    user_id = x_user_id if x_user_id else "guest"
+    result = {
+        "user_id": user_id,
+        "steps": {}
+    }
+
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        # Step 1: FCM 토큰 확인
+        c.execute("SELECT user_id, token, device_type, last_used FROM fcm_tokens WHERE user_id = ? ORDER BY last_used DESC LIMIT 5", (user_id,))
+        token_rows = c.fetchall()
+        result["steps"]["1_fcm_tokens"] = {
+            "ok": len(token_rows) > 0,
+            "count": len(token_rows),
+            "tokens": [{"user_id": r[0], "token": r[1][:20] + "...", "device": r[2], "last_used": r[3]} for r in token_rows]
+        }
+
+        # Step 2: 관심종목 확인
+        c.execute("SELECT symbol FROM watchlist WHERE user_id = ?", (user_id,))
+        watchlist_rows = c.fetchall()
+        result["steps"]["2_watchlist"] = {
+            "ok": len(watchlist_rows) > 0,
+            "count": len(watchlist_rows),
+            "symbols": [r[0] for r in watchlist_rows]
+        }
+
+        # Step 3: 관심종목 + FCM 토큰 조인 확인 (news_alerts.py가 실제로 하는 쿼리)
+        c.execute("""
+            SELECT DISTINCT w.user_id, w.symbol 
+            FROM watchlist w
+            JOIN fcm_tokens f ON w.user_id = f.user_id
+            WHERE w.user_id = ?
+        """, (user_id,))
+        join_rows = c.fetchall()
+        result["steps"]["3_join_watchlist_fcm"] = {
+            "ok": len(join_rows) > 0,
+            "count": len(join_rows),
+            "message": "OK - 알림 대상 종목이 확인됨" if join_rows else "FAIL - watchlist와 fcm_tokens의 user_id가 연결되지 않음!",
+            "rows": [{"user_id": r[0], "symbol": r[1]} for r in join_rows]
+        }
+
+        # Step 4: 전체 FCM 토큰 수 (다른 user_id로 저장됐는지 확인)
+        c.execute("SELECT user_id, COUNT(*) as cnt FROM fcm_tokens GROUP BY user_id")
+        all_token_users = c.fetchall()
+        result["steps"]["4_all_token_users"] = {
+            "users": [{"user_id": r[0], "token_count": r[1]} for r in all_token_users]
+        }
+
+        conn.close()
+    except Exception as e:
+        result["steps"]["db_error"] = str(e)
+
+    # Step 5: Firebase Admin SDK 초기화 상태
+    try:
+        fb_initialized = bool(firebase_admin._apps)
+        result["steps"]["5_firebase_sdk"] = {
+            "ok": fb_initialized,
+            "message": "Firebase Admin SDK 초기화 완료" if fb_initialized else "FAIL - Firebase 미초기화! FIREBASE_CREDENTIALS 환경변수 또는 firebase-adminsdk.json 파일 확인 필요"
+        }
+    except Exception as e:
+        result["steps"]["5_firebase_sdk"] = {"ok": False, "error": str(e)}
+
+    # Step 6: pref_news 설정 확인
+    try:
+        from db_manager import get_user_fcm_tokens
+        tokens_data = get_user_fcm_tokens(user_id)
+        news_disabled = [t for t in tokens_data if not t.get("pref_news", True)]
+        result["steps"]["6_pref_news"] = {
+            "ok": len(news_disabled) == 0,
+            "total_tokens": len(tokens_data),
+            "news_disabled_count": len(news_disabled),
+            "message": "뉴스 알림 허용됨" if len(news_disabled) == 0 else f"WARN - {len(news_disabled)}개 기기에서 뉴스 알림이 꺼져 있음!"
+        }
+    except Exception as e:
+        result["steps"]["6_pref_news"] = {"ok": False, "error": str(e)}
+
+    # 최종 판정
+    all_ok = all(
+        result["steps"].get(k, {}).get("ok", True)
+        for k in ["1_fcm_tokens", "2_watchlist", "3_join_watchlist_fcm", "5_firebase_sdk"]
+    )
+    result["overall"] = "✅ 모든 항목 정상" if all_ok else "❌ 문제 발견 - steps 항목 확인 필요"
+
+    return {"status": "success", "data": result}
 
 @router.get("/fcm/test")
 @router.post("/fcm/test")
