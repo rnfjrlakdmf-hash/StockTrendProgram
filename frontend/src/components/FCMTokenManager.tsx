@@ -125,48 +125,58 @@ export default function FCMTokenManager() {
         try {
             const currentUserId = getReliableUserId();
 
-            // [BugFix] 로그인 안 한 상태(guest)에서는 자동 등록 안 함
-            // 로그인 후 user가 설정되면 다시 syncTokenToServer가 호출되므로 안전
+            // 비로그인 상태에서는 등록 안 함
             if (currentUserId === 'guest') {
                 console.log('[FCM] Not logged in. Skipping auto token registration.');
                 return;
             }
 
             const token = await requestFCMToken();
-            if (token) {
-                setCurrentToken(token);
+            if (!token) return;
 
-                // 1. 서버에서 기존 토큰 정보 조회 (소유주 확인)
-                const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
-                const data = await res.json();
+            setCurrentToken(token);
 
-                let needRegister = true;
-                if (data.status === 'success' && data.data) {
-                    setPrefs(data.data);
-                    // 이미 현재 로그인한 유저로 등록되어 있다면 추가 등록 스킵
-                    if (data.data.user_id === currentUserId) {
-                        needRegister = false;
-                        console.log('[FCM] Token already registered for user:', currentUserId);
-                    }
-                }
+            // ─── 핵심: 토큰 자동 갱신 로직 ───────────────────────────
+            const storedToken = localStorage.getItem('fcm_token_value');
+            const lastSyncTime = parseInt(localStorage.getItem('fcm_last_sync') || '0');
+            const now = Date.now();
+            const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12시간마다 자동 재등록
 
-                if (needRegister) {
-                    const regResult = await registerTokenToBackend(token, currentUserId);
-                    if (regResult.status === 'success') {
-                        console.log('[FCM] Token registered for user:', currentUserId);
-                        await fetchPreferences(token);
-                    } else {
-                        console.error('[FCM] Registration failed:', regResult.message);
-                    }
-                }
+            const tokenChanged = storedToken !== token;           // Firebase가 토큰 교체했는지
+            const syncExpired = now - lastSyncTime > SYNC_INTERVAL_MS; // 12시간 경과했는지
 
+            if (tokenChanged) {
+                // 🔄 Firebase가 새 토큰 발급 → 즉시 재등록 (사용자 모르게 자동)
+                console.log('[FCM] Token rotated by Firebase. Auto re-registering silently...');
+            } else if (!syncExpired) {
+                // ⏭️ 최근 12시간 내 동일 토큰 → 스킵 (서버 부하 방지)
+                console.log('[FCM] Token is fresh (synced within 12h). Skipping.');
                 setRegistered(true);
-                localStorage.setItem('fcm_registered', 'true');
+                await fetchPreferences(token);
+                return;
+            } else {
+                // ⏰ 12시간 이상 경과 → last_used 갱신을 위해 재등록
+                console.log('[FCM] Re-syncing token to refresh last_used timestamp...');
             }
+
+            // 서버에 토큰 등록/갱신 (UPSERT → last_used 자동 갱신)
+            const regResult = await registerTokenToBackend(token, currentUserId);
+            if (regResult.status === 'success') {
+                console.log('[FCM] Token synced for user:', currentUserId);
+                localStorage.setItem('fcm_token_value', token);
+                localStorage.setItem('fcm_last_sync', String(now));
+                await fetchPreferences(token);
+            } else {
+                console.error('[FCM] Sync failed:', regResult.message);
+            }
+
+            setRegistered(true);
+            localStorage.setItem('fcm_registered', 'true');
         } catch (e) {
             console.error('[FCM] Auto-sync failed:', e);
         }
     };
+
 
     const registerTokenToBackend = async (token: string, forcedUserId?: string) => {
         // [BugFix] stock_user JSON에서 id를 직접 읽어서 가장 신뢰성 있는 user_id 사용

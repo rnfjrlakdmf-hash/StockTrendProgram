@@ -466,3 +466,39 @@ def trigger_daily_report(x_admin_key: Optional[str] = Header(None), secret: Opti
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.post("/fcm/cleanup-tokens")
+@router.get("/fcm/cleanup-tokens")
+def cleanup_stale_tokens():
+    """
+    [자동 정리] 불필요한 FCM 토큰 정리
+    - guest 토큰 전체 삭제
+    - 30일 이상 미사용 토큰 삭제
+    """
+    from db_manager import get_db_connection
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        # 1. guest 토큰 삭제
+        c.execute("DELETE FROM fcm_tokens WHERE user_id = 'guest'")
+        guest_deleted = c.rowcount
+
+        # 2. 30일 이상 미사용 토큰 삭제
+        c.execute("""
+            DELETE FROM fcm_tokens 
+            WHERE last_used < datetime('now', '-30 days')
+            AND user_id != 'guest'
+        """)
+        stale_deleted = c.rowcount
+
+        conn.commit()
+        conn.close()
+
+        return {
+            "status": "success",
+            "message": f"정리 완료: guest 토큰 {guest_deleted}개 삭제, 30일 미사용 토큰 {stale_deleted}개 삭제"
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
