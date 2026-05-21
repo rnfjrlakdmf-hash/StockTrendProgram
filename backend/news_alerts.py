@@ -61,15 +61,19 @@ def get_stock_display_info(symbol: str):
         kr_name = get_korean_stock_name(symbol) or symbol
         return kr_name, None, True
     else:
-        # 해외 종목: GLOBAL_KOREAN_NAMES에서 한글명, GLOBAL_ENGLISH_NAMES에서 영문명 가져오기
-        ko_raw = GLOBAL_KOREAN_NAMES.get(symbol, symbol)
+        # 해외 종목: .O / .N / .A 같은 거래소 suffix 제거 후 매핑 조회
+        # 예: "GOOGL.O" → "GOOGL", "AAPL.O" → "AAPL"
+        base_symbol = symbol.split('.')[0] if '.' in symbol else symbol
+
+        ko_raw = GLOBAL_KOREAN_NAMES.get(base_symbol) or GLOBAL_KOREAN_NAMES.get(symbol, base_symbol)
         if isinstance(ko_raw, list):
             kr_name = ko_raw[0]
         else:
             kr_name = ko_raw
 
-        en_name = GLOBAL_ENGLISH_NAMES.get(symbol)
+        en_name = GLOBAL_ENGLISH_NAMES.get(base_symbol) or GLOBAL_ENGLISH_NAMES.get(symbol)
         return kr_name, en_name, False
+
 
 
 class NewsAlertMonitor:
