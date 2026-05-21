@@ -44,6 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (isAdminEmail(parsedUser.email)) {
                     parsedUser.is_pro = true;
                 }
+                if (parsedUser.is_pro) {
+                    localStorage.setItem("isPro", "true");
+                } else {
+                    localStorage.removeItem("isPro");
+                }
                 setUser(parsedUser);
                 
                 // [Self-Healing] Silent background sync to ensure the backend DB 'users' table is populated
@@ -63,6 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const serverUser = { ...data.user };
                         if (isAdminEmail(serverUser.email)) {
                             serverUser.is_pro = true;
+                        }
+                        if (serverUser.is_pro) {
+                            localStorage.setItem("isPro", "true");
+                        } else {
+                            localStorage.removeItem("isPro");
                         }
                         localStorage.setItem("stock_user", JSON.stringify(serverUser));
                         localStorage.setItem("user_id", serverUser.id);
@@ -128,6 +138,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(immediateUser);
         localStorage.setItem("stock_user", JSON.stringify(immediateUser));
+        if (immediateUser.is_pro) {
+            localStorage.setItem("isPro", "true");
+        } else {
+            localStorage.removeItem("isPro");
+        }
 
         // 2단계: 백엔드 동기화 및 마이그레이션 순차 대기
         try {
@@ -148,6 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const serverUser = { ...data.user };
                     if (isAdminEmail(serverUser.email)) {
                         serverUser.is_pro = true;
+                    }
+                    if (serverUser.is_pro) {
+                        localStorage.setItem("isPro", "true");
+                    } else {
+                        localStorage.removeItem("isPro");
                     }
                     setUser(serverUser);
                     localStorage.setItem("stock_user", JSON.stringify(serverUser));
@@ -180,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("stock_user");
         localStorage.removeItem("user_id");
         localStorage.removeItem("stock_token");
+        localStorage.removeItem("isPro");
         window.location.href = "/";
     };
 
