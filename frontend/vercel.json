@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://stocktrendprogram-production.up.railway.app/api/:path*"
+      "destination": "http://13.209.1.59:8000/api/:path*"
     }
   ]
 }

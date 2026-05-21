@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   }
 } else {
   // 서버 사이드 (Build/SSR)
-  apiBase = process.env.BACKEND_URL || "https://stocktrendprogram-production.up.railway.app";
+  apiBase = process.env.BACKEND_URL || "https://stock-trend-program.co.kr";
 }
 
 export const API_BASE_URL = apiBase;

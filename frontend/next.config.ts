@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
 // 환경에 따라 백엔드 URL 자동 선택
-// 1순위: 환경변수 (Vercel 대시보드에서 설정 가능)
-// 2순위: 운영 환경(Vercel) → Railway 서버
-// 3순위: 로컬 개발 환경 → localhost:8000
+// 1순위: 환경변수 (EC2 서버에서 직접 설정 가능)
+// 2순위: 로컬 개발 환경 → localhost:8000
+// 3순위: 운영 환경 → EC2 도메인
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   (process.env.NODE_ENV === 'development' 
     ? 'http://localhost:8000' 
-    : 'https://stocktrendprogram-production.up.railway.app');
+    : 'http://localhost:8000');  // EC2에서 프론트/백엔드 같은 서버이므로 localhost
+
 
 const nextConfig: NextConfig = {
   distDir: '.next',
