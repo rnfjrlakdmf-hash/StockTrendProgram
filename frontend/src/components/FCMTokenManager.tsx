@@ -198,15 +198,25 @@ export default function FCMTokenManager() {
     };
 
     const handleEnableNotifications = async () => {
+        // ✅ 로그인 체크: 비로그인 상태면 guest 토큰 등록 방지
+        const currentUserId = getReliableUserId();
+        if (currentUserId === 'guest') {
+            alert('🔐 로그인 후 알림을 설정할 수 있습니다.\n\n우측 상단의 로그인 버튼을 눌러 로그인해주세요!');
+            return;
+        }
+
         setLoading(true);
 
         try {
             const token = await requestFCMToken();
 
-            const data = await registerTokenToBackend(token);
+            const data = await registerTokenToBackend(token, currentUserId);
 
             if (data.status === 'success') {
                 setCurrentToken(token);
+                // localStorage에 토큰 값과 sync 시간 저장 (자동 갱신 시스템용)
+                localStorage.setItem('fcm_token_value', token);
+                localStorage.setItem('fcm_last_sync', String(Date.now()));
                 await fetchPreferences(token);
                 setRegistered(true);
                 setPermission('granted');
@@ -216,14 +226,10 @@ export default function FCMTokenManager() {
                     body: '이제 앱이 꺼져있어도 가격 알림을 받을 수 있습니다.',
                     icon: '/icon.png'
                 });
-
-                // [BugFix] 신뢰성 있는 user_id 사용
-                const currentUserId = getReliableUserId();
-                alert(`✅ 서버 연결 성공!\n(ID: ${currentUserId})\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.`);
-                console.log('[FCM] Registered to:', API_BASE_URL, 'User:', currentUserId, 'Token:', token);
+                console.log('[FCM] Registered. User:', currentUserId, 'Token:', token.substring(0, 20) + '...');
 
             } else {
-                alert(`❌ 서버 등록 실패\n(API: ${API_BASE_URL})\n\n응답: ${data.message}`);
+                alert(`❌ 알림 등록 실패\n\n${data.message || '잠시 후 다시 시도해주세요.'}`);
                 console.error("[FCM] Server Error:", data);
             }
         } catch (error: any) {
@@ -231,15 +237,15 @@ export default function FCMTokenManager() {
             const errMsg = error.message || String(error);
             
             if (errMsg === 'PERMISSION_DENIED') {
-                alert('❌ 알림 권한이 거부되었습니다.\n\n브라우저 설정에서 알림 권한을 허용해주세요.');
+                alert('❌ 알림 권한이 거부되었습니다.\n\n브라우저 주소창의 🔒 자물쇠를 클릭하여 알림 권한을 허용해주세요.');
             } else if (errMsg === 'TIMEOUT') {
-                alert('❌ 서버 응답 시간 초과\n\n토큰 발급 시간이 초과되었습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+                alert('❌ 연결 시간 초과\n\n인터넷 연결을 확인하고 다시 시도해주세요.');
             } else if (errMsg === 'FCM_UNAVAILABLE') {
-                alert('❌ 시스템 오류\n\n푸시 알림을 지원하지 않는 환경이거나 브라우저입니다.');
+                alert('❌ 알림을 지원하지 않는 환경입니다.\n\n일반 크롬(Chrome) 또는 엣지(Edge) 브라우저를 이용해주세요.');
             } else if (errMsg.includes('push service error') || errMsg.includes('Registration failed')) {
-                alert(`❌ 브라우저 푸시 서비스 차단됨\n\n[원인]\n1. 시크릿 모드(Incognito)에서는 알림이 작동하지 않습니다.\n2. Brave 등 특정 브라우저에서는 푸시 기능이 제한됩니다.\n3. 회사망/광고차단앱이 알림 서버를 막고 있을 수 있습니다.\n\n[상세 에러 내역]\n${errMsg}\n\n일반 크롬(Chrome)이나 엣지(Edge) 브라우저에서 다시 시도해주세요.`);
+                alert('❌ 브라우저 푸시 서비스가 차단되었습니다.\n\n시크릿 모드를 사용 중이거나, 광고 차단 앱이 알림을 막고 있을 수 있습니다.\n일반 크롬(Chrome) 브라우저에서 다시 시도해주세요.');
             } else {
-                alert(`❌ 서버 통신 오류\n\n${errMsg}\n(API: ${API_BASE_URL})\n다시 시도해주시거나 관리자에게 문의해주세요.`);
+                alert(`❌ 오류가 발생했습니다.\n\n${errMsg}\n\n다시 시도해주시거나 관리자에게 문의해주세요.`);
             }
         } finally {
             setLoading(false);
@@ -525,6 +531,9 @@ export default function FCMTokenManager() {
             </div>
         );
     }
+
+    // 비로그인 상태에서는 알림 카드 표시 안 함 (guest 토큰 방지)
+    if (getReliableUserId() === 'guest') return null;
 
     // Default Request State (Premium Card)
     return (
