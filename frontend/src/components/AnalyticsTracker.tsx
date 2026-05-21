@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function AnalyticsTracker() {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
 
     // 1. Unique Visitor ID 생성 & 관리
     const getVisitorId = (): string => {
@@ -29,6 +29,11 @@ export default function AnalyticsTracker() {
     // 2. 페이지뷰 전송 핸들러
     const sendPing = async (isPageview: boolean) => {
         try {
+            // [BugFix] 인증 로딩 중에는 ping 차단 (새로고침 시 관리자가 guest로 집계되는 버그 방지)
+            if (isLoading) {
+                return;
+            }
+
             // 관리자 계정(rnfjr@gmail.com, rnfjrlakdmf@gmail.com)은 PV/UV 수집 대상에서 제외
             if (user?.email && (user.email === "rnfjr@gmail.com" || user.email === "rnfjrlakdmf@gmail.com")) {
                 console.log("[Analytics] Skipping analytics ping for admin user:", user.email);
@@ -61,7 +66,7 @@ export default function AnalyticsTracker() {
     // 3. 페이지가 변경될 때마다 페이지뷰(PV) 보고
     useEffect(() => {
         sendPing(true);
-    }, [pathname, user]); // 사용자가 로그인하거나 페이지 경로가 바뀔 때 실행
+    }, [pathname, user, isLoading]); // [BugFix] isLoading 추가: 인증 완료 후에만 PV 전송
 
     // 4. 실시간 동시 접속자(Active User) 보고 (60초 주기 핑)
     useEffect(() => {
