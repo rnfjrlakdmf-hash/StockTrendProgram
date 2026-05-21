@@ -605,9 +605,9 @@ export default function Sidebar() {
                                 {watchlistPreview.map((stock) => (
                                     <Link
                                         key={stock.symbol}
-                                        href="/watchlist"
+                                        href={`/discovery?q=${stock.symbol.split('.')[0]}`}
                                         onClick={() => setIsMobileOpen(false)}
-                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5"
+                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400/20 group-hover:fill-yellow-400 transition-all" />
