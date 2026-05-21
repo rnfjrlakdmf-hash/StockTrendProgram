@@ -239,7 +239,7 @@ export default function FCMTokenManager() {
     const handleTestPush = async (e: React.MouseEvent) => {
         e.stopPropagation();
         setLoading(true);
-        const userId = String(user?.id || localStorage.getItem('user_id') || 'guest');
+        const userId = getReliableUserId();
         
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/test`, {
@@ -249,20 +249,23 @@ export default function FCMTokenManager() {
                 }
             });
             const data = await res.json();
-            console.log("[FCM-Test] Response:", data);
+            console.log('[FCM-Test] Response:', data);
 
-            if (res.status !== 200 || data.status !== 'success') {
+            if (res.status === 200 && data.status === 'success') {
+                // 성공 - 잠시 후 실제 알림이 도착함
+                alert('✅ 테스트 알림을 발송했습니다!\n잠시 후 알림이 도착합니다. 🔔\n\n알림이 안 오면:\n1. 브라우저 알림 권한 확인\n2. Windows 알림 센터 확인');
+            } else {
                 const errMsg = data.message || data.error || '상세 사유 없음';
-                const errDetail = data.user_id ? `(ID: ${data.user_id})` : '';
-                alert(`❌ 테스트 발송 실패: ${errMsg} ${errDetail}\n(Status: ${res.status})`);
+                alert(`❌ 테스트 발송 실패: ${errMsg}\n(ID: ${userId})`);
             }
         } catch (error) {
             console.error('[FCM-Test] Request failed:', error);
-            alert(`❌ 서버 연결 오류 발생\n\n상세: ${error}\nAPI: ${API_BASE_URL}`);
+            alert(`❌ 서버 연결 오류\n\n${error}`);
         } finally {
             setLoading(false);
         }
     };
+
 
     // [Fix] Listen for global event from layout banner
     useEffect(() => {
@@ -453,13 +456,25 @@ export default function FCMTokenManager() {
                                             </div>
                                         </div>
 
-                                        <div className="w-full">
+                                        <div className="w-full flex gap-2">
                                             <button 
                                                 onClick={handleEnableNotifications}
-                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] shadow-lg shadow-blue-500/20"
+                                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] shadow-lg shadow-blue-500/20"
                                             >
                                                 <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 
                                                 알림 갱신 (Sync)
+                                            </button>
+                                            <button
+                                                onClick={handleTestPush}
+                                                disabled={loading}
+                                                className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 text-[11px] shadow-lg shadow-purple-500/20 disabled:opacity-50"
+                                            >
+                                                {loading ? (
+                                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <span>🔔</span>
+                                                )}
+                                                테스트 알림
                                             </button>
                                         </div>
                                         <p className="text-[10px] text-gray-500 text-center mt-1">
