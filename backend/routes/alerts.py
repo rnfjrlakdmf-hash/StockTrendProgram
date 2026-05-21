@@ -20,10 +20,15 @@ def create_alert(data: Dict, x_user_id: Optional[str] = Header(None)):
         return {"status": "error", "message": "로그인이 필요합니다."}
     
     try:
+        # [BugFix] 프론트엔드가 'alert_type' 또는 'type' 두 가지로 보낼 수 있음
+        alert_type = data.get('type') or data.get('alert_type')
+        if not alert_type:
+            return {"status": "error", "message": "알림 타입이 없습니다."}
+        
         alert_id = save_price_alert(
             user_id=x_user_id,
             symbol=data['symbol'],
-            alert_type=data['type'],
+            alert_type=alert_type,
             buy_price=data.get('buy_price'),
             threshold=data.get('threshold'),
             target_price=data.get('target_price'),
@@ -32,6 +37,7 @@ def create_alert(data: Dict, x_user_id: Optional[str] = Header(None)):
         return {"status": "success", "data": {"id": alert_id}}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
 
 @router.delete("/alerts/{alert_id}")
 def remove_alert(alert_id: int, x_user_id: Optional[str] = Header(None)):
