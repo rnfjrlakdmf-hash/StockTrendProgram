@@ -203,7 +203,7 @@ class NewsAlertMonitor:
                                 'title': n_title,
                                 'publisher': item.get('officeName', '네이버 뉴스'),
                                 'source': 'naver',
-                                'url': f"https://m.stock.naver.com/investment/news/article/{office_id}/{article_id}" if office_id and article_id else f"/discovery?symbol={symbol}"
+                                'url': f"https://m.stock.naver.com/investment/news/article/{office_id}/{article_id}" if office_id and article_id else f"/discovery?q={symbol}"
                             })
                         else:
                             print(f"[NewsAlert] Filtered irrelevant Naver News for {kr_name}: {n_title}")
@@ -234,7 +234,7 @@ class NewsAlertMonitor:
                                     'title': kr_title,
                                     'publisher': top_kr.get('publisher', '구글 뉴스 (한국어)'),
                                     'source': 'naver_kr',
-                                    'url': top_kr.get('url', f"/discovery?symbol={symbol}")
+                                    'url': top_kr.get('url', f"/discovery?q={symbol}")
                                 })
                                 print(f"[NewsAlert] 🇰🇷 한국어 뉴스 발견 for {kr_name}: {kr_title[:40]}")
                     except Exception as e:
@@ -265,7 +265,7 @@ class NewsAlertMonitor:
                             'title': g_title,
                             'publisher': top_g.get('publisher', '구글 뉴스'),
                             'source': 'google',
-                            'url': top_g.get('link') or f"/discovery?symbol={symbol}"
+                            'url': top_g.get('link') or f"/discovery?q={symbol}"
                         })
                     else:
                         print(f"[NewsAlert] Filtered irrelevant Google News for {kr_name}({symbol}): {g_title}")
@@ -342,7 +342,7 @@ class NewsAlertMonitor:
 
             # 클릭 시 이동할 URL: 항상 종목발굴 페이지로 (clean symbol 사용)
             clean_symbol = symbol.split('.')[0] if '.' in symbol else symbol
-            discovery_url = f"/discovery?symbol={clean_symbol}"
+            discovery_url = f"/discovery?q={clean_symbol}"
             news_url = news_item.get('url') or discovery_url
 
             # 발송할 토큰 모두 수집

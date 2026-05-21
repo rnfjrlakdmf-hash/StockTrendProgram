@@ -361,7 +361,7 @@ def send_price_alert_notification(
         "alert_type": alert_type,
         "current_price": str(current_price),
         "change_pct": str(change_pct),
-        "url": f"/discovery?symbol={symbol}"
+        "url": f"/discovery?q={symbol}"
     }
     
 

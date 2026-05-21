@@ -105,7 +105,7 @@ class MorningBriefingService:
             data={
                 "type": "morning_briefing",
                 "symbol": symbol,
-                "url": f"/discovery?symbol={symbol}"
+                "url": f"/discovery?q={symbol}"
             }
         )
         print(f"[MorningBriefing] Sent 3:3 briefing for {stock_name} to {user_id}")

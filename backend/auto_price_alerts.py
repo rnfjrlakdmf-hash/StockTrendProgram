@@ -175,7 +175,7 @@ class AutoPriceMonitor:
                 data={
                     "type": "auto_price_alert",
                     "symbol": symbol,
-                    "url": f"/discovery?symbol={symbol}"
+                    "url": f"/discovery?q={symbol}"
                 }
             )
             print(f"[AutoPriceAlert] Sent '{title_prefix}' for {stock_name} to {len(all_tokens)} devices")
