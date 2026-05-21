@@ -120,6 +120,21 @@ async def startup_event():
             
             from auto_price_alerts import auto_price_monitor
             asyncio.create_task(auto_price_monitor.start())
+            
+            # [BugFix] alerts.json 기반 사용자 설정 알림 체크 루프 (60초마다)
+            async def check_alerts_loop():
+                print("[AlertsLoop] JSON-based alert checker started (60s interval)")
+                await asyncio.sleep(30)  # 서버 안정화 후 시작
+                while True:
+                    try:
+                        from alerts import check_alerts
+                        triggered = await asyncio.to_thread(check_alerts)
+                        if triggered:
+                            print(f"[AlertsLoop] {len(triggered)} alert(s) triggered and sent!")
+                    except Exception as e:
+                        print(f"[AlertsLoop] Error: {e}")
+                    await asyncio.sleep(60)
+            asyncio.create_task(check_alerts_loop())
         except: pass
 
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)

@@ -24,8 +24,8 @@ export default function SettingsPage() {
     const [kisGuideOpen, setKisGuideOpen] = useState(false);
     const [kisConnected, setKisConnected] = useState(false);
     const [isKisCollapsed, setIsKisCollapsed] = useState(true);
-    const [isAccountCollapsed, setIsAccountCollapsed] = useState(false);
-    const [isBrokersCollapsed, setIsBrokersCollapsed] = useState(false);
+    const [isAccountCollapsed, setIsAccountCollapsed] = useState(true);
+    const [isBrokersCollapsed, setIsBrokersCollapsed] = useState(true);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
