@@ -4,7 +4,7 @@ import os
 def test_ssh():
     key_path = "StockAI-Server.pem"
     hostname = "13.209.99.170"
-    usernames = ["ubuntu", "ec2-user", "admin", "root"]
+    usernames = ["ubuntu", "ec2-user", "admin", "root", "bitnami", "centos", "debian"]
     
     print(f"Loading private key from {key_path}...")
     try:
