@@ -104,37 +104,62 @@ export default function FCMTokenManager() {
         }
     };
 
+    // [BugFix] user_id를 가장 신뢰성 있는 순서로 읽기
+    // 1) useAuth user.id (React 상태)
+    // 2) stock_user localStorage (JSON에서 id 직접 파싱)
+    // 3) user_id localStorage (백엔드 응답 후 늦게 저장됨 - 신뢰 안함)
+    // 4) guest (마지막 충대)
+    const getReliableUserId = (): string => {
+        if (user?.id) return user.id;
+        try {
+            const storedUser = localStorage.getItem('stock_user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                if (parsed?.id) return parsed.id;
+            }
+        } catch {}
+        return localStorage.getItem('user_id') || 'guest';
+    };
+
     const syncTokenToServer = async () => {
         try {
+            const currentUserId = getReliableUserId();
+
+            // [BugFix] 로그인 안 한 상태(guest)에서는 자동 등록 안 함
+            // 로그인 후 user가 설정되면 다시 syncTokenToServer가 호출되므로 안전
+            if (currentUserId === 'guest') {
+                console.log('[FCM] Not logged in. Skipping auto token registration.');
+                return;
+            }
+
             const token = await requestFCMToken();
             if (token) {
                 setCurrentToken(token);
-                const currentUserId = user?.id || localStorage.getItem('user_id') || 'guest';
-                
+
                 // 1. 서버에서 기존 토큰 정보 조회 (소유주 확인)
                 const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
                 const data = await res.json();
-                
+
                 let needRegister = true;
                 if (data.status === 'success' && data.data) {
                     setPrefs(data.data);
-                    // 이미 현재 로그인한 유저로 등록되어 있다면 추가 등록 API 요청(DB 쓰기)을 생략
+                    // 이미 현재 로그인한 유저로 등록되어 있다면 추가 등록 스킵
                     if (data.data.user_id === currentUserId) {
                         needRegister = false;
-                        console.log("[FCM] Token is already registered to the correct user:", currentUserId);
+                        console.log('[FCM] Token already registered for user:', currentUserId);
                     }
                 }
-                
+
                 if (needRegister) {
-                    const regResult = await registerTokenToBackend(token);
+                    const regResult = await registerTokenToBackend(token, currentUserId);
                     if (regResult.status === 'success') {
-                        console.log("[FCM] Registered token to backend successfully for user:", currentUserId);
+                        console.log('[FCM] Token registered for user:', currentUserId);
                         await fetchPreferences(token);
                     } else {
-                        console.error("[FCM] Registration failed:", regResult.message);
+                        console.error('[FCM] Registration failed:', regResult.message);
                     }
                 }
-                
+
                 setRegistered(true);
                 localStorage.setItem('fcm_registered', 'true');
             }
@@ -143,10 +168,10 @@ export default function FCMTokenManager() {
         }
     };
 
-    const registerTokenToBackend = async (token: string) => {
-        // useAuth의 user가 있으면 우선 사용, 없으면 localStorage 확인
-        const userId = user?.id || localStorage.getItem('user_id') || 'guest';
-        console.log("[FCM] Registering token for user:", userId);
+    const registerTokenToBackend = async (token: string, forcedUserId?: string) => {
+        // [BugFix] stock_user JSON에서 id를 직접 읽어서 가장 신뢰성 있는 user_id 사용
+        const userId = forcedUserId || getReliableUserId();
+        console.log('[FCM] Registering token for user:', userId);
         const res = await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
             method: 'POST',
             headers: {
@@ -182,10 +207,10 @@ export default function FCMTokenManager() {
                     icon: '/icon.png'
                 });
 
-                // [Debug] Success Alert with strict details
-                const currentUserId = user?.id || localStorage.getItem('user_id') || 'guest';
-                alert(`✅ 서버 연결 성공!\n(ID: ${currentUserId})\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.\n다시 백엔드에서 테스트를 진행해주세요.`);
-                console.log("[FCM] Registered to:", API_BASE_URL, "User:", currentUserId, "Token:", token);
+                // [BugFix] 신뢰성 있는 user_id 사용
+                const currentUserId = getReliableUserId();
+                alert(`✅ 서버 연결 성공!\n(ID: ${currentUserId})\n(API: ${API_BASE_URL})\n\n토큰이 등록되었습니다.`);
+                console.log('[FCM] Registered to:', API_BASE_URL, 'User:', currentUserId, 'Token:', token);
 
             } else {
                 alert(`❌ 서버 등록 실패\n(API: ${API_BASE_URL})\n\n응답: ${data.message}`);
