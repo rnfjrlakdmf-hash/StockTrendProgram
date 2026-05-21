@@ -373,13 +373,23 @@ def run_market_scheduler():
                     send_closing_notification("KR")
                     time.sleep(60)
                 
-                # 오후 23:35 미국 장시작 시가 알림 (휴장일 제외)
-                if now.hour == 23 and now.minute == 35 and not is_market_holiday("US"):
+                # 미국 서머타임(DST) 적용 여부 확인 (미국 동부 시간 기준)
+                ny_tz = pytz.timezone('America/New_York')
+                ny_time = datetime.now(ny_tz)
+                is_dst = ny_time.dst().total_seconds() != 0
+                
+                # 서머타임 시: KST 22:35 개장 알림 / KST 04:10 마감 알림
+                # 표준시간 시: KST 23:35 개장 알림 / KST 05:10 마감 알림
+                us_open_hour = 22 if is_dst else 23
+                us_close_hour = 4 if is_dst else 5
+                
+                # 미국 장시작 시가 알림 (개장 5분 후)
+                if now.hour == us_open_hour and now.minute == 35 and not is_market_holiday("US"):
                     send_opening_notification("US")
                     time.sleep(60)
 
-                # 오전 06:10 미국 장마감 종가 리포트 (휴장일 제외)
-                if now.hour == 6 and now.minute == 10 and not is_market_holiday("US"):
+                # 미국 장마감 종가 리포트 (마감 10분 후)
+                if now.hour == us_close_hour and now.minute == 10 and not is_market_holiday("US"):
                     send_closing_notification("US")
                     time.sleep(60)
             

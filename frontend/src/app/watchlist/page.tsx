@@ -193,8 +193,8 @@ export default function WatchlistPage() {
         const ms = (marketStatus || '').toLowerCase();
 
         if (isDomestic) {
-            if (ms.includes('장중') || ms.includes('거래')) return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
             if (ms.includes('시간외') || ms.includes('야간')) return { label: '시간외', color: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400 animate-pulse' };
+            if (ms.includes('장중') || ms === '거래중' || ms === 'open') return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
             return { label: '장마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };
         }
 

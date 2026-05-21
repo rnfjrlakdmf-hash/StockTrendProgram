@@ -29,7 +29,8 @@ export default function NaverTopWidget() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/market/rank/naver/${market}/${rankType}`);
+                // Vercel Edge Cache Proxy 호출
+                const res = await fetch(`/api/proxy/rank/naver?market=${market}&rank_type=${rankType}`);
                 const json = await res.json();
                 if (!ignore && json.status === "success") {
                     setData(Array.isArray(json.data) ? json.data : []);

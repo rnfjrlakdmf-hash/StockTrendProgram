@@ -55,8 +55,9 @@ export default function GlobalRankingWidget() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 60000); // 60초 타임아웃
             try {
+                // EC2 백엔드 직접 호출 대신 Vercel Edge Cache Proxy 호출
                 const res = await fetch(
-                    `${API_BASE_URL}/api/market/rank/global?market=${market}&category=${catId}`,
+                    `/api/proxy/rank/global?market=${market}&category=${catId}`,
                     { signal: controller.signal }
                 );
                 clearTimeout(timeoutId);

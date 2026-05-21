@@ -247,7 +247,8 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/market/rank/top10/${market}`);
+        // Vercel Edge Cache Proxy 호출
+        const res = await fetch(`/api/proxy/rank/top10?market=${market}`);
 
         // [Fix] Check response status before parsing
         if (!res.ok) {
