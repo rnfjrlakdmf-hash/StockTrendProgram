@@ -82,6 +82,67 @@ class NewsAlertMonitor:
         self.check_interval = 120  # 2분마다 체크
         self.last_seen_articles = {}  # {symbol_source: last_article_id}
         self.sent_titles = {}  # {symbol: [title1, title2, ...]}
+        self._load_sent_history()  # 서버 재시작 시 발송 이력 복원
+
+    def _load_sent_history(self):
+        """DB에서 최근 24시간 이내 발송된 뉴스 이력을 불러와 중복 방지에 활용"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            # news_sent_log 테이블이 없으면 생성
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS news_sent_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    article_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            # 최근 24시간 이내 발송된 기록 로드
+            cursor.execute("""
+                SELECT symbol, article_id, title FROM news_sent_log
+                WHERE sent_at > datetime('now', '-24 hours')
+                ORDER BY sent_at DESC
+            """)
+            rows = cursor.fetchall()
+            conn.close()
+            for symbol, article_id, title in rows:
+                key = f"{symbol}_"
+                # last_seen_articles 복원 (소스 키는 정확히 알 수 없어 prefix로 저장)
+                self.last_seen_articles[f"_restored_{symbol}_{article_id}"] = article_id
+                if symbol not in self.sent_titles:
+                    self.sent_titles[symbol] = []
+                if title not in self.sent_titles[symbol]:
+                    self.sent_titles[symbol].append(title)
+            print(f"[NewsAlert] 발송 이력 복원 완료: {len(rows)}건")
+        except Exception as e:
+            print(f"[NewsAlert] 발송 이력 복원 실패 (무시): {e}")
+
+    def _save_sent_log(self, symbol: str, article_id: str, title: str):
+        """발송된 뉴스를 DB에 기록 (재시작 후에도 중복 방지)"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            # 이미 같은 article_id가 최근 24시간 내 기록되어 있으면 스킵
+            cursor.execute("""
+                SELECT 1 FROM news_sent_log
+                WHERE symbol=? AND article_id=?
+                AND sent_at > datetime('now', '-24 hours')
+            """, (symbol, article_id))
+            if cursor.fetchone():
+                conn.close()
+                return  # 이미 발송된 기사
+            cursor.execute("""
+                INSERT INTO news_sent_log (symbol, article_id, title) VALUES (?, ?, ?)
+            """, (symbol, str(article_id), title))
+            # 오래된 로그(7일 초과) 자동 삭제
+            cursor.execute("DELETE FROM news_sent_log WHERE sent_at < datetime('now', '-7 days')")
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[NewsAlert] 발송 로그 저장 실패 (무시): {e}")
 
     async def start(self):
         """뉴스 모니터링 시작"""
@@ -289,7 +350,24 @@ class NewsAlertMonitor:
             if self.last_seen_articles.get(key) != article_id:
                 self.last_seen_articles[key] = article_id
 
-                # 중복 속보 방지: 최근 발송된 기사 제목과 유사도 검사
+                # 중복 속보 방지 ①: DB 기반 article_id 중복 체크 (재시작 후에도 유효)
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT 1 FROM news_sent_log
+                        WHERE symbol=? AND article_id=?
+                        AND sent_at > datetime('now', '-24 hours')
+                    """, (symbol, str(article_id)))
+                    already_sent = cursor.fetchone() is not None
+                    conn.close()
+                    if already_sent:
+                        print(f"[NewsAlert] 중복 뉴스 차단 (DB 이력, {kr_name}): {item['title'][:40]}")
+                        continue
+                except Exception:
+                    pass
+
+                # 중복 속보 방지 ②: 제목 유사도 검사 (기준 70%로 강화)
                 new_title_words = set(re.findall(r'\w+', item['title']))
                 is_duplicate = False
 
@@ -299,22 +377,25 @@ class NewsAlertMonitor:
                     if not new_title_words or not past_words:
                         continue
                     intersection = len(new_title_words.intersection(past_words))
-                    # 제목 내 단어의 40% 이상이 일치하면 같은 뉴스로 간주
+                    # 제목 내 단어의 70% 이상 일치하면 같은 뉴스로 간주 (40% → 70%로 강화)
                     similarity = intersection / min(len(new_title_words), len(past_words))
-                    if similarity > 0.4:
+                    if similarity > 0.7:
                         is_duplicate = True
                         break
 
                 if is_duplicate:
-                    print(f"[NewsAlert] 중복 뉴스 알림 차단 ({kr_name}): {item['title']}")
+                    print(f"[NewsAlert] 중복 뉴스 알림 차단 (유사도, {kr_name}): {item['title'][:40]}")
                     continue
 
-                # 최근 발송 제목 목록에 추가 (최대 10개 유지)
+                # 최근 발송 제목 목록에 추가 (최대 20개 유지)
                 if symbol not in self.sent_titles:
                     self.sent_titles[symbol] = []
                 self.sent_titles[symbol].append(item['title'])
-                if len(self.sent_titles[symbol]) > 10:
+                if len(self.sent_titles[symbol]) > 20:
                     self.sent_titles[symbol].pop(0)
+
+                # DB에 발송 이력 저장 (재시작 후에도 중복 방지)
+                self._save_sent_log(symbol, str(article_id), item['title'])
 
                 print(f"[NewsAlert] New article detected for {kr_name}({symbol}): {item['title']}")
                 await self.send_news_push(symbol, kr_name, is_korean, item, users)
