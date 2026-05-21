@@ -152,29 +152,48 @@ async def read_stock(symbol: str, skip_ai: bool = False):
     # Lazy Imports
     from stock_data import get_stock_info
     from ai_analysis import analyze_stock
-    from db_manager import save_analysis_result
+    from db_manager import save_analysis_result, get_cached_ai_analysis, save_ai_analysis_cache
     
     # Use to_thread to prevent blocking
     data = await asyncio.to_thread(get_stock_info, symbol)
     if data:
         if not skip_ai:
             try:
-                # Run heavy AI analysis in a separate thread
-                ai_result = await asyncio.to_thread(analyze_stock, data)
-                data.update({
-                    "score": ai_result.get("score", 50),
-                    "metrics": ai_result.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
-                    "summary": ai_result.get("analysis_summary", data["summary"]),
-                    "rationale": ai_result.get("rationale", {}),
-                    "related_stocks": ai_result.get("related_stocks", [])
-                })
-                await asyncio.to_thread(save_analysis_result, data)
+                # [★ AI Cache] 1단계: DB에 6시간 이내 캐시된 AI 결과가 있으면 즉시 사용
+                db_cached = await asyncio.to_thread(get_cached_ai_analysis, data['symbol'])
+                if db_cached:
+                    data.update({
+                        "score": db_cached.get("score", 50),
+                        "metrics": db_cached.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
+                        "summary": db_cached.get("summary", data.get("summary", "")),
+                        "rationale": db_cached.get("rationale", {}),
+                        "related_stocks": db_cached.get("related_stocks", [])
+                    })
+                    print(f"[★ AI-Cache] DB Cache HIT for {symbol} - Skipping Gemini API call")
+                else:
+                    # [2단계] DB 캐시 없음 → Gemini API 호출 (3~15초)
+                    ai_result = await asyncio.to_thread(analyze_stock, data)
+                    data.update({
+                        "score": ai_result.get("score", 50),
+                        "metrics": ai_result.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
+                        "summary": ai_result.get("analysis_summary", data["summary"]),
+                        "rationale": ai_result.get("rationale", {}),
+                        "related_stocks": ai_result.get("related_stocks", [])
+                    })
+                    # [3단계] DB에 AI 결과 저장 (6시간 캐시, 비동기 백그라운드)
+                    await asyncio.to_thread(save_analysis_result, data)
+                    await asyncio.to_thread(save_ai_analysis_cache, data['symbol'], ai_result)
             except Exception as e:
                 print(f"[ERROR] AI Analysis in thread failed: {e}")
         
-        turbo_engine.set_cache(cache_key, data)
+        # [메모리 캐시] TTL 60분 (skip_ai=False), 10분 (skip_ai=True)
+        # skip_ai=True: Fast Fetch 결과 10분 캐시 → 재검색 시 즉시 반환
+        # skip_ai=False: AI 결과 포함 1시간 캐시 → Gemini 재호출 없음
+        mem_ttl = 3600 if not skip_ai else 600
+        turbo_engine.set_cache(cache_key, data, ttl=mem_ttl)
         return {"status": "success", "data": data, "turbo": False}
     return {"status": "error", "message": "Stock not found"}
+
 
 @router.get("/pro/summary/{symbol}")
 def read_pro_summary(symbol: str):
@@ -360,6 +379,7 @@ def stock_investors_live(symbol: str):
         return {"status": "error", "message": str(e)}
 
 @router.get("/stock/{symbol}/financials")
+@turbo_cache(ttl_seconds=600)  # [Cache] 10분 캐싱 → 재요청 시 즉시 반환 (스크래핑 비용 절감)
 def stock_financials(symbol: str):
     from korea_data import get_stock_financials
     try:

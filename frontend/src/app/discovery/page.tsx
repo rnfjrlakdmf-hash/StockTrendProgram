@@ -187,7 +187,7 @@ function EasyTerm({ label, term, isEasyMode, align = 'left' }: { label: string, 
 
 // [Cache System] Ultra-fast navigation
 const STOCK_CACHE: Record<string, { data: any, timestamp: number }> = {};
-const CACHE_DURATION = 60 * 1000; // 1 minute cache for fast re-navigation
+const CACHE_DURATION = 30 * 60 * 1000; // [Optimized] 10분→30분 캐시. 백엔드 AI 캐시(1시간)와 정렬하여 Gemini 재호출 최소화
 
 // Helper for parsing change rate and applying standard KOR formatting (Red = Up, Blue = Down, with ▲/▼)
 const formatChangeDisplay = (val: any) => {
@@ -328,6 +328,7 @@ function DiscoveryContent() {
     const [stock, setStock] = useState<StockData | null>(null);
     const [loading, setLoading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false); // [New] AI analyzing state
+    const [analysisStep, setAnalysisStep] = useState(0); // 0=idle, 1=수급분석, 2=재무검토, 3=뉴스감지, 4=리포트작성
     const [error, setError] = useState("");
     const [showReport, setShowReport] = useState(false);
     const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor' | 'overhang'>('analysis');
@@ -610,18 +611,30 @@ function DiscoveryContent() {
                 setStock(cachedData.data);
                 setLoading(false);
                 
-                // Then fetch the slow AI in background
-                setIsAnalyzing(true);
-                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`)
-                    .then(res => res.ok ? res.json() : null)
-                    .then(jsonFull => {
-                        if (jsonFull?.status === "success") {
-                            setStock(jsonFull.data);
-                            STOCK_CACHE[jsonFull.data.symbol.toUpperCase()] = { data: jsonFull.data, timestamp: Date.now() };
-                        }
-                        setIsAnalyzing(false);
-                    })
-                    .catch(() => setIsAnalyzing(false));
+                // [Optimized] 캐시에 이미 AI 분석 결과(score)가 있으면 백그라운드 재요청 스킵
+                const hasAiData = cachedData.data?.score !== undefined && cachedData.data?.rationale;
+                if (hasAiData) {
+                    console.log("[Search] Cache hit with AI data! No background fetch needed.", targetSymbol);
+                    setLoading(false);
+                } else {
+                    // AI 데이터 없으면 백그라운드에서 AI 분석 요청
+                    setIsAnalyzing(true);
+                    setAnalysisStep(1);
+                    const stepTimer1 = setTimeout(() => setAnalysisStep(2), 1500);
+                    const stepTimer2 = setTimeout(() => setAnalysisStep(3), 3000);
+                    const stepTimer3 = setTimeout(() => setAnalysisStep(4), 5000);
+                    fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`)
+                        .then(res => res.ok ? res.json() : null)
+                        .then(jsonFull => {
+                            clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3);
+                            if (jsonFull?.status === "success") {
+                                setStock(jsonFull.data);
+                                STOCK_CACHE[jsonFull.data.symbol.toUpperCase()] = { data: jsonFull.data, timestamp: Date.now() };
+                            }
+                            setIsAnalyzing(false); setAnalysisStep(0);
+                        })
+                        .catch(() => { clearTimeout(stepTimer1); clearTimeout(stepTimer2); clearTimeout(stepTimer3); setIsAnalyzing(false); setAnalysisStep(0); });
+                }
 
                 // Fetch Financial Highlights in background
                 setFinancialsLoading(true);
@@ -659,18 +672,29 @@ function DiscoveryContent() {
                     return;
                 }
 
-                // 2. Slow Fetch (Background AI Analysis)
+                // 2. Slow Fetch (Background AI Analysis) - 30초 AbortController 타임아웃
                 setIsAnalyzing(true);
-                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`)
+                setAnalysisStep(1);
+                const aiStepTimer1 = setTimeout(() => setAnalysisStep(2), 1800);
+                const aiStepTimer2 = setTimeout(() => setAnalysisStep(3), 3600);
+                const aiStepTimer3 = setTimeout(() => setAnalysisStep(4), 5500);
+                const aiController = new AbortController();
+                const aiTimeoutId = setTimeout(() => aiController.abort(), 30000); // 30초 타임아웃
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}`, { signal: aiController.signal })
                     .then(res => res.ok ? res.json() : null)
                     .then(jsonFull => {
+                        clearTimeout(aiTimeoutId); clearTimeout(aiStepTimer1); clearTimeout(aiStepTimer2); clearTimeout(aiStepTimer3);
                         if (jsonFull?.status === "success") {
                             setStock(jsonFull.data);
                             STOCK_CACHE[jsonFull.data.symbol.toUpperCase()] = { data: jsonFull.data, timestamp: Date.now() };
                         }
-                        setIsAnalyzing(false);
+                        setIsAnalyzing(false); setAnalysisStep(0);
                     })
-                    .catch(() => setIsAnalyzing(false));
+                    .catch((err) => {
+                        clearTimeout(aiTimeoutId); clearTimeout(aiStepTimer1); clearTimeout(aiStepTimer2); clearTimeout(aiStepTimer3);
+                        if (err.name !== 'AbortError') console.error('[AI Fetch] Error:', err);
+                        setIsAnalyzing(false); setAnalysisStep(0);
+                    });
 
                 // 3. Fetch Financial Highlights
                 setFinancialsLoading(true);
@@ -1079,7 +1103,15 @@ function DiscoveryContent() {
                                     <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
                                         <div className="flex items-center gap-3 md:flex-col md:items-end">
                                             <div className="text-sm text-gray-400 md:mb-1"><span>AI 종합 점수</span></div>
-                                            <div className={`text-4xl md:text-5xl font-black ${stock.score >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm`}><span>{stock.score}</span></div>
+                                            {/* [UX] AI 분석 중 점수 스켈레톤 */}
+                                            {isAnalyzing && !stock.score ? (
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <div className="w-20 h-12 bg-white/10 rounded-xl animate-pulse" />
+                                                    <div className="text-[10px] text-blue-400/60 font-mono animate-pulse">분석 중...</div>
+                                                </div>
+                                            ) : (
+                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm transition-all duration-700`}><span>{stock.score || '-'}</span></div>
+                                            )}
                                         </div>
                                         <div className="w-full md:w-auto mt-4 md:mt-2 flex items-center justify-end gap-2">
                                             {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && <WatchlistButton symbol={stock.symbol} />}
@@ -1097,11 +1129,27 @@ function DiscoveryContent() {
                                     </div>
                                 </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="기관/외국인 수급 강도" color="#3b82f6" />
-                                        <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="성장성 및 수익성" color="#10b981" />
-                                        <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="긍정/부정 뉴스 분석" color="#f59e0b" />
-                                    </div>
+                                    {/* [UX] 게이지 차트 or 스켈레톤 */}
+                                    {isAnalyzing && !stock.metrics?.supplyDemand ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                            {["수급 분석", "재무 건전성", "뉴스 심리"].map((label, i) => (
+                                                <div key={i} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+                                                    <div className="w-24 h-24 rounded-full bg-white/10" />
+                                                    <div className="text-center space-y-1.5">
+                                                        <div className="h-4 w-20 bg-white/10 rounded-full mx-auto" />
+                                                        <div className="h-3 w-28 bg-white/5 rounded-full mx-auto" />
+                                                    </div>
+                                                    <div className="text-[11px] text-blue-400/50 font-mono">{label} 분석 중...</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                            <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="기관/외국인 수급 강도" color="#3b82f6" />
+                                            <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="성장성 및 수익성" color="#10b981" />
+                                            <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="긍정/부정 뉴스 분석" color="#f59e0b" />
+                                        </div>
+                                    )}
 
                                     {/* [New] Live Supply Widget for Korea Stocks ONLY */}
                                     {stock.currency === 'KRW' && stock.symbol && !stock.symbol.includes('.') && (
@@ -1357,11 +1405,60 @@ function DiscoveryContent() {
                                             </h4>
                                             <div className={`leading-relaxed text-sm md:text-lg font-medium whitespace-pre-wrap mb-6 min-h-[100px] ${(stock.summary || "").includes("오류") ? 'text-red-300' : 'text-gray-100'}`}>
                                                 {isAnalyzing && (!stock?.summary || (stock.summary && stock.summary.length < 50)) ? (
-                                                    <div className="flex flex-col items-center justify-center h-full py-8 space-y-3 bg-white/5 rounded-xl border border-white/5">
-                                                        <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-                                                        <div className="text-center">
-                                                            <div className="text-blue-200 text-sm font-bold mb-1"><span>AI가 실시간 데이터를 분석 중입니다...</span></div>
-                                                            <div className="text-slate-500 text-xs"><span>전략 수립 및 리포트 작성 중 (약 3~5초)</span></div>
+                                                    <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/40 to-indigo-950/40 overflow-hidden">
+                                                        {/* 진행 단계 헤더 */}
+                                                        <div className="flex items-center gap-3 px-5 py-4 border-b border-blue-500/10">
+                                                            <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-blue-500/20">
+                                                                <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                                                                <span className="absolute inset-0 rounded-full border border-blue-400/30 animate-ping" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-blue-200">🤖 AI 분석 엔진 가동 중</p>
+                                                                <p className="text-[11px] text-blue-400/70 font-mono">
+                                                                    {analysisStep === 1 && '수급 데이터 수집 중... (외국인·기관 매매 분석)'}
+                                                                    {analysisStep === 2 && '재무제표 검토 중... (매출·영업이익·부채비율)'}
+                                                                    {analysisStep === 3 && '뉴스·공시 감지 중... (호재·악재 자동 스캔)'}
+                                                                    {analysisStep === 4 && 'AI 리포트 최종 작성 중... (거의 완료!)'}
+                                                                    {analysisStep === 0 && '데이터 요청 중...'}
+                                                                </p>
+                                                            </div>
+                                                            {/* 단계 뱃지 */}
+                                                            <div className="ml-auto text-[10px] font-black text-blue-300 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-400/20">
+                                                                {analysisStep}/4
+                                                            </div>
+                                                        </div>
+                                                        {/* 진행 바 */}
+                                                        <div className="px-5 pt-3 pb-1">
+                                                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-400 rounded-full transition-all duration-1000 ease-out"
+                                                                    style={{ width: `${[5, 28, 55, 80, 95][analysisStep] ?? 5}%` }}
+                                                                />
+                                                            </div>
+                                                            <p className="text-right text-[10px] text-blue-400/60 mt-1 font-mono">{[5, 28, 55, 80, 95][analysisStep] ?? 5}%</p>
+                                                        </div>
+                                                        {/* 스켈레톤 텍스트 미리보기 */}
+                                                        <div className="px-5 pb-5 space-y-2.5">
+                                                            {[100, 90, 75, 85, 60].map((w, i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    className="h-3.5 rounded-full bg-white/5 animate-pulse"
+                                                                    style={{ width: `${w}%`, animationDelay: `${i * 150}ms` }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        {/* 단계 스텝 도트 */}
+                                                        <div className="flex items-center justify-center gap-3 pb-4">
+                                                            {['수급', '재무', '뉴스', '리포트'].map((label, i) => (
+                                                                <div key={i} className="flex flex-col items-center gap-1">
+                                                                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                                                                        analysisStep > i ? 'bg-blue-400 scale-125' : analysisStep === i + 1 ? 'bg-blue-400 animate-pulse' : 'bg-white/10'
+                                                                    }`} />
+                                                                    <span className={`text-[9px] font-bold transition-colors duration-500 ${
+                                                                        analysisStep > i ? 'text-blue-300' : 'text-white/20'
+                                                                    }`}>{label}</span>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -1371,8 +1468,8 @@ function DiscoveryContent() {
                                             </div>
 
                                             {/* [New] 3-Line Rationale with Beginner Terms Guide */}
-                                            {stock.rationale && stock.rationale.supply && (
-                                                <div className="mb-6 space-y-3">
+                                            {(stock.rationale && stock.rationale.supply) ? (
+                                                <div className="mb-6 space-y-3 animate-in fade-in duration-500">
                                                     {/* 용어 설명 토글 버튼 */}
                                                     <details className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
                                                         <summary className="flex items-center gap-2 p-3 cursor-pointer text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
@@ -1403,7 +1500,25 @@ function DiscoveryContent() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )}
+                                            ) : isAnalyzing ? (
+                                                /* [UX] rationale 카드 스켈레톤 */
+                                                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    {[
+                                                        { label: '✅ 수급 (Supply)', color: 'border-blue-500/20', labelColor: 'text-blue-400/40' },
+                                                        { label: '🔥 모멘텀 (Momentum)', color: 'border-white/10', labelColor: 'text-purple-400/40' },
+                                                        { label: '⚠️ 리스크 (Risk)', color: 'border-red-500/20', labelColor: 'text-red-400/40' },
+                                                    ].map((item, i) => (
+                                                        <div key={i} className={`bg-white/5 p-4 rounded-xl border ${item.color} shadow-lg`} style={{ animationDelay: `${i * 200}ms` }}>
+                                                            <div className={`font-bold mb-2 text-sm ${item.labelColor}`}>{item.label}</div>
+                                                            <div className="space-y-1.5">
+                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-full" />
+                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-5/6" />
+                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-4/6" />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null}
 
 
 

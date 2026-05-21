@@ -47,6 +47,22 @@ def init_db():
         )
     ''')
 
+    # [AI Cache] AI 분석 결과 영구 캐싱 테이블 (6시간 TTL)
+    # 동일 종목 재검색 시 Gemini API 재호출 없이 즉시 반환
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ai_analysis_cache (
+            symbol TEXT PRIMARY KEY,
+            score INTEGER,
+            supply_score INTEGER,
+            financial_score INTEGER,
+            news_score INTEGER,
+            summary TEXT,
+            rationale_json TEXT,
+            related_stocks_json TEXT,
+            cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Users Table (Google Login)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -442,6 +458,93 @@ def save_analysis_result(data):
         conn.commit()
     except Exception as e:
         print(f"DB Save Error: {e}")
+    finally:
+        conn.close()
+
+# ─────────────────────────────────────────────
+# [AI Cache] 종목별 AI 분석 결과 DB 캐싱 (6시간)
+# ─────────────────────────────────────────────
+AI_CACHE_TTL_HOURS = 24  # [Optimized] 6시간 → 24시간. AI 분석은 뉴스/가격보다 느리게 변하므로 재호출 비용 절감
+
+def get_cached_ai_analysis(symbol: str):
+    """
+    DB에서 AI 분석 캐시를 조회합니다.
+    6시간 이내 분석 결과가 있으면 반환, 없으면 None 반환.
+    """
+    import json
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT score, supply_score, financial_score, news_score,
+                   summary, rationale_json, related_stocks_json, cached_at
+            FROM ai_analysis_cache
+            WHERE symbol = ?
+              AND cached_at >= datetime('now', ?, 'utc')
+        """, (symbol.upper(), f'-{AI_CACHE_TTL_HOURS} hours'))
+        row = cursor.fetchone()
+        if row:
+            print(f"[AI-Cache] DB Cache HIT for {symbol} (cached at {row[7]})")
+            return {
+                "score": row[0],
+                "metrics": {
+                    "supplyDemand": row[1],
+                    "financials": row[2],
+                    "news": row[3]
+                },
+                "summary": row[4],
+                "rationale": json.loads(row[5]) if row[5] else {},
+                "related_stocks": json.loads(row[6]) if row[6] else []
+            }
+        return None
+    except Exception as e:
+        print(f"[AI-Cache] DB Read Error: {e}")
+        return None
+    finally:
+        conn.close()
+
+def save_ai_analysis_cache(symbol: str, ai_result: dict):
+    """
+    AI 분석 결과를 DB에 저장합니다. (UPSERT)
+    다음 조회 시 Gemini API 없이 즉시 반환합니다.
+    """
+    import json
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    cursor = conn.cursor()
+    try:
+        metrics = ai_result.get('metrics', {})
+        rationale = ai_result.get('rationale', {})
+        related = ai_result.get('related_stocks', [])
+        summary = ai_result.get('summary', ai_result.get('analysis_summary', ''))
+
+        cursor.execute("""
+            INSERT INTO ai_analysis_cache
+                (symbol, score, supply_score, financial_score, news_score,
+                 summary, rationale_json, related_stocks_json, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'utc'))
+            ON CONFLICT(symbol) DO UPDATE SET
+                score              = excluded.score,
+                supply_score       = excluded.supply_score,
+                financial_score    = excluded.financial_score,
+                news_score         = excluded.news_score,
+                summary            = excluded.summary,
+                rationale_json     = excluded.rationale_json,
+                related_stocks_json= excluded.related_stocks_json,
+                cached_at          = excluded.cached_at
+        """, (
+            symbol.upper(),
+            ai_result.get('score', 50),
+            metrics.get('supplyDemand', 50),
+            metrics.get('financials', 50),
+            metrics.get('news', 50),
+            summary,
+            json.dumps(rationale, ensure_ascii=False),
+            json.dumps(related, ensure_ascii=False)
+        ))
+        conn.commit()
+        print(f"[AI-Cache] Saved to DB: {symbol} (expires in {AI_CACHE_TTL_HOURS}h)")
+    except Exception as e:
+        print(f"[AI-Cache] DB Write Error: {e}")
     finally:
         conn.close()
 

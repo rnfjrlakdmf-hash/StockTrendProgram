@@ -33,19 +33,19 @@ def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
     return genai.GenerativeModel('gemini-2.5-flash')
 
-def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 12, temperature: float = 0.1, models_to_try: list = None):
+def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 8, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
-    timeout: 각 모델 시도당 최대 대기 시간 (초)
+    timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 12s → 8s
     temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
-    models_to_try: 시도할 모델 리스트 (기본값: flash -> pro)
+    models_to_try: 시도할 모델 리스트 (기본값: gemini-2.5-flash 단일 사용)
     """
     import concurrent.futures
     
     if models_to_try is None:
+        # [Optimized] 단일 모델 사용으로 폴백 지연 제거 (gemini-2.5-flash는 충분히 빠름)
         models_to_try = [
             "gemini-2.5-flash",
-            "gemini-2.0-flash"
         ]
     
     last_error = None
@@ -112,88 +112,43 @@ def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         safe_financials = "N/A"
 
-    prompt = f"""
-    You are a professional financial data analyst. Provide a CONCISE, READABLE data summary.
-    
-    Stock: {stock_data.get('symbol')} - {stock_data.get('name')}
-    Price: {stock_data.get('price')} {stock_data.get('currency')}
-    Sector: {stock_data.get('sector')}
-    Financials: {json.dumps(safe_financials, ensure_ascii=False)}
-    
-    Recent News:
-    {json.dumps([f"[{n.get('press', n.get('publisher', 'N/A'))}] {n['title']}" for n in stock_data.get('news', [])[:5]], ensure_ascii=False)}
+    # 뉴스 5개 사용 (분석 품질 유지)
+    news_titles = [f"[{n.get('press', n.get('publisher', 'N/A'))}] {n['title']}" for n in stock_data.get('news', [])[:5]]
 
-    CRITICAL: Keep Korean text CONCISE and SCANNABLE. Use bullet points!
-    NEVER provide direct buy/sell recommendations or specific price targets.
+    prompt = f"""You are a financial data analyst. Analyze the stock and return a JSON with scores and Korean summary.
 
-    Required Analysis (JSON format):
-    
-    1. **Data Scores** (0-100):
-       - Overall analysis score
-       - Supply/Demand Trend Intensity
-       - Financial Stability/Strength
-       - News Sentiment Factor
-    
-    2. **Key Context** (Korean - MAX 4 bullet points):
-       Format as:
-       📊 [데이터 포인트 1] (객관적 사실)
-       📊 [데이터 포인트 2] (수치 포함)
-       ⚠️ [유의 사항] (리스크 요인)
-       📝 [시장 관찰] (데이터 흐름 요약)
-       
-       Example:
-       📊 시장 지배력: 반도체 점유율 1위 (45%) 확인
-       📊 재무 지표: PER 12배로 업계 평균(15배) 대비 수치적 차이 존재
-       ⚠️ 유의 사항: 원자재 가격 변동에 따른 수익성 영향 가능성
-       📝 시장 관찰: 외국인 매수세 지속 여부가 지표에 영향
-    
-    3. **Data Indicators**:
-       - volatility: 변동성 수준 (number)
-       - trend_strength: 추세 강도 % (number)
-       - observation_point: "주요 데이터 관찰 포인트" (Korean, 1 sentence)
-    
-    4. **3-Line Data Summary** (Korean - each 1 sentence max):
-       - supply: 수급 데이터 요약
-       - momentum: 추세 흐름 요약
-       - risk: 주요 변량/리스크 데이터
-    
-    5. **Translate Top 3 News** (Korean title + 1-line summary)
-    
-    6. **Related Stocks** (3 competitors only):
-       - symbol, name, reason (Korean, brief)
+Stock: {stock_data.get('symbol')} - {stock_data.get('name')}
+Price: {stock_data.get('price')} {stock_data.get('currency')}
+Sector: {stock_data.get('sector')}
+Key Financials: {json.dumps(safe_financials, ensure_ascii=False)}
+Recent News (5 headlines): {json.dumps(news_titles, ensure_ascii=False)}
 
-    Response Format (JSON):
-    {{
-        "score": <0-100>,
-        "metrics": {{
-            "supplyDemand": <0-100>,
-            "financials": <0-100>,
-            "news": <0-100>
-        }},
-        "analysis_summary": "📊 [포인트1]\\n📊 [포인트2]\\n⚠️ [유의사항]\\n📝 [요약]",
-        "strategy": {{
-            "volatility": <number>,
-            "trend_strength": <number>,
-            "observation_point": "<Korean 1 sentence>"
-        }},
-        "rationale": {{
-            "supply": "<Korean 1 sentence>",
-            "momentum": "<Korean 1 sentence>",
-            "risk": "<Korean 1 sentence>"
-        }},
-        "translated_news": [
-            {{ "original_title": "...", "title": "<Korean>", "summary": "<Korean 1-line>" }},
-            ...
-        ],
-        "related_stocks": [
-            {{ "symbol": "...", "name": "...", "reason": "..." }},
-            ...
-        ]
-    }}
-    """
+Rules:
+- NEVER recommend buy/sell or specific price targets.
+- All text fields must be written in Korean, concise (1-2 sentences max per field).
+- analysis_summary: 4 bullet points with emojis (📊📊⚠️📝).
+- related_stocks: List 3 real, currently-tradable stocks in the SAME sector/theme. Include valid ticker symbols.
+
+Return ONLY this JSON (no extra text):
+{{
+    "score": <0-100 overall>,
+    "metrics": {{"supplyDemand": <0-100>, "financials": <0-100>, "news": <0-100>}},
+    "analysis_summary": "📊 [수치사실1]\\n📊 [수치사실2]\\n⚠️ [리스크1]\\n📝 [시장흐름]",
+    "strategy": {{"volatility": <0-100>, "trend_strength": <0-100>, "observation_point": "<Korean 1 sentence>"}},
+    "rationale": {{"supply": "<Korean 1 sentence>", "momentum": "<Korean 1 sentence>", "risk": "<Korean 1 sentence>"}},
+    "related_stocks": [
+        {{"symbol": "<ticker>", "name": "<Korean company name>", "reason": "<Korean 1 sentence why related>"}},
+        {{"symbol": "<ticker>", "name": "<Korean company name>", "reason": "<Korean 1 sentence why related>"}},
+        {{"symbol": "<ticker>", "name": "<Korean company name>", "reason": "<Korean 1 sentence why related>"}}
+    ]
+}}"""
 
     try:
+        import time as _time
+        _t0 = _time.time()
         response = generate_with_retry(prompt, json_mode=True)
+        _elapsed = _time.time() - _t0
+        print(f"[Gemini] analyze_stock completed in {_elapsed:.2f}s for {stock_data.get('symbol')}")
         return json.loads(response.text)
 
     except Exception as e:

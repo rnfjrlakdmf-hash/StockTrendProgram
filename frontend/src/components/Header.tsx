@@ -7,6 +7,8 @@ import { useEffect, useRef } from 'react';
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 
+const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
+
 import FlipIndexTicker from './FlipIndexTicker';
 
 interface HeaderProps {
@@ -127,10 +129,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                         <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">이용 가이드</span>
                     </Link>
 
-                    <Link href="/admin" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
-                        <Users className="h-5 w-5" />
-                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">회원 관리</span>
-                    </Link>
+                    {/* [Admin Only] 관리자 계정으로 로그인 시에만 노출 */}
+                    {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
+                        <Link href="/admin" className="p-2 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/30 text-fuchsia-400 hover:text-fuchsia-200 hover:bg-fuchsia-900/40 transition-all group relative">
+                            <Users className="h-5 w-5" />
+                            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">관리자 센터</span>
+                        </Link>
+                    )}
 
                     <button className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors">
                         {user ? (

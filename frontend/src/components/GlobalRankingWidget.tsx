@@ -57,7 +57,7 @@ export default function GlobalRankingWidget() {
             try {
                 // EC2 백엔드 직접 호출 대신 Vercel Edge Cache Proxy 호출
                 const res = await fetch(
-                    `/api/proxy/rank/global?market=${market}&category=${catId}`,
+                    `/api/market/rank/global?market=${market}&category=${catId}`,
                     { signal: controller.signal }
                 );
                 clearTimeout(timeoutId);

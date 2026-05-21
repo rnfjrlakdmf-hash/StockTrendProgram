@@ -248,7 +248,7 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
     const fetchData = async () => {
       try {
         // Vercel Edge Cache Proxy 호출
-        const res = await fetch(`/api/proxy/rank/top10?market=${market}`);
+        const res = await fetch(`/api/market/rank/top10/${market}`);
 
         // [Fix] Check response status before parsing
         if (!res.ok) {
