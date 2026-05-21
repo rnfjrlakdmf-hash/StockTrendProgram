@@ -84,6 +84,8 @@ async def legacy_etf_detail(symbol: str):
     return get_etf_detail(symbol)
 from routes.debug import router as debug_router
 app.include_router(debug_router, prefix="/api")
+from routes.debug_notify import router as debug_notify_router
+app.include_router(debug_notify_router, prefix="/api")
 app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")
