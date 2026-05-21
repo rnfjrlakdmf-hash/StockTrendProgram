@@ -418,32 +418,124 @@ export default function SettingsPage() {
 
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {[
-                                    { name: "토스증권", color: "from-blue-600 to-blue-800", deepLink: "supertoss://", webUrl: "https://tossinvest.com" },
-                                    { name: "KB증권", color: "from-yellow-600 to-yellow-800", deepLink: "kb-mable://", webUrl: "https://www.kbsec.com" },
-                                    { name: "미래에셋", color: "from-orange-600 to-orange-800", deepLink: "miraeasset-mstock://", webUrl: "https://securities.miraeasset.com" },
-                                    { name: "NH나무증권", color: "from-green-600 to-green-800", deepLink: "nh-namuh://", webUrl: "https://www.nhqv.com" },
-                                    { name: "삼성증권", color: "from-indigo-600 to-indigo-800", deepLink: "samsungpop://", webUrl: "https://www.samsungpop.com" },
-                                    { name: "카카오페이증권", color: "from-amber-500 to-amber-700", deepLink: "kakaopaysec://", webUrl: "https://securities.kakaopay.com" },
+                                    {
+                                        name: "토스증권",
+                                        color: "from-blue-500 to-blue-700",
+                                        shadow: "shadow-blue-900/40",
+                                        deepLink: "supertoss://invest",
+                                        iosStore: "https://apps.apple.com/kr/app/id839333328",
+                                        androidStore: "https://play.google.com/store/apps/details?id=viva.republica.toss",
+                                        htsUrl: "https://tossinvest.com",
+                                        webUrl: "https://tossinvest.com",
+                                        label: "웹 트레이딩"
+                                    },
+                                    {
+                                        name: "KB증권",
+                                        color: "from-yellow-500 to-yellow-700",
+                                        shadow: "shadow-yellow-900/40",
+                                        deepLink: "kb-mable://",
+                                        iosStore: "https://apps.apple.com/kr/app/id1372899048",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.kbsec.m_able",
+                                        htsUrl: "https://m-able.kbsec.com/Mtradesub.do?cmd=TF01SP00100MU1",
+                                        webUrl: "https://m-able.kbsec.com",
+                                        label: "M-able"
+                                    },
+                                    {
+                                        name: "미래에셋",
+                                        color: "from-orange-500 to-red-600",
+                                        shadow: "shadow-orange-900/40",
+                                        deepLink: "miraeasset-mstock://",
+                                        iosStore: "https://apps.apple.com/kr/app/id489213167",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.miraeasset.stock",
+                                        htsUrl: "https://securities.miraeasset.com/hts/index.do",
+                                        webUrl: "https://securities.miraeasset.com",
+                                        label: "M-Stock"
+                                    },
+                                    {
+                                        name: "나무증권",
+                                        color: "from-[#C4E82F] to-[#A0C714]",
+                                        textColor: "text-[#0A1A05]",
+                                        shadow: "shadow-[#A0C714]/40",
+                                        deepLink: "namuh://",
+                                        iosStore: "https://apps.apple.com/kr/app/id1228853333",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.nhqv.namuh",
+                                        htsUrl: "https://www.mynamuh.com",
+                                        webUrl: "https://www.mynamuh.com",
+                                        label: "나무"
+                                    },
+                                    {
+                                        name: "삼성증권",
+                                        color: "from-indigo-500 to-indigo-700",
+                                        shadow: "shadow-indigo-900/40",
+                                        deepLink: "samsungpop://",
+                                        iosStore: "https://apps.apple.com/kr/app/id441266665",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.samsungpop.android",
+                                        htsUrl: "https://www.samsungpop.com/trading/hts.do",
+                                        webUrl: "https://www.samsungpop.com",
+                                        label: "POP"
+                                    },
+                                    {
+                                        name: "카카오페이증권",
+                                        color: "from-amber-400 to-orange-500",
+                                        shadow: "shadow-amber-900/40",
+                                        deepLink: "kakaopaysec://",
+                                        iosStore: "https://apps.apple.com/kr/app/id1514643599",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.kakaopaycorp.securities",
+                                        htsUrl: "https://securities.kakaopay.com",
+                                        webUrl: "https://securities.kakaopay.com",
+                                        label: "카카오페이"
+                                    },
                                 ].map((broker) => (
                                     <button
                                         key={broker.name}
                                         onClick={() => {
-                                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                            if (isMobile) {
-                                                const timeout = setTimeout(() => {
-                                                    window.open(broker.webUrl, '_blank');
-                                                }, 1500);
+                                            const ua = navigator.userAgent;
+                                            const isIOS = /iPhone|iPad|iPod/i.test(ua);
+                                            const isAndroid = /Android/i.test(ua);
+                                            const isMobile = isIOS || isAndroid;
+
+                                            if (isAndroid) {
+                                                // 안드로이드: Intent URI를 사용하여 앱 직접 실행. 앱이 없으면 시스템이 알아서 플레이스토어로 연결함.
+                                                // 앱의 메인 홈 화면을 강제로 띄우기 위해 (빈 딥링크로 인한 웹뷰 폴백 방지)
+                                                // scheme이 포함되면 앱 내부 라우터가 오작동할 수 있으므로, 명시적으로 LAUNCHER 인텐트를 사용합니다.
+                                                const packageName = broker.androidStore.split('id=')[1];
+                                                const intentUrl = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageName};end;`;
+                                                
+                                                if (broker.name === "나무증권") {
+                                                    alert("안드로이드 모드로 인식되어 앱(Intent) 실행을 시도합니다!\nURL: " + intentUrl);
+                                                }
+                                                window.location.href = intentUrl;
+                                            } else if (isIOS) {
+                                                // iOS: 기존 방식 유지 (딥링크 후 스토어 이동)
                                                 window.location.href = broker.deepLink;
-                                                window.location.href = broker.deepLink;
-                                                window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
+
+                                                const t = setTimeout(() => {
+                                                    window.location.href = broker.iosStore;
+                                                }, 2000);
+
+                                                const onVisibilityChange = () => {
+                                                    if (document.hidden) {
+                                                        clearTimeout(t);
+                                                        document.removeEventListener('visibilitychange', onVisibilityChange);
+                                                    }
+                                                };
+                                                document.addEventListener('visibilitychange', onVisibilityChange);
+
                                             } else {
-                                                window.open(broker.webUrl, '_blank');
+                                                // PC: 웹 HTS 새 탭으로 오픈
+                                                if (broker.name === "나무증권") {
+                                                    alert("PC(데스크톱) 모드로 인식되어 웹사이트를 엽니다!\nUserAgent: " + ua);
+                                                }
+                                                window.open(broker.htsUrl, '_blank', 'noopener,noreferrer');
                                             }
                                         }}
-                                        className={`bg-gradient-to-br ${broker.color} p-5 rounded-2xl text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 border border-white/10 group`}
+                                        className={`bg-gradient-to-br ${broker.color} p-4 rounded-2xl ${broker.textColor || 'text-white'} font-black hover:scale-[1.04] active:scale-95 transition-all ${broker.shadow} shadow-lg flex flex-col items-center justify-center gap-1.5 border border-white/15 group min-h-[80px]`}
                                     >
-                                        {broker.name}
-                                        <ExternalLink className="w-3 h-3 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                        <span className="text-sm font-black">{broker.name}</span>
+                                        <span className="text-[10px] font-medium opacity-70 flex items-center gap-1">
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            {broker.label}
+                                        </span>
                                     </button>
                                 ))}
                             </div>
