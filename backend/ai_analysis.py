@@ -27,11 +27,11 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-1.5-flash-latest', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-1.5-flash-latest')
+    return genai.GenerativeModel('gemini-2.5-flash')
 
 def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 12, temperature: float = 0.1, models_to_try: list = None):
     """
@@ -44,8 +44,8 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 12, 
     
     if models_to_try is None:
         models_to_try = [
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest"
+            "gemini-2.5-flash",
+            "gemini-2.0-flash"
         ]
     
     last_error = None
@@ -851,9 +851,9 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # Use gemini-1.5-pro-latest for better instruction following on forced scenarios
+        # Use gemini-2.5-flash for better instruction following on forced scenarios
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest"] if target_symbol else None
+        models = ["gemini-2.5-flash", "gemini-2.0-flash"] if target_symbol else None
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)
