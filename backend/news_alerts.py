@@ -181,9 +181,11 @@ class NewsAlertMonitor:
                             return True
                     return False
 
-            # ── 1. 네이버 뉴스 (국내 종목만) ─────────────────────────────
+            # ── 1. 네이버 뉴스 ─────────────────────────────────────────────
+            # 국내 종목: 종목코드로 직접 조회 / 해외 종목: 한글명으로 검색
             clean_sym = symbol.split('.')[0]
             if is_korean:
+                # 국내 종목: 네이버 증권 종목 뉴스 API
                 try:
                     url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=1"
                     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -207,6 +209,37 @@ class NewsAlertMonitor:
                             print(f"[NewsAlert] Filtered irrelevant Naver News for {kr_name}: {n_title}")
                 except Exception as e:
                     print(f"[NewsAlert] Naver news fetch error for {symbol}: {e}")
+            else:
+                # 해외 종목: 한글 이름으로 네이버 뉴스 검색 (예: "구글 주식", "애플 주식")
+                if kr_name and kr_name != clean_sym:
+                    try:
+                        naver_query = f"{kr_name} 주식" if not kr_name.endswith('주식') else kr_name
+                        # 네이버 검색 뉴스 API (검색어 기반)
+                        import urllib.parse
+                        encoded_query = urllib.parse.quote(naver_query)
+                        url = f"https://m.search.naver.com/search.naver?where=news&query={encoded_query}&sm=tab_jum"
+                        headers = {
+                            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)',
+                            'Accept-Language': 'ko-KR,ko;q=0.9'
+                        }
+                        from stock_data import fetch_google_news as _fetch_naver_style
+                        # 구글 뉴스를 한국어로 검색하여 네이버 역할 대체
+                        kr_g_news = _fetch_naver_style(naver_query, lang='ko', region='KR')
+                        if kr_g_news and len(kr_g_news) > 0:
+                            top_kr = kr_g_news[0]
+                            kr_title = top_kr.get('title', '')
+                            if _is_relevant(kr_title):
+                                news_items.append({
+                                    'id': f"kr_google_{hash(kr_title) % 100000}",
+                                    'title': kr_title,
+                                    'publisher': top_kr.get('publisher', '구글 뉴스 (한국어)'),
+                                    'source': 'naver_kr',
+                                    'url': top_kr.get('url', f"/discovery?symbol={symbol}")
+                                })
+                                print(f"[NewsAlert] 🇰🇷 한국어 뉴스 발견 for {kr_name}: {kr_title[:40]}")
+                    except Exception as e:
+                        print(f"[NewsAlert] Korean news fetch error for {symbol}: {e}")
+
 
             # ── 2. 구글 뉴스 ──────────────────────────────────────────────
             try:
