@@ -492,18 +492,11 @@ export default function SettingsPage() {
                                             const ua = navigator.userAgent;
                                             const isIOS = /iPhone|iPad|iPod/i.test(ua);
                                             const isAndroid = /Android/i.test(ua);
+                                            const isMobile = isAndroid || isIOS;
 
-                                            if (isAndroid) {
-                                                // 안드로이드: Intent URI를 사용하여 앱 직접 실행.
-                                                // intent:// 로 시작하고 S.browser_fallback_url을 제공하여 앱 미설치 시 플레이스토어로 안전하게 이동하게 합니다.
-                                                 const scheme = broker.deepLink.split('://')[0];
-                                                 const packageName = broker.androidStore.split('id=')[1];
-                                                const fallbackUrl = encodeURIComponent(broker.androidStore);
-                                                 const intentUrl = `intent://#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end;`;
-                                                
-                                                window.location.href = intentUrl;
-                                            } else if (isIOS) {
-                                                // iOS: 기존 방식 유지 (딥링크 후 스토어 이동)
+                                            if (isMobile) {
+                                                // 모바일(안드로이드/iOS): 딥링크로 앱 실행 시도 후 미설치 시 스토어로 이동 (타임아웃 방식)
+                                                const storeUrl = isAndroid ? broker.androidStore : broker.iosStore;
                                                 window.location.href = broker.deepLink;
 
                                                 const t = setTimeout(() => {
