@@ -80,27 +80,78 @@ class AutoPriceMonitor:
     async def check_and_alert(self, symbol: str, users: List[str], today_str: str):
         """단일 종목의 가격을 조회하고 알림 조건 검사"""
         def _fetch_price_data():
+            # 1. 네이버 API 우선 사용 (차단 방지 및 빠름)
             try:
-                # 한국 주식 지원
-                yf_sym = f"{symbol}.KS" if (symbol.isdigit() and len(symbol) == 6) else symbol
-                ticker = yf.Ticker(yf_sym)
-                
-                # fast_info를 통해 매우 빠르게 이전 종가, 현재가, 52주 최고가 조회
-                current = ticker.fast_info.last_price
-                prev_close = ticker.fast_info.previous_close
-                high_52 = ticker.fast_info.year_high
-                
-                # yfinance에서 코스닥 종목을 못 찾았을 경우 .KQ로 재시도
-                if current is None or current == 0:
-                    if symbol.isdigit() and len(symbol) == 6:
-                        yf_sym = f"{symbol}.KQ"
+                from korea_data import get_naver_stock_info
+                info = get_naver_stock_info(symbol)
+                if info and info.get('price'):
+                    price_str = str(info['price']).replace(',', '')
+                    current = float(price_str)
+                    
+                    pct = 0.0
+                    if info.get('change_rate'):
+                        try:
+                            pct = float(info['change_rate'])
+                        except ValueError:
+                            pass
+                    
+                    prev_close = current / (1 + pct / 100.0) if pct != -100.0 else current
+                    high_52 = None
+                    
+                    # 해외주식의 경우 추가 상세 API를 호출하여 52주 최고가 및 정확한 전일종가(기준가) 보충
+                    is_foreign = '.' in symbol or not (symbol.isdigit() and len(symbol) == 6)
+                    if is_foreign:
+                        import requests
+                        try:
+                            url = f"https://api.stock.naver.com/stock/{symbol}/basic"
+                            HEADER = {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+                            }
+                            res = requests.get(url, headers=HEADER, timeout=3)
+                            if res.status_code == 200:
+                                data = res.json()
+                                for item in data.get('stockItemTotalInfos', []):
+                                    if item.get('code') == 'highPriceOf52Weeks':
+                                        val_str = str(item.get('value', '')).replace(',', '')
+                                        high_52 = float(val_str)
+                                    if item.get('code') == 'basePrice':
+                                        val_str = str(item.get('value', '')).replace(',', '')
+                                        prev_close = float(val_str)
+                        except Exception as ex:
+                            print(f"[AutoPriceAlert] Failed to get foreign detailed info for {symbol}: {ex}")
+                    
+                    if current > 0 and prev_close > 0:
+                        return current, prev_close, high_52
+            except Exception as e:
+                print(f"[AutoPriceAlert] Naver API fetch failed for {symbol}: {e}")
+
+            # 2. Fallback: yfinance 사용
+            try:
+                # yfinance API 차단 및 해외주식 티커 접미사 처리 (예: .O, .N 등 제거하여 야후 파이낸스 호환되도록 처리)
+                clean_sym = symbol.split('.')[0] if ('.' in symbol and not symbol.split('.')[0].isdigit()) else symbol
+                if clean_sym.isdigit() and len(clean_sym) == 6:
+                    # 한국 주식 지원
+                    yf_sym = f"{clean_sym}.KS"
+                    ticker = yf.Ticker(yf_sym)
+                    current = ticker.fast_info.last_price
+                    prev_close = ticker.fast_info.previous_close
+                    high_52 = ticker.fast_info.year_high
+                    
+                    if current is None or current == 0:
+                        yf_sym = f"{clean_sym}.KQ"
                         ticker = yf.Ticker(yf_sym)
                         current = ticker.fast_info.last_price
                         prev_close = ticker.fast_info.previous_close
                         high_52 = ticker.fast_info.year_high
-
+                else:
+                    ticker = yf.Ticker(clean_sym)
+                    current = ticker.fast_info.last_price
+                    prev_close = ticker.fast_info.previous_close
+                    high_52 = ticker.fast_info.year_high
+                
                 return current, prev_close, high_52
-            except Exception:
+            except Exception as e:
+                print(f"[AutoPriceAlert] Fallback yfinance failed for {symbol}: {e}")
                 return None, None, None
 
         current, prev_close, high_52 = await asyncio.to_thread(_fetch_price_data)

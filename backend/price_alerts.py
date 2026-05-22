@@ -69,14 +69,27 @@ class PriceAlertMonitor:
         """현재 가격 조회 (Offloaded to thread)"""
         def _get_price():
             try:
-                ticker = yf.Ticker(symbol)
+                # [v7.1.0-Fix] yfinance 대신 네이버 금융 API 연동하여 IP 차단 방지 및 거래소 접미사(.O 등) 호환 해결
+                from korea_data import get_naver_stock_info
+                info = get_naver_stock_info(symbol)
+                if info and info.get('price'):
+                    price_str = str(info['price']).replace(',', '')
+                    return float(price_str)
+            except Exception as e:
+                print(f"[PriceAlert] Naver API price fetch error for {symbol}: {e}")
+            
+            # Fallback to yfinance (단, 거래소 접미사 제거)
+            try:
+                clean_sym = symbol.split('.')[0] if ('.' in symbol and not symbol.split('.')[0].isdigit()) else symbol
+                if clean_sym.isdigit() and len(clean_sym) == 6:
+                    clean_sym = f"{clean_sym}.KS"
+                ticker = yf.Ticker(clean_sym)
                 data = ticker.history(period="1d", interval="1m")
                 if not data.empty:
                     return float(data['Close'].iloc[-1])
-                return None
             except Exception as e:
-                print(f"[PriceAlert] Price fetch error for {symbol}: {e}")
-                return None
+                print(f"[PriceAlert] Fallback yfinance error for {symbol}: {e}")
+            return None
 
         return await asyncio.to_thread(_get_price)
     
