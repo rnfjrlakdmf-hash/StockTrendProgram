@@ -497,10 +497,23 @@ export default function SettingsPage() {
                                             if (isMobile) {
                                                 // 모바일(안드로이드/iOS): 딥링크로 앱 실행 시도 후 미설치 시 스토어로 이동 (타임아웃 방식)
                                                 const storeUrl = isAndroid ? broker.androidStore : broker.iosStore;
-                                                window.location.href = broker.deepLink;
+                                                
+                                                let targetDeepLink = broker.deepLink;
+                                                if (isAndroid) {
+                                                    // 안드로이드 패키지명을 플레이스토어 링크에서 추출하여 표준 인텐트 생성
+                                                    const packageName = broker.androidStore.includes('id=') 
+                                                        ? broker.androidStore.split('id=')[1] 
+                                                        : '';
+                                                    const scheme = broker.deepLink.replace('://', '');
+                                                    if (packageName) {
+                                                        targetDeepLink = `intent://#Intent;scheme=${scheme};package=${packageName};end`;
+                                                    }
+                                                }
+
+                                                window.location.href = targetDeepLink;
 
                                                 const t = setTimeout(() => {
-                                                    window.location.href = broker.iosStore;
+                                                    window.location.href = storeUrl;
                                                 }, 2000);
 
                                                 const onVisibilityChange = () => {
