@@ -415,14 +415,19 @@ def gather_naver_stock_data(symbol: str):
                     over_status = m_info.get('overMarketStatus') if m_info else 'CLOSE'
                     
                     import datetime
-                    now_dt = datetime.datetime.now()
-                    is_weekend = now_dt.weekday() >= 5
+                    import pytz
+                    kst = pytz.timezone('Asia/Seoul')
+                    now_kst = datetime.datetime.now(kst)
+                    is_weekend = now_kst.weekday() >= 5
+                    
+                    current_time_num = now_kst.hour * 100 + now_kst.minute
+                    is_after_over_hours = current_time_num >= 1800
                     
                     if is_weekend:
                         market_status = "휴장 (주말)"
                     elif reg_status == 'OPEN':
                         market_status = "장중"
-                    elif over_status == 'OPEN':
+                    elif over_status == 'OPEN' and not is_after_over_hours:
                         market_status = "시간외 거래 중"
                     elif nxt_data and nxt_data.get('price'):
                         # [v7.0.1] Detect NXT active status
@@ -1315,14 +1320,19 @@ def get_naver_stock_info(symbol: str):
                         over_status = m_info.get('overMarketStatus') if m_info else 'CLOSE'
                         
                         import datetime
-                        now_dt = datetime.datetime.now()
-                        is_weekend = now_dt.weekday() >= 5
+                        import pytz
+                        kst = pytz.timezone('Asia/Seoul')
+                        now_kst = datetime.datetime.now(kst)
+                        is_weekend = now_kst.weekday() >= 5
+                        
+                        current_time_num = now_kst.hour * 100 + now_kst.minute
+                        is_after_over_hours = current_time_num >= 1800
                         
                         if is_weekend:
                             market_status = "휴장 (주말)"
                         elif reg_status == 'OPEN':
                             market_status = "장중"
-                        elif over_status == 'OPEN':
+                        elif over_status == 'OPEN' and not is_after_over_hours:
                             market_status = "시간외 거래 중"
                         else:
                             market_status = "장마감"
