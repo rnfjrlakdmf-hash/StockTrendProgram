@@ -478,7 +478,7 @@ export default function SettingsPage() {
                                         name: "카카오페이증권",
                                         color: "from-amber-400 to-orange-500",
                                         shadow: "shadow-amber-900/40",
-                                        deepLink: "kakaopaysec://",
+                                        deepLink: "kakaopay://",
                                         iosStore: "https://apps.apple.com/kr/app/id1514643599",
                                         androidStore: "https://play.google.com/store/apps/details?id=com.kakaopaycorp.securities",
                                         htsUrl: "https://securities.kakaopay.com",
@@ -504,9 +504,10 @@ export default function SettingsPage() {
                                                     const packageName = broker.androidStore.includes('id=') 
                                                         ? broker.androidStore.split('id=')[1] 
                                                         : '';
-                                                    const scheme = broker.deepLink.replace('://', '');
                                                     if (packageName) {
-                                                        targetDeepLink = `intent://#Intent;scheme=${scheme};package=${packageName};end`;
+                                                        // 스키마 불일치로 인한 오작동을 피하기 위해 안드로이드에서는
+                                                        // scheme을 기재하지 않고 패키지명만 명시하여 해당 앱을 강제 실행합니다.
+                                                        targetDeepLink = `intent://#Intent;package=${packageName};end`;
                                                     }
                                                 }
 
