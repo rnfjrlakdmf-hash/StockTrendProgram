@@ -124,6 +124,22 @@ export default function FlipIndexTicker() {
 
     return (
         <div className="relative w-full max-w-5xl overflow-hidden group">
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes ticker-h {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-ticker-h {
+                    display: flex !important;
+                    width: max-content !important;
+                    animation: ticker-h 35s linear infinite !important;
+                    will-change: transform;
+                }
+                .animate-ticker-h:hover {
+                    animation-play-state: paused !important;
+                }
+            `}} />
+            
             <div 
                 className="animate-ticker-h py-2 flex items-center gap-4" 
                 style={{ width: 'max-content' }}
