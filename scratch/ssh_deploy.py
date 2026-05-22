@@ -2,7 +2,7 @@ import paramiko
 import os
 
 def test_ssh():
-    key_path = "StockAI-Server.pem"
+    key_path = "C:/Users/rnfjr/.ssh/stockai.pem"
     hostname = "13.209.99.170"
     usernames = ["ubuntu", "ec2-user", "admin", "root", "bitnami", "centos", "debian"]
     

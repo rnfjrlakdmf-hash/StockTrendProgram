@@ -3130,7 +3130,23 @@ def get_live_disclosures():
 async def fetch_stocks_for_heatmap(session, item, item_type='sector'):
     stocks = []
     try:
-        async with session.get(item['url'], headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
+        url = item['url']
+        if item_type == 'theme' and 'type=theme' not in url:
+            if 'type=' in url:
+                import re
+                url = re.sub(r'type=[^&]+', 'type=theme', url)
+            else:
+                separator = '&' if '?' in url else '?'
+                url = f"{url}{separator}type=theme"
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Referer': 'https://finance.naver.com/',
+        }
+
+        async with session.get(url, headers=headers, timeout=5) as res:
             text = await res.text('euc-kr', 'replace')
             from bs4 import BeautifulSoup
             soup_sub = BeautifulSoup(text, 'html.parser')
@@ -3192,6 +3208,7 @@ async def fetch_stocks_for_heatmap(session, item, item_type='sector'):
                     except BaseException:
                         continue
     except Exception as e:
+        print(f"fetch_stocks_for_heatmap error: {e}")
         pass
 
     return {
@@ -3258,11 +3275,13 @@ async def get_sector_heatmap_data():
                     "change": val
                 })
 
-            tasks = [
-                fetch_stocks_for_heatmap(
-                    session,
-                    c,
-                    "sector") for c in candidates]
+            sem = asyncio.Semaphore(5)
+            async def fetch_with_sem(c):
+                async with sem:
+                    await asyncio.sleep(0.1)
+                    return await fetch_stocks_for_heatmap(session, c, "sector")
+
+            tasks = [fetch_with_sem(c) for c in candidates]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             sectors = [
@@ -3331,11 +3350,13 @@ async def get_theme_heatmap_data():
                     "change": val
                 })
 
-            tasks = [
-                fetch_stocks_for_heatmap(
-                    session,
-                    c,
-                    "theme") for c in candidates]
+            sem = asyncio.Semaphore(5)
+            async def fetch_with_sem(c):
+                async with sem:
+                    await asyncio.sleep(0.1)
+                    return await fetch_stocks_for_heatmap(session, c, "theme")
+
+            tasks = [fetch_with_sem(c) for c in candidates]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             themes = [

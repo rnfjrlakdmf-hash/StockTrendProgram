@@ -33,10 +33,10 @@ def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
     return genai.GenerativeModel('gemini-2.5-flash')
 
-def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 8, temperature: float = 0.1, models_to_try: list = None):
+def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 20, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
-    timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 12s → 8s
+    timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 20s
     temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
     models_to_try: 시도할 모델 리스트 (기본값: gemini-2.5-flash 단일 사용)
     """

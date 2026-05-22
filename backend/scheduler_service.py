@@ -227,7 +227,10 @@ def send_closing_notification(market: str):
         # 수익금 문자열 생성 (미국장은 원화 환산 추가)
         if total_profit != 0:
             if market == "US":
-                fx_rate = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                try:
+                    fx_rate = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                except ValueError:
+                    fx_rate = 1350.0
                 profit_krw = total_profit * fx_rate
                 # 원화는 만원 단위로 가독성 있게 표시 (10,000원 이상일 때)
                 if abs(profit_krw) >= 10000:
