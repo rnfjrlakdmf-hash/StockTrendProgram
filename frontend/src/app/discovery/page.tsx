@@ -1110,7 +1110,7 @@ function DiscoveryContent() {
                                                     <div className="text-[10px] text-blue-400/60 font-mono animate-pulse">분석 중...</div>
                                                 </div>
                                             ) : (
-                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm transition-all duration-700`}><span>{stock.score || '-'}</span></div>
+                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm transition-colors duration-700`}><span>{stock.score || '-'}</span></div>
                                             )}
                                         </div>
                                         <div className="w-full md:w-auto mt-4 md:mt-2 flex items-center justify-end gap-2">

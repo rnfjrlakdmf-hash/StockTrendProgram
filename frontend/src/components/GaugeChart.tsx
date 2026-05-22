@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface GaugeChartProps {
@@ -9,13 +10,13 @@ interface GaugeChartProps {
     color?: string;
 }
 
-export default function GaugeChart({ score, label, subLabel, color = "#3b82f6" }: GaugeChartProps) {
-    const data = [
+const GaugeChart = memo(function GaugeChart({ score, label, subLabel, color = "#3b82f6" }: GaugeChartProps) {
+    const data = useMemo(() => [
         { name: "Score", value: score },
         { name: "Remaining", value: 100 - score },
-    ];
+    ], [score]);
 
-    const trackData = [{ name: "Track", value: 100 }];
+    const trackData = useMemo(() => [{ name: "Track", value: 100 }], []);
 
     return (
         <div className="relative flex flex-col items-center justify-center">
@@ -47,6 +48,7 @@ export default function GaugeChart({ score, label, subLabel, color = "#3b82f6" }
                             paddingAngle={0}
                             cornerRadius={4}
                             stroke="none"
+                            isAnimationActive={true}
                         >
                             <Cell fill={color} />
                             <Cell fill="transparent" />
@@ -62,4 +64,6 @@ export default function GaugeChart({ score, label, subLabel, color = "#3b82f6" }
             {subLabel && <p className="text-sm text-gray-500 mt-[-20px] text-center">{subLabel}</p>}
         </div>
     );
-}
+});
+
+export default GaugeChart;
