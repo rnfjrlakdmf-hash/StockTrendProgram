@@ -496,9 +496,10 @@ export default function SettingsPage() {
                                             if (isAndroid) {
                                                 // 안드로이드: Intent URI를 사용하여 앱 직접 실행.
                                                 // intent:// 로 시작하고 S.browser_fallback_url을 제공하여 앱 미설치 시 플레이스토어로 안전하게 이동하게 합니다.
-                                                const packageName = broker.androidStore.split('id=')[1];
+                                                 const scheme = broker.deepLink.split('://')[0];
+                                                 const packageName = broker.androidStore.split('id=')[1];
                                                 const fallbackUrl = encodeURIComponent(broker.androidStore);
-                                                const intentUrl = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageName};S.browser_fallback_url=${fallbackUrl};end;`;
+                                                 const intentUrl = `intent://#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end;`;
                                                 
                                                 window.location.href = intentUrl;
                                             } else if (isIOS) {
