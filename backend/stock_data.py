@@ -1159,10 +1159,6 @@ def fetch_google_news(query, lang='ko', region='KR', period='1d'):
                 except:
                     pass
                 
-                # Check for basic encoding artifacts
-                if title.count('') > 2:
-                    continue
-
                 cleaned_results.append({
                     "title": title,
                     "publisher": res.get("media", "Google News"),

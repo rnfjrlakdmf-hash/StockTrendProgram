@@ -110,9 +110,9 @@ class NewsAlertMonitor:
             rows = cursor.fetchall()
             conn.close()
             for symbol, article_id, title in rows:
-                key = f"{symbol}_"
-                # last_seen_articles 복원 (소스 키는 정확히 알 수 없어 prefix로 저장)
-                self.last_seen_articles[f"_restored_{symbol}_{article_id}"] = article_id
+                if symbol not in self.last_seen_articles:
+                    self.last_seen_articles[symbol] = []
+                self.last_seen_articles[symbol].append(str(article_id))
                 if symbol not in self.sent_titles:
                     self.sent_titles[symbol] = []
                 if title not in self.sent_titles[symbol]:
@@ -192,7 +192,7 @@ class NewsAlertMonitor:
             await asyncio.sleep(2)  # 구글/네이버 차단 방지를 위한 2초 대기
 
     async def check_symbol_news(self, symbol: str, users: List[str]):
-        """특정 종목의 최신 뉴스 1건을 확인하고 변경 시 알림 발송"""
+        """특정 종목의 최신 뉴스를 확인하고 변경 시 알림 발송"""
         from stock_data import fetch_google_news
 
         kr_name, en_name, is_korean = get_stock_display_info(symbol)
@@ -201,14 +201,19 @@ class NewsAlertMonitor:
             news_items = []
 
             # ── 관련성 판단 함수 ──────────────────────────────────────────
-            def _is_relevant(title: str) -> bool:
+            def _is_relevant(title: str, item_source: str) -> bool:
                 """뉴스 제목이 해당 종목과 관련있는지 확인"""
                 title_lower = title.lower()
+
+                # 네이버 종목 뉴스판과 직접 등록한 DART 공시는 관련성 100% 신뢰
+                if item_source in ('naver', 'disclosure'):
+                    return True
 
                 if is_korean:
                     # 국내 종목: 한글 이름 기반 체크
                     def _get_abbreviations(name):
-                        abbrs = {name}
+                        clean_name = re.sub(r'(?:홀딩스|바이오로직스|중공업|전자|자동차|제?\d+호?스팩|우선주|우)$', '', name).strip()
+                        abbrs = {name, clean_name}
                         if name.endswith("중공업"): abbrs.add(name[:-3] + "重")
                         elif name.endswith("전자"): abbrs.update([name[:-2] + "전", name[:-2] + "電"])
                         elif name.endswith("자동차"): abbrs.add(name[:-3] + "차")
@@ -216,7 +221,9 @@ class NewsAlertMonitor:
                         elif name == "카카오뱅크": abbrs.add("카뱅")
                         elif name == "카카오페이": abbrs.add("카페")
                         elif name == "SK하이닉스": abbrs.add("하이닉스")
-                        return abbrs
+                        if len(clean_name) >= 3:
+                            abbrs.add(clean_name[:2])
+                        return {x for x in abbrs if x and len(x) >= 2}
 
                     for vn in _get_abbreviations(kr_name):
                         if vn in title:
@@ -224,17 +231,13 @@ class NewsAlertMonitor:
                     return False
                 else:
                     # 해외 종목: 티커, 영문명, 한글명 모두 체크
-                    # 1) 티커 심볼 체크 (예: AAPL, TSLA)
                     if symbol.upper() in title.upper():
                         return True
-                    # 2) 영문 회사명 체크 (예: Apple, Tesla)
                     if en_name:
                         for word in en_name.split():
                             if len(word) > 3 and word.lower() in title_lower:
                                 return True
-                    # 3) 한글명 체크 (예: 애플, 테슬라)
                     if kr_name and kr_name != symbol:
-                        # 한글명이 있고 티커와 다른 경우만
                         if isinstance(GLOBAL_KOREAN_NAMES.get(symbol), list):
                             for kn in GLOBAL_KOREAN_NAMES[symbol]:
                                 if kn in title:
@@ -244,22 +247,21 @@ class NewsAlertMonitor:
                     return False
 
             # ── 1. 네이버 뉴스 ─────────────────────────────────────────────
-            # 국내 종목: 종목코드로 직접 조회 / 해외 종목: 한글명으로 검색
             clean_sym = symbol.split('.')[0]
             if is_korean:
-                # 국내 종목: 네이버 증권 종목 뉴스 API (상위 5건 검사)
+                # 국내 종목: 네이버 증권 종목 뉴스 API (상위 12건 검사)
                 try:
-                    url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=5"
+                    url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=12"
                     headers = {'User-Agent': 'Mozilla/5.0'}
                     res = requests.get(url, headers=headers, timeout=5)
                     data = res.json()
                     if data and len(data) > 0 and 'items' in data[0] and len(data[0]['items']) > 0:
-                        for item in data[0]['items'][:5]:
+                        for item in data[0]['items'][:12]:
                             n_title = item.get('title', '')
                             office_id = item.get('officeId', '')
                             article_id = item.get('articleId', '')
 
-                            if _is_relevant(n_title):
+                            if _is_relevant(n_title, 'naver'):
                                 news_items.append({
                                     'id': article_id,
                                     'title': n_title,
@@ -272,16 +274,16 @@ class NewsAlertMonitor:
                 except Exception as e:
                     print(f"[NewsAlert] Naver news fetch error for {symbol}: {e}")
             else:
-                # 해외 종목: 한글 이름으로 네이버 뉴스 검색 (상위 3건 검사)
+                # 해외 종목: 한글 이름으로 네이버 뉴스 검색 (상위 8건 검사)
                 if kr_name and kr_name != clean_sym:
                     try:
                         naver_query = f"{kr_name} 주식" if not kr_name.endswith('주식') else kr_name
                         from stock_data import fetch_google_news as _fetch_naver_style
                         kr_g_news = _fetch_naver_style(naver_query, lang='ko', region='KR')
                         if kr_g_news and len(kr_g_news) > 0:
-                            for top_kr in kr_g_news[:3]:
+                            for top_kr in kr_g_news[:8]:
                                 kr_title = top_kr.get('title', '')
-                                if _is_relevant(kr_title):
+                                if _is_relevant(kr_title, 'naver_kr'):
                                     news_items.append({
                                         'id': f"kr_google_{hash(kr_title) % 100000}",
                                         'title': kr_title,
@@ -293,15 +295,12 @@ class NewsAlertMonitor:
                     except Exception as e:
                         print(f"[NewsAlert] Korean news fetch error for {symbol}: {e}")
 
-
             # ── 2. 구글 뉴스 ──────────────────────────────────────────────
             try:
                 if is_korean:
-                    # 국내 종목: 한글 검색
                     search_query = f"{kr_name} 주식" if not kr_name.endswith('주식') else kr_name
                     g_news = fetch_google_news(search_query)
                 else:
-                    # 해외 종목: 영문 검색 우선
                     if en_name:
                         search_query = f"{en_name} stock"
                     else:
@@ -309,10 +308,10 @@ class NewsAlertMonitor:
                     g_news = fetch_google_news(search_query, lang='en', region='US')
 
                 if g_news and len(g_news) > 0:
-                    for top_g in g_news[:3]:
+                    for top_g in g_news[:8]:
                         g_title = top_g.get('title', '')
 
-                        if _is_relevant(g_title):
+                        if _is_relevant(g_title, 'google'):
                             news_items.append({
                                 'id': top_g.get('link'),
                                 'title': g_title,
@@ -350,66 +349,78 @@ class NewsAlertMonitor:
         if not fetched_news:
             return
 
+        # 해당 종목의 캐시 리스트 초기화 확인
+        if symbol not in self.last_seen_articles:
+            self.last_seen_articles[symbol] = []
+
         # 새로운 기사 확인 및 알림 발송
         for item in fetched_news:
-            key = f"{symbol}_{item['source']}"
-            article_id = item['id']
+            article_id = str(item['id'])
 
             if not article_id:
                 continue
 
-            if self.last_seen_articles.get(key) != article_id:
-                self.last_seen_articles[key] = article_id
+            # 중복 체크 ①: 메모리 캐시 리스트 체크
+            if article_id in self.last_seen_articles[symbol]:
+                continue
 
-                # 중복 속보 방지 ①: DB 기반 article_id 중복 체크 (재시작 후에도 유효)
-                try:
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        SELECT 1 FROM news_sent_log
-                        WHERE symbol=? AND article_id=?
-                        AND sent_at > datetime('now', '-24 hours')
-                    """, (symbol, str(article_id)))
-                    already_sent = cursor.fetchone() is not None
-                    conn.close()
-                    if already_sent:
-                        print(f"[NewsAlert] 중복 뉴스 차단 (DB 이력, {kr_name}): {item['title'][:40]}")
-                        continue
-                except Exception:
-                    pass
-
-                # 중복 속보 방지 ②: 제목 유사도 검사 (기준 70%로 강화)
-                new_title_words = set(re.findall(r'\w+', item['title']))
-                is_duplicate = False
-
-                recent_titles = self.sent_titles.get(symbol, [])
-                for past_title in recent_titles:
-                    past_words = set(re.findall(r'\w+', past_title))
-                    if not new_title_words or not past_words:
-                        continue
-                    intersection = len(new_title_words.intersection(past_words))
-                    # 제목 내 단어의 70% 이상 일치하면 같은 뉴스로 간주 (40% → 70%로 강화)
-                    similarity = intersection / min(len(new_title_words), len(past_words))
-                    if similarity > 0.7:
-                        is_duplicate = True
-                        break
-
-                if is_duplicate:
-                    print(f"[NewsAlert] 중복 뉴스 알림 차단 (유사도, {kr_name}): {item['title'][:40]}")
+            # 중복 속보 방지 ②: DB 기반 article_id 중복 체크 (재시작 후에도 유효)
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT 1 FROM news_sent_log
+                    WHERE symbol=? AND article_id=?
+                    AND sent_at > datetime('now', '-24 hours')
+                """, (symbol, article_id))
+                already_sent = cursor.fetchone() is not None
+                conn.close()
+                if already_sent:
+                    # 메모리 캐시 싱크 맞추기
+                    self.last_seen_articles[symbol].append(article_id)
+                    if len(self.last_seen_articles[symbol]) > 100:
+                        self.last_seen_articles[symbol].pop(0)
+                    print(f"[NewsAlert] 중복 뉴스 차단 (DB 이력, {kr_name}): {item['title'][:40]}")
                     continue
+            except Exception:
+                pass
 
-                # 최근 발송 제목 목록에 추가 (최대 20개 유지)
-                if symbol not in self.sent_titles:
-                    self.sent_titles[symbol] = []
-                self.sent_titles[symbol].append(item['title'])
-                if len(self.sent_titles[symbol]) > 20:
-                    self.sent_titles[symbol].pop(0)
+            # 중복 속보 방지 ③: 제목 유사도 검사 (기준 70%로 유지)
+            new_title_words = set(re.findall(r'\w+', item['title']))
+            is_duplicate = False
 
-                # DB에 발송 이력 저장 (재시작 후에도 중복 방지)
-                self._save_sent_log(symbol, str(article_id), item['title'])
+            recent_titles = self.sent_titles.get(symbol, [])
+            for past_title in recent_titles:
+                past_words = set(re.findall(r'\w+', past_title))
+                if not new_title_words or not past_words:
+                    continue
+                intersection = len(new_title_words.intersection(past_words))
+                similarity = intersection / min(len(new_title_words), len(past_words))
+                if similarity > 0.7:
+                    is_duplicate = True
+                    break
 
-                print(f"[NewsAlert] New article detected for {kr_name}({symbol}): {item['title']}")
-                await self.send_news_push(symbol, kr_name, is_korean, item, users)
+            if is_duplicate:
+                print(f"[NewsAlert] 중복 뉴스 알림 차단 (유사도, {kr_name}): {item['title'][:40]}")
+                continue
+
+            # 최근 발송 제목 목록에 추가 (최대 20개 유지)
+            if symbol not in self.sent_titles:
+                self.sent_titles[symbol] = []
+            self.sent_titles[symbol].append(item['title'])
+            if len(self.sent_titles[symbol]) > 20:
+                self.sent_titles[symbol].pop(0)
+
+            # 메모리 캐시에 기사 ID 추가 (최대 100개 유지)
+            self.last_seen_articles[symbol].append(article_id)
+            if len(self.last_seen_articles[symbol]) > 100:
+                self.last_seen_articles[symbol].pop(0)
+
+            # DB에 발송 이력 저장 (재시작 후에도 중복 방지)
+            self._save_sent_log(symbol, article_id, item['title'])
+
+            print(f"[NewsAlert] New article detected for {kr_name}({symbol}): {item['title']}")
+            await self.send_news_push(symbol, kr_name, is_korean, item, users)
 
     async def send_news_push(self, symbol: str, display_name: str, is_korean: bool, news_item: dict, users: List[str]):
         """유저들에게 새로운 뉴스 푸시 알림 발송"""
