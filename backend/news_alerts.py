@@ -11,6 +11,7 @@ import re
 from typing import Dict, List, Set
 from db_manager import get_db_connection
 from stock_data import get_korean_stock_name, GLOBAL_KOREAN_NAMES
+from dart_disclosure import get_dart_disclosures
 
 # 해외 종목 영문 이름 매핑 (구글 뉴스 검색용)
 GLOBAL_ENGLISH_NAMES = {
@@ -324,6 +325,25 @@ class NewsAlertMonitor:
             except Exception as e:
                 print(f"[NewsAlert] Google news fetch error for {symbol}: {e}")
 
+            # ── 3. DART 공시 (국내 종목만 지원) ─────────────────────────────
+            if is_korean:
+                try:
+                    disclosures = get_dart_disclosures(symbol, period="1d")
+                    for d in disclosures:
+                        d_title = d.get('title', '')
+                        d_link = d.get('link', '')
+                        d_submitter = d.get('submitter', '금융감독원 DART')
+                        if d_title and d_link:
+                            news_items.append({
+                                'id': d_link,
+                                'title': f"[공시] {d_title}",
+                                'publisher': d_submitter,
+                                'source': 'disclosure',
+                                'url': d_link
+                            })
+                except Exception as de:
+                    print(f"[NewsAlert] DART disclosure fetch error for {symbol}: {de}")
+
             return news_items
 
         fetched_news = await asyncio.to_thread(_fetch_news)
@@ -402,14 +422,19 @@ class NewsAlertMonitor:
             source = news_item.get('source', '')
 
             # 국내/해외/소스에 따른 이모지
-            if not is_korean:
+            if source == 'disclosure':
+                source_icon = "📢"
+            elif not is_korean:
                 source_icon = "🌐"  # 해외 종목
             elif source == 'naver':
                 source_icon = "🇰🇷"
             else:
                 source_icon = "📰"
 
-            push_title = f"{source_icon} {display_name} 속보!"
+            if source == 'disclosure':
+                push_title = f"{source_icon} {display_name} 공시 속보!"
+            else:
+                push_title = f"{source_icon} {display_name} 속보!"
             push_body = f"[{office_name}] {title}"
 
             # 클릭 시 이동할 URL: 항상 종목발굴 페이지로 (clean symbol 사용)

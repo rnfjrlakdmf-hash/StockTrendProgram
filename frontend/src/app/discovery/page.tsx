@@ -551,14 +551,14 @@ function DiscoveryContent() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // [New] Handle URL Query Params - ONLY ONCE on mount
+    // [New] Handle URL Query Params - Trigger search when query param differs from current stock
     useEffect(() => {
         const query = searchParams.get("q");
-        if (query && !stock) {
+        if (query && (!stock || query.toUpperCase() !== stock.symbol.toUpperCase())) {
             setSearchInput(query);
             handleSearch(query);
         }
-    }, [searchParams, !!stock]);
+    }, [searchParams, stock]);
 
     const handleSearch = async (term?: string) => {
         let query = (term || searchInput || "").trim();
