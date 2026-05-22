@@ -124,33 +124,20 @@ export default function FlipIndexTicker() {
 
     return (
         <div className="relative w-full max-w-5xl overflow-hidden group">
-            <style jsx>{`
-                @keyframes ticker-h {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                }
-                .ticker-content-h {
-                    display: flex;
-                    width: max-content;
-                    animation: ticker-h 30s linear infinite;
-                    will-change: transform;
-                }
-                .ticker-content-h:hover {
-                    animation-play-state: paused;
-                }
-            `}</style>
-            
-            <div className="ticker-content-h py-2 flex items-center gap-4">
+            <div 
+                className="animate-ticker-h py-2 flex items-center gap-4" 
+                style={{ width: 'max-content' }}
+            >
                 {[...indices, ...indices].map((idx, i) => (
-                    <div key={i} className="flex items-center gap-6 px-8 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-2 group/item">
+                    <div key={i} className="flex items-center gap-4 px-4 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-1.5 group/item">
                         <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-2">
                                 <span className="text-lg">{idx.icon}</span>
                                 <span className="text-[13px] font-black text-amber-200/80 uppercase tracking-wider">{idx.label}</span>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <span className="text-xl font-black text-white tabular-nums tracking-tighter">{idx.value}</span>
-                                <span className={`text-[13px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1 ${idx.up ? 'text-rose-400 border-rose-500/20 bg-rose-500/5' : 'text-sky-400 border-sky-500/20 bg-sky-500/5'}`}>
+                                <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-lg border flex items-center gap-1 ${idx.up ? 'text-rose-400 border-rose-500/20 bg-rose-500/5' : 'text-sky-400 border-sky-500/20 bg-sky-500/5'}`}>
                                     {idx.up ? '▲' : '▼'}{idx.change}
                                 </span>
                             </div>

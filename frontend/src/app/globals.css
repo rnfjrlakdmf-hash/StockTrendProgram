@@ -43,3 +43,20 @@ body {
   0% { transform: translateX(-100%) skewX(-12deg); }
   100% { transform: translateX(200%) skewX(-12deg); }
 }
+
+@keyframes ticker-h {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-ticker-h {
+  display: flex;
+  width: max-content;
+  animation: ticker-h 35s linear infinite;
+  will-change: transform;
+}
+
+.animate-ticker-h:hover {
+  animation-play-state: paused;
+}
+
