@@ -551,12 +551,17 @@ function DiscoveryContent() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // [New] Handle URL Query Params - Trigger search when query param differs from current stock
+    // [New] Handle URL Query Params - Trigger search when query param differs from current stock (safely ignoring market suffixes like .KS, .O to avoid infinite loops)
     useEffect(() => {
         const query = searchParams.get("q");
-        if (query && (!stock || query.toUpperCase() !== stock.symbol.toUpperCase())) {
-            setSearchInput(query);
-            handleSearch(query);
+        if (query) {
+            const cleanQuery = query.split('.')[0].toUpperCase();
+            const cleanStockSymbol = stock?.symbol ? stock.symbol.split('.')[0].toUpperCase() : '';
+            
+            if (cleanQuery !== cleanStockSymbol) {
+                setSearchInput(query);
+                handleSearch(query);
+            }
         }
     }, [searchParams, stock]);
 
