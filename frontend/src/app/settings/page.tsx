@@ -492,18 +492,14 @@ export default function SettingsPage() {
                                             const ua = navigator.userAgent;
                                             const isIOS = /iPhone|iPad|iPod/i.test(ua);
                                             const isAndroid = /Android/i.test(ua);
-                                            const isMobile = isIOS || isAndroid;
 
                                             if (isAndroid) {
-                                                // 안드로이드: Intent URI를 사용하여 앱 직접 실행. 앱이 없으면 시스템이 알아서 플레이스토어로 연결함.
-                                                // 앱의 메인 홈 화면을 강제로 띄우기 위해 (빈 딥링크로 인한 웹뷰 폴백 방지)
-                                                // scheme이 포함되면 앱 내부 라우터가 오작동할 수 있으므로, 명시적으로 LAUNCHER 인텐트를 사용합니다.
+                                                // 안드로이드: Intent URI를 사용하여 앱 직접 실행.
+                                                // intent:// 로 시작하고 S.browser_fallback_url을 제공하여 앱 미설치 시 플레이스토어로 안전하게 이동하게 합니다.
                                                 const packageName = broker.androidStore.split('id=')[1];
-                                                const intentUrl = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageName};end;`;
+                                                const fallbackUrl = encodeURIComponent(broker.androidStore);
+                                                const intentUrl = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageName};S.browser_fallback_url=${fallbackUrl};end;`;
                                                 
-                                                if (broker.name === "나무증권") {
-                                                    alert("안드로이드 모드로 인식되어 앱(Intent) 실행을 시도합니다!\nURL: " + intentUrl);
-                                                }
                                                 window.location.href = intentUrl;
                                             } else if (isIOS) {
                                                 // iOS: 기존 방식 유지 (딥링크 후 스토어 이동)
