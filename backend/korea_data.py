@@ -3512,146 +3512,188 @@ def get_korean_investment_indicators(
         fin_gubun: str = "IFRSL",
         rpt: str = "3"):
     """
-    [Commercial Protection] WiseReport(나이스평가정보) 유료 투자지표 데이터 무단 크롤링 금지.
-    상업적 운영에 따른 저작권 침해 방지를 위해 비활성화.
+    [Commercial Protection] 금융감독원 Open DART API 기반 합법적 재무 지표 연동
+    최근 3개년 사업보고서 데이터를 수집하여 매출액, 영업이익, 당기순이익, 자산총계, 부채비율, ROE 등을 가공 표출합니다.
     """
-    return None
-
-    """
-    네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 지표를 스크랩합니다.
-    (수익성, 성장성, 안정성, 활동성 통합 지원)
-    - encparam 보안 토큰을 실시간 파싱하여 정밀 요청을 수행합니다.
-    """
+    from dart_api_client import dart_api_client
+    import datetime
+    
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
     if not (len(code) == 6 and code.isdigit()):
         return None
 
-    try:
-        session = requests.Session()
-        session.headers.update(HEADER)
-
-        # Step 1: Parent Frame에 접속하여 보안 토큰(encparam) 추출
-        # [Fix] c1040001.aspx 대신 가장 안정적인 c1010001.aspx(기업개요)에서 encparam을 추출합니다.
-        frame_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}"
-        res_frame = session.get(frame_url, timeout=7)
-        html_frame = decode_safe(res_frame)
-
-        # encparam: '...' 형태의 토큰 추출 (다양한 패턴 대응)
-        match = re.search(r"encparam\s*[:=]\s*'([^']+)'", html_frame)
-        if not match:
-            # [Secondary Fallback] find in all script blocks
-            match = re.search(r"encparam\s*[:=]\s*\"([^\"]+)\"", html_frame)
-
-        if not match:
-            print(f"Failed to find encparam for {code}")
-            # [Ultra Fallback] If still not found, try the old URL just in case
-            old_url = f"https://navercomp.wisereport.co.kr/v2/company/c1040001.aspx?cmp_cd={code}"
-            res_old = session.get(old_url, timeout=5)
-            match = re.search(
-                r"encparam\s*[:=]\s*'([^']+)'",
-                decode_safe(res_old))
-
-        if not match:
-            return {"status": "empty", "message": "해당 종목의 데이터 토큰을 찾을 수 없습니다."}
-
-        encparam = match.group(1)
-
-        # Step 2: 실시간 데이터 API 호출 (JSON 포맷 반환)
-        # finGubun: IFRSL(연결), IFRSS(별도), GAAPL(연결), GAAPS(별도), MAIN(주재무제표)
-        valid_fingubun = ["IFRSL", "IFRSS", "GAAPL", "GAAPS", "MAIN"]
-        if fin_gubun not in valid_fingubun:
-            fin_gubun = "MAIN"  # Default to MAIN for stability
-
-        data_url = f"https://navercomp.wisereport.co.kr/v2/company/cF4002.aspx?cmp_cd={code}&frq={freq}&rpt={rpt}&finGubun={fin_gubun}&encparam={encparam}"
-
-        ajax_headers = {
-            "Referer": frame_url,
-            "X-Requested-With": "XMLHttpRequest"
-        }
-        res_data = session.get(data_url, headers=ajax_headers, timeout=7)
-
-        # JSON 파싱 시도 (cF4002.aspx는 encparam이 있으면 JSON으로 반환함)
-        try:
-            raw_bytes = res_data.content
-            # [Fix] Try CP949 first for NaverComp data, then fallback to UTF-8
-            try:
-                json_str = raw_bytes.decode('cp949')
-            except UnicodeDecodeError:
-                json_str = raw_bytes.decode('utf-8', 'ignore')
-            json_data = json.loads(json_str)
-        except Exception as e:
-            print(f"Failed to parse JSON for {code}: {e}")
-            return None
-
-        # Step 3: 데이터 가공 (Header: YYMM, Data: indicators)
-        if not json_data or "YYMM" not in json_data or not json_data.get(
-                "YYMM"):
-            msg = "해당 종목의 지표 정보를 불러올 수 없거나 존재하지 않는 페이지입니다."
-            if "삼성전자" in str(symbol) or code == "005930":
-                # Extra diagnostic for core stocks
-                msg = f"WiseReport 서버로부터 {code} 지표 데이터를 정상적으로 로드하지 못했습니다. (네트워크/IP 차단 가능성)"
-            return {"status": "empty", "message": msg}
-
-        # Header 정제 (HTML 태그 제거)
-        headers = []
-        for h in json_data.get("YYMM", []):
-            clean_h = re.sub(
-                r'<[^>]*>',
-                '',
-                h).replace(
-                "\n",
-                "").replace(
-                "\t",
-                "").strip()
-            if clean_h and clean_h not in headers:
-                headers.append(clean_h)
-
-        indicators = []
-        for row in json_data.get("DATA", []):
-            name = row.get("ACC_NM", "").strip()
-            if not name:
-                continue
-
-            values = {}
-            # DATA1, DATA2 ... 순서대로 헤더와 매칭
-            for i, h in enumerate(headers):
-                if i < 6:
-                    key = f"DATA{i + 1}"
-                elif i == 6:
-                    key = "YYOY"
-                elif i == 7:
-                    key = "YEYOY"
-                else:
-                    key = f"DATA{i + 1}"
-                val = row.get(key)
-                # N/A 등 문자열 정리
-                try:
-                    if isinstance(val, (int, float)):
-                        values[h] = val
-                    else:
-                        values[h] = None
-                except BaseException:
-                    values[h] = None
-
-            indicators.append({
-                "name": name,
-                "values": values
-            })
-
-        return {
-            "status": "success",
-            "symbol": symbol,
-            "freq": freq,
-            "finGubun": fin_gubun,
-            "category": rpt,
-            "headers": headers,
-            "indicators": indicators
-        }
-
-    except Exception as e:
-        print(f"Indicators intensive scraping error for {symbol}: {e}")
+    corp_code = dart_api_client._load_corp_code(symbol)
+    if not corp_code:
+        print(f"[DART-Indicators] corp_code 변환 실패: {symbol}")
         return None
+
+    current_year = datetime.datetime.now().year
+    # 데이터가 존재하는지 확인하기 위해 최대 4개년 조사
+    years_to_check = [str(current_year - 1), str(current_year - 2), str(current_year - 3), str(current_year - 4)]
+
+    raw_results = {}
+    for y in years_to_check:
+        try:
+            # 11011: 사업보고서 (연간 정기 공시)
+            items = dart_api_client.get_financial_sheets(corp_code, y, reprt_code="11011")
+            if items:
+                raw_results[y] = items
+                # 3개년치를 모았으면 루프 조기 종료 (API 사용량 절약)
+                if len(raw_results) >= 3:
+                    break
+        except Exception as e:
+            print(f"[DART-Indicators] Error fetching {y} for {symbol}: {e}")
+
+    # 데이터가 존재하는 연도들만 내림차순 정렬 후 최근 3개년 선택
+    available_years = sorted([y for y, items in raw_results.items() if len(items) > 0], reverse=True)[:3]
+    if not available_years:
+        print(f"[DART-Indicators] 조회 가능한 DART 재무제표가 없습니다: {symbol}")
+        return None
+
+    # 오름차순(과거 -> 최근)으로 정렬하여 헤더 구성
+    available_years.sort()
+    headers = [f"{y}/12" for y in available_years]
+
+    target_indicators = [
+        {"name": "매출액", "keys": ["매출액", "영업수익", "매출"]},
+        {"name": "영업이익", "keys": ["영업이익", "영업이익(손실)"]},
+        {"name": "당기순이익", "keys": ["당기순이익", "당기순이익(손실)", "분기순이익", "반기순이익"]},
+        {"name": "자산총계", "keys": ["자산총계"]},
+        {"name": "부채총계", "keys": ["부채총계"]},
+        {"name": "자본총계", "keys": ["자본총계"]}
+    ]
+
+    indicators_data = []
+    
+    # 1. 일반 재무 계정 금액 가공 (단위: 억원)
+    for ind in target_indicators:
+        values_map = {}
+        for y in available_years:
+            header_key = f"{y}/12"
+            items = raw_results[y]
+            
+            # 연결(CFS) 재무제표 데이터를 우선적으로 사용하며, 없으면 별도(OFS)를 대상으로 함
+            cfs_items = [it for it in items if it.get("fs_div") == "CFS"]
+            search_items = cfs_items if cfs_items else items
+            
+            matched_item = None
+            for k in ind["keys"]:
+                matched_item = next((it for it in search_items if k in it.get("account_nm", "").replace(" ", "")), None)
+                if matched_item:
+                    break
+            
+            if matched_item:
+                amt_str = matched_item.get("thstrm_amount", "").replace(",", "").strip()
+                try:
+                    is_neg = amt_str.startswith("-") or (amt_str.startswith("(") and amt_str.endswith(")"))
+                    clean_amt = "".join(c for c in amt_str if c.isdigit())
+                    amt_val = int(clean_amt) if clean_amt else 0
+                    if is_neg:
+                        amt_val = -amt_val
+                    
+                    # '원' 단위를 '억원' 단위로 정수 반올림
+                    amt_in_eok = round(amt_val / 100_000_000)
+                    values_map[header_key] = f"{amt_in_eok:,.0f}"
+                except Exception as e:
+                    print(f"[DART-Indicators] Parsing error for {symbol} {ind['name']} {y}: {e}")
+                    values_map[header_key] = "0"
+            else:
+                values_map[header_key] = "-"
+        
+        indicators_data.append({
+            "name": f"{ind['name']} (억원)",
+            "values": values_map
+        })
+
+    # 2. 부채비율 계산 (부채총계 / 자본총계 * 100)
+    debt_ratio_map = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        items = raw_results[y]
+        
+        cfs_items = [it for it in items if it.get("fs_div") == "CFS"]
+        search_items = cfs_items if cfs_items else items
+        
+        liab_item = next((it for it in search_items if "부채총계" in it.get("account_nm", "").replace(" ", "")), None)
+        eq_item = next((it for it in search_items if "자본총계" in it.get("account_nm", "").replace(" ", "")), None)
+        
+        if liab_item and eq_item:
+            try:
+                l_raw = liab_item.get("thstrm_amount", "").replace(",", "").strip()
+                l_neg = l_raw.startswith("-") or (l_raw.startswith("(") and l_raw.endswith(")"))
+                l_str = "".join(c for c in l_raw if c.isdigit())
+                l_val = int(l_str) if l_str else 0
+                if l_neg: l_val = -l_val
+
+                e_raw = eq_item.get("thstrm_amount", "").replace(",", "").strip()
+                e_neg = e_raw.startswith("-") or (e_raw.startswith("(") and e_raw.endswith(")"))
+                e_str = "".join(c for c in e_raw if c.isdigit())
+                e_val = int(e_str) if e_str else 0
+                if e_neg: e_val = -e_val
+
+                if e_val != 0:
+                    ratio = (l_val / e_val) * 100
+                    debt_ratio_map[header_key] = f"{ratio:.1f}%"
+                else:
+                    debt_ratio_map[header_key] = "-"
+            except:
+                debt_ratio_map[header_key] = "-"
+        else:
+            debt_ratio_map[header_key] = "-"
+            
+    indicators_data.append({
+        "name": "부채비율 (%)",
+        "values": debt_ratio_map
+    })
+
+    # 3. ROE 계산 (당기순이익 / 자본총계 * 100)
+    roe_map = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        items = raw_results[y]
+        
+        cfs_items = [it for it in items if it.get("fs_div") == "CFS"]
+        search_items = cfs_items if cfs_items else items
+        
+        net_item = next((it for it in search_items if any(k in it.get("account_nm", "").replace(" ", "") for k in ["당기순이익", "당기순이익(손실)"])), None)
+        eq_item = next((it for it in search_items if "자본총계" in it.get("account_nm", "").replace(" ", "")), None)
+        
+        if net_item and eq_item:
+            try:
+                n_raw = net_item.get("thstrm_amount", "").replace(",", "").strip()
+                n_neg = n_raw.startswith("-") or (n_raw.startswith("(") and n_raw.endswith(")"))
+                n_str = "".join(c for c in n_raw if c.isdigit())
+                n_val = int(n_str) if n_str else 0
+                if n_neg: n_val = -n_val
+
+                e_raw = eq_item.get("thstrm_amount", "").replace(",", "").strip()
+                e_neg = e_raw.startswith("-") or (e_raw.startswith("(") and e_raw.endswith(")"))
+                e_str = "".join(c for c in e_raw if c.isdigit())
+                e_val = int(e_str) if e_str else 0
+                if e_neg: e_val = -e_val
+
+                if e_val != 0:
+                    roe_val = (n_val / e_val) * 100
+                    roe_map[header_key] = f"{roe_val:.1f}%"
+                else:
+                    roe_map[header_key] = "-"
+            except:
+                roe_map[header_key] = "-"
+        else:
+            roe_map[header_key] = "-"
+            
+    indicators_data.append({
+        "name": "ROE (%)",
+        "values": roe_map
+    })
+
+    print(f"[DART-Indicators] 3개년 재무 데이터 변환 완료 [{symbol}] -> {headers}")
+    return {
+        "status": "success",
+        "headers": headers,
+        "indicators": indicators_data
+    }
 
 
 def get_investor_ranking_data():
