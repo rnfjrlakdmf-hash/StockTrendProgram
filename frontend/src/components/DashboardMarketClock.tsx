@@ -182,12 +182,12 @@ export default function DashboardMarketClock() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-black text-white tracking-tight">실시간 글로벌 거래소 전광판</h3>
+                            <h3 className="text-lg font-black text-white tracking-tight">글로벌 거래소 전광판</h3>
                             <span className="text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-md animate-pulse">
-                                Live Sync
+                                Time Sync
                             </span>
                         </div>
-                        <p className="text-xs text-gray-400 font-medium">전 세계 주요 증시의 현재 운영 상태와 초단위 실시간 시간 정보입니다.</p>
+                        <p className="text-xs text-gray-400 font-medium">전 세계 주요 증시의 현재 운영 상태와 초단위 시간 정보입니다.</p>
                     </div>
                 </div>
 

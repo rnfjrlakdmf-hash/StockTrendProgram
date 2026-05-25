@@ -116,7 +116,7 @@ export default function NaverTopWidget() {
                 {/* Refresh indicator */}
                 <div className="text-[10px] sm:text-xs text-gray-500 flex items-center justify-end gap-1.5 bg-black/30 px-3 py-1.5 rounded-full pl-0 sm:pl-3 bg-transparent sm:bg-black/30 w-fit self-end sm:self-auto">
                     <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
-                    <span>실시간 갱신</span>
+                    <span>자동 갱신</span>
                 </div>
             </div>
 

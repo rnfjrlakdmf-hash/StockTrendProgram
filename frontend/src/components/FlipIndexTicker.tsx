@@ -46,6 +46,7 @@ const Sparkline = ({ data, up }: { data: number[], up: boolean }) => {
 export default function FlipIndexTicker() {
     const [indices, setIndices] = useState<MarketIndex[]>([]);
     const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     const fetchIndices = async () => {
         try {
@@ -107,6 +108,7 @@ export default function FlipIndexTicker() {
     };
 
     useEffect(() => {
+        setMounted(true);
         fetchIndices();
         const interval = setInterval(fetchIndices, 15000); 
         return () => clearInterval(interval);
@@ -124,6 +126,7 @@ export default function FlipIndexTicker() {
 
     return (
         <div className="relative w-full max-w-5xl overflow-hidden group">
+            {/* Inline CSS to guarantee implementation across all browsers & prevent Next.js PurgeCSS issues */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @keyframes ticker-h {
                     0% { transform: translateX(0); }
@@ -142,10 +145,10 @@ export default function FlipIndexTicker() {
             
             <div 
                 className="animate-ticker-h py-2 flex items-center gap-4" 
-                style={{ width: 'max-content' }}
+                style={{ display: 'flex', width: 'max-content' }}
             >
                 {[...indices, ...indices].map((idx, i) => (
-                    <div key={i} className="flex items-center gap-4 px-4 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-1.5 group/item">
+                    <div key={i} className="flex-shrink-0 flex items-center gap-4 px-4 border-r border-white/10 last:border-none hover:bg-white/[0.04] transition-all rounded-2xl py-1.5 group/item">
                         <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-2">
                                 <span className="text-lg">{idx.icon}</span>

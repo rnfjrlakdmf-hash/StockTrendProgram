@@ -202,7 +202,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                     ? <><span className="text-yellow-400 font-bold">퍼센트(%)</span> 로 감시 조건을 설정합니다.</>
                     : mode === 'price'
                         ? <><span className="text-yellow-400 font-bold">특정 가격</span> 도달 시 알림을 받습니다.</>
-                        : <><span className="text-purple-400 font-bold">기술적 지표</span> 변화를 실시간 감시합니다.</>
+                        : <><span className="text-purple-400 font-bold">기술적 지표</span> 변화를 자동으로 감시합니다.</>
                 }
             </p>
 

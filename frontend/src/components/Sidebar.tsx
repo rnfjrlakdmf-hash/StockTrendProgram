@@ -28,7 +28,7 @@ const navigation = [
         name: "AI 퀀트 종목 발굴", 
         href: "/discovery", 
         icon: Compass,
-        desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 실시간 골라냅니다."
+        desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다."
     },
     { 
         name: "기업 펀더멘탈 분석", 
@@ -37,7 +37,7 @@ const navigation = [
         desc: "회사가 돈은 잘 버는지, 빚은 없는지, 부도 위험은 없는지 재무 구조를 철저히 검사해 줍니다."
     },
     { 
-        name: "실시간 테마 트래커", 
+        name: "테마 트래커", 
         href: "/theme", 
         icon: Sparkles,
         desc: "오늘 하루 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다."
@@ -64,7 +64,7 @@ const navigation = [
         name: "투자 인텔리전스 포럼", 
         href: "/community", 
         icon: Users,
-        desc: "어떤 종목에 호재나 악재가 터졌을 때 실시간으로 다른 주주들과 소통하고 관련 공시를 공유합니다."
+        desc: "어떤 종목에 호재나 악재가 터졌을 때 다른 주주들과 소통하고 관련 공시를 공유합니다."
     },
     { 
         name: "포트폴리오 자산 진단", 
@@ -73,10 +73,10 @@ const navigation = [
         desc: "내가 산 주식들의 투자 비중을 분석하여 특정 종목에 몰리지 않고 안전하게 분산되어 있는지 진단합니다."
     },
     { 
-        name: "실시간 스마트 워치리스트", 
+        name: "스마트 워치리스트", 
         href: "/watchlist", 
         icon: Star,
-        desc: "내가 찜한 종목들의 실시간 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다."
+        desc: "내가 찜한 종목들의 최신 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다."
     },
     { 
         name: "연동 설정 및 시스템 관리", 
@@ -775,7 +775,7 @@ export default function Sidebar() {
                                 />
                                 <BenefitItem
                                     icon={<LineChart className="w-5 h-5 text-green-400" />}
-                                    title="실시간 스나이퍼 알림"
+                                    title="스나이퍼 알림"
                                     desc="RSI, 골든크로스 등 기술 지표 변동을 분석합니다."
                                 />
                                 <BenefitItem
@@ -839,7 +839,7 @@ export default function Sidebar() {
                                 <span suppressHydrationWarning>월 ${proPriceUsd} (약 ₩{proPriceKrw.toLocaleString()})으로 시작하기</span>
                             </button>
                             <p className="text-center text-xs text-gray-500 mt-4" suppressHydrationWarning>
-                                * 실시간 환율({exchangeRate.toLocaleString()}원/$) 적용
+                                * 최신 환율({exchangeRate.toLocaleString()}원/$) 적용
                             </p>
                         </div>
                     </div>

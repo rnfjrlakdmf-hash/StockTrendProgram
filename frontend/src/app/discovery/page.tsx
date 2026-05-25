@@ -1543,7 +1543,7 @@ function DiscoveryContent() {
                                                 {newsLoading ? (
                                                     <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                                         <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
-                                                        <p className="text-gray-400 text-sm">실시간 뉴스를 집계하고 있습니다...</p>
+                                                        <p className="text-gray-400 text-sm">최신 뉴스를 집계하고 있습니다...</p>
                                                     </div>
                                                 ) : (Array.isArray(periodNews) && periodNews.length > 0) || (stock?.news && Array.isArray(stock.news) && stock.news.length > 0) ? (
                                                     (Array.isArray(periodNews) && periodNews.length > 0 ? periodNews : (stock?.news || [])).map((n: any, idx: number) => (
@@ -2375,14 +2375,14 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
         return (
             <div className="mt-8 pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    📊 실시간 수급 집계 현황 (잠정)
+                    📊 장 마감 수급 집계 현황 (잠정)
                 </h4>
                 <div className="p-6 bg-white/5 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-3">
                     {isWeekend ? (
                         <>
                             <div className="text-3xl">😴</div>
                             <div className="text-gray-300 font-bold"><span>오늘은 휴장일(주말)입니다.</span></div>
-                            <div className="text-sm text-gray-500"><span>실시간 잠정 수급은 평일 장중(09:30 ~ 14:30)에만 집계됩니다.</span></div>
+                            <div className="text-sm text-gray-500"><span>장 마감 수급 정보는 평일 장중(09:30 ~ 14:30)에만 집계됩니다.</span></div>
                         </>
                     ) : (
                         <>
@@ -2391,7 +2391,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                                 <span>{isMarketOpen ? "잠정 집계 현황이 아직 없습니다." : "지금은 정규장 운영 시간이 아닙니다."}</span>
                             </div>
                             <div className="text-sm text-gray-500">
-                                <span>{isMarketOpen ? "장 시작 직후이거나, 거래량이 적어 집계되지 않았을 수 있습니다." : "실시간 수급 집계가 종료되었습니다. (정규장: 09:00 ~ 15:30)"}</span>
+                                <span>{isMarketOpen ? "장 시작 직후이거나, 거래량이 적어 집계되지 않았을 수 있습니다." : "장 마감 수급 집계가 마감되었습니다. (정규장: 09:00 ~ 15:30)"}</span>
                             </div>
                         </>
                     )}
@@ -2427,7 +2427,7 @@ function LiveSupplyWidget({ symbol }: { symbol: string }) {
                         </>
                     ) : (
                         <>
-                            <span>📊 실시간 수급 분석 데이터</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>09:30~14:30 집계</span></span>
+                            <span>📊 장 마감 수급 분석 데이터</span> <span className="text-[10px] md:text-xs font-normal text-gray-400 bg-white/10 px-2 py-0.5 rounded ml-2"><span>09:30~14:30 집계</span></span>
                         </>
                     )
                 )}
@@ -2655,7 +2655,7 @@ function StockLiveChart({ symbol }: { symbol: string }) {
     }, [symbol]);
 
     if (loading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-gray-500" /></div>;
-    if (!data || !Array.isArray(data) || data.length === 0) return <div className="text-gray-500 text-sm"><span>실시간 차트 데이터 없음</span></div>;
+    if (!data || !Array.isArray(data) || data.length === 0) return <div className="text-gray-500 text-sm"><span>당일 차트 데이터 없음</span></div>;
 
     const isUp = (Array.isArray(data) && data.length > 0) ? ((data[data.length - 1]?.close || 0) >= (data[0]?.close || 0)) : false;
     const color = isUp ? "#ef4444" : "#3b82f6"; // Red or Blue
@@ -2731,11 +2731,11 @@ function KisRealTimeBanner() {
 
                 <div className="flex-1">
                     <div className="text-sm font-black text-amber-300 mb-0.5">
-                        실시간으로 보고 싶으신가요?
+                        더 빠르게 정보를 보고 싶으신가요?
                     </div>
                     <div className="text-[11px] text-gray-400 leading-relaxed mb-3">
                         현재 <span className="text-amber-400 font-bold">10초 간격</span>으로 갱신 중입니다.
-                        한국투자증권 OpenAPI를 연동하면 나스닥·NYSE 체결가를 <span className="text-white font-bold">즉시 실시간</span>으로 볼 수 있습니다.
+                        한국투자증권 OpenAPI를 연동하면 나스닥·NYSE 체결가를 <span className="text-white font-bold">즉시</span> 볼 수 있습니다.
                         <span className="text-green-400 font-bold"> 계좌 개설 + API 발급 모두 무료</span>입니다.
                     </div>
 
@@ -2746,7 +2746,7 @@ function KisRealTimeBanner() {
                                 {step}
                             </span>
                         ))}
-                        <span className="text-[10px] text-green-400 font-bold">→ 실시간 완료!</span>
+                        <span className="text-[10px] text-green-400 font-bold">→ 연동 완료!</span>
                     </div>
 
                     <a

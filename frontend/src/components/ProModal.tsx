@@ -52,7 +52,7 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
                         />
                         <BenefitItem
                             icon={<LineChart className="w-5 h-5 text-green-400" />}
-                            title="실시간 스나이퍼 알림"
+                            title="스나이퍼 알림"
                             desc="RSI, 골든크로스 등 기술 지표 변동을 분석합니다."
                         />
                         <BenefitItem

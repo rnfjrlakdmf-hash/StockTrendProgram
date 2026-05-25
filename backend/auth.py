@@ -21,6 +21,9 @@ class UserSettingsRequest(BaseModel):
     kis_secret: str
     kis_account: str
 
+class DeleteAccountRequest(BaseModel):
+    user_id: str
+
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     """
@@ -115,3 +118,22 @@ def get_recent_telegram_users_api():
         return {"status": "success", "data": users}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.post("/delete-account")
+def delete_account(req: DeleteAccountRequest):
+    """
+    개인정보 보호법 준수를 위한 회원 탈퇴 API.
+    탈퇴 시 DB에서 해당 유저의 모든 개인정보를 영구 파기합니다.
+    """
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+        
+    try:
+        from db_manager import delete_user_data
+        success = delete_user_data(req.user_id)
+        if success:
+            return {"status": "success", "message": "Account and all associated personal data have been permanently deleted"}
+        else:
+            return {"status": "error", "message": "Failed to delete account data from DB"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database deletion error: {str(e)}")

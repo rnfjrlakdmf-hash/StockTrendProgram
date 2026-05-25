@@ -23,7 +23,7 @@ export default function GuidePage() {
       ]
     },
     {
-      title: "☀️ 실시간 마켓 리포트",
+      title: "☀️ 마켓 리포트",
       icon: <Bell className="w-6 h-6 text-blue-400" />,
       color: "bg-blue-400/10",
       description: "시장이 열리고 닫힐 때, 당신의 성적표를 배달합니다.",
@@ -40,7 +40,7 @@ export default function GuidePage() {
       description: "내가 담은 시점부터 지금까지, 수익금을 자동으로 계산합니다.",
       steps: [
         "종목을 관심종목에 담으면 '등록 시점 가격'이 기록됩니다.",
-        "미국 주식은 실시간 환율을 적용해 '원화'로 자동 계산됩니다.",
+        "미국 주식은 당일 환율을 적용해 '원화'로 자동 계산됩니다.",
         "누적 수익금(원/$)을 보며 나의 투자 성과를 관리하세요."
       ]
     },
@@ -50,7 +50,7 @@ export default function GuidePage() {
       color: "bg-purple-400/10",
       description: "지금 시장에서 가장 뜨거운 종목과 테마를 찾아내세요.",
       steps: [
-        "실시간 급등주와 거래량 상위 종목을 한눈에 확인합니다.",
+        "당일 급등주와 거래량 상위 종목을 한눈에 확인합니다.",
         "현재 가장 강한 상승 테마와 관련 종목을 연결해서 분석하세요.",
         "다양한 보조지표를 통해 매수/매도 타이밍의 힌트를 얻으세요."
       ]

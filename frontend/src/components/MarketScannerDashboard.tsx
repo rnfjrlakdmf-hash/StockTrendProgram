@@ -263,12 +263,12 @@ export default function MarketScannerDashboard() {
                     </div>
                 </div>
 
-                {/* LIVE 공시 속보 */}
+                {/* 공시 속보 */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md flex flex-col h-[320px]">
                     <div className="flex justify-between items-center mb-1 shrink-0">
                         <div className="flex items-center gap-2">
                             <Radio className={`w-4 h-4 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
-                            <h3 className="text-base font-bold text-white">LIVE 특이 공시 속보</h3>
+                            <h3 className="text-base font-bold text-white">특이 공시 속보</h3>
                         </div>
                         {lastUpdated && (
                             <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
@@ -278,7 +278,7 @@ export default function MarketScannerDashboard() {
                         )}
                     </div>
                     <p className="text-[11px] text-gray-500 mb-3 pb-3 border-b border-white/10 shrink-0 leading-relaxed">
-                        유상증자·수주·계약 등 호재/악재 공시를 실시간 포착합니다.
+                        유상증자·수주·계약 등 호재/악재 공시를 신속하게 포착합니다.
                     </p>
                     <div className="overflow-y-auto pr-1 custom-scrollbar flex-1 space-y-2">
                         {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (

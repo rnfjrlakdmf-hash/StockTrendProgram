@@ -183,7 +183,7 @@ export default function GlobalRankingWidget() {
                         <TrendingUp className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-white tracking-tight">글로벌 실시간 랭킹</h2>
+                        <h2 className="text-xl font-bold text-white tracking-tight">글로벌 랭킹</h2>
                         <p className="text-xs text-gray-400/60 mt-0.5">실계좌 기반 최신 시장 트렌드 동기화</p>
                     </div>
                 </div>
@@ -279,7 +279,7 @@ export default function GlobalRankingWidget() {
                                     <div className="p-4 rounded-full bg-white/5">
                                         <Activity className="w-8 h-8 text-gray-600" />
                                     </div>
-                                    <p className="text-xs text-gray-500 font-medium">실시간 데이터 동기화 중...</p>
+                                    <p className="text-xs text-gray-500 font-medium">데이터 동기화 중...</p>
                                 </div>
                             )}
                         </div>

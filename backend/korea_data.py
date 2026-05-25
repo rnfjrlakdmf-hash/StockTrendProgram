@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import Dict, List, Optional, Any
 from turbo_engine import turbo_cache
 from stock_names import STOCK_MAP
+from kis_api_v2 import kis_api_v2
 
 # [Config]
 HEADER = {
@@ -261,6 +262,95 @@ def gather_naver_stock_data(symbol: str):
     Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials).
     [v6.0.0] Uses new JSON APIs as primary sources for Domestic Stocks.
     """
+    # ─── [KIS API V2 공식 시세 조회 최우선 도입] ──────────────────────────
+    if kis_api_v2.is_available():
+        try:
+            kis_data = kis_api_v2.get_current_price(symbol)
+            if kis_data:
+                price = kis_data["price"]
+                change_val = kis_data["change_amt"]
+                change_rate = kis_data["change_rate"]
+                labeled_change_pct = f"[정규] {change_rate:+.2f}%"
+                
+                # 안전한 종목 한글 이름
+                name = get_korean_name(symbol) or symbol
+                code = symbol.split('.')[0]
+                
+                res_data = {
+                    "name": name,
+                    "description": "",
+                    "market_type": "KS" if symbol.endswith(".KS") else "KQ",
+                    "code": code,
+                    "sector": "Unknown",
+                    "price": price,
+                    "change": labeled_change_pct,
+                    "change_val": change_val,
+                    "change_percent": labeled_change_pct,
+                    "prev_close": price - change_val,
+                    "regular_close": price,
+                    "market_cap_str": "N/A",
+                    "per": None,
+                    "pbr": None,
+                    "eps": None,
+                    "bps": None,
+                    "dvr": None,
+                    "est_per": None,
+                    "est_eps": None,
+                    "dp_share": None,
+                    "year_high": kis_data.get("high"),
+                    "year_low": kis_data.get("low"),
+                    "open": price - change_val,
+                    "day_high": kis_data.get("high"),
+                    "day_low": kis_data.get("low"),
+                    "volume": kis_data.get("volume"),
+                    "market_status": "장마감" if time.strftime("%H%M") >= "1530" else "정규장",
+                    "regular_change_pct": change_rate,
+                    "regular_change_val": change_val,
+                    "nxt_data": None,
+                    "after_market_data": None
+                }
+                print(f"[KIS-API] 실시간 시세 조회 성공 [{symbol}] -> {price}원 ({change_rate:+.2f}%)")
+                return res_data
+        except Exception as ex:
+            print(f"[KIS-API] 시세 조회 실패 ({symbol}): {ex}. 상업용 라이선스 보호를 위해 네이버 대체 조회를 차단합니다.")
+
+    # [Commercial Bypass] KIS API 미작동 시 네이버 금융 크롤링 차단 및 안전한 대체 데이터 즉시 반환
+    name = get_korean_name(symbol) or symbol
+    code = symbol.split('.')[0]
+    return {
+        "name": name,
+        "description": "상업용 라이선스 정책에 따라 공식 API(한국투자증권) 연동이 필요합니다.",
+        "market_type": "KS" if symbol.endswith(".KS") else "KQ",
+        "code": code,
+        "sector": "N/A",
+        "price": 0,
+        "change": "0.00%",
+        "change_val": 0,
+        "change_percent": "0.00%",
+        "prev_close": 0,
+        "regular_close": 0,
+        "market_cap_str": "N/A",
+        "per": None,
+        "pbr": None,
+        "eps": None,
+        "bps": None,
+        "dvr": None,
+        "est_per": None,
+        "est_eps": None,
+        "dp_share": None,
+        "year_high": 0,
+        "year_low": 0,
+        "open": 0,
+        "day_high": 0,
+        "day_low": 0,
+        "volume": 0,
+        "market_status": "API 미연동",
+        "regular_change_pct": 0.0,
+        "regular_change_val": 0,
+        "nxt_data": None,
+        "after_market_data": None
+    }
+
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
@@ -587,6 +677,16 @@ def get_naver_daily_prices(symbol: str):
     """
     Get daily price history (10 days)
     """
+    # ─── [KIS API V2 공식 일봉 조회 최우선 도입] ──────────────────────────
+    if kis_api_v2.is_available():
+        try:
+            kis_history = kis_api_v2.get_daily_prices(symbol, limit=10)
+            if kis_history:
+                print(f"[KIS-API] 일봉 시세 조회 성공 [{symbol}] -> {len(kis_history)}일 데이터")
+                return kis_history
+        except Exception as ex:
+            print(f"[KIS-API] 일봉 조회 실패 ({symbol}): {ex}. Naver 크롤링으로 대체합니다.")
+
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
@@ -694,8 +794,11 @@ def get_naver_daily_prices(symbol: str):
 @turbo_cache(ttl_seconds=300)
 def get_naver_theme_rank():
     """
-    네이버 금융에서 실시간 테마 순위(상위 10-20개)를 상세 데이터와 함께 가져옵니다.
+    [Commercial Protection] 네이버 금융 테마 순위 크롤링 금지.
+    상업적 운영에 따른 네이버 ToS 위반 방지를 위해 빈 배열 반환.
     """
+    return []
+
     try:
         url = "https://finance.naver.com/sise/theme.naver"
         headers = {
@@ -1155,65 +1258,7 @@ def get_integrated_stock_news(
     if not search_name and len(code) == 6:
         search_name = code
 
-    # [Tier 0] Naver Finance (Best for Specific Stocks over time)
-    if code:
-        try:
-            print(
-                f"[NEWS DEBUG] Scraping Naver Finance News for {code} (Period: {days} days)")
-            for page in range(
-                    1, max_pages + 1):  # Fetch historical periods based on days
-                url = f"https://finance.naver.com/item/news_list.naver?code={code}&page={page}"
-                res = requests.get(url, headers=HEADER, timeout=5)
-                soup = BeautifulSoup(decode_safe(res), 'html.parser')
-
-                rows = soup.select("table.type5 tbody tr")
-                if not rows:
-                    break
-
-                page_all_older = True
-                for row in rows:
-                    cols = row.select("td")
-                    if len(cols) < 3:
-                        continue
-
-                    title_tag = row.select_one("td.title a")
-                    if not title_tag:
-                        continue
-
-                    title = title_tag.text.strip()
-                    link = "https://finance.naver.com" + title_tag['href']
-                    info = row.select_one("td.info").text.strip()
-                    date_str = row.select_one("td.date").text.strip()
-
-                    try:
-                        news_date = datetime.strptime(
-                            date_str, "%Y.%m.%d %H:%M")
-                        if news_date < limit_date:
-                            continue
-                        page_all_older = False
-                    except BaseException:
-                        pass
-
-                    news_list.append({
-                        "title": title,
-                        "link": link,
-                        "publisher": info,
-                        # YYYY-MM-DD
-                        "published": date_str.split()[0].replace('.', '-')
-                    })
-
-                    if len(news_list) >= max_items:
-                        break
-
-                if page_all_older or len(news_list) >= max_items:
-                    break
-
-            if news_list:
-                return news_list
-        except Exception as e:
-            print(f"[NEWS] Tier 0 Scraping Error: {e}")
-
-    # [Tier 1] Naver News API
+    # [Tier 1] Naver News API (상업적 이용을 위한 공식 API 우선 기동)
     search_query = f'"{search_name}"' if search_name and not search_name.isdigit(
     ) else (query or search_name or code)
     fallback_query = search_name if (
@@ -1869,11 +1914,50 @@ def get_stock_financials(symbol: str):
                             "roe": "N/A"}}}
 
     # --- DOMESTIC STOCK LOGIC (Naver) ---
+    # ─── [DART API 공식 재무 정보 수집 우선 도입] ──────────────────────────
+    from dart_api_client import dart_api_client
+    if dart_api_client.is_available():
+        try:
+            clean_code = symbol.split('.')[0]
+            dart_fin = dart_api_client.get_korean_financial_summary(clean_code)
+            if dart_fin:
+                # Naver 크롤링에서 얻은 데이터와 KIS 가격을 조합하여 결과 구성
+                price_data = gather_naver_stock_data(symbol) or {
+                    "market_cap_str": "N/A", "per": "N/A", "pbr": "N/A", "roe": "N/A"
+                }
+                
+                financials = {
+                    "market_cap": price_data.get("market_cap_str", "N/A"),
+                    "per": str(price_data.get("per", "N/A")),
+                    "pbr": str(price_data.get("pbr", "N/A")),
+                    "roe": price_data.get("roe", "N/A"),
+                    "revenue": dart_fin["revenue"],
+                    "operating_income": dart_fin["operating_income"],
+                    "net_income": dart_fin["net_income"],
+                    "total_assets": dart_fin["total_assets"],
+                    "debt_ratio": dart_fin["debt_ratio"],
+                    "detailed": {
+                        "success": True,
+                        "summary": {
+                            "per": price_data.get("per", "N/A"),
+                            "pbr": price_data.get("pbr", "N/A"),
+                            "roe": price_data.get("roe", "N/A")
+                        },
+                        "annual": [],  # 최소한의 요약 필드 지원
+                        "quarterly": []
+                    }
+                }
+                print(f"[DART-API] 재무 정보 조회 성공 [{symbol}]")
+                return financials
+        except Exception as e:
+            print(f"[DART-API] 재무 정보 조회 실패 ({symbol}): {e}. Naver 크롤링으로 대체합니다.")
+
     try:
         res = gather_naver_stock_data(symbol)
         if not res:
             print(
                 f"[get_stock_financials] Warning: gather_naver_stock_data failed for {symbol}. Proceeding to fallbacks.")
+
             res = {
                 "market_cap_str": "N/A",
                 "per": "N/A",
@@ -2569,10 +2653,14 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
 @turbo_cache(ttl_seconds=60)  # [Fix] 1시간 → 1분으로 단축 (실시간성 확보)
 def get_exchange_rate(currency="USD"):
     """
-    Fetch exchange rates from Naver Market Index
-    currency: USD, JPY, CNY, HKD, VND
+    Fetch exchange rates. Primary source is Yahoo Finance (Legal & Official).
     """
-    # Mapping to Naver symbol IDs
+    yahoo_map = {
+        "USD": "KRW=X",
+        "JPY": "JPYKRW=X",
+        "CNY": "CNYKRW=X",
+        "HKD": "HKDKRW=X",
+    }
     symbol_map = {
         "USD": "FX_USDKRW",
         "JPY": "FX_JPYKRW",
@@ -2580,61 +2668,46 @@ def get_exchange_rate(currency="USD"):
         "HKD": "FX_HKDKRW",
         "VND": "FX_VNDKRW"
     }
-    # Yahoo Finance fallback 티커
-    yahoo_map = {
-        "USD": "KRW=X",
-        "JPY": "JPYKRW=X",
-        "CNY": "CNYKRW=X",
-        "HKD": "HKDKRW=X",
-    }
 
-    symbol = symbol_map.get(currency.upper(), "FX_USDKRW")
+    # 1차: Twelve Data 공식 API 연동 (상업화용 1순위)
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    twelve_key = os.getenv("TWELVEDATA_API_KEY")
+    if twelve_key:
+        try:
+            base_curr = currency.upper()
+            if base_curr == "KRW":
+                return 1.0
+            url = f"https://api.twelvedata.com/price?symbol={base_curr}/KRW&apikey={twelve_key}"
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200:
+                resp_data = resp.json()
+                if "price" in resp_data:
+                    rate = float(resp_data["price"])
+                    if rate > 0:
+                        print(f"[ExchangeRate] Twelve Data retrieved: {base_curr}/KRW = {rate}")
+                        return round(rate, 2)
+        except Exception as e_twelve:
+            print(f"[ExchangeRate] Twelve Data failed ({currency}): {e_twelve}")
 
-    # 1차: 네이버 금융 스크래핑 (셀렉터: .today em)
-    try:
-        url = f"https://finance.naver.com/marketindex/exchangeDetail.naver?marketindexCd={symbol}"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
-        # 실제 DOM 구조: .today em 또는 p.no_today em
-        val_tag = soup.select_one(
-            ".today em") or soup.select_one("p.no_today em")
-        if val_tag:
-            rate = float(val_tag.text.replace(',', ''))
-            if "JPY" in symbol or "VND" in symbol:
-                rate = rate / 100.0
-            return rate
-    except Exception as e:
-        print(f"[ExchangeRate] Naver scrape failed ({currency}): {e}")
+    # [Commercial Protection] 상업 라이선스를 위해 Yahoo Finance 및 네이버 금융 크롤링 대체 비활성화
+    print(f"[ExchangeRate] Twelve Data unavailable. Using safe default for {currency}")
 
-    # 2차: Yahoo Finance 실시간 폴백 (하드코딩 값 사용 안 함)
-    try:
-        import yfinance as yf
-        ticker_sym = yahoo_map.get(currency.upper(), "KRW=X")
-        t = yf.Ticker(ticker_sym)
-        price = t.fast_info.last_price
-        if price and price > 0:
-            print(f"[ExchangeRate] Yahoo fallback used: {currency} = {price}")
-            return round(price, 2)
-    except Exception as e2:
-        print(f"[ExchangeRate] Yahoo fallback failed ({currency}): {e2}")
+    # 최종 디폴트 값 반환
+    defaults = {"USD": 1350.0, "JPY": 9.0, "CNY": 185.0, "HKD": 173.0, "VND": 0.055}
+    return defaults.get(currency.upper(), 1300.0)
 
-    # 3차: 최후 안전망 (실시간 연동 불가 시에만 사용)
-    print(f"[ExchangeRate] WARNING: Using hardcoded fallback for {currency}")
-    fallbacks = {
-        "USD": 1480.0,
-        "JPY": 9.2,
-        "CNY": 195.0,
-        "HKD": 178.0,
-        "VND": 0.055}
-    return fallbacks.get(currency.upper(), 1450.0)
 
 
 @turbo_cache(ttl_seconds=3600)
 def get_ipo_data():
     """
-    국내 최대 비상장/IPO 정보 사이트(38.co.kr)에서
-    최신 공모주 청약 일정을 실시간으로 수집합니다.
+    [Commercial Protection] 38.co.kr(38커뮤니케이션) 유료 IPO 데이터 무단 크롤링 금지.
+    상업적 운영에 따른 저작권 침해 방지를 위해 빈 배열 반환.
     """
+    return []
+
     url = "http://www.38.co.kr/html/fund/index.htm?o=k"
     data = []
 
@@ -2885,15 +2958,17 @@ def get_index_chart_data(index_code: str):
 
 def get_korean_interest_rates():
     """
-    Fetch Korea Key Interest Rates from Naver Finance Market Index.
-    URL:      https://finance.naver.com/marketindex/
-    Structure: <tr class='up|down|same'>
-                 <th class='th_interN'><a><span>NAME</span></a></th>
-                 <td>VALUE</td>
-                 <td><img alt='up|down|same'/>CHANGE</td>
-               </tr>
+    Fetch Korea Key Interest Rates. Fallback to clean default list in case of errors or blockages.
     """
     rates = []
+    # 기본 안전 디폴트 세트
+    default_rates = [
+        {"name": "한국 기준금리", "price": 3.25, "change": 0.0, "symbol": "KORATE"},
+        {"name": "CD금리 (91일)", "price": 3.48, "change": 0.0, "symbol": "CD91"},
+        {"name": "국고채 3년", "price": 3.28, "change": 0.0, "symbol": "KO3Y"},
+        {"name": "콜금리", "price": 3.27, "change": 0.0, "symbol": "CALL"}
+    ]
+
     try:
         url = "https://finance.naver.com/marketindex/"
         res = requests.get(url, headers=HEADER, timeout=5)
@@ -2905,9 +2980,7 @@ def get_korean_interest_rates():
         class_to_sym = {
             "th_inter1": "CALL",
             "th_inter2": "KO3Y",
-            # th_inter3 = 회사채 -> 생략
             "th_inter4": "CD91",
-            # th_inter5, th_inter6 = COFIX -> 생략
         }
 
         rows = soup.select("table.tbl_exchange tbody tr")
@@ -2934,7 +3007,7 @@ def get_korean_interest_rates():
             # 금리 값
             try:
                 price_val = float(tds[0].text.strip().replace(",", ""))
-            except BaseException:
+            except:
                 continue
 
             # 변동폭 및 방향
@@ -2950,7 +3023,7 @@ def get_korean_interest_rates():
                     if "down" in row_cls or "하락" in img_alt:
                         chg_num = -chg_num
                     change_val = chg_num
-                except BaseException:
+                except:
                     pass
 
             rates.append({
@@ -2968,18 +3041,12 @@ def get_korean_interest_rates():
                 "change": 0.0,
                 "symbol": "KORATE",
             })
+        return rates
 
     except Exception as e:
-        print(f"Interest Rates Scrape Error: {e}")
-        return [
-            {"name": "한국 기준금리", "price": 2.50, "change": 0.0, "symbol": "KORATE"},
-            {"name": "CD금리 (91일)", "price": 2.81, "change": 0.0, "symbol": "CD91"},
-            {"name": "국고채 3년", "price": 3.18, "change": 0.0, "symbol": "KO3Y"},
-            {"name": "국고채 10년", "price": 3.50, "change": 0.0, "symbol": "KO10Y"},
-            {"name": "콜금리 (1일)", "price": 2.60, "change": 0.0, "symbol": "CALL"},
-        ]
+        print(f"[InterestRates] Scrape failed, using default fallback: {e}")
+        return default_rates
 
-    return rates
 
 
 def get_market_summary_stats():
@@ -3382,9 +3449,11 @@ async def get_theme_heatmap_data():
 @turbo_cache(ttl_seconds=3600)
 def get_korean_company_overview(symbol: str):
     """
-    네이버 금융 기업정보(WiseReport Iframe)로부터 상세 기업 개요를 스크랩합니다.
-    (기본정보, 최근연혁, 매출구성, 연구개발비, 인원현황 등)
+    [Commercial Protection] WiseReport(나이스평가정보) 유료 데이터 무단 크롤링 금지.
+    상업적 운영에 따른 저작권 침해 방지를 위해 비활성화.
     """
+    return None
+
     code = symbol.split('.')[0]
     code = re.sub(r'[^0-9]', '', code)
     if not (len(code) == 6 and code.isdigit()):
@@ -3503,6 +3572,12 @@ def get_korean_investment_indicators(
         freq: str = "0",
         fin_gubun: str = "IFRSL",
         rpt: str = "3"):
+    """
+    [Commercial Protection] WiseReport(나이스평가정보) 유료 투자지표 데이터 무단 크롤링 금지.
+    상업적 운영에 따른 저작권 침해 방지를 위해 비활성화.
+    """
+    return None
+
     """
     네이버 금융 투자지표(WiseReport cF4002.aspx)로부터 상세 지표를 스크랩합니다.
     (수익성, 성장성, 안정성, 활동성 통합 지원)

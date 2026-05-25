@@ -276,7 +276,7 @@ def search_stock_api(q: str = None, query: str = None):
         for ko_name in names:
             clean_ko = ko_name.replace(" ", "").strip()
             if q_norm == clean_ko or q_norm in clean_ko or clean_ko in q_norm:
-                add_result(ticker, ko_name, "Global")
+                add_result(ticker, names[0], "Global")
                 break # Found for this ticker
     
     # 3. Domestic Search Fallback
@@ -510,7 +510,7 @@ def get_watchlist_events(symbols: str = ""):
     # =============================================
     # [1] DART API — 한국 종목 전용 (실제 공시 기반)
     # =============================================
-    dart_api_key = os.getenv("DART_API_KEY", "f4ec215eba3e7ef30b5102e2bc3f30616ab9a858")
+    dart_api_key = os.getenv("DART_API_KEY", "").strip()  # [Security] 하드코딩 제거, 환경변수 전용
     if dart_api_key and kr_symbols:
         try:
             # 검색 범위: 60일 전 ~ 60일 후 (과거 발표 + 미래 예고 모두 포착)

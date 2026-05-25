@@ -1087,6 +1087,35 @@ def delete_fcm_token(token: str):
     finally:
         conn.close()
 
+
+def delete_user_data(user_id: str) -> bool:
+    """
+    개인정보 보호법에 의거, 회원 탈퇴 시 해당 유저의 모든 개인정보 및 관련 레코드를
+    DB에서 즉시 영구 삭제(DELETE)합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. users 테이블 삭제
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        # 2. watchlist 테이블 삭제
+        cursor.execute("DELETE FROM watchlist WHERE user_id = ?", (user_id,))
+        # 3. watchlist_backup 테이블 삭제
+        cursor.execute("DELETE FROM watchlist_backup WHERE user_id = ?", (user_id,))
+        # 4. user_portfolio 테이블 삭제
+        cursor.execute("DELETE FROM user_portfolio WHERE user_id = ?", (user_id,))
+        # 5. fcm_tokens 테이블 삭제
+        cursor.execute("DELETE FROM fcm_tokens WHERE user_id = ?", (user_id,))
+        
+        conn.commit()
+        print(f"[DB] User data permanently deleted for user_id: {user_id}")
+        return True
+    except Exception as e:
+        print(f"[DB] Delete user data error: {e}")
+        return False
+    finally:
+        conn.close()
+
 def get_all_fcm_tokens() -> list:
     """모든 사용자의 유효한 FCM 토큰 조회 (브로드캐스트용)"""
     conn = get_db_connection()

@@ -1,0 +1,295 @@
+Connecting to ubuntu@13.209.99.170...
+Connected!
+
+=== Systemctl Service Status ===
+● stocktrend-backend.service - StockTrend FastAPI Backend Service
+     Loaded: loaded (/etc/systemd/system/stocktrend-backend.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2026-05-23 12:53:33 UTC; 1h 3min ago
+   Main PID: 701275 (uvicorn)
+      Tasks: 16 (limit: 1013)
+     Memory: 460.4M (peak: 505.9M swap: 194.3M swap peak: 340.0M)
+        CPU: 19min 58.438s
+     CGroup: /system.slice/stocktrend-backend.service
+             └─701275 /home/ubuntu/StockTrendProgram/backend/venv/bin/python3 /home/ubuntu/StockTrendProgram/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+
+May 23 13:56:50 ip-172-31-34-224 stocktrend-backend[701275]: INFO:TurboEngine:⌛ [Cache Expired] v8:get_simple_quote:NOK - Refreshing data (kept for fallback)...
+May 23 13:56:50 ip-172-31-34-224 stocktrend-backend[701275]: INFO:TurboEngine:💾 [Cache Set] v8:get_simple_quote:QBTS.K - Optimized for speed
+May 23 13:56:50 ip-172-31-34-224 stocktrend-backend[701275]: INFO:TurboEngine:⌛ 
+
+=== Database Status (Watchlist & FCM Tokens) ===
+
+DB check error stderr:
+bash: -c: line 1: syntax error near unexpected token `base64.b64decode'
+bash: -c: line 1: `python3 -c \"import base64; exec(base64.b64decode('CmltcG9ydCBzcWxpdGUzCmltcG9ydCBvcwoKZGJfcGF0aCA9ICcvaG9tZS91YnVudHUvU3RvY2tUcmVuZFByb2dyYW0vYmFja2VuZC9zdG9ja19hcHAuZGInCgpwcmludChmIkNoZWNraW5nIERCOiB7ZGJfcGF0aH0gKGV4aXN0czoge29zLnBhdGguZXhpc3RzKGRiX3BhdGgpfSkiKQp0cnk6CiAgICBjb25uID0gc3FsaXRlMy5jb25uZWN0KGRiX3BhdGgpCiAgICBjdXJzb3IgPSBjb25uLmN1cnNvcigpCiAgICAKICAgICMgMS4gV2F0Y2hsaXN0CiAgICBjdXJzb3IuZXhlY3V0ZSgiU0VMRUNUIHVzZXJfaWQsIHN5bWJvbCwgYWRkZWRfcHJpY2UgRlJPTSB3YXRjaGxpc3QiKQogICAgcm93cyA9IGN1cnNvci5mZXRjaGFsbCgpCiAgICBwcmludChmIldhdGNobGlzdCBSb3dzIChDb3VudDoge2xlbihyb3dzKX0pOiIpCiAgICB1bmlxdWVfdXNlcnMgPSBzZXQoW3JbMF0gZm9yIHIgaW4gcm93c10pCiAgICBwcmludChmIlVuaXF1ZSBVc2VycyBpbiBXYXRjaGxpc3Q6IHt1bmlxdWVfdXNlcnN9IikKICAgIGZvciByIGluIHJvd3NbOjE1XToKICAgICAgICBwcmludCgiICBXYXRjaGxpc3Q6IiwgcikKICAgICAgICAKICAgICMgMi4gRkNNIFRva2VucwogICAgY3Vyc29yLmV4ZWN1dGUoIlNFTEVDVCB1c2VyX2lkLCBwcmVmX21vcm5pbmcsIHByZWZfY2xvc2luZywgcHJlZl9wcmljZSwgcHJlZl9uZXdzLCBsZW5ndGgodG9rZW4pIEZST00gZmNtX3Rva2VucyIpCiAgICByb3dzX2ZjbSA9IGN1cnNvci5mZXRjaGFsbCgpCiAgICBwcmludChmIkZDTSBUb2tlbiBSb3dzIChDb3VudDoge2xlbihyb3dzX2ZjbSl9KToiKQogICAgZm9yIHIgaW4gcm93c19mY206CiAgICAgICAgcHJpbnQoIiAgRkNNIFRva2VuIFByZWZzOiIsIHIpCiAgICAgICAgCiAgICBjb25uLmNsb3NlKCkKZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgcHJpbnQoIkRCIGVycm9yOiIsIGUpCg==').decode('utf-8'))\"'
+
+
+=== Logs Around KST 15:40 (Filtered, No 429) ===
+Total lines matching filter: 115
+May 22 06:35:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:35:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:35:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:35:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:35:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:35:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:35:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:35:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:35:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:36:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:36:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:36:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:36:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:37:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:37:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:37:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:37:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:38:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:38:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:38:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:38:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:39:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:39:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:39:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:39:53 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:04 ip-172-31-34-224 stocktrend-backend[432550]: [Scheduler] Generating hybrid KR market closing report...
+May 22 06:40:06 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=%5EDJI&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:08 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for '^DJI' in any tier.
+May 22 06:40:10 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=%5EIXIC&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:40:12 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for '^IXIC' in any tier.
+May 22 06:40:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:16 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=%5EGSPC&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:16 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for '^GSPC' in any tier.
+May 22 06:40:18 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=%5ESOX&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:20 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for '^SOX' in any tier.
+May 22 06:40:22 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=%5ETNX&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:24 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for '^TNX' in any tier.
+May 22 06:40:26 ip-172-31-34-224 stocktrend-backend[432550]:   !! AC API Stage failed: HTTPSConnectionPool(host='ac.finance.naver.com', port=443): Max retries exceeded with url: /ac?q=CL%3DF&q_enc=utf-8&st=111&frm=stock&r_format=json&r_enc=utf-8&r_unicode=1&t_koreng=1&ans=2&run=2&rev=4&con=1&r_lt=111 (Caused by NameResolutionError("HTTPSConnection(host='ac.finance.naver.com', port=443): Failed to resolve 'ac.finance.naver.com' ([Errno -2] Name or service not known)")). Moving to Tier 3.
+May 22 06:40:26 ip-172-31-34-224 stocktrend-backend[432550]:  -> [Search Failed] No results for 'CL=F' in any tier.
+May 22 06:40:29 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: USDKRW"}}}
+May 22 06:40:30 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:$USDKRW: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 06:40:30 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:$USDKRW: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 06:40:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:40:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:40:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:40:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:41:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:41:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:41:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:41:52 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:42:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:42:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:42:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:42:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:10 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:11 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:43:11 ip-172-31-34-224 stocktrend-backend[432550]: [gather_naver_stock_data] Price API failed: invalid literal for int() with base 10: ''
+May 22 06:43:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:22 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:43:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:32 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:44 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:44 ip-172-31-34-224 stocktrend-backend[432550]: [gather_naver_stock_data] Price API failed: invalid literal for int() with base 10: ''
+May 22 06:43:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:43:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:43:54 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:56 ip-172-31-34-224 stocktrend-backend[432550]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 06:43:58 ip-172-31-34-224 stocktrend-backend[432550]: [gather_naver_stock_data] Price API failed: invalid literal for int() with base 10: ''
+May 22 06:44:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:44:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:44:12 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:44:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:44:31 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:44:32 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:44:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 06:44:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294630.KS"}}}
+May 22 06:44:51 ip-172-31-34-224 stocktrend-backend[432550]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+
+=== Today's Important Logs (No 429) ===
+Total lines matching today's filter: 9821
+May 22 00:00:07 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:00:08 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:00:12 ip-172-31-34-224 stocktrend-backend[357798]: INFO:scheduler:📅 [Scheduler] Starting hourly briefing for: 9:00
+May 22 00:00:18 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:00:18 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:00:23 ip-172-31-34-224 stocktrend-backend[357798]: [WARNING] Model gemini-2.5-flash timed out after 8s
+May 22 00:00:28 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:00:29 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:00:30 ip-172-31-34-224 stocktrend-backend[357798]: INFO:scheduler:📅 [Scheduler] Task completed for 9:00
+May 22 00:00:30 ip-172-31-34-224 stocktrend-backend[357798]: [SYSTEM-Briefing] Generation error: Gemini API call timed out after 8 seconds
+May 22 00:00:39 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:00:40 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:00:50 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:00:50 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:00 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:01 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:11 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:12 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:22 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:23 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:33 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:34 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:44 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:44 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:01:54 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:01:55 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:05 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:06 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:16 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:17 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:27 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:27 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:38 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:38 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:48 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:49 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:02:59 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:02:59 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:03:10 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:03:10 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:03:20 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:03:21 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:03:31 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:03:31 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:03:41 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:03:42 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:03:52 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:03:53 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:03 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:04 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:07 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:07 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:08 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:08 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:14 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:15 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:25 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:26 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:36 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:37 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:47 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:47 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:04:57 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:04:58 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:05:08 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:05:08 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:05:18 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:05:19 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:05:27 ip-172-31-34-224 stocktrend-backend[357798]: [Scheduler] Sending KR market opening prices...
+May 22 00:05:29 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:05:30 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:05:40 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:05:41 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:05:51 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:05:51 ip-172-31-34-224 stocktrend-backend[357798]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:44 ip-172-31-34-224 stocktrend-backend[391446]: INFO:scheduler:Disclosure Scheduler Started.
+May 22 00:06:44 ip-172-31-34-224 stocktrend-backend[391446]: INFO:scheduler:📅 [Resource-Clean] Hourly Scheduler Active.
+May 22 00:06:44 ip-172-31-34-224 stocktrend-backend[391446]: INFO:scheduler:📅 [Scheduler] Starting hourly briefing for: 9:00
+May 22 00:06:45 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:06:45 ip-172-31-34-224 stocktrend-backend[391446]: [Scheduler] All Intelligence Services Started
+May 22 00:06:47 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GOOGL.O"}}}
+May 22 00:06:47 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: NVDA.O"}}}
+May 22 00:06:49 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:49 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:49 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:49 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:50 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:06:55 ip-172-31-34-224 stocktrend-backend[391446]: [get_naver_stock_info] Domestic New API failed: could not convert string to float: ''
+May 22 00:06:55 ip-172-31-34-224 stocktrend-backend[391446]: [gather_naver_stock_data] Price API failed: invalid literal for int() with base 10: ''
+May 22 00:06:58 ip-172-31-34-224 stocktrend-backend[391446]: INFO:scheduler:📅 [Scheduler] Task completed for 9:00
+May 22 00:06:59 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:00 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:07:10 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:10 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:07:21 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:22 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:07:32 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:32 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:07:42 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:43 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:07:53 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:07:54 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:04 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:04 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:14 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:15 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:25 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:25 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:35 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:36 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:46 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:47 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:08:57 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:08:58 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:09:08 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:09:08 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:09:19 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:09:19 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:09:29 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:09:30 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:09:40 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:09:41 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:09:51 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:09:51 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:01 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:02 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:12 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:13 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:23 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:23 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:33 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:34 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:44 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:45 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:10:55 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:10:55 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:05 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:11:06 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:16 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:11:16 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:26 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:11:27 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:37 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:11:38 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:48 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$000660.KS: possibly delisted; no price data found  (period=1d)
+May 22 00:11:48 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:52 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:52 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:53 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$GOOGL.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+May 22 00:11:53 ip-172-31-34-224 stocktrend-backend[391446]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")

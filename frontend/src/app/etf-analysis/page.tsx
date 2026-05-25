@@ -306,7 +306,7 @@ function EtfAnalysisContent() {
                             }`}
                         >
                             <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-gray-500'}`}></span>
-                            {autoRefresh ? '실시간 연동 중 (10초 자동갱신)' : '실시간 연동 켜기 (수동)'}
+                            {autoRefresh ? '자동 갱신 중 (10초 주기)' : '자동 갱신 켜기 (수동)'}
                         </button>
                     </div>
                 </div>
@@ -526,7 +526,7 @@ function EtfAnalysisContent() {
                                                         </div>
                                                     </div>
                                                     <div className="p-4 rounded-xl border border-dashed border-gray-700 text-gray-500 text-[11px] leading-relaxed italic">
-                                                        * 무료 실시간 데이터 연동 환경에서는 일부 미국 상장 ETF의 구성종목 조회가 제한되어, 대체 분석 지표(유사 ETF 추천)를 제공합니다.
+                                                        * 무료 데이터 연동 환경에서는 일부 미국 상장 ETF의 구성종목 조회가 제한되어, 대체 분석 지표(유사 ETF 추천)를 제공합니다.
                                                     </div>
                                                 </div>
                                             </div>
@@ -568,7 +568,7 @@ function EtfAnalysisContent() {
                                     <div className="p-6 rounded-3xl bg-white/5 border border-white/10 flex items-start gap-4">
                                         <AlertTriangle className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
                                         <p className="text-xs text-gray-400 font-bold leading-relaxed">
-                                            미국 증시 상장(US) ETF 및 해외 지수 추종 상품의 경우, 무료 데이터 파이프라인의 명백한 한계로 인해 <span className="text-orange-400">실시간 구성 종목 추출이 제한되며, 가격 등락 역시 15분 지연된 시세</span>로 제공됩니다.
+                                            미국 증시 상장(US) ETF 및 해외 지수 추종 상품의 경우, 무료 데이터 파이프라인의 명백한 한계로 인해 <span className="text-orange-400">구성 종목 추출이 제한되며, 가격 등락 역시 15분 지연된 시세</span>로 제공됩니다.
                                             모든 분석 정보는 과거 데이터를 기반으로 하며 미래 수익을 보장하지 않으므로 투자 판단의 참고용으로만 활용하십시오.
                                         </p>
                                     </div>

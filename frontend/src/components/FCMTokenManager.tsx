@@ -51,21 +51,21 @@ export default function FCMTokenManager() {
         });
     }, []);
 
-    // [Auto Sync] 사용자가 변경되거나 권한이 허용되면 토큰 갱신
+    // [Auto Sync] 사용자가 변경되거나 권한이 허용되면 토큰 강제 갱신
     useEffect(() => {
         const currentPermission = getNotificationPermission();
         if (currentPermission === 'granted') {
-            syncTokenToServer();
+            syncTokenToServer(true); // 강제 갱신 트리거
         }
     }, [user]);
 
-    // [Tab Focus Sync] 탭이 활성화될 때 토큰 상태 및 소유권 자동 검증 (최적화되어 패스)
+    // [Tab Focus Sync] 탭이 활성화될 때 토큰 상태 및 소유권 자동 검증 (로그인 시 강제 갱신)
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 const currentPermission = getNotificationPermission();
                 if (currentPermission === 'granted') {
-                    syncTokenToServer();
+                    syncTokenToServer(true); // 강제 갱신 트리거
                 }
             }
         };
@@ -121,7 +121,7 @@ export default function FCMTokenManager() {
         return localStorage.getItem('user_id') || 'guest';
     };
 
-    const syncTokenToServer = async () => {
+    const syncTokenToServer = async (force: boolean = false) => {
         try {
             const currentUserId = getReliableUserId();
 
@@ -145,7 +145,9 @@ export default function FCMTokenManager() {
             const tokenChanged = storedToken !== token;           // Firebase가 토큰 교체했는지
             const syncExpired = now - lastSyncTime > SYNC_INTERVAL_MS; // 12시간 경과했는지
 
-            if (tokenChanged) {
+            if (force) {
+                console.log('[FCM] Forced sync triggered by user action or login status change.');
+            } else if (tokenChanged) {
                 // 🔄 Firebase가 새 토큰 발급 → 즉시 재등록 (사용자 모르게 자동)
                 console.log('[FCM] Token rotated by Firebase. Auto re-registering silently...');
             } else if (!syncExpired) {
@@ -333,10 +335,10 @@ export default function FCMTokenManager() {
                                 </button>
                                 <p className="text-white font-bold mb-1 flex items-center gap-1.5">
                                     <span className={`w-1.5 h-1.5 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`}></span>
-                                    {loading ? '연결 재설정 중...' : '실시간 알림 수신 중'}
+                                    {loading ? '연결 재설정 중...' : '자동 알림 수신 중'}
                                 </p>
                                 <p className="text-gray-400 font-medium mb-3 leading-relaxed">
-                                    {loading ? '잠시만 기다려주세요.' : '정상적으로 연결되었습니다. 실시간으로 최신 속보와 가격 알림을 수신합니다.'}
+                                    {loading ? '잠시만 기다려주세요.' : '정상적으로 연결되었습니다. 자동으로 최신 속보와 가격 알림을 수신합니다.'}
                                 </p>
                                 
                                 {!loading && (
@@ -570,7 +572,7 @@ export default function FCMTokenManager() {
                         {/* Content */}
                         <p className="text-sm text-gray-400 leading-relaxed mb-4 font-medium">
                             시장 변동 알림을 <br />
-                            실시간으로 받아보세요.
+                            자동으로 받아보세요.
                         </p>
 
                         {/* Action Button */}

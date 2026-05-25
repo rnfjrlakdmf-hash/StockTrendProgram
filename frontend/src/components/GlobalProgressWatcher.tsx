@@ -74,7 +74,7 @@ export default function GlobalProgressWatcher() {
             <div className="w-full opacity-60">
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs text-gray-400 font-bold">실시간 뉴스 엔진 대기 중 (Active)</span>
+                    <span className="text-xs text-gray-400 font-bold">뉴스 엔진 대기 중 (Active)</span>
                 </div>
             </div>
         );

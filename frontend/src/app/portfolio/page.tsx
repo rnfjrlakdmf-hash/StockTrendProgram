@@ -426,7 +426,7 @@ export default function PortfolioPage() {
                       </div>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
                         <div className="flex flex-col">
-                          <div className="text-[10px] text-gray-500">실시간가</div>
+                          <div className="text-[10px] text-gray-500">현재가</div>
                           <div className="text-xs font-black text-yellow-400">
                             {currPrice > 0 ? `${currPrice.toLocaleString()}${h.currency === "USD" ? "$" : "원"}` : "조회중..."}
                           </div>

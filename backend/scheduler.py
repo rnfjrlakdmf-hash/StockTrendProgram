@@ -31,44 +31,71 @@ def save_state(state):
         logger.error(f"Failed to save state: {e}")
 
 async def check_and_notify_disclosures():
-    """Periodic task to check for new disclosures and send notifications."""
-    logger.info("Running Disclosure Check...")
+    """Periodic task to check for new disclosures and send notifications using Open DART API."""
+    logger.info("Running Disclosure Check via Open DART API...")
     
-    # [Lazy Import] 무거운 모듈은 필요 시에만 로드
-    from kind_scraper import KindScraper
+    from dart_api_client import dart_api_client
+    if not dart_api_client.is_available():
+        logger.warning("[Scheduler] DART_API_KEY가 존재하지 않아 공시 체크를 건너뜁니다.")
+        return
+
     from db_manager import get_all_fcm_tokens
     from firebase_config import send_multicast_notification
 
-    scraper = KindScraper(headless=True)
     try:
-        keywords = ["보호예수", "전환사채", "신주인수권"]
+        keywords = ["보호예수", "전환사채", "신주인수권", "무상증자", "유상증자"]
         new_findings = []
         state = load_state()
         processed_ids = set(state.get("processed_ids", []))
 
-        for kw in keywords:
-            try:
-                logger.info(f"Scraping keyword: {kw}")
-                results = scraper.scrape_latest_disclosures(kw)
-                for item in results:
-                    doc_id = str(item.get('no'))
-                    if doc_id and doc_id not in processed_ids:
-                        item['keyword'] = kw
-                        new_findings.append(item)
-                        processed_ids.add(doc_id)
-                await asyncio.sleep(5)
-            except Exception as e:
-                logger.error(f"Error scraping {kw}: {e}")
+        # 오늘 올라온 공시 목록 조회 (0 = 오늘)
+        results = dart_api_client.get_realtime_disclosures(days_ago=0)
+        
+        for item in results:
+            doc_id = str(item.get('rcept_no'))  # 접수번호를 고유 ID로 사용
+            if doc_id and doc_id not in processed_ids:
+                title = item.get('report_nm', '')
+                
+                # 관심 키워드가 공시 제목에 포함되어 있는지 확인
+                matched_kw = None
+                for kw in keywords:
+                    if kw in title:
+                        matched_kw = kw
+                        break
+                
+                if matched_kw:
+                    item['keyword'] = matched_kw
+                    item['title'] = title
+                    new_findings.append(item)
+                    processed_ids.add(doc_id)
 
         if new_findings:
             logger.info(f"Found {len(new_findings)} new disclosures.")
-            from korea_data import search_korean_stock_symbol
             from db_manager import get_user_tokens_by_watchlist_symbol
 
             for item in new_findings:
                 corp = item.get('corp_name', 'Unknown')
-                symbol = search_korean_stock_symbol(corp)
-                tokens = get_user_tokens_by_watchlist_symbol(symbol) if symbol else []
+                # DART API가 제공하는 stock_code (6자리) 사용
+                raw_code = item.get('stock_code')
+                if not raw_code:
+                    continue
+                
+                # 종목코드 포맷 맞춤 (국내 주식은 6자리 코드)
+                # korea_data의 watchlist 연동을 위해 .KS 또는 .KQ 추가 판단
+                # 여기서는 단순히 raw_code를 기반으로 watchlist 조회
+                # raw_code가 DB에 들어있는 방식과 매칭해야 함 (대개 005930.KS 또는 005930 형식)
+                # watchlist 테이블에는 보통 symbol이 005930.KS 와 같은 형태로 저장되므로,
+                # 이를 매칭하기 위해 유추 로직을 적용합니다.
+                symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
+                tokens = []
+                matched_symbol = None
+                
+                for sym in symbol_candidates:
+                    t_list = get_user_tokens_by_watchlist_symbol(sym)
+                    if t_list:
+                        tokens = t_list
+                        matched_symbol = sym
+                        break
 
                 if tokens:
                     category = item.get('keyword', '공시')
@@ -77,10 +104,10 @@ async def check_and_notify_disclosures():
                     noti_body = f"{title_text}\n\n나의 관심종목에 새로운 공시가 올라왔습니다."
                     data_payload = {
                         "type": "DISCLOSURE_ALERT",
-                        "symbol": symbol or corp,
-                        "url": f"/discovery?q={symbol or corp}"
+                        "symbol": matched_symbol or raw_code,
+                        "url": f"/discovery?q={raw_code}"
                     }
-                    logger.info(f"Sending targeted alert for {corp} ({symbol}) to {len(tokens)} tokens")
+                    logger.info(f"Sending targeted alert for {corp} ({matched_symbol}) to {len(tokens)} tokens")
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
                     await asyncio.sleep(1)
 
@@ -90,9 +117,7 @@ async def check_and_notify_disclosures():
             logger.info("No new disclosures found.")
 
     except Exception as e:
-        logger.error(f"Scheduler Error: {e}")
-    finally:
-        scraper._close_driver()
+        logger.error(f"Scheduler Error in DART Check: {e}")
 
 async def hourly_briefing_scheduler_loop():
     """

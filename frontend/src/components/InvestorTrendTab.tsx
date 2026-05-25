@@ -141,7 +141,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                         <Calendar className="w-4 h-4 text-indigo-400" />
                         <span className="text-sm font-bold text-gray-300 mr-2">누적 기간</span>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                            <PeriodButton val={1} label="당일 (실시간)" />
+                            <PeriodButton val={1} label="당일" />
                             <PeriodButton val={5} label="5일" />
                             <PeriodButton val={20} label="1개월" />
                             <PeriodButton val={60} label="3개월" />
@@ -512,7 +512,7 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
             )}
             <div className="text-[10px] text-gray-600 flex items-center gap-2 justify-center bg-white/5 py-2 rounded-xl border border-white/5">
                 <AlertCircle className="w-3 h-3" />
-                <span><span>데이터 소스: 네이버 금융 실시간 거래원 및 모바일 투자자 트렌드 API 연동. 해외 주식은 주요 기관 보유 현황을 제공합니다.</span></span>
+                <span><span>데이터 소스: 네이버 금융 거래원 및 모바일 투자자 트렌드 API 연동. 해외 주식은 주요 기관 보유 현황을 제공합니다.</span></span>
             </div>
         </div>
     );

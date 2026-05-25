@@ -16,7 +16,7 @@ from dart_disclosure import get_dart_disclosures
 # 해외 종목 영문 이름 매핑 (구글 뉴스 검색용)
 GLOBAL_ENGLISH_NAMES = {
     "AAPL": "Apple", "TSLA": "Tesla", "MSFT": "Microsoft", "NVDA": "Nvidia",
-    "AMZN": "Amazon", "GOOGL": "Google", "GOOG": "Google", "META": "Meta",
+    "AMZN": "Amazon", "GOOGL": "Alphabet Class A", "GOOG": "Alphabet Class C", "META": "Meta",
     "NFLX": "Netflix", "AMD": "AMD", "INTC": "Intel", "QCOM": "Qualcomm",
     "AVGO": "Broadcom", "TXN": "Texas Instruments", "ASML": "ASML",
     "KO": "Coca-Cola", "PEP": "Pepsi", "SBUX": "Starbucks", "NKE": "Nike",
@@ -205,24 +205,39 @@ class NewsAlertMonitor:
                 """뉴스 제목이 해당 종목과 관련있는지 확인"""
                 title_lower = title.lower()
 
-                # 네이버 종목 뉴스판과 직접 등록한 DART 공시는 관련성 100% 신뢰
-                if item_source in ('naver', 'disclosure'):
+                # 직접 등록된 DART 공시는 관련성 100% 신뢰
+                if item_source == 'disclosure':
                     return True
 
                 if is_korean:
                     # 국내 종목: 한글 이름 기반 체크
                     def _get_abbreviations(name):
                         clean_name = re.sub(r'(?:홀딩스|바이오로직스|중공업|전자|자동차|제?\d+호?스팩|우선주|우)$', '', name).strip()
-                        abbrs = {name, clean_name}
-                        if name.endswith("중공업"): abbrs.add(name[:-3] + "重")
-                        elif name.endswith("전자"): abbrs.update([name[:-2] + "전", name[:-2] + "電"])
-                        elif name.endswith("자동차"): abbrs.add(name[:-3] + "차")
-                        elif name.endswith("바이오로직스"): abbrs.add(name[:-5] + "바이오")
-                        elif name == "카카오뱅크": abbrs.add("카뱅")
-                        elif name == "카카오페이": abbrs.add("카페")
-                        elif name == "SK하이닉스": abbrs.add("하이닉스")
-                        if len(clean_name) >= 3:
+                        abbrs = {name}
+                        
+                        # 그룹 지주사명이나 대표 키워드가 단독으로 약칭에 들어가는 것을 방지
+                        GROUP_KEYWORDS = {"삼성", "현대", "LG", "SK", "한화", "두산", "효성", "롯데", "CJ", "GS", "신세계"}
+                        if clean_name and clean_name not in GROUP_KEYWORDS:
+                            abbrs.add(clean_name)
+                            
+                        if name.endswith("중공업"):
+                            abbrs.update([name[:-3] + "중공", name[:-3] + "重"])
+                        elif name.endswith("전자"):
+                            abbrs.update([name[:-2] + "전", name[:-2] + "電"])
+                        elif name.endswith("자동차"):
+                            abbrs.add(name[:-3] + "차")
+                        elif name.endswith("바이오로직스"):
+                            abbrs.add(name[:-5] + "바이오")
+                        elif name == "카카오뱅크":
+                            abbrs.add("카뱅")
+                        elif name == "카카오페이":
+                            abbrs.add("카페")
+                        elif name == "SK하이닉스":
+                            abbrs.add("하이닉스")
+                            
+                        if len(clean_name) >= 3 and clean_name not in GROUP_KEYWORDS:
                             abbrs.add(clean_name[:2])
+                            
                         return {x for x in abbrs if x and len(x) >= 2}
 
                     for vn in _get_abbreviations(kr_name):

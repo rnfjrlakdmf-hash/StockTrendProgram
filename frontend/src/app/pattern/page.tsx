@@ -776,7 +776,7 @@ export default function PatternPage() {
                                     {/* Flow Chart Placeholder/Text */}
                                     <div className="bg-black/40 rounded-2xl p-6 border border-white/10">
                                         <div className="flex items-center gap-2 mb-4 text-xs font-bold text-gray-400">
-                                            <Activity className="w-4 h-4 text-emerald-500" /> 5개 투자 데이터 실시간 체크
+                                            <Activity className="w-4 h-4 text-emerald-500" /> 5개 투자 데이터 정밀 체크
                                         </div>
                                         <div className="space-y-4">
                                             {result.whale?.ingredients?.map((ing: any, idx: number) => (

@@ -55,7 +55,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
             <div className="flex items-center justify-between mb-8 relative">
                 <div className="space-y-1">
                     <h2 className="text-xl md:text-2xl font-black text-white tracking-tighter flex items-center gap-2">
-                        Real-time Market <span className="text-blue-400">Statistics</span>
+                        Market <span className="text-blue-400">Statistics</span>
                         {filterKeyword && (
                             <span className="text-[10px] px-2 py-0.5 bg-blue-600 rounded-full text-white uppercase tracking-widest animate-pulse ml-2">
                                 FILTER: {filterKeyword}
@@ -63,12 +63,12 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         )}
                     </h2>
                     <p className="text-gray-500 font-bold text-[10px] md:text-xs">
-                        거래량 상위 {market === 'KR' ? '국내' : '미국'} ETF 종목군을 실시간으로 집계한 데이터입니다.
+                        거래량 상위 {market === 'KR' ? '국내' : '미국'} ETF 종목군을 집계한 최신 데이터입니다.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Live Now</span>
+                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Active Now</span>
                 </div>
             </div>
 
@@ -150,7 +150,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-center gap-3">
                     <Zap className="w-5 h-5 text-yellow-500 shrink-0" />
                     <p className="text-xs text-blue-200/80 leading-relaxed font-medium">
-                        국내 ETF 수치는 거래소 실시간 데이터를 기반으로 하며, <span className="text-blue-400 font-bold underline">레버리지/인버스/배당주</span> 등 유형별 통계를 객관적으로 집계합니다.
+                        국내 ETF 수치는 거래소 공개 데이터를 기반으로 하며, <span className="text-blue-400 font-bold underline">레버리지/인버스/배당주</span> 등 유형별 통계를 객관적으로 집계합니다.
                     </p>
                 </div>
             )}

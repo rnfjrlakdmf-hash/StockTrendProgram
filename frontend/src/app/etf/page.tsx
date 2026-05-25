@@ -88,8 +88,8 @@ export default function EtfAnalysisPage() {
                             </h1>
                             <p className="text-gray-400 font-bold max-w-xl leading-snug text-xs md:text-sm">
                                 {market === 'KR' 
-                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 실시간 모니터링합니다."
-                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 실시간 데이터를 집계하여 노출합니다."
+                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 모니터링합니다."
+                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 최신 데이터를 집계하여 노출합니다."
                                 }
                             </p>
                         </div>
@@ -259,7 +259,7 @@ export default function EtfAnalysisPage() {
                                             <p className="text-xs font-bold text-gray-300 leading-relaxed bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5">
                                                 현재 {market === 'KR' ? '국내' : '미국'} ETF 시장에서 거래량이 가장 활발한 종목은 
                                                 <span className="text-blue-400"> {data[0]?.name || '...'}</span> 입니다. 
-                                                이 종목의 실시간 거래량은 {data[0]?.volume ? parseInt(data[0].volume).toLocaleString() : '0'}건을 기록 중입니다.
+                                                이 종목의 당일 거래량은 {data[0]?.volume ? parseInt(data[0].volume).toLocaleString() : '0'}건을 기록 중입니다.
                                             </p>
                                             <p className="text-[10px] text-gray-500 font-bold">Updated: {lastUpdate.toLocaleTimeString()}</p>
                                         </div>

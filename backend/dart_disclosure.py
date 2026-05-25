@@ -48,7 +48,7 @@ def get_dart_disclosures(symbol: str, period: str = "1m"):
         cutoff_date = now - timedelta(days=30) # Default 1 month
 
     # 1. Try Official FSS Open DART API FIRST (Instant, Real-time, 0 delay)
-    dart_api_key = os.getenv("DART_API_KEY", "f4ec215eba3e7ef30b5102e2bc3f30616ab9a858")
+    dart_api_key = os.getenv("DART_API_KEY", "").strip()  # [Security] 하드코딩 제거, 환경변수 전용
     if dart_api_key:
         try:
             # Calculate search start date based on period (DART API requires YYYYMMDD)
@@ -69,45 +69,46 @@ def get_dart_disclosures(symbol: str, period: str = "1m"):
             res = requests.get(url, timeout=7)
             if res.ok:
                 data = res.json()
-                if data.get("status") == "000" and "list" in data:
-                    for item in data["list"]:
-                        title = item.get("report_nm", "")
-                        rcept_no = item.get("rcept_no", "")
-                        rcept_dt = item.get("rcept_dt", "")
-                        flr_nm = item.get("flr_nm", "")
-                        
-                        # Parse date for comparison
-                        dt = datetime.strptime(rcept_dt, "%Y%m%d")
-                        if dt < cutoff_date:
-                            continue
+                status = data.get("status")
+                # 000: 성공, 013: 데이터 없음 -> 공식 API가 정상 동작했으므로 즉시 리턴
+                if status in ["000", "013"]:
+                    if "list" in data:
+                        for item in data["list"]:
+                            title = item.get("report_nm", "")
+                            rcept_no = item.get("rcept_no", "")
+                            rcept_dt = item.get("rcept_dt", "")
+                            flr_nm = item.get("flr_nm", "")
                             
-                        formatted_date = f"{rcept_dt[:4]}.{rcept_dt[4:6]}.{rcept_dt[6:8]}"
-                        link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
-                        
-                        # Determine type
-                        disclosure_type = "일반공시"
-                        if "정정" in title: disclosure_type = "정정공시"
-                        elif "감사" in title: disclosure_type = "감사보고서"
-                        elif "사업보고서" in title: disclosure_type = "상장공시"
-                        elif "분기보고서" in title: disclosure_type = "상장공시"
-                        elif "반기보고서" in title: disclosure_type = "상장공시"
-                        elif "전환사채" in title or "CB" in title: disclosure_type = "채권공시"
-                        
-                        disclosures.append({
-                            "title": title,
-                            "link": link,
-                            "submitter": flr_nm,
-                            "date": formatted_date,
-                            "type": disclosure_type
-                        })
-                    
-                    if disclosures:
-                        print(f"[DART API] Successfully retrieved {len(disclosures)} disclosures for {symbol}")
-                        return disclosures
+                            # Parse date for comparison
+                            dt = datetime.strptime(rcept_dt, "%Y%m%d")
+                            if dt < cutoff_date:
+                                continue
+                                
+                            formatted_date = f"{rcept_dt[:4]}.{rcept_dt[4:6]}.{rcept_dt[6:8]}"
+                            link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
+                            
+                            # Determine type
+                            disclosure_type = "일반공시"
+                            if "정정" in title: disclosure_type = "정정공시"
+                            elif "감사" in title: disclosure_type = "감사보고서"
+                            elif "사업보고서" in title: disclosure_type = "상장공시"
+                            elif "분기보고서" in title: disclosure_type = "상장공시"
+                            elif "반기보고서" in title: disclosure_type = "상장공시"
+                            elif "전환사채" in title or "CB" in title: disclosure_type = "채권공시"
+                            
+                            disclosures.append({
+                                "title": title,
+                                "link": link,
+                                "submitter": flr_nm,
+                                "date": formatted_date,
+                                "type": disclosure_type
+                            })
+                    print(f"[DART API] Successfully retrieved {len(disclosures)} disclosures for {symbol} (No scraping needed)")
+                    return disclosures
         except Exception as e:
             print(f"[DART API] Error fetching from Open DART: {e}. Falling back to scraping.")
 
-    # 2. Fallback to Naver Scraping (if API fails or returns no data)
+    # 2. Fallback to Naver Scraping (if API fails)
     try:
         # Loop through pages until we hit the cutoff date
         # Limit to 30 pages to prevent infinite loops/too much load
@@ -216,7 +217,7 @@ def get_dart_overhang_and_investments(symbol: str):
     investments = []
     
     # 1. Fetch from official FSS Open DART API (Instant & Zero Delay)
-    dart_api_key = os.getenv("DART_API_KEY", "f4ec215eba3e7ef30b5102e2bc3f30616ab9a858")
+    dart_api_key = os.getenv("DART_API_KEY", "").strip()  # [Security] 하드코딩 제거, 환경변수 전용
     if dart_api_key:
         try:
             today = datetime.now()
@@ -228,44 +229,52 @@ def get_dart_overhang_and_investments(symbol: str):
             res = requests.get(url, timeout=7)
             if res.ok:
                 data = res.json()
-                if data.get("status") == "000" and "list" in data:
-                    overhang_keywords = [
-                        '전환사채', '신주인수권부사채', '유상증자', '무상증자', '전환청구권행사', 
-                        'BW', 'CB', '교환사채', '주식매수선택권', '신주발행', '이익배당', 
-                        '감자', '합병', '분할', '소각', '신주인수권'
-                    ]
-                    
-                    invest_keywords = [
-                        '타법인주식', '출자', '유형자산양수', '유형자산취득', '영업양수', 
-                        '영업양도', '자산총액', '타법인', '지분취득'
-                    ]
-                    
-                    for item in data["list"]:
-                        title = item.get("report_nm", "")
-                        rcept_no = item.get("rcept_no", "")
-                        rcept_dt = item.get("rcept_dt", "")
+                status = data.get("status")
+                if status in ["000", "013"]:
+                    if "list" in data:
+                        overhang_keywords = [
+                            '전환사채', '신주인수권부사채', '유상증자', '무상증자', '전환청구권행사', 
+                            'BW', 'CB', '교환사채', '주식매수선택권', '신주발행', '이익배당', 
+                            '감자', '합병', '분할', '소각', '신주인수권'
+                        ]
                         
-                        formatted_date = f"{rcept_dt[:4]}.{rcept_dt[4:6]}.{rcept_dt[6:8]}"
-                        link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
+                        invest_keywords = [
+                            '타법인주식', '출자', '유형자산양수', '유형자산취득', '영업양수', 
+                            '영업양도', '자산총액', '타법인', '지분취득'
+                        ]
                         
-                        matched = False
-                        for kw in overhang_keywords:
-                            if kw in title:
-                                if not any(x['title'] == title and x['date'] == formatted_date for x in overhang):
-                                    overhang.append({
-                                        "title": title, "link": link, "date": formatted_date, "type": "오버행(잠재물량)"
-                                    })
-                                matched = True
-                                break
-                                
-                        if not matched:
-                            for kw in invest_keywords:
+                        for item in data["list"]:
+                            title = item.get("report_nm", "")
+                            rcept_no = item.get("rcept_no", "")
+                            rcept_dt = item.get("rcept_dt", "")
+                            
+                            formatted_date = f"{rcept_dt[:4]}.{rcept_dt[4:6]}.{rcept_dt[6:8]}"
+                            link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
+                            
+                            matched = False
+                            for kw in overhang_keywords:
                                 if kw in title:
-                                    if not any(x['title'] == title and x['date'] == formatted_date for x in investments):
-                                        investments.append({
-                                            "title": title, "link": link, "date": formatted_date, "type": "타법인출자/투자"
+                                    if not any(x['title'] == title and x['date'] == formatted_date for x in overhang):
+                                        overhang.append({
+                                            "title": title, "link": link, "date": formatted_date, "type": "오버행(잠재물량)"
                                         })
+                                    matched = True
                                     break
+                                    
+                            if not matched:
+                                for kw in invest_keywords:
+                                    if kw in title:
+                                        if not any(x['title'] == title and x['date'] == formatted_date for x in investments):
+                                            investments.append({
+                                                "title": title, "link": link, "date": formatted_date, "type": "타법인출자/투자"
+                                            })
+                                        break
+                    # 공식 API 성공 시 즉시 리턴하여 네이버 크롤링 원천 차단
+                    print(f"[DART API] Successfully retrieved overhang/investments for {symbol} (No scraping)")
+                    return {
+                        "overhang": sorted(overhang, key=lambda x: x['date'], reverse=True),
+                        "investments": sorted(investments, key=lambda x: x['date'], reverse=True)
+                    }
         except Exception as e:
             print(f"[DART API] Overhang/Investments error: {e}")
 

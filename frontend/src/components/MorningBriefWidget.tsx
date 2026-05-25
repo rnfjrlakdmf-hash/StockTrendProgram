@@ -367,7 +367,7 @@ export default function MorningBriefWidget() {
                                     </span>
                                     {latestPersonal?.is_instant && (
                                         <span className="text-[9px] bg-amber-500/20 text-amber-500 px-2.5 py-0.5 rounded-sm font-black tracking-widest uppercase animate-pulse border border-amber-500/10">
-                                            실시간 초고속 생성
+                                            초고속 생성
                                         </span>
                                     )}
                                 </div>
@@ -408,7 +408,7 @@ export default function MorningBriefWidget() {
                             </div>
                         </div>
 
-                        {latestPersonal && latestPersonal.market_title !== "시장 상황을 실시간으로 분석 중입니다..." ? (
+                        {latestPersonal && latestPersonal.market_title !== "시장 상황을 분석 중입니다..." ? (
                             <div className="space-y-10 animate-in fade-in slide-in-from-left duration-700">
                                 {/* Naver Style Summary Box */}
                                 <div className="bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
@@ -510,7 +510,7 @@ export default function MorningBriefWidget() {
                         <div className="flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
                                 <Globe className="w-5 h-5 text-gray-400" />
-                                <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter shadow-sm">실시간 시장 히스토리</h3>
+                                <h3 className="text-lg font-black text-gray-200 uppercase tracking-tighter shadow-sm">시장 히스토리</h3>
                                 {marketStatus && (
                                     <div className={`ml-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-all animate-in fade-in zoom-in duration-500
                                         ${marketStatus.status === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 

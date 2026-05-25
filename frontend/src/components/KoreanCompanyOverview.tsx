@@ -222,7 +222,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
       
       <div className="mt-8 p-4 bg-indigo-900/20 rounded-2xl border border-indigo-500/20 border-dashed text-center">
         <p className="text-[11px] text-indigo-400 font-medium">
-          <span>위 데이터는 네이버 금융 기업분석 정보를 기반으로 실시간 제공됩니다. </span>
+          <span>위 데이터는 네이버 금융 기업분석 정보를 기반으로 제공됩니다. </span>
           <span>기업의 공시 시점에 따라 실제 데이터와 미세한 시차가 발생할 수 있습니다.</span>
         </p>
       </div>

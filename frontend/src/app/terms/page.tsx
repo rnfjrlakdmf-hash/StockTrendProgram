@@ -25,7 +25,7 @@ export default function TermsPage() {
             <p>본 서비스는 다음과 같은 기능을 제공합니다:</p>
             <ul className="list-disc ml-6 mt-3 space-y-1 text-gray-400">
               <li>AI 기반 주식 종목 분석 및 점수화</li>
-              <li>실시간 국내외 주가 데이터 조회</li>
+              <li>국내외 주가 데이터 조회</li>
               <li>재무제표 및 기업 정보 제공</li>
               <li>관심 종목 등록 및 관리</li>
               <li>주가 알림 서비스</li>

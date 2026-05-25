@@ -113,16 +113,37 @@ async def startup_event():
         
         await asyncio.sleep(5)
         try:
+            print("[Background] Starting price alerts & batch news...")
             from price_alerts import price_alert_monitor, create_price_alerts_tables
             await asyncio.to_thread(create_price_alerts_tables)
             asyncio.create_task(price_alert_monitor.start())
-            
-            from news_alerts import news_alert_monitor
-            asyncio.create_task(news_alert_monitor.start())
-            
+            print("[Background] price_alert_monitor task created.")
+        except Exception as e:
+            print(f"[Background] Error starting price alerts: {e}")
+            traceback.print_exc()
+
+        try:
+            # ✅ [v7.0.0] 1만명 규모 배치 뉴스 시스템 (공식 네이버 Open API)
+            # 기존: 이용자별 × 종목별 → API 폭주 (비효율)
+            # 개선: 종목별 1회 수집 → 이용자별 분류 발송 (API 최소화)
+            print("[Background] Starting batch news system...")
+            from batch_news_system import batch_news_system
+            asyncio.create_task(batch_news_system.start(interval_minutes=10))
+            print("[Background] batch_news_system task created.")
+        except Exception as e:
+            print(f"[Background] Error starting batch news system: {e}")
+            traceback.print_exc()
+
+        try:
+            print("[Background] Starting auto price alerts...")
             from auto_price_alerts import auto_price_monitor
             asyncio.create_task(auto_price_monitor.start())
-            
+            print("[Background] auto_price_monitor task created.")
+        except Exception as e:
+            print(f"[Background] Error starting auto price alerts: {e}")
+            traceback.print_exc()
+
+        try:
             # [BugFix] alerts.json 기반 사용자 설정 알림 체크 루프 (60초마다)
             async def check_alerts_loop():
                 print("[AlertsLoop] JSON-based alert checker started (60s interval)")
@@ -137,7 +158,11 @@ async def startup_event():
                         print(f"[AlertsLoop] Error: {e}")
                     await asyncio.sleep(60)
             asyncio.create_task(check_alerts_loop())
-        except: pass
+            print("[Background] check_alerts_loop task created.")
+        except Exception as e:
+            print(f"[Background] Error starting check_alerts_loop: {e}")
+            traceback.print_exc()
+
 
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
         try:
@@ -227,6 +252,17 @@ def read_root():
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "timestamp": time.time()}
+
+@app.get("/api/admin/news-stats")
+def news_api_stats():
+    """배치 뉴스 시스템 API 호출 통계 (관리자용)"""
+    try:
+        from batch_news_system import batch_news_system
+        stats = batch_news_system.get_api_stats()
+        return {"status": "ok", "stats": stats}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn

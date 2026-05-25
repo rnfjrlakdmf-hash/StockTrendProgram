@@ -379,57 +379,10 @@ def get_etf_detail(symbol: str):
                     data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
         except: pass
 
-        # 3. Ultimate Fallback & Holdings (WiseReport)
-        try:
-            # WiseReport contains the actual holdings table and detailed info for KR ETFs
-            wise_url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_sym}"
-            wise_resp = requests.get(wise_url, headers=headers, timeout=7)
-            if wise_resp.status_code == 200:
-                # Detect encoding automatically or fallback to euc-kr
-                if wise_resp.encoding.lower() == 'iso-8859-1':
-                    wise_resp.encoding = 'euc-kr'
-                wise_html = wise_resp.text
-                
-                # 3.1 Basic Info from 'product_summary_data' JS variable
-                match_prod = re.search(r"var\s+product_summary_data\s*=\s*(\{.*?\});", wise_html, re.DOTALL)
-                if match_prod:
-                    try:
-                        prod_json = json.loads(match_prod.group(1))
-                        if data["basic_info"]["launch_date"] == "알 수 없음":
-                            data["basic_info"]["launch_date"] = prod_json.get("LIST_DT", "알 수 없음")
-                        if data["basic_info"]["index"] == "알 수 없음":
-                            data["basic_info"]["index"] = prod_json.get("BASE_IDX_NM_KOR", "알 수 없음")
-                        if data["basic_info"]["amc"] == "알 수 없음":
-                            data["basic_info"]["amc"] = prod_json.get("ISSUE_NM_KOR", "알 수 없음")
-                    except: pass
+        # 3. [Commercial Protection] WiseReport 크롤링 차단 (나이스평가정보 저작권 보호)
+        # 상업적 운영에 따른 법적 위험 방지를 위해 비활성화.
+        pass
 
-                # 3.2 Holdings from 'CU_data' JS variable
-                if not data["holdings"]:
-                    match_cu = re.search(r"var\s+CU_data\s*=\s*(\{.*?\});", wise_html, re.DOTALL)
-                    if match_cu:
-                        try:
-                            cu_json = json.loads(match_cu.group(1))
-                            for h_item in cu_json.get("grid_data", []):
-                                h_name = h_item.get("STK_NM_KOR")
-                                h_weight = h_item.get("ETF_WEIGHT")
-                                if h_name and h_name != "원화현금":
-                                    # Handle None or empty weights for overseas holdings in KR ETFs
-                                    w_val = safe_to_float(h_weight)
-                                    if w_val > 0:
-                                        w_str = f"{w_val:.2f}%"
-                                    else:
-                                        # Force 0.00% so frontend can apply "Top Holding" logic
-                                        w_str = "0.00%"
-                                    
-                                    data["holdings"].append({"name": h_name, "weight": w_str})
-                                    if len(data["holdings"]) >= 15: break
-                        except: pass
-                
-                # 3.3 Fallback to regex if still missing launch date
-                if data["basic_info"]["launch_date"] == "알 수 없음":
-                    match_date = re.search(r"LIST_DT\"\s*:\s*\"(20\d{2}-\d{2}-\d{2})\"", wise_html)
-                    if match_date: data["basic_info"]["launch_date"] = match_date.group(1)
-        except: pass
 
         # 5. Populate Similar ETFs for KR ETFs
         if not data["similar_etfs"]:

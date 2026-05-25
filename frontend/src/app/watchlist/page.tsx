@@ -521,9 +521,9 @@ export default function WatchlistPage() {
                         <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-3xl">
                             <h3 className="text-xl font-black text-emerald-400 flex items-center gap-2 mb-2">
                                 <RefreshCw className={`w-5 h-5 ${eventsLoading ? 'animate-spin' : ''}`} />
-                                실시간 일정 리포트
+                                최신 일정 리포트
                             </h3>
-                            <p className="text-sm text-emerald-400/60 font-medium">관심종목의 배당락일, 실적발표, 주요 공시를 실시간 스캔합니다.</p>
+                            <p className="text-sm text-emerald-400/60 font-medium">관심종목의 배당락일, 실적발표, 주요 공시를 신속하게 스캔합니다.</p>
                         </div>
 
                         {eventEvents.length === 0 ? (
@@ -592,8 +592,8 @@ export default function WatchlistPage() {
                                     <Bell className="w-6 h-6 text-blue-400" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white leading-tight">실시간 푸시 알림 서비스</h4>
-                                    <p className="text-xs text-gray-400 mt-0.5">앱을 닫아도 실시간 가격 돌파 및 공시 소식을 전달합니다.</p>
+                                    <h4 className="font-bold text-white leading-tight">자동 푸시 알림 서비스</h4>
+                                    <p className="text-xs text-gray-400 mt-0.5">앱을 닫아도 설정한 가격 돌파 및 공시 소식을 전달합니다.</p>
                                 </div>
                             </div>
                             <button
@@ -608,7 +608,7 @@ export default function WatchlistPage() {
                                         });
                                         const data = await res.json();
                                         if (data.status === 'success') {
-                                            alert("✅ 실시간 푸시 알림이 활성화되었습니다!");
+                                            alert("✅ 자동 푸시 알림이 활성화되었습니다!");
                                             window.location.reload(); // 권한 상태 반영을 위해 새로고침
                                         }
                                     } else {

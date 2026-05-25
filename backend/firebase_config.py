@@ -54,6 +54,14 @@ def initialize_firebase():
         print("[Firebase] Push notifications will not work")
 
 
+def is_night_time_kst() -> bool:
+    """한국 표준시(KST) 기준 야간(21:00 ~ 08:00) 여부 확인"""
+    from datetime import datetime
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    return now.hour >= 21 or now.hour < 8
+
 
 def sanitize_notification_text(title: str, body: str):
     """
@@ -121,6 +129,12 @@ def send_push_notification(
     """
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
+
+    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한 (관리자 제외)
+    is_admin = any(k in title.lower() for k in ["admin", "관리자", "analytics", "보고서"])
+    if is_night_time_kst() and not is_admin:
+        print(f"[Firebase-NightBlock] Skipped sending notification during night time: {title}")
+        return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
     # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
@@ -222,6 +236,12 @@ def send_multicast_notification(
     """
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
+
+    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한 (관리자 제외)
+    is_admin = any(k in title.lower() for k in ["admin", "관리자", "analytics", "보고서"])
+    if is_night_time_kst() and not is_admin:
+        print(f"[Firebase-NightBlock] Skipped multicast notification during night time: {title}")
+        return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
     if not tokens:
         return {"success": False, "error": "No tokens provided"}

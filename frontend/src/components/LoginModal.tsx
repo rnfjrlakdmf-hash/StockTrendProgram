@@ -15,6 +15,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
     const [errorMsg, setErrorMsg] = useState("");
     const [isMobile, setIsMobile] = useState(false);
+    const [agreed, setAgreed] = useState(false);
 
     useEffect(() => {
         setIsMobile(/Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth <= 768);
@@ -82,10 +83,31 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         <p className="text-sm text-gray-400">구글 계정으로 로그인하여<br />관심종목과 브리핑을 동기화하세요.</p>
                     </div>
 
+                    {/* 약관 동의 체크박스 */}
+                    <div className="flex items-center gap-2 mb-5 mt-[-10px] justify-center">
+                        <input
+                            type="checkbox"
+                            id="terms-agree-chk"
+                            checked={agreed}
+                            onChange={(e) => setAgreed(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-600 bg-black text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <label htmlFor="terms-agree-chk" className="text-xs text-gray-400 select-none cursor-pointer">
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">이용약관</a>
+                            {" 및 "}
+                            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">개인정보 처리방침</a>
+                            {"에 동의합니다 (필수)"}
+                        </label>
+                    </div>
+
                     {/* 구글 로그인 버튼 */}
                     <button
                         id="google-login-btn"
                         onClick={() => {
+                            if (!agreed) {
+                                alert("서비스 이용약관 및 개인정보 처리방침에 동의해 주세요.");
+                                return;
+                            }
                             setStatus("loading");
                             setErrorMsg("");
                             googleLogin();

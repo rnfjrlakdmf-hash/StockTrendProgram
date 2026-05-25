@@ -63,7 +63,7 @@ function SignalsPageContent() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black">
-            <Header title="시장 인텔리전스" subtitle="실시간 시그널 · 글로벌 캘린더 · 시장 주도주 분석" />
+            <Header title="시장 인텔리전스" subtitle="당일 시그널 · 글로벌 캘린더 · 시장 주도주 분석" />
             <div className="max-w-5xl mx-auto p-4 space-y-6">
                 {/* Tab Bar */}
                 <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide">
@@ -217,7 +217,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                     <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-purple-500 to-blue-500 opacity-50"></div>
                     <div className="flex items-center gap-2 mb-3">
                         <Zap className="w-5 h-5 text-yellow-400" />
-                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">실시간 주요 공시 인사이트</h4>
+                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">당일 주요 공시 인사이트</h4>
                         <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/40 uppercase tracking-tighter">
                             v3.7.18-WATCHLIST
                         </span>
@@ -263,7 +263,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                         <Zap className="w-4 h-4 text-orange-400" /> 데이터 기반 시장 모니터링
                     </h3>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                        전체 시장의 노이즈를 제거하고 정교한 알고리즘 조건(<span className="text-orange-300">거래량 급증</span>, <span className="text-blue-300">핵심 공시</span>, <span className="text-green-300">주요 수급 변동</span>)에 부합하는 유의미한 시그널을 실시간으로 포착합니다.
+                        전체 시장의 노이즈를 제거하고 정교한 알고리즘 조건(<span className="text-orange-300">거래량 급증</span>, <span className="text-blue-300">핵심 공시</span>, <span className="text-green-300">주요 수급 변동</span>)에 부합하는 유의미한 시그널을 신속하게 포착합니다.
                     </p>
                 </div>
             </div>
@@ -596,7 +596,7 @@ function MarketInsightsTab({ router }: { router: any }) {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderList("실시간 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
+                        {renderList("인기 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
                         {renderList("거래대금 상위 (실수급 연속 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
                     </div>
                 )}
@@ -801,7 +801,7 @@ function CalendarTab({ router }: { router: any }) {
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
-                                🌍 주요 경제 지표 (실시간)
+                                🌍 주요 경제 지표 (최신)
                             </h4>
                         </div>
                         {globalAssetsLoading ? (
@@ -916,7 +916,7 @@ function CalendarTab({ router }: { router: any }) {
                     </div>
 
                     <h4 className="font-bold text-sm text-gray-400 mb-3 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-blue-400" /> 다가오는 주요 일정 (실시간 탐지)
+                        <Activity className="w-4 h-4 text-blue-400" /> 다가오는 주요 일정 (자동 탐지)
                     </h4>
                     {earndivLoading ? (
                         <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
@@ -975,7 +975,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 )}
                                                 {ev.is_dart && (
                                                     <div className="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                                        <FileText className="w-3 h-3" /> 실시간 분석 완료
+                                                        <FileText className="w-3 h-3" /> 분석 완료
                                                     </div>
                                                 )}
                                             </div>

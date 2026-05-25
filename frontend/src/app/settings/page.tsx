@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle, Zap, Eye, EyeOff, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function SettingsPage() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     // 🔒 Hidden Admin Mode
     const [adminMode, setAdminMode] = useState(false);
@@ -15,6 +15,39 @@ export default function SettingsPage() {
     const [lastClickTime, setLastClickTime] = useState(0);
     const [freeMode, setFreeMode] = useState(false);
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const handleDeleteAccount = async () => {
+        if (!user || !user.id) return;
+        
+        const confirmDelete = window.confirm(
+            "⚠️ 정말로 회원 탈퇴를 진행하시겠습니까?\n탈퇴 즉시 귀하의 계정 정보, 관심종목, 포트폴리오, 푸시 알림 토큰 등 모든 개인정보가 법에 따라 복구 불가능하게 영구 파기(DELETE)됩니다."
+        );
+        
+        if (!confirmDelete) return;
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ user_id: user.id }),
+            });
+            
+            const data = await response.json();
+            if (data.status === "success") {
+                setMsg({ type: 'success', text: '🗑️ 회원 탈퇴가 완료되었습니다. 모든 개인정보가 영구 삭제되었습니다.' });
+                setTimeout(() => {
+                    logout();
+                }, 2000);
+            } else {
+                setMsg({ type: 'error', text: data.message || '회원 탈퇴 처리 중 오류가 발생했습니다.' });
+            }
+        } catch (error) {
+            console.error("Delete account error:", error);
+            setMsg({ type: 'error', text: '서버 통신 오류로 회원 탈퇴에 실패했습니다.' });
+        }
+    };
 
     // [New] KIS API 키 상태
     const [kisAppKey, setKisAppKey] = useState('');
@@ -103,7 +136,7 @@ export default function SettingsPage() {
             <div className="max-w-2xl mx-auto p-6 space-y-6">
 
                 {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    [New] KIS 실시간 시세 연동
+                    [New] KIS 시세 연동
                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
                 <div className={`rounded-3xl border shadow-xl transition-all duration-300 ${kisConnected
                     ? 'bg-gradient-to-br from-blue-950/60 to-purple-950/60 border-blue-500/40'
@@ -121,9 +154,9 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-black text-white flex items-center gap-2">
-                                        실시간 시세 연동
+                                        시세 연동
                                         {kisConnected && (
-                                            <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-black tracking-widest">LIVE</span>
+                                            <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-black tracking-widest">ACTIVE</span>
                                         )}
                                     </h3>
                                     <p className="text-xs text-gray-400">한국투자증권 OpenAPI</p>
@@ -145,9 +178,9 @@ export default function SettingsPage() {
                                     ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
                                     : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'}`}>
                                     {kisConnected ? (
-                                        <><CheckCircle className="w-4 h-4 shrink-0" /> 실시간 시세가 활성화되어 있습니다. 해외주식도 즉시 체결가로 업데이트됩니다.</>
+                                        <><CheckCircle className="w-4 h-4 shrink-0" /> 시세 연동이 활성화되어 있습니다. 해외주식도 즉시 체결가로 업데이트됩니다.</>
                                     ) : (
-                                        <><AlertTriangle className="w-4 h-4 shrink-0" /> 현재 10초 간격 갱신 중입니다. 실시간으로 보고 싶으면 아래 단계를 진행하세요.</>
+                                        <><AlertTriangle className="w-4 h-4 shrink-0" /> 현재 10초 간격 갱신 중입니다. 즉시 갱신하여 보고 싶으면 아래 단계를 진행하세요.</>
                                     )}
                                 </div>
                             </div>
@@ -186,8 +219,8 @@ export default function SettingsPage() {
                                             {
                                                 step: '3',
                                                 icon: '✅',
-                                                title: '미국주식 실시간 시세 신청',
-                                                desc: '한국투자증권 앱 → 해외주식 메뉴에서 실시간 시세 신청 (완전 무료)',
+                                                title: '미국주식 무료 시세 신청',
+                                                desc: '한국투자증권 앱 → 해외주식 메뉴에서 시세 신청 (완전 무료)',
                                                 link: null,
                                                 linkLabel: null,
                                                 color: 'border-green-500/30 bg-green-500/5'
@@ -196,7 +229,7 @@ export default function SettingsPage() {
                                                 step: '4',
                                                 icon: '⚡',
                                                 title: '아래 입력창에 키 입력 후 저장',
-                                                desc: 'App Key, App Secret, 계좌번호 입력하면 즉시 실시간 활성화',
+                                                desc: 'App Key, App Secret, 계좌번호 입력하면 즉시 연동 활성화',
                                                 link: null,
                                                 linkLabel: null,
                                                 color: 'border-amber-500/30 bg-amber-500/5'
@@ -263,7 +296,7 @@ export default function SettingsPage() {
                                         onClick={handleSaveKis}
                                         className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2"
                                     >
-                                        <Zap className="w-4 h-4" /> 저장하고 실시간 활성화
+                                        <Zap className="w-4 h-4" /> 저장하고 연동 활성화
                                     </button>
                                     {kisConnected && (
                                         <button
@@ -383,10 +416,24 @@ export default function SettingsPage() {
                                 </span>
                             </div>
                             {user && (
-                                <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
-                                    <span className="text-gray-400 font-medium">연동 이메일</span>
-                                    <span className="text-white text-sm font-bold">{user.email}</span>
-                                </div>
+                                <>
+                                    <div className="flex justify-between items-center p-5 bg-black/20 rounded-2xl border border-white/5">
+                                        <span className="text-gray-400 font-medium">연동 이메일</span>
+                                        <span className="text-white text-sm font-bold">{user.email}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-5 bg-red-950/20 rounded-2xl border border-red-500/20 mt-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-red-400 font-bold text-sm">회원 탈퇴</span>
+                                            <span className="text-[10px] text-gray-500 mt-1">개인정보 및 관심종목 즉시 파기</span>
+                                        </div>
+                                        <button
+                                            onClick={handleDeleteAccount}
+                                            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-xl text-xs font-black border border-red-500/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-1.5"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" /> 계정 영구 삭제
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
                     )}
@@ -495,35 +542,41 @@ export default function SettingsPage() {
                                             const isMobile = isAndroid || isIOS;
 
                                             if (isMobile) {
-                                                // 모바일(안드로이드/iOS): 딥링크로 앱 실행 시도 후 미설치 시 스토어로 이동 (타임아웃 방식)
-                                                const storeUrl = isAndroid ? broker.androidStore : broker.iosStore;
-                                                
-                                                let targetDeepLink = broker.deepLink;
                                                 if (isAndroid) {
-                                                    // 안드로이드 패키지명을 플레이스토어 링크에서 추출하여 표준 인텐트 생성
-                                                    const packageName = broker.androidStore.includes('id=') 
-                                                        ? broker.androidStore.split('id=')[1] 
-                                                        : '';
-                                                    if (packageName) {
-                                                        // 스키마 불일치로 인한 오작동을 피하기 위해 안드로이드에서는
-                                                        // scheme을 기재하지 않고 패키지명만 명시하여 해당 앱을 강제 실행합니다.
-                                                        targetDeepLink = `intent://#Intent;package=${packageName};end`;
-                                                    }
+                                                    const packageName = (broker as any).packageName;
+                                                    const fallbackUrl = encodeURIComponent(`https://play.google.com/store/apps/details?id=${packageName}`);
+                                                    
+                                                    // 딥링크에서 scheme과 host/path 추출 (호스트가 없으면 open 기본값 적용)
+                                                    const deepLink = broker.deepLink;
+                                                    const scheme = deepLink.split('://')[0];
+                                                    const hostAndPath = deepLink.split('://')[1] || "open";
+                                                    
+                                                    // 안드로이드 크롬/웹뷰 표준 인텐트 구성:
+                                                    // scheme과 package가 모두 기재되어야 안드로이드 시스템이 앱이 깔려있을 때 100% 정상 실행합니다.
+                                                    // 앱이 없을 경우 S.browser_fallback_url에 지정한 구글 플레이스토어로 정상 리다이렉트됩니다.
+                                                    const intentUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
+                                                    
+                                                    window.location.href = intentUrl;
+                                                } else {
+                                                    // iOS 처리: 커스텀 딥링크 시도 후 미설치 시 앱스토어 이동 타이머 작동
+                                                    const storeUrl = broker.iosStore;
+                                                    window.location.href = broker.deepLink;
+                                                    
+                                                    const start = Date.now();
+                                                    const t = setTimeout(() => {
+                                                        if (Date.now() - start < 1800 && !document.hidden) {
+                                                            window.location.href = storeUrl;
+                                                        }
+                                                    }, 1200);
+
+                                                    const onVisibilityChange = () => {
+                                                        if (document.hidden) {
+                                                            clearTimeout(t);
+                                                            document.removeEventListener('visibilitychange', onVisibilityChange);
+                                                        }
+                                                    };
+                                                    document.addEventListener('visibilitychange', onVisibilityChange);
                                                 }
-
-                                                window.location.href = targetDeepLink;
-
-                                                const t = setTimeout(() => {
-                                                    window.location.href = storeUrl;
-                                                }, 2000);
-
-                                                const onVisibilityChange = () => {
-                                                    if (document.hidden) {
-                                                        clearTimeout(t);
-                                                        document.removeEventListener('visibilitychange', onVisibilityChange);
-                                                    }
-                                                };
-                                                document.addEventListener('visibilitychange', onVisibilityChange);
 
                                             } else {
                                                 // PC: 웹 HTS 새 탭으로 오픈
@@ -552,7 +605,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="py-10 text-center space-y-2">
-                    <p className="text-gray-600 text-[10px] font-black tracking-widest uppercase">Sector Trend v2.9.0 (Compliance-Secure)</p>
+                    <p className="text-gray-600 text-[10px] font-black tracking-widest uppercase">Sector Trend v2.9.10 (Compliance-Secure)</p>
                     <p className="text-gray-700 text-[9px]">© 2026 Gemini Antigravity. All rights reserved.</p>
                 </div>
 

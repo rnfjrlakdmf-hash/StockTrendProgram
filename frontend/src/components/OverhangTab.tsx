@@ -99,7 +99,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                         }`}
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        <span>{isRefreshing ? "스캔 중..." : "실시간 재추출"}</span>
+                        <span>{isRefreshing ? "스캔 중..." : "즉시 재추출"}</span>
                     </button>
                     <a 
                         href={`https://finance.naver.com/item/news_notice.naver?code=${symbol.replace(/[^0-9]/g, '')}`}

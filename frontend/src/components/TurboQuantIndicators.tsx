@@ -229,7 +229,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <span><span>터보퀸트 정밀 진단 </span><span className="text-[10px] text-indigo-500/50 font-normal"><span>v2.3</span></span><span>: </span><span className="text-indigo-400"><span>{getCategoryTitle()}</span></span></span>
                         </h3>
                         <p className="text-slate-400 text-sm font-medium">
-                            <span><span>{stockName ? `${stockName}(${symbol})` : symbol}</span> <span>실시간 데이터 가독성 엔진 가동 중</span></span>
+                            <span><span>{stockName ? `${stockName}(${symbol})` : symbol}</span> <span>데이터 가독성 엔진 가동 중</span></span>
                         </p>
                     </div>
 
@@ -283,7 +283,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
                         <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-                        <p className="text-slate-400 font-bold animate-pulse text-sm">터보 엔진이 지표 데이터를 실시간 분석 중입니다...</p>
+                        <p className="text-slate-400 font-bold animate-pulse text-sm">터보 엔진이 지표 데이터를 분석 중입니다...</p>
                     </div>
                 ) : error ? (
                     <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl flex items-center gap-4 text-red-300">
@@ -406,7 +406,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <div>
                                 <h5 className="text-indigo-300 text-sm font-black mb-1 notranslate" translate="no"><span>터보퀸트 정밀 분석 가이드</span></h5>
                                 <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                    <span>이 화면의 데이터는 실시간 공시 지표를 바탕으로 파싱되었습니다. 현재 **핵심 요약 모드**가 활성화되어 있어 투자 결정에 가장 중요한 지표들만 선별하여 보여드립니다. </span>
+                                    <span>이 화면의 데이터는 공시 지표를 바탕으로 파싱되었습니다. 현재 **핵심 요약 모드**가 활성화되어 있어 투자 결정에 가장 중요한 지표들만 선별하여 보여드립니다. </span>
                                     <span>상단의 탭을 통해 수익성, 성장성, 안정성, 활동성 데이터를 입체적으로 분석하세요.</span>
                                 </p>
                             </div>

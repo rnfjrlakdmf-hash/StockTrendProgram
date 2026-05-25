@@ -298,7 +298,7 @@ function CommunityContent() {
                     <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl flex items-start gap-3 max-w-md">
                         <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                         <p className="text-[10px] text-amber-200/80 leading-relaxed font-bold">
-                            본 커뮤니티는 유사투자자문행위 방지를 위해 실시간 AI 필터가 작동 중입니다. 
+                            본 커뮤니티는 유사투자자문행위 방지를 위해 정밀 AI 필터가 작동 중입니다. 
                             <span className="text-amber-500"> 특정 종목 추천, 수익 보장, 리딩 유도</span> 등의 발언은 즉시 삭제 및 차단될 수 있습니다.
                         </p>
                     </div>
@@ -323,7 +323,7 @@ function CommunityContent() {
                                 <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-sm font-bold text-gray-300">실시간 글로벌 라운지</span>
+                                        <span className="text-sm font-bold text-gray-300">글로벌 라운지</span>
                                     </div>
                                     <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center gap-2">
                                         <Sparkles className="w-3 h-3 text-blue-400" />
@@ -600,7 +600,7 @@ function CommunityContent() {
                                             {/* Hot Stocks Ranking */}
                                             <div className="bg-white/5 rounded-3xl border border-white/10 p-6 shadow-xl">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                    <Flame className="w-4 h-4 text-orange-400" /> 실시간 인기 토론 종목
+                                                    <Flame className="w-4 h-4 text-orange-400" /> 인기 토론 종목
                                                     <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse ml-1" />
                                                 </h3>
                                                 {hotLoading ? (

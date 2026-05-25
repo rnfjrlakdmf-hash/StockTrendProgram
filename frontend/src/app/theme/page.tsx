@@ -162,7 +162,7 @@ export default function ThemePage() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-zinc-950">
-            <Header title="실시간 이슈 테마 분석 (v2.6)" subtitle="Find the Next Big Thing with AI." />
+            <Header title="이슈 테마 분석 (v2.6)" subtitle="Find the Next Big Thing with AI." />
 
             <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
@@ -441,7 +441,7 @@ export default function ThemePage() {
                                 <div className="bg-gradient-to-r from-orange-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
                                     <h4 className="text-xl font-black text-white flex items-center gap-2">
                                         <TrendingUp className="w-6 h-6 text-orange-400" />
-                                        실시간 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
+                                        주요 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
                                     </h4>
                                 </div>
                                 <CleanStockList
@@ -470,7 +470,7 @@ export default function ThemePage() {
                                         <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
                                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                                         </div>
-                                        실시간 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
+                                        주요 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
                                     </h4>
                                 </div>
                                 <CleanStockList

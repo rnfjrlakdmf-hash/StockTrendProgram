@@ -168,7 +168,7 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-black text-white pb-20">
-            <Header title="관리자 대시보드" subtitle={`총 ${users.length}명의 회원이 가입되어 있으며, 실시간 방문 통계를 제공합니다.`} />
+            <Header title="관리자 대시보드" subtitle={`총 ${users.length}명의 회원이 가입되어 있으며, 방문 통계를 제공합니다.`} />
 
             <div className="max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
@@ -183,7 +183,7 @@ export default function AdminPage() {
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500"></span>
                                 </span>
-                                <h3 className="text-xl font-bold text-white">실시간 접속</h3>
+                                <h3 className="text-xl font-bold text-white">현재 접속</h3>
                             </div>
                             <Activity className="w-5 h-5 text-green-400" />
                         </div>
@@ -217,7 +217,7 @@ export default function AdminPage() {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">오늘 자정(KST)부터 실시간으로 집계된 페이지 뷰와 순 방문자입니다.</p>
+                        <p className="text-xs text-gray-500 mt-4">오늘 자정(KST)부터 집계된 페이지 뷰와 순 방문자입니다.</p>
                     </div>
 
                     {/* Total Cumulative PV */}
@@ -375,7 +375,7 @@ export default function AdminPage() {
                           <div>
                              <UserCheck className="w-10 h-10 text-blue-500 mb-6" />
                              <h3 className="text-xl font-bold text-white mb-2">프리미엄 관리 및 권한 조절</h3>
-                             <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들에게 실시간으로 Pro 등급을 활성화하여 제공할 수 있습니다. 스위치를 클릭하면 해당 등급 설정이 백엔드 DB와 대시보드 화면에 즉시 실시간 동기화 적용됩니다.</p>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들에게 Pro 등급을 활성화하여 제공할 수 있습니다. 스위치를 클릭하면 해당 등급 설정이 백엔드 DB와 대시보드 화면에 즉시 동기화 적용됩니다.</p>
                           </div>
                      </div>
 
@@ -385,12 +385,12 @@ export default function AdminPage() {
                              <Activity className="w-10 h-10 text-indigo-400 mb-6" />
                              <h3 className="text-xl font-bold text-white mb-2">일일 운영 보고서 자동 알림 (23:59:59)</h3>
                              <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                                 매일 밤 11시 59분 59초에 오늘 하루 동안 집계된 순방문자수(UV), 페이지뷰(PV), 실시간 동시 접속자 수 및 누적 가입자 현황을 관리자 계정으로 자동 발송합니다.
+                                 매일 밤 11시 59분 59초에 오늘 하루 동안 집계된 순방문자수(UV), 페이지뷰(PV), 동시 접속자 수 및 누적 가입자 현황을 관리자 계정으로 자동 발송합니다.
                              </p>
                              <div className="flex flex-col gap-3">
                                  <div className="flex items-center gap-2 text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-xl self-start">
                                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                     백엔드 실시간 스케줄러 정상 작동 중 (🟢 ON)
+                                     백엔드 스케줄러 정상 작동 중 (🟢 ON)
                                  </div>
                                  <button
                                      onClick={handleTestDailyReport}

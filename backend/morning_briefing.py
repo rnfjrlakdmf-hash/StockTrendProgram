@@ -70,7 +70,7 @@ class MorningBriefingService:
                     print(f"[MorningBriefing] Error for {symbol}: {e}")
 
     async def analyze_and_send(self, user_id: str, tokens: List[str], symbol: str):
-        """종목별 뉴스 분석 및 알림 발송 (3:3 초압축 버전)"""
+        """종목별 뉴스 분석 및 알림 발송 (호재/악재 2개 알림 분할 및 수급 정보 추가)"""
         stock_name = get_korean_stock_name(symbol) or GLOBAL_KOREAN_NAMES.get(symbol, symbol)
         
         # 뉴스 수집
@@ -83,32 +83,77 @@ class MorningBriefingService:
         if not analysis:
             return
 
-        # 메시지 구성
-        title = f"⚖️ {stock_name} AI 마켓 밸런스 브리핑"
-        
-        # 호재/악재 텍스트 구성 (3:3 초압축)
+        # 1. 수급 정보 요약 생성 (국내 주식 한정)
+        investor_summary = ""
+        clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+        is_kr = clean_sym.isdigit() and len(clean_sym) == 6
+        if is_kr:
+            try:
+                from korea_data import get_naver_investor_data
+                inv_res = get_naver_investor_data(symbol, trader_day=1)
+                if inv_res.get("status") == "success" and inv_res.get("data", {}).get("trend"):
+                    trend_data = inv_res["data"]["trend"][0]
+                    retail = trend_data.get("retail", 0)
+                    foreigner = trend_data.get("foreigner", 0)
+                    institution = trend_data.get("institution", 0)
+                    
+                    def format_volume(vol):
+                        if vol == 0:
+                            return "0주"
+                        sign = "+" if vol > 0 else ""
+                        abs_vol = abs(vol)
+                        if abs_vol >= 10000:
+                            return f"{sign}{vol / 10000:.1f}만주"
+                        elif abs_vol >= 1000:
+                            return f"{sign}{vol / 1000:.1f}천주"
+                        else:
+                            return f"{sign}{vol}주"
+                            
+                    investor_summary = f"\n📊 [전날 수급] 개인: {format_volume(retail)} | 외인: {format_volume(foreigner)} | 기관: {format_volume(institution)}"
+            except Exception as ie:
+                print(f"[MorningBriefing] Failed to fetch investor data for {stock_name}: {ie}")
+
+        # 호재/악재 텍스트 구성 (3:3 분할)
         pros_list = analysis.get('pros', [])[:3]
         cons_list = analysis.get('cons', [])[:3]
-        
-        pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
-        cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
         ai_opinion = analysis.get('ai_opinion', '신중한 판단 필요')
-        
-        # 알림창 최적화 (여백 최소화)
-        body = f"{pros_str}\n{cons_str}\n🤖 {ai_opinion}\n⚠️ 본 정보는 참고용입니다."
 
-        # 알림 발송
+        # === 1. 호재 알림 발송 ===
+        title_pro = f"⚖️ [호재] {stock_name} AI 브리핑"
+        pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
+        body_pro = f"{pros_str}{investor_summary}"
+        
         send_multicast_notification(
             tokens=tokens,
-            title=title,
-            body=body,
+            title=title_pro,
+            body=body_pro,
             data={
-                "type": "morning_briefing",
+                "type": "morning_briefing_pro",
                 "symbol": symbol,
                 "url": f"/discovery?q={symbol}"
             }
         )
-        print(f"[MorningBriefing] Sent 3:3 briefing for {stock_name} to {user_id}")
+
+        # 알림이 꼬이거나 씹히는 것을 방지하기 위해 0.5초 대기
+        await asyncio.sleep(0.5)
+
+        # === 2. 악재 알림 발송 ===
+        title_con = f"⚖️ [악재/리스크] {stock_name} AI 브리핑"
+        cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
+        body_con = f"{cons_str}\n🤖 {ai_opinion}\n⚠️ 본 정보는 참고용입니다."
+
+        send_multicast_notification(
+            tokens=tokens,
+            title=title_con,
+            body=body_con,
+            data={
+                "type": "morning_briefing_con",
+                "symbol": symbol,
+                "url": f"/discovery?q={symbol}"
+            }
+        )
+        
+        print(f"[MorningBriefing] Sent split briefing (pro/con) for {stock_name} to {user_id}")
 
     async def fetch_latest_news(self, symbol: str, stock_name: str) -> List[str]:
         """최신 뉴스 헤드라인 수집"""

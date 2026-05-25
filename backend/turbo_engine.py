@@ -22,8 +22,8 @@ class TurboEngine:
         self.cache_ttl = 300 
         logger.info("🚀 Turbo Engine Initialized - High Performance Mode")
 
-    def get_cache(self, key: str):
-        """저장된 유효 캐시가 있으면 즉시 반환 (조회 속도 0ms 목표)"""
+    def get_cache(self, key: str, allow_expired: bool = False):
+        """저장된 유효 캐시가 있으면 즉시 반환 (조회 속도 0ms 목표). allow_expired=True일 경우 만료된 캐시도 반환"""
         if key in self._cache:
             entry = self._cache[key]
             # 시간 만료 여부 확인
@@ -31,9 +31,11 @@ class TurboEngine:
             if time.time() - entry['timestamp'] < ttl:
                 logger.info(f"⚡ [Cache Hit] {key} - Turbo mode activated (0ms)")
                 return entry['data']
+            elif allow_expired:
+                logger.info(f"⚡ [Cache Hit (Stale)] {key} - Using expired cache as fallback (stale)")
+                return entry['data']
             else:
-                logger.info(f"⌛ [Cache Expired] {key} - Refreshing data...")
-                del self._cache[key] # 만료된 캐시 삭제
+                logger.info(f"⌛ [Cache Expired] {key} - Refreshing data (kept for fallback)...")
         return None
 
     def set_cache(self, key: str, data: Any, ttl: int = None):
@@ -165,7 +167,7 @@ CACHE_VERSION = "v8"
 def turbo_cache(ttl_seconds: int = 300):
     """
     터보 엔진 기반 캐싱 데코레이터.
-    함수의 인자를 기반으로 키를 생성하여, 중복 호출 시 0ms 응답을 달성합니다.
+    함수의 인자가 기반으로 키를 생성하여, 중복 호출 시 0ms 응답을 달성합니다.
     """
     def decorator(func):
         @wraps(func)
@@ -177,9 +179,25 @@ def turbo_cache(ttl_seconds: int = 300):
             if cached_data is not None:
                 return cached_data
                 
-            result = await func(*args, **kwargs)
-            if result is not None:
-                turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+            try:
+                result = await func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"❌ Error in async {func.__name__} for {args}: {e}. Trying stale fallback...")
+                result = None
+                
+            if result is not None and result is not False:
+                # 상태 코드가 있는 dict 구조일 경우, 성공(success)이 아니면 캐시하지 않음
+                if isinstance(result, dict) and result.get("status") == "error":
+                    pass
+                else:
+                    turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+                    return result
+            
+            # API 조회가 실패하거나 예외가 났을 때 만료된 기존 캐시 복구 시도
+            stale_data = turbo_engine.get_cache(cache_key, allow_expired=True)
+            if stale_data is not None:
+                logger.warning(f"⚠️ [Stale Fallback] Recovered stale data for async {func.__name__}")
+                return stale_data
             return result
 
         @wraps(func)
@@ -191,18 +209,25 @@ def turbo_cache(ttl_seconds: int = 300):
             if cached_data is not None:
                 return cached_data
                 
-            result = func(*args, **kwargs)
-            
-            # [Fix] Strictly prevent caching None, False, or empty data
-            if result is None or result is False:
-                return result
-
-            # 상태 코드가 있는 dict 구조일 경우, 성공(success)이 아니면 캐시하지 않음
-            if isinstance(result, dict) and result.get("status") == "error":
-                return result
-
-            if result:
-                turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+            try:
+                result = func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"❌ Error in sync {func.__name__} for {args}: {e}. Trying stale fallback...")
+                result = None
+                
+            if result is not None and result is not False:
+                # [Fix] Strictly prevent caching None, False, or empty data
+                if isinstance(result, dict) and result.get("status") == "error":
+                    pass
+                else:
+                    turbo_engine.set_cache(cache_key, result, ttl=ttl_seconds)
+                    return result
+                    
+            # API 조회가 실패하거나 예외가 났을 때 만료된 기존 캐시 복구 시도
+            stale_data = turbo_engine.get_cache(cache_key, allow_expired=True)
+            if stale_data is not None:
+                logger.warning(f"⚠️ [Stale Fallback] Recovered stale data for sync {func.__name__}")
+                return stale_data
             return result
 
         if asyncio.iscoroutinefunction(func):

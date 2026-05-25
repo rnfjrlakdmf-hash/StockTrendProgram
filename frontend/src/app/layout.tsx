@@ -11,12 +11,13 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
-  title: "AI Stock Analyst - 실시간 주식 시세 분석",
-  description: "AI 기반 실시간 주식 시장 데이터 분석 서비스. 본 정보는 투자 참고용이며 투자 권유가 아닙니다.",
+  title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
+  description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요. 테슬라, 엔비디아, 삼성전자 등 국내외 주식 분석 제공.",
+  keywords: ["AI 주식 분석", "무료 주가 알림", "주식 속보 알림", "장 마감 미국주식 시세", "테슬라 주가 분석", "엔비디아 주가 분석", "AI 모닝 브리핑", "주식 포트폴리오 진단"],
   metadataBase: new URL('https://stock-trend-program.co.kr'),
   openGraph: {
-    title: "AI Stock Analyst",
-    description: "인공지능 기반 실시간 주식 시장 데이터 분석 서비스",
+    title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스",
+    description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요.",
     url: 'https://stock-trend-program.co.kr',
     siteName: 'AI Stock Analyst',
     images: [
@@ -32,8 +33,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "AI Stock Analyst - 실시간 주식 분석",
-    description: "실시간 주식 시세 분석 서비스",
+    title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스",
+    description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요.",
     images: ['/og-image.png'],
     creator: '@StockTrendAI',
   },
@@ -54,35 +55,14 @@ export default function RootLayout({
       <head>
         {/* Google AdSense 게시자 ID 메타 힌트 */}
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
-        
-        {/* Google AdSense 공식 스크립트 (크롤러 검증용 HTML Head 고정형) */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
-          crossOrigin="anonymous"
-        />
-
-        {/* [v5.2.9] Universal Google AdSense TagError Silencer */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('error', function(e) {
-                if (e.message && (e.message.indexOf('TagError') !== -1 || e.message.indexOf('adsbygoogle') !== -1)) {
-                  e.stopImmediatePropagation();
-                  e.preventDefault();
-                }
-              }, true);
-              window.addEventListener('unhandledrejection', function(e) {
-                if (e.reason && e.reason.message && (e.reason.message.indexOf('TagError') !== -1 || e.reason.message.indexOf('adsbygoogle') !== -1)) {
-                  e.stopImmediatePropagation();
-                  e.preventDefault();
-                }
-              }, true);
-            `
-          }}
-        />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+        {/* Google AdSense 공식 스크립트 (Next.js 권장 최적화 Script 컴포넌트 적용) */}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <AuthProvider>
           <AnalyticsTracker />
           <div className="flex min-h-screen">
