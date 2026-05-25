@@ -1659,6 +1659,7 @@ def get_stock_financials(symbol: str):
                     us_gaap = facts["facts"]["us-gaap"]
                     
                     def get_annual_fact(keys):
+                        """연간(10-K) FY 데이터 추출 - {연도: 값} 딕셔너리 반환"""
                         for key in keys:
                             if key in us_gaap:
                                 units = us_gaap[key].get("units", {})
@@ -1679,6 +1680,44 @@ def get_stock_financials(symbol: str):
                                     return {y: info["val"] for y, info in annuals.items()}
                         return {}
                     
+                    def get_quarterly_fact(keys):
+                        """분기(10-Q) 데이터 추출 - 최근 4분기 [{quarter_label, val}, ...] 리스트 반환"""
+                        for key in keys:
+                            if key in us_gaap:
+                                units = us_gaap[key].get("units", {})
+                                usd_data = units.get("USD") or units.get("shares") or units.get("pure")
+                                if not usd_data:
+                                    continue
+                                # 10-Q 분기 데이터만 필터링 (fp가 Q1/Q2/Q3/Q4인 항목)
+                                quarters = {}
+                                for item in usd_data:
+                                    form = item.get("form", "")
+                                    fp = item.get("fp", "")
+                                    fy = item.get("fy")
+                                    val = item.get("val")
+                                    end_date = item.get("end", "")
+                                    # 분기 데이터: 10-Q form이고 Q1/Q2/Q3이거나, 10-K인데 fp가 Q4인 항목
+                                    if val is not None and fy and fp in ("Q1", "Q2", "Q3", "Q4"):
+                                        qkey = f"{fy}_{fp}"
+                                        if qkey not in quarters or end_date > quarters[qkey]["end"]:
+                                            quarters[qkey] = {"val": val, "end": end_date, "fy": fy, "fp": fp}
+                                if quarters:
+                                    # 최신순 정렬하여 최근 4분기 반환
+                                    sorted_quarters = sorted(quarters.items(), key=lambda x: x[1]["end"], reverse=True)[:4]
+                                    # 오래된 순서로 재정렬 (과거→현재)
+                                    sorted_quarters.sort(key=lambda x: x[1]["end"])
+                                    result = []
+                                    for qkey, qinfo in sorted_quarters:
+                                        fy_val = qinfo["fy"]
+                                        fp_val = qinfo["fp"]
+                                        qnum = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}.get(fp_val, 1)
+                                        result.append({
+                                            "label": f"{fy_val}.{qnum}Q",
+                                            "val": qinfo["val"]
+                                        })
+                                    return result
+                        return []
+                    
                     # Major US-GAAP tags
                     revenue_keys = ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "SalesRevenueGoodsNet"]
                     op_income_keys = ["OperatingIncomeLoss", "OperatingIncomeLossFromContinuingOperations"]
@@ -1687,6 +1726,7 @@ def get_stock_financials(symbol: str):
                     liabilities_keys = ["Liabilities"]
                     equity_keys = ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]
                     
+                    # 연간 데이터 추출
                     rev_data = get_annual_fact(revenue_keys)
                     op_data = get_annual_fact(op_income_keys)
                     net_data = get_annual_fact(net_income_keys)
@@ -1694,8 +1734,16 @@ def get_stock_financials(symbol: str):
                     liab_data = get_annual_fact(liabilities_keys)
                     eq_data = get_annual_fact(equity_keys)
                     
+                    # 분기 데이터 추출
+                    rev_q = get_quarterly_fact(revenue_keys)
+                    op_q = get_quarterly_fact(op_income_keys)
+                    net_q = get_quarterly_fact(net_income_keys)
+                    
                     # Extract common years (up to 4 years)
                     all_years = set(rev_data.keys()) & set(assets_data.keys()) & set(eq_data.keys())
+                    if not all_years:
+                        # assets 없이 rev+net 교집합으로 폴백
+                        all_years = set(rev_data.keys()) & set(net_data.keys())
                     available_years = sorted(list(all_years), reverse=True)[:4]
                     available_years.sort() # Past to Recent
                     
@@ -1704,69 +1752,101 @@ def get_stock_financials(symbol: str):
                             usd_krw_rate = float(get_exchange_rate("USD"))
                         except:
                             usd_krw_rate = 1350.0
-                            
-                        clean_headers = [f"{y}/12" for y in available_years]
+                        
+                        # ---- 연간 헤더 + 분기 헤더 합산 ----
+                        annual_headers = [f"{y}/12" for y in available_years]
+                        quarterly_headers = [q["label"] for q in rev_q] if rev_q else []
+                        # 연간 4개 + 분기 최대 4개 = 최대 8개
+                        all_headers = annual_headers + quarterly_headers
+                        
                         full_data = {}
                         
-                        def fill_metric(val_map, key_name):
-                            vals = []
+                        def usd_to_eok(val_usd):
+                            if val_usd is None:
+                                return None
+                            return round((val_usd * usd_krw_rate) / 100_000_000, 2)
+                        
+                        def fill_metric_combined(annual_map, quarterly_list, key_name):
+                            """연간 값 + 분기 값을 합산하여 full_data에 저장"""
+                            annual_vals = []
                             for y in available_years:
-                                val_usd = val_map.get(y)
-                                if val_usd is not None:
-                                    # Convert USD to Eok KRW
-                                    val_eok = (val_usd * usd_krw_rate) / 100_000_000
-                                    vals.append(round(val_eok, 2))
-                                else:
-                                    vals.append(None)
-                            full_data[key_name] = { "dates": clean_headers, "values": vals }
+                                val_usd = annual_map.get(y)
+                                annual_vals.append(usd_to_eok(val_usd))
+                            
+                            quarterly_vals = []
+                            for q in quarterly_list:
+                                quarterly_vals.append(usd_to_eok(q["val"]))
+                            
+                            full_data[key_name] = {
+                                "dates": all_headers,
+                                "values": annual_vals + quarterly_vals
+                            }
                         
-                        fill_metric(rev_data, "revenue")
-                        fill_metric(op_data, "operating_income")
-                        fill_metric(net_data, "net_income")
+                        fill_metric_combined(rev_data, rev_q, "revenue")
+                        fill_metric_combined(op_data, op_q, "operating_income")
+                        fill_metric_combined(net_data, net_q, "net_income")
                         
-                        # operating_margin (%)
+                        # operating_margin (%) - 연간만 계산 후 분기는 None
                         op_margin_vals = []
                         for y in available_years:
                             r = rev_data.get(y)
                             o = op_data.get(y)
-                            if r and o:
+                            if r and o and r != 0:
                                 op_margin_vals.append(round((o / r) * 100, 2))
                             else:
                                 op_margin_vals.append(None)
-                        full_data["operating_margin"] = { "dates": clean_headers, "values": op_margin_vals }
+                        # 분기 마진 계산
+                        for i, q in enumerate(rev_q):
+                            r_q = q["val"]
+                            o_q = op_q[i]["val"] if i < len(op_q) else None
+                            if r_q and o_q and r_q != 0:
+                                op_margin_vals.append(round((o_q / r_q) * 100, 2))
+                            else:
+                                op_margin_vals.append(None)
+                        full_data["operating_margin"] = { "dates": all_headers, "values": op_margin_vals }
                         
-                        # net_income_margin (%)
+                        # net_income_margin (%) - 연간 + 분기
                         net_margin_vals = []
                         for y in available_years:
                             r = rev_data.get(y)
                             n = net_data.get(y)
-                            if r and n:
+                            if r and n and r != 0:
                                 net_margin_vals.append(round((n / r) * 100, 2))
                             else:
                                 net_margin_vals.append(None)
-                        full_data["net_income_margin"] = { "dates": clean_headers, "values": net_margin_vals }
+                        for i, q in enumerate(rev_q):
+                            r_q = q["val"]
+                            n_q = net_q[i]["val"] if i < len(net_q) else None
+                            if r_q and n_q and r_q != 0:
+                                net_margin_vals.append(round((n_q / r_q) * 100, 2))
+                            else:
+                                net_margin_vals.append(None)
+                        full_data["net_income_margin"] = { "dates": all_headers, "values": net_margin_vals }
                         
-                        # debt_ratio (%)
+                        # debt_ratio (%) - 연간만 (분기 대차대조표는 추출 복잡)
                         debt_vals = []
                         for y in available_years:
                             l = liab_data.get(y)
                             e = eq_data.get(y)
-                            if l is not None and e:
+                            if l is not None and e and e != 0:
                                 debt_vals.append(round((l / e) * 100, 2))
                             else:
                                 debt_vals.append(None)
-                        full_data["debt_ratio"] = { "dates": clean_headers, "values": debt_vals }
+                        # 분기는 None 패딩
+                        debt_vals_combined = debt_vals + [None] * len(quarterly_headers)
+                        full_data["debt_ratio"] = { "dates": all_headers, "values": debt_vals_combined }
                         
-                        # roe (%)
+                        # roe (%) - 연간만
                         roe_vals = []
                         for y in available_years:
                             n = net_data.get(y)
                             e = eq_data.get(y)
-                            if n is not None and e:
+                            if n is not None and e and e != 0:
                                 roe_vals.append(round((n / e) * 100, 2))
                             else:
                                 roe_vals.append(None)
-                        full_data["roe"] = { "dates": clean_headers, "values": roe_vals }
+                        roe_vals_combined = roe_vals + [None] * len(quarterly_headers)
+                        full_data["roe"] = { "dates": all_headers, "values": roe_vals_combined }
                         
                         # Try to get live market info from yfinance for PER, PBR, Cap
                         try:
@@ -1787,16 +1867,13 @@ def get_stock_financials(symbol: str):
                                 pbr_vals.append(latest_pbr if isinstance(latest_pbr, (int, float)) else None)
                             else:
                                 per_vals.append(None)
-                                per_vals.append(None)
-                                
-                        # Handle length mismatch if any
-                        per_vals = per_vals[:len(available_years)]
-                        pbr_vals = pbr_vals[:len(available_years)]
-                        while len(per_vals) < len(available_years): per_vals.append(None)
-                        while len(pbr_vals) < len(available_years): pbr_vals.append(None)
+                                pbr_vals.append(None)
+                        # 분기 패딩
+                        per_vals_combined = per_vals + [None] * len(quarterly_headers)
+                        pbr_vals_combined = pbr_vals + [None] * len(quarterly_headers)
                         
-                        full_data["per"] = { "dates": clean_headers, "values": per_vals }
-                        full_data["pbr"] = { "dates": clean_headers, "values": pbr_vals }
+                        full_data["per"] = { "dates": all_headers, "values": per_vals_combined }
+                        full_data["pbr"] = { "dates": all_headers, "values": pbr_vals_combined }
                         
                         mcap = info.get('marketCap') or 0
                         financials = {

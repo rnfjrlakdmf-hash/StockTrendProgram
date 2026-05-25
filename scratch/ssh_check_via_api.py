@@ -29,20 +29,15 @@ def check_via_api():
         except:
             print(res)
             
-        # 2. API - 최근 alerts 호출 (최대 10개)
-        print("\n=== API: /api/alerts (Recent Alerts) ===")
-        stdin, stdout, stderr = ssh.exec_command("curl -s http://127.0.0.1:8000/api/alerts")
-        res_alerts = stdout.read().decode('utf-8', 'ignore')
+        # 2. API - 미국 주식 재무 데이터 연동 호출 테스트
+        print("\n=== API: /api/analysis/stock/AAPL/indicators ===")
+        stdin, stdout, stderr = ssh.exec_command("curl -s 'http://127.0.0.1:8000/api/analysis/stock/AAPL/indicators?freq=0&finGubun=IFRSL&category=1'")
+        res_indicators = stdout.read().decode('utf-8', 'ignore')
         try:
-            alerts_data = json.loads(res_alerts)
-            if isinstance(alerts_data, list):
-                print(f"Total Alerts Count: {len(alerts_data)}")
-                for alert in alerts_data[:10]:
-                    print(f"- [{alert.get('symbol')}] {alert.get('title')} ({alert.get('created_at')})")
-            else:
-                print(json.dumps(alerts_data, indent=2, ensure_ascii=False))
+            ind_data = json.loads(res_indicators)
+            print(json.dumps(ind_data, indent=2, ensure_ascii=False))
         except Exception as e:
-            print(f"Error parsing alerts: {e}\nRaw response: {res_alerts}")
+            print(f"Error parsing indicators: {e}\nRaw response: {res_indicators}")
 
         # 2.5. systemd 서비스 최근 로그 50줄 출력
         print("\n=== systemd Service Logs (Last 50 lines) ===")

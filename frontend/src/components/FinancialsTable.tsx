@@ -159,9 +159,15 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
     const dates = firstMetric.dates;
     
-    // 연간/분기 데이터 분리 (네이버 금융 cop_analysis 기준: 앞 4개 연간, 뒤 6개 분기)
-    const annualDates = dates.slice(0, 4);
-    const quarterlyDates = dates.slice(4);
+    // 연간/분기 데이터 스마트 분리:
+    // - 'Q' 포함 레이블 (예: 2024.1Q, 2024.2Q) → 분기
+    // - '/12', '/3', '/6', '/9' 형식 또는 4자리 숫자만 → 연간
+    // - 'Q' 없고 'E' 포함 → 추정(연간으로 취급)
+    const isQuarterDate = (d: string) => d?.includes('Q') || d?.includes('분기');
+    const annualDates = dates.filter((d: string) => !isQuarterDate(d));
+    const quarterlyDates = dates.filter((d: string) => isQuarterDate(d));
+    // 실제로 분기 데이터가 있는지 (None이 아닌 값이 하나라도 있는지)
+    const hasQuarterlyData = quarterlyDates.length > 0;
 
     const isEstimate = (d: string) => d?.includes('(E)');
 
@@ -173,7 +179,11 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     <h4 className="text-lg font-bold text-white flex items-center gap-2">
                         📋 기업 상세 실적 분석
                     </h4>
-                    <p className="text-[10px] text-gray-500 mt-0.5 ml-7 italic">네이버 금융 제공 데이터 기반 (단위: 억원/원/%)</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5 ml-7 italic">
+                        {currency === 'USD'
+                            ? '📡 SEC EDGAR 공식 공시 데이터 기반 (달러→원 환산, 억원 단위)'
+                            : '📊 네이버 금융 제공 데이터 기반 (단위: 억원/원/%)'}
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -209,21 +219,26 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                         <th colSpan={annualDates.length} className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest text-emerald-400 text-center border-b border-emerald-500/20 bg-emerald-500/5">
                                             📊 연간 실적 (Yearly)
                                         </th>
-                                        <th colSpan={quarterlyDates.length} className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest text-blue-400 text-center border-b border-blue-500/20 bg-blue-500/5 border-l border-white/10">
-                                            ⏰ 분기 실적 (Quarterly)
-                                        </th>
+                                        {hasQuarterlyData && (
+                                            <th colSpan={quarterlyDates.length} className="py-1.5 px-3 text-[10px] font-black uppercase tracking-widest text-blue-400 text-center border-b border-blue-500/20 bg-blue-500/5 border-l border-white/10">
+                                                ⏰ 분기 실적 (Quarterly)
+                                            </th>
+                                        )}
                                     </tr>
                                     {/* 2층: 날짜 헤더 */}
                                     <tr className="border-b border-white/10">
                                         <th className="py-2 px-4 text-gray-500 text-[10px] font-black uppercase tracking-tighter sticky left-0 bg-black/90 z-20 backdrop-blur-md w-32 border-r border-white/5">지표</th>
-                                        {dates.map((date, idx) => {
-                                            const isQStart = idx === 4;
+                                        {dates.map((date: string, idx: number) => {
+                                            const isQDate = isQuarterDate(date);
+                                            const isFirstQ = isQDate && !isQuarterDate(dates[idx - 1] || '');
                                             return (
                                                 <th 
                                                     key={idx} 
                                                     className={`py-2 px-3 text-xs font-bold text-center whitespace-nowrap ${
-                                                        isEstimate(date) ? 'text-purple-400' : 'text-gray-300'
-                                                    } ${isQStart ? 'border-l border-white/20' : ''}`}
+                                                        isEstimate(date) ? 'text-purple-400' 
+                                                        : isQDate ? 'text-blue-300' 
+                                                        : 'text-gray-300'
+                                                    } ${isFirstQ ? 'border-l border-white/20' : ''}`}
                                                 >
                                                     {date}
                                                 </th>
@@ -266,8 +281,8 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
                                                 {/* 값들 */}
                                                 {metric.values.map((val: any, idx: number) => {
-                                                    const isQuarter = idx >= 4;
-                                                    const isQStart = idx === 4;
+                                                    const isQuarter = isQuarterDate(dates[idx] || '');
+                                                    const isFirstQ = isQuarter && !isQuarterDate(dates[idx - 1] || '');
                                                     const trend = getTrend(metric.values, idx);
                                                     const colorClass = val !== null
                                                         ? getColorClass(val, config.higherIsBetter, val === 0)
@@ -277,8 +292,8 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                         <td 
                                                             key={idx} 
                                                             className={`py-3 px-3 text-center transition-colors ${
-                                                                isEstimate(dates[idx]) ? 'bg-purple-500/5' : isQuarter ? 'bg-blue-400/2' : 'bg-emerald-400/2'
-                                                            } ${isQStart ? 'border-l border-white/20' : ''}`}
+                                                                isEstimate(dates[idx]) ? 'bg-purple-500/5' : isQuarter ? 'bg-blue-500/[0.04]' : 'bg-emerald-400/[0.02]'
+                                                            } ${isFirstQ ? 'border-l border-blue-500/30' : ''}`}
                                                         >
                                                             {val === null ? (
                                                                 <span className="text-gray-700 text-sm">-</span>
