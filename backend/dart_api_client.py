@@ -205,8 +205,248 @@ class DartApiClient:
 
         return summary
 
-# ─── 전역 단일 인스턴스 ──────────────────────────────────────────────────────
-dart_api_client = DartApiClient()
+    def _parse_amount(self, amt_str: str):
+        """금액 문자열 → int 변환 (원 단위). 실패 시 None."""
+        if not amt_str:
+            return None
+        cleaned = amt_str.replace(",", "").strip()
+        if cleaned in ("", "-", "N/A", "nan"):
+            return None
+        try:
+            return int(cleaned)
+        except:
+            return None
+
+    def _extract_metrics_from_items(self, items: list) -> dict:
+        """
+        DART fnlttSinglAcnt 응답 리스트에서 핵심 재무 지표 추출.
+        연결재무제표(CFS) 우선, 없으면 별도(OFS) 사용.
+        반환: { revenue, operating_income, net_income, total_assets, total_liabilities, total_equity }
+        """
+        # CFS 우선
+        cfs = [i for i in items if i.get("fs_div") == "CFS"]
+        target = cfs if cfs else items
+
+        result = {}
+        for item in target:
+            acc = item.get("account_nm", "").replace(" ", "")
+            amt = self._parse_amount(item.get("thstrm_amount", ""))
+            if amt is None:
+                continue
+            if ("매출액" in acc or acc == "수익(매출액)") and "revenue" not in result:
+                result["revenue"] = amt
+            elif "영업이익" in acc and "operating_income" not in result:
+                result["operating_income"] = amt
+            elif "당기순이익" in acc and "net_income" not in result:
+                result["net_income"] = amt
+            elif "자산총계" in acc and "total_assets" not in result:
+                result["total_assets"] = amt
+            elif "부채총계" in acc and "total_liabilities" not in result:
+                result["total_liabilities"] = amt
+            elif "자본총계" in acc and "total_equity" not in result:
+                result["total_equity"] = amt
+        return result
+
+    def get_full_data_for_financials(self, stock_code: str) -> dict:
+        """
+        ✅ [합법적 공공 데이터] DART 공식 API 기반 FinancialsTable full_data 구성
+        
+        네이버 스크래핑을 완전히 대체합니다.
+        - 연간: 최근 4개 사업연도 (사업보고서 11011)
+        - 분기: 최근 4개 분기 (1Q: 11014 / 2Q(반기): 11012 / 3Q: 11013 / 4Q는 연간에 포함)
+        
+        반환: {
+          "success": True,
+          "full_data": {
+            "revenue":          { "dates": [...], "values": [...] },
+            "operating_income": { "dates": [...], "values": [...] },
+            "net_income":       { "dates": [...], "values": [...] },
+            "operating_margin": { "dates": [...], "values": [...] },
+            "net_income_margin":{ "dates": [...], "values": [...] },
+            "debt_ratio":       { "dates": [...], "values": [...] },
+            "roe":              { "dates": [...], "values": [...] },
+          },
+          "summary": { "per": ..., "pbr": ..., "roe": ... }
+        }
+        """
+        if not self.is_available():
+            return {"success": False, "error": "DART_API_KEY not set"}
+
+        corp_code = self._load_corp_code(stock_code)
+        if not corp_code:
+            return {"success": False, "error": f"Corp code not found for {stock_code}"}
+
+        import datetime
+        current_year = datetime.datetime.now().year
+        current_month = datetime.datetime.now().month
+
+        # ─── 1. 연간 데이터 수집 (사업보고서 11011) ───────────────────────
+        # 가장 최근 확정 연간 보고서 기준: 현재가 4월 이후면 작년 연보 포함, 이전이면 재작년부터
+        annual_start_year = current_year - 1 if current_month >= 4 else current_year - 2
+        annual_years = [str(annual_start_year - i) for i in range(4)]  # 최근→과거 순
+        annual_years.reverse()  # 과거→최근 순
+
+        annual_data = {}  # { "2022": {metrics}, ... }
+        for year in annual_years:
+            items = self.get_financial_sheets(corp_code, year, "11011")
+            if items:
+                metrics = self._extract_metrics_from_items(items)
+                if metrics.get("revenue") is not None or metrics.get("operating_income") is not None:
+                    annual_data[year] = metrics
+
+        # ─── 2. 분기 데이터 수집 ──────────────────────────────────────────
+        # 분기 보고서 코드: 11014=1분기(3월), 11012=반기(6월), 11013=3분기(9월)
+        # 최신 연도부터 최근 4개 분기 수집
+        quarter_schedule = []
+        for y_offset in range(2):
+            yr = str(current_year - y_offset)
+            # 현재 월 기준으로 이미 공시된 분기만 포함
+            if y_offset == 0:
+                if current_month >= 11:  # 11월 이후: 3Q까지 공시
+                    quarter_schedule.extend([
+                        (yr, "11013", f"{yr}/09"),
+                        (yr, "11012", f"{yr}/06"),
+                        (yr, "11014", f"{yr}/03"),
+                    ])
+                elif current_month >= 8:  # 8월 이후: 2Q(반기)까지 공시
+                    quarter_schedule.extend([
+                        (yr, "11012", f"{yr}/06"),
+                        (yr, "11014", f"{yr}/03"),
+                    ])
+                elif current_month >= 5:  # 5월 이후: 1Q까지 공시
+                    quarter_schedule.extend([
+                        (yr, "11014", f"{yr}/03"),
+                    ])
+                # 1~4월은 작년 3Q 이후 데이터 없음
+            else:
+                # 작년은 전체 3개 분기 포함
+                quarter_schedule.extend([
+                    (yr, "11013", f"{yr}/09"),
+                    (yr, "11012", f"{yr}/06"),
+                    (yr, "11014", f"{yr}/03"),
+                ])
+
+        quarterly_data = []  # [{ "label": "2025/03", metrics... }, ...]
+        for (yr, reprt_code, label) in quarter_schedule:
+            if len(quarterly_data) >= 4:
+                break
+            items = self.get_financial_sheets(corp_code, yr, reprt_code)
+            if items:
+                metrics = self._extract_metrics_from_items(items)
+                if metrics.get("revenue") is not None or metrics.get("operating_income") is not None:
+                    quarterly_data.append({"label": label, **metrics})
+
+        # 과거→최근 순으로 정렬
+        quarterly_data.sort(key=lambda x: x["label"])
+
+        # ─── 3. full_data 조립 ─────────────────────────────────────────────
+        # 연간 날짜 헤더 (예: 2022/12, 2023/12)
+        ann_labels = [f"{y}/12" for y in sorted(annual_data.keys())]
+        qtr_labels = [q["label"] for q in quarterly_data]
+        all_labels = ann_labels + qtr_labels
+        total = len(all_labels)
+
+        if total == 0:
+            return {"success": False, "error": "No data retrieved from DART"}
+
+        def to_eok(val):
+            """원 → 억원 변환"""
+            if val is None:
+                return None
+            return round(val / 100_000_000, 2)
+
+        def build_series(annual_key, quarterly_key=None):
+            qkey = quarterly_key or annual_key
+            ann_vals = [to_eok(annual_data.get(y, {}).get(annual_key)) for y in sorted(annual_data.keys())]
+            qtr_vals = [to_eok(q.get(qkey)) for q in quarterly_data]
+            return {"dates": all_labels, "values": ann_vals + qtr_vals}
+
+        full_data = {}
+        full_data["revenue"]          = build_series("revenue")
+        full_data["operating_income"] = build_series("operating_income")
+        full_data["net_income"]       = build_series("net_income")
+
+        # 영업이익률 (%)
+        margin_vals = []
+        for i, label in enumerate(all_labels):
+            if i < len(ann_labels):
+                yr = sorted(annual_data.keys())[i] if i < len(annual_data) else None
+                r = annual_data.get(yr, {}).get("revenue") if yr else None
+                o = annual_data.get(yr, {}).get("operating_income") if yr else None
+            else:
+                qi = i - len(ann_labels)
+                r = quarterly_data[qi].get("revenue") if qi < len(quarterly_data) else None
+                o = quarterly_data[qi].get("operating_income") if qi < len(quarterly_data) else None
+            if r and o and r != 0:
+                margin_vals.append(round((o / r) * 100, 2))
+            else:
+                margin_vals.append(None)
+        full_data["operating_margin"] = {"dates": all_labels, "values": margin_vals}
+
+        # 순이익률 (%)
+        net_margin_vals = []
+        for i, label in enumerate(all_labels):
+            if i < len(ann_labels):
+                yr = sorted(annual_data.keys())[i] if i < len(annual_data) else None
+                r = annual_data.get(yr, {}).get("revenue") if yr else None
+                n = annual_data.get(yr, {}).get("net_income") if yr else None
+            else:
+                qi = i - len(ann_labels)
+                r = quarterly_data[qi].get("revenue") if qi < len(quarterly_data) else None
+                n = quarterly_data[qi].get("net_income") if qi < len(quarterly_data) else None
+            if r and n and r != 0:
+                net_margin_vals.append(round((n / r) * 100, 2))
+            else:
+                net_margin_vals.append(None)
+        full_data["net_income_margin"] = {"dates": all_labels, "values": net_margin_vals}
+
+        # 부채비율 (%) - 연간만 (분기 대차대조표는 API 응답이 불안정)
+        debt_vals = []
+        for yr in sorted(annual_data.keys()):
+            l = annual_data[yr].get("total_liabilities")
+            e = annual_data[yr].get("total_equity")
+            if l is not None and e and e != 0:
+                debt_vals.append(round((l / e) * 100, 2))
+            else:
+                debt_vals.append(None)
+        debt_vals += [None] * len(qtr_labels)
+        full_data["debt_ratio"] = {"dates": all_labels, "values": debt_vals}
+
+        # ROE (%) - 연간만
+        roe_vals = []
+        for yr in sorted(annual_data.keys()):
+            n = annual_data[yr].get("net_income")
+            e = annual_data[yr].get("total_equity")
+            if n is not None and e and e != 0:
+                roe_vals.append(round((n / e) * 100, 2))
+            else:
+                roe_vals.append(None)
+        roe_vals += [None] * len(qtr_labels)
+        full_data["roe"] = {"dates": all_labels, "values": roe_vals}
+
+        # ─── 4. 요약 정보 (최신 연간 기준) ───────────────────────────────
+        latest_annual = annual_data.get(sorted(annual_data.keys())[-1], {}) if annual_data else {}
+        rev_latest = latest_annual.get("revenue")
+        oi_latest = latest_annual.get("operating_income")
+        ni_latest = latest_annual.get("net_income")
+        l_latest = latest_annual.get("total_liabilities")
+        e_latest = latest_annual.get("total_equity")
+
+        summary_roe = round((ni_latest / e_latest) * 100, 2) if ni_latest and e_latest else None
+        summary_debt = round((l_latest / e_latest) * 100, 2) if l_latest and e_latest else None
+
+        return {
+            "success": True,
+            "full_data": full_data,
+            "summary": {
+                "revenue_eok": to_eok(rev_latest),
+                "operating_income_eok": to_eok(oi_latest),
+                "net_income_eok": to_eok(ni_latest),
+                "debt_ratio": summary_debt,
+                "roe": summary_roe,
+            },
+            "source": "dart_official_api"  # 합법적 데이터 출처 표시
+        }
 
 
 # ─── 전역 단일 인스턴스 ──────────────────────────────────────────────────────

@@ -73,6 +73,25 @@ def deploy_remote():
             print("Failed to parse JSON response:", e)
             print("Raw response:", res)
 
+        # 5. 한국 종목 검증 (005930 삼성전자)
+        print("\n=== Verifying 005930 (Samsung) financials API on EC2 ===")
+        stdin, stdout, stderr = ssh.exec_command("curl -s 'http://127.0.0.1:8000/api/analysis/stock/005930/financials'")
+        res_kr = stdout.read().decode('utf-8', 'ignore')
+        try:
+            kr_json = json.loads(res_kr)
+            data_kr = kr_json.get('data', {})
+            detailed_kr = data_kr.get('detailed', {})
+            source_kr = detailed_kr.get('source', 'unknown')
+            print(f"Source: {source_kr}")  # dart_official_api 이어야 함
+            if 'full_data' in detailed_kr:
+                rev_kr = detailed_kr['full_data'].get('revenue', {})
+                print(f"Revenue dates: {rev_kr.get('dates')}")
+                print(f"Revenue values (억원): {rev_kr.get('values')}")
+            else:
+                print("full_data MISSING - DART fallback to Naver")
+        except Exception as e:
+            print("KR parse error:", e)
+
         ssh.close()
         print("\n=== Deployment Completed! ===")
     except Exception as e:

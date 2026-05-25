@@ -2054,44 +2054,75 @@ def get_stock_financials(symbol: str):
                             "pbr": "N/A",
                             "roe": "N/A"}}}
 
-    # --- DOMESTIC STOCK LOGIC (Naver) ---
-    # ─── [DART API 공식 재무 정보 수집 우선 도입] ──────────────────────────
+    # --- DOMESTIC STOCK LOGIC ---
+    # ─── [1순위] DART 공식 API (금융감독원) - 완전 합법적 공공 데이터 ──────────
     from dart_api_client import dart_api_client
     if dart_api_client.is_available():
         try:
             clean_code = symbol.split('.')[0]
-            dart_fin = dart_api_client.get_korean_financial_summary(clean_code)
-            if dart_fin:
-                # Naver 크롤링에서 얻은 데이터와 KIS 가격을 조합하여 결과 구성
-                price_data = gather_naver_stock_data(symbol) or {
-                    "market_cap_str": "N/A", "per": "N/A", "pbr": "N/A", "roe": "N/A"
-                }
+            dart_result = dart_api_client.get_full_data_for_financials(clean_code)
+            if dart_result and dart_result.get("success") and dart_result.get("full_data"):
+                full_data = dart_result["full_data"]
+                dart_summary = dart_result.get("summary", {})
+                
+                # 시장 지표(시총·PER·PBR·ROE)는 기존 네이버/거래소 API에서 보완
+                price_data = gather_naver_stock_data(symbol) or {}
+                market_per = str(price_data.get("per", "N/A"))
+                market_pbr = str(price_data.get("pbr", "N/A"))
+                market_roe = price_data.get("roe", dart_summary.get("roe", "N/A"))
+                market_cap = price_data.get("market_cap_str", "N/A")
+                
+                # PER·PBR 배열 추가 (DART는 제공 안 함 → 최신값만 넣고 나머지 None)
+                all_dates = full_data["revenue"]["dates"] if "revenue" in full_data else []
+                n_dates = len(all_dates)
+                per_vals = [None] * (n_dates - 1) + [
+                    float(market_per) if market_per not in ("N/A", "None", "") else None
+                ] if n_dates > 0 else []
+                pbr_vals = [None] * (n_dates - 1) + [
+                    float(market_pbr) if market_pbr not in ("N/A", "None", "") else None
+                ] if n_dates > 0 else []
+                
+                try:
+                    per_vals[-1] = float(market_per) if market_per not in ("N/A", "None", "") else None
+                    pbr_vals[-1] = float(market_pbr) if market_pbr not in ("N/A", "None", "") else None
+                except:
+                    pass
+
+                full_data["per"] = {"dates": all_dates, "values": per_vals}
+                full_data["pbr"] = {"dates": all_dates, "values": pbr_vals}
+                
+                rev_eok = dart_summary.get("revenue_eok")
+                oi_eok = dart_summary.get("operating_income_eok")
+                ni_eok = dart_summary.get("net_income_eok")
+                debt_pct = dart_summary.get("debt_ratio")
                 
                 financials = {
-                    "market_cap": price_data.get("market_cap_str", "N/A"),
-                    "per": str(price_data.get("per", "N/A")),
-                    "pbr": str(price_data.get("pbr", "N/A")),
-                    "roe": price_data.get("roe", "N/A"),
-                    "revenue": dart_fin["revenue"],
-                    "operating_income": dart_fin["operating_income"],
-                    "net_income": dart_fin["net_income"],
-                    "total_assets": dart_fin["total_assets"],
-                    "debt_ratio": dart_fin["debt_ratio"],
+                    "market_cap": market_cap,
+                    "per": market_per,
+                    "pbr": market_pbr,
+                    "roe": market_roe,
+                    "revenue": f"{rev_eok:,.0f}" if rev_eok else "N/A",
+                    "operating_income": f"{oi_eok:,.0f}" if oi_eok else "N/A",
+                    "net_income": f"{ni_eok:,.0f}" if ni_eok else "N/A",
+                    "debt_ratio": f"{debt_pct:.2f}%" if debt_pct else "N/A",
                     "detailed": {
                         "success": True,
+                        "source": "dart_official_api",
                         "summary": {
-                            "per": price_data.get("per", "N/A"),
-                            "pbr": price_data.get("pbr", "N/A"),
-                            "roe": price_data.get("roe", "N/A")
+                            "per": market_per,
+                            "pbr": market_pbr,
+                            "roe": market_roe
                         },
-                        "annual": [],  # 최소한의 요약 필드 지원
-                        "quarterly": []
+                        "full_data": full_data
                     }
                 }
-                print(f"[DART-API] 재무 정보 조회 성공 [{symbol}]")
+                print(f"[DART-API] ✅ 금감원 DART 공식 API 재무제표 성공 [{symbol}] "
+                      f"(연간 {len([d for d in all_dates if d.endswith('/12')])}개 + "
+                      f"분기 {len([d for d in all_dates if not d.endswith('/12')])}개)")
                 return financials
         except Exception as e:
             print(f"[DART-API] 재무 정보 조회 실패 ({symbol}): {e}. Naver 크롤링으로 대체합니다.")
+
 
     try:
         res = gather_naver_stock_data(symbol)
