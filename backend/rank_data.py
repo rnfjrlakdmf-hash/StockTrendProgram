@@ -362,41 +362,7 @@ def get_market_movers(market="KR"):
     Fetch Top 5 Gainers and Losers.
     Priority: KIS API (Real-time) > Naver/Yahoo (Fallback)
     """
-    # 1. Try KIS API (Only for KR and if configured)
     if market == "KR":
-        try:
-            # Try to get global client or use env vars
-            import os
-            app_key = os.getenv("KIS_APP_KEY")
-            secret = os.getenv("KIS_APP_SECRET")
-            account = os.getenv("KIS_ACCOUNT")
-            
-            if app_key and secret:
-                from kis_api import KisApi
-                # New instance created, but access_token is now cached at class level!
-                # So this is fast.
-                kis = KisApi(app_key, secret, account)
-                
-                # Fetch Gainers (0) and Losers (1)
-                gainers = kis.get_fluctuation_rank("0")
-                if not gainers:
-                     # If KIS fails or empty, fallback to Naver
-                     pass
-                else:
-                    losers = kis.get_fluctuation_rank("1")
-                    
-                    if gainers or losers:
-                        return {
-                            "gainers": gainers,
-                            "losers": losers
-                        }
-                # If we are here, it means KIS was configured but returned no data/fail.
-                # Fallback to Naver.
-        except Exception as e:
-            # print(f"KIS Ranking Error: {e}")
-            pass
-
-        # 2. Fallback: Naver Finance Crawling
         return crawl_naver_movers()
         
     elif market == "US":

@@ -11,7 +11,6 @@ from functools import lru_cache
 from typing import Dict, List, Optional, Any
 from turbo_engine import turbo_cache
 from stock_names import STOCK_MAP
-from kis_api_v2 import kis_api_v2
 
 # [Config]
 HEADER = {
@@ -262,57 +261,6 @@ def gather_naver_stock_data(symbol: str):
     Fetch comprehensive stock info from Naver (Price, Name, Market Type, Detailed Financials).
     [v6.0.0] Uses new JSON APIs as primary sources for Domestic Stocks.
     """
-    # ─── [KIS API V2 공식 시세 조회 최우선 도입] ──────────────────────────
-    if kis_api_v2.is_available():
-        try:
-            kis_data = kis_api_v2.get_current_price(symbol)
-            if kis_data:
-                price = kis_data["price"]
-                change_val = kis_data["change_amt"]
-                change_rate = kis_data["change_rate"]
-                labeled_change_pct = f"[정규] {change_rate:+.2f}%"
-                
-                # 안전한 종목 한글 이름
-                name = get_korean_name(symbol) or symbol
-                code = symbol.split('.')[0]
-                
-                res_data = {
-                    "name": name,
-                    "description": "",
-                    "market_type": "KS" if symbol.endswith(".KS") else "KQ",
-                    "code": code,
-                    "sector": "Unknown",
-                    "price": price,
-                    "change": labeled_change_pct,
-                    "change_val": change_val,
-                    "change_percent": labeled_change_pct,
-                    "prev_close": price - change_val,
-                    "regular_close": price,
-                    "market_cap_str": "N/A",
-                    "per": None,
-                    "pbr": None,
-                    "eps": None,
-                    "bps": None,
-                    "dvr": None,
-                    "est_per": None,
-                    "est_eps": None,
-                    "dp_share": None,
-                    "year_high": kis_data.get("high"),
-                    "year_low": kis_data.get("low"),
-                    "open": price - change_val,
-                    "day_high": kis_data.get("high"),
-                    "day_low": kis_data.get("low"),
-                    "volume": kis_data.get("volume"),
-                    "market_status": "장마감" if time.strftime("%H%M") >= "1530" else "정규장",
-                    "regular_change_pct": change_rate,
-                    "regular_change_val": change_val,
-                    "nxt_data": None,
-                    "after_market_data": None
-                }
-                print(f"[KIS-API] 실시간 시세 조회 성공 [{symbol}] -> {price}원 ({change_rate:+.2f}%)")
-                return res_data
-        except Exception as ex:
-            print(f"[KIS-API] 시세 조회 실패 ({symbol}): {ex}. 상업용 라이선스 보호를 위해 네이버 대체 조회를 차단합니다.")
 
     # [Commercial Bypass] KIS API 미작동 시 네이버 금융 크롤링 차단 및 안전한 대체 데이터 즉시 반환
     name = get_korean_name(symbol) or symbol
@@ -677,15 +625,6 @@ def get_naver_daily_prices(symbol: str):
     """
     Get daily price history (10 days)
     """
-    # ─── [KIS API V2 공식 일봉 조회 최우선 도입] ──────────────────────────
-    if kis_api_v2.is_available():
-        try:
-            kis_history = kis_api_v2.get_daily_prices(symbol, limit=10)
-            if kis_history:
-                print(f"[KIS-API] 일봉 시세 조회 성공 [{symbol}] -> {len(kis_history)}일 데이터")
-                return kis_history
-        except Exception as ex:
-            print(f"[KIS-API] 일봉 조회 실패 ({symbol}): {ex}. Naver 크롤링으로 대체합니다.")
 
     try:
         code = symbol.split('.')[0]
