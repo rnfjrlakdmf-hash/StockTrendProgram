@@ -160,10 +160,21 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
     const dates = firstMetric.dates;
     
     // 연간/분기 데이터 스마트 분리:
-    // - 'Q' 포함 레이블 (예: 2024.1Q, 2024.2Q) → 분기
-    // - '/12', '/3', '/6', '/9' 형식 또는 4자리 숫자만 → 연간
-    // - 'Q' 없고 'E' 포함 → 추정(연간으로 취급)
-    const isQuarterDate = (d: string) => d?.includes('Q') || d?.includes('분기');
+    // [미국 종목] 분기 = 'Q' 포함 (예: 2025.2Q, 2026.1Q)
+    // [국내 종목] 분기 = 월이 /03, /06, /09 인 경우 (예: 2025/03, 2025/06, 2025/09)
+    //             연간 = /12 로 끝나는 경우
+    // 공통 = '(E)' 추정치는 형식 그대로 유지하되 연간/분기 구분 적용
+    const isQuarterDate = (d: string) => {
+        if (!d) return false;
+        if (d.includes('Q') || d.includes('분기')) return true; // 미국 종목
+        // 국내 종목: /03, /06, /09 는 분기 (월별 체크)
+        const monthMatch = d.match(/\/(\d{2})/);
+        if (monthMatch) {
+            const month = parseInt(monthMatch[1]);
+            return month === 3 || month === 6 || month === 9;
+        }
+        return false;
+    };
     const annualDates = dates.filter((d: string) => !isQuarterDate(d));
     const quarterlyDates = dates.filter((d: string) => isQuarterDate(d));
     // 실제로 분기 데이터가 있는지 (None이 아닌 값이 하나라도 있는지)

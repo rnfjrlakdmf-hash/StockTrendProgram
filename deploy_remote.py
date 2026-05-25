@@ -21,9 +21,16 @@ def deploy_remote():
         ssh.connect(hostname, username=username, pkey=key, timeout=15)
         print("Connected successfully!")
         
-        # 1. git pull
+        # 1. git pull (충돌 파일 정리 후 강제 pull)
         print("\n=== Running git pull on EC2 ===")
-        stdin, stdout, stderr = ssh.exec_command("cd /home/ubuntu/StockTrendProgram && git pull")
+        git_cmd = (
+            "cd /home/ubuntu/StockTrendProgram && "
+            "git fetch origin && "
+            "git checkout -- . && "
+            "git clean -fd backend/sec_tickers_cache.json 2>/dev/null || true && "
+            "git pull origin main"
+        )
+        stdin, stdout, stderr = ssh.exec_command(git_cmd)
         print(stdout.read().decode('utf-8', 'ignore'))
         pull_err = stderr.read().decode('utf-8', 'ignore')
         if pull_err:
