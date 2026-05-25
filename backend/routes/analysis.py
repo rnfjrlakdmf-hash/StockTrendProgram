@@ -391,9 +391,14 @@ def stock_financials(symbol: str):
 @router.get("/stock/{symbol}/indicators")
 @turbo_cache(ttl_seconds=300)
 def stock_indicators(symbol: str, freq: str = "0", finGubun: str = "IFRSL", category: str = "1"):
-    from korea_data import get_korean_investment_indicators
+    from korea_data import get_korean_investment_indicators, get_global_investment_indicators
     try:
-        raw_data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+        clean_code = symbol.split('.')[0]
+        if clean_code.isdigit():
+            raw_data = get_korean_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+        else:
+            raw_data = get_global_investment_indicators(symbol, freq=freq, fin_gubun=finGubun, rpt=category)
+            
         if raw_data and raw_data.get("status") == "success":
             headers = raw_data.get("headers", [])
             indicators = raw_data.get("indicators", [])

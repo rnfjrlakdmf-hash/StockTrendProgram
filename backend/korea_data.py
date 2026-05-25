@@ -3891,3 +3891,140 @@ def get_naver_economy_calendar():
         print(f"[EconomyCalendar] API Processing Error: {e}")
 
     return events
+
+
+@turbo_cache(ttl_seconds=3600)
+def get_global_investment_indicators(symbol: str, freq: str = "0", fin_gubun: str = "IFRSL", rpt: str = "1"):
+    """
+    [Commercial Protection] 미국 SEC EDGAR API 기반 합법적 글로벌 재무제표 가공 연동
+    미국 상장기업의 10-K 연간 보고서 데이터를 수집하여 3개년 매출액, 영업이익, 당기순이익 등을 억원 단위로 원화 환산해 표출합니다.
+    """
+    import sec_api_client
+    
+    # CIK 코드 획득
+    cik = sec_api_client.get_cik_by_ticker(symbol)
+    if not cik:
+        print(f"[SEC-Indicators] Ticker to CIK 매핑 실패: {symbol}")
+        return None
+
+    # SEC Facts 데이터 조회
+    facts = sec_api_client.fetch_company_facts(cik)
+    if not facts:
+        print(f"[SEC-Indicators] Company Facts 수집 실패: CIK: {cik} ({symbol})")
+        return None
+
+    us_gaap = facts.get("facts", {}).get("us-gaap", {})
+    if not us_gaap:
+        print(f"[SEC-Indicators] us-gaap 데이터가 존재하지 않습니다: {symbol}")
+        return None
+
+    def get_annual_fact(keys):
+        for key in keys:
+            if key in us_gaap:
+                units = us_gaap[key].get("units", {})
+                usd_data = units.get("USD") or units.get("shares") or units.get("pure")
+                if not usd_data:
+                    continue
+                
+                annuals = {}
+                for item in usd_data:
+                    if item.get("form") == "10-K":
+                        fy = item.get("fy")
+                        val = item.get("val")
+                        fp = item.get("fp")
+                        if fy and val is not None and fp == "FY":
+                            end_date = item.get("end", "")
+                            # 최신 개정본 또는 기간이 가장 최근인 것을 우선시함
+                            if fy not in annuals or end_date > annuals[fy]["end"]:
+                                annuals[fy] = {"val": val, "end": end_date}
+                if annuals:
+                    return {y: info["val"] for y, info in annuals.items()}
+        return {}
+
+    # 주요 US-GAAP 계정 키
+    revenue_keys = ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "SalesRevenueGoodsNet"]
+    op_income_keys = ["OperatingIncomeLoss", "OperatingIncomeLossFromContinuingOperations"]
+    net_income_keys = ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]
+    assets_keys = ["Assets"]
+    liabilities_keys = ["Liabilities"]
+    equity_keys = ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]
+
+    rev_data = get_annual_fact(revenue_keys)
+    op_data = get_annual_fact(op_income_keys)
+    net_data = get_annual_fact(net_income_keys)
+    assets_data = get_annual_fact(assets_keys)
+    liab_data = get_annual_fact(liabilities_keys)
+    eq_data = get_annual_fact(equity_keys)
+
+    # 데이터가 1개 이상이라도 존재하는 연도 집합 확보
+    # 최소한 매출액, 자산, 자본 정보가 있는 연도를 찾음
+    all_years = set(rev_data.keys()) & set(assets_data.keys()) & set(eq_data.keys())
+    available_years = sorted(list(all_years), reverse=True)[:3]
+    available_years.sort() # 과거 -> 최신 정렬
+
+    if not available_years:
+        print(f"[SEC-Indicators] 3개년 교집합 연도를 찾지 못했습니다: {symbol}")
+        return None
+
+    headers = [f"{y}/12" for y in available_years]
+
+    # 실시간 환율 적용 (없으면 1,350원 기준)
+    try:
+        usd_krw_rate = float(get_exchange_rate("USD"))
+    except:
+        usd_krw_rate = 1350.0
+
+    indicators_data = []
+
+    def format_to_eok(val_map, name):
+        vals = {}
+        for y in available_years:
+            val_usd = val_map.get(y)
+            header_key = f"{y}/12"
+            if val_usd is not None:
+                val_krw = val_usd * usd_krw_rate
+                val_eok = round(val_krw / 100_000_000)
+                vals[header_key] = f"{val_eok:,.0f}"
+            else:
+                vals[header_key] = "-"
+        return {"name": f"{name} (억원)", "values": vals}
+
+    indicators_data.append(format_to_eok(rev_data, "매출액"))
+    indicators_data.append(format_to_eok(op_data, "영업이익"))
+    indicators_data.append(format_to_eok(net_data, "당기순이익"))
+    indicators_data.append(format_to_eok(assets_data, "자산총계"))
+    indicators_data.append(format_to_eok(liab_data, "부채총계"))
+    indicators_data.append(format_to_eok(eq_data, "자본총계"))
+
+    # 부채비율 (%)
+    debt_ratio = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        l_usd = liab_data.get(y)
+        e_usd = eq_data.get(y)
+        if l_usd is not None and e_usd is not None and e_usd != 0:
+            ratio = (l_usd / e_usd) * 100
+            debt_ratio[header_key] = f"{ratio:.1f}%"
+        else:
+            debt_ratio[header_key] = "-"
+    indicators_data.append({"name": "부채비율 (%)", "values": debt_ratio})
+
+    # ROE (%)
+    roe = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        n_usd = net_data.get(y)
+        e_usd = eq_data.get(y)
+        if n_usd is not None and e_usd is not None and e_usd != 0:
+            roe_val = (n_usd / e_usd) * 100
+            roe[header_key] = f"{roe_val:.1f}%"
+        else:
+            roe[header_key] = "-"
+    indicators_data.append({"name": "ROE (%)", "values": roe})
+
+    print(f"[SEC-Indicators] 3개년 미국 재무 데이터 원화 환산 완료 [{symbol}] -> {headers} (환율: {usd_krw_rate:,.1f}원)")
+    return {
+        "status": "success",
+        "headers": headers,
+        "indicators": indicators_data
+    }
