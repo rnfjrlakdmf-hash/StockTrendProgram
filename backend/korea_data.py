@@ -1629,7 +1629,7 @@ def get_detailed_financials(symbol: str) -> dict:
 
 
 def get_stock_financials(symbol: str):
-    """ Legacy Wrapper to prevent duplicated requests (Supports Global) """
+    """ Legacy Wrapper to prevent duplicated requests (Supports Global & SEC API) """
     import re
     import yfinance as yf
     import math
@@ -1647,20 +1647,193 @@ def get_stock_financials(symbol: str):
         pass
 
     if is_global:
+        # 1. Try SEC EDGAR API Integration for reliable official financial disclosures
         try:
-            # Global Stock Logic (yfinance) - Using safer fast_info where
-            # possible
+            import sec_api_client
+            ticker_name = symbol.split('.')[0].upper()
+            
+            cik = sec_api_client.get_cik_by_ticker(ticker_name)
+            if cik:
+                facts = sec_api_client.fetch_company_facts(cik)
+                if facts and "facts" in facts and "us-gaap" in facts["facts"]:
+                    us_gaap = facts["facts"]["us-gaap"]
+                    
+                    def get_annual_fact(keys):
+                        for key in keys:
+                            if key in us_gaap:
+                                units = us_gaap[key].get("units", {})
+                                usd_data = units.get("USD") or units.get("shares") or units.get("pure")
+                                if not usd_data:
+                                    continue
+                                annuals = {}
+                                for item in usd_data:
+                                    if item.get("form") == "10-K":
+                                        fy = item.get("fy")
+                                        val = item.get("val")
+                                        fp = item.get("fp")
+                                        if fy and val is not None and fp == "FY":
+                                            end_date = item.get("end", "")
+                                            if fy not in annuals or end_date > annuals[fy]["end"]:
+                                                annuals[fy] = {"val": val, "end": end_date}
+                                if annuals:
+                                    return {y: info["val"] for y, info in annuals.items()}
+                        return {}
+                    
+                    # Major US-GAAP tags
+                    revenue_keys = ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "SalesRevenueGoodsNet"]
+                    op_income_keys = ["OperatingIncomeLoss", "OperatingIncomeLossFromContinuingOperations"]
+                    net_income_keys = ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]
+                    assets_keys = ["Assets"]
+                    liabilities_keys = ["Liabilities"]
+                    equity_keys = ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]
+                    
+                    rev_data = get_annual_fact(revenue_keys)
+                    op_data = get_annual_fact(op_income_keys)
+                    net_data = get_annual_fact(net_income_keys)
+                    assets_data = get_annual_fact(assets_keys)
+                    liab_data = get_annual_fact(liabilities_keys)
+                    eq_data = get_annual_fact(equity_keys)
+                    
+                    # Extract common years (up to 4 years)
+                    all_years = set(rev_data.keys()) & set(assets_data.keys()) & set(eq_data.keys())
+                    available_years = sorted(list(all_years), reverse=True)[:4]
+                    available_years.sort() # Past to Recent
+                    
+                    if available_years:
+                        try:
+                            usd_krw_rate = float(get_exchange_rate("USD"))
+                        except:
+                            usd_krw_rate = 1350.0
+                            
+                        clean_headers = [f"{y}/12" for y in available_years]
+                        full_data = {}
+                        
+                        def fill_metric(val_map, key_name):
+                            vals = []
+                            for y in available_years:
+                                val_usd = val_map.get(y)
+                                if val_usd is not None:
+                                    # Convert USD to Eok KRW
+                                    val_eok = (val_usd * usd_krw_rate) / 100_000_000
+                                    vals.append(round(val_eok, 2))
+                                else:
+                                    vals.append(None)
+                            full_data[key_name] = { "dates": clean_headers, "values": vals }
+                        
+                        fill_metric(rev_data, "revenue")
+                        fill_metric(op_data, "operating_income")
+                        fill_metric(net_data, "net_income")
+                        
+                        # operating_margin (%)
+                        op_margin_vals = []
+                        for y in available_years:
+                            r = rev_data.get(y)
+                            o = op_data.get(y)
+                            if r and o:
+                                op_margin_vals.append(round((o / r) * 100, 2))
+                            else:
+                                op_margin_vals.append(None)
+                        full_data["operating_margin"] = { "dates": clean_headers, "values": op_margin_vals }
+                        
+                        # net_income_margin (%)
+                        net_margin_vals = []
+                        for y in available_years:
+                            r = rev_data.get(y)
+                            n = net_data.get(y)
+                            if r and n:
+                                net_margin_vals.append(round((n / r) * 100, 2))
+                            else:
+                                net_margin_vals.append(None)
+                        full_data["net_income_margin"] = { "dates": clean_headers, "values": net_margin_vals }
+                        
+                        # debt_ratio (%)
+                        debt_vals = []
+                        for y in available_years:
+                            l = liab_data.get(y)
+                            e = eq_data.get(y)
+                            if l is not None and e:
+                                debt_vals.append(round((l / e) * 100, 2))
+                            else:
+                                debt_vals.append(None)
+                        full_data["debt_ratio"] = { "dates": clean_headers, "values": debt_vals }
+                        
+                        # roe (%)
+                        roe_vals = []
+                        for y in available_years:
+                            n = net_data.get(y)
+                            e = eq_data.get(y)
+                            if n is not None and e:
+                                roe_vals.append(round((n / e) * 100, 2))
+                            else:
+                                roe_vals.append(None)
+                        full_data["roe"] = { "dates": clean_headers, "values": roe_vals }
+                        
+                        # Try to get live market info from yfinance for PER, PBR, Cap
+                        try:
+                            t_yf = yf.Ticker(ticker_name)
+                            info = t_yf.info
+                        except:
+                            info = {}
+                            
+                        latest_per = info.get('trailingPE') or info.get('forwardPE') or 'N/A'
+                        latest_pbr = info.get('priceToBook') or 'N/A'
+                        latest_roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A'
+                        
+                        per_vals = []
+                        pbr_vals = []
+                        for y in available_years:
+                            if y == available_years[-1]:
+                                per_vals.append(latest_per if isinstance(latest_per, (int, float)) else None)
+                                pbr_vals.append(latest_pbr if isinstance(latest_pbr, (int, float)) else None)
+                            else:
+                                per_vals.append(None)
+                                per_vals.append(None)
+                                
+                        # Handle length mismatch if any
+                        per_vals = per_vals[:len(available_years)]
+                        pbr_vals = pbr_vals[:len(available_years)]
+                        while len(per_vals) < len(available_years): per_vals.append(None)
+                        while len(pbr_vals) < len(available_years): pbr_vals.append(None)
+                        
+                        full_data["per"] = { "dates": clean_headers, "values": per_vals }
+                        full_data["pbr"] = { "dates": clean_headers, "values": pbr_vals }
+                        
+                        mcap = info.get('marketCap') or 0
+                        financials = {
+                            "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else (f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A"),
+                            "per": str(latest_per),
+                            "pbr": str(latest_pbr),
+                            "roe": latest_roe,
+                            "revenue": f"{rev_data.get(available_years[-1], 0) * usd_krw_rate / 100_000_000:,.0f}" if rev_data.get(available_years[-1]) else "N/A",
+                            "operating_income": f"{op_data.get(available_years[-1], 0) * usd_krw_rate / 100_000_000:,.0f}" if op_data.get(available_years[-1]) else "N/A",
+                            "net_income": f"{net_data.get(available_years[-1], 0) * usd_krw_rate / 100_000_000:,.0f}" if net_data.get(available_years[-1]) else "N/A",
+                            "debt_ratio": f"{debt_vals[-1]:.2f}%" if debt_vals and debt_vals[-1] is not None else "N/A",
+                            "detailed": {
+                                "success": True,
+                                "summary": {
+                                    "per": latest_per,
+                                    "pbr": latest_pbr,
+                                    "roe": latest_roe
+                                },
+                                "full_data": full_data
+                            }
+                        }
+                        print(f"[SEC-API] 공식 SEC EDGAR 데이터를 바탕으로 detailed/full_data 구조 생성 성공 [{symbol}]")
+                        return financials
+        except Exception as e_sec:
+            print(f"[SEC-API] SEC 데이터 수집 실패 ({symbol}): {e_sec}. yfinance 로직으로 대체합니다.")
+
+        # 2. Legacy Fallback (yfinance scraping)
+        try:
             ticker_name = symbol.split('.')[0]
             t = yf.Ticker(ticker_name)
 
-            # [Fix] info is slow and can trigger rate limits/errors, try fast_info first
             info = {}
             try:
-                info = t.info  # Still need for some fields
+                info = t.info
             except BaseException:
                 pass
 
-            # Format to match Korean data structure with aggressive fallbacks
             mcap = info.get('marketCap') or 0
             financials = {
                 "market_cap": f"{mcap / 1e12:.2f}T" if mcap > 1e12 else (f"{mcap / 1e9:.2f}B" if mcap > 0 else "N/A"),
@@ -1679,15 +1852,13 @@ def get_stock_financials(symbol: str):
                 "revenue": 'N/A',
                 "net_income": 'N/A',
                 "total_assets": 'N/A',
-                                "operating_income": 'N/A',
+                "operating_income": 'N/A',
                 "debt_ratio": 'N/A'}
 
             # Fetch Financial Statements
             try:
                 income_stmt = t.income_stmt
                 if not income_stmt.empty:
-                    # yfinance uses different labels sometimes, check common
-                    # ones
                     rev_keys = ['Total Revenue', 'Revenue']
                     for rk in rev_keys:
                         if rk in income_stmt.index:
@@ -1721,7 +1892,6 @@ def get_stock_financials(symbol: str):
                             financials['total_assets'] = f"{assets:,.0f}"
                             break
 
-                    # Debt to Equity
                     if 'Total Liab' in balance_sheet.index and 'Total Stockholder Equity' in balance_sheet.index:
                         liab = balance_sheet.loc['Total Liab'].iloc[0]
                         equity = balance_sheet.loc['Total Stockholder Equity'].iloc[0]
@@ -1730,7 +1900,6 @@ def get_stock_financials(symbol: str):
             except BaseException:
                 pass
 
-            # If operating_income still N/A, try info
             if financials['operating_income'] == 'N/A':
                 financials['operating_income'] = info.get(
                     'operatingCashflow', 'N/A')
@@ -1738,11 +1907,9 @@ def get_stock_financials(symbol: str):
             if financials['debt_ratio'] == 'N/A':
                 financials['debt_ratio'] = info.get('debtToEquity', 'N/A')
 
-            # Populate Detailed History (Annual / Quarterly)
             annual_data = []
             quarterly_data = []
 
-            # Helper to get value from dataframe safely
             def get_val(df, key, col):
                 if df.empty or key not in df.index or col not in df.columns:
                     return 0
@@ -1756,10 +1923,7 @@ def get_stock_financials(symbol: str):
                 # Annual
                 for i, date in enumerate(income_stmt.columns[:4]):
                     d_str = str(date.year)
-
-                    # Get assets from balance sheet if available
                     assets = get_val(balance_sheet, 'Total Assets', date)
-
                     annual_data.append({
                         "date": d_str,
                         "revenue": get_val(income_stmt, 'Total Revenue', date),
@@ -1797,8 +1961,6 @@ def get_stock_financials(symbol: str):
             return financials
         except Exception as e:
             print(f"Global info fetch error for {symbol}: {e}")
-            # Fall through to domestic if global logic fails for a numeric
-            # symbol
             if not any(c.isalpha() for c in symbol):
                 pass
             else:
