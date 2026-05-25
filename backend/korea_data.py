@@ -262,43 +262,6 @@ def gather_naver_stock_data(symbol: str):
     [v6.0.0] Uses new JSON APIs as primary sources for Domestic Stocks.
     """
 
-    # [Commercial Bypass] KIS API 미작동 시 네이버 금융 크롤링 차단 및 안전한 대체 데이터 즉시 반환
-    name = get_korean_name(symbol) or symbol
-    code = symbol.split('.')[0]
-    return {
-        "name": name,
-        "description": "상업용 라이선스 정책에 따라 공식 API(한국투자증권) 연동이 필요합니다.",
-        "market_type": "KS" if symbol.endswith(".KS") else "KQ",
-        "code": code,
-        "sector": "N/A",
-        "price": 0,
-        "change": "0.00%",
-        "change_val": 0,
-        "change_percent": "0.00%",
-        "prev_close": 0,
-        "regular_close": 0,
-        "market_cap_str": "N/A",
-        "per": None,
-        "pbr": None,
-        "eps": None,
-        "bps": None,
-        "dvr": None,
-        "est_per": None,
-        "est_eps": None,
-        "dp_share": None,
-        "year_high": 0,
-        "year_low": 0,
-        "open": 0,
-        "day_high": 0,
-        "day_low": 0,
-        "volume": 0,
-        "market_status": "API 미연동",
-        "regular_change_pct": 0.0,
-        "regular_change_val": 0,
-        "nxt_data": None,
-        "after_market_data": None
-    }
-
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
