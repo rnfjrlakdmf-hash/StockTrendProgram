@@ -353,7 +353,7 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                                     <span>{row.label}</span>
                                                     {showEasy && (
                                                         <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 cursor-help flex-shrink-0">
-                                                            <span className="text-[10px] font-black">?</span>
+                                                            <span className="text-[10px] font-black">{"?"}</span>
                                                             <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 w-56 p-3 bg-slate-900 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] rounded-xl text-[11px] font-medium text-emerald-300 leading-relaxed opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[60] whitespace-normal pointer-events-none drop-shadow-2xl text-left">
                                                                 <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-slate-900 border-l border-b border-emerald-500/30 transform rotate-45"></div>
                                                                 <div className="relative z-10">{INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}</div>
