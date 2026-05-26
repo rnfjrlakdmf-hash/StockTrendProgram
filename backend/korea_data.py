@@ -1924,6 +1924,43 @@ def get_stock_financials(symbol: str):
                 ni_vals_eok = full_data.get("net_income", {}).get("values", [])  # 억원 리스트
                 eq_vals_eok = full_data.get("total_equity", {}).get("values", [])  # 억원 리스트 (있으면)
 
+                # ── 각 기간 말일의 과거 주가 조회 (yfinance 5년 월별 데이터) ────────────────
+                # label 형태: "2022/12" → 연간말, "2025/03" → 분기말
+                def _label_to_period_price(label: str, hist_df) -> float | None:
+                    """label(YYYY/MM)에 해당하는 기간 말일 종가를 hist_df에서 조회"""
+                    try:
+                        import pandas as pd
+                        yr, mo = label.split("/")
+                        target = pd.Timestamp(f"{yr}-{mo}-01") + pd.offsets.MonthEnd(0)
+                        # 해당 월 마지막 거래일 이전 데이터 중 가장 가까운 날짜
+                        mask = hist_df.index <= target
+                        if mask.any():
+                            return float(hist_df.loc[mask, "Close"].iloc[-1])
+                    except Exception:
+                        pass
+                    return None
+
+                hist_price_map = {}  # { "2022/12": 62600.0, ... }
+                try:
+                    import yfinance as yf_hist
+                    import pandas as pd
+                    yf_symbol_hist = f"{symbol.split('.')[0]}.KS" if not symbol.upper().endswith((".KS", ".KQ")) else symbol
+                    # KQ 여부 확인 (KS 실패 시 KQ 시도)
+                    ticker_hist = yf_hist.Ticker(yf_symbol_hist)
+                    hist_df = ticker_hist.history(period="6y", interval="1d")
+                    if hist_df.empty:
+                        yf_symbol_hist = f"{symbol.split('.')[0]}.KQ"
+                        ticker_hist = yf_hist.Ticker(yf_symbol_hist)
+                        hist_df = ticker_hist.history(period="6y", interval="1d")
+                    if not hist_df.empty:
+                        hist_df.index = hist_df.index.tz_localize(None) if hist_df.index.tzinfo else hist_df.index
+                        for lbl in all_dates:
+                            price_at = _label_to_period_price(lbl, hist_df)
+                            if price_at:
+                                hist_price_map[lbl] = price_at
+                except Exception as hist_err:
+                    print(f"[DART-CALC] 과거 주가 조회 실패: {hist_err}")
+
                 eps_vals = []
                 bps_vals = []
                 per_vals = []
@@ -1932,6 +1969,12 @@ def get_stock_financials(symbol: str):
                 for i, label in enumerate(all_dates):
                     ni_eok_i = ni_vals_eok[i] if i < len(ni_vals_eok) else None
                     eq_eok_i = eq_vals_eok[i] if i < len(eq_vals_eok) else None
+
+                    # 해당 기간 주가: 과거 조회 우선, 최신 기간은 현재주가 사용
+                    if i == n_dates - 1:
+                        price_i = current_price
+                    else:
+                        price_i = hist_price_map.get(label) or current_price
 
                     # ① EPS = 당기순이익(원) / 발행주식수
                     if ni_eok_i is not None and shares_outstanding and shares_outstanding > 0:
@@ -1947,23 +1990,15 @@ def get_stock_financials(symbol: str):
                     else:
                         bps_i = None
 
-                    # ③ PER = 현재주가 / EPS  (최신 날짜에만 현재가 기준으로 계산)
-                    if eps_i is not None and eps_i > 0:
-                        if i == n_dates - 1:
-                            # 최신 기간은 현재주가 사용
-                            per_i = round(current_price / eps_i, 2) if current_price > 0 else None
-                        else:
-                            # 과거 기간은 EPS만 활용, 가격 기준이 없어 None 처리
-                            per_i = None
+                    # ③ PER = 해당기간 말일주가 / EPS
+                    if eps_i is not None and eps_i > 0 and price_i and price_i > 0:
+                        per_i = round(price_i / eps_i, 2)
                     else:
                         per_i = None  # 적자 기업이거나 데이터 없음
 
-                    # ④ PBR = 현재주가 / BPS (최신 날짜에만)
-                    if bps_i is not None and bps_i > 0:
-                        if i == n_dates - 1:
-                            pbr_i = round(current_price / bps_i, 2) if current_price > 0 else None
-                        else:
-                            pbr_i = None
+                    # ④ PBR = 해당기간 말일주가 / BPS
+                    if bps_i is not None and bps_i > 0 and price_i and price_i > 0:
+                        pbr_i = round(price_i / bps_i, 2)
                     else:
                         pbr_i = None
 
