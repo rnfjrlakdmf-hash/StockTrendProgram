@@ -654,76 +654,69 @@ def get_naver_flash_news():
 
 def get_naver_market_index_data():
     """
-    네이버 모바일 API를 사용하여 국내외 주요 지수 및 매크로 지표(금리, VIX, 환율 등)를 통합 수집합니다.
+    [v6.1.0] 네이버 모바일 비공식 API 대신 yfinance 공식 API를 사용하여
+    국내외 주요 지수 및 매크로 지표(금리, VIX, 환율 등)를 통합 수집합니다.
     """
-    # [v5.5.0] 네이버 API 경로 최적화 및 다우존스 추가
     indices_to_fetch = [
-        {"code": "KOSPI", "label": "KOSPI", "type": "dom"},
-        {"code": "KOSDAQ", "label": "KOSDAQ", "type": "dom"},
-        {"code": ".INX", "label": "S&P 500", "type": "world"},
-        {"code": ".IXIC", "label": "NASDAQ", "type": "world"},
-        {"code": ".DJI", "label": "DOW JONES", "type": "world"},
-        {"code": ".NDX", "label": "NASDAQ 100", "type": "world"},
-        # [Macro Intelligence]
-        {"code": ".VIX", "label": "VIX(공포지수)", "type": "world"},
-        {"code": "CMTS@TY10", "label": "미 국채 10년물 금리", "type": "old"},
-        {"code": "FRX@DXY", "label": "달러 지수", "type": "old"},
-        # [European Indices]
-        {"code": ".GDAXI", "label": "독일 DAX", "type": "world"},
-        {"code": ".FCHI", "label": "프랑스 CAC 40", "type": "world"},
-        {"code": ".FTSE", "label": "영국 FTSE 100", "type": "world"}
+        {"ticker": "^KS11", "label": "KOSPI", "is_rate": False},
+        {"ticker": "^KQ11", "label": "KOSDAQ", "is_rate": False},
+        {"ticker": "^GSPC", "label": "S&P 500", "is_rate": False},
+        {"ticker": "^IXIC", "label": "NASDAQ", "is_rate": False},
+        {"ticker": "^DJI", "label": "DOW JONES", "is_rate": False},
+        {"ticker": "^NDX", "label": "NASDAQ 100", "is_rate": False},
+        {"ticker": "^VIX", "label": "VIX(공포지수)", "is_rate": False},
+        {"ticker": "^TNX", "label": "미 국채 10년물 금리", "is_rate": True},
+        {"ticker": "DX-Y.NYB", "label": "달러 지수", "is_rate": False},
+        {"ticker": "^GDAXI", "label": "독일 DAX", "is_rate": False},
+        {"ticker": "^FCHI", "label": "프랑스 CAC 40", "is_rate": False},
+        {"ticker": "^FTSE", "label": "영국 FTSE 100", "is_rate": False}
     ]
 
     results = []
 
     def _fetch_one(idx):
         try:
-            if idx["type"] == "world":
-                url = f"https://api.stock.naver.com/index/{idx['code']}/basic"
-            elif idx["type"] == "dom":
-                url = f"https://m.stock.naver.com/front-api/realTime/marketPrice?itemCodes={idx['code']}&endType=index&stockType=domestic"
+            import yfinance as yf
+            t = yf.Ticker(idx["ticker"])
+            info = t.fast_info
+            last_price = info.get('last_price', None)
+            prev_close = info.get('previous_close', None)
+            
+            # Fallback for fast_info issues
+            if last_price is None or prev_close is None:
+                hist = t.history(period="2d")
+                if len(hist) >= 2:
+                    last_price = hist['Close'].iloc[-1]
+                    prev_close = hist['Close'].iloc[-2]
+                elif len(hist) == 1:
+                    last_price = hist['Close'].iloc[0]
+                    prev_close = last_price
+            
+            if last_price is None:
+                raise ValueError(f"No price data for {idx['ticker']}")
+                
+            change = last_price - prev_close if prev_close else 0
+            pct = (change / prev_close * 100) if prev_close else 0
+            
+            if idx["is_rate"]:
+                val_formatted = f"{last_price:.4f}%"
             else:
-                url = f"https://m.stock.naver.com/api/index/{idx['code']}/basic"
-
-            res = requests.get(url, headers=HEADER, timeout=5)
-            if res.status_code == 200:
-                data = res.json()
-
-                if idx["type"] == "dom":
-                    datas = data.get("result", {}).get("datas", [])
-                    if datas:
-                        stock_item = datas[0]
-                        price = stock_item.get(
-                            'closePrice', '0').replace(
-                            ',', '')
-                        pct = stock_item.get('fluctuationsRatio', '0')
-                    else:
-                        price, pct = '0', '0'
-                else:
-                    price = data.get('closePrice', '0').replace(',', '')
-                    pct = data.get('fluctuationsRatio', '0')
-
-                is_rate = "금리" in idx["label"] or "TY10" in idx["code"]
-                try:
-                    price_val = float(price)
-                    val_formatted = f"{price_val:.4f}%" if is_rate else f"{price_val:,.2f}"
-                except BaseException:
-                    val_formatted = price
-
-                return {
-                    "label": idx["label"],
-                    "value": val_formatted,
-                    "change": float(pct),
-                    "up": float(pct) >= 0
-                }
+                val_formatted = f"{last_price:,.2f}"
+                
+            return {
+                "label": idx["label"],
+                "value": val_formatted,
+                "change": float(pct),
+                "up": float(pct) >= 0
+            }
         except Exception as e:
-            print(f"Error fetching index {idx['label']}: {e}")
+            print(f"Error fetching index {idx['label']} via yfinance: {e}")
             return {
                 "label": idx["label"],
                 "value": "N/A",
-                "change": "0.00%",
-                "up": True}
-        return None
+                "change": 0.0,
+                "up": True
+            }
 
     import concurrent.futures
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(indices_to_fetch)) as executor:
@@ -2116,95 +2109,61 @@ def get_stock_financials(symbol: str):
 
 def get_korean_market_indices():
     """
-    Fetch major Korean indices (KOSPI, KOSDAQ, KOSPI200)
+    [v6.1.0] 네이버 금융 크롤링 대신 yfinance를 사용하여 국내 주요 지수를 안전하게 수집합니다.
     """
-    indices = {
-        "kospi": {
-            "value": "0",
-            "change": "0",
-            "percent": "0.00%",
-            "direction": "Equal"},
-        "kosdaq": {
-            "value": "0",
-            "change": "0",
-            "percent": "0.00%",
-            "direction": "Equal"},
-        "kospi200": {
-            "value": "0",
-            "change": "0",
-            "percent": "0.00%",
-            "direction": "Equal"}}
-
-    def fetch_one(code):
+    tickers = {
+        "kospi": "^KS11",
+        "kosdaq": "^KQ11",
+        "kospi200": "^KS200"
+    }
+    
+    results = {}
+    import yfinance as yf
+    
+    for key, ticker in tickers.items():
         try:
-            url = f"https://finance.naver.com/sise/sise_index.naver?code={code}"
-            res = requests.get(url, headers=HEADER, timeout=3)
-            # Use decode_safe
-            soup = BeautifulSoup(decode_safe(res), 'html.parser')
-
-            val_node = soup.select_one("#now_value")
-            # Fallback for now_value if nested
-            if not val_node:
-                val_node = soup.select_one(".quotient #now_value")
-
-            # KOSPI/KOSDAQ common
-            change_node = soup.select_one("#change_value_and_rate")
-            if not change_node:
-                change_node = soup.select_one(".quotient #change_value_and_rate")
-
-            val = val_node.text.strip() if val_node else "0"
-            percent = "0.00%"
-            change = "0"
+            t = yf.Ticker(ticker)
+            info = t.fast_info
+            last_price = info.get('last_price', None)
+            prev_close = info.get('previous_close', None)
+            
+            if last_price is None or prev_close is None:
+                hist = t.history(period="2d")
+                if len(hist) >= 2:
+                    last_price = hist['Close'].iloc[-1]
+                    prev_close = hist['Close'].iloc[-2]
+                elif len(hist) == 1:
+                    last_price = hist['Close'].iloc[0]
+                    prev_close = last_price
+            
+            if last_price is None:
+                raise ValueError("No data")
+                
+            change_val = last_price - prev_close if prev_close else 0
+            pct = (change_val / prev_close * 100) if prev_close else 0
+            
             direction = "Equal"
-
-            if change_node:
-                txt = change_node.text.strip().replace('\n', '').replace('\t', '')
-                import re
-                # Extract percentage like +0.11% or -1.23%
-                p_match = re.search(r'([+-]?\d+\.\d+%)', txt)
-                if p_match:
-                    percent = p_match.group(1)
+            if pct > 0:
+                direction = "Up"
+            elif pct < 0:
+                direction = "Down"
                 
-                # Extract numeric change value
-                # Usually txt is like "7.95 +0.11%상승"
-                parts = txt.split()
-                if parts:
-                    change = parts[0]
-                
-                if "+" in txt or "상승" in txt or "up" in str(change_node.get('class', [])):
-                    direction = "Up"
-                elif "-" in txt or "하락" in txt or "dn" in str(change_node.get('class', [])):
-                    direction = "Down"
-            else:
-                # KOSPI200 Fallback
-                c_val_node = soup.select_one("#change_value")
-                c_rate_node = soup.select_one("#change_rate")
-                if c_val_node and c_rate_node:
-                    change = c_val_node.text.strip()
-                    percent = c_rate_node.text.strip()
-                    if "+" in percent or "상승" in percent:
-                        direction = "Up"
-                    elif "-" in percent or "하락" in percent:
-                        direction = "Down"
-
-            return {
-                "value": val,
-                "change": change,
-                "percent": percent,
-                "direction": direction}
-        except BaseException:
-            pass
-        return {
-            "value": "0",
-            "change": "0",
-            "percent": "0.00%",
-            "direction": "Equal"}
-
-    indices["kospi"] = fetch_one("KOSPI")
-    indices["kosdaq"] = fetch_one("KOSDAQ")
-    indices["kospi200"] = fetch_one("KPI200")
-
-    return indices
+            results[key] = {
+                "value": f"{last_price:,.2f}",
+                "change": f"{abs(change_val):.2f}",
+                "percent": f"{pct:+.2f}%",
+                "direction": direction
+            }
+        except Exception as e:
+            print(f"Error fetching {key} via yfinance: {e}")
+            results[key] = {
+                "value": "0",
+                "change": "0",
+                "percent": "0.00%",
+                "direction": "Equal"
+            }
+            
+    return results
 
 
 def get_top_sectors():
