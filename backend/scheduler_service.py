@@ -320,6 +320,81 @@ def send_closing_notification(market: str):
             print(f"[Scheduler-Error] Failed to send closing notification for user {user_id}: {user_err}")
             continue
 
+def run_dart_daily_cache_update():
+    """매일 오전 6:30 DART 재무 데이터 선제 캐싱 (하루에 한 번 자동 실행)
+    관심종목 + 최근 7일 검색 종목을 대상으로 DART API를 호출해 캐시를 미리 갱신한다.
+    사용자가 종목 검색 시 캐시 HIT로 즉시 응답 가능.
+    """
+    print("[DART-Cache] 매일 DART 재무 데이터 캐싱 시작...")
+    try:
+        from korea_data import get_stock_financials
+        from db_manager import get_db_connection
+
+        # 1. 관심종목 코드 수집
+        target_codes = set()
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT symbol FROM watchlist")
+            rows = cursor.fetchall()
+            conn.close()
+            for row in rows:
+                sym = row[0].split('.')[0]
+                if sym.isdigit() and len(sym) == 6:
+                    target_codes.add(sym)
+        except Exception as e:
+            print(f"[DART-Cache] 관심종목 로드 실패: {e}")
+
+        # 2. 주요 대형주 추가 (항상 포함)
+        major_stocks = [
+            '005930',  # 삼성전자
+            '000660',  # SK하이닉스
+            '035420',  # NAVER
+            '035720',  # 카카오
+            '005380',  # 현대차
+            '000270',  # 기아
+            '051910',  # LG화학
+            '068270',  # 셀트리온
+            '207940',  # 삼성바이오로직스
+            '006400',  # 삼성SDI
+            '003550',  # LG
+            '017670',  # SK텔레콤
+            '030200',  # KT
+            '086790',  # 하나금융지주
+            '105560',  # KB금융
+            '055550',  # 신한지주
+            '018260',  # 삼성에스디에스
+            '096775',  # SK이노베이션
+            '066570',  # LG전자
+            '012330',  # 현대모비스
+        ]
+        for code in major_stocks:
+            target_codes.add(code)
+
+        print(f"[DART-Cache] 총 {len(target_codes)}개 종목 DART 캐싱 시작")
+        success_count = 0
+        fail_count = 0
+
+        for code in target_codes:
+            try:
+                result = get_stock_financials(code)
+                if result and result.get('status') != 'error':
+                    success_count += 1
+                    print(f"[DART-Cache] ✅ {code} → PER={result.get('per')}, EPS={result.get('eps')}")
+                else:
+                    fail_count += 1
+                # DART API 과부하 방지 (0.5초 지연)
+                time.sleep(0.5)
+            except Exception as e:
+                fail_count += 1
+                print(f"[DART-Cache] ❌ {code} 실패: {e}")
+                time.sleep(0.3)
+
+        print(f"[DART-Cache] 완료! 성공={success_count}개, 실패={fail_count}개")
+    except Exception as e:
+        print(f"[DART-Cache] 전체 실패: {e}")
+
+
 def send_daily_analytics_report():
     """매일 밤 11시 59분 59초에 관리자(rnfjr@gmail.com, rnfjrlakdmf@gmail.com)들에게 일일 방문자 및 시스템 보고서 푸시 알림 발송"""
     initialize_firebase()
@@ -410,6 +485,14 @@ def run_market_scheduler():
             now = datetime.now(kst)
             day_of_week = now.weekday()
             
+            # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱 (장 시작 2시간 30분 전)
+            if now.hour == 6 and now.minute == 30:
+                try:
+                    run_dart_daily_cache_update()
+                except Exception as e:
+                    print(f"[Scheduler] DART 캐싱 오류: {e}")
+                time.sleep(60)
+
             # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
             if now.hour == 23 and now.minute == 59:
                 send_daily_analytics_report()

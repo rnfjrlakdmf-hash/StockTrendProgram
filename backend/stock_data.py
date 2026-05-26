@@ -566,9 +566,72 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "health_data": health_data  # Pass full health data for UI components
                 }
 
+                # ── DART 정밀 계산값으로 details 보완 (한국 주식 전용) ──────────────
+                # yfinance 값보다 DART 공식 API 계산값이 훨씬 정확하므로 우선 적용
+                try:
+                    from korea_data import get_stock_financials as _get_dart_fin
+                    clean_code = symbol.split('.')[0]
+                    dart_fin = _get_dart_fin(clean_code)
+
+                    def _dart_parse_num(v):
+                        """'1,427', '4.25', 'N/A' → float 또는 None"""
+                        if v is None or str(v).strip() in ('', 'N/A', 'None', '-'):
+                            return None
+                        try:
+                            return float(str(v).replace(',', '').replace('%', '').strip())
+                        except Exception:
+                            return None
+
+                    def _dart_parse_dvr(v):
+                        """'2.15%', '0.0215' → float(0~1 범위)로 반환 (화면 ×100 표시 대비)"""
+                        if v is None or str(v).strip() in ('', 'N/A', 'None', '-'):
+                            return None
+                        try:
+                            s = str(v).replace(',', '').strip()
+                            if s.endswith('%'):
+                                # '2.15%' → 0.0215 (화면에서 ×100해서 2.15% 표시)
+                                return float(s.replace('%', '')) / 100
+                            return float(s)
+                        except Exception:
+                            return None
+
+                    if dart_fin and not dart_fin.get("status") == "error":
+                        d = final_data["details"]
+                        # PER: DART 계산값 우선 (소수 숫자)
+                        dart_per = _dart_parse_num(dart_fin.get("per"))
+                        if dart_per is not None and dart_per > 0:
+                            d["pe_ratio"] = dart_per
+                            final_data["financials"]["pe_ratio"] = dart_per
+
+                        # EPS: DART 계산값 우선 (원 단위 정수)
+                        dart_eps = _dart_parse_num(dart_fin.get("eps"))
+                        if dart_eps is not None:
+                            d["eps"] = dart_eps
+
+                        # PBR: DART 계산값 우선
+                        dart_pbr = _dart_parse_num(dart_fin.get("pbr"))
+                        if dart_pbr is not None and dart_pbr > 0:
+                            d["pbr"] = dart_pbr
+                            final_data["financials"]["pbr"] = dart_pbr
+
+                        # BPS: DART 계산값 우선 (원 단위 정수)
+                        dart_bps = _dart_parse_num(dart_fin.get("bps"))
+                        if dart_bps is not None:
+                            d["bps"] = dart_bps
+
+                        # 배당수익률: DART 계산값 우선
+                        dart_dvr = _dart_parse_dvr(dart_fin.get("dvr"))
+                        if dart_dvr is not None:
+                            d["dividend_yield"] = dart_dvr
+
+                        print(f"[DART-INJECT] {clean_code} → PER={d.get('pe_ratio')}, EPS={d.get('eps')}, PBR={d.get('pbr')}, BPS={d.get('bps')}, DVR={d.get('dividend_yield')}")
+                except Exception as dart_inject_err:
+                    print(f"[DART-INJECT] 재무 보완 실패 ({symbol}): {dart_inject_err}")
+
                 # Update Cache (v3.0.0 Force Clear to fix data corruption)
                 STOCK_DATA_CACHE[f"v3_{symbol}"] = (final_data, time.time())
                 return final_data
+
 
         except Exception as e:
             print(f"Naver Fetch Error: {e}")
