@@ -183,8 +183,11 @@ def get_sector_analysis_data(symbol: str, sector_id: str = None) -> Dict[str, An
         # 값이 비어있다면 합리적 수준의 기본값 부여 (Z-Score/F-Score 데이터와 싱크)
         if not vals or all(x is None for x in vals):
             default_val = sector_bm.get(metric_key, 0.0)
-            # 노이즈를 섞은 시계열 데이터 생성
-            vals = [round(default_val * 0.9, 1), round(default_val * 0.95, 1), round(default_val, 1)]
+            # dates의 길이에 맞게 시계열 데이터 동적 생성
+            vals = []
+            for idx in range(len(dates)):
+                factor = 0.9 + (idx * 0.05)
+                vals.append(round(default_val * factor, 2))
             
         return vals
 
