@@ -3692,6 +3692,8 @@ def get_korean_investment_indicators(
     ]
 
     indicators_data = []
+    # 연도별 계정 원시 정수값 저장용 딕셔너리
+    raw_values = {ind["name"]: {} for ind in target_indicators}
     
     # 1. 일반 재무 계정 금액 가공 (단위: 억원)
     for ind in target_indicators:
@@ -3719,13 +3721,16 @@ def get_korean_investment_indicators(
                     if is_neg:
                         amt_val = -amt_val
                     
+                    raw_values[ind["name"]][header_key] = amt_val
                     # '원' 단위를 '억원' 단위로 정수 반올림
                     amt_in_eok = round(amt_val / 100_000_000)
                     values_map[header_key] = f"{amt_in_eok:,.0f}"
                 except Exception as e:
                     print(f"[DART-Indicators] Parsing error for {symbol} {ind['name']} {y}: {e}")
+                    raw_values[ind["name"]][header_key] = 0
                     values_map[header_key] = "0"
             else:
+                raw_values[ind["name"]][header_key] = 0
                 values_map[header_key] = "-"
         
         indicators_data.append({
@@ -3737,35 +3742,11 @@ def get_korean_investment_indicators(
     debt_ratio_map = {}
     for y in available_years:
         header_key = f"{y}/12"
-        items = raw_results[y]
-        
-        cfs_items = [it for it in items if it.get("fs_div") == "CFS"]
-        search_items = cfs_items if cfs_items else items
-        
-        liab_item = next((it for it in search_items if "부채총계" in it.get("account_nm", "").replace(" ", "")), None)
-        eq_item = next((it for it in search_items if "자본총계" in it.get("account_nm", "").replace(" ", "")), None)
-        
-        if liab_item and eq_item:
-            try:
-                l_raw = liab_item.get("thstrm_amount", "").replace(",", "").strip()
-                l_neg = l_raw.startswith("-") or (l_raw.startswith("(") and l_raw.endswith(")"))
-                l_str = "".join(c for c in l_raw if c.isdigit())
-                l_val = int(l_str) if l_str else 0
-                if l_neg: l_val = -l_val
-
-                e_raw = eq_item.get("thstrm_amount", "").replace(",", "").strip()
-                e_neg = e_raw.startswith("-") or (e_raw.startswith("(") and e_raw.endswith(")"))
-                e_str = "".join(c for c in e_raw if c.isdigit())
-                e_val = int(e_str) if e_str else 0
-                if e_neg: e_val = -e_val
-
-                if e_val != 0:
-                    ratio = (l_val / e_val) * 100
-                    debt_ratio_map[header_key] = f"{ratio:.1f}%"
-                else:
-                    debt_ratio_map[header_key] = "-"
-            except:
-                debt_ratio_map[header_key] = "-"
+        l_val = raw_values["부채총계"].get(header_key, 0)
+        e_val = raw_values["자본총계"].get(header_key, 0)
+        if e_val != 0 and l_val != 0:
+            ratio = (l_val / e_val) * 100
+            debt_ratio_map[header_key] = f"{ratio:.1f}%"
         else:
             debt_ratio_map[header_key] = "-"
             
@@ -3778,41 +3759,128 @@ def get_korean_investment_indicators(
     roe_map = {}
     for y in available_years:
         header_key = f"{y}/12"
-        items = raw_results[y]
-        
-        cfs_items = [it for it in items if it.get("fs_div") == "CFS"]
-        search_items = cfs_items if cfs_items else items
-        
-        net_item = next((it for it in search_items if any(k in it.get("account_nm", "").replace(" ", "") for k in ["당기순이익", "당기순이익(손실)"])), None)
-        eq_item = next((it for it in search_items if "자본총계" in it.get("account_nm", "").replace(" ", "")), None)
-        
-        if net_item and eq_item:
-            try:
-                n_raw = net_item.get("thstrm_amount", "").replace(",", "").strip()
-                n_neg = n_raw.startswith("-") or (n_raw.startswith("(") and n_raw.endswith(")"))
-                n_str = "".join(c for c in n_raw if c.isdigit())
-                n_val = int(n_str) if n_str else 0
-                if n_neg: n_val = -n_val
-
-                e_raw = eq_item.get("thstrm_amount", "").replace(",", "").strip()
-                e_neg = e_raw.startswith("-") or (e_raw.startswith("(") and e_raw.endswith(")"))
-                e_str = "".join(c for c in e_raw if c.isdigit())
-                e_val = int(e_str) if e_str else 0
-                if e_neg: e_val = -e_val
-
-                if e_val != 0:
-                    roe_val = (n_val / e_val) * 100
-                    roe_map[header_key] = f"{roe_val:.1f}%"
-                else:
-                    roe_map[header_key] = "-"
-            except:
-                roe_map[header_key] = "-"
+        n_val = raw_values["당기순이익"].get(header_key, 0)
+        e_val = raw_values["자본총계"].get(header_key, 0)
+        if e_val != 0 and n_val != 0:
+            roe_val = (n_val / e_val) * 100
+            roe_map[header_key] = f"{roe_val:.1f}%"
         else:
             roe_map[header_key] = "-"
             
     indicators_data.append({
         "name": "ROE (%)",
         "values": roe_map
+    })
+
+    # 4. 영업이익률 (%) (수익성 추가)
+    op_margin_map = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        op_val = raw_values["영업이익"].get(header_key, 0)
+        rev_val = raw_values["매출액"].get(header_key, 0)
+        if rev_val != 0 and op_val != 0:
+            margin = (op_val / rev_val) * 100
+            op_margin_map[header_key] = f"{margin:.1f}%"
+        else:
+            op_margin_map[header_key] = "-"
+    indicators_data.append({
+        "name": "영업이익률 (%)",
+        "values": op_margin_map
+    })
+
+    # 5. 매출액순이익률 (%) (수익성 추가)
+    net_margin_map = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        n_val = raw_values["당기순이익"].get(header_key, 0)
+        rev_val = raw_values["매출액"].get(header_key, 0)
+        if rev_val != 0 and n_val != 0:
+            margin = (n_val / rev_val) * 100
+            net_margin_map[header_key] = f"{margin:.1f}%"
+        else:
+            net_margin_map[header_key] = "-"
+    indicators_data.append({
+        "name": "매출액순이익률 (%)",
+        "values": net_margin_map
+    })
+
+    # 6. 매출액증가율 (%) (성장성 추가)
+    rev_growth_map = {}
+    for i, y in enumerate(available_years):
+        header_key = f"{y}/12"
+        if i == 0:
+            rev_growth_map[header_key] = "-"
+        else:
+            prev_y = available_years[i-1]
+            prev_key = f"{prev_y}/12"
+            curr_val = raw_values["매출액"].get(header_key, 0)
+            prev_val = raw_values["매출액"].get(prev_key, 0)
+            if prev_val > 0 and curr_val > 0:
+                growth = ((curr_val - prev_val) / prev_val) * 100
+                rev_growth_map[header_key] = f"{growth:+.1f}%"
+            else:
+                rev_growth_map[header_key] = "-"
+    indicators_data.append({
+        "name": "매출액증가율 (%)",
+        "values": rev_growth_map
+    })
+
+    # 7. 영업이익증가율 (%) (성장성 추가)
+    op_growth_map = {}
+    for i, y in enumerate(available_years):
+        header_key = f"{y}/12"
+        if i == 0:
+            op_growth_map[header_key] = "-"
+        else:
+            prev_y = available_years[i-1]
+            prev_key = f"{prev_y}/12"
+            curr_val = raw_values["영업이익"].get(header_key, 0)
+            prev_val = raw_values["영업이익"].get(prev_key, 0)
+            if prev_val != 0 and curr_val != 0:
+                growth = ((curr_val - prev_val) / abs(prev_val)) * 100
+                op_growth_map[header_key] = f"{growth:+.1f}%"
+            else:
+                op_growth_map[header_key] = "-"
+    indicators_data.append({
+        "name": "영업이익증가율 (%)",
+        "values": op_growth_map
+    })
+
+    # 8. 순이익증가율 (%) (성장성 추가)
+    net_growth_map = {}
+    for i, y in enumerate(available_years):
+        header_key = f"{y}/12"
+        if i == 0:
+            net_growth_map[header_key] = "-"
+        else:
+            prev_y = available_years[i-1]
+            prev_key = f"{prev_y}/12"
+            curr_val = raw_values["당기순이익"].get(header_key, 0)
+            prev_val = raw_values["당기순이익"].get(prev_key, 0)
+            if prev_val != 0 and curr_val != 0:
+                growth = ((curr_val - prev_val) / abs(prev_val)) * 100
+                net_growth_map[header_key] = f"{growth:+.1f}%"
+            else:
+                net_growth_map[header_key] = "-"
+    indicators_data.append({
+        "name": "순이익증가율 (%)",
+        "values": net_growth_map
+    })
+
+    # 9. 총자산회전율 (배) (활동성 추가)
+    asset_turnover_map = {}
+    for y in available_years:
+        header_key = f"{y}/12"
+        rev_val = raw_values["매출액"].get(header_key, 0)
+        asset_val = raw_values["자산총계"].get(header_key, 0)
+        if asset_val != 0 and rev_val != 0:
+            turnover = rev_val / asset_val
+            asset_turnover_map[header_key] = f"{turnover:.2f}배"
+        else:
+            asset_turnover_map[header_key] = "-"
+    indicators_data.append({
+        "name": "총자산회전율 (배)",
+        "values": asset_turnover_map
     })
 
     print(f"[DART-Indicators] 3개년 재무 데이터 변환 완료 [{symbol}] -> {headers}")

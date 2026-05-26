@@ -177,14 +177,15 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
 
     // 차트 데이터 변환
     const getChartData = () => {
-        if (!data || !Array.isArray(data.rows) || data.rows.length === 0 || !Array.isArray(data.years)) return [];
+        if (!data || !Array.isArray(filteredRows) || filteredRows.length === 0 || !Array.isArray(data.years)) return [];
         const chartData: any[] = [];
         data.years.forEach((year, idx) => {
             const entry: any = { name: year };
-            // 상위 3개 지표를 차트에 표시
-            data.rows.slice(0, 3).forEach(row => {
+            // 현재 카테고리에 필터링된 지표(최대 3개)를 차트에 표시
+            filteredRows.slice(0, 3).forEach(row => {
                 const valStr = String(row.values?.[idx] || '0');
-                const val = parseFloat(valStr.replace(/,/g, ''));
+                // 백분율(%) 기호나 쉼표, 한글 등을 안전하게 정제하여 숫자로 변환
+                const val = parseFloat(valStr.replace(/[^0-9.-]/g, ''));
                 entry[row.label] = isNaN(val) ? 0 : val;
             });
             chartData.push(entry);
