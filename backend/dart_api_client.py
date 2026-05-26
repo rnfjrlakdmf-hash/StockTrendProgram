@@ -400,7 +400,7 @@ class DartApiClient:
                 net_margin_vals.append(None)
         full_data["net_income_margin"] = {"dates": all_labels, "values": net_margin_vals}
 
-        # 부채비율 (%) - 연간만 (분기 대차대조표는 API 응답이 불안정)
+        # 부채비율 (%) - 연간 + 분기 (분기 대차대조표 데이터가 있는 경우)
         debt_vals = []
         for yr in sorted(annual_data.keys()):
             l = annual_data[yr].get("total_liabilities")
@@ -409,10 +409,22 @@ class DartApiClient:
                 debt_vals.append(round((l / e) * 100, 2))
             else:
                 debt_vals.append(None)
-        debt_vals += [None] * len(qtr_labels)
+        # 분기: total_liabilities와 total_equity가 수집된 경우 계산, 없으면 None
+        for q in quarterly_data:
+            l_q = q.get("total_liabilities")
+            e_q = q.get("total_equity")
+            if l_q is not None and e_q and e_q != 0:
+                debt_vals.append(round((l_q / e_q) * 100, 2))
+            else:
+                debt_vals.append(None)
         full_data["debt_ratio"] = {"dates": all_labels, "values": debt_vals}
 
-        # ROE (%) - 연간만
+        # total_equity 시계열 (억원) - EPS/BPS 계산에 필요
+        eq_ann_vals = [to_eok(annual_data.get(y, {}).get("total_equity")) for y in sorted(annual_data.keys())]
+        eq_qtr_vals = [to_eok(q.get("total_equity")) for q in quarterly_data]
+        full_data["total_equity"] = {"dates": all_labels, "values": eq_ann_vals + eq_qtr_vals}
+
+        # ROE (%) - 연간 + 분기 (데이터가 있는 경우)
         roe_vals = []
         for yr in sorted(annual_data.keys()):
             n = annual_data[yr].get("net_income")
@@ -421,7 +433,13 @@ class DartApiClient:
                 roe_vals.append(round((n / e) * 100, 2))
             else:
                 roe_vals.append(None)
-        roe_vals += [None] * len(qtr_labels)
+        for q in quarterly_data:
+            n_q = q.get("net_income")
+            e_q = q.get("total_equity")
+            if n_q is not None and e_q and e_q != 0:
+                roe_vals.append(round((n_q / e_q) * 100, 2))
+            else:
+                roe_vals.append(None)
         full_data["roe"] = {"dates": all_labels, "values": roe_vals}
 
         # ─── 4. 요약 정보 (최신 연간 기준) ───────────────────────────────

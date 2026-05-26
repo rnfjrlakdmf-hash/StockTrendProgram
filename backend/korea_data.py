@@ -413,6 +413,7 @@ def gather_naver_stock_data(symbol: str):
             "market_status": market_status,
             "regular_change_pct": reg_change_pct,
             "regular_change_val": change_val,
+            "shares_outstanding": info.get('sharesOutstanding'),
             "nxt_data": None,
             "after_market_data": None
         }
@@ -1904,42 +1905,105 @@ def get_stock_financials(symbol: str):
                 full_data = dart_result["full_data"]
                 dart_summary = dart_result.get("summary", {})
                 
-                # 시장 지표(시총·PER·PBR·ROE)는 기존 네이버/거래소 API에서 보완
+                # ── 시장 정보 수집 (주가·시총·발행주식수) ──────────────────────
                 price_data = gather_naver_stock_data(symbol) or {}
-                market_per = str(price_data.get("per", "N/A"))
-                market_pbr = str(price_data.get("pbr", "N/A"))
-                market_roe = price_data.get("roe", dart_summary.get("roe", "N/A"))
+                current_price = price_data.get("price") or 0  # 현재주가 (원)
+                shares_outstanding = price_data.get("shares_outstanding") or 0  # 발행주식수 (주)
                 market_cap = price_data.get("market_cap_str", "N/A")
-                
-                # PER·PBR 배열 추가 (DART는 제공 안 함 → 최신값만 넣고 나머지 None)
+                market_dvr = price_data.get("dvr")  # 배당수익률
+                market_roe = price_data.get("roe", dart_summary.get("roe", "N/A"))
+
+                # ── DART 재무 데이터 기반 EPS·BPS·PER·PBR 정밀 계산 ────────────
+                # DART는 원(KRW) 단위 수치를 제공함
+                # net_income은 full_data["net_income"]["values"]에 억원 단위로 들어 있음
+                # → 원 단위로 역산: 억원 × 100_000_000
+
                 all_dates = full_data["revenue"]["dates"] if "revenue" in full_data else []
                 n_dates = len(all_dates)
-                per_vals = [None] * (n_dates - 1) + [
-                    float(market_per) if market_per not in ("N/A", "None", "") else None
-                ] if n_dates > 0 else []
-                pbr_vals = [None] * (n_dates - 1) + [
-                    float(market_pbr) if market_pbr not in ("N/A", "None", "") else None
-                ] if n_dates > 0 else []
-                
-                try:
-                    per_vals[-1] = float(market_per) if market_per not in ("N/A", "None", "") else None
-                    pbr_vals[-1] = float(market_pbr) if market_pbr not in ("N/A", "None", "") else None
-                except:
-                    pass
 
+                ni_vals_eok = full_data.get("net_income", {}).get("values", [])  # 억원 리스트
+                eq_vals_eok = full_data.get("total_equity", {}).get("values", [])  # 억원 리스트 (있으면)
+
+                eps_vals = []
+                bps_vals = []
+                per_vals = []
+                pbr_vals = []
+
+                for i, label in enumerate(all_dates):
+                    ni_eok_i = ni_vals_eok[i] if i < len(ni_vals_eok) else None
+                    eq_eok_i = eq_vals_eok[i] if i < len(eq_vals_eok) else None
+
+                    # ① EPS = 당기순이익(원) / 발행주식수
+                    if ni_eok_i is not None and shares_outstanding and shares_outstanding > 0:
+                        ni_won = ni_eok_i * 100_000_000  # 억원 → 원
+                        eps_i = round(ni_won / shares_outstanding, 2)
+                    else:
+                        eps_i = None
+
+                    # ② BPS = 자본총계(원) / 발행주식수
+                    if eq_eok_i is not None and shares_outstanding and shares_outstanding > 0:
+                        eq_won = eq_eok_i * 100_000_000
+                        bps_i = round(eq_won / shares_outstanding, 2)
+                    else:
+                        bps_i = None
+
+                    # ③ PER = 현재주가 / EPS  (최신 날짜에만 현재가 기준으로 계산)
+                    if eps_i is not None and eps_i > 0:
+                        if i == n_dates - 1:
+                            # 최신 기간은 현재주가 사용
+                            per_i = round(current_price / eps_i, 2) if current_price > 0 else None
+                        else:
+                            # 과거 기간은 EPS만 활용, 가격 기준이 없어 None 처리
+                            per_i = None
+                    else:
+                        per_i = None  # 적자 기업이거나 데이터 없음
+
+                    # ④ PBR = 현재주가 / BPS (최신 날짜에만)
+                    if bps_i is not None and bps_i > 0:
+                        if i == n_dates - 1:
+                            pbr_i = round(current_price / bps_i, 2) if current_price > 0 else None
+                        else:
+                            pbr_i = None
+                    else:
+                        pbr_i = None
+
+                    eps_vals.append(eps_i)
+                    bps_vals.append(bps_i)
+                    per_vals.append(per_i)
+                    pbr_vals.append(pbr_i)
+
+                full_data["eps"] = {"dates": all_dates, "values": eps_vals}
+                full_data["bps"] = {"dates": all_dates, "values": bps_vals}
                 full_data["per"] = {"dates": all_dates, "values": per_vals}
                 full_data["pbr"] = {"dates": all_dates, "values": pbr_vals}
-                
+
+                # ── 최신값을 요약 지표로 추출 ──────────────────────────────────
+                latest_eps = eps_vals[-1] if eps_vals else None
+                latest_bps = bps_vals[-1] if bps_vals else None
+                latest_per = per_vals[-1] if per_vals else None
+                latest_pbr = pbr_vals[-1] if pbr_vals else None
+
+                def _fmt(v, decimals=2):
+                    """숫자 값을 보기 좋게 문자열로 변환"""
+                    if v is None:
+                        return "N/A"
+                    return f"{v:,.{decimals}f}"
+
                 rev_eok = dart_summary.get("revenue_eok")
                 oi_eok = dart_summary.get("operating_income_eok")
                 ni_eok = dart_summary.get("net_income_eok")
                 debt_pct = dart_summary.get("debt_ratio")
-                
+
+                print(f"[DART-CALC] EPS={latest_eps}, BPS={latest_bps}, PER={latest_per}, PBR={latest_pbr} | 주가={current_price}, 주식수={shares_outstanding:,}")
+
                 financials = {
                     "market_cap": market_cap,
-                    "per": market_per,
-                    "pbr": market_pbr,
-                    "roe": market_roe,
+                    "per": _fmt(latest_per),
+                    "pbr": _fmt(latest_pbr),
+                    "eps": _fmt(latest_eps, 0),
+                    "bps": _fmt(latest_bps, 0),
+                    "roe": _fmt(dart_summary.get("roe")),
+                    "dvr": f"{market_dvr * 100:.2f}%" if market_dvr else "N/A",
                     "revenue": f"{rev_eok:,.0f}" if rev_eok else "N/A",
                     "operating_income": f"{oi_eok:,.0f}" if oi_eok else "N/A",
                     "net_income": f"{ni_eok:,.0f}" if ni_eok else "N/A",
@@ -1948,9 +2012,11 @@ def get_stock_financials(symbol: str):
                         "success": True,
                         "source": "dart_official_api",
                         "summary": {
-                            "per": market_per,
-                            "pbr": market_pbr,
-                            "roe": market_roe
+                            "per": latest_per,
+                            "pbr": latest_pbr,
+                            "eps": latest_eps,
+                            "bps": latest_bps,
+                            "roe": dart_summary.get("roe")
                         },
                         "full_data": full_data
                     }
