@@ -298,9 +298,9 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2 notranslate" translate="no">
                                 <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 지표 추이 분석
                             </h4>
-                            <div className="h-[300px] w-full">
+                            <div className="h-[300px] w-full" key={category}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={getChartData()}>
+                                    <LineChart key={category} data={getChartData()}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                                         <YAxis 
