@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -303,6 +303,62 @@ const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, pre
     }
     return { ...finalFormat, text: label ? `${label} ${icon}${cleanPct}` : `${icon}${cleanPct}` };
 };
+function parseCompanyDescription(desc: string) {
+    if (!desc) return null;
+    
+    // 문장 단위로 분할
+    const sentences = desc.split(/[.!?]\s+/).map(s => s.trim()).filter(Boolean);
+    
+    let basicIntro = "";
+    let establishment = "";
+    let location = "";
+    const products: string[] = [];
+    const technologies: string[] = [];
+    
+    sentences.forEach((sentence, idx) => {
+        // 설립 및 본사 정보 찾기
+        if (sentence.includes("설립") || sentence.includes("본사")) {
+            const estMatch = sentence.match(/(\d{4})년에\s+설립/);
+            if (estMatch) {
+                establishment = estMatch[1] + "년 설립";
+            }
+            const locMatch = sentence.match(/(대한민국\s+[가-힣]+시|[가-힣]+시|서울|성남|울산|수원|인천|부산)/);
+            if (locMatch) {
+                location = locMatch[1];
+            }
+            return;
+        }
+        
+        // 첫 문장은 기본 소개로 지정
+        if (idx === 0) {
+            basicIntro = sentence + (sentence.endsWith('.') ? '' : '.');
+            return;
+        }
+        
+        // 제품 및 제품 목록 추출 (쉼표로 구분된 부분)
+        if (sentence.includes("제공합니다") || sentence.includes("포함됩니다") || sentence.includes("영위합니다") || sentence.includes("생산")) {
+            const cleanText = sentence.replace(/이 회사는|을 포함한|제품 및 서비스가 포함됩니다|등을 제공합니다|제공합니다/g, "");
+            const items = cleanText.split(/[,;]/).map(i => i.trim()).filter(i => i.length > 1 && i.length < 20);
+            products.push(...items);
+        } else if (sentence.includes("솔루션") || sentence.includes("기술") || sentence.includes("시스템")) {
+            const items = sentence.replace(/솔루션도 제공하고 있다|등을 제공합니다|제공합니다/g, "").split(/[,;]/).map(i => i.trim()).filter(i => i.length > 1 && i.length < 20);
+            technologies.push(...items);
+        }
+    });
+    
+    // 중복 제거
+    const uniqueProducts = Array.from(new Set(products)).slice(0, 12);
+    const uniqueTech = Array.from(new Set(technologies)).slice(0, 8);
+    
+    return {
+        basicIntro,
+        establishment,
+        location,
+        products: uniqueProducts,
+        technologies: uniqueTech,
+        rawSentences: sentences
+    };
+}
 
 export default function DiscoveryPage() {
     return (
@@ -1394,16 +1450,91 @@ function DiscoveryContent() {
 
 
                                             {/* [New] Corporate Overview Section (Basic Description) */}
-                                            {stock.description && (
-                                                <div className="mb-8 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 p-5 md:p-6 shadow-lg">
-                                                    <h4 className="text-sm font-black text-indigo-300 flex items-center gap-2 mb-4 uppercase tracking-widest">
-                                                        🏢 기업 개요 (Company Profile)
-                                                    </h4>
-                                                    <div className="text-gray-300 text-sm md:text-base leading-relaxed font-medium">
-                                                        {stock.description}
+                                            {stock.description && (() => {
+                                                const parsed = parseCompanyDescription(stock.description);
+                                                if (!parsed) return null;
+                                                
+                                                return (
+                                                    <div className="mb-8 rounded-3xl bg-gradient-to-br from-indigo-950/20 to-purple-950/20 border border-indigo-500/10 p-5 md:p-6 shadow-2xl relative overflow-hidden group">
+                                                        {/* 배경 광원 효과 */}
+                                                        <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-150 duration-700" />
+                                                        
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                                                                    <Building2 className="w-4 h-4 text-indigo-400" />
+                                                                </div>
+                                                                <h4 className="text-sm font-black text-indigo-300 uppercase tracking-widest">
+                                                                    기업 개요 (Company Profile)
+                                                                </h4>
+                                                            </div>
+                                                            
+                                                            <div className="flex gap-2">
+                                                                {parsed.establishment && (
+                                                                    <span className="text-[10px] md:text-xs font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                                                        📅 {parsed.establishment}
+                                                                    </span>
+                                                                )}
+                                                                {parsed.location && (
+                                                                    <span className="text-[10px] md:text-xs font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                                                        📍 {parsed.location}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 기본 회사 소개 */}
+                                                        {parsed.basicIntro && (
+                                                            <p className="text-gray-200 text-sm md:text-base leading-relaxed font-semibold mb-5 border-l-2 border-indigo-500/40 pl-3 relative z-10">
+                                                                {parsed.basicIntro}
+                                                            </p>
+                                                        )}
+
+                                                        {/* 주요 사업 배지 */}
+                                                        {parsed.products.length > 0 && (
+                                                            <div className="mb-4 relative z-10">
+                                                                <h5 className="text-[10px] md:text-[11px] font-black text-indigo-400/80 uppercase tracking-widest mb-2">
+                                                                    🚢 주요 사업 및 생산 품목
+                                                                </h5>
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {parsed.products.map((item, idx) => (
+                                                                        <span key={idx} className="text-xs font-semibold text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10 px-2.5 py-1.5 rounded-xl">
+                                                                            {item}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* 핵심 기술 배지 */}
+                                                        {parsed.technologies.length > 0 && (
+                                                            <div className="mb-4 relative z-10">
+                                                                <h5 className="text-[10px] md:text-[11px] font-black text-purple-400/80 uppercase tracking-widest mb-2">
+                                                                    ⚡ 핵심 기술 및 솔루션
+                                                                </h5>
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {parsed.technologies.map((item, idx) => (
+                                                                        <span key={idx} className="text-xs font-semibold text-purple-200 bg-purple-500/5 hover:bg-purple-500/10 transition-colors border border-purple-500/10 px-2.5 py-1.5 rounded-xl">
+                                                                            {item}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* 설명 전문 보기 아코디언 */}
+                                                        <details className="mt-4 border-t border-white/5 pt-3 group relative z-10">
+                                                            <summary className="text-[10px] md:text-xs text-gray-500 font-bold hover:text-gray-300 cursor-pointer list-none flex items-center gap-1 select-none">
+                                                                <span>📄 설명 전문 보기</span>
+                                                                <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+                                                            </summary>
+                                                            <p className="text-gray-400 text-xs md:text-sm leading-relaxed mt-2 whitespace-pre-wrap">
+                                                                {stock.description}
+                                                            </p>
+                                                        </details>
                                                     </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
 
                                             <h4 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-white">
                                                 <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-blue-400" /> 종합 분석 리포트
