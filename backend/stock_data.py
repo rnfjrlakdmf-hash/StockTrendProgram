@@ -619,12 +619,11 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                         if dart_bps is not None:
                             d["bps"] = dart_bps
 
-                        # 배당수익률: DART 계산값 우선
-                        dart_dvr = _dart_parse_dvr(dart_fin.get("dvr"))
-                        if dart_dvr is not None:
-                            d["dividend_yield"] = dart_dvr
+                        # ※ 배당수익률(dvr)은 DART 계산값 대신 yfinance(naver_info)값 유지
+                        # 이유: DART dvr 계산 시 이상치(51%) 발생 사례 있음
+                        # yfinance dividendYield (0~1 소수 형태)가 더 정확함
 
-                        print(f"[DART-INJECT] {clean_code} → PER={d.get('pe_ratio')}, EPS={d.get('eps')}, PBR={d.get('pbr')}, BPS={d.get('bps')}, DVR={d.get('dividend_yield')}")
+                        print(f"[DART-INJECT] {clean_code} → PER={d.get('pe_ratio')}, EPS={d.get('eps')}, PBR={d.get('pbr')}, BPS={d.get('bps')}, DVR={d.get('dividend_yield')}, dp_share={d.get('dividend_rate')}")
                 except Exception as dart_inject_err:
                     print(f"[DART-INJECT] 재무 보완 실패 ({symbol}): {dart_inject_err}")
 
