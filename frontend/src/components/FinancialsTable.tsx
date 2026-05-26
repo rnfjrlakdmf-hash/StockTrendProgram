@@ -193,7 +193,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     <p className="text-[10px] text-gray-500 mt-0.5 ml-7 italic">
                         {currency === 'USD'
                             ? '📡 SEC EDGAR 공식 공시 데이터 기반 (달러→원 환산, 억원 단위)'
-                            : '📊 네이버 금융 제공 데이터 기반 (단위: 억원/원/%)'}
+                            : '📡 금융감독원 DART 공식 공시 데이터 기반 (단위: 억원/원/%)'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -353,9 +353,9 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
             <div className="mt-2 p-3 bg-blue-900/10 rounded-xl border border-blue-500/20 flex items-center justify-between">
                 <p className="text-[11px] text-gray-400 leading-relaxed">
-                    실적 데이터는 네이버 금융 정보를 바탕으로 제공됩니다. 예상(E) 수치는 증권사 컨센서스 자료이며 실제 결과와 다를 수 있습니다.
+                    실적 데이터는 금융감독원 DART 공식 API를 바탕으로 제공됩니다. 예상(E) 수치는 수집 시점에 제공된 공시 자료 기준이며 실제 결과와 다를 수 있습니다.
                 </p>
-                <span className="text-[10px] text-blue-500/50 font-mono">v3.6.1</span>
+                <span className="text-[10px] text-blue-500/50 font-mono">v3.6.2</span>
             </div>
         </div>
     );
