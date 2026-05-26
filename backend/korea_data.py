@@ -300,7 +300,34 @@ def gather_naver_stock_data(symbol: str):
             return None
 
         # ── 데이터 매핑 및 가공 ──────────────────────────────────
-        name = info.get('longName') or info.get('shortName') or symbol
+        # Try to resolve Korean stock name from local map or clean/translate
+        name = None
+        try:
+            from stock_names import STOCK_MAP
+            code_to_name = {}
+            for name_key, code_val in STOCK_MAP.items():
+                if isinstance(code_val, str) and code_val.isdigit():
+                    if code_val in code_to_name:
+                        if len(name_key) > len(code_to_name[code_val]):
+                            code_to_name[code_val] = name_key
+                    else:
+                        code_to_name[code_val] = name_key
+            name = code_to_name.get(code)
+        except Exception as name_err:
+            print(f"[gather_naver_stock_data] Error importing stock names: {name_err}")
+
+
+        if not name:
+            name = info.get('longName') or info.get('shortName') or symbol
+            if name and any(ord(c) < 128 for c in name): # Contains ASCII
+                try:
+                    from deep_translator import GoogleTranslator
+                    translated = GoogleTranslator(source='en', target='ko').translate(name)
+                    if translated:
+                        name = translated
+                except Exception as trans_err:
+                    print(f"[gather_naver_stock_data] Translation error for name {name}: {trans_err}")
+
         
         # 1. 시가총액 포맷팅 (조 단위, 억 단위)
         mcap = info.get('marketCap') or 0
