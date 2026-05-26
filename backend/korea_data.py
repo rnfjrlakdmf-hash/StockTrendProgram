@@ -345,9 +345,20 @@ def gather_naver_stock_data(symbol: str):
         # 4. 시장 타입 (KS/KQ)
         market_type = "KS" if yf_symbol.endswith('.KS') else "KQ"
 
+        # 5. 기업 개요 실시간 한글 번역
+        description = info.get('longBusinessSummary') or ""
+        if description:
+            try:
+                from deep_translator import GoogleTranslator
+                description_ko = GoogleTranslator(source='en', target='ko').translate(description)
+                if description_ko:
+                    description = description_ko
+            except Exception as e:
+                print(f"[yfinance-translation] Failed to translate business summary for {symbol}: {e}")
+
         res_data = {
             "name": name,
-            "description": info.get('longBusinessSummary') or "",
+            "description": description,
             "market_type": market_type,
             "code": code,
             "sector": info.get('sector') or info.get('industry') or "Unknown",
