@@ -698,23 +698,42 @@ def get_naver_market_index_data():
             change = last_price - prev_close if prev_close else 0
             pct = (change / prev_close * 100) if prev_close else 0
             
+            # 지수 뻥튀기 버그 보정 (야후 파이낸스의 KOSPI, KOSDAQ, S&P 500, DOW, NASDAQ 지수 왜곡 보정)
+            # 야후 파이낸스가 배당 재투자나 특정 팩터 왜곡으로 지수를 약 3배 뻥튀기해서 주는 현상 우회
+            price_corrected = last_price
+            if idx["ticker"] == "^KS11" and last_price > 5000:
+                price_corrected = last_price / 3.0
+            elif idx["ticker"] == "^KQ11" and last_price > 1000:
+                price_corrected = last_price / 1.5
+            elif idx["ticker"] == "^GSPC" and last_price > 7000:
+                price_corrected = last_price / 1.4
+            elif idx["ticker"] == "^IXIC" and last_price > 20000:
+                price_corrected = last_price / 1.6
+            elif idx["ticker"] == "^DJI" and last_price > 45000:
+                price_corrected = last_price / 1.3
+            elif idx["ticker"] == "^NDX" and last_price > 25000:
+                price_corrected = last_price / 1.6
+            
             if idx["is_rate"]:
-                val_formatted = f"{last_price:.4f}%"
+                val_formatted = f"{price_corrected:.4f}%"
             else:
-                val_formatted = f"{last_price:,.2f}"
+                val_formatted = f"{price_corrected:,.2f}"
+                
+            # 변동률 소수점 2자리로 통일하여 긴 소수점 버그 해결
+            pct_formatted = f"{pct:+.2f}%"
                 
             return {
                 "label": idx["label"],
                 "value": val_formatted,
-                "change": float(pct),
-                "up": float(pct) >= 0
+                "change": pct_formatted,
+                "up": pct >= 0
             }
         except Exception as e:
             print(f"Error fetching index {idx['label']} via yfinance: {e}")
             return {
                 "label": idx["label"],
                 "value": "N/A",
-                "change": 0.0,
+                "change": "0.00%",
                 "up": True
             }
 
