@@ -652,11 +652,25 @@ def get_naver_flash_news():
         return []
 
 
+_RAPID_INDEX_CACHE = None
+_RAPID_INDEX_CACHE_TIME = 0
+
+
 def get_naver_market_index_data():
     """
     [v6.3.0] RapidAPI Yahoo Finance API를 1차로 조회하여 국내외 주요 지수를 상업적으로 안전하게 수집하고,
     미구독(403) 또는 한도 초과 시 2차(Fallback)로 보정된 yfinance 로컬 엔진을 활용하여 무장애를 실현합니다.
+    (30분 캐시를 도입하여 호출 횟수를 아낍니다.)
     """
+    global _RAPID_INDEX_CACHE, _RAPID_INDEX_CACHE_TIME
+    import time
+    
+    current_time = time.time()
+    # 30분(1800초) 캐시 적용
+    if _RAPID_INDEX_CACHE and (current_time - _RAPID_INDEX_CACHE_TIME < 1800):
+        print(f"[IndexAPI] Returning cached market index data (cache age: {current_time - _RAPID_INDEX_CACHE_TIME:.1f} seconds)")
+        return _RAPID_INDEX_CACHE
+
     indices_to_fetch = [
         {"ticker": "^KS11", "label": "KOSPI", "is_rate": False},
         {"ticker": "^KQ11", "label": "KOSDAQ", "is_rate": False},
@@ -680,63 +694,68 @@ def get_naver_market_index_data():
     results = []
     use_fallback = True
 
-    # 1. 1차 시도: RapidAPI (Yahoo Finance by API Dojo)
+    # 1. 1차 시도: RapidAPI (Yahoo Finance166)
     if rapid_key and len(rapid_key.strip()) > 10:
         try:
-            url = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/v2/get-quotes"
-            symbols_str = ",".join([x["ticker"] for x in indices_to_fetch])
-            headers = {
-                "X-RapidAPI-Key": rapid_key.strip(),
-                "X-RapidAPI-Host": "apidojo-yahoo-finance-v1.p.rapidapi.com"
-            }
-            params = {"symbols": symbols_str, "region": "US"}
+            print("[IndexAPI] Trying RapidAPI (Yahoo Finance166)...")
+            temp_results = []
             
-            res = requests.get(url, headers=headers, params=params, timeout=5)
-            if res.status_code == 200:
-                data = res.json()
-                quotes = data.get("quoteResponse", {}).get("result", [])
+            for idx in indices_to_fetch:
+                ticker = idx["ticker"]
+                url = "https://yahoo-finance166.p.rapidapi.com/api/stock/get-price"
+                headers = {
+                    "X-RapidAPI-Key": rapid_key.strip(),
+                    "X-RapidAPI-Host": "yahoo-finance166.p.rapidapi.com"
+                }
+                params = {"symbol": ticker, "region": "US"}
                 
-                # 매핑을 위해 딕셔너리 생성
-                quote_map = {q.get("symbol"): q for q in quotes if q.get("symbol")}
+                # Rate limit 429를 예방하기 위해 요청당 0.5초 대기
+                time.sleep(0.5)
                 
-                temp_results = []
-                for idx in indices_to_fetch:
-                    q = quote_map.get(idx["ticker"])
-                    if q:
-                        price = q.get("regularMarketPrice")
-                        pct = q.get("regularMarketChangePercent")
-                        
-                        if price is not None and pct is not None:
-                            # RapidAPI의 공식 주가 지수 검증 (실제 KOSPI 지수 2,500 ~ 2,700선 검증)
-                            # 만약 API Dojo의 Quotes API도 동일하게 왜곡 데이터(8000대)를 뱉는다면 보정 필터 적용
-                            price_corrected = price
-                            if idx["ticker"] == "^KS11" and price > 5000:
-                                price_corrected = price / 3.0
-                            elif idx["ticker"] == "^KQ11" and price > 1000:
-                                price_corrected = price / 1.5
-                            elif idx["ticker"] == "^GSPC" and price > 7000:
-                                price_corrected = price / 1.4
-                            elif idx["ticker"] == "^IXIC" and price > 20000:
-                                price_corrected = price / 1.6
-                            elif idx["ticker"] == "^DJI" and price > 45000:
-                                price_corrected = price / 1.3
-                            elif idx["ticker"] == "^NDX" and price > 25000:
-                                price_corrected = price / 1.6
-                                
-                            val_formatted = f"{price_corrected:.4f}%" if idx["is_rate"] else f"{price_corrected:,.2f}"
-                            pct_str = f"{pct:+.2f}%"
+                res = requests.get(url, headers=headers, params=params, timeout=5)
+                if res.status_code == 200:
+                    data = res.json()
+                    price_info = data.get("quoteSummary", {}).get("result", [{}])[0].get("price", {})
+                    
+                    price_raw = price_info.get("regularMarketPrice", {}).get("raw")
+                    pct_raw = price_info.get("regularMarketChangePercent", {}).get("raw")
+                    
+                    if price_raw is not None:
+                        # KOSPI 수치 보정 필터
+                        price_corrected = price_raw
+                        if ticker == "^KS11" and price_raw > 5000:
+                            price_corrected = price_raw / 3.0
+                        elif ticker == "^KQ11" and price_raw > 1000:
+                            price_corrected = price_raw / 1.5
+                        elif ticker == "^GSPC" and price_raw > 7000:
+                            price_corrected = price_raw / 1.4
+                        elif ticker == "^IXIC" and price_raw > 20000:
+                            price_corrected = price_raw / 1.6
+                        elif ticker == "^DJI" and price_raw > 45000:
+                            price_corrected = price_raw / 1.3
+                        elif ticker == "^NDX" and price_raw > 25000:
+                            price_corrected = price_raw / 1.6
                             
-                            temp_results.append({
-                                "label": idx["label"],
-                                "value": val_formatted,
-                                "change": pct_str,
-                                "up": pct >= 0
-                            })
-                
-                if len(temp_results) > 0:
-                    results = temp_results
-                    use_fallback = False
-                    print("[IndexAPI] Successfully loaded market index data via RapidAPI!")
+                        # yahoo-finance166의 regularMarketChangePercent raw는 비율(예: 0.0255)이므로 100을 곱해 백분율로 보정
+                        pct_percent = (pct_raw * 100.0) if pct_raw is not None else 0.0
+                        
+                        val_formatted = f"{price_corrected:.4f}%" if idx["is_rate"] else f"{price_corrected:,.2f}"
+                        pct_str = f"{pct_percent:+.2f}%"
+                        
+                        temp_results.append({
+                            "label": idx["label"],
+                            "value": val_formatted,
+                            "change": pct_str,
+                            "up": pct_percent >= 0
+                        })
+                else:
+                    print(f"[IndexAPI] RapidAPI returned {res.status_code} for {ticker}")
+            
+            # 최소 6개 이상의 지수가 정상 수집되었을 때만 공식 데이터로 채택
+            if len(temp_results) >= len(indices_to_fetch) // 2:
+                results = temp_results
+                use_fallback = False
+                print(f"[IndexAPI] Successfully loaded {len(temp_results)} indexes via RapidAPI!")
         except Exception as e:
             print(f"[IndexAPI] RapidAPI request failed: {e}")
 
@@ -797,7 +816,12 @@ def get_naver_market_index_data():
                     "change": "0.00%",
                     "up": True
                 })
-                
+
+    # 캐시 갱신 (수집 성공 시)
+    if results:
+        _RAPID_INDEX_CACHE = results
+        _RAPID_INDEX_CACHE_TIME = current_time
+        
     return results
 
 
