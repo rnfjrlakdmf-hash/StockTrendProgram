@@ -1032,83 +1032,84 @@ function DiscoveryContent() {
                                             </span>
                                         </h3>
 
-                                        <div className="flex flex-wrap items-center gap-4 mb-8">
-                                            <span className="text-4xl md:text-6xl font-black text-white tabular-nums tracking-tighter flex items-center">
-                                                <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
-                                                    {stock.currency === 'KRW' ? '₩' : '$'}
+                                        {/* 정규장 및 시간외 거래 가격 분리 레이아웃 */}
+                                        <div className="flex flex-col gap-4 mb-8">
+                                            {/* 정규장 가격 영역 */}
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-md w-max shadow-sm">
+                                                    REGULAR MARKET 정규장 종가
                                                 </span>
-                                                <BlinkingPrice
-                                                    price={stock.currency === 'KRW'
-                                                        ? Number(String(stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                        : stock.regular_close || stock.price}
-                                                    className="text-white bg-transparent"
-                                                />
-                                            </span>
+                                                <div className="flex flex-wrap items-center gap-4">
+                                                    <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter flex items-center">
+                                                        <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
+                                                            {stock.currency === 'KRW' ? '₩' : '$'}
+                                                        </span>
+                                                        <BlinkingPrice
+                                                            price={stock.currency === 'KRW'
+                                                                ? Number(String(stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                                : stock.regular_close || stock.price}
+                                                            className="text-white bg-transparent"
+                                                        />
+                                                    </span>
 
-                                            <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
-                                                (() => {
-                                                    const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                    return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                           val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                           'bg-gray-500/10 border-white/10 text-gray-400';
-                                                })()
-                                            }`}>
-                                                <span className="flex items-center gap-1">
-                                                    {(() => {
-                                                        const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                        return val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                    })()}
-                                                    {Math.abs(Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString()}
-                                                </span>
-                                                <span className="text-sm md:text-base font-bold opacity-80 ml-1">
-                                                    ({(() => {
-                                                        const pct = stock.regular_change_pct;
-                                                        if (!pct || pct === 0 || pct === '0.00%') {
-                                                            // change_percent fallback: 퍼센트 문자열에서 숫자 추출
-                                                            const raw = String(stock.change_percent || stock.change || '0.00%');
-                                                            const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                            return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
-                                                        }
-                                                        const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
-                                                        return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
-                                                    })()})
-                                                </span>
+                                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
+                                                        (() => {
+                                                            const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                            return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                                   val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                                   'bg-gray-500/10 border-white/10 text-gray-400';
+                                                        })()
+                                                    }`}>
+                                                        <span className="flex items-center gap-1">
+                                                            {(() => {
+                                                                const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                                return val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                            })()}
+                                                            {Math.abs(Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString()}
+                                                        </span>
+                                                        <span className="text-sm md:text-base font-bold opacity-80 ml-1">
+                                                            ({(() => {
+                                                                const pct = stock.regular_change_pct;
+                                                                if (!pct || pct === 0 || pct === '0.00%') {
+                                                                    const raw = String(stock.change_percent || stock.change || '0.00%');
+                                                                    const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                    return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
+                                                                }
+                                                                const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
+                                                                return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+                                                            })()})
+                                                        </span>
+                                                    </div>
+
+                                                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
+                                                        stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
+                                                        stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                                                        'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full ${
+                                                            stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
+                                                            stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.6)]' :
+                                                            'bg-gray-500'
+                                                        }`}></div>
+                                                        <span className="text-xs md:text-sm font-black uppercase tracking-tight">{stock.market_status || '장마감'}</span>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
-                                                stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
-                                                stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
-                                                'bg-gray-500/10 text-gray-400 border-gray-500/30'
-                                            }`}>
-                                                <div className={`w-2 h-2 rounded-full ${
-                                                    stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
-                                                    stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.6)]' :
-                                                    'bg-gray-500'
-                                                }`}></div>
-                                                <span className="text-xs md:text-sm font-black uppercase tracking-tight">{stock.market_status || '장마감'}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* [New] 해외 주식 세션별 가격 위젯 (프리마켓 / 정규장 / 에프터마켓) */}
-                                        {(extendedHours || extendedLoading) && (
-                                            <>
+                                            {/* 해외 주식 세션별 가격 위젯 (프리마켓 / 정규장 / 에프터마켓) */}
+                                            {(extendedHours || extendedLoading) && (
                                                 <GlobalExtendedHoursWidget
                                                     data={extendedHours}
                                                     loading={extendedLoading}
                                                     lastUpdated={extendedLastUpdated}
                                                 />
-                                            </>
-                                        )}
+                                            )}
 
-                                        {/* NXT / After-hours Card (Sub-box style, 국내 전용) */}
-                                        {!extendedHours && (stock.nxt_data || stock.after_market_data) && (
-                                            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 md:p-6 max-w-md transition-all hover:bg-white/[0.08] group relative overflow-hidden shadow-2xl">
-                                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                                                    <Clock className="w-12 h-12 text-indigo-400" />
-                                                </div>
-                                                <div className="relative z-10">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <span className="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2.5 py-0.5 rounded-md border border-indigo-500/20 shadow-sm">
+                                            {/* 시간외 거래(애프터 마켓) 가격 영역 (국내 전용) */}
+                                            {!extendedHours && (stock.nxt_data || stock.after_market_data) && (
+                                                <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-3.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2.5 py-0.5 rounded-md border border-indigo-500/20 shadow-sm w-max">
                                                             {stock.market_status?.includes('야간') || stock.market_status?.includes('NXT') || (!stock.after_market_data && stock.nxt_data) 
                                                                 ? 'NXT AFTER MARKET 야간거래' 
                                                                 : 'AFTER MARKET 시간외거래'}
@@ -1117,9 +1118,9 @@ function DiscoveryContent() {
                                                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-end gap-3">
+                                                    <div className="flex items-center gap-4 mt-1.5">
                                                         <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
-                                                            <span className="mr-0.5">{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                            <span className="text-lg md:text-xl mr-0.5 text-gray-500 font-bold">{stock.currency === 'KRW' ? '₩' : '$'}</span>
                                                             <BlinkingPrice
                                                                 price={Number(String(
                                                                     (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
@@ -1129,16 +1130,17 @@ function DiscoveryContent() {
                                                                 className="text-white bg-transparent"
                                                             />
                                                         </span>
-                                                        <div className={`flex items-center gap-1.5 font-bold mb-1 ${
-                                                            ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                ? (stock.nxt_data?.change_val || 0) 
-                                                                : (stock.after_market_data?.change_val || 0)) > 0 ? 'text-rose-400' : 
-                                                            ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                ? (stock.nxt_data?.change_val || 0) 
-                                                                : (stock.after_market_data?.change_val || 0)) < 0 ? 'text-blue-400' : 
-                                                            'text-gray-400'
+                                                        <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${
+                                                            (() => {
+                                                                const val = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                    ? (stock.nxt_data?.change_val || 0) 
+                                                                    : (stock.after_market_data?.change_val || 0);
+                                                                return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                                       val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                                       'bg-gray-500/10 border-white/10 text-gray-400';
+                                                            })()
                                                         }`}>
-                                                            <span className="text-sm">
+                                                            <span>
                                                                 {((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                     ? (stock.nxt_data?.change_val || 0) 
                                                                     : (stock.after_market_data?.change_val || 0)) > 0 ? '▲' : 
@@ -1149,7 +1151,7 @@ function DiscoveryContent() {
                                                                     ? (stock.nxt_data?.change_val || 0) 
                                                                     : (stock.after_market_data?.change_val || 0)).toLocaleString()}
                                                             </span>
-                                                            <span className="text-xs opacity-80">
+                                                            <span className="text-xs md:text-sm opacity-80">
                                                                 ({(stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                     ? (stock.nxt_data?.change_pct_str || stock.nxt_data?.change_pct || "0.00%") 
                                                                     : (stock.after_market_data?.change_pct_str || stock.after_market_data?.change_pct || "0.00%")})
@@ -1157,8 +1159,8 @@ function DiscoveryContent() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
