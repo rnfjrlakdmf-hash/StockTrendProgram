@@ -2003,7 +2003,10 @@ def get_stock_financials(symbol: str):
                     "eps": _fmt(latest_eps, 0),
                     "bps": _fmt(latest_bps, 0),
                     "roe": _fmt(dart_summary.get("roe")),
-                    "dvr": f"{market_dvr * 100:.2f}%" if market_dvr else "N/A",
+                    "dvr": (
+                        f"{market_dvr * 100:.2f}%" if (market_dvr and 0 < market_dvr < 1)
+                        else (f"{market_dvr:.2f}%" if (market_dvr and 1 <= market_dvr <= 50) else "N/A")
+                    ),
                     "revenue": f"{rev_eok:,.0f}" if rev_eok else "N/A",
                     "operating_income": f"{oi_eok:,.0f}" if oi_eok else "N/A",
                     "net_income": f"{ni_eok:,.0f}" if ni_eok else "N/A",

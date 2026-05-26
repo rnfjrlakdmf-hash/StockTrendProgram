@@ -83,10 +83,26 @@ def deploy_remote():
             detailed_kr = data_kr.get('detailed', {})
             source_kr = detailed_kr.get('source', 'unknown')
             print(f"Source: {source_kr}")  # dart_official_api 이어야 함
+            print(f"PER: {data_kr.get('per')}")
+            print(f"PBR: {data_kr.get('pbr')}")
+            print(f"EPS (원): {data_kr.get('eps')}")
+            print(f"BPS (원): {data_kr.get('bps')}")
+            print(f"ROE: {data_kr.get('roe')}")
+            print(f"배당수익률: {data_kr.get('dvr')}")
             if 'full_data' in detailed_kr:
-                rev_kr = detailed_kr['full_data'].get('revenue', {})
+                fd = detailed_kr['full_data']
+                rev_kr = fd.get('revenue', {})
+                eps_kr = fd.get('eps', {})
+                bps_kr = fd.get('bps', {})
+                per_kr = fd.get('per', {})
+                pbr_kr = fd.get('pbr', {})
+                debt_kr = fd.get('debt_ratio', {})
                 print(f"Revenue dates: {rev_kr.get('dates')}")
-                print(f"Revenue values (억원): {rev_kr.get('values')}")
+                print(f"EPS values: {eps_kr.get('values')}")
+                print(f"BPS values: {bps_kr.get('values')}")
+                print(f"PER values: {per_kr.get('values')}")
+                print(f"PBR values: {pbr_kr.get('values')}")
+                print(f"debt_ratio values: {debt_kr.get('values')}")
             else:
                 print("full_data MISSING - DART fallback to Naver")
         except Exception as e:
