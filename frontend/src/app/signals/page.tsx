@@ -112,7 +112,33 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
     const [riskLoading, setRiskLoading] = useState(false);
 
+    // [New] 자동 새로고침 상태
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const [countdown, setCountdown] = useState(30);
+
     const fetchSignals = async () => { try { const r = await fetch(`${API_BASE_URL}/api/signals?limit=50`); const j = await r.json(); if (j.status === "success") setSignals(j.data || []); } catch { } finally { setLoading(false); } };
+
+    // [New] 자동 새로고침 주기 관리 타이머
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (autoRefresh) {
+            timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        fetchSignals();
+                        fetchRiskAlerts();
+                        return 30; // 30초 주기로 리셋
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        } else {
+            setCountdown(30);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [autoRefresh]);
 
     // Auth Token Helper
     const getAuthToken = async () => {
@@ -292,6 +318,28 @@ function SignalsFeedTab({ router }: { router: any }) {
                         <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery("")} className="absolute right-3 top-2.5 text-gray-400 hover:text-white text-xs z-10">✕</button>
+                        )}
+                    </div>
+
+                    {/* 자동 새로고침 토글 */}
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold select-none h-9 hover:bg-white/[0.08] transition-all">
+                        <span className="text-gray-400">자동 갱신</span>
+                        <button
+                            onClick={() => setAutoRefresh(!autoRefresh)}
+                            className={`relative w-8 h-4 rounded-full p-0.5 transition-colors cursor-pointer ${
+                                autoRefresh ? 'bg-orange-600' : 'bg-gray-700'
+                            }`}
+                        >
+                            <div
+                                className={`w-3 h-3 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${
+                                    autoRefresh ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                        {autoRefresh && (
+                            <span className="text-orange-400 font-mono w-6 text-center animate-pulse text-[10px]">
+                                {countdown}s
+                            </span>
                         )}
                     </div>
 
