@@ -380,7 +380,7 @@ def run_dart_daily_cache_update():
                 result = get_stock_financials(code)
                 if result and result.get('status') != 'error':
                     success_count += 1
-                    print(f"[DART-Cache] ✅ {code} → PER={result.get('per')}, EPS={result.get('eps')}")
+                    print(f"[DART-Cache] [OK] {code} → PER={result.get('per')}, EPS={result.get('eps')}")
                 else:
                     fail_count += 1
                 # DART API 과부하 방지 (0.5초 지연)

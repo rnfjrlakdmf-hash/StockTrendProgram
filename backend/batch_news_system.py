@@ -212,7 +212,7 @@ class BatchNewsSystem:
                     self.sent_log[symbol] = set()
                 self.sent_log[symbol].add(article_id)
 
-            print(f"[BatchNews] ✅ 발송 이력 복원: {len(rows)}건")
+            print(f"[BatchNews] [OK] 발송 이력 복원: {len(rows)}건")
         except Exception as e:
             print(f"[BatchNews] 발송 이력 복원 실패 (무시): {e}")
 
@@ -591,7 +591,7 @@ class BatchNewsSystem:
             except Exception as e:
                 print(f"[BatchNews] FCM 발송 오류: {e}")
 
-        print(f"[BatchNews] ✅ 발송 완료: {sent_count}건")
+        print(f"[BatchNews] [OK] 발송 완료: {sent_count}건")
 
     async def _send_fcm(
         self,

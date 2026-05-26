@@ -2158,7 +2158,7 @@ def get_stock_financials(symbol: str):
                         "full_data": full_data
                     }
                 }
-                print(f"[DART-API] ✅ 금감원 DART 공식 API 재무제표 성공 [{symbol}] "
+                print(f"[DART-API] [SUCCESS] 금감원 DART 공식 API 재무제표 성공 [{symbol}] "
                       f"(연간 {len([d for d in all_dates if d.endswith('/12')])}개 + "
                       f"분기 {len([d for d in all_dates if not d.endswith('/12')])}개)")
                 return financials
