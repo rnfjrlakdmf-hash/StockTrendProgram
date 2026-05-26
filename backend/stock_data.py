@@ -960,7 +960,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 "market_cap_str": mkt_cap_str, # Mirror
                 "pe_ratio": pe,
                 "eps": info.get('trailingEps'),
-                "dividend_yield": info.get('dividendYield'),
+                "dividend_yield": (info.get('dividendYield') / 100) if info.get('dividendYield') is not None else None,
                 "forward_pe": info.get('forwardPE'),
                 "forward_eps": info.get('forwardEps'),
                 "pbr": info.get('pbr') or info.get('priceToBook'),

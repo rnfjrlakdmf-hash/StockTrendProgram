@@ -400,7 +400,7 @@ def gather_naver_stock_data(symbol: str):
             "pbr": info.get('priceToBook'),
             "eps": info.get('trailingEps'),
             "bps": info.get('bookValue'),
-            "dvr": info.get('dividendYield'),
+            "dvr": (info.get('dividendYield') / 100) if info.get('dividendYield') is not None else None,
             "est_per": info.get('forwardPE'),
             "est_eps": None,
             "dp_share": info.get('dividendRate'),  # 주당배당금 (원화 환산 필요 없음, yfinance는 달러 단위이나 KRW 종목은 원화)
