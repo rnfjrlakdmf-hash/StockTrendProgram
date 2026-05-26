@@ -1903,6 +1903,19 @@ def get_stock_financials(symbol: str):
             dart_result = dart_api_client.get_full_data_for_financials(clean_code)
             if dart_result and dart_result.get("success") and dart_result.get("full_data"):
                 full_data = dart_result["full_data"]
+                
+                # ── DART 날짜 정렬 버그 수정 (YYYY/MM 문자열 정렬) ──────────────
+                if "revenue" in full_data and "dates" in full_data["revenue"]:
+                    dates = full_data["revenue"]["dates"]
+                    sorted_indices = sorted(range(len(dates)), key=lambda idx: dates[idx])
+                    for key in list(full_data.keys()):
+                        if isinstance(full_data[key], dict) and "dates" in full_data[key] and "values" in full_data[key]:
+                            orig_dates = full_data[key]["dates"]
+                            orig_vals = full_data[key]["values"]
+                            if len(orig_dates) == len(dates) and len(orig_vals) == len(dates):
+                                full_data[key]["dates"] = [orig_dates[idx] for idx in sorted_indices]
+                                full_data[key]["values"] = [orig_vals[idx] for idx in sorted_indices]
+
                 dart_summary = dart_result.get("summary", {})
                 
                 # ── 시장 정보 수집 (주가·시총·발행주식수) ──────────────────────
