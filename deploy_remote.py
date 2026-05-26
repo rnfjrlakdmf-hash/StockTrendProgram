@@ -108,6 +108,12 @@ def deploy_remote():
         except Exception as e:
             print("KR parse error:", e)
 
+        # 6. 종목발굴 화면 검증 - details 필드 확인 (상세 재무/투자 지표 카드)
+        print("\n=== Verifying 005930 stock INFO API (details 카드) on EC2 ===")
+        stdin, stdout, stderr = ssh.exec_command("curl -s 'http://127.0.0.1:8000/api/analysis/stock/005930' | python3 -c \"import sys,json; d=json.load(sys.stdin); det=d.get('data', {}).get('details',{}); print('PER:', det.get('pe_ratio')); print('EPS:', det.get('eps')); print('PBR:', det.get('pbr')); print('BPS:', det.get('bps')); print('DVR:', det.get('dividend_yield')); print('배당금:', det.get('dividend_rate')); print('forward_pe:', det.get('forward_pe')); print('forward_eps:', det.get('forward_eps'))\" 2>&1")
+        info_out = stdout.read().decode('utf-8', 'ignore').strip()
+        print(info_out if info_out else "  (응답 없음 또는 파싱 실패)")
+
         ssh.close()
         print("\n=== Deployment Completed! ===")
     except Exception as e:
