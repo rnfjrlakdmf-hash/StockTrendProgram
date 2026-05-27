@@ -46,6 +46,8 @@ class AutoPriceMonitor:
             self.notified_events = {today_str: {}}
 
         # FCM 토큰이 있는 활성 사용자의 관심종목만 가져옴
+        # [Fix-3] 심볼 형식 불일치 관대화: watchlist의 '005930'과 fcm_tokens JOIN 실패 방지
+        # LIKE 매칭으로 '005930', '005930.KS', '005930.KQ' 모두 검색
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -57,6 +59,19 @@ class AutoPriceMonitor:
         conn.close()
         
         if not rows:
+            # 디버깅: 조인 실패 원인 로깅
+            conn2 = get_db_connection()
+            c2 = conn2.cursor()
+            c2.execute("SELECT COUNT(*) FROM watchlist")
+            wl_count = c2.fetchone()[0]
+            c2.execute("SELECT COUNT(*) FROM fcm_tokens")
+            fcm_count = c2.fetchone()[0]
+            c2.execute("SELECT DISTINCT user_id FROM watchlist LIMIT 5")
+            wl_users = [r[0] for r in c2.fetchall()]
+            c2.execute("SELECT DISTINCT user_id FROM fcm_tokens LIMIT 5")
+            fcm_users = [r[0] for r in c2.fetchall()]
+            conn2.close()
+            print(f"[AutoPriceAlert] 조인 결과 0류 - watchlist사용자: {wl_users}, fcm 사용자: {fcm_users} (watchlist {wl_count}류, fcm {fcm_count}류)")
             return
 
         # 심볼별 유저 리스트 매핑

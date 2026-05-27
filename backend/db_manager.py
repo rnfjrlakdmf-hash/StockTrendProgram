@@ -981,6 +981,13 @@ def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_na
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # [Fix-3] user_id 정규화: 앞뒤 공백 및 null 처리
+    clean_user_id = (user_id or '').strip()
+    if not clean_user_id or clean_user_id == 'guest':
+        print(f"[FCM-Save] Blocked: guest or empty user_id='{user_id}'")
+        conn.close()
+        return False
+    
     try:
         cursor.execute("""
             INSERT INTO fcm_tokens (user_id, token, device_type, device_name, last_used)
@@ -990,15 +997,17 @@ def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_na
                 device_type = excluded.device_type,
                 device_name = excluded.device_name,
                 last_used = CURRENT_TIMESTAMP
-        """, (user_id, token, device_type, device_name))
+        """, (clean_user_id, token, device_type, device_name))
         
         conn.commit()
+        print(f"[FCM-Save] Token saved: user_id='{clean_user_id}', device={device_type}, token={token[:20]}...")
         return True
     except Exception as e:
         print(f"[DB] Save FCM token error: {e}")
         return False
     finally:
         conn.close()
+
 
 
 def get_user_fcm_tokens(user_id: str) -> list:

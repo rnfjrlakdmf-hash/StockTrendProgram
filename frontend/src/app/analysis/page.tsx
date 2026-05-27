@@ -849,7 +849,7 @@ function AnalysisContent() {
                                         onChange={(e) => { const newId = e.target.value; setSelectedSectorId(newId); fetchSectorAnalysis(secSymbol || symbol, newId); }}
                                         className="bg-black/80 border border-white/20 rounded-2xl px-6 py-3 text-sm font-black text-white outline-none focus:ring-4 focus:ring-red-500/30 min-w-[240px] cursor-pointer appearance-none shadow-xl"
                                     >
-                                        {(Array.isArray(sectorData?.compare_sectors) ? sectorData.compare_sectors : []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}</option>)}
+                                        {(Array.isArray(sectorData?.compare_sectors) ? sectorData.compare_sectors : []).map((s: any) => <option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.name}{s.sector ? ` [${s.sector}]` : ''}</option>)}
                                     </select>
                                     <button onClick={() => handleGlobalSearch("sector")} className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-2xl text-sm font-black shadow-[0_10px_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 text-white">데이터 갱신</button>
                                 </div>

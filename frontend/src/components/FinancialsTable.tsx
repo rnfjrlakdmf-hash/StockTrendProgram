@@ -206,9 +206,8 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 </div>
             </div>
 
-            {/* 카테고리별 그룹 렌더링 */}
             {METRIC_GROUPS.map((group) => {
-                const groupKeys = group.keys.filter(k => data[k]);
+                const groupKeys = group.keys.filter(k => (data as any)[k]);
                 if (groupKeys.length === 0) return null;
 
                 return (

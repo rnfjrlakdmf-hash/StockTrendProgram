@@ -130,9 +130,14 @@ def send_push_notification(
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
 
-    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한 (관리자 제외)
-    is_admin = any(k in title.lower() for k in ["admin", "관리자", "analytics", "보고서"])
-    if is_night_time_kst() and not is_admin:
+    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한
+    # 단, 가격 변동 알림(급등/급락/신고가/손절/익절/목표가)은 실시간 투자 정보로서 24시간 허용
+    PRICE_ALERT_KEYWORDS = ["admin", "관리자", "analytics", "보고서",
+                            "급등", "급락", "신고가", "목표", "손절", "익절",
+                            "가격", "도달", "auto_price", "포착", "경신",
+                            "[test]", "connection verified"]
+    is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
+    if is_night_time_kst() and not is_price_or_admin:
         print(f"[Firebase-NightBlock] Skipped sending notification during night time: {title}")
         return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
@@ -237,9 +242,14 @@ def send_multicast_notification(
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
 
-    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한 (관리자 제외)
-    is_admin = any(k in title.lower() for k in ["admin", "관리자", "analytics", "보고서"])
-    if is_night_time_kst() and not is_admin:
+    # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한
+    # 단, 가격 변동 알림은 실시간 투자 정보로서 24시간 허용
+    PRICE_ALERT_KEYWORDS = ["admin", "관리자", "analytics", "보고서",
+                            "급등", "급락", "신고가", "목표", "손절", "익절",
+                            "가격", "도달", "auto_price", "포착", "경신",
+                            "[test]", "connection verified"]
+    is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
+    if is_night_time_kst() and not is_price_or_admin:
         print(f"[Firebase-NightBlock] Skipped multicast notification during night time: {title}")
         return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     

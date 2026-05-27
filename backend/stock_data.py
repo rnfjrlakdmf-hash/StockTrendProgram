@@ -2247,67 +2247,55 @@ def get_financial_health(symbol: str) -> dict:
 
 
 def get_market_status():
-
     """
     Returns current market status (Open/Closed) and time.
-    Mock implementation for stability.
     """
-    now = datetime.datetime.now()
-    # Real Implementation
+    import datetime as dt_mod
+    now = dt_mod.datetime.now()
     try:
+        from korea_data import get_korean_market_indices, get_exchange_rate
         indices = get_korean_market_indices()
         kospi = indices.get('kospi', {})
-        kospi_val = kospi.get('value', '2600.00')
+        kospi_val = kospi.get('value', '-')
         kospi_percent = kospi.get('percent', '0.00%')
-        
-        usd = get_exchange_rate()
 
-        is_open = False
-        if 0 <= now.weekday() <= 4:
-            if 9 <= now.hour < 16:
-                is_open = True
-                
-        # Determine Signal
-        # Red = Bad/Bearish (Down), Green = Good/Bullish (Up), Yellow = Uncertain (Flat)
+        usd_rate = get_exchange_rate("USD")
+        # 환율: 숫자이면 포맷, 아니면 그대로 표시
         try:
-            pct = float(kospi_percent.replace('%', ''))
+            usd_display = f"{float(usd_rate):,.1f}"
+        except:
+            usd_display = str(usd_rate)
+
+        is_open = (0 <= now.weekday() <= 4 and 9 <= now.hour < 16)
+
+        try:
+            pct = float(str(kospi_percent).replace('%', '').replace('+', '').strip())
         except:
             pct = 0.0
-            
-        signal = 'green'
-        msg = "Market is Bullish"
-        reason = "KOSPI is rising."
-        
+
         if pct < -0.5:
-            signal = 'red'
-            msg = "시장 흐름이 좋지 않아요"
-            reason = "코스피가 뚜렷한 하락세입니다."
+            signal, msg, reason = 'red', '시장 흐름이 좋지 않아요', '코스피가 뚜렷한 하락세입니다.'
         elif pct < 0:
-            signal = 'yellow'
-            msg = "시장이 다소 부진해요"
-            reason = "코스피가 소폭 하락했습니다."
+            signal, msg, reason = 'yellow', '시장이 다소 부진해요', '코스피가 소폭 하락했습니다.'
         elif pct > 0:
-            signal = 'green'
-            msg = "시장 분위기가 좋아요"
-            reason = "코스피가 상승세입니다!"
+            signal, msg, reason = 'green', '시장 분위기가 좋아요', '코스피가 상승세입니다!'
         else:
-            signal = 'yellow'
-            msg = "시장이 보합세예요"
-            reason = "큰 변동 없이 잔잔한 흐름입니다."
+            signal, msg, reason = 'yellow', '시장이 보합세예요', '큰 변동 없이 잔잔한 흐름입니다.'
 
         return {
             "signal": signal,
             "message": msg,
             "reason": reason,
             "details": {
-                "kospi": kospi_val,
-                "usd": usd
+                "kospi": kospi_val if kospi_val else '-',
+                "usd": usd_display
             }
         }
     except Exception as e:
-        print(f"Status Error: {e}")
+        print(f"[MarketStatus] Error: {e}")
         return {
-             "signal": "yellow",
-             "message": "Market Data Unavailable",
-             "details": {"kospi": "-", "usd": "-"}
+            "signal": "yellow",
+            "message": "시장 데이터 로딩 중",
+            "reason": "잠시 후 다시 시도해 주세요.",
+            "details": {"kospi": "-", "usd": "-"}
         }

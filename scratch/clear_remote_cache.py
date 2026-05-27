@@ -30,10 +30,12 @@ def clear_cache():
         if out: print("Stdout:", out)
         if err: print("Stderr:", err)
         
-        # 2. Restart backend to clear memory cache (TurboCache)
+        # 2. Restart backend to clear memory cache (TurboCache) and restart PM2 frontend
         print("Restarting backend service...")
         ssh.exec_command("sudo systemctl restart stocktrend-backend.service")
-        print("Restart command sent!")
+        print("Restarting PM2 frontend service...")
+        ssh.exec_command("pm2 restart stocktrend-frontend")
+        print("Restart commands sent!")
         
         ssh.close()
         print("Disconnected.")

@@ -3006,7 +3006,9 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                             </div>
                         </>
                     ) : (
-                        <div className="text-gray-600 text-xs font-bold mt-1">세션 미개장</div>
+                        <div className="text-gray-600 text-xs font-bold mt-1">
+                            {data.market_status === 'CLOSED' ? '장마감 (세션 종료)' : '세션 미개장'}
+                        </div>
                     )}
                 </div>
 
@@ -3078,9 +3080,14 @@ function GlobalExtendedHoursWidget({ data, loading, lastUpdated }: { data: any; 
                             <div className="text-[10px] text-gray-500 mt-1.5 font-mono">
                                 vs 정규장 종가 {currencySymbol}{fmt(regular.price)}
                             </div>
+                            {!isExtendedActive && (
+                                <div className="text-gray-500 text-[10px] font-bold mt-2">장마감 (최종가)</div>
+                            )}
                         </>
                     ) : (
-                        <div className="text-gray-600 text-xs font-bold mt-1">세션 미개장</div>
+                        <div className="text-gray-600 text-xs font-bold mt-1">
+                            {data.market_status === 'CLOSED' ? '장마감 (세션 종료)' : '세션 미개장'}
+                        </div>
                     )}
                 </div>
             </div>

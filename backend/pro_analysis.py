@@ -350,9 +350,29 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
                 if roe_val > 8: f_score += 1; f_details.append(f"✅ ROE 우수 ({roe_val:.1f}%)")
                 else: f_details.append("❌ ROE 부족")
                 
+                # [FIX] PER/PBR 우선순위: DART summary → naver_data(yf) → yfinance info
+                dart_per = nav_summary.get("per") if nav_summary else None
+                dart_pbr = nav_summary.get("pbr") if nav_summary else None
+                naver_per_raw = naver_data.get("per") if naver_data else None
+                naver_pbr_raw = naver_data.get("pbr") if naver_data else None
+                
+                def pick_ratio(dart_val, naver_val, yf_val):
+                    for v in [dart_val, naver_val, yf_val]:
+                        try:
+                            if v is None: continue
+                            s = str(v).strip()
+                            if s in ["", "-", "N/A", "NaN", "nan", "0", "0.0"]: continue
+                            f = float(s.replace(",", ""))
+                            if f > 0: return f
+                        except: continue
+                    return 0.0
+                
+                per_val = pick_ratio(dart_per, naver_per_raw, info.get("trailingPE") or info.get("forwardPE"))
+                pbr_val = pick_ratio(dart_pbr, naver_pbr_raw, info.get("priceToBook"))
+                
                 ratios = {
-                    "PER": round(safe_float(naver_data.get("per") or info.get("trailingPE") or 0), 1),
-                    "PBR": round(safe_float(naver_data.get("pbr") or info.get("priceToBook") or 0), 2),
+                    "PER": round(per_val, 1),
+                    "PBR": round(pbr_val, 2),
                     "ROE": f"{roe_val:.1f}%",
                     "부채비율": f"{debt_ratio:.0f}%",
                     "유동비율": "150%",
@@ -582,9 +602,29 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
         if roe_val > 10: f_score += 1; f_details.append(f"✅ ROE 우수 ({roe_val:.1f}%)")
         else: f_details.append(f"❌ ROE 부족 ({roe_val:.1f}%)")
 
+        # [FIX] PER/PBR 우선순위: DART summary → naver_data(yf) → yfinance info
+        _dart_per = nav_summary.get("per") if nav_summary else None
+        _dart_pbr = nav_summary.get("pbr") if nav_summary else None
+        _naver_per = naver_data.get("per") if naver_data else None
+        _naver_pbr = naver_data.get("pbr") if naver_data else None
+        
+        def _pick_ratio(dart_val, naver_val, yf_val):
+            for v in [dart_val, naver_val, yf_val]:
+                try:
+                    if v is None: continue
+                    s = str(v).strip()
+                    if s in ["", "-", "N/A", "NaN", "nan", "0", "0.0"]: continue
+                    f = float(s.replace(",", ""))
+                    if f > 0: return f
+                except: continue
+            return 0.0
+        
+        _per_val = _pick_ratio(_dart_per, _naver_per, info.get("trailingPE") or info.get("forwardPE"))
+        _pbr_val = _pick_ratio(_dart_pbr, _naver_pbr, info.get("priceToBook"))
+        
         ratios = {
-            "PER": round(safe_float(naver_data.get("per") or info.get("trailingPE") or 0), 1),
-            "PBR": round(safe_float(naver_data.get("pbr") or info.get("priceToBook") or 0), 2),
+            "PER": round(_per_val, 1),
+            "PBR": round(_pbr_val, 2),
             "ROE": f"{roe_val:.1f}%",
             "부채비율": f"{debt_ratio:.0f}%",
             "유동비율": f"{current_ratio:.1f}",
@@ -744,10 +784,18 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                 
                 def get_val(key, yf_key, scale=1):
                     val = nav_sum.get(key)
+                    # "N/A", "NaN" 등 처리
+                    if isinstance(val, str) and val.strip() in ["", "-", "N/A", "NaN", "nan", "0", "0.0"]:
+                        val = None
+                    if val is None and naver_data and key in naver_data:
+                        val = naver_data.get(key)
                     if val is None:
                         val = info.get(yf_key)
                         if val is not None: val = val * scale
-                    return float(val) if val is not None else 0
+                    try:
+                        return float(val) if val is not None else 0
+                    except:
+                        return 0
 
                 results.append({
                     "symbol": sym.strip(),

@@ -405,12 +405,30 @@ function SignalsFeedTab({ router }: { router: any }) {
                                 <Star className="w-5 h-5 fill-yellow-400" />
                                 내 관심종목 시그널
                             </h3>
-                            <button 
-                                onClick={() => setShowWatchlistSection(false)}
-                                className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
-                            >
-                                ✕ 닫기
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => {
+                                        if (!window.confirm("내 관심종목 시그널 내역을 모두 삭제하시겠습니까?")) return;
+                                        const idsToHide = watchlistSignals.map(sig => sig.id);
+                                        setHiddenSignals(prev => {
+                                            const next = [...prev, ...idsToHide];
+                                            localStorage.setItem("hidden_signals", JSON.stringify(next));
+                                            return next;
+                                        });
+                                        setShowWatchlistSection(false);
+                                    }}
+                                    className="text-xs text-red-400 hover:text-white px-2 py-1 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1"
+                                    title="스캔 내역 전체 삭제"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> 내역 삭제
+                                </button>
+                                <button 
+                                    onClick={() => setShowWatchlistSection(false)}
+                                    className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+                                >
+                                    ✕ 닫기
+                                </button>
+                            </div>
                         </div>
                         <div className="space-y-3">
                             {watchlistSignals.map(sig => renderSignal(sig, (e) => {
@@ -422,10 +440,29 @@ function SignalsFeedTab({ router }: { router: any }) {
                 )}
 
                 <div className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 text-blue-400">
-                        <Globe className="w-5 h-5" />
-                        전체 시장 시그널
-                    </h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold flex items-center gap-2 text-blue-400">
+                            <Globe className="w-5 h-5" />
+                            전체 시장 시그널
+                        </h3>
+                        {otherSignals.length > 0 && (
+                            <button 
+                                onClick={() => {
+                                    if (!window.confirm("전체 시장 시그널 내역을 모두 삭제하시겠습니까?")) return;
+                                    const idsToHide = otherSignals.map(sig => sig.id);
+                                    setHiddenSignals(prev => {
+                                        const next = [...prev, ...idsToHide];
+                                        localStorage.setItem("hidden_signals", JSON.stringify(next));
+                                        return next;
+                                    });
+                                }}
+                                className="text-xs text-gray-500 hover:text-red-400 px-2 py-1 bg-white/5 hover:bg-red-500/10 rounded-lg border border-white/10 hover:border-red-500/20 transition-colors flex items-center gap-1"
+                                title="전체 시장 시그널 내역 지우기"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> 모두 지우기
+                            </button>
+                        )}
+                    </div>
                     {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
                         : otherSignals.length === 0 ? (
                             <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
