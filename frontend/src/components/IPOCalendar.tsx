@@ -11,7 +11,7 @@ export default function IPOCalendar() {
     useEffect(() => {
         const fetchIPO = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/korea/ipo`);
+                const res = await fetch(`${API_BASE_URL}/api/market/korea/ipo`);
                 const json = await res.json();
                 if (json.status === "success") {
                     const mapped = json.data.map((item: any) => ({
