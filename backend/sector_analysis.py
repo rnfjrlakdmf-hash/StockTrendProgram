@@ -94,11 +94,14 @@ def get_sector_analysis_data(symbol: str, sector_id: str = None) -> Dict[str, An
     }
     
     resolved_sector = "default"
-    sector_lower = sector_name.lower()
-    for main_sector, syns in SECTOR_SYNONYMS.items():
-        if any(syn in sector_lower for syn in syns):
-            resolved_sector = main_sector
-            break
+    if sector_id and sector_id in SECTOR_BENCHMARKS:
+        resolved_sector = sector_id
+    else:
+        sector_lower = sector_name.lower()
+        for main_sector, syns in SECTOR_SYNONYMS.items():
+            if any(syn in sector_lower for syn in syns):
+                resolved_sector = main_sector
+                break
             
     # 2. DART 재무 데이터 수집 (내 종목 정보 파악용)
     fin_data = get_stock_financials(symbol) or {}
@@ -239,40 +242,26 @@ def get_sector_analysis_data(symbol: str, sector_id: str = None) -> Dict[str, An
             "chart_data": chart_data
         }
 
-    # 4. compare_sectors 셀렉트 목록 구성
-    peers = PEER_MAPPING.get(resolved_sector, [
-        {"id": clean_code, "name": naver_data.get("name", symbol)},
-        {"id": "005930", "name": "삼성전자"}
-    ])
-    
+    # 4. compare_sectors 셀렉트 목록 구성 (종목 대신 섹터 목록 제공)
     compare_sectors = []
-    # 중복 제거 및 가입
-    added_ids = set()
     
-    # 1순위: 현재 종목 포함
-    current_name = naver_data.get("name", symbol)
-    compare_sectors.append({
-        "id": clean_code,
-        "name": f"{current_name} ({sector_name[:6]})",
-        "selected": True
-    })
-    added_ids.add(clean_code)
+    # 한국어 업종명 표시용 매핑
+    RESOLVED_SECTOR_DISPLAY = {
+        "반도체와반도체장비": "반도체",
+        "자동차": "자동차",
+        "제약": "제약/바이오",
+        "서비스업": "서비스/IT",
+        "default": "기타/종합"
+    }
     
-    # 2순위: 동종 피어 기업 추가
-    for p in peers:
-        p_id = p["id"]
-        if p_id not in added_ids:
-            compare_sectors.append({
-                "id": p_id,
-                "name": f"{p['name']} ({sector_name[:6]})",
-                "selected": False
-            })
-            added_ids.add(p_id)
-            
-    # sector_id가 전달된 경우 selected 상태 갱신
-    if sector_id and sector_id in added_ids:
-        for cs in compare_sectors:
-            cs["selected"] = (cs["id"] == sector_id)
+    # 모든 가용한 섹터를 셀렉트 옵션으로 제공
+    for sec_key, sec_display in RESOLVED_SECTOR_DISPLAY.items():
+        compare_sectors.append({
+            "id": sec_key,
+            "name": sec_display,
+            "sector": "", # UI 호환성을 위해 빈 문자열
+            "selected": (sec_key == resolved_sector)
+        })
 
     return {
         "status": "success",
