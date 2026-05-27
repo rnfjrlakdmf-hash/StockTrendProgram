@@ -286,8 +286,8 @@ def gather_naver_stock_data(symbol: str):
         except Exception:
             pass
 
-        # 코스피 조회 실패 시 코스닥으로 대체 시도
-        if not info or not info.get('regularMarketPrice'):
+        # 코스피 조회 실패 시 또는 잘못된 펀드(MUTUALFUND) 데이터 반환 시 코스닥으로 대체 시도
+        if not info or not info.get('regularMarketPrice') or info.get('quoteType') == 'MUTUALFUND':
             yf_symbol = f"{code}.KQ"
             t = yf.Ticker(yf_symbol)
             try:
