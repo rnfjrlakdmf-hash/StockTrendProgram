@@ -27,7 +27,7 @@ def get_market_news():
                 return [
                     {
                         "title": item.get("tit", "").replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">"),
-                        "link": f"https://m.stock.naver.com/investment/news/article/{item.get('oid')}/{item.get('aid')}",
+                        "link": f"https://n.news.naver.com/mnews/article/{item.get('oid')}/{item.get('aid')}",
                         "publisher": item.get("ohnm"),
                         "time": item.get("dt", "")[:8],
                     } for item in data
@@ -37,16 +37,26 @@ def get_market_news():
 
     def fetch_global_category():
         try:
-            from stock_data import fetch_google_news
-            news_list = fetch_google_news("미국 증시 경제", "ko", "KR")
-            return [
-                {
-                    "title": item.get("title", ""),
-                    "link": item.get("link", ""),
-                    "publisher": item.get("publisher", ""),
-                    "time": item.get("published", "")[:10]
-                } for item in news_list[:5]
-            ]
+            import urllib.request
+            import xml.etree.ElementTree as ET
+            import urllib.parse
+            
+            encoded_query = urllib.parse.quote("미국 증시 경제")
+            url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            
+            with urllib.request.urlopen(req, timeout=3) as response:
+                root = ET.fromstring(response.read())
+                items = root.find('channel').findall('item')
+                
+                return [
+                    {
+                        "title": item.find('title').text if item.find('title') is not None else "",
+                        "link": item.find('link').text if item.find('link') is not None else "",
+                        "publisher": "Google News",
+                        "time": item.find('pubDate').text[:16] if item.find('pubDate') is not None else ""
+                    } for item in items[:5]
+                ]
         except:
             return []
 

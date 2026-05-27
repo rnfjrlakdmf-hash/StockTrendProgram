@@ -1086,6 +1086,32 @@ def get_integrated_stock_news(
     if not search_name and len(code) == 6:
         search_name = code
 
+    # [Tier 0] Naver Mobile JSON API (No API key needed, best for domestic stocks)
+    if len(code) == 6 and code.isdigit():
+        try:
+            url = f"https://m.stock.naver.com/api/news/stock/{code}?pageSize={max_items}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            response = requests.get(url, headers=headers, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if data and isinstance(data, list) and len(data) > 0:
+                    items = data[0].get('items', [])
+                    for item in items:
+                        if len(news_list) >= max_items: break
+                        dt = item.get('datetime', '')
+                        formatted_dt = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]} {dt[8:10]}:{dt[10:12]}" if len(dt) >= 12 else dt
+                        news_list.append({
+                            "title": item.get('title', '').replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">"),
+                            "description": item.get('body', ''),
+                            "link": item.get('mobileNewsUrl', f"https://n.news.naver.com/mnews/article/{item.get('officeId')}/{item.get('articleId')}"),
+                            "publisher": item.get('officeName', '네이버 뉴스'),
+                            "published": formatted_dt
+                        })
+                    if news_list:
+                        return news_list
+        except BaseException:
+            pass
+
     # [Tier 1] Naver News API (상업적 이용을 위한 공식 API 우선 기동)
     search_query = f'"{search_name}"' if search_name and not search_name.isdigit(
     ) else (query or search_name or code)
@@ -2361,117 +2387,57 @@ get_top_themes = get_top_trending_themes  # Alias
 def get_investor_history(symbol: str, days: int = 40):
     """
     Fetch historical investor breakdown (Foreigner, Institution) for 'Whale Tracker'.
-    Scrapes 'https://finance.naver.com/item/frgn.naver' (Pagination).
-    Uses ThreadPoolExecutor for parallel fetching to avoid timeout.
-
-    Args:
-        symbol: Stock code (e.g. '005930.KS')
-        days: Number of trading days to fetch (Default reduces to 40)
+    Uses Naver Mobile JSON API (m.stock.naver.com/api/stock/{code}/trend).
+    Much more stable and faster than HTML parsing.
     """
-    import concurrent.futures
-    import traceback
-
     try:
         code = symbol.split('.')[0]
         code = re.sub(r'[^0-9]', '', code)
-
-        # Helper to fetch a single page
-        def fetch_page(page_num):
-            try:
-                url = f"https://finance.naver.com/item/frgn.naver?code={code}&page={page_num}"
-                res = requests.get(url, headers=HEADER, timeout=5)
-                if res.status_code != 200:
-                    return []
-
-                soup = BeautifulSoup(decode_safe(res), 'html.parser')
-                # Fixed: Look for table with summary containing "순매매"
-                target_table = None
-                tables = soup.select("table")
-                for tbl in tables:
-                    summary = tbl.get("summary", "")
-                    if "순매매" in summary and "외국인" in summary:
-                        target_table = tbl
-                        break
-
-                if not target_table:
-                    return []
-
-                rows = target_table.select("tbody tr")
-                page_data = []
-
-                for row in rows:
-                    cols = row.select("td")
-                    if len(cols) < 7:
-                        continue
-
-                    try:
-                        date_txt = cols[0].text.strip()
-                        if not re.match(r'\d{4}\.\d{2}\.\d{2}', date_txt):
-                            continue
-
-                        inst_txt = cols[5].text.strip().replace(',', '')
-                        frgn_txt = cols[6].text.strip().replace(',', '')
-                        price_txt = cols[1].text.strip().replace(',', '')
-
-                        def safe_int(txt):
-                            try:
-                                if not txt or not txt.strip():
-                                    return 0
-                                # Handle numbers with signs
-                                clean = re.sub(r'[^0-9-]', '', txt)
-                                return int(clean) if clean else 0
-                            except BaseException:
-                                return 0
-
-                        inst_val = safe_int(inst_txt)
-                        frgn_val = safe_int(frgn_txt)
-                        retail_val = -(inst_val + frgn_val)
-
-                        page_data.append({
-                            "date": date_txt.replace('.', '-'),
-                            "price": int(price_txt.replace(',', '')),
-                            "institution": inst_val,
-                            "foreigner": frgn_val,
-                            "retail": retail_val
-                        })
-                    except BaseException:
-                        continue
-                return page_data
-
-            except Exception as e:
-                print(f"Page {page_num} Fetch Error: {e}")
-                return []
-
-        # Parallel Fetch
-        pages_to_fetch = (days // 20) + 2
-        if pages_to_fetch > 5:
-            pages_to_fetch = 5
-
-        all_data = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_page = {
-                executor.submit(
-                    fetch_page,
-                    p): p for p in range(
-                    1,
-                    pages_to_fetch + 1)}
-            for future in concurrent.futures.as_completed(future_to_page):
-                page_data = future.result()
-                all_data.extend(page_data)
-
-        # Sort by Date Descending
-        all_data.sort(key=lambda x: x['date'], reverse=True)
-
-        # Deduplicate
+        
+        url = f"https://m.stock.naver.com/api/stock/{code}/trend?pageSize={days}"
+        res = requests.get(url, headers=HEADER, timeout=5)
+        
+        if res.status_code != 200:
+            return []
+            
+        data = res.json()
+        if not data:
+            return []
+            
         unique_data = []
-        seen_dates = set()
-        for d in all_data:
-            if d['date'] not in seen_dates:
-                seen_dates.add(d['date'])
-                unique_data.append(d)
-
-        return unique_data[:days]
-
+        for row in data:
+            try:
+                # API dates are like "20260526" -> convert to "2026-05-26"
+                raw_date = row.get("bizdate", "")
+                if len(raw_date) == 8:
+                    fmt_date = f"{raw_date[:4]}-{raw_date[4:6]}-{raw_date[6:]}"
+                else:
+                    continue
+                    
+                price = int(row.get("closePrice", "0").replace(',', ''))
+                
+                # Use clean_num helper if needed or parse manually
+                def parse_val(v_str):
+                    if not v_str: return 0
+                    clean = re.sub(r'[^0-9-]', '', str(v_str))
+                    return int(clean) if clean else 0
+                    
+                inst_val = parse_val(row.get("organPureBuyQuant", "0"))
+                frgn_val = parse_val(row.get("foreignerPureBuyQuant", "0"))
+                retail_val = parse_val(row.get("individualPureBuyQuant", "0"))
+                
+                unique_data.append({
+                    "date": fmt_date,
+                    "price": price,
+                    "institution": inst_val,
+                    "foreigner": frgn_val,
+                    "retail": retail_val
+                })
+            except Exception:
+                continue
+                
+        return unique_data
+        
     except Exception as e:
         print(f"Investor History Error: {e}")
         return []
