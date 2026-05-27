@@ -115,6 +115,26 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
     const [riskLoading, setRiskLoading] = useState(false);
 
+    // [v6.6.0] 숨긴 시그널(삭제) 상태를 브라우저에 저장하여 영구 삭제된 것처럼 작동하게 함
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem("hidden_signals");
+            if (saved) {
+                try {
+                    setHiddenSignals(JSON.parse(saved));
+                } catch (e) {}
+            }
+        }
+    }, []);
+
+    const hideSignal = (id: number) => {
+        setHiddenSignals(prev => {
+            const next = [...prev, id];
+            localStorage.setItem("hidden_signals", JSON.stringify(next));
+            return next;
+        });
+    };
+
     // [New] 자동 새로고침 상태
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [countdown, setCountdown] = useState(30);
@@ -228,7 +248,7 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     const otherSignals = signals.filter(sig => {
         const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchSearch && !watchlistSymbols.includes(sig.symbol);
+        return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
 
     const renderSignal = (sig: any, onHide?: (e: React.MouseEvent) => void) => {
@@ -257,7 +277,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                             <Bot className="w-3.5 h-3.5" /> AI 분석
                         </button>
                         {onHide && (
-                            <button onClick={onHide} className="p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-lg transition-colors" title="시그널 지우기">
+                            <button onClick={onHide} className="p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-lg transition-colors" title="시그널 삭제 (숨기기)">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
@@ -395,7 +415,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                         <div className="space-y-3">
                             {watchlistSignals.map(sig => renderSignal(sig, (e) => {
                                 e.stopPropagation();
-                                setHiddenSignals(prev => [...prev, sig.id]);
+                                hideSignal(sig.id);
                             }))}
                         </div>
                     </div>
@@ -415,7 +435,10 @@ function SignalsFeedTab({ router }: { router: any }) {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {otherSignals.map(renderSignal)}
+                                {otherSignals.map(sig => renderSignal(sig, (e) => {
+                                    e.stopPropagation();
+                                    hideSignal(sig.id);
+                                }))}
                             </div>
                         )}
                 </div>
