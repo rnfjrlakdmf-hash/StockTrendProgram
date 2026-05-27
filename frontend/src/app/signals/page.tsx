@@ -9,7 +9,8 @@ import { API_BASE_URL } from "@/lib/config";
 import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
-    Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart
+    Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
+    Star, Globe, Trash2, X
 } from "lucide-react";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
@@ -110,6 +111,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [showWatchlistSection, setShowWatchlistSection] = useState(false);
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
+    const [hiddenSignals, setHiddenSignals] = useState<number[]>([]);
     const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
     const [riskLoading, setRiskLoading] = useState(false);
 
@@ -221,7 +223,7 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     const watchlistSignals = signals.filter(sig => {
         const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchSearch && watchlistSymbols.includes(sig.symbol);
+        return matchSearch && watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
 
     const otherSignals = signals.filter(sig => {
@@ -229,7 +231,7 @@ function SignalsFeedTab({ router }: { router: any }) {
         return matchSearch && !watchlistSymbols.includes(sig.symbol);
     });
 
-    const renderSignal = (sig: any) => {
+    const renderSignal = (sig: any, onHide?: (e: React.MouseEvent) => void) => {
         const badge = getBadge(sig.signal_type);
         const handleSignalClick = () => {
             if (sig.signal_type === "DISCLOSURE") {
@@ -250,9 +252,16 @@ function SignalsFeedTab({ router }: { router: any }) {
                         <h4 className="font-bold text-white text-sm">{sig.title}</h4>
                         <p className="text-xs text-gray-400 mt-1 line-clamp-1">{sig.summary}</p>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold ml-2 shrink-0">
-                        <Bot className="w-3.5 h-3.5" /> AI 분석
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold">
+                            <Bot className="w-3.5 h-3.5" /> AI 분석
+                        </button>
+                        {onHide && (
+                            <button onClick={onHide} className="p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-lg transition-colors" title="시그널 지우기">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -386,7 +395,10 @@ function SignalsFeedTab({ router }: { router: any }) {
                             </button>
                         </div>
                         <div className="space-y-3">
-                            {watchlistSignals.map(renderSignal)}
+                            {watchlistSignals.map(sig => renderSignal(sig, (e) => {
+                                e.stopPropagation();
+                                setHiddenSignals(prev => [...prev, sig.id]);
+                            }))}
                         </div>
                     </div>
                 )}
