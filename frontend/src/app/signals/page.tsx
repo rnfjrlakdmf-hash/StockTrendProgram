@@ -108,7 +108,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [selectedDisclosure, setSelectedDisclosure] = useState<Signal | null>(null);
 
     const [searchQuery, setSearchQuery] = useState("");
-    const [showWatchlistOnly, setShowWatchlistOnly] = useState(false);
+    const [showWatchlistSection, setShowWatchlistSection] = useState(false);
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
     const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
     const [riskLoading, setRiskLoading] = useState(false);
@@ -158,8 +158,8 @@ function SignalsFeedTab({ router }: { router: any }) {
                 alert(j.message || "관심종목 스캔에 실패했습니다.");
             } else {
                 fetchSignals();
-                if (type === 'watchlist' && !showWatchlistOnly) {
-                    setShowWatchlistOnly(true);
+                if (type === 'watchlist') {
+                    setShowWatchlistSection(true);
                 }
             }
         } catch {
@@ -169,10 +169,10 @@ function SignalsFeedTab({ router }: { router: any }) {
     };
 
     useEffect(() => {
-        if (showWatchlistOnly && watchlistSymbols.length === 0) {
+        if (watchlistSymbols.length === 0) {
             (async () => {
                 const token = user?.id;
-                if (!token) { alert("로그인이 필요합니다."); setShowWatchlistOnly(false); return; }
+                if (!token) return;
                 try {
                     const r = await fetch(`${API_BASE_URL}/api/watchlist`, { headers: { "x-user-id": token } });
                     const j = await r.json();
@@ -182,7 +182,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                 } catch { }
             })();
         }
-    }, [showWatchlistOnly, watchlistSymbols.length]);
+    }, [watchlistSymbols.length]);
 
     const fetchBriefing = async (sym: string) => { setBriefingSymbol(sym); setBriefingLoading(true); setBriefing(null); try { const r = await fetch(`${API_BASE_URL}/api/signals/${sym}/briefing`); const j = await r.json(); if (j.status === "success") setBriefing(j.data); } catch { } finally { setBriefingLoading(false); } };
 
@@ -219,12 +219,44 @@ function SignalsFeedTab({ router }: { router: any }) {
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
-    // 검색어 필터링 로직
-    const filteredSignals = signals.filter(sig => {
+    const watchlistSignals = signals.filter(sig => {
         const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchWatch = !showWatchlistOnly || watchlistSymbols.includes(sig.symbol);
-        return matchSearch && matchWatch;
+        return matchSearch && watchlistSymbols.includes(sig.symbol);
     });
+
+    const otherSignals = signals.filter(sig => {
+        const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchSearch && !watchlistSymbols.includes(sig.symbol);
+    });
+
+    const renderSignal = (sig: any) => {
+        const badge = getBadge(sig.signal_type);
+        const handleSignalClick = () => {
+            if (sig.signal_type === "DISCLOSURE") {
+                setSelectedDisclosure(sig);
+            } else {
+                router.push(`/discovery?q=${sig.symbol}`);
+            }
+        };
+
+        return (
+            <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={handleSignalClick}>
+                <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.color}`}>{badge.label}</span>
+                            <span className="text-xs text-gray-500">{new Date(sig.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                        <h4 className="font-bold text-white text-sm">{sig.title}</h4>
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">{sig.summary}</p>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold ml-2 shrink-0">
+                        <Bot className="w-3.5 h-3.5" /> AI 분석
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-4 text-left">
@@ -288,12 +320,6 @@ function SignalsFeedTab({ router }: { router: any }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
                     <h3 className="text-lg font-bold flex items-center gap-2">감지된 시그널 피드</h3>
-                    <label
-                        className="flex items-center gap-1.5 text-xs text-blue-300 font-bold cursor-pointer hover:text-blue-200 transition-colors w-max bg-blue-900/10 px-2 py-1.5 rounded-lg border border-blue-500/20"
-                        title="전체 시장의 수많은 시그널 중, 내가 관심 있는 종목의 이벤트만 필터링해서 봅니다."
-                    >
-                        <input type="checkbox" className="rounded bg-black border-blue-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 w-3.5 h-3.5"
-                            checked={showWatchlistOnly} onChange={(e) => setShowWatchlistOnly(e.target.checked)} />
                         관심종목 시그널만 필터링
                     </label>
                 </div>
@@ -344,42 +370,46 @@ function SignalsFeedTab({ router }: { router: any }) {
                 </div>
             </div>
 
-            {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
-                : filteredSignals.length === 0 ? (
-                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                        <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다.'}</p>
-                        {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 rounded-xl text-sm font-bold">지금 첫 스캔 실행</button>}
-                    </div>
-                ) : filteredSignals.map(sig => {
-                    const badge = getBadge(sig.signal_type);
-
-                    const handleSignalClick = () => {
-                        if (sig.signal_type === "DISCLOSURE") {
-                            setSelectedDisclosure(sig);
-                        } else {
-                            router.push(`/discovery?q=${sig.symbol}`);
-                        }
-                    };
-
-                    return (
-                        <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={handleSignalClick}>
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.color}`}>{badge.label}</span>
-                                        <span className="text-xs text-gray-500">{new Date(sig.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                                    </div>
-                                    <h4 className="font-bold text-white text-sm">{sig.title}</h4>
-                                    <p className="text-xs text-gray-400 mt-1 line-clamp-1">{sig.summary}</p>
-                                </div>
-                                <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold ml-2">
-                                    <Bot className="w-3.5 h-3.5" /> AI 분석
-                                </button>
-                            </div>
+            <div className="flex flex-col gap-6">
+                {showWatchlistSection && watchlistSignals.length > 0 && (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold flex items-center gap-2 text-yellow-400">
+                                <Star className="w-5 h-5 fill-yellow-400" />
+                                내 관심종목 시그널
+                            </h3>
+                            <button 
+                                onClick={() => setShowWatchlistSection(false)}
+                                className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+                            >
+                                ✕ 닫기
+                            </button>
                         </div>
-                    );
-                })}
+                        <div className="space-y-3">
+                            {watchlistSignals.map(renderSignal)}
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-3">
+                    <h3 className="text-lg font-bold flex items-center gap-2 text-blue-400">
+                        <Globe className="w-5 h-5" />
+                        전체 시장 시그널
+                    </h3>
+                    {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
+                        : otherSignals.length === 0 ? (
+                            <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                                <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다.'}</p>
+                                {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 transition-colors rounded-xl text-sm font-bold">지금 첫 스캔 실행</button>}
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {otherSignals.map(renderSignal)}
+                            </div>
+                        )}
+                </div>
+            </div>
 
             {/* AI 브리핑 모달 */}
             {briefingSymbol && (
