@@ -18,9 +18,12 @@ async def trigger_scan(type: str = Query("all"), x_user_id: Optional[str] = Head
         if not x_user_id:
             return {"status": "error", "message": "관심종목 스캔을 위해 로그인이 필요합니다."}
         
-        symbols = get_watchlist(x_user_id)
-        if not symbols:
+        watchlist_data = get_watchlist(x_user_id)
+        if not watchlist_data:
             return {"status": "error", "message": "등록된 관심종목이 없습니다."}
+            
+        # get_watchlist returns a list of tuples: [(symbol, price, qty), ...]
+        symbols = [item[0] for item in watchlist_data]
             
         # 백그라운드 태스크 대신 프론트엔드가 결과를 기다릴 수 있도록 직접 실행 (작은 수의 경우)
         # 하지만 갯수가 많으면 타임아웃 우려되므로 일단 직접 실행 후 추후 비동기 검토
