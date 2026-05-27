@@ -14,12 +14,11 @@ export default function IPOCalendar() {
                 const res = await fetch(`${API_BASE_URL}/api/korea/ipo`);
                 const json = await res.json();
                 if (json.status === "success") {
-                    // Map backend fields to frontend expectations
                     const mapped = json.data.map((item: any) => ({
                         ...item,
                         subscription_date: item.date,
                         fixed_price: item.price,
-                        price_band: ""
+                        price_band: item.band || ""
                     }));
                     setIpos(mapped);
                 }
@@ -41,7 +40,7 @@ export default function IPOCalendar() {
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Megaphone className="h-5 w-5 text-purple-400" /> 공모주(IPO) 일정
                 </h2>
-                <span className="text-xs text-gray-400">38커뮤니케이션 제공</span>
+                <span className="text-xs text-gray-400">DART 제공</span>
             </div>
 
             {loading ? (

@@ -212,6 +212,7 @@ class FCMPreferencesRequest(BaseModel):
     pref_price: bool = True
     pref_news: bool = True
     pref_watch_compact: bool = False  # [BugFix] 누락됐던 필드 추가
+    pref_ipo: bool = True
 
 @router.post("/fcm/preferences")
 def update_preferences(req: FCMPreferencesRequest):
@@ -221,7 +222,8 @@ def update_preferences(req: FCMPreferencesRequest):
         "pref_closing": req.pref_closing,
         "pref_price": req.pref_price,
         "pref_news": req.pref_news,
-        "pref_watch_compact": req.pref_watch_compact  # [BugFix] 저장 반영
+        "pref_watch_compact": req.pref_watch_compact,  # [BugFix] 저장 반영
+        "pref_ipo": req.pref_ipo
     })
     if success:
         return {"status": "success", "message": "Preferences updated"}

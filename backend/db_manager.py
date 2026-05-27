@@ -185,6 +185,8 @@ def init_db():
             pref_closing BOOLEAN DEFAULT 1,
             pref_price BOOLEAN DEFAULT 1,
             pref_news BOOLEAN DEFAULT 1,
+            pref_watch_compact BOOLEAN DEFAULT 0,
+            pref_ipo BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -199,6 +201,10 @@ def init_db():
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watch_compact BOOLEAN DEFAULT 0")
     except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_ipo BOOLEAN DEFAULT 1")
+    except: pass
+    
+    print("[DB] FCM tokens table created")
 
     # [NEW] User Portfolio Table (Manual Entry)
     cursor.execute('''
@@ -966,6 +972,7 @@ def create_fcm_tokens_table():
             pref_price BOOLEAN DEFAULT 1,
             pref_news BOOLEAN DEFAULT 1,
             pref_watch_compact BOOLEAN DEFAULT 0,
+            pref_ipo BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -1016,7 +1023,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact
+        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_ipo
         FROM fcm_tokens
         WHERE user_id = ?
         ORDER BY last_used DESC
@@ -1137,6 +1144,20 @@ def get_all_fcm_tokens() -> list:
         return [row[0] for row in rows]
     except Exception as e:
         print(f"[DB] Get all FCM tokens error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def get_fcm_tokens_for_ipo() -> list:
+    """공모주 알림 수신에 동의한(혹은 기본값 1인) 모든 토큰 반환"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE pref_ipo = 1")
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"[DB] Get IPO FCM tokens error: {e}")
         return []
     finally:
         conn.close()

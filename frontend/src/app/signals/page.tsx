@@ -1139,7 +1139,8 @@ function CalendarTab({ router }: { router: any }) {
                 </div>
             {/* 공모주 서브탭 */}
             <div className={mainTab === "ipo" ? "space-y-3 block animate-in fade-in duration-200" : "hidden"}>
-                    <p className="text-xs text-gray-500">한국 공모주 청약 일정 (38커뮤니케이션 제공)</p>
+                    <h2 className="text-xl font-bold text-white">공모주 일정</h2>
+                    <p className="text-xs text-gray-500">한국 공모주 청약 일정 (DART 제공)</p>
                     {ipoLoading ? (
                         <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
                     ) : ipos.length === 0 ? (

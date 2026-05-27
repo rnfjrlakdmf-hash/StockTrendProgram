@@ -2765,59 +2765,17 @@ def get_exchange_rate(currency="USD"):
 @turbo_cache(ttl_seconds=3600)
 def get_ipo_data():
     """
-    [Commercial Protection] 38.co.kr(38커뮤니케이션) 유료 IPO 데이터 무단 크롤링 금지.
-    상업적 운영에 따른 저작권 침해 방지를 위해 빈 배열 반환.
+    [DART 공식 API 적용 버전]
+    금융감독원 공시 원본(증권신고서)을 직접 파싱하여 
+    청약일과 공모가 밴드를 추출합니다.
     """
-    return []
-
-    url = "http://www.38.co.kr/html/fund/index.htm?o=k"
-    data = []
-
     try:
-        res = requests.get(url, headers=HEADER, timeout=7)
-        # 38.co.kr은 EUC-KR 인코딩을 사용하므로 변환 필요
-        soup = BeautifulSoup(decode_safe(res), 'html.parser')
-
-        # 공모주 청약일정 테이블 탐색
-        table = soup.select_one("table[summary='공모주 청약일정']")
-        if not table:
-            # Fallback: 다른 구조일 경우 대비
-            rows = soup.select("table tr")
-        else:
-            rows = table.select("tr")
-
-        for row in rows:
-            cols = row.select("td")
-            if len(cols) < 5:
-                continue
-
-            name = cols[0].text.strip()
-            # 종목명이 비어있거나 헤더인 경우 건너븀
-            if not name or "종목명" in name:
-                continue
-
-            dates = cols[1].text.strip().replace('\xa0', '').replace('\t', '')
-            fixed_price = cols[2].text.strip().replace(
-                '\xa0', '').replace('\t', '')
-            hope_price = cols[3].text.strip().replace(
-                '\xa0', '').replace('\t', '')
-            competition = cols[4].text.strip().replace(
-                '\xa0', '').replace('\t', '')  # 주관사 또는 경쟁률
-
-            data.append({
-                "name": name,
-                "date": dates,
-                "price": fixed_price,
-                "band": hope_price,
-                "detail": competition
-            })
-            if len(data) >= 15:
-                break  # 최신 15개 정도면 충분
-
+        from dart_ipo import fetch_dart_ipo_schedule
+        return fetch_dart_ipo_schedule()
     except Exception as e:
-        print(f"[IPO] 실시간 수집 에러: {e}")
+        print(f"[IPO] DART API 수집 에러: {e}")
+        return []
 
-    return data
 
 
 def get_live_investor_estimates(symbol: str):

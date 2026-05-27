@@ -165,6 +165,64 @@ async def hourly_briefing_scheduler_loop():
             logger.error(f"📅 [Scheduler] Loop error: {e}")
             await asyncio.sleep(60)
 
+async def check_and_notify_ipos():
+    """Periodic task to check for new IPOs and notify ALL users."""
+    logger.info("Running IPO Check...")
+    
+    # Import inside function to avoid circular deps
+    from dart_ipo import fetch_dart_ipo_schedule
+    from db_manager import get_fcm_tokens_for_ipo
+    from firebase_config import send_multicast_notification
+    
+    IPO_STATE_FILE = "/tmp/ipo_state.json" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(os.path.abspath(__file__)), "ipo_state.json")
+    
+    processed_ipos = []
+    if os.path.exists(IPO_STATE_FILE):
+        try:
+            with open(IPO_STATE_FILE, 'r', encoding='utf-8') as f:
+                processed_ipos = json.load(f).get("processed_ipos", [])
+        except Exception:
+            pass
+            
+    try:
+        # Fetch IPOs (will use cache if recently fetched, which is fine)
+        ipos = await asyncio.to_thread(fetch_dart_ipo_schedule)
+        
+        new_ipos = []
+        for ipo in ipos:
+            ipo_name = ipo.get('name')
+            if ipo_name and ipo_name not in processed_ipos:
+                new_ipos.append(ipo)
+                processed_ipos.append(ipo_name)
+                
+        if new_ipos:
+            logger.info(f"Found {len(new_ipos)} new IPO(s). Sending notifications.")
+            tokens = get_fcm_tokens_for_ipo()
+            if tokens:
+                for ipo in new_ipos:
+                    name = ipo.get('name')
+                    band = ipo.get('band', '')
+                    schedule = ipo.get('date', '')
+                    underwriter = ipo.get('detail', '')
+                    
+                    noti_title = f"🚀 [신규 공모주] {name}"
+                    noti_body = f"희망공모가: {band}원\n청약일: {schedule}\n주관사: {underwriter}"
+                    data_payload = {
+                        "type": "IPO_ALERT",
+                        "url": "/market"
+                    }
+                    send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+                    await asyncio.sleep(1)
+            
+            # Save state
+            with open(IPO_STATE_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"processed_ipos": processed_ipos[-1000:]}, f, ensure_ascii=False)
+        else:
+            logger.info("No new IPOs found.")
+            
+    except Exception as e:
+        logger.error(f"Scheduler Error in IPO Check: {e}")
+
 async def disclosure_scheduler_loop():
     """Background loop to run the disclosure check every 30 minutes."""
     logger.info("Disclosure Scheduler Started.")
@@ -173,6 +231,7 @@ async def disclosure_scheduler_loop():
         try:
             await asyncio.sleep(1800)  # 30분 간격
             await check_and_notify_disclosures()
+            await check_and_notify_ipos()
         except asyncio.CancelledError:
             logger.info("Disclosure Scheduler stopped.")
             break
