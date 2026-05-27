@@ -166,7 +166,11 @@ def fetch_dart_ipo_schedule():
     """
     메인 공모주 수집 함수 (korea_data.py에서 호출됨)
     """
+    api_key = os.getenv('DART_API_KEY')
     filings = fetch_recent_ipo_filings(days=60)
+    if not filings:
+        return [{"name": "DEBUG_NO_FILINGS", "date": f"KEY={'Set' if api_key else 'None'}", "band": "1~2", "price": "DEBUG", "detail": "DEBUG"}]
+        
     data = []
     
     for f in filings:
