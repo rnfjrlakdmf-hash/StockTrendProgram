@@ -329,8 +329,6 @@ function SignalsFeedTab({ router }: { router: any }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
                     <h3 className="text-lg font-bold flex items-center gap-2">감지된 시그널 피드</h3>
-                        관심종목 시그널만 필터링
-                    </label>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                     <div className="relative flex-1 sm:w-48">
