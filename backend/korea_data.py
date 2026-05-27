@@ -383,6 +383,36 @@ def gather_naver_stock_data(symbol: str):
             except Exception as e:
                 print(f"[yfinance-translation] Failed to translate business summary for {symbol}: {e}")
 
+        # Fallback to Naver scraping for PER, PBR, EPS, BPS if missing
+        per_val = info.get('trailingPE')
+        pbr_val = info.get('priceToBook')
+        eps_val = info.get('trailingEps')
+        bps_val = info.get('bookValue')
+        
+        if per_val is None or pbr_val is None:
+            try:
+                import requests
+                from bs4 import BeautifulSoup
+                url = f"https://finance.naver.com/item/main.naver?code={code}"
+                headers = {"User-Agent": "Mozilla/5.0"}
+                res = requests.get(url, headers=headers, timeout=2)
+                soup = BeautifulSoup(res.content.decode('euc-kr', 'replace'), 'html.parser')
+                
+                if per_val is None:
+                    per_em = soup.select_one("#_per")
+                    if per_em: per_val = float(per_em.text.replace(',', ''))
+                if pbr_val is None:
+                    pbr_em = soup.select_one("#_pbr")
+                    if pbr_em: pbr_val = float(pbr_em.text.replace(',', ''))
+                if eps_val is None:
+                    eps_em = soup.select_one("#_eps")
+                    if eps_em: eps_val = float(eps_em.text.replace(',', ''))
+                if bps_val is None:
+                    bps_em = soup.select_one("#_bps")
+                    if bps_em: bps_val = float(bps_em.text.replace(',', ''))
+            except Exception as e:
+                print(f"[Fallback Scraping] Failed to fetch PER/PBR for {code}: {e}")
+
         res_data = {
             "name": name,
             "description": description,
@@ -396,10 +426,10 @@ def gather_naver_stock_data(symbol: str):
             "prev_close": prev_close,
             "regular_close": price,
             "market_cap_str": market_cap_str,
-            "per": info.get('trailingPE'),
-            "pbr": info.get('priceToBook'),
-            "eps": info.get('trailingEps'),
-            "bps": info.get('bookValue'),
+            "per": per_val,
+            "pbr": pbr_val,
+            "eps": eps_val,
+            "bps": bps_val,
             "dvr": (info.get('dividendYield') / 100) if info.get('dividendYield') is not None else None,
             "est_per": info.get('forwardPE'),
             "est_eps": None,
