@@ -100,13 +100,17 @@ def download_and_extract_xml(rcept_no):
                         return text
     except Exception as e:
         print(f"[DART IPO] XML download error for {rcept_no}: {e}")
-    return ""
+        return f"DEBUG_EXCEPTION:{e}"
+    return f"DEBUG_HTTP_FAIL:{res.status_code if 'res' in locals() else 'NoRes'}"
 
 
 def parse_ipo_details(text):
     """
     정규식을 통해 공모가 밴드와 청약일을 추출합니다.
     """
+    if text.startswith("DEBUG_"):
+        return {"price_band": text, "schedule": "DEBUG", "competition": "DEBUG"}
+        
     details = {
         "price_band": "",
         "schedule": "",
