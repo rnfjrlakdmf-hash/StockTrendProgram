@@ -73,145 +73,66 @@ def fetch_recent_ipo_filings(days=30):
     return unique_results[:30]
 
 
-def download_and_extract_xml(rcept_no):
-    """
-    접수번호로 원본 XML을 다운로드하여 텍스트로 반환합니다.
-    """
-    api_key = os.getenv('DART_API_KEY')
-    url = f"https://opendart.fss.or.kr/api/document.xml?crtfc_key={api_key}&rcept_no={rcept_no}"
-    try:
-        res = requests.get(url, timeout=15)
-        if res.status_code == 200:
-            with zipfile.ZipFile(io.BytesIO(res.content)) as z:
-                for filename in z.namelist():
-                    if filename.endswith(".xml"):
-                        xml_bytes = z.read(filename)
-                        try:
-                            # 최신 DART XML은 대부분 UTF-8입니다.
-                            xml_content = xml_bytes.decode('utf-8', errors='strict')
-                        except UnicodeDecodeError:
-                            xml_content = xml_bytes.decode('cp949', errors='ignore')
-                        
-                        # 50MB가 넘는 방대한 XML을 BeautifulSoup로 파싱하면 서버가 멈춥니다.
-                        # 정규식을 이용해 초고속으로 HTML/XML 태그만 제거합니다.
-                        text = re.sub(r'<[^>]+>', ' ', xml_content)
-                        # 중복 공백 제거
-                        text = re.sub(r'\s+', ' ', text)
-                        return text
-    except Exception as e:
-        print(f"[DART IPO] XML download error for {rcept_no}: {e}")
-        return f"DEBUG_EXCEPTION:{e}"
-    return f"DEBUG_HTTP_FAIL:{res.status_code if 'res' in locals() else 'NoRes'}"
-
-
-def parse_ipo_details(text):
-    """
-    정규식을 통해 공모가 밴드와 청약일을 추출합니다.
-    """
-    if text.startswith("DEBUG_"):
-        return {"price_band": text, "schedule": "DEBUG", "competition": "DEBUG"}
-        
-    details = {
-        "price_band": "",
-        "schedule": "",
-        "competition": "예정" # 주관사 등
-    }
-    
-    # 1. 청약기일 추출
-    # 형태1: 2024년 05월 11일 ~ 2024년 05월 12일
-    # 형태2: 2024.05.11 ~ 05.12
-    date_pattern_1 = r"(20\d{2}년\s*\d{1,2}월\s*\d{1,2}일\s*~?\s*(?:20\d{2}년)?\s*\d{1,2}월\s*\d{1,2}일)"
-    date_pattern_2 = r"(20\d{2}\.\s*\d{1,2}\.\s*\d{1,2}\.?\s*~?\s*(?:20\d{2}\.)?\s*\d{1,2}\.\s*\d{1,2}\.?)"
-    
-    # 청약기일 근처에서 탐색
-    idx_sub = text.find("청약기일")
-    if idx_sub != -1:
-        snippet = text[idx_sub:idx_sub+300]
-        match1 = re.search(date_pattern_1, snippet)
-        match2 = re.search(date_pattern_2, snippet)
-        if match1:
-            raw_dates = match1.group(1).replace("년", ".").replace("월", ".").replace("일", "").replace(" ", "")
-            details["schedule"] = raw_dates
-        elif match2:
-            raw_dates = match2.group(1).replace(" ", "")
-            details["schedule"] = raw_dates
-            
-    # 2. 희망공모가액 추출
-    # 형태: 12,500원 ~ 15,000원, 혹은 12,500 ~ 15,000
-    price_pattern = r"([\d,]+)원?\s*~\s*([\d,]+)원?"
-    idx_price = text.find("공모희망가액")
-    if idx_price == -1:
-        idx_price = text.find("희망공모가액")
-    if idx_price != -1:
-        snippet = text[idx_price:idx_price+300]
-        match = re.search(price_pattern, snippet)
-        if match:
-            # 밴드 형태로 저장
-            p1, p2 = match.group(1).replace(",", ""), match.group(2).replace(",", "")
-            try:
-                details["price_band"] = f"{int(p1):,}~{int(p2):,}"
-            except:
-                details["price_band"] = f"{match.group(1)}~{match.group(2)}"
-            
-    # 주관사 힌트 (대표주관회사)
-    idx_under = text.find("대표주관회사")
-    if idx_under != -1:
-        snippet = text[idx_under:idx_under+150]
-        # 주변의 증권사 이름 추출
-        sec_match = re.search(r"([가-힣a-zA-Z]+증권|[가-힣a-zA-Z]+투자증권)", snippet)
-        if sec_match:
-            details["competition"] = sec_match.group(1)
-            
-    return details
-
-
-@turbo_cache(ttl_seconds=3600)
 def fetch_dart_ipo_schedule():
     """
-    메인 공모주 수집 함수 (korea_data.py에서 호출됨)
+    DART API의 한계(증권신고서 XML 미제공)로 인해 38.co.kr에서 공모주 일정을 직접 크롤링합니다.
+    (이전 코드와의 호환성을 위해 함수명 유지)
     """
-    api_key = os.getenv('DART_API_KEY')
-    filings = fetch_recent_ipo_filings(days=60)
-    if not filings:
-        return [{"name": "DEBUG_NO_FILINGS", "date": f"KEY={'Set' if api_key else 'None'}", "band": "1~2", "price": "DEBUG", "detail": "DEBUG"}]
-        
-    data = []
+    url = "http://www.38.co.kr/html/fund/index.htm?o=k"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91"
+    }
     
-    for f in filings:
-        text = download_and_extract_xml(f['rcept_no'])
-        details = parse_ipo_details(text)
+    ipo_list = []
+    
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        # 38.co.kr uses euc-kr/cp949
+        soup = BeautifulSoup(res.content.decode('euc-kr', 'replace'), 'html.parser')
         
-        # 청약일이나 밴드가 아예 없으면 유효한 일반 공모주가 아닐 확률이 높으므로 스킵
-        if not details["price_band"] and not details["schedule"]:
-            continue
-            
-        # 밴드 정보가 없으면 일반 공모주가 아니거나 파싱 실패로 간주하고 제외 (정확도 향상)
-        if not details["price_band"]:
-            continue
-            
-        price_val = details["price_band"]
-        schedule_val = details["schedule"]
-        
-        # 날짜 포맷 정리 (YYYY.MM.DD~YYYY.MM.DD) -> 프론트엔드 포맷에 맞게
-        if "~" in schedule_val:
-            parts = schedule_val.split("~")
-            if len(parts) == 2:
-                # "2024.05.15" -> "05.15" ~ "05.16" 형태로 짧게 표시할 수도 있지만
-                # 38커뮤니케이션 호환성을 위해 원본에 가깝게
-                pass
+        target_table = None
+        for tbl in soup.find_all('table'):
+            if tbl.get('summary') == '공모주 청약일정':
+                target_table = tbl
+                break
                 
-        data.append({
-            "name": f['name'],
-            "date": schedule_val,
-            "price": "확정대기", # 확정 공모가는 별도 공시이므로 밴드만 표시
-            "band": price_val,
-            "detail": details["competition"]
-        })
+        if not target_table:
+            return []
+            
+        rows = target_table.find('tbody').find_all('tr')
+        for row in rows:
+            cols = row.find_all('td')
+            if len(cols) < 5: 
+                continue
+                
+            name = cols[0].text.strip().replace('\xa0', '')
+            schedule = cols[1].text.strip().replace('\xa0', '')
+            fixed_price = cols[2].text.strip().replace('\xa0', '')
+            price_band = cols[3].text.strip().replace('\xa0', '')
+            underwriter = cols[5].text.strip().replace('\xa0', '')
+            
+            # 필터링
+            if name.startswith("[") or not schedule or len(schedule) < 5:
+                continue
+                
+            ipo_list.append({
+                "name": name,
+                "date": schedule,
+                "price": fixed_price if fixed_price and fixed_price != "-" else "확정대기",
+                "band": price_band,
+                "detail": underwriter
+            })
+            
+            if len(ipo_list) >= 15: # 최근 15개 정도만
+                break
+                
+    except Exception as e:
+        print(f"[IPO] Crawl Error: {e}")
         
-    return data
+    return ipo_list
 
 if __name__ == "__main__":
-    # Test execution
     res = fetch_dart_ipo_schedule()
     for r in res:
         print(r)
+
