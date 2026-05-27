@@ -96,6 +96,7 @@ function SignalsPageContent() {
 
 // ============ TAB 1: SIGNAL FEED ============
 function SignalsFeedTab({ router }: { router: any }) {
+    const { user } = useAuth();
     const [signals, setSignals] = useState<Signal[]>([]);
     const [loading, setLoading] = useState(true);
     const [scanning, setScanning] = useState(false);
@@ -140,21 +141,11 @@ function SignalsFeedTab({ router }: { router: any }) {
         };
     }, [autoRefresh]);
 
-    // Auth Token Helper
-    const getAuthToken = async () => {
-        try {
-            const { getAuth } = await import("firebase/auth");
-            const auth = getAuth();
-            if (auth.currentUser) return await auth.currentUser.getIdToken();
-        } catch { }
-        return null; // Guest
-    };
-
     const scanSignals = async (type: 'all' | 'watchlist' = 'all') => {
         setScanning(true);
         try {
             const endpoint = type === 'watchlist' ? '/api/signals/scan?type=watchlist' : '/api/signals/scan?type=all';
-            const token = await getAuthToken();
+            const token = user?.id;
             const headers: any = { "Content-Type": "application/json" };
             if (token) headers["x-user-id"] = token;
 
@@ -180,7 +171,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     useEffect(() => {
         if (showWatchlistOnly && watchlistSymbols.length === 0) {
             (async () => {
-                const token = await getAuthToken();
+                const token = user?.id;
                 if (!token) { alert("로그인이 필요합니다."); setShowWatchlistOnly(false); return; }
                 try {
                     const r = await fetch(`${API_BASE_URL}/api/watchlist`, { headers: { "x-user-id": token } });
