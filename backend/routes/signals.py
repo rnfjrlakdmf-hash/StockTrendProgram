@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, Query, BackgroundTasks
+from fastapi import APIRouter, Header, Query, BackgroundTasks, Response
 from typing import Optional, List, Dict, Any
 from smart_signals import scan_watchlist_signals, scan_all_signals
 from db_manager import get_recent_signals, get_watchlist
@@ -6,8 +6,9 @@ from db_manager import get_recent_signals, get_watchlist
 router = APIRouter()
 
 @router.get("/signals")
-def read_signals(limit: int = Query(50)):
+def read_signals(response: Response, limit: int = Query(50)):
     """최근 감지된 시그널 목록 조회"""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     signals = get_recent_signals(limit)
     return {"status": "success", "data": signals}
 
