@@ -1045,16 +1045,34 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
         if resolved:
             symbol = resolved
 
-    naver_info = None
-    # 1. 네이버 통합 API 시도 (국내/해외 모두 지원)
-    # v3.8.0: High Priority for Naver to bypass yfinance blocks on cloud IPs
-    try:
-        naver_info = get_naver_stock_info(symbol)
-        if naver_info and naver_info.get('price') and naver_info['price'] != "확인불가":
-            print(f"[get_simple_quote] Success via Naver for {symbol}")
-            return naver_info
-    except Exception as e:
-        print(f"[get_simple_quote] Naver Check Error for {symbol}: {e}")
+    # [Commercial Protection] 상업적 이용을 위해 네이버 비공개 API(get_naver_stock_info) 호출 전면 비활성화
+    # 대신 100% 합법적인 yfinance 기반의 gather_naver_stock_data 모듈을 최우선으로 사용하여 풍성한 데이터 확보
+    import re
+    is_korean_stock = bool(re.match(r'^\d{6}$', symbol) or symbol.endswith(('.KS', '.KQ')))
+    
+    if is_korean_stock:
+        try:
+            # gather_naver_stock_data는 이름과 달리 내부적으로 yfinance만 사용하도록 개편된 모듈임
+            from korea_data import gather_naver_stock_data
+            yf_info = gather_naver_stock_data(symbol)
+            if yf_info and yf_info.get('price'):
+                print(f"[get_simple_quote] Success via Legal yfinance Engine for {symbol}")
+                # get_simple_quote의 반환 규격에 맞게 매핑
+                change_pct_val = yf_info.get('regular_change_pct', 0)
+                change_pct_str = f"{change_pct_val:+.2f}%"
+                return {
+                    "symbol": symbol,
+                    "name": yf_info.get('name', symbol),
+                    "price": str(yf_info.get('price')),
+                    "change": change_pct_str,
+                    "change_percent": change_pct_str,
+                    "up": change_pct_val >= 0,
+                    "currency": "KRW",
+                    "market_status": yf_info.get('market_status', '장마감'),
+                    "raw_price": float(yf_info.get('price', 0))
+                }
+        except Exception as e:
+            print(f"[get_simple_quote] Legal yfinance Engine Error for {symbol}: {e}")
 
     # 2. 브로커 클라이언트 사용 시도
     if broker_client:
@@ -1071,15 +1089,11 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
     try:
         # [v3.7.2] Robust Universal Ticker Normalization
         yf_symbol = symbol
-            
-        # [v3.7.6] Aggressive Naver Probing for US Stocks if first try failed
-        if is_us_stock and (not naver_info or naver_info.get('price') == "확인불가"):
-            for sfx in ['.O', '.N', '.A']:
-                try:
-                    probe = get_naver_stock_info(yf_symbol.split('.')[0] + sfx)
-                    if probe and probe.get('price') and probe['price'] != "확인불가":
-                        return probe
-                except: continue
+        
+        # [Commercial Protection] US Stock Naver Probing 제거
+        # 상업적 이용을 위해 네이버 API 호출 금지, 오직 yfinance 로컬 엔진 활용
+        
+        # yfinance Fallback
 
         # yfinance Fallback
         if '.' in symbol and is_us_stock and not symbol.endswith(('.KS', '.KQ')):
