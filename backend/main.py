@@ -172,6 +172,24 @@ async def startup_event():
             print(f"[Background] Error starting check_alerts_loop: {e}")
             traceback.print_exc()
 
+        try:
+            # [Auto-Heal Scraper] 매일 1회 (혹은 12시간마다) KIND 크롤러 헬스체크
+            async def auto_heal_loop():
+                print("[AutoHealLoop] KIND Scraper health checker started")
+                await asyncio.sleep(60) # 서버 안정화 후 시작
+                while True:
+                    try:
+                        from auto_heal_scraper import run_health_check_and_heal
+                        await asyncio.to_thread(run_health_check_and_heal)
+                    except Exception as e:
+                        print(f"[AutoHealLoop] Error: {e}")
+                    # 12시간(43200초) 대기
+                    await asyncio.sleep(43200)
+            asyncio.create_task(auto_heal_loop())
+            print("[Background] auto_heal_loop task created.")
+        except Exception as e:
+            print(f"[Background] Error starting auto_heal_loop: {e}")
+            traceback.print_exc()
 
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
         try:

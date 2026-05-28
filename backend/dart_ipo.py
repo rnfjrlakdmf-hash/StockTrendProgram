@@ -75,59 +75,97 @@ def fetch_recent_ipo_filings(days=30):
 
 def fetch_dart_ipo_schedule():
     """
-    DART API의 한계(증권신고서 XML 미제공)로 인해 38.co.kr에서 공모주 일정을 직접 크롤링합니다.
-    (이전 코드와의 호환성을 위해 함수명 유지)
+    한국거래소(KIND) 공모주 청약일정 메뉴에서 데이터를 크롤링합니다.
+    (기존 38.co.kr의 상업적 이용 이슈 회피)
     """
-    url = "http://www.38.co.kr/html/fund/index.htm?o=k"
+    url = "https://kind.krx.co.kr/listinvstg/pubofrprogcom.do"
+    
+    # 앞뒤 한달 기간으로 설정
+    now = datetime.datetime.now()
+    start_date = (now - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    end_date = (now + datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    
+    data = {
+        "method": "searchPubofrProgComMain",
+        "fromDate": start_date,
+        "toDate": end_date,
+        "currentPageSize": "100",
+        "pageIndex": "1"
+    }
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     
     ipo_list = []
     
     try:
-        res = requests.get(url, headers=headers, timeout=10)
-        # 38.co.kr uses euc-kr/cp949
-        soup = BeautifulSoup(res.content.decode('euc-kr', 'replace'), 'html.parser')
+        res = requests.post(url, data=data, headers=headers, timeout=10)
+        # KIND는 meta tag에 utf-8로 되어있으나 실제 euc-kr, cp949 혼재 가능성 존재
+        # requests.content로 원시 바이트를 얻은 뒤 utf-8/euc-kr 폴백 디코딩
+        try:
+            html = res.content.decode('utf-8', 'ignore')
+        except:
+            html = res.content.decode('euc-kr', 'ignore')
+            
+        soup = BeautifulSoup(html, 'html.parser')
         
         target_table = None
         for tbl in soup.find_all('table'):
-            if tbl.get('summary') == '공모주 청약일정':
+            if '회사명' in tbl.text or '시장구분' in tbl.text:
                 target_table = tbl
                 break
                 
         if not target_table:
-            return []
+            # 타겟 테이블을 찾지 못했다면 크롤링 실패 (UI 변경 등)
+            raise ValueError("KIND Table target not found. UI might have changed.")
             
-        rows = target_table.find('tbody').find_all('tr')
-        for row in rows:
-            cols = row.find_all('td')
-            if len(cols) < 5: 
+        rows = target_table.find_all('tr')
+        if not rows: return []
+        
+        # 헤더 인덱스 동적 탐색 (UI 변경에 약간의 내성 확보)
+        headers_text = [th.text.strip().replace('\r', '').replace('\n', '') for th in rows[0].find_all(['th', 'td'])]
+        
+        # 기본 인덱스 설정 (실패 대비)
+        idx_name = 1  # 회사명
+        idx_underwriter = 2 # 주관사
+        idx_band = 3 # 공모희망가액
+        idx_schedule = 4 # 청약일정
+        
+        for i, header in enumerate(headers_text):
+            if '회사명' in header: idx_name = i
+            elif '주관사' in header: idx_underwriter = i
+            elif '희망가액' in header: idx_band = i
+            elif '청약일정' in header: idx_schedule = i
+
+        for row in rows[1:]:
+            cols = row.find_all(['td', 'th'])
+            if len(cols) <= max(idx_name, idx_underwriter, idx_band, idx_schedule): 
                 continue
                 
-            name = cols[0].text.strip().replace('\xa0', '')
-            schedule = cols[1].text.strip().replace('\xa0', '')
-            fixed_price = cols[2].text.strip().replace('\xa0', '')
-            price_band = cols[3].text.strip().replace('\xa0', '')
-            underwriter = cols[5].text.strip().replace('\xa0', '')
+            name = cols[idx_name].text.strip()
+            schedule = cols[idx_schedule].text.strip()
+            band = cols[idx_band].text.strip()
+            underwriter = cols[idx_underwriter].text.strip()
             
-            # 필터링
-            if name.startswith("[") or not schedule or len(schedule) < 5:
+            # 클리닝
+            schedule = schedule.replace("-", ".")
+            band = band.replace(" ", "")
+            
+            if not name or "상세정보" in name:
                 continue
                 
             ipo_list.append({
                 "name": name,
                 "date": schedule,
-                "price": fixed_price if fixed_price and fixed_price != "-" else "확정대기",
-                "band": price_band,
+                "price": "확정대기",
+                "band": band,
                 "detail": underwriter
             })
             
-            if len(ipo_list) >= 15: # 최근 15개 정도만
-                break
-                
     except Exception as e:
-        print(f"[IPO] Crawl Error: {e}")
+        print(f"[IPO KIND] Crawl Error: {e}")
+        # 오류 발생 시 빈 리스트 반환
+        return []
         
     return ipo_list
 
