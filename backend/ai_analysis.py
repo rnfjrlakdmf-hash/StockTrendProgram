@@ -734,8 +734,10 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         return data
 
     except Exception as e:
-        print(f"Supply Chain Analysis Error: {e}")
-        return None
+        import traceback
+        err_msg = f"Supply Chain Analysis Error: {e}\n{traceback.format_exc()}"
+        print(err_msg)
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Dict[str, Any]:
     """
