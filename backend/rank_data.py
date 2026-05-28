@@ -857,85 +857,82 @@ def get_etf_ranking(market="KR", category=None):
     from stock_data import get_simple_quote
 
     if market == "KR":
-        url = "https://finance.naver.com/api/sise/etfItemList.nhn"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://finance.naver.com/sise/sise_etf.naver',
-            'Accept': 'application/json, text/javascript, */*; q=0.01'
-        }
-        try:
-            print(f"[ETF API] Requesting Naver KR ETF list...")
-            res = requests.get(url, headers=headers, timeout=7)
-            if res.status_code != 200:
-                print(f"[ETF API] Naver API Error: Status {res.status_code}")
-                return []
-            json_data = res.json()
-            items = json_data.get('result', {}).get('etfItemList', [])
+        import time
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from stock_data import get_simple_quote
+
+        # [Commercial Protection] 네이버 ETF API 호출(etfItemList.nhn) 전면 비활성화
+        # 상업적 이용 시 법적 리스크(DB권 침해)를 방지하기 위해 국내 주요 ETF 고정 리스트 사용
+        
+        kr_etf_symbols = [
+            # 지수 (KOSPI 200, S&P500, 나스닥 등)
+            "069500", "133690", "360750", "304940", "143850",
+            # 레버리지 & 인버스
+            "122630", "114800", "252670", "233740", "252710",
+            # 반도체 & 테마 (AI, 2차전지, 헬스케어)
+            "091160", "305720", "305540", "418120", "461580", "450320", "261220",
+            # 배당 & 인컴 & 채권
+            "360200", "161510", "438220", "329200", "273130"
+        ]
+
+        def fetch_kr_quote_safe(sym):
+            try:
+                # get_simple_quote는 .KS 등 접미사 처리를 내부적으로 지원하거나 순수 번호로 KIS 호출
+                q = get_simple_quote(sym)
+                if q:
+                    change_percent = str(q.get("change_percent", q.get("change", "0"))).replace('%', '').replace('+', '')
+                    return {
+                        "symbol": q.get("symbol", sym),
+                        "name": q.get("name", f"ETF-{sym}"),
+                        "price": str(q.get("price", "0.00")),
+                        "change": str(q.get("change", "0.00%")),
+                        "change_percent": float(change_percent) if change_percent else 0.0,
+                        "volume": str(q.get("volume", "0"))
+                    }
+            except Exception as e:
+                pass
+            return None
+
+        results = []
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            unique_symbols = list(set(kr_etf_symbols))
+            futures = {executor.submit(fetch_kr_quote_safe, sym): sym for sym in unique_symbols}
+            for f in as_completed(futures):
+                try:
+                    res = f.result(timeout=5)
+                    if res: results.append(res)
+                except: pass
+
+        # Sort by volume to mimic ranking
+        results.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
+        
+        data = []
+        # Category Filters (if provided)
+        keywords = []
+        if category == "inverse": keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "(H)", "Short", "Bear", "하락", "S-S", "2X"]
+        elif category == "index": keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ", "추종", "대표", "기초", "KRX", "Nasdaq100", "Dow"]
+        elif category == "sector": keywords = ["반도체", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지", "채권", "금리", "고배당", "리츠", "AI", "로봇", "필수소비재", "금융", "보험"]
+        elif category == "leverage": keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL", "2배", "3배", "Double", "Triple"]
+        elif category == "dividend": keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income", "성장배당", "고배당", "분기배당", "월배당", "Divid", "Yield"]
+        elif category == "battery": keywords = ["2차전지", "전지", "배터리", "Battery", "Secondary Cell", "에너지솔루션", "양극재", "음극재", "전고체", "소재"]
+        elif category == "ai": keywords = ["AI", "인공지능", "Tech", "IT", "Robo", "소프트웨어", "데이터", "클라우드", "Cloud", "Computing"]
+        elif category == "bond": keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT", "CD", "KOFR", "머니마켓", "단기채", "초단기", "국고채", "회사채", "단기금융"]
+        elif category == "semiconductor": keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA", "팹리스", "파운드리", "ASML", "HBM"]
+        elif category == "healthcare": keywords = ["헬스케어", "바이오", "Bio", "Health", "제약", "의료기기", "mRNA"]
+
+        rank = 1
+        for item in results:
+            name = item.get('name', '')
+            if category:
+                matched = any(k.lower() in name.lower() for k in keywords)
+                if not matched: continue
             
-            # 카테고리별 키워드 설정
-            keywords = []
-            if category == "inverse":
-                keywords = ["인버스", "inverse", "선물인버스", "SQQQ", "VIX", "헷지", "(H)", "Short", "Bear", "하락", "S-S", "2X"]
-            elif category == "index":
-                keywords = ["200", "코스피", "코스닥", "S&P", "나스닥", "MSCI", "VN", "KOSPI", "KOSDAQ", "추종", "대표", "기초", "KRX", "Nasdaq100", "Dow"]
-            elif category == "sector":
-                keywords = ["반도체", "헬스케어", "IT", "TECH", "바이오", "전지", "미디어", "게임", "여행", "에너지", "채권", "금리", "고배당", "리츠", "AI", "로봇", "필수소비재", "금융", "보험"]
-            elif category == "leverage":
-                keywords = ["레버리지", "leverage", "블룸버그", "선물레버리지", "Bull", "TQQQ", "SOXL", "2배", "3배", "Double", "Triple"]
-            elif category == "dividend":
-                keywords = ["배당", "인컴", "리츠", "커버드콜", "Dividend", "Income", "성장배당", "고배당", "분기배당", "월배당", "Divid", "Yield"]
-            elif category == "battery":
-                keywords = ["2차전지", "전지", "배터리", "Battery", "Secondary Cell", "에너지솔루션", "양극재", "음극재", "전고체", "소재"]
-            elif category == "ai":
-                keywords = ["AI", "인공지능", "Tech", "IT", "Robo", "소프트웨어", "데이터", "클라우드", "Cloud", "Computing"]
-            elif category == "bond":
-                keywords = ["채권", "금리", "Bond", "Treasury", "액티브", "TMF", "TLT", "CD", "KOFR", "머니마켓", "단기채", "초단기", "국고채", "회사채", "단기금융"]
-            elif category == "semiconductor":
-                keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA", "팹리스", "파운드리", "ASML", "HBM"]
-            elif category == "healthcare":
-                keywords = ["헬스케어", "바이오", "Bio", "Health", "제약", "의료기기", "mRNA"]
+            item['rank'] = rank
+            data.append(item)
+            rank += 1
+            if len(data) >= 20: break
 
-            data = []
-            
-            # 카테고리가 있으면 전체 리스트에서 필터링, 없으면 상위 20개만
-            target_items = items
-            if not category:
-                target_items = items[:20]
-
-            print(f"[ETF API] Total items from Naver: {len(items)}, Category: '{category}'")
-            print(f"[ETF API] Keywords for match: {keywords}")
-            if items:
-                print(f"[ETF API] First item name: {items[0].get('itemname')}")
-
-            for i, item in enumerate(target_items):
-                name = item.get('itemname', '')
-                
-                # 카테고리 필터링 수행 (대소문자 무시)
-                if category:
-                    matched = any(k.lower() in name.lower() for k in keywords)
-                    if not matched:
-                        continue
-
-                change_rate = float(item.get('changeRate', 0))
-                data.append({
-                    "rank": i + 1,
-                    "symbol": item.get('itemcode'),
-                    "name": name,
-                    "price": item.get('nowVal'),
-                    "change": f"{change_rate:+.2f}%", 
-                    "change_percent": change_rate,
-                    "volume": str(item.get('quant', 0))
-                })
-                
-                # 필터링 시 너무 많아지면 끊기 (상위 30개 정도)
-                if category and len(data) >= 30:
-                    break
-
-            print(f"[ETF API] Filtered result count: {len(data)}")
-            return data
-        except Exception as e:
-            print(f"Error calling Naver ETF API: {e}")
-            return []
+        return data
             
     elif market == "US":
         # 1. Use Cache if available and not expired
