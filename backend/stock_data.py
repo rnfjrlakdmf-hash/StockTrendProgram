@@ -1060,10 +1060,17 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 # get_simple_quote의 반환 규격에 맞게 매핑
                 change_pct_val = yf_info.get('regular_change_pct', 0)
                 change_pct_str = f"{change_pct_val:+.2f}%"
+                
+                raw_price = yf_info.get('price', 0)
+                try:
+                    price_str = f"{float(str(raw_price).replace(',', '')):,.0f}"
+                except:
+                    price_str = str(raw_price)
+
                 return {
                     "symbol": symbol,
                     "name": yf_info.get('name', symbol),
-                    "price": str(yf_info.get('price')),
+                    "price": price_str,
                     "change": change_pct_str,
                     "change_percent": change_pct_str,
                     "up": change_pct_val >= 0,
