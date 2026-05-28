@@ -695,19 +695,30 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
             except: pass
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-            futures = [executor.submit(enrich_node, node) for node in data.get("nodes", [])]
-            futures.extend([executor.submit(enrich_comm, comm) for comm in data.get("commodities", [])])
+            n_list = data.get("nodes") or []
+            futures = [executor.submit(enrich_node, node) for node in n_list]
             
-            # [Fix] Also enrich leaders and followers
-            futures.extend([executor.submit(enrich_node, s) for s in data.get("leaders", [])])
-            futures.extend([executor.submit(enrich_node, s) for s in data.get("followers", [])])
+            c_list = data.get("commodities") or []
+            futures.extend([executor.submit(enrich_comm, comm) for comm in c_list])
+            
+            # [Fix] Also enrich leaders and followers safely
+            l_list = data.get("leaders") or []
+            futures.extend([executor.submit(enrich_node, s) for s in l_list])
+            
+            f_list = data.get("followers") or []
+            futures.extend([executor.submit(enrich_node, s) for s in f_list])
             
             concurrent.futures.wait(futures)
 
         # [Fix] Final Filter: Remove nodes/stocks that failed validation (delisted or unlisted)
-        data["leaders"] = [s for s in data.get("leaders", []) if not s.get("invalid")]
-        data["followers"] = [s for s in data.get("followers", []) if not s.get("invalid")]
-        data["nodes"] = [n for n in data.get("nodes", []) if not n.get("invalid")]
+        leaders_list = data.get("leaders")
+        data["leaders"] = [s for s in leaders_list if not s.get("invalid")] if leaders_list else []
+        
+        followers_list = data.get("followers")
+        data["followers"] = [s for s in followers_list if not s.get("invalid")] if followers_list else []
+        
+        nodes_list = data.get("nodes")
+        data["nodes"] = [n for n in nodes_list if not n.get("invalid")] if nodes_list else []
         # 3. Ensure array properties exist to prevent frontend crashes
         data["nodes"] = data.get("nodes") or []
         data["links"] = data.get("links") or []
