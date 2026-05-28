@@ -1067,6 +1067,33 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 except:
                     price_str = str(raw_price)
 
+                # [v4] 한국 시장(KST) 시간 기반 정밀 상태 계산
+                market_status = "장마감"
+                try:
+                    from datetime import datetime
+                    import pytz
+                    kst = pytz.timezone('Asia/Seoul')
+                    now = datetime.now(kst)
+                    
+                    if now.weekday() >= 5:  # 주말(토,일)
+                        market_status = "장마감"
+                    else:
+                        hm = now.strftime("%H%M")
+                        if "0830" <= hm < "0840":
+                            market_status = "장전시간외"
+                        elif "0840" <= hm < "0900":
+                            market_status = "동시호가"
+                        elif "0900" <= hm < "1530":
+                            market_status = "장중"
+                        elif "1530" <= hm < "1540":
+                            market_status = "동시호가"
+                        elif "1540" <= hm < "1800":
+                            market_status = "시간외단일가"
+                        else:
+                            market_status = "장마감"
+                except Exception as e:
+                    market_status = yf_info.get('market_status', '장마감')
+
                 return {
                     "symbol": symbol,
                     "name": yf_info.get('name', symbol),
@@ -1075,7 +1102,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     "change_percent": change_pct_str,
                     "up": change_pct_val >= 0,
                     "currency": "KRW",
-                    "market_status": yf_info.get('market_status', '장마감'),
+                    "market_status": market_status,
                     "raw_price": float(yf_info.get('price', 0))
                 }
         except Exception as e:
