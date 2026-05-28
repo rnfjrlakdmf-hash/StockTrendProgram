@@ -129,9 +129,13 @@ CACHE_TOP10 = {
     "KR": {"data": [], "timestamp": 0},
     "US": {"data": [], "timestamp": 0}
 }
-CACHE_DURATION = 15  # 15초
+CACHE_DURATION = 15
 CACHE_US_ETFS = {"data": [], "timestamp": 0}
-CACHE_US_ETFS_DURATION = 600 # 10분 (미국 ETF는 자주 안 바뀌어도 됨)
+CACHE_US_ETFS_DURATION = 60 * 5  # 5 minutes
+
+# KR ETF Cache
+CACHE_KR_ETFS = {"data": [], "timestamp": 0}
+CACHE_KR_ETFS_DURATION = 60 * 5  # 5 minutes
 
 # [New] Global Ranking Cache
 CACHE_GLOBAL_RANKING = {}
@@ -862,92 +866,78 @@ def get_etf_ranking(market="KR", category=None):
         from stock_data import get_simple_quote
 
         # [Commercial Protection] 네이버 ETF API 호출(etfItemList.nhn) 전면 비활성화
-        # 상업적 이용 시 법적 리스크(DB권 침해)를 방지하기 위해 국내 주요 ETF 고정 리스트 사용
-        
+        # 상업적 이용 시 법적 리스크(DB권 침해)를 방지하기 위해 거래량 상위 75개 하드코딩
         kr_etf_symbols = [
-            # 지수 (KOSPI 200, S&P500, 나스닥 등)
-            "069500", "133690", "360750", "304940", "143850",
-            # 레버리지 & 인버스
-            "122630", "114800", "252670", "233740", "252710",
-            # 반도체 & 테마 (AI, 2차전지, 헬스케어)
-            "091160", "305720", "305540", "418120", "461580", "450320", "261220",
-            # 배당 & 인컴 & 채권
-            "360200", "161510", "438220", "329200", "273130"
+            '252670', '114800', '252710', '462330', '233740', '251340', '229200', '396500', '069500', '412570', '379800', '122630', '360750', '395160', '364980', '487240', '305720', '498400', '271050', '395270', '123310', '462010', '091160', '253230', '329200', '488080', '494310', '472150', '232080', '292150', '486290', '379810', '102110', '466920', '144600', '411060', '381180', '252420', '455850', '448330', '498410', '102970', '091180', '462900', '117700', '233160', '228790', '445290', '161510', '453850', '490590', '466930', '461950', '458730', '364970', '494670', '367760', '475720', '471990', '138540', '284430', '253160', '305540', '469150', '471760', '476550', '157500', '494300', '489030', '278530', '217770', '472160', '148020', '469170', '139220'
         ]
 
-        def fetch_kr_quote_safe(sym):
-            try:
-                # get_simple_quote는 .KS 등 접미사 처리를 내부적으로 지원하거나 순수 번호로 KIS 호출
-                q = get_simple_quote(sym)
-                if q:
-                    import re
-                    change_percent = str(q.get("change_percent", q.get("change", "0"))).replace('%', '').replace('+', '')
-                    raw_name = q.get("name", f"ETF-{sym}")
-                    
-                    # ETF 이름 클리닝 (가독성 향상)
-                    clean_name = raw_name
-                    # 1. 괄호 안의 영문 등 제거 (예: 삼성코덱스(Samsung Kodex) -> 삼성코덱스)
-                    # 단, (H) 같은 헷지 표시는 살려둠
-                    clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
-                    
-                    # 2. 불필요한 운용사 전체 이름 축약
-                    clean_name = clean_name.replace("미래에셋맵스운용 - 미래에셋타이거", "TIGER")
-                    clean_name = clean_name.replace("미래에셋자산운용 - 타이거", "TIGER")
-                    clean_name = clean_name.replace("미래에셋자산운용 - 미래에셋타이거", "TIGER")
-                    clean_name = clean_name.replace("미래에셋자산운용 - TIGER", "TIGER")
-                    clean_name = clean_name.replace("미래에셋 TIGER", "TIGER")
-                    clean_name = clean_name.replace("미래에셋운용 - 미래에셋타이거", "TIGER")
-                    clean_name = clean_name.replace("삼성코덱스", "KODEX")
-                    clean_name = clean_name.replace("삼성 Kodex", "KODEX")
-                    clean_name = clean_name.replace("삼성 KODEX", "KODEX")
-                    clean_name = clean_name.replace("삼성자산운용 - 삼성KODEX", "KODEX")
-                    clean_name = clean_name.replace("김킨덱스", "KINDEX")
-                    
-                    # 3. 불필요한 접미사 제거
-                    clean_name = clean_name.replace("- 주식파생상품", "").replace(" - ", " ").strip()
-                    clean_name = clean_name.replace(" ETF", "").replace(" Etf", "").replace(" etf", "")
-                    
-                    # 4. 널리 쓰이는 이름으로 치환
-                    clean_name = clean_name.replace("이차전지", "2차전지")
-                    clean_name = clean_name.replace("Us Nasdaq", "미국나스닥")
-                    clean_name = clean_name.replace("USA 나스닥", "미국나스닥")
-                    clean_name = clean_name.replace("Inverse2x", "인버스2X")
-                    clean_name = clean_name.replace("Inverse", "인버스")
-                    
-                    # 5. 티커별 하드코딩 예외 처리
-                    if sym == "091160": clean_name = "KODEX 반도체"
-                    if sym == "114800": clean_name = "KODEX 인버스"
-                    if sym == "161510": clean_name = "ARIRANG 고배당주"
-                    if sym == "438220": clean_name = "KODEX 미국배당다우존스"
-                    if sym == "418120": clean_name = "TIGER 미국배당+3%다우존스"
-                    
-                    # 6. 여러 공백 축소
-                    clean_name = re.sub(r'\s+', ' ', clean_name).strip()
-
-                    return {
-                        "symbol": q.get("symbol", sym),
-                        "name": clean_name,
-                        "price": str(q.get("price", "0.00")),
-                        "change": str(q.get("change", "0.00%")),
-                        "change_percent": float(change_percent) if change_percent else 0.0,
-                        "volume": str(q.get("volume", "0"))
-                    }
-            except Exception as e:
-                pass
-            return None
-
-        results = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            unique_symbols = list(set(kr_etf_symbols))
-            futures = {executor.submit(fetch_kr_quote_safe, sym): sym for sym in unique_symbols}
-            for f in as_completed(futures):
+        current_time = time.time()
+        if CACHE_KR_ETFS["data"] and (current_time - CACHE_KR_ETFS["timestamp"] < CACHE_KR_ETFS_DURATION):
+            results = CACHE_KR_ETFS["data"]
+        else:
+            def fetch_kr_quote_safe(sym):
                 try:
-                    res = f.result(timeout=5)
-                    if res: results.append(res)
-                except: pass
+                    q = get_simple_quote(sym)
+                    if q:
+                        import re
+                        change_percent = str(q.get("change_percent", q.get("change", "0"))).replace('%', '').replace('+', '')
+                        raw_name = q.get("name", f"ETF-{sym}")
+                        
+                        clean_name = raw_name
+                        clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
+                        clean_name = clean_name.replace("미래에셋맵스운용 - 미래에셋타이거", "TIGER")
+                        clean_name = clean_name.replace("미래에셋자산운용 - 타이거", "TIGER")
+                        clean_name = clean_name.replace("미래에셋자산운용 - 미래에셋타이거", "TIGER")
+                        clean_name = clean_name.replace("미래에셋자산운용 - TIGER", "TIGER")
+                        clean_name = clean_name.replace("미래에셋 TIGER", "TIGER")
+                        clean_name = clean_name.replace("미래에셋운용 - 미래에셋타이거", "TIGER")
+                        clean_name = clean_name.replace("삼성코덱스", "KODEX")
+                        clean_name = clean_name.replace("삼성 Kodex", "KODEX")
+                        clean_name = clean_name.replace("삼성 KODEX", "KODEX")
+                        clean_name = clean_name.replace("삼성자산운용 - 삼성KODEX", "KODEX")
+                        clean_name = clean_name.replace("김킨덱스", "KINDEX")
+                        clean_name = clean_name.replace("- 주식파생상품", "").replace(" - ", " ").strip()
+                        clean_name = clean_name.replace(" ETF", "").replace(" Etf", "").replace(" etf", "")
+                        clean_name = clean_name.replace("이차전지", "2차전지")
+                        clean_name = clean_name.replace("Us Nasdaq", "미국나스닥")
+                        clean_name = clean_name.replace("USA 나스닥", "미국나스닥")
+                        clean_name = clean_name.replace("Inverse2x", "인버스2X")
+                        clean_name = clean_name.replace("Inverse", "인버스")
+                        
+                        if sym == "091160": clean_name = "KODEX 반도체"
+                        if sym == "114800": clean_name = "KODEX 인버스"
+                        if sym == "161510": clean_name = "ARIRANG 고배당주"
+                        if sym == "438220": clean_name = "KODEX 미국배당다우존스"
+                        if sym == "418120": clean_name = "TIGER 미국배당+3%다우존스"
+                        
+                        clean_name = re.sub(r'\s+', ' ', clean_name).strip()
 
-        # Sort by volume to mimic ranking
-        results.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
+                        return {
+                            "symbol": q.get("symbol", sym),
+                            "name": clean_name,
+                            "price": str(q.get("price", "0.00")),
+                            "change": str(q.get("change", "0.00%")),
+                            "change_percent": float(change_percent) if change_percent else 0.0,
+                            "volume": str(q.get("volume", "0"))
+                        }
+                except Exception as e:
+                    pass
+                return None
+
+            results = []
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                unique_symbols = list(set(kr_etf_symbols))
+                futures = {executor.submit(fetch_kr_quote_safe, sym): sym for sym in unique_symbols}
+                for f in as_completed(futures):
+                    try:
+                        res = f.result(timeout=10)
+                        if res: results.append(res)
+                    except: pass
+
+            # Sort by volume to mimic ranking
+            results.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
+            CACHE_KR_ETFS["data"] = results
+            CACHE_KR_ETFS["timestamp"] = current_time
         
         data = []
         # Category Filters (if provided)
