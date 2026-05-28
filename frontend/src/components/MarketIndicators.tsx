@@ -196,7 +196,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
     );
     if (!data) return null;
 
-    const displayLimit = limit || 5;
+    const displayLimit = limit || 20;
 
     const indices = processItems(data.Indices, 'Indices');
     const crypto = processItems(data.Crypto, 'Crypto');

@@ -50,6 +50,8 @@ export default function SupplyChainPage() {
         } catch (e) {}
     };
 
+    const [error, setError] = useState<string | null>(null);
+
     const handleSearch = async (targetSymbol?: string) => {
         const query = (targetSymbol || searchInput).toUpperCase();
         if (!query) return;
@@ -64,6 +66,7 @@ export default function SupplyChainPage() {
         // [Cache Check]
         if (SUPPLY_CACHE[query]) {
             setData(SUPPLY_CACHE[query].data);
+            setError(null);
             setLoading(false);
             
             // Background update
@@ -82,15 +85,19 @@ export default function SupplyChainPage() {
 
         setLoading(true);
         setData(null);
+        setError(null);
         try {
             const res = await fetch(`${API_BASE_URL}/api/analysis/supply-chain/${query}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 SUPPLY_CACHE[query] = { data: json.data, timestamp: Date.now() };
                 setData(json.data);
+            } else {
+                setError(json.message || "공급망 데이터를 불러오는 데 실패했습니다.");
             }
         } catch (e) {
             console.error(e);
+            setError("데이터 요청 중 네트워크 오류가 발생했습니다.");
         } finally {
             setLoading(false);
         }
@@ -190,6 +197,22 @@ export default function SupplyChainPage() {
                         <p className="animate-pulse text-lg text-cyan-500">
                             AI가 전 세계 공급망 데이터를 연결 중입니다...
                         </p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="p-6 rounded-2xl bg-red-900/20 border border-red-500/30 text-center max-w-lg">
+                            <h3 className="text-red-400 font-bold mb-2 text-lg">⚠️ 분석 실패</h3>
+                            <p className="text-red-200/80">{error}</p>
+                            <button 
+                                onClick={() => handleSearch()}
+                                className="mt-6 bg-red-500/20 hover:bg-red-500/30 text-red-300 px-6 py-2 rounded-xl transition-colors font-bold text-sm"
+                            >
+                                다시 시도하기
+                            </button>
+                        </div>
                     </div>
                 )}
 

@@ -114,7 +114,7 @@ def get_normalized_major_indicators():
         "Bonds": [process_item(x) for x in raw.get("Bonds", [])],
         "Interest": [process_item(x) for x in raw.get("Interest", []) + raw.get("DomesticInterest", [])],
         "Indices": [process_item(x) for x in raw.get("RPC", []) if x.get("categoryType") == "index"],
-        "Crypto": [process_item(x, True) for x in raw.get("Crypto", [])[:10]] if raw.get("Crypto") else [],
+        "Crypto": [process_item(x, True) for x in raw.get("Crypto", [])[:20]] if raw.get("Crypto") else [],
         "updatedAt": raw.get("updatedAt")
     }
     

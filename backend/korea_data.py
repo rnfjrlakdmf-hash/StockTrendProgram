@@ -413,6 +413,25 @@ def gather_naver_stock_data(symbol: str):
             except Exception as e:
                 print(f"[Fallback Scraping] Failed to fetch PER/PBR for {code}: {e}")
 
+        # [Restore] 시간외 거래 데이터 (After-market) 복구
+        nxt_data = None
+        try:
+            url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={code}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            res = requests.get(url, headers=headers, timeout=2)
+            if res.status_code == 200:
+                data_root = res.json()
+                item = data_root.get('domesticKrx', {}).get(code)
+                if item:
+                    m_info = item.get('overMarketPriceInfo')
+                    if m_info and m_info.get('overPrice'):
+                        nxt_data = {
+                            "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
+                            "change_pct": float(m_info.get('fluctuationsRatio', 0))
+                        }
+        except Exception as e:
+            print(f"[gather_naver_stock_data] Failed to fetch after_market_data: {e}")
+
         res_data = {
             "name": name,
             "description": description,
@@ -444,8 +463,8 @@ def gather_naver_stock_data(symbol: str):
             "regular_change_pct": reg_change_pct,
             "regular_change_val": change_val,
             "shares_outstanding": info.get('sharesOutstanding'),
-            "nxt_data": None,
-            "after_market_data": None
+            "nxt_data": nxt_data,
+            "after_market_data": nxt_data
         }
         return res_data
     except Exception as e:

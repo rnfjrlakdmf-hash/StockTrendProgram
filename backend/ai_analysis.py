@@ -33,7 +33,7 @@ def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
     return genai.GenerativeModel('gemini-2.5-flash')
 
-def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 20, temperature: float = 0.1, models_to_try: list = None):
+def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 60, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
     timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 20s
@@ -506,7 +506,7 @@ def analyze_node_detail(symbol: str, name: str) -> Dict[str, Any]:
     """
     
     try:
-        response = generate_with_retry(prompt, json_mode=True)
+        response = generate_with_retry(prompt, json_mode=True, timeout=60)
         return json.loads(response.text)
     except Exception as e:
         print(f"Node Detail Analysis Error: {e}")
@@ -590,7 +590,7 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     """
     
     try:
-        response = generate_with_retry(prompt, json_mode=True)
+        response = generate_with_retry(prompt, json_mode=True, timeout=60)
         data = json.loads(response.text)
 
         # [New] Enrich with Real-time Stock Data (Nodes & Commodities)
@@ -600,7 +600,10 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
 
         def enrich_node(node):
             ticker_sym = node.get("ticker")
-            if not ticker_sym: return
+            if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
+                node["price_display"] = "확인불가"
+                node["invalid"] = True
+                return
             try:
                 if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
                 if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
@@ -666,7 +669,9 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
 
         def enrich_comm(comm):
             ticker_sym = comm.get("ticker")
-            if not ticker_sym: return
+            if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
+                comm["price_display"] = "확인불가"
+                return
             try:
                 yt = yf.Ticker(ticker_sym)
                 price = getattr(yt.fast_info, 'last_price', None)
