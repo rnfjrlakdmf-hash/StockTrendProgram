@@ -218,6 +218,21 @@ export default function PatternPage() {
 
     const isLocked = !isPro && dailyCount >= dailyLimit;
 
+    const isUS = useMemo(() => {
+        const symbol = result?.stock_info?.symbol || searchInput || "";
+        return /[a-zA-Z]/.test(symbol);
+    }, [result, searchInput]);
+
+    const formatPrice = (val: number | string | undefined | null) => {
+        if (val === undefined || val === null || isNaN(Number(val))) return '0';
+        const num = Number(val);
+        if (isUS) {
+            return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+            return `₩${Math.round(num).toLocaleString()}`;
+        }
+    };
+
     // Moving Averages
     const movingAverages = useMemo(() => {
         if (!result?.history || result.history.length === 0) return { ma5: [], ma20: [], ma60: [], ma120: [] };
@@ -343,12 +358,12 @@ export default function PatternPage() {
                 }
             }
         },
-        yaxis: { opposite: true, labels: { formatter: (val: number) => Math.round(val || 0).toLocaleString() } },
+        yaxis: { opposite: true, labels: { formatter: (val: number) => formatPrice(val) } },
         grid: { borderColor: '#ffffff08', strokeDashArray: 4, padding: { left: 10, right: 10 } },
         tooltip: {
             shared: true,
             x: { format: ['1m','5m','30m','60m'].includes(candleInterval) ? 'yyyy년 MM월 dd일 HH:mm' : 'yyyy년 MM월 dd일' },
-            y: { formatter: (val: number) => Math.round(val || 0).toLocaleString() },
+            y: { formatter: (val: number) => formatPrice(val) },
             custom: function({ seriesIndex, dataPointIndex, w }: any) {
                 const history = result?.history || [];
                 const item = history[dataPointIndex];
@@ -376,14 +391,14 @@ export default function PatternPage() {
                 let priceSection = "";
                 if (chartType === 'candle') {
                     priceSection = `
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${Math.round(item.open || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${Math.round(item.high || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${Math.round(item.low || 0).toLocaleString()}</span></div>
-                        <div class="flex gap-10 justify-between mb-2 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${Math.round(item.close || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${formatPrice(item.open)}</span></div>
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${formatPrice(item.high)}</span></div>
+                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${formatPrice(item.low)}</span></div>
+                        <div class="flex gap-10 justify-between mb-2 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${formatPrice(item.close)}</span></div>
                     `;
                 } else {
                     priceSection = `
-                        <div class="flex gap-10 justify-between mb-2 text-sm font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-emerald-400">${Math.round(item.close || 0).toLocaleString()}</span></div>
+                        <div class="flex gap-10 justify-between mb-2 text-sm font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-emerald-400">${formatPrice(item.close)}</span></div>
                     `;
                 }
 
@@ -396,10 +411,10 @@ export default function PatternPage() {
                         <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
                         
                         <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
-                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">5일선</span> <span class="font-mono text-gray-300">${ma5 ? Math.round(ma5).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">20일선</span> <span class="font-mono text-gray-300">${ma20 ? Math.round(ma20).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">60일선</span> <span class="font-mono text-gray-300">${ma60 ? Math.round(ma60).toLocaleString() : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">120일선</span> <span class="font-mono text-gray-300">${ma120 ? Math.round(ma120).toLocaleString() : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">5일선</span> <span class="font-mono text-gray-300">${ma5 ? formatPrice(ma5) : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">20일선</span> <span class="font-mono text-gray-300">${ma20 ? formatPrice(ma20) : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">60일선</span> <span class="font-mono text-gray-300">${ma60 ? formatPrice(ma60) : '-'}</span></div>
+                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">120일선</span> <span class="font-mono text-gray-300">${ma120 ? formatPrice(ma120) : '-'}</span></div>
                         </div>
                     </div>
                 `;
@@ -426,7 +441,7 @@ export default function PatternPage() {
                             y: highest.high,
                             marker: { size: 0 },
                             label: {
-                                text: `최고 ${Math.round(highest.high).toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
+                                text: `최고 ${formatPrice(highest.high)} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
                                 borderColor: '#ef4444',
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
                                 style: { color: '#fff', background: '#ef4444' }
@@ -444,7 +459,7 @@ export default function PatternPage() {
                             y: lowest.low,
                             marker: { size: 0 },
                             label: {
-                                text: `↑ 최저 ${Math.round(lowest.low).toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
+                                text: `↑ 최저 ${formatPrice(lowest.low)} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
                                 borderColor: '#3b82f6',
                                 offsetY: 40,
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
