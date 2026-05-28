@@ -1143,9 +1143,18 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             # yfinance 세션 상태 추출
             market_status = "장마감"
             try:
-                ms = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
+                # fast_info에는 market_state가 없을 수 있으므로 info 딕셔너리에서도 우선적으로 찾음
+                ms_info = str(ticker.info.get('marketState', '')).upper()
+                ms_fast = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
+                ms = ms_info if ms_info else ms_fast
+                
                 if 'PRE' in ms:              market_status = "프리마켓"
-                elif 'POST' in ms or 'AFTER' in ms: market_status = "에프터마켓"
+                elif 'POST' in ms or 'AFTER' in ms or 'CLOSED' in ms: 
+                    # CLOSED 상태도 일단 장마감/에프터마켓 등으로 취급
+                    if 'POST' in ms or 'AFTER' in ms:
+                        market_status = "에프터마켓"
+                    else:
+                        market_status = "장마감"
                 elif 'REGULAR' in ms or 'OPEN' in ms: market_status = "장중"
             except: pass
 
