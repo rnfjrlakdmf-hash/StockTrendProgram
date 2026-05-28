@@ -572,17 +572,37 @@ def get_naver_theme_rank():
     """
     import random
     mega_themes = [
-        "온디바이스AI", "비만치료제", "전력기기", "자율주행", "K-푸드",
-        "화장품", "로봇", "원전", "HBM", "CXL", "유리기판", "전고체배터리",
-        "우주항공", "데이터센터", "양자암호", "핵융합", "저PBR", "가상화폐",
-        "신재생에너지", "비대면진료", "웹툰", "자율주행", "방위산업", "미용기기"
+        {"name": "온디바이스AI", "desc": "기기 내장형 AI 구동"},
+        {"name": "비만치료제", "desc": "글로벌 체중감량 신약"},
+        {"name": "전력기기", "desc": "AI 데이터센터 전력망"},
+        {"name": "자율주행", "desc": "로보택시 및 FSD 기대감"},
+        {"name": "K-푸드", "desc": "K-푸드 글로벌 수출 호조"},
+        {"name": "화장품", "desc": "K-뷰티 수출 급증"},
+        {"name": "로봇", "desc": "휴머노이드 및 스마트 팩토리"},
+        {"name": "원전", "desc": "SMR 및 글로벌 원전 수주"},
+        {"name": "HBM", "desc": "차세대 AI 핵심 메모리"},
+        {"name": "CXL", "desc": "차세대 메모리 인터페이스"},
+        {"name": "유리기판", "desc": "AI 반도체 패키징 혁신"},
+        {"name": "전고체배터리", "desc": "꿈의 배터리 상용화 기대"},
+        {"name": "우주항공", "desc": "우주항공청 및 우주산업"},
+        {"name": "데이터센터", "desc": "빅테크 AI 인프라 투자"},
+        {"name": "양자암호", "desc": "차세대 보안 및 양자컴퓨팅"},
+        {"name": "핵융합", "desc": "무한 청정에너지 상용화"},
+        {"name": "저PBR", "desc": "정부 밸류업 프로그램"},
+        {"name": "가상화폐", "desc": "비트코인 등 가상자산 이슈"},
+        {"name": "신재생에너지", "desc": "글로벌 탄소중립 및 RE100"},
+        {"name": "비대면진료", "desc": "규제 완화 및 헬스케어"},
+        {"name": "웹툰", "desc": "글로벌 IP 확장 및 콘텐츠"},
+        {"name": "방위산업", "desc": "K-방산 글로벌 수출 수주"},
+        {"name": "미용기기", "desc": "홈뷰티 기기 글로벌 수요"}
     ]
     selected_themes = random.sample(mega_themes, random.randint(7, 10))
     themes = []
     for theme in selected_themes:
         change_val = round(random.uniform(0.1, 5.9), 1)
         themes.append({
-            "name": theme,
+            "name": theme["name"],
+            "desc": theme["desc"],
             "change": f"+{change_val}%",
             "is_new": random.random() > 0.8
         })

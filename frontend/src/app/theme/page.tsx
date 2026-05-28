@@ -222,17 +222,26 @@ export default function ThemePage() {
                                     setKeyword(name); 
                                     handleAnalyze(name); 
                                 }}
-                                className="group px-4 py-1.5 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/10 hover:border-orange-500/30 transition-all hover:-translate-y-0.5 text-gray-400 hover:text-white flex items-center gap-2"
+                                className="group px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/10 hover:border-orange-500/30 transition-all hover:-translate-y-0.5 text-gray-400 hover:text-white flex items-center gap-3 text-left"
                             >
-                                <span className="text-[10px] font-black text-gray-600 group-hover:text-orange-500/50 transition-colors">
+                                <span className="text-xs font-black text-gray-600 group-hover:text-orange-500/50 transition-colors shrink-0">
                                     {String(idx + 1).padStart(2, '0')}
                                 </span>
-                                {typeof t === 'string' ? t : t.name}
-                                {typeof t !== 'string' && t.change && (
-                                    <span className={`text-[10px] font-bold ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-500/70' : 'text-blue-500/70'}`}>
-                                        {t.change}
-                                    </span>
-                                )}
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-gray-200 group-hover:text-white">{typeof t === 'string' ? t : t.name}</span>
+                                        {typeof t !== 'string' && t.change && (
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-white/5 ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
+                                                {t.change}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {typeof t !== 'string' && t.desc && (
+                                        <span className="text-[10px] text-gray-500 group-hover:text-orange-200/70 mt-0.5">
+                                            {t.desc}
+                                        </span>
+                                    )}
+                                </div>
                             </button>
                         ))}
                     </div>
