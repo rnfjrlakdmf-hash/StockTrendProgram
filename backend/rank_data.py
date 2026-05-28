@@ -963,16 +963,17 @@ def get_etf_ranking(market="KR", category=None):
         elif category == "semiconductor": keywords = ["반도체", "Chip", "Semicon", "SOXX", "NVDA", "팹리스", "파운드리", "ASML", "HBM"]
         elif category == "healthcare": keywords = ["헬스케어", "바이오", "Bio", "Health", "제약", "의료기기", "mRNA"]
 
-        rank = 1
+        # 원본 거래량 순위(rank)를 필터링 전에 미리 부여하여, 필터링 후에도 원래 순위 유지
+        for i, item in enumerate(results):
+            item['rank'] = i + 1
+            
         for item in results:
             name = item.get('name', '')
             if category:
                 matched = any(k.lower() in name.lower() for k in keywords)
                 if not matched: continue
             
-            item['rank'] = rank
             data.append(item)
-            rank += 1
             if len(data) >= 20: break
 
         return data
