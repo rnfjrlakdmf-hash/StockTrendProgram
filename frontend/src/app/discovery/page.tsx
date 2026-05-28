@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, Suspense, useMemo, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
@@ -377,6 +377,9 @@ export default function DiscoveryPage() {
 
 function DiscoveryContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const lastSearchedQuery = useRef<string>("");
     const [mounted, setMounted] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -607,19 +610,14 @@ function DiscoveryContent() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // [New] Handle URL Query Params - Trigger search when query param differs from current stock (safely ignoring market suffixes like .KS, .O to avoid infinite loops)
+    // [New] Handle URL Query Params - Trigger search when query param differs from last searched query (prevents infinite loops)
     useEffect(() => {
         const query = searchParams.get("q");
-        if (query) {
-            const cleanQuery = query.split('.')[0].toUpperCase();
-            const cleanStockSymbol = stock?.symbol ? stock.symbol.split('.')[0].toUpperCase() : '';
-            
-            if (cleanQuery !== cleanStockSymbol) {
-                setSearchInput(query);
-                handleSearch(query);
-            }
+        if (query && query.toUpperCase() !== lastSearchedQuery.current.toUpperCase()) {
+            setSearchInput(query);
+            handleSearch(query);
         }
-    }, [searchParams, stock]);
+    }, [searchParams]);
 
     const handleSearch = async (term?: string) => {
         let query = (term || searchInput || "").trim();
@@ -664,6 +662,18 @@ function DiscoveryContent() {
             const cacheBuster = Math.random().toString(36).substring(7);
             const safeTicker = encodeURIComponent(targetSymbol.toUpperCase());
             console.log("[Search] Fetching data for ticker:", safeTicker);
+
+            // [Fix] URL 파라미터 동기화 (관련 섹터 종목 클릭 시 무한 새로고침 및 멈춤 방지)
+            // React closure stale state 방지를 위해 브라우저의 실제 URL을 직접 확인합니다.
+            const currentQ = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get("q") : searchParams.get("q");
+            
+            if (currentQ?.toUpperCase() !== targetSymbol.toUpperCase()) {
+                console.log("[Search] URL is different, pushing to router. Fetching data immediately to prevent UI freeze.");
+                router.push(`${pathname}?q=${targetSymbol}`);
+            }
+
+            // 검색 진행이 확정되었으므로 마지막 검색 기록 갱신 (useEffect 중복 호출 방지)
+            lastSearchedQuery.current = targetSymbol;
 
             // [Instant Load] Check global STOCK_CACHE first
             const cachedData = STOCK_CACHE[targetSymbol.toUpperCase()];
