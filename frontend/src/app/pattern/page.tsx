@@ -626,8 +626,8 @@ export default function PatternPage() {
                                             <TrendingUp className="w-6 h-6 text-emerald-400" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-bold text-white leading-none">주린이를 위한 AI 차트 도슨트 🎓</h3>
-                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">AI 지능형 분석 Insight</p>
+                                            <h3 className="text-xl font-bold text-white leading-none">AI 차트 지표 요약 📊</h3>
+                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">객관적 보조지표 추세 요약</p>
                                         </div>
                                     </div>
                                     
@@ -759,7 +759,7 @@ export default function PatternPage() {
                         {result.whale && (
                             <div className="rounded-3xl bg-white/5 border border-white/10 p-8 space-y-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-100">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3"><TowerControl className="w-6 h-6 text-blue-400" /> 📡 세력 평단가 추적기</h3>
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3"><TowerControl className="w-6 h-6 text-blue-400" /> 📡 투자자별 추정 평균 단가</h3>
                                     <div className="px-3 py-1 bg-blue-500/10 rounded-full text-[10px] font-bold text-blue-400 border border-blue-500/20 uppercase tracking-tighter">최근 40일 추정</div>
                                 </div>
 
@@ -770,7 +770,7 @@ export default function PatternPage() {
                                             <div className="bg-gradient-to-br from-blue-500/10 to-transparent p-5 rounded-2xl border border-blue-500/20 flex flex-col justify-between h-32">
                                                 <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500" /> 외국인 평단</p>
                                                 <div>
-                                                    <p className="text-2xl font-black text-white font-mono">₩{result.whale?.foreigner?.avg_price?.toLocaleString()}</p>
+                                                    <p className="text-2xl font-black text-white font-mono">{formatPrice(result.whale?.foreigner?.avg_price)}</p>
                                                     <div className={`text-xs mt-1 font-bold ${result.whale?.foreigner?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                                                         수익률 {result.whale?.foreigner?.return_rate}%
                                                     </div>
@@ -779,7 +779,7 @@ export default function PatternPage() {
                                             <div className="bg-gradient-to-br from-purple-500/10 to-transparent p-5 rounded-2xl border border-purple-500/20 flex flex-col justify-between h-32">
                                                 <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-500" /> 기관 평단</p>
                                                 <div>
-                                                    <p className="text-2xl font-black text-white font-mono">₩{result.whale?.institution?.avg_price?.toLocaleString()}</p>
+                                                    <p className="text-2xl font-black text-white font-mono">{formatPrice(result.whale?.institution?.avg_price)}</p>
                                                     <div className={`text-xs mt-1 font-bold ${result.whale?.institution?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                                                         수익률 {result.whale?.institution?.return_rate}%
                                                     </div>
@@ -797,8 +797,8 @@ export default function PatternPage() {
                                             {result.whale?.ingredients?.map((ing: any, idx: number) => (
                                                 <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0">
                                                     <span className="text-gray-500 font-mono">{ing.date.split('-').slice(1).join('/')}</span>
-                                                    <span className={`font-bold ${ing.winner === '개인' ? 'text-yellow-400' : ing.winner === '외국인' ? 'text-red-400' : 'text-blue-400'}`}>{ing.winner} 입성</span>
-                                                    <span className="text-gray-300 font-mono">₩{ing.price.toLocaleString()}</span>
+                                                    <span className={`font-bold ${ing.winner === '개인' ? 'text-yellow-400' : ing.winner === '외국인' ? 'text-red-400' : 'text-blue-400'}`}>{ing.winner === '순매수 없음' ? ing.winner : `${ing.winner} 순매수`}</span>
+                                                    <span className="text-gray-300 font-mono">{formatPrice(ing.price)}</span>
                                                 </div>
                                             ))}
                                         </div>
