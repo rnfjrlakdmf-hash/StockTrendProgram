@@ -880,10 +880,53 @@ def get_etf_ranking(market="KR", category=None):
                 # get_simple_quote는 .KS 등 접미사 처리를 내부적으로 지원하거나 순수 번호로 KIS 호출
                 q = get_simple_quote(sym)
                 if q:
+                    import re
                     change_percent = str(q.get("change_percent", q.get("change", "0"))).replace('%', '').replace('+', '')
+                    raw_name = q.get("name", f"ETF-{sym}")
+                    
+                    # ETF 이름 클리닝 (가독성 향상)
+                    clean_name = raw_name
+                    # 1. 괄호 안의 영문 등 제거 (예: 삼성코덱스(Samsung Kodex) -> 삼성코덱스)
+                    # 단, (H) 같은 헷지 표시는 살려둠
+                    clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
+                    
+                    # 2. 불필요한 운용사 전체 이름 축약
+                    clean_name = clean_name.replace("미래에셋맵스운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - 타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - TIGER", "TIGER")
+                    clean_name = clean_name.replace("미래에셋 TIGER", "TIGER")
+                    clean_name = clean_name.replace("미래에셋운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("삼성코덱스", "KODEX")
+                    clean_name = clean_name.replace("삼성 Kodex", "KODEX")
+                    clean_name = clean_name.replace("삼성 KODEX", "KODEX")
+                    clean_name = clean_name.replace("삼성자산운용 - 삼성KODEX", "KODEX")
+                    clean_name = clean_name.replace("김킨덱스", "KINDEX")
+                    
+                    # 3. 불필요한 접미사 제거
+                    clean_name = clean_name.replace("- 주식파생상품", "").replace(" - ", " ").strip()
+                    clean_name = clean_name.replace(" ETF", "").replace(" Etf", "").replace(" etf", "")
+                    
+                    # 4. 널리 쓰이는 이름으로 치환
+                    clean_name = clean_name.replace("이차전지", "2차전지")
+                    clean_name = clean_name.replace("Us Nasdaq", "미국나스닥")
+                    clean_name = clean_name.replace("USA 나스닥", "미국나스닥")
+                    clean_name = clean_name.replace("Inverse2x", "인버스2X")
+                    clean_name = clean_name.replace("Inverse", "인버스")
+                    
+                    # 5. 티커별 하드코딩 예외 처리
+                    if sym == "091160": clean_name = "KODEX 반도체"
+                    if sym == "114800": clean_name = "KODEX 인버스"
+                    if sym == "161510": clean_name = "ARIRANG 고배당주"
+                    if sym == "438220": clean_name = "KODEX 미국배당다우존스"
+                    if sym == "418120": clean_name = "TIGER 미국배당+3%다우존스"
+                    
+                    # 6. 여러 공백 축소
+                    clean_name = re.sub(r'\s+', ' ', clean_name).strip()
+
                     return {
                         "symbol": q.get("symbol", sym),
-                        "name": q.get("name", f"ETF-{sym}"),
+                        "name": clean_name,
                         "price": str(q.get("price", "0.00")),
                         "change": str(q.get("change", "0.00%")),
                         "change_percent": float(change_percent) if change_percent else 0.0,
