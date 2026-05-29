@@ -1149,10 +1149,14 @@ function DiscoveryContent() {
                                                         </span>
                                                         <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${
                                                             (() => {
-                                                                const val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
-                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.change_val || 0) 
-                                                                    : (stock.after_market_data?.change_val || 0);
+                                                                const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                let val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                                let pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                if (val === 0 && pct !== 0) {
+                                                                    const priceStr = String(nxt?.price || '0').replace(/,/g, '');
+                                                                    const priceNum = Number(priceStr);
+                                                                    val = priceNum - (priceNum / (1 + (pct / 100)));
+                                                                }
                                                                 return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
                                                                        val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
                                                                        'bg-gray-500/10 border-white/10 text-gray-400';
@@ -1160,16 +1164,27 @@ function DiscoveryContent() {
                                                         }`}>
                                                             <span>
                                                                 {(() => {
-                                                                    const val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
-                                                                        (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                        ? (stock.nxt_data?.change_val || 0) 
-                                                                        : (stock.after_market_data?.change_val || 0);
+                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                    let val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                                    let pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                    if (val === 0 && pct !== 0) {
+                                                                        const priceStr = String(nxt?.price || '0').replace(/,/g, '');
+                                                                        const priceNum = Number(priceStr);
+                                                                        val = priceNum - (priceNum / (1 + (pct / 100)));
+                                                                    }
                                                                     return val > 0 ? '▲' : val < 0 ? '▼' : '';
                                                                 })()}
-                                                                {Math.abs(stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
-                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.change_val || 0) 
-                                                                    : (stock.after_market_data?.change_val || 0)).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                {(() => {
+                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                    let val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                                    let pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                    if (val === 0 && pct !== 0) {
+                                                                        const priceStr = String(nxt?.price || '0').replace(/,/g, '');
+                                                                        const priceNum = Number(priceStr);
+                                                                        val = priceNum - (priceNum / (1 + (pct / 100)));
+                                                                    }
+                                                                    return Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
+                                                                })()}
                                                             </span>
                                                             <span className="text-xs md:text-sm opacity-80">
                                                                 ({(() => {
@@ -1177,9 +1192,14 @@ function DiscoveryContent() {
                                                                         const pct = Number(stock.extended_change_percent);
                                                                         return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
                                                                     }
-                                                                    return (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                        ? (stock.nxt_data?.change_pct_str || stock.nxt_data?.change_pct || "0.00%") 
-                                                                        : (stock.after_market_data?.change_pct_str || stock.after_market_data?.change_pct || "0.00%");
+                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                    const rawPct = nxt?.change_pct_str || nxt?.change_pct || "0.00%";
+                                                                    if (typeof rawPct === 'number') return `${rawPct > 0 ? '+' : ''}${rawPct.toFixed(2)}%`;
+                                                                    if (typeof rawPct === 'string') {
+                                                                        const num = parseFloat(rawPct.replace(/[^\d.-]/g, ''));
+                                                                        if (!isNaN(num)) return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
+                                                                    }
+                                                                    return rawPct;
                                                                 })()})
                                                             </span>
                                                         </div>
