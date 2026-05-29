@@ -1128,7 +1128,11 @@ function DiscoveryContent() {
                                                                     ? 'NXT AFTER MARKET 야간거래' 
                                                                     : 'AFTER MARKET 시간외거래'}
                                                         </span>
-                                                        <span className={`w-1.5 h-1.5 rounded-full animate-ping ${
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${
+                                                            stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') || stock.market_status?.includes('NXT')
+                                                            ? 'animate-ping'
+                                                            : ''
+                                                        } ${
                                                             stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
                                                             ? 'bg-amber-400'
                                                             : 'bg-indigo-400'
