@@ -1175,19 +1175,32 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             # yfinance 세션 상태 추출
             market_status = "장마감"
             try:
-                # fast_info에는 market_state가 없을 수 있으므로 info 딕셔너리에서도 우선적으로 찾음
-                ms_info = str(ticker.info.get('marketState', '')).upper()
-                ms_fast = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
-                ms = ms_info if ms_info else ms_fast
+                # [New] 강제 장마감 필터링 (현지시간 20:00 ~ 다음날 04:00 및 주말)
+                import pytz
+                from datetime import datetime
+                ny_tz = pytz.timezone('America/New_York')
+                now_ny = datetime.now(ny_tz)
+                ct = now_ny.hour * 100 + now_ny.minute
                 
-                if 'PRE' in ms:              market_status = "프리마켓"
-                elif 'POST' in ms or 'AFTER' in ms or 'CLOSED' in ms: 
-                    # CLOSED 상태도 일단 장마감/에프터마켓 등으로 취급
-                    if 'POST' in ms or 'AFTER' in ms:
-                        market_status = "에프터마켓"
-                    else:
-                        market_status = "장마감"
-                elif 'REGULAR' in ms or 'OPEN' in ms: market_status = "장중"
+                # 주말(토,일) 또는 밤 8시(20:00) ~ 새벽 4시(04:00) 사이면 API 응답 무시하고 무조건 장마감 처리
+                if now_ny.weekday() >= 5 or (2000 <= ct <= 2359) or (0 <= ct < 400):
+                    market_status = "장마감"
+                else:
+                    # fast_info에는 market_state가 없을 수 있으므로 info 딕셔너리에서도 우선적으로 찾음
+                    ms_info = str(ticker.info.get('marketState', '')).upper()
+                    ms_fast = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
+                    ms = ms_info if ms_info else ms_fast
+                    
+                    if 'PRE' in ms:              
+                        market_status = "프리마켓"
+                    elif 'POST' in ms or 'AFTER' in ms or 'CLOSED' in ms: 
+                        # CLOSED 상태도 일단 장마감/에프터마켓 등으로 취급
+                        if 'POST' in ms or 'AFTER' in ms:
+                            market_status = "에프터마켓"
+                        else:
+                            market_status = "장마감"
+                    elif 'REGULAR' in ms or 'OPEN' in ms: 
+                        market_status = "장중"
             except: pass
 
             # [New] 정규장 및 시간외 가격 분리 추출
