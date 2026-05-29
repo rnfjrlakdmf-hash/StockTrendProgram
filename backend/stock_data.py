@@ -1172,36 +1172,29 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close else 0
             price_str = f"{current_price:,.2f}" if is_us_stock else f"{current_price:,.0f}"
 
-            # yfinance 세션 상태 추출
-            market_status = "장마감"
+            # [New] 미국 뉴욕 시간대별 "절대 강제 매핑" (yfinance 문자열 무시)
             try:
-                # [New] 강제 장마감 필터링 (현지시간 20:00 ~ 다음날 04:00 및 주말)
                 import pytz
                 from datetime import datetime
                 ny_tz = pytz.timezone('America/New_York')
                 now_ny = datetime.now(ny_tz)
                 ct = now_ny.hour * 100 + now_ny.minute
                 
-                # 주말(토,일) 또는 밤 8시(20:00) ~ 새벽 4시(04:00) 사이면 API 응답 무시하고 무조건 장마감 처리
-                if now_ny.weekday() >= 5 or (2000 <= ct <= 2359) or (0 <= ct < 400):
+                # 주말은 무조건 장마감
+                if now_ny.weekday() >= 5:
                     market_status = "장마감"
+                # 평일 시간대별 정밀 컷오프
+                elif 400 <= ct < 930:
+                    market_status = "프리마켓"
+                elif 930 <= ct < 1600:
+                    market_status = "장중"
+                elif 1600 <= ct < 2000:
+                    market_status = "에프터마켓"
                 else:
-                    # fast_info에는 market_state가 없을 수 있으므로 info 딕셔너리에서도 우선적으로 찾음
-                    ms_info = str(ticker.info.get('marketState', '')).upper()
-                    ms_fast = str(getattr(ticker.fast_info, 'market_state', '') or '').upper()
-                    ms = ms_info if ms_info else ms_fast
-                    
-                    if 'PRE' in ms:              
-                        market_status = "프리마켓"
-                    elif 'POST' in ms or 'AFTER' in ms or 'CLOSED' in ms: 
-                        # CLOSED 상태도 일단 장마감/에프터마켓 등으로 취급
-                        if 'POST' in ms or 'AFTER' in ms:
-                            market_status = "에프터마켓"
-                        else:
-                            market_status = "장마감"
-                    elif 'REGULAR' in ms or 'OPEN' in ms: 
-                        market_status = "장중"
-            except: pass
+                    market_status = "장마감"
+            except Exception as e:
+                print(f"Time-based US market status error: {e}")
+                market_status = "장마감"
 
             # [New] 정규장 및 시간외 가격 분리 추출
             regular_price = ticker.info.get('regularMarketPrice')
