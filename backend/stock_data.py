@@ -935,6 +935,30 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             if stock_name and stock_name != target_symbol:
                 display_name = stock_name
 
+        # [New] 미국 주식 절대 시간표 강제 매핑
+        us_market_status = "미국 장마감"
+        if not target_symbol.endswith(('.KS', '.KQ')):
+            try:
+                import pytz
+                from datetime import datetime
+                ny_tz = pytz.timezone('America/New_York')
+                now_ny = datetime.now(ny_tz)
+                ct = now_ny.hour * 100 + now_ny.minute
+                
+                if now_ny.weekday() >= 5:
+                    us_market_status = "장마감"
+                elif 400 <= ct < 930:
+                    us_market_status = "프리마켓"
+                elif 930 <= ct < 1600:
+                    us_market_status = "장중"
+                elif 1600 <= ct < 2000:
+                    us_market_status = "에프터마켓"
+                else:
+                    us_market_status = "장마감"
+            except Exception as e:
+                print(f"Time-based US market status error: {e}")
+                us_market_status = "장마감"
+
         # [Fix] Match domestic stock data structure for UI consistency
         result_data = {
             "name": display_name,
@@ -949,7 +973,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             "change_percent": change_str, # Mirror
             "summary": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "sector": info.get('sector', 'N/A'),
-            "market_status": winner_data.get('market_status', '미국 장마감'),
+            "market_status": winner_data.get('market_status', us_market_status),
             "financials": {
                 "pe_ratio": pe, "pbr": pbr, "roe": roe, "revenue_growth": rev_growth, "market_cap": mkt_cap_str
             },
@@ -971,7 +995,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 "pbr": info.get('pbr') or info.get('priceToBook'),
                 "bps": info.get('bps') or info.get('bookValue'),
                 "dividend_rate": info.get('dividendRate'),
-                "market_status": "미국 장중" if is_us_market_open() else "미국 장마감", # Real-time status
+                "market_status": us_market_status if not target_symbol.endswith(('.KS', '.KQ')) else winner_data.get('market_status', '한국 장마감'), # Real-time status
                 "nxt_data": None
             },
             "detailed_financials": {
