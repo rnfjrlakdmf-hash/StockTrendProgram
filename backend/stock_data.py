@@ -1185,6 +1185,32 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 elif 'REGULAR' in ms or 'OPEN' in ms: market_status = "장중"
             except: pass
 
+            # [New] 정규장 및 시간외 가격 분리 추출
+            regular_price = ticker.info.get('regularMarketPrice')
+            regular_change = ticker.info.get('regularMarketChange')
+            regular_change_pct = ticker.info.get('regularMarketChangePercent')
+            
+            extended_price = None
+            extended_change = None
+            extended_change_pct = None
+            
+            is_extended_hours = False
+            if market_status in ["프리마켓", "에프터마켓"]:
+                is_extended_hours = True
+                if market_status == "프리마켓":
+                    extended_price = ticker.info.get('preMarketPrice')
+                    extended_change = ticker.info.get('preMarketChange')
+                    extended_change_pct = ticker.info.get('preMarketChangePercent')
+                else:
+                    extended_price = ticker.info.get('postMarketPrice')
+                    extended_change = ticker.info.get('postMarketChange')
+                    extended_change_pct = ticker.info.get('postMarketChangePercent')
+
+            if regular_price is None:
+                regular_price = current_price
+            if regular_change_pct is None:
+                regular_change_pct = change_pct
+
             return {
                 "symbol": symbol,
                 "name": symbol,
@@ -1194,6 +1220,13 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 "up": change_pct >= 0,
                 "currency": "USD" if is_us_stock else "KRW",
                 "market_status": market_status,
+                "regular_price": regular_price,
+                "regular_change": regular_change,
+                "regular_change_percent": regular_change_pct,
+                "extended_price": extended_price,
+                "extended_change": extended_change,
+                "extended_change_percent": extended_change_pct,
+                "is_extended_hours": is_extended_hours,
             }
     except Exception as e:
         print(f"[get_simple_quote] yfinance fallback failed for {symbol}: {e}")
