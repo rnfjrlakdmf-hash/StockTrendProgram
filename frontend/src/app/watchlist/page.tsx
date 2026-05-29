@@ -202,9 +202,8 @@ export default function WatchlistPage() {
         if (ms.includes('프리') || ms.includes('pre')) return { label: 'PRE', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
         if (ms.includes('에프터') || ms.includes('after') || ms.includes('post')) return { label: 'AFTER', color: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400 animate-pulse' };
         if (ms.includes('장중') || ms.includes('open') || ms.includes('정규')) return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
-        return { label: '마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };
+        return { label: '장마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };
     };
-
     // ─────────────────────────────────────────────
     // [v2] 가격 변동 감지 → 브라우저 알림 트리거
     // ─────────────────────────────────────────────
