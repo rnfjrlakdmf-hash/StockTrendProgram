@@ -949,6 +949,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             "change_percent": change_str, # Mirror
             "summary": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "sector": info.get('sector', 'N/A'),
+            "market_status": winner_data.get('market_status', '미국 장마감'),
             "financials": {
                 "pe_ratio": pe, "pbr": pbr, "roe": roe, "revenue_growth": rev_growth, "market_cap": mkt_cap_str
             },
