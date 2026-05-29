@@ -1061,15 +1061,15 @@ function DiscoveryContent() {
                                                         </span>
                                                         <BlinkingPrice
                                                             price={stock.currency === 'KRW'
-                                                                ? Number(String(stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                                : stock.regular_close || stock.price}
+                                                                ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                                : stock.regular_price || stock.regular_close || stock.price}
                                                             className="text-white bg-transparent"
                                                         />
                                                     </span>
 
                                                     <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
                                                         (() => {
-                                                            const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                            const val = Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
                                                             return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
                                                                    val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
                                                                    'bg-gray-500/10 border-white/10 text-gray-400';
@@ -1077,14 +1077,14 @@ function DiscoveryContent() {
                                                     }`}>
                                                         <span className="flex items-center gap-1">
                                                             {(() => {
-                                                                const val = Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                                const val = Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
                                                                 return val > 0 ? '▲' : val < 0 ? '▼' : '';
                                                             })()}
-                                                            {Math.abs(Number(String(stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString()}
+                                                            {Math.abs(Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                         </span>
                                                         <span className="text-sm md:text-base font-bold opacity-80 ml-1">
                                                             ({(() => {
-                                                                const pct = stock.regular_change_pct;
+                                                                const pct = stock.regular_change_percent || stock.regular_change_pct;
                                                                 if (!pct || pct === 0 || pct === '0.00%') {
                                                                     const raw = String(stock.change_percent || stock.change || '0.00%');
                                                                     const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
@@ -1113,43 +1113,44 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            {/* 해외 주식 세션별 가격 위젯 (프리마켓 / 정규장 / 에프터마켓) */}
-                                            {(extendedHours || extendedLoading) && (
-                                                <GlobalExtendedHoursWidget
-                                                    data={extendedHours}
-                                                    loading={extendedLoading}
-                                                    lastUpdated={extendedLastUpdated}
-                                                />
-                                            )}
-
-                                            {/* 시간외 거래(애프터 마켓) 가격 영역 (국내 전용) */}
-                                            {!extendedHours && (stock.nxt_data || stock.after_market_data) && (
+                                            {/* 시간외 거래 가격 영역 (미국/한국 공통 적용) */}
+                                            {((stock.is_extended_hours && stock.extended_price) || stock.nxt_data || stock.after_market_data) && (
                                                 <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-3.5">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2.5 py-0.5 rounded-md border border-indigo-500/20 shadow-sm w-max">
-                                                            {stock.market_status?.includes('야간') || stock.market_status?.includes('NXT') || (!stock.after_market_data && stock.nxt_data) 
-                                                                ? 'NXT AFTER MARKET 야간거래' 
-                                                                : 'AFTER MARKET 시간외거래'}
+                                                        <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border shadow-sm w-max ${
+                                                            stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
+                                                            ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                                                            : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+                                                        }`}>
+                                                            {stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
+                                                                ? 'PRE MARKET 프리마켓' 
+                                                                : stock.market_status?.includes('야간') || stock.market_status?.includes('NXT') || (!stock.after_market_data && stock.nxt_data) 
+                                                                    ? 'NXT AFTER MARKET 야간거래' 
+                                                                    : 'AFTER MARKET 시간외거래'}
                                                         </span>
-                                                        {(stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) && (
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-                                                        )}
+                                                        <span className={`w-1.5 h-1.5 rounded-full animate-ping ${
+                                                            stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
+                                                            ? 'bg-amber-400'
+                                                            : 'bg-indigo-400'
+                                                        }`}></span>
                                                     </div>
                                                     <div className="flex items-center gap-4 mt-1.5">
                                                         <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
                                                             <span className="text-lg md:text-xl mr-0.5 text-gray-500 font-bold">{stock.currency === 'KRW' ? '₩' : '$'}</span>
                                                             <BlinkingPrice
                                                                 price={Number(String(
+                                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
                                                                     (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                         ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
                                                                         : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                                ).replace(/,/g, '')).toLocaleString()}
+                                                                ).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                                 className="text-white bg-transparent"
                                                             />
                                                         </span>
                                                         <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${
                                                             (() => {
-                                                                const val = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                const val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
+                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                     ? (stock.nxt_data?.change_val || 0) 
                                                                     : (stock.after_market_data?.change_val || 0);
                                                                 return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
@@ -1158,20 +1159,28 @@ function DiscoveryContent() {
                                                             })()
                                                         }`}>
                                                             <span>
-                                                                {((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                {(() => {
+                                                                    const val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
+                                                                        (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                        ? (stock.nxt_data?.change_val || 0) 
+                                                                        : (stock.after_market_data?.change_val || 0);
+                                                                    return val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                                })()}
+                                                                {Math.abs(stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) :
+                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                     ? (stock.nxt_data?.change_val || 0) 
-                                                                    : (stock.after_market_data?.change_val || 0)) > 0 ? '▲' : 
-                                                                 ((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.change_val || 0) 
-                                                                    : (stock.after_market_data?.change_val || 0)) < 0 ? '▼' : ''}
-                                                                {Math.abs((stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.change_val || 0) 
-                                                                    : (stock.after_market_data?.change_val || 0)).toLocaleString()}
+                                                                    : (stock.after_market_data?.change_val || 0)).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                             </span>
                                                             <span className="text-xs md:text-sm opacity-80">
-                                                                ({(stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                    ? (stock.nxt_data?.change_pct_str || stock.nxt_data?.change_pct || "0.00%") 
-                                                                    : (stock.after_market_data?.change_pct_str || stock.after_market_data?.change_pct || "0.00%")})
+                                                                ({(() => {
+                                                                    if (stock.is_extended_hours && stock.extended_change_percent !== undefined) {
+                                                                        const pct = Number(stock.extended_change_percent);
+                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                                    }
+                                                                    return (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                        ? (stock.nxt_data?.change_pct_str || stock.nxt_data?.change_pct || "0.00%") 
+                                                                        : (stock.after_market_data?.change_pct_str || stock.after_market_data?.change_pct || "0.00%");
+                                                                })()})
                                                             </span>
                                                         </div>
                                                     </div>
