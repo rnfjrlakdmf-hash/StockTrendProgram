@@ -1047,7 +1047,11 @@ function DiscoveryContent() {
                                             {/* 정규장 가격 영역 */}
                                             <div className="flex flex-col gap-1.5">
                                                 <span className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-md w-max shadow-sm">
-                                                    REGULAR MARKET 정규장 종가
+                                                    {stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
+                                                     stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
+                                                     stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') ? 'AFTER MARKET 시간외 거래' :
+                                                     stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'PRE MARKET 프리마켓' :
+                                                     'REGULAR MARKET 정규장 종가'}
                                                 </span>
                                                 <div className="flex flex-wrap items-center gap-4">
                                                     <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter flex items-center">
@@ -1093,12 +1097,14 @@ function DiscoveryContent() {
 
                                                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
                                                         stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
-                                                        stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                                                        stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                                                        stock.market_status?.includes('동시호가') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
                                                         'bg-gray-500/10 text-gray-400 border-gray-500/30'
                                                     }`}>
                                                         <div className={`w-2 h-2 rounded-full ${
                                                             stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
-                                                            stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') ? 'bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.6)]' :
+                                                            stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') ? 'bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.6)]' :
+                                                            stock.market_status?.includes('동시호가') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]' :
                                                             'bg-gray-500'
                                                         }`}></div>
                                                         <span className="text-xs md:text-sm font-black uppercase tracking-tight">{stock.market_status || '장마감'}</span>
