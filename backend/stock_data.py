@@ -89,29 +89,33 @@ def get_market_status_info():
 
 def is_us_market_open():
     """
-    미국 증시(NYSE, NASDAQ) 정규장 운영 여부를 판별합니다.
-    - 정규장: 현지시간 09:30 ~ 16:00
-    - 한국시간(KST) 기준:
-      - 서머타임 적용 시: 22:30 ~ 05:00 (다음날)
-      - 서머타임 미적용 시: 23:30 ~ 06:00 (다음날)
+    미국 증시(NYSE, NASDAQ) 정규장 운영 여부를 뉴욕 현지시간 기준으로 완벽하게 판별합니다.
+    - 정규장: 뉴욕 현지시간 09:30 ~ 16:00
+    - 공휴일 등 예외 상황은 기본적으로 고려하지 않으며 정규 요일/시간만 체크합니다.
     """
-    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    
-    # 서머타임 판별 (3월 둘째 일요일 ~ 11월 첫째 일요일)
-    # 간단한 판별: 3월말 ~ 10월말 사이는 대략 서머타임
-    is_dst = 3 < now.month < 11
-    
-    current_time = now.hour * 100 + now.minute
-    weekday = now.weekday()
-    
-    if weekday >= 5: return False # 주말은 닫힘
-    
-    if is_dst:
-        # 서머타임 (22:30 ~ 05:00)
-        return (current_time >= 2230) or (current_time < 500)
-    else:
-        # 서머타임 아님 (23:30 ~ 06:00)
-        return (current_time >= 2330) or (current_time < 600)
+    try:
+        import pytz
+        ny_tz = pytz.timezone('America/New_York')
+        now_ny = datetime.datetime.now(ny_tz)
+        
+        # 주말(토=5, 일=6)은 휴장
+        weekday = now_ny.weekday()
+        if weekday >= 5: return False 
+        
+        # 09:30 ~ 16:00 판별
+        current_time = now_ny.hour * 100 + now_ny.minute
+        return 930 <= current_time < 1600
+    except Exception as e:
+        # pytz가 없을 경우의 Fallback 로직 (기존 유지하지만 훨씬 보수적으로)
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        is_dst = 3 <= now.month <= 11
+        current_time = now.hour * 100 + now.minute
+        weekday = now.weekday()
+        if weekday >= 5: return False
+        if is_dst:
+            return (current_time >= 2230) or (current_time < 500)
+        else:
+            return (current_time >= 2330) or (current_time < 600)
 
 # [Cache] Memory Cache for Static Data
 NAME_CACHE = {}
