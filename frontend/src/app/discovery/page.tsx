@@ -1051,6 +1051,7 @@ function DiscoveryContent() {
                                                      stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
                                                      stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') ? 'AFTER MARKET 시간외 거래' :
                                                      stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'PRE MARKET 프리마켓' :
+                                                     stock.market_status?.includes('장마감') || stock.market_status?.includes('CLOSED') ? 'MARKET CLOSED 장마감 종가' :
                                                      'REGULAR MARKET 정규장 종가'}
                                                 </span>
                                                 <div className="flex flex-wrap items-center gap-4">
