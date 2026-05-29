@@ -942,7 +942,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 import pytz
                 from datetime import datetime
                 ny_tz = pytz.timezone('America/New_York')
-                now_ny = datetime.now(ny_tz)
+                now_ny = datetime.now(pytz.utc).astimezone(ny_tz)
                 ct = now_ny.hour * 100 + now_ny.minute
                 
                 if now_ny.weekday() >= 5:
@@ -1201,7 +1201,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 import pytz
                 from datetime import datetime
                 ny_tz = pytz.timezone('America/New_York')
-                now_ny = datetime.now(ny_tz)
+                now_ny = datetime.now(pytz.utc).astimezone(ny_tz)
                 ct = now_ny.hour * 100 + now_ny.minute
                 
                 # 주말은 무조건 장마감
