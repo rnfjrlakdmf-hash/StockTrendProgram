@@ -2754,13 +2754,30 @@ def get_exchange_rate(currency="USD"):
         except Exception as e_twelve:
             print(f"[ExchangeRate] Twelve Data failed ({currency}): {e_twelve}")
 
-    # [Commercial Protection] 상업 라이선스를 위해 Yahoo Finance 및 네이버 금융 크롤링 대체 비활성화
-    print(f"[ExchangeRate] Twelve Data unavailable. Using safe default for {currency}")
+    # 2차: yfinance Fallback (Twelve Data 실패 시)
+    try:
+        import yfinance as yf
+        ticker = yahoo_map.get(currency.upper())
+        if ticker:
+            t = yf.Ticker(ticker)
+            rate = getattr(t.fast_info, 'last_price', None)
+            if rate is None:
+                rate = t.fast_info.get("last_price") if hasattr(t.fast_info, "get") else None
+            if rate and rate > 0:
+                print(f"[ExchangeRate] yfinance fallback retrieved: {currency.upper()}/KRW = {rate}")
+                
+                # JPYKRW=X in Yahoo Finance is for 1 JPY, but Korea uses 100 JPY
+                if currency.upper() == "JPY":
+                    rate = rate * 100
+                    
+                return round(rate, 2)
+    except Exception as e_yf:
+        print(f"[ExchangeRate] yfinance fallback failed ({currency}): {e_yf}")
 
     # 최종 디폴트 값 반환
+    print(f"[ExchangeRate] All APIs unavailable. Using safe default for {currency}")
     defaults = {"USD": 1350.0, "JPY": 9.0, "CNY": 185.0, "HKD": 173.0, "VND": 0.055}
     return defaults.get(currency.upper(), 1300.0)
-
 
 
 @turbo_cache(ttl_seconds=3600)
