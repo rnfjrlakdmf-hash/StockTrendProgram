@@ -990,6 +990,10 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             "regular_change_val": winner_data.get('regular_change'),
             "regular_change_pct": winner_data.get('regular_change_percent'),
             "change_val": winner_data.get('regular_change'),
+            "extended_price": winner_data.get('extended_price'),
+            "extended_change": winner_data.get('extended_change'),
+            "extended_change_percent": winner_data.get('extended_change_percent'),
+            "is_extended_hours": winner_data.get('is_extended_hours', False),
             "summary": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "sector": info.get('sector', 'N/A'),
             "market_status": final_market_status,
@@ -1247,18 +1251,21 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             extended_price = None
             extended_change = None
             extended_change_pct = None
-            
             is_extended_hours = False
-            if market_status in ["프리마켓", "에프터마켓"]:
-                is_extended_hours = True
+            
+            if market_status in ["프리마켓", "에프터마켓", "장마감"]:
                 if market_status == "프리마켓":
                     extended_price = ticker.info.get('preMarketPrice')
                     extended_change = ticker.info.get('preMarketChange')
                     extended_change_pct = ticker.info.get('preMarketChangePercent')
-                else:
+                else: # 에프터마켓 or 장마감
                     extended_price = ticker.info.get('postMarketPrice')
                     extended_change = ticker.info.get('postMarketChange')
                     extended_change_pct = ticker.info.get('postMarketChangePercent')
+                
+                # yfinance API에서 간혹 0이나 빈값이 올 수 있으므로 필터
+                if extended_price is not None and extended_price > 0:
+                    is_extended_hours = True
 
             if regular_price is None:
                 regular_price = current_price
