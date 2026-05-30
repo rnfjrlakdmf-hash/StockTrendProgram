@@ -933,13 +933,36 @@ function CalendarTab({ router }: { router: any }) {
     useEffect(() => {
         (async () => {
             try {
+                // 기본 캘린더 데이터 조회
                 const r = await fetch(`${API_BASE_URL}/api/market/calendar/events`);
                 const j = await r.json();
-                if (j.status === "success") setEvents(j.data || []);
+                let allEvents = j.status === "success" ? (j.data || []) : [];
+
+                // 사용자의 관심종목 일정(실적/배당 등) 추가 조회
+                const token = localStorage.getItem("token");
+                if (token && watchlistSymbols.length > 0) {
+                    try {
+                        const syms = watchlistSymbols.join(",");
+                        const w_res = await fetch(`${API_BASE_URL}/api/market/calendar/watchlist?symbols=${syms}`, {
+                            headers: { "x-user-id": token }
+                        });
+                        const w_j = await w_res.json();
+                        if (w_j.status === "success" && w_j.data) {
+                            // 중복 제거 후 합치기 (종목코드와 타입이 같으면 중복)
+                            const existingKeys = new Set(allEvents.map((e: any) => `${e.symbol}-${e.type}`));
+                            const newEvents = w_j.data.filter((e: any) => !existingKeys.has(`${e.symbol}-${e.type}`));
+                            allEvents = [...allEvents, ...newEvents];
+                        }
+                    } catch (e) {
+                        console.error("Watchlist events fetch error:", e);
+                    }
+                }
+
+                setEvents(allEvents);
             } catch { }
             finally { setEarndivLoading(false); }
         })();
-    }, []);
+    }, [watchlistSymbols.join(",")]);
 
     // 공모주 데이터 fetch
     useEffect(() => {
