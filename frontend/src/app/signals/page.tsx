@@ -10,8 +10,9 @@ import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
-    Star, Globe, Trash2, X
+    Star, Globe, Trash2, X, Bell, BellRing
 } from "lucide-react";
+import { toast } from "react-toastify";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
@@ -767,7 +768,64 @@ function CalendarTab({ router }: { router: any }) {
     // 공모주(IPO) 데이터
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
+    const [watchedIpos, setWatchedIpos] = useState<Set<string>>(new Set());
 
+    const fetchWatched = async () => {
+        try {
+            const userId = user?.id || (user as any)?.uid || "guest";
+            const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
+                headers: { "X-User-Id": userId }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                setWatchedIpos(new Set(json.data));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        fetchWatched();
+    }, [user]);
+
+    const toggleWatchIPO = async (ipoName: string) => {
+        const userId = user?.id || (user as any)?.uid || "guest";
+        const isWatched = watchedIpos.has(ipoName);
+
+        try {
+            if (isWatched) {
+                const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist/${encodeURIComponent(ipoName)}`, {
+                    method: "DELETE",
+                    headers: { "X-User-Id": userId }
+                });
+                if (res.ok) {
+                    const newSet = new Set(watchedIpos);
+                    newSet.delete(ipoName);
+                    setWatchedIpos(newSet);
+                    toast.success(`${ipoName} 알림이 해제되었습니다.`, { autoClose: 2000 });
+                }
+            } else {
+                const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-User-Id": userId
+                    },
+                    body: JSON.stringify({ ipo_name: ipoName })
+                });
+                if (res.ok) {
+                    const newSet = new Set(watchedIpos);
+                    newSet.add(ipoName);
+                    setWatchedIpos(newSet);
+                    toast.success(`${ipoName} 알림이 등록되었습니다.`, { autoClose: 2000 });
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("알림 설정 중 오류가 발생했습니다.", { autoClose: 2000 });
+        }
+    };
 
     // 경제지표 데이터 fetch (글로벌 일정)
     useEffect(() => {
@@ -1157,26 +1215,54 @@ function CalendarTab({ router }: { router: any }) {
                                             <th className="p-3 whitespace-nowrap text-center">공모일정</th>
                                             <th className="p-3 whitespace-nowrap text-right">공모가</th>
                                             <th className="p-3 whitespace-nowrap text-center">정보</th>
+                                            <th className="p-3 whitespace-nowrap text-center">알림</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5 text-sm">
-                                        {ipos.map((ipo, idx) => (
-                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-3 font-bold text-white align-middle">{ipo.name}</td>
-                                                <td className="p-3 text-gray-300 text-xs align-middle text-center font-mono">{ipo.subscription_date}</td>
-                                                <td className="p-3 text-right align-middle">
-                                                    {ipo.fixed_price && ipo.fixed_price !== "-" && (
-                                                        <span className="text-red-400 font-bold font-mono text-xs bg-red-900/20 px-1.5 py-0.5 rounded">{ipo.fixed_price}</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 text-center align-middle">
-                                                    <button
-                                                        onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
-                                                        className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5"
-                                                    >정보</button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {ipos.map((ipo, idx) => {
+                                            const formatIpoDate = (dateStr: string) => {
+                                                if (!dateStr) return "-";
+                                                if (dateStr.includes("~")) {
+                                                    const [start, end] = dateStr.split("~");
+                                                    const formatPart = (part: string) => {
+                                                        if (part.length === 6) return `20${part.substring(0, 2)}.${part.substring(2, 4)}.${part.substring(4, 6)}`;
+                                                        if (part.length === 4) return `${part.substring(0, 2)}.${part.substring(2, 4)}`;
+                                                        return part;
+                                                    };
+                                                    return `${formatPart(start)} ~ ${formatPart(end)}`;
+                                                }
+                                                return dateStr;
+                                            };
+                                            const isWatched = watchedIpos.has(ipo.name);
+                                            return (
+                                                <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                                                    <td className="p-3 font-bold text-white align-middle">{ipo.name}</td>
+                                                    <td className="p-3 text-gray-300 text-xs align-middle text-center font-mono">{formatIpoDate(ipo.subscription_date)}</td>
+                                                    <td className="p-3 text-right align-middle">
+                                                        {ipo.fixed_price && ipo.fixed_price !== "-" && (
+                                                            <span className="text-red-400 font-bold font-mono text-xs bg-red-900/20 px-1.5 py-0.5 rounded">{ipo.fixed_price}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3 text-center align-middle">
+                                                        <button
+                                                            onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
+                                                            className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5 whitespace-nowrap"
+                                                        >정보</button>
+                                                    </td>
+                                                    <td className="p-3 text-center align-middle">
+                                                        <button
+                                                            onClick={() => toggleWatchIPO(ipo.name)}
+                                                            className={`p-2 rounded-full transition-colors ${
+                                                                isWatched ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/5 text-gray-500 hover:text-gray-300'
+                                                            }`}
+                                                            title={isWatched ? "알림 해제" : "알림 받기"}
+                                                        >
+                                                            {isWatched ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
