@@ -513,7 +513,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                                     {briefing.key_points && (
                                         <div className="space-y-2">
                                             <h4 className="text-xs font-bold text-gray-400">핵심 포인트</h4>
-                                            {briefing.key_points.map((p: string, i: number) => (
+                                            {(Array.isArray(briefing.key_points) ? briefing.key_points : []).map((p: string, i: number) => (
                                                 <div key={i} className="flex items-start gap-2 text-sm bg-gray-800/50 p-2 rounded-lg border border-white/5">
                                                     <span className="text-blue-400 mt-0.5">●</span>
                                                     <span className="text-gray-300 leading-relaxed">{p}</span>
@@ -648,7 +648,7 @@ function HeatmapTab({ router }: { router: any }) {
 
                                 {/* Stocks in this theme/sector */}
                                 <div className="space-y-2">
-                                    {item.stocks && item.stocks.map((stock: any, j: number) => (
+                                    {Array.isArray(item.stocks) && item.stocks.map((stock: any, j: number) => (
                                         <div
                                             key={j}
                                             className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
@@ -887,7 +887,7 @@ function CalendarTab({ router }: { router: any }) {
                         );
                     }).map((item: any) => {
                         // 화면 표시용 이름 정제 (중복 제거를 위해 [한국], [글로벌] 등 제거)
-                        let cleanName = item.event_kr
+                        let cleanName = String(item.event_kr || "")
                             .replace(/\[.*?\]/g, "") // 모든 [텍스트] 제거
                             .replace(/\(공포지수\)/g, "")
                             .replace("DOW JONES", "다우존스")
@@ -1242,8 +1242,9 @@ function CalendarTab({ router }: { router: any }) {
                                     </thead>
                                     <tbody className="divide-y divide-white/5 text-sm">
                                         {ipos.map((ipo, idx) => {
-                                            const formatIpoDate = (dateStr: string) => {
-                                                if (!dateStr) return "-";
+                                            const formatIpoDate = (rawStr: any) => {
+                                                const dateStr = String(rawStr || "");
+                                                if (!dateStr || dateStr === "null" || dateStr === "undefined") return "-";
                                                 if (dateStr.includes("~")) {
                                                     const [start, end] = dateStr.split("~");
                                                     const formatPart = (part: string) => {
