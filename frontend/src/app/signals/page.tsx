@@ -850,7 +850,7 @@ function CalendarTab({ router }: { router: any }) {
                 const [krRes, globalRes, indicesRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
                     fetch(`${API_BASE_URL}/api/market/assets`),
-                    fetch(`${API_BASE_URL}/api/market/indices`)
+                    fetch(`${API_BASE_URL}/api/market/indices`, { cache: "no-store" })
                 ]);
 
                 const krJson = await krRes.json();
