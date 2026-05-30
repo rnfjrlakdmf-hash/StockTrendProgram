@@ -122,12 +122,18 @@ class MorningBriefingService:
                 # 필터링할 키워드
                 if any(x in text for x in ["없음", "정보 없", "알 수 없", "해당 뉴스", "확인 불가", "None", "해당 사항"]):
                     continue
+                # 극도로 짧게 잘라내서 모바일 푸시에서 잘리지 않게 방어
+                if len(text) > 30:
+                    text = text[:27] + "..."
                 res.append(text)
-            return res[:3]
+            # 최대 2개로 제한
+            return res[:2]
 
         pros_list = filter_items(analysis.get('pros', []))
         cons_list = filter_items(analysis.get('cons', []))
-        ai_opinion = analysis.get('ai_opinion', '신중한 판단 필요')
+        
+        raw_ai_opinion = str(analysis.get('ai_opinion', '신중한 판단 필요')).strip()
+        ai_opinion = raw_ai_opinion[:30] + "..." if len(raw_ai_opinion) > 30 else raw_ai_opinion
 
         has_pros = len(pros_list) > 0
         has_cons = len(cons_list) > 0
@@ -194,30 +200,31 @@ class MorningBriefingService:
         return list(set(headlines))
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
-        """AI를 사용해 호재 3개, 악재 3개 추출 (초보자 친화 + 준법 버전)"""
+        """AI를 사용해 호재 2개, 악재 2개 추출 (초보자 친화 + 준법 버전, 글자수 극도로 제한)"""
         prompt = f"""
-        Extract up to 3 factual 'Upward Factors' (호재) and 3 'Downward Risks' (악재) for the company '{name}' ({symbol}) based ONLY on the provided news headlines.
+        Extract up to 2 factual 'Upward Factors' (호재) and 2 'Downward Risks' (악재) for the company '{name}' ({symbol}) based ONLY on the provided news headlines.
         
         STRICT RELEVANCE RULES:
         1. Only include news that is directly and specifically about the company '{name}'.
         2. Absolutely ignore news about other companies (e.g. if the target company is '{name}', ignore news about '대성산업' or '와이제이링크').
         3. Absolutely ignore news about regions or unrelated terms (e.g. if the target company is '서남', ignore news about '서남아시아' or '서남 수협').
-        4. If there are not enough valid news headlines for '{name}', return fewer factors (e.g. 1 or 2 items, or empty list if none). Do not hallucinate or make up news.
+        4. If there are not enough valid news headlines for '{name}', return fewer factors (e.g. 1 item, or empty list if none). Do not hallucinate or make up news.
         
-        STRICT LEGAL & COMPLIANCE RULES:
+        STRICT LEGAL & COMPLIANCE & LENGTH RULES:
         1. NEVER recommend buying, selling, or holding. Avoid directive/subjective words: "추천", "주의", "매수 권장", "손절", "관리 필요", "긍정적", "부정적".
         2. Keep all descriptions strictly neutral, factual, and objective.
-        3. Explain in plain Korean (쉬운 우리말) for beginners. Avoid difficult financial jargon (e.g. instead of "컨센서스 상회", use "시장 예상보다 높은 실적").
-        4. Neutral summary (ai_opinion): Max 30 characters.
+        3. Explain in plain Korean (쉬운 우리말) for beginners. Avoid difficult financial jargon.
+        4. Each factor MUST be extremely concise (Max 25 characters per factor) to fit in a mobile push notification.
+        5. Neutral summary (ai_opinion): Max 25 characters.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "pros": ["Simple factual factor 1", "Simple factual factor 2", ...],
-            "cons": ["Simple factual risk 1", "Simple factual risk 2", ...],
-            "ai_opinion": "Easy neutral summary"
+            "pros": ["Concise factual factor 1", "Concise factual factor 2"],
+            "cons": ["Concise factual risk 1", "Concise factual risk 2"],
+            "ai_opinion": "Extremely concise neutral summary"
         }}
         """
         
