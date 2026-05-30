@@ -1138,11 +1138,8 @@ def get_integrated_stock_news(
             print(f"[News][Tier0] Naver API 오류 ({code}): {e}")
 
     # [Tier 1] Naver News API (상업적 이용을 위한 공식 API 우선 기동)
-    search_query = f'"{search_name}"' if search_name and not search_name.isdigit(
-    ) else (query or search_name or code)
-    fallback_query = search_name if (
-        search_name and not search_name.isdigit()) else (
-        query or code)
+    search_query = code if code else (f'"{search_name}"' if search_name and not search_name.isdigit() else query)
+    fallback_query = code if code else (search_name if search_name and not search_name.isdigit() else query)
 
     load_dotenv()
     client_id = os.getenv('NAVER_CLIENT_ID')

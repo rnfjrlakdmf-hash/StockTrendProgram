@@ -812,10 +812,17 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         if not currency:
             currency = 'USD'
 
+        # [Fix] winner_data에 이미 정확한 change_percent가 계산되어 있음
+        # prev_close가 없어서 0이 되면 직접 계산 불가 → winner_data 값 우선 사용
+        winner_change_str = winner_data.get('change_percent') or winner_data.get('change', '')
+        
         if previous_close and previous_close != 0:
             change_percent = (
                 (current_price - previous_close) / previous_close) * 100
             change_str = f"{change_percent:+.2f}%"
+        elif winner_change_str and winner_change_str not in ("0.00%", "+0.00%", "-0.00%", ""):
+            # winner_data에서 이미 계산된 값 사용 (yfinance fast_info 기반)
+            change_str = winner_change_str
         else:
             change_str = "0.00%"
 
@@ -960,6 +967,12 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 us_market_status = "장마감"
 
         # [Fix] Match domestic stock data structure for UI consistency
+        final_market_status = winner_data.get('market_status', us_market_status)
+        if not target_symbol.endswith(('.KS', '.KQ')):
+            # [Fix] 네이버 API에서 간헐적으로 잘못된 시간대(새벽 등)에 프리/에프터로 내려주는 버그 방어
+            if us_market_status == "장마감" and final_market_status in ("프리마켓", "에프터마켓", "장중"):
+                final_market_status = "장마감"
+
         result_data = {
             "name": display_name,
             "description": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
@@ -971,9 +984,15 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
             "currency": currency,
             "change": change_str,
             "change_percent": change_str, # Mirror
+            # [Fix] 해외 종목 등락금액/등락률 필드 추가 (프론트엔드에서 regular_* 필드 사용)
+            "regular_price": winner_data.get('regular_price') or current_price,
+            "regular_close": winner_data.get('regular_price') or current_price,
+            "regular_change_val": winner_data.get('regular_change'),
+            "regular_change_pct": winner_data.get('regular_change_percent'),
+            "change_val": winner_data.get('regular_change'),
             "summary": info.get('longBusinessSummary', '상세 정보 로딩 시간이 지연되어 기본 데이터만 표시합니다.'),
             "sector": info.get('sector', 'N/A'),
-            "market_status": winner_data.get('market_status', us_market_status),
+            "market_status": final_market_status,
             "financials": {
                 "pe_ratio": pe, "pbr": pbr, "roe": roe, "revenue_growth": rev_growth, "market_cap": mkt_cap_str
             },

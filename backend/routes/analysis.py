@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Query, Header, HTTPException
+from fastapi import APIRouter, Query, Header, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import asyncio
@@ -867,16 +867,21 @@ async def stock_news_period(symbol: str, period: str = Query("1d")):
                 def _collect_korean_rss_supplement():
                     results = []
                     seen = set()
-                    # 종목명으로 구글 뉴스 한국어 검색
-                    search_queries = [korean_name]
-                    if korean_name != symbol.split('.')[0]:
-                        search_queries.append(symbol.split('.')[0])  # 종목 코드도 추가
+                    search_queries = []
+                    # 종목 코드가 있으면 코드만으로 검색 (동음이의어 방지, 예: 남성)
+                    code = symbol.split('.')[0]
+                    if code and code.isdigit() and len(code) == 6:
+                        search_queries.append(code)
+                    else:
+                        search_queries.append(korean_name)
 
                     for kw in search_queries:
                         if not kw:
                             continue
                         try:
-                            encoded = urllib.parse.quote(kw + " 주가")
+                            # 코드로 검색할 때는 '주가' 키워드 없이 코드만으로 정확도 높임
+                            query_str = kw if kw.isdigit() else f'"{kw}" 주가'
+                            encoded = urllib.parse.quote(query_str)
                             url = f"https://news.google.com/rss/search?q={encoded}&hl=ko&gl=KR&ceid=KR:ko"
                             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
                             with urllib.request.urlopen(req, timeout=8) as resp:

@@ -1,23 +1,16 @@
-import yfinance as yf
-import json
+import asyncio
+import sys
+import traceback
+sys.path.append('c:\\Users\\rnfjr\\StockTrendProgram\\backend')
+from korea_data import get_integrated_stock_news
 
-def fetch_yfinance_news(symbol):
-    print(f"Fetching news for {symbol} via yfinance...")
+async def main():
     try:
-        ticker = yf.Ticker(symbol)
-        news = ticker.news
-        print(f"Found {len(news)} news items.")
-        return news
+        news = await get_integrated_stock_news('005930.KS', '삼성전자', 30)
+        print(f"News count: {len(news)}")
     except Exception as e:
-        print(f"Error: {e}")
-        return []
+        print("ERROR:")
+        traceback.print_exc()
 
-print("--- Testing US Stock (AAPL) ---")
-us_news = fetch_yfinance_news("AAPL")
-if us_news:
-    print(json.dumps(us_news[0], indent=2))
-
-print("\n--- Testing KR Stock (005930.KS) ---")
-kr_news = fetch_yfinance_news("005930.KS")
-if kr_news:
-    print(json.dumps(kr_news[0], indent=2))
+if __name__ == '__main__':
+    asyncio.run(main())
