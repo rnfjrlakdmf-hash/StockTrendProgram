@@ -161,9 +161,11 @@ def send_opening_notification(market: str):
                     import pytz
                     kst = pytz.timezone('Asia/Seoul')
                     today_str = datetime.datetime.now(kst).strftime("%Y-%m-%d")
+                    yesterday_str = (datetime.datetime.now(kst) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
                     
                     for ev in all_events:
-                        if ev.get("date") == today_str:
+                        # 오늘 일정(yfinance 등 미래 일정)이거나, 어제 오후에 뜬 공시(DART)인 경우 알림
+                        if ev.get("date") == today_str or (ev.get("source") == "DART" and ev.get("date") == yesterday_str):
                             event_emoji = "📈" if ev.get("type") == "earnings" else "💰" if ev.get("type") == "dividend" else "🔔"
                             detail = ev.get("detail", "")
                             # Clean up detail string slightly for compact notification display
