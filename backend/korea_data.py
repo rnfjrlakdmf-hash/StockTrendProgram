@@ -1042,7 +1042,7 @@ def get_top_market_cap_stocks(limit=10):
     return results
 
 
-@turbo_cache(ttl_seconds=120)
+@turbo_cache(ttl_seconds=60)
 def get_integrated_stock_news(
         symbol: str = "",
         name: str = "",
@@ -1089,30 +1089,53 @@ def get_integrated_stock_news(
         search_name = code
 
     # [Tier 0] Naver Mobile JSON API (No API key needed, best for domestic stocks)
+    # [Note] API returns a list where each element = {total:1, items:[single_news]}.
+    #        pageSize=N means N sections, each with 1 news item. Always request 50.
     if len(code) == 6 and code.isdigit():
         try:
-            url = f"https://m.stock.naver.com/api/news/stock/{code}?pageSize={max_items}"
-            headers = {"User-Agent": "Mozilla/5.0"}
-            response = requests.get(url, headers=headers, timeout=5)
+            naver_page_size = 50  # [Fix] API 구조상 각 섹션에 뉴스 1개 → 50개 요청해야 50개 확보
+            url = f"https://m.stock.naver.com/api/news/stock/{code}?pageSize={naver_page_size}"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            response = requests.get(url, headers=headers, timeout=8)
             if response.status_code == 200:
                 data = response.json()
                 if data and isinstance(data, list) and len(data) > 0:
-                    items = data[0].get('items', [])
-                    for item in items:
+                    # [Fix] 네이버 API = 섹션 리스트, 각 섹션의 items 배열에서 뉴스 수집
+                    all_items = []
+                    for section in data:
+                        if isinstance(section, dict):
+                            section_items = section.get('items', [])
+                            if isinstance(section_items, list):
+                                all_items.extend(section_items)
+                    
+                    seen_titles = set()
+                    for item in all_items:
                         if len(news_list) >= max_items: break
+                        if not isinstance(item, dict): continue
+                        title = item.get('title', '').replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">")
+                        if not title or len(title) < 2:
+                            continue
+                        # 중복 제거
+                        if title in seen_titles:
+                            continue
+                        seen_titles.add(title)
                         dt = item.get('datetime', '')
                         formatted_dt = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]} {dt[8:10]}:{dt[10:12]}" if len(dt) >= 12 else dt
+                        office_id = item.get('officeId', '')
+                        article_id = item.get('articleId', '')
+                        default_link = f"https://n.news.naver.com/mnews/article/{office_id}/{article_id}" if office_id and article_id else ""
                         news_list.append({
-                            "title": item.get('title', '').replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">"),
+                            "title": title,
                             "description": item.get('body', ''),
-                            "link": item.get('mobileNewsUrl', f"https://n.news.naver.com/mnews/article/{item.get('officeId')}/{item.get('articleId')}"),
+                            "link": item.get('mobileNewsUrl', default_link),
                             "publisher": item.get('officeName', '네이버 뉴스'),
                             "published": formatted_dt
                         })
+                    print(f"[News][Tier0] {code}: Naver API 수집 {len(news_list)}개 (섹션 {len(data)}개)")
                     if news_list:
                         return news_list
-        except BaseException:
-            pass
+        except Exception as e:
+            print(f"[News][Tier0] Naver API 오류 ({code}): {e}")
 
     # [Tier 1] Naver News API (상업적 이용을 위한 공식 API 우선 기동)
     search_query = f'"{search_name}"' if search_name and not search_name.isdigit(
@@ -1692,6 +1715,9 @@ def get_stock_financials(symbol: str):
                     rev_q = get_quarterly_fact(revenue_keys)
                     op_q = get_quarterly_fact(op_income_keys)
                     net_q = get_quarterly_fact(net_income_keys)
+                    assets_q = get_quarterly_fact(assets_keys)
+                    liab_q = get_quarterly_fact(liabilities_keys)
+                    eq_q = get_quarterly_fact(equity_keys)
                     
                     # Extract common years (up to 4 years)
                     all_years = set(rev_data.keys()) & set(assets_data.keys()) & set(eq_data.keys())
@@ -1777,7 +1803,7 @@ def get_stock_financials(symbol: str):
                                 net_margin_vals.append(None)
                         full_data["net_income_margin"] = { "dates": all_headers, "values": net_margin_vals }
                         
-                        # debt_ratio (%) - 연간만 (분기 대차대조표는 추출 복잡)
+                        # debt_ratio (%) - 연간 + 분기
                         debt_vals = []
                         for y in available_years:
                             l = liab_data.get(y)
@@ -1786,11 +1812,20 @@ def get_stock_financials(symbol: str):
                                 debt_vals.append(round((l / e) * 100, 2))
                             else:
                                 debt_vals.append(None)
-                        # 분기는 None 패딩
-                        debt_vals_combined = debt_vals + [None] * len(quarterly_headers)
+                        
+                        q_debt_vals = []
+                        for i, q in enumerate(rev_q):
+                            l_q = liab_q[i]["val"] if i < len(liab_q) else None
+                            e_q = eq_q[i]["val"] if i < len(eq_q) else None
+                            if l_q is not None and e_q and e_q != 0:
+                                q_debt_vals.append(round((l_q / e_q) * 100, 2))
+                            else:
+                                q_debt_vals.append(None)
+                        
+                        debt_vals_combined = debt_vals + q_debt_vals
                         full_data["debt_ratio"] = { "dates": all_headers, "values": debt_vals_combined }
                         
-                        # roe (%) - 연간만
+                        # roe (%) - 연간 + 분기
                         roe_vals = []
                         for y in available_years:
                             n = net_data.get(y)
@@ -1799,7 +1834,17 @@ def get_stock_financials(symbol: str):
                                 roe_vals.append(round((n / e) * 100, 2))
                             else:
                                 roe_vals.append(None)
-                        roe_vals_combined = roe_vals + [None] * len(quarterly_headers)
+                                
+                        q_roe_vals = []
+                        for i, q in enumerate(rev_q):
+                            n_q = net_q[i]["val"] if i < len(net_q) else None
+                            e_q = eq_q[i]["val"] if i < len(eq_q) else None
+                            if n_q is not None and e_q and e_q != 0:
+                                q_roe_vals.append(round((n_q / e_q) * 100, 2))
+                            else:
+                                q_roe_vals.append(None)
+                                
+                        roe_vals_combined = roe_vals + q_roe_vals
                         full_data["roe"] = { "dates": all_headers, "values": roe_vals_combined }
                         
                         # Try to get live market info from yfinance for PER, PBR, Cap
@@ -1816,15 +1861,23 @@ def get_stock_financials(symbol: str):
                         per_vals = []
                         pbr_vals = []
                         for y in available_years:
-                            if y == available_years[-1]:
-                                per_vals.append(latest_per if isinstance(latest_per, (int, float)) else None)
-                                pbr_vals.append(latest_pbr if isinstance(latest_pbr, (int, float)) else None)
-                            else:
-                                per_vals.append(None)
-                                pbr_vals.append(None)
-                        # 분기 패딩
-                        per_vals_combined = per_vals + [None] * len(quarterly_headers)
-                        pbr_vals_combined = pbr_vals + [None] * len(quarterly_headers)
+                            per_vals.append(None)
+                            pbr_vals.append(None)
+                        
+                        # 분기 데이터에 최신 PER/PBR 채우기 (마지막 분기 및 연간 마지막 데이터에)
+                        q_per_vals = [None] * len(quarterly_headers)
+                        q_pbr_vals = [None] * len(quarterly_headers)
+                        
+                        if len(available_years) > 0:
+                            per_vals[-1] = latest_per if isinstance(latest_per, (int, float)) else None
+                            pbr_vals[-1] = latest_pbr if isinstance(latest_pbr, (int, float)) else None
+                            
+                        if len(quarterly_headers) > 0:
+                            q_per_vals[-1] = latest_per if isinstance(latest_per, (int, float)) else None
+                            q_pbr_vals[-1] = latest_pbr if isinstance(latest_pbr, (int, float)) else None
+                            
+                        per_vals_combined = per_vals + q_per_vals
+                        pbr_vals_combined = pbr_vals + q_pbr_vals
                         
                         full_data["per"] = { "dates": all_headers, "values": per_vals_combined }
                         full_data["pbr"] = { "dates": all_headers, "values": pbr_vals_combined }

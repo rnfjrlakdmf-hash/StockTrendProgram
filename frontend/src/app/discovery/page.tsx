@@ -497,11 +497,17 @@ function DiscoveryContent() {
         const fetchPeriodNews = async () => {
             if (!stock?.symbol) return;
             setNewsLoading(true);
+            setPeriodNews([]); // [Fix] 이전 종목 뉴스 초기화
             try {
-                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/` + encodeURIComponent(stock.symbol) + `/news`);
+                const res = await fetch(`${API_BASE_URL}/api/analysis/stock/` + encodeURIComponent(stock.symbol) + `/news?t=${Date.now()}`);
                 const json = await res.json();
-                if (json.status === "success") {
+                console.log(`[News] ${stock.symbol} → status=${json.status}, count=${Array.isArray(json.data) ? json.data.length : typeof json.data}`);
+                if (json.status === "success" && Array.isArray(json.data)) {
                     setPeriodNews(json.data);
+                } else if (json.status === "success" && json.data && !Array.isArray(json.data)) {
+                    // data가 배열이 아닌 경우 (예: 객체) 빈 배열로
+                    console.warn('[News] json.data is not an array:', typeof json.data, json.data);
+                    setPeriodNews([]);
                 }
             } catch (err) {
                 console.error("News fetch error:", err);
@@ -1716,20 +1722,25 @@ function DiscoveryContent() {
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                                 <h4 className="text-xl font-bold flex items-center gap-2 text-white">
-                                                    <TrendingUp className="h-6 w-6 text-yellow-400" /> 관련 뉴스/공시
+                                                    <TrendingUp className="h-6 w-6 text-yellow-400" /> 관련 뉴스
+                                                    {!newsLoading && periodNews.length > 0 && (
+                                                        <span className="ml-1 text-xs font-semibold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-full px-2 py-0.5">
+                                                            {periodNews.length}건
+                                                        </span>
+                                                    )}
                                                 </h4>
                                                 
 
                                             </div>
 
-                                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                                            <div className="space-y-3 max-h-[800px] overflow-y-auto pr-2">
                                                 {newsLoading ? (
                                                     <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                                         <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
                                                         <p className="text-gray-400 text-sm">최신 뉴스를 집계하고 있습니다...</p>
                                                     </div>
-                                                ) : (Array.isArray(periodNews) && periodNews.length > 0) || (stock?.news && Array.isArray(stock.news) && stock.news.length > 0) ? (
-                                                    (Array.isArray(periodNews) && periodNews.length > 0 ? periodNews : (stock?.news || [])).map((n: any, idx: number) => (
+                                                ) : Array.isArray(periodNews) && periodNews.length > 0 ? (
+                                                    periodNews.map((n: any, idx: number) => (
                                                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer" onClick={() => window.open(n.link, '_blank')}>
                                                             <div className="w-full">
                                                                 <h5 className="font-bold text-white mb-2 group-hover:text-yellow-400 text-lg leading-snug break-all">
@@ -1747,8 +1758,9 @@ function DiscoveryContent() {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="text-gray-400 text-center py-8 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                                        관련된 최신 뉴스가 없습니다.
+                                                    <div className="text-gray-400 text-center py-10 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                                        <p className="text-base mb-1">📰 관련 뉴스를 찾을 수 없습니다.</p>
+                                                        <p className="text-xs text-gray-500">{stock?.name || stock?.symbol} 뉴스 데이터를 불러오지 못했습니다.</p>
                                                     </div>
                                                 )}
                                             </div>

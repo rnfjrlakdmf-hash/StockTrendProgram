@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Header, HTTPException
+﻿from fastapi import APIRouter, Query, Header, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import asyncio
@@ -482,8 +482,15 @@ def stock_dart_overhang(symbol: str):
 
 @router.get("/stock/{symbol}/news")
 async def stock_news_period(symbol: str, period: str = Query("1d")):
-    """특정 종목의 기간별 뉴스 수집 (글로벌 종목 대응)"""
-    from stock_data import fetch_google_news, get_korean_name
+    """특정 종목의 기간별 뉴스 수집 (글로벌/국내 종목 정확 대응) - v2.0 강화버전 (20개 이상 보장)"""
+    import urllib.parse
+    import urllib.request
+    import xml.etree.ElementTree as ET
+    from stock_data import get_korean_name
+
+    MIN_NEWS_COUNT = 20  # 최소 뉴스 보장 개수
+    MAX_NEWS_COUNT = 40  # 최대 뉴스 개수
+
     try:
         # 1. 글로벌 종목 여부 판별
         is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
@@ -491,34 +498,423 @@ async def stock_news_period(symbol: str, period: str = Query("1d")):
         # 2. 종목명 찾기 (뉴스 검색용)
         from stock_data import NAME_CACHE, GLOBAL_KOREAN_NAMES
         
-        name = NAME_CACHE.get(symbol)
-        if not name:
-            # GLOBAL_KOREAN_NAMES에서 먼저 확인
+        korean_name = NAME_CACHE.get(symbol)
+        if not korean_name:
             if symbol in GLOBAL_KOREAN_NAMES:
                 val = GLOBAL_KOREAN_NAMES[symbol]
-                name = val[0] if isinstance(val, list) else val
+                korean_name = val[0] if isinstance(val, list) else val
             else:
-                name = await asyncio.to_thread(get_korean_name, symbol)
-                if not name:
-                    name = symbol
+                korean_name = await asyncio.to_thread(get_korean_name, symbol)
+                if not korean_name:
+                    korean_name = symbol
 
-        # 3. 뉴스 검색 (글로벌 종목은 영어/US 검색 병행 또는 전환 고려)
+        news = []
+
+        # ─────────────────────────────────────────────────────────────────────
+        # 3-A. 해외 종목: Google RSS로 영어 뉴스 직접 수집 (20개 이상 보장)
+        # ─────────────────────────────────────────────────────────────────────
         if is_global:
-            # 글로벌 종목은 영어 뉴스 비중이 높으므로 언어 설정 조정 가능
-            # 여기서는 우선 쿼리를 종목명 + 심볼로 강화
-            search_query = f"{name} {symbol} stock"
-            news = await asyncio.to_thread(fetch_google_news, search_query, lang='en', region='US', period='30d')
-            
-            # 만약 영어 뉴스 결과가 너무 적으면 한국어 뉴스도 시도 (선택 사항)
-            if not news:
-                news = await asyncio.to_thread(fetch_google_news, name, lang='ko', region='KR', period='30d')
+            clean_symbol = symbol.split('.')[0].upper()
+
+            # ── 영어 검색어 사전 (종목 티커 → 정확한 회사명, 복수 키워드) ──────────────
+            ENGLISH_NAME_MAP = {
+                # ── 빅테크 / Magnificent 7 ──
+                "AAPL":  ("Apple",             ["apple", "aapl", "iphone", "ipad", "macbook", "tim cook"]),
+                "MSFT":  ("Microsoft",          ["microsoft", "msft", "azure", "copilot", "satya nadella"]),
+                "GOOGL": ("Alphabet Google",    ["google", "alphabet", "googl", "gemini", "waymo", "youtube"]),
+                "GOOG":  ("Alphabet Google",    ["google", "alphabet", "goog", "gemini", "waymo", "youtube"]),
+                "AMZN":  ("Amazon",             ["amazon", "amzn", "aws", "bezos", "jassy", "prime"]),
+                "META":  ("Meta Platforms",     ["meta", "facebook", "instagram", "whatsapp", "zuckerberg", "threads"]),
+                "TSLA":  ("Tesla",              ["tesla", "tsla", "elon musk", "cybertruck", "model s", "model 3", "model x", "model y"]),
+                "NVDA":  ("Nvidia",             ["nvidia", "nvda", "jensen huang", "h100", "blackwell", "cuda", "geforce"]),
+                # ── 반도체 ──
+                "AMD":   ("AMD Advanced Micro Devices", ["amd", "advanced micro", "ryzen", "radeon", "epyc", "lisa su"]),
+                "INTC":  ("Intel",              ["intel", "intc", "core ultra", "xeon", "pat gelsinger"]),
+                "QCOM":  ("Qualcomm",           ["qualcomm", "qcom", "snapdragon", "cristiano amon"]),
+                "AVGO":  ("Broadcom",           ["broadcom", "avgo", "hock tan"]),
+                "ASML":  ("ASML",               ["asml", "euv", "lithography", "extreme ultraviolet"]),
+                "TSM":   ("TSMC Taiwan Semiconductor", ["tsmc", "tsm", "taiwan semiconductor", "2nm", "3nm"]),
+                "SMCI":  ("Super Micro Computer", ["super micro", "smci", "supermicro"]),
+                "MU":    ("Micron Technology",  ["micron", "mu", "dram", "nand", "hbm"]),
+                "TXN":   ("Texas Instruments",  ["texas instruments", "txn", "analog chips"]),
+                "ON":    ("ON Semiconductor",   ["on semiconductor", "onsemi"]),
+                "MCHP":  ("Microchip Technology", ["microchip technology", "mchp"]),
+                "LRCX":  ("Lam Research",        ["lam research", "lrcx"]),
+                "AMAT":  ("Applied Materials",   ["applied materials", "amat"]),
+                "KLAC":  ("KLA Corporation",     ["kla corporation", "klac"]),
+                "SWKS":  ("Skyworks Solutions",  ["skyworks", "swks"]),
+                "MRVL":  ("Marvell Technology",  ["marvell", "mrvl"]),
+                "NXPI":  ("NXP Semiconductors",  ["nxp", "nxpi"]),
+                "ARM":   ("ARM Holdings",        ["arm holdings", "arm", "softbank arm"]),
+                # ── 클라우드 / SaaS ──
+                "CRM":   ("Salesforce",          ["salesforce", "crm", "marc benioff"]),
+                "NOW":   ("ServiceNow",          ["servicenow", "now"]),
+                "SNOW":  ("Snowflake",           ["snowflake", "snow"]),
+                "DDOG":  ("Datadog",             ["datadog", "ddog"]),
+                "MDB":   ("MongoDB",             ["mongodb", "mdb"]),
+                "ESTC":  ("Elastic",             ["elastic", "estc", "elasticsearch"]),
+                "NET":   ("Cloudflare",          ["cloudflare", "net"]),
+                "OKTA":  ("Okta",               ["okta"]),
+                "TEAM":  ("Atlassian",           ["atlassian", "team", "jira", "confluence"]),
+                "ZS":    ("Zscaler",             ["zscaler", "zs"]),
+                "ZM":    ("Zoom Video",          ["zoom", "zm"]),
+                "DOCU":  ("DocuSign",            ["docusign", "docu"]),
+                "HUBS":  ("HubSpot",             ["hubspot", "hubs"]),
+                "WDAY":  ("Workday",             ["workday", "wday"]),
+                "ADBE":  ("Adobe",               ["adobe", "adbe", "photoshop", "creative cloud", "firefly"]),
+                "ORCL":  ("Oracle",              ["oracle", "orcl", "larry ellison"]),
+                "SAP":   ("SAP",                 ["sap"]),
+                "INTU":  ("Intuit",              ["intuit", "intu", "turbotax", "quickbooks"]),
+                # ── 사이버보안 ──
+                "CRWD":  ("CrowdStrike",         ["crowdstrike", "crwd", "george kurtz"]),
+                "PANW":  ("Palo Alto Networks",  ["palo alto", "panw", "nikesh arora"]),
+                "S":     ("SentinelOne",         ["sentinelone"]),
+                "FTNT":  ("Fortinet",            ["fortinet", "ftnt"]),
+                "CYBR":  ("CyberArk",            ["cyberark", "cybr"]),
+                # ── AI / 머신러닝 ──
+                "PLTR":  ("Palantir",            ["palantir", "pltr", "alex karp", "aip"]),
+                "AI":    ("C3.ai",               ["c3.ai", "c3ai"]),
+                "IONQ":  ("IonQ",               ["ionq", "quantum computing"]),
+                "QUBT":  ("Quantum Computing",   ["quantum computing", "qubt"]),
+                "RGTI":  ("Rigetti Computing",   ["rigetti", "rgti"]),
+                "BBAI":  ("BigBear.ai",          ["bigbear", "bbai"]),
+                # ── 스트리밍 / 미디어 ──
+                "NFLX":  ("Netflix",             ["netflix", "nflx", "reed hastings", "ted sarandos"]),
+                "DIS":   ("Disney",              ["disney", "dis", "bob iger", "espn", "hulu"]),
+                "PARA":  ("Paramount",           ["paramount", "para"]),
+                "WBD":   ("Warner Bros Discovery", ["warner bros", "wbd", "max streaming"]),
+                "SPOT":  ("Spotify",             ["spotify", "spot", "daniel ek"]),
+                # ── 전기차 / 모빌리티 ──
+                "RIVN":  ("Rivian",              ["rivian", "rivn"]),
+                "LCID":  ("Lucid Motors",        ["lucid", "lcid", "lucid motors"]),
+                "NIO":   ("NIO",                 ["nio", "william li"]),
+                "LI":    ("Li Auto",             ["li auto", "lixiang"]),
+                "XPEV":  ("XPeng",               ["xpeng", "xpev"]),
+                "GM":    ("General Motors",      ["general motors", "gm", "mary barra"]),
+                "F":     ("Ford Motor",          ["ford", "jim farley"]),
+                "UBER":  ("Uber",                ["uber", "dara khosrowshahi"]),
+                "LYFT":  ("Lyft",               ["lyft"]),
+                # ── 핀테크 / 금융 ──
+                "V":     ("Visa",               ["visa"]),
+                "MA":    ("Mastercard",          ["mastercard", "ma", "michael miebach"]),
+                "PYPL":  ("PayPal",              ["paypal", "pypl", "alex chriss"]),
+                "SQ":    ("Block",               ["block", "sq", "jack dorsey", "cash app", "square"]),
+                "HOOD":  ("Robinhood",           ["robinhood", "hood", "vlad tenev"]),
+                "COIN":  ("Coinbase",            ["coinbase", "coin", "brian armstrong"]),
+                "AFRM":  ("Affirm",              ["affirm", "afrm", "max levchin"]),
+                "SOFI":  ("SoFi Technologies",   ["sofi", "noto"]),
+                "MSTR":  ("MicroStrategy",       ["microstrategy", "mstr", "michael saylor", "bitcoin holdings"]),
+                "BAC":   ("Bank of America",     ["bank of america", "bac", "brian moynihan"]),
+                "JPM":   ("JPMorgan Chase",      ["jpmorgan", "jpm", "jamie dimon"]),
+                "GS":    ("Goldman Sachs",       ["goldman sachs", "gs", "david solomon"]),
+                "MS":    ("Morgan Stanley",      ["morgan stanley", "ms"]),
+                "WFC":   ("Wells Fargo",         ["wells fargo", "wfc", "charlie scharf"]),
+                "C":     ("Citigroup",           ["citigroup", "citi", "jane fraser"]),
+                "BLK":   ("BlackRock",           ["blackrock", "blk", "larry fink"]),
+                # ── 이커머스 / 리테일 ──
+                "SHOP":  ("Shopify",             ["shopify", "shop", "tobi lutke"]),
+                "MELI":  ("MercadoLibre",        ["mercadolibre", "meli"]),
+                "WMT":   ("Walmart",             ["walmart", "wmt", "doug mcmillon"]),
+                "COST":  ("Costco",              ["costco", "cost", "ron vachris"]),
+                "TGT":   ("Target",              ["target", "tgt", "brian cornell"]),
+                "BABA":  ("Alibaba",             ["alibaba", "baba", "jack ma", "eddie wu", "taobao", "tmall"]),
+                "JD":    ("JD.com",              ["jd.com", "jd", "richard liu"]),
+                "PDD":   ("PDD Holdings Temu",   ["pdd", "temu", "pinduoduo"]),
+                "CPNG":  ("Coupang",             ["coupang", "cpng", "bom kim"]),
+                "ABNB":  ("Airbnb",              ["airbnb", "abnb", "brian chesky"]),
+                # ── 소비재 / 식음료 ──
+                "KO":    ("Coca-Cola",           ["coca-cola", "ko", "coke", "james quincey"]),
+                "PEP":   ("PepsiCo",             ["pepsico", "pepsi", "pep", "ramon laguarta"]),
+                "SBUX":  ("Starbucks",           ["starbucks", "sbux", "brian niccol"]),
+                "MCD":   ("McDonald's",          ["mcdonald", "mcd", "chris kempczyk"]),
+                "NKE":   ("Nike",               ["nike", "nke", "elliott hill"]),
+                "LULU":  ("Lululemon",           ["lululemon", "lulu", "calvin mcdonald"]),
+                # ── 헬스케어 / 바이오 ──
+                "JNJ":   ("Johnson & Johnson",   ["johnson", "jnj", "joaquin duato"]),
+                "PFE":   ("Pfizer",              ["pfizer", "pfe", "albert bourla"]),
+                "MRNA":  ("Moderna",             ["moderna", "mrna", "stephane bancel", "mrna vaccine"]),
+                "LLY":   ("Eli Lilly",           ["eli lilly", "lly", "ozempic", "mounjaro", "david ricks"]),
+                "NVO":   ("Novo Nordisk",        ["novo nordisk", "nvo", "ozempic", "wegovy", "semaglutide"]),
+                "ABBV":  ("AbbVie",              ["abbvie", "abbv", "humira", "skyrizi"]),
+                "MRK":   ("Merck",               ["merck", "mrk", "keytruda", "robert davis"]),
+                "BMY":   ("Bristol-Myers Squibb", ["bristol-myers", "bmy", "opdivo", "eliquis"]),
+                "GILD":  ("Gilead Sciences",     ["gilead", "gild", "veklury"]),
+                "REGN":  ("Regeneron",           ["regeneron", "regn", "eylea", "dupixent"]),
+                "ISRG":  ("Intuitive Surgical",  ["intuitive surgical", "isrg", "da vinci"]),
+                "TMO":   ("Thermo Fisher",       ["thermo fisher", "tmo"]),
+                "DHR":   ("Danaher",             ["danaher", "dhr"]),
+                "BSX":   ("Boston Scientific",   ["boston scientific", "bsx"]),
+                "MDT":   ("Medtronic",           ["medtronic", "mdt", "geoff martha"]),
+                "UNH":   ("UnitedHealth",        ["unitedhealth", "unh", "optum"]),
+                "CVS":   ("CVS Health",          ["cvs", "karen lynch"]),
+                # ── 에너지 ──
+                "XOM":   ("ExxonMobil",          ["exxon", "exxonmobil", "xom", "darren woods"]),
+                "CVX":   ("Chevron",             ["chevron", "cvx", "mike wirth"]),
+                "SHEL":  ("Shell",               ["shell", "shel", "wael sawan"]),
+                "BP":    ("BP",                  ["bp", "murray auchincloss"]),
+                "TTE":   ("TotalEnergies",       ["totalenergies", "tte"]),
+                # ── 항공우주 / 방산 ──
+                "BA":    ("Boeing",              ["boeing", "ba", "kelly ortberg", "737", "787"]),
+                "RTX":   ("RTX Raytheon",        ["raytheon", "rtx", "greg hayes", "pratt whitney"]),
+                "LMT":   ("Lockheed Martin",     ["lockheed", "lmt", "james taiclet"]),
+                "NOC":   ("Northrop Grumman",    ["northrop", "noc", "kathy warden"]),
+                "GD":    ("General Dynamics",    ["general dynamics", "gd", "phebe novakovic"]),
+                "HII":   ("Huntington Ingalls",  ["huntington ingalls", "hii"]),
+                "SPCE":  ("Virgin Galactic",     ["virgin galactic", "spce"]),
+                "RKT":   ("Rocket Companies",    ["rocket companies", "rkt"]),
+                # ── 통신 ──
+                "T":     ("AT&T",               ["at&t", "att", "john stankey"]),
+                "VZ":    ("Verizon",             ["verizon", "vz", "hans vestberg"]),
+                "TMUS":  ("T-Mobile",            ["t-mobile", "tmus", "mike sievert"]),
+                "CMCSA": ("Comcast",             ["comcast", "cmcsa", "brian roberts"]),
+                "CHTR":  ("Charter Communications", ["charter", "chtr", "chris winfrey"]),
+                # ── ETF ──
+                "SPY":   ("S&P 500 ETF",         ["s&p 500", "spy", "spdr", "sp500"]),
+                "QQQ":   ("Nasdaq 100 ETF",       ["nasdaq", "qqq", "invesco"]),
+                "SCHD":  ("Schwab Dividend ETF",  ["schd", "schwab dividend"]),
+                "VOO":   ("Vanguard S&P 500 ETF", ["vanguard", "voo"]),
+                "VTI":   ("Vanguard Total Market ETF", ["vanguard total", "vti"]),
+                "IWM":   ("iShares Russell 2000",  ["russell 2000", "iwm", "small cap"]),
+                "GLD":   ("SPDR Gold ETF",        ["gold etf", "gld", "spdr gold"]),
+                "SOXL":  ("Direxion Semiconductor", ["soxl", "semiconductor etf", "soxx"]),
+                "TQQQ":  ("ProShares UltraPro QQQ", ["tqqq", "triple leveraged", "ultrapro qqq"]),
+                "SQQQ":  ("ProShares UltraPro Short QQQ", ["sqqq", "short nasdaq"]),
+                # ── 일본 ──
+                "9984.T": ("SoftBank",           ["softbank", "masayoshi son", "vision fund"]),
+                "7203.T": ("Toyota",             ["toyota", "akio toyoda", "bz4x"]),
+                "6758.T": ("Sony",               ["sony", "playstation", "kenichiro yoshida"]),
+                "9432.T": ("NTT",                ["ntt", "nippon telegraph"]),
+                "7267.T": ("Honda",              ["honda", "toshihiro mibe"]),
+                "6861.T": ("Keyence",            ["keyence"]),
+                "4063.T": ("Shin-Etsu Chemical", ["shin-etsu", "shinetsu"]),
+                # ── 한국 ADR ──
+                "055550.KS": ("Shinhan Financial", ["신한", "shinhan"]),
+                # ── 기타 글로벌 주요 종목 ──
+                "SONY":  ("Sony",                ["sony", "playstation", "ps5", "kenichiro yoshida"]),
+                "TM":    ("Toyota",              ["toyota", "akio toyoda", "lexus"]),
+                "HMC":   ("Honda",               ["honda", "toshihiro mibe"]),
+                "DELL":  ("Dell Technologies",   ["dell", "michael dell", "optiplex"]),
+                "HPQ":   ("HP Inc",              ["hp inc", "hpq", "enrique lores"]),
+                "HPE":   ("Hewlett Packard Enterprise", ["hewlett packard", "hpe", "antonio neri"]),
+                "IBM":   ("IBM",                 ["ibm", "arvind krishna", "watson"]),
+                "ACN":   ("Accenture",           ["accenture", "acn", "julie sweet"]),
+                "CSCO":  ("Cisco",               ["cisco", "csco", "chuck robbins"]),
+                "ANET":  ("Arista Networks",     ["arista", "anet", "jayshree ullal"]),
+                "RBLX":  ("Roblox",              ["roblox", "rblx", "david baszucki"]),
+                "U":     ("Unity Software",      ["unity software", "unity"]),
+                "SNAP":  ("Snap",                ["snap", "snapchat", "evan spiegel"]),
+                "PINS":  ("Pinterest",           ["pinterest", "pins", "bill ready"]),
+                "MTCH":  ("Match Group",         ["match group", "tinder", "mtch", "hinge"]),
+                "SE":    ("Sea Limited",         ["sea limited", "se", "shopee", "garena", "seamoney"]),
+                "GRAB":  ("Grab",               ["grab", "anthony tan"]),
+                "NTES":  ("NetEase",             ["netease", "ntes", "william ding"]),
+                "BIDU":  ("Baidu",               ["baidu", "bidu", "robin li", "ernie bot"]),
+                "TCEHY": ("Tencent",             ["tencent", "tcehy", "wechat", "pony ma"]),
+                "RACE":  ("Ferrari",             ["ferrari", "race", "benedetto vigna"]),
+                "LVMUY": ("LVMH",               ["lvmh", "louis vuitton", "bernard arnault"]),
+                "LVS":   ("Las Vegas Sands",     ["las vegas sands", "lvs", "rob goldstein"]),
+                "MGM":   ("MGM Resorts",         ["mgm resorts", "mgm", "bill hornbuckle"]),
+                "WYNN":  ("Wynn Resorts",        ["wynn", "craig billings"]),
+                "DKNG":  ("DraftKings",          ["draftkings", "dkng", "jason robins"]),
+                "PENN":  ("Penn Entertainment",  ["penn", "espn bet"]),
+            }
+
+            # 매핑에서 이름과 키워드 추출
+            map_val = ENGLISH_NAME_MAP.get(clean_symbol)
+            if isinstance(map_val, tuple):
+                eng_name, filter_keywords = map_val
+            else:
+                # [NEW] 매핑에 없는 종목은 yfinance로 회사명 자동 조회
+                eng_name = clean_symbol
+                yf_long_name = ""
+                try:
+                    import yfinance as yf
+                    ticker_obj = yf.Ticker(clean_symbol)
+                    info = ticker_obj.info
+                    yf_long_name = info.get("longName") or info.get("shortName") or ""
+                    if yf_long_name:
+                        eng_name = yf_long_name
+                        print(f"[News][yf] Auto-resolved name: {clean_symbol} → {eng_name}")
+                except Exception as yf_err:
+                    print(f"[News][yf] Name lookup failed for {clean_symbol}: {yf_err}")
+
+                # 키워드: 티커 + 회사명의 첫 단어
+                filter_keywords = [clean_symbol.lower()]
+                if yf_long_name:
+                    # 회사명의 첫 2단어도 키워드로 추가
+                    name_words = yf_long_name.lower().split()[:2]
+                    filter_keywords.extend([w for w in name_words if len(w) > 2])
+
+            def _fetch_google_rss(query: str, use_filter: bool = True, max_items: int = 40) -> list:
+                """Google RSS 뉴스 수집 공통 함수"""
+                results = []
+                seen = set()
+                try:
+                    encoded = urllib.parse.quote(query)
+                    url = f"https://news.google.com/rss/search?q={encoded}&hl=en-US&gl=US&ceid=US:en"
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        root = ET.fromstring(resp.read())
+                        channel = root.find("channel")
+                        if channel is None:
+                            return results
+                        for item in channel.findall("item"):
+                            if len(results) >= max_items:
+                                break
+                            title_el  = item.find("title")
+                            link_el   = item.find("link")
+                            pub_el    = item.find("pubDate")
+                            source_el = item.find("source")
+                            title = (title_el.text or "").strip() if title_el is not None else ""
+                            if not title or title in seen:
+                                continue
+                            if use_filter:
+                                title_lower = title.lower()
+                                if not any(kw in title_lower for kw in filter_keywords):
+                                    continue
+                            seen.add(title)
+                            results.append({
+                                "title":       title,
+                                "link":        link_el.text if link_el is not None else "",
+                                "publisher":   source_el.text if source_el is not None else "Google News",
+                                "published":   pub_el.text[:16] if pub_el is not None and pub_el.text else "",
+                                "description": ""
+                            })
+                except Exception as rss_err:
+                    print(f"[News][RSS] Error for '{query}': {rss_err}")
+                return results
+
+            # ── Step 1: 다중 쿼리로 필터링 적용 뉴스 수집 ──────────────────
+            def _collect_global_news_step1():
+                results = []
+                seen_titles = set()
+                # 검색 우선순위: (1) 티커+stock (2) 회사명+stock (3) 회사명+earnings (4) 회사명
+                queries = [
+                    f"{clean_symbol} stock",
+                    f"{eng_name} stock",
+                    f"{eng_name} earnings",
+                    f"{eng_name}",
+                ]
+                for q in queries:
+                    if len(results) >= MAX_NEWS_COUNT:
+                        break
+                    new_items = _fetch_google_rss(q, use_filter=True, max_items=MAX_NEWS_COUNT)
+                    for item in new_items:
+                        if item["title"] not in seen_titles:
+                            seen_titles.add(item["title"])
+                            results.append(item)
+                print(f"[News][Step1] '{clean_symbol}' filtered results: {len(results)}")
+                return results
+
+            news = await asyncio.to_thread(_collect_global_news_step1)
+
+            # ── Step 2: 20개 미달이면 필터 없이 티커 단독 검색으로 보충 ─────
+            if len(news) < MIN_NEWS_COUNT:
+                existing = {n["title"] for n in news}
+                def _collect_global_news_step2():
+                    results = []
+                    # 필터 없이 티커+회사명 조합으로 보충
+                    queries_nofilter = [
+                        f"{clean_symbol} {eng_name} stock",
+                        f"{clean_symbol} stock news",
+                        f"{clean_symbol}",
+                    ]
+                    for q in queries_nofilter:
+                        new_items = _fetch_google_rss(q, use_filter=False, max_items=30)
+                        for item in new_items:
+                            if item["title"] not in existing and item["title"] not in {r["title"] for r in results}:
+                                results.append(item)
+                        if len(results) >= (MIN_NEWS_COUNT - len(news)):
+                            break
+                    print(f"[News][Step2] '{clean_symbol}' nofilter supplement: +{len(results)}")
+                    return results
+
+                extra = await asyncio.to_thread(_collect_global_news_step2)
+                news.extend(extra)
+
+            # ── Step 3: 여전히 20개 미달이면 회사명 단독 필터 없이 최후 보충 ─
+            if len(news) < MIN_NEWS_COUNT and eng_name != clean_symbol:
+                existing = {n["title"] for n in news}
+                def _collect_global_news_step3():
+                    results = []
+                    new_items = _fetch_google_rss(eng_name, use_filter=False, max_items=25)
+                    for item in new_items:
+                        if item["title"] not in existing and item["title"] not in {r["title"] for r in results}:
+                            results.append(item)
+                    print(f"[News][Step3] '{clean_symbol}' final supplement: +{len(results)}")
+                    return results
+                extra3 = await asyncio.to_thread(_collect_global_news_step3)
+                news.extend(extra3)
+
+            # 최대 MAX_NEWS_COUNT 개 제한
+            news = news[:MAX_NEWS_COUNT]
+
+        # ─────────────────────────────────────────────────────────────────────
+        # 3-B. 국내 종목: 네이버 모바일 API → 네이버 검색 API → Google RSS (20개 이상 보장)
+        # ─────────────────────────────────────────────────────────────────────
         else:
             from korea_data import get_integrated_stock_news
-            news = await asyncio.to_thread(get_integrated_stock_news, symbol=symbol, name=name, days=30)
-            
+            news = await asyncio.to_thread(
+                get_integrated_stock_news,
+                symbol=symbol,
+                name=korean_name,
+                days=30
+            )
+
+            # 국내 종목도 20개 미달 시 Google RSS 한국어로 보충
+            if len(news) < MIN_NEWS_COUNT and korean_name:
+                existing_titles = {n["title"] for n in news}
+                def _collect_korean_rss_supplement():
+                    results = []
+                    seen = set()
+                    # 종목명으로 구글 뉴스 한국어 검색
+                    search_queries = [korean_name]
+                    if korean_name != symbol.split('.')[0]:
+                        search_queries.append(symbol.split('.')[0])  # 종목 코드도 추가
+
+                    for kw in search_queries:
+                        if not kw:
+                            continue
+                        try:
+                            encoded = urllib.parse.quote(kw + " 주가")
+                            url = f"https://news.google.com/rss/search?q={encoded}&hl=ko&gl=KR&ceid=KR:ko"
+                            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                            with urllib.request.urlopen(req, timeout=8) as resp:
+                                root = ET.fromstring(resp.read())
+                                channel = root.find("channel")
+                                if channel:
+                                    for item in channel.findall("item")[:25]:
+                                        title_el  = item.find("title")
+                                        link_el   = item.find("link")
+                                        pub_el    = item.find("pubDate")
+                                        source_el = item.find("source")
+                                        title = (title_el.text or "").strip() if title_el is not None else ""
+                                        if not title or title in existing_titles or title in seen:
+                                            continue
+                                        seen.add(title)
+                                        results.append({
+                                            "title":       title,
+                                            "link":        link_el.text if link_el is not None else "",
+                                            "publisher":   source_el.text if source_el is not None else "Google News",
+                                            "published":   pub_el.text[:16] if pub_el is not None and pub_el.text else "",
+                                            "description": ""
+                                        })
+                        except Exception as e:
+                            print(f"[News][KR-RSS] Error for '{kw}': {e}")
+                    print(f"[News][KR-RSS] Korean supplement: +{len(results)}")
+                    return results
+
+                kr_extra = await asyncio.to_thread(_collect_korean_rss_supplement)
+                news.extend(kr_extra)
+                news = news[:MAX_NEWS_COUNT]
+
+        print(f"[News] Final result: {len(news)} articles for {symbol}")
         return {"status": "success", "data": news}
     except Exception as e:
+        import traceback
+        print(f"[News] Endpoint error for {symbol}: {traceback.format_exc()}")
         return {"status": "error", "message": str(e)}
+
 
 @router.get("/stock/{symbol}/disclosures")
 @turbo_cache(ttl_seconds=300)
