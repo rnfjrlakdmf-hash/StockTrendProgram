@@ -50,7 +50,7 @@ export default function FlipIndexTicker() {
 
     const fetchIndices = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/indices`, { cache: "no-store" });
+            const res = await fetch(`${API_BASE_URL}/api/market/indices`);
             const json = await res.json();
             if (json.status === 'success' && Array.isArray(json.data)) {
                 // [v5.8.0] 필터링 개선: 지수뿐만 아니라 수급, 통계, 매크로 지표를 통합적으로 표시

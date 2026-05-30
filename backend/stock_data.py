@@ -1821,7 +1821,13 @@ def get_market_intelligence_indicators():
             cat = "📉 공포지수" if "VIX" in label else "📋 글로벌 금리" if "금리" in label else "🌍 글로벌 지수"
             if "환율" in label or "달러" in label: cat = "💵 외환"
 
-            add_indicator(event_kr, idx['value'], cat, change=idx['change'], impact="high")
+            try:
+                import re
+                cv = float(re.sub(r'[^0-9.-]', '', idx['change']))
+            except:
+                cv = 0.0
+
+            add_indicator(event_kr, idx['value'], cat, change=idx['change'], impact="high", cv=cv)
 
         # 1.2 가상자산 추가
         try:

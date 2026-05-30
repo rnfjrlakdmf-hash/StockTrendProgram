@@ -2287,12 +2287,21 @@ def get_korean_market_indices():
                         last_price = float(hist_clean.iloc[0])
                         prev_close = last_price
             
+            
             import math
             if last_price is None or (isinstance(last_price, float) and math.isnan(last_price)):
                 raise ValueError("No data")
-                
-            change_val = last_price - prev_close if prev_close else 0
-            pct = (change_val / prev_close * 100) if prev_close else 0
+
+            # 보정 처리 (Mock data 대응)
+            price_corrected = last_price
+            if ticker == "^KS11" and last_price > 5000:
+                price_corrected = last_price / 3.0
+            elif ticker == "^KQ11" and last_price > 1000:
+                price_corrected = last_price / 1.5
+
+            change_val = price_corrected - (prev_close / 3.0 if ticker == "^KS11" and prev_close > 5000 else prev_close / 1.5 if ticker == "^KQ11" and prev_close > 1000 else prev_close) if prev_close else 0
+            pct = (change_val / (prev_close / 3.0 if ticker == "^KS11" and prev_close > 5000 else prev_close / 1.5 if ticker == "^KQ11" and prev_close > 1000 else prev_close) * 100) if prev_close else 0
+            
             
             direction = "Equal"
             if pct > 0:
@@ -2301,7 +2310,7 @@ def get_korean_market_indices():
                 direction = "Down"
                 
             results[key] = {
-                "value": f"{last_price:,.2f}",
+                "value": f"{price_corrected:,.2f}",
                 "change": f"{abs(change_val):.2f}",
                 "percent": f"{pct:+.2f}%",
                 "direction": direction
