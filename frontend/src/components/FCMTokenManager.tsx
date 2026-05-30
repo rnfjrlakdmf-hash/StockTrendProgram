@@ -450,8 +450,8 @@ export default function FCMTokenManager() {
                                                 <div className="flex items-start gap-2.5">
                                                     <div className="bg-orange-500/20 p-1.5 rounded-lg text-orange-400 text-xs mt-0.5">🚀</div>
                                                     <div>
-                                                        <p className="text-white font-bold text-[11px]">신규 공모주 알림</p>
-                                                        <p className="text-gray-400 text-[10px] leading-relaxed">새로운 공모주 청약 일정 및 희망공모가 알림</p>
+                                                        <p className="text-white font-bold text-[11px]">모든 공모주 전체 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">모든 공모주 청약 일정 알림 (개별 종목만 받으려면 해제)</p>
                                                     </div>
                                                 </div>
                                                 <button 
