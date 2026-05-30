@@ -889,7 +889,7 @@ function CalendarTab({ router }: { router: any }) {
         if (mainTab !== "ipo") return;
         (async () => {
             try {
-                const r = await fetch(`${API_BASE_URL}/api/market/korea/ipo`);
+                const r = await fetch(`${API_BASE_URL}/api/market/korea/ipo`, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
                 const j = await r.json();
                 if (j.status === "success") {
                     setIpos(j.data.map((item: any) => ({

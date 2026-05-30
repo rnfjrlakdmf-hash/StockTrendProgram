@@ -53,16 +53,11 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* Google AdSense 게시자 ID 메타 힌트 */}
+        {/* Google AdSense 공식 스크립트 */}
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833" crossOrigin="anonymous"></script>
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
-        {/* Google AdSense 공식 스크립트 (Next.js 권장 최적화 Script 컴포넌트 적용) */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
         <AuthProvider>
           <AnalyticsTracker />
           <div className="flex min-h-screen">
