@@ -263,6 +263,16 @@ def init_db():
         )
     ''')
 
+    # [NEW] IPO Watchlist Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ipo_watchlist (
+            user_id TEXT,
+            ipo_name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, ipo_name)
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -1420,3 +1430,51 @@ def get_realtime_active_count(minutes: int = 5):
         return 0
     finally:
         conn.close()
+
+# ─────────────────────────────────────────────
+# IPO Watchlist Management
+# ─────────────────────────────────────────────
+def add_ipo_watchlist(user_id: str, ipo_name: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT OR REPLACE INTO ipo_watchlist (user_id, ipo_name) VALUES (?, ?)",
+            (user_id, ipo_name)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error adding IPO watchlist: {e}")
+        return False
+    finally:
+        conn.close()
+
+def remove_ipo_watchlist(user_id: str, ipo_name: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM ipo_watchlist WHERE user_id = ? AND ipo_name = ?",
+            (user_id, ipo_name)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error removing IPO watchlist: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_user_ipo_watchlist(user_id: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT ipo_name FROM ipo_watchlist WHERE user_id = ?", (user_id,))
+        return [row[0] for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"[DB] Error fetching IPO watchlist: {e}")
+        return []
+    finally:
+        conn.close()
+

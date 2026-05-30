@@ -502,6 +502,16 @@ def run_market_scheduler():
             if now.hour == 8 and now.minute == 0:
                 asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                 time.sleep(60)
+
+            # [매일 발송] 공모주 청약 일정 알림 (평일 오전 8:15)
+            if day_of_week <= 4:
+                if now.hour == 8 and now.minute == 15 and not is_market_holiday("KR"):
+                    try:
+                        from batch_ipo_alerts import send_ipo_alerts
+                        send_ipo_alerts()
+                    except Exception as e:
+                        print(f"[Scheduler] IPO 알림 오류: {e}")
+                    time.sleep(60)
             
             if now.hour == 21 and now.minute == 30:
                 asyncio.run(morning_briefing_service.run_daily_briefing("US"))

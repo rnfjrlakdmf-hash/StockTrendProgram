@@ -267,3 +267,32 @@ def get_watchlist_cb_alerts(x_user_id: str = Header(None)):
     all_cb.sort(key=lambda x: x.get('date', ''), reverse=True)
             
     return {"status": "success", "data": all_cb}
+
+# ─────────────────────────────────────────────
+# IPO Watchlist Endpoints
+# ─────────────────────────────────────────────
+class IPOWatchlistRequest(BaseModel):
+    ipo_name: str
+
+@router.get("/ipo_watchlist")
+def read_ipo_watchlist(x_user_id: str = Header(None)):
+    from db_manager import get_user_ipo_watchlist
+    user_id = x_user_id or "guest"
+    items = get_user_ipo_watchlist(user_id)
+    return {"status": "success", "data": items}
+
+@router.post("/ipo_watchlist")
+def create_ipo_watchlist(req: IPOWatchlistRequest, x_user_id: str = Header(None)):
+    from db_manager import add_ipo_watchlist
+    user_id = x_user_id or "guest"
+    success = add_ipo_watchlist(user_id, req.ipo_name)
+    return {"status": "success" if success else "error"}
+
+@router.delete("/ipo_watchlist/{ipo_name}")
+def delete_ipo_watchlist(ipo_name: str, x_user_id: str = Header(None)):
+    from db_manager import remove_ipo_watchlist
+    import urllib.parse
+    user_id = x_user_id or "guest"
+    decoded_name = urllib.parse.unquote(ipo_name)
+    success = remove_ipo_watchlist(user_id, decoded_name)
+    return {"status": "success" if success else "error"}
