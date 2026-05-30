@@ -690,10 +690,10 @@ function EtfAnalysisContent() {
                                                 }}
                                                 series={[
                                                     { name: '시세', type: 'candlestick', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: [d.open, d.high, d.low, d.close] })) },
-                                                    { name: 'MA5', type: 'line', data: filteredChartData.filter((d: any) => d.ma5).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma5 })) },
-                                                    { name: 'MA20', type: 'line', data: filteredChartData.filter((d: any) => d.ma20).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma20 })) },
-                                                    { name: 'MA60', type: 'line', data: filteredChartData.filter((d: any) => d.ma60).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma60 })) },
-                                                    { name: 'MA120', type: 'line', data: filteredChartData.filter((d: any) => d.ma120).map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma120 })) },
+                                                    { name: 'MA5', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma5 || null })) },
+                                                    { name: 'MA20', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma20 || null })) },
+                                                    { name: 'MA60', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma60 || null })) },
+                                                    { name: 'MA120', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma120 || null })) },
                                                 ]}
                                                 type="line"
                                                 height="100%"
