@@ -242,12 +242,12 @@ function SignalsFeedTab({ router }: { router: any }) {
     };
 
     const watchlistSignals = signals.filter(sig => {
-        const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
         return matchSearch && watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
 
     const otherSignals = signals.filter(sig => {
-        const matchSearch = !searchQuery || sig.title.toLowerCase().includes(searchQuery.toLowerCase()) || sig.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
         return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
 
@@ -1144,7 +1144,7 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-2.5">
-                            {filtered.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12).map((ev, i) => {
+                            {filtered.sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(0, 12).map((ev, i) => {
                                 const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
                                 return (
                                     <div key={i} 
