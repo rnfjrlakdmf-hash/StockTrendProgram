@@ -479,9 +479,8 @@ def get_calendar_events():
     from stock_data import get_real_stock_events
     try:
         data = get_real_stock_events()
-        import datetime
-        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        filtered = [ev for ev in data if ev.get("date") and ev.get("date") >= today_str]
+        # 프론트엔드 달력에서 과거 일정도 볼 수 있도록 필터링 해제
+        filtered = [ev for ev in data if ev.get("date")]
         return {"status": "success", "data": filtered}
     except Exception as e:
         return {"status": "error", "message": str(e)}
