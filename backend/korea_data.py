@@ -723,20 +723,9 @@ def get_naver_market_index_data():
                     pct_raw = price_info.get("regularMarketChangePercent", {}).get("raw")
                     
                     if price_raw is not None:
-                        # KOSPI 수치 보정 필터
+                        # KOSPI 수치 보정 필터 (제거 - 2026년 기준 실제 수치 반영)
                         price_corrected = price_raw
-                        if ticker == "^KS11" and price_raw > 5000:
-                            price_corrected = price_raw / 3.0
-                        elif ticker == "^KQ11" and price_raw > 1000:
-                            price_corrected = price_raw / 1.5
-                        elif ticker == "^GSPC" and price_raw > 7000:
-                            price_corrected = price_raw / 1.4
-                        elif ticker == "^IXIC" and price_raw > 20000:
-                            price_corrected = price_raw / 1.6
-                        elif ticker == "^DJI" and price_raw > 45000:
-                            price_corrected = price_raw / 1.3
-                        elif ticker == "^NDX" and price_raw > 25000:
-                            price_corrected = price_raw / 1.6
+                            
                             
                         # yahoo-finance166의 regularMarketChangePercent raw는 비율(예: 0.0255)이므로 100을 곱해 백분율로 보정
                         pct_percent = (pct_raw * 100.0) if pct_raw is not None else 0.0
@@ -786,20 +775,8 @@ def get_naver_market_index_data():
                 change = last_price - prev_close if prev_close else 0
                 pct = (change / prev_close * 100) if prev_close else 0
                 
-                # 보정 처리
+                # 보정 처리 (제거 - 2026년 기준 실제 수치 반영)
                 price_corrected = last_price
-                if idx["ticker"] == "^KS11" and last_price > 5000:
-                    price_corrected = last_price / 3.0
-                elif idx["ticker"] == "^KQ11" and last_price > 1000:
-                    price_corrected = last_price / 1.5
-                elif idx["ticker"] == "^GSPC" and last_price > 7000:
-                    price_corrected = last_price / 1.4
-                elif idx["ticker"] == "^IXIC" and last_price > 20000:
-                    price_corrected = last_price / 1.6
-                elif idx["ticker"] == "^DJI" and last_price > 45000:
-                    price_corrected = last_price / 1.3
-                elif idx["ticker"] == "^NDX" and last_price > 25000:
-                    price_corrected = last_price / 1.6
                 
                 val_formatted = f"{price_corrected:.4f}%" if idx["is_rate"] else f"{price_corrected:,.2f}"
                 pct_str = f"{pct:+.2f}%"
