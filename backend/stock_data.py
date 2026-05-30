@@ -1793,10 +1793,19 @@ def get_market_intelligence_indicators():
 
     def add_indicator(name, value, category, change="0.00%", impact="medium", cv=0):
         # 이름 정규화 (공백 제거, 특수문자 통일 등)
-        norm_name = name.replace(" ", "").replace("지수", "").replace("[한국]", "").replace("[글로벌]", "").strip()
+        norm_name = name.replace(" ", "").replace("지수", "").replace("[한국]", "").replace("[글로벌]", "").replace("🏦", "").strip()
         if norm_name in seen_names:
             return
         seen_names.add(norm_name)
+        
+        # 자동으로 문자열 change에서 cv 값 추출 (cv가 0일 때만)
+        if cv == 0 and change and change != "0.00%":
+            try:
+                import re
+                cv = float(re.sub(r'[^0-9.-]', '', change))
+            except:
+                cv = 0.0
+
         indicators.append({
             "date": today, "time": "장마감",
             "event_kr": name,
