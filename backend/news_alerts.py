@@ -444,6 +444,10 @@ class NewsAlertMonitor:
             from db_manager import get_user_fcm_tokens
 
             title = news_item.get('title', '새로운 소식')
+            import re
+            # [www.kdpress.co.kr] 와 같은 도메인 텍스트 제거
+            title = re.sub(r'\[[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\]\s*', '', title).strip()
+            
             office_name = news_item.get('publisher', '뉴스')
             source = news_item.get('source', '')
 

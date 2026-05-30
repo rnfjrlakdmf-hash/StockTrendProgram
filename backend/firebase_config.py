@@ -242,6 +242,10 @@ def send_multicast_notification(
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
 
+    # 중복 토큰 제거 (동일 기기 중복 발송 방지)
+    if tokens:
+        tokens = list(set(tokens))
+
     # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한
     # 단, 가격 변동 알림은 실시간 투자 정보로서 24시간 허용
     PRICE_ALERT_KEYWORDS = ["admin", "관리자", "analytics", "보고서",

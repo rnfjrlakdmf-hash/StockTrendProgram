@@ -61,7 +61,18 @@ self.addEventListener('notificationclick', (event) => {
 
     // 종목발굴 페이지 URL 가져오기
     const data = event.notification.data || {};
-    const targetUrl = data.url || '/discovery';
+    let targetUrl = data.url || '/discovery';
+
+    if (event.action === 'view') {
+        // '종목 보기' 버튼 클릭 시 해당 종목 페이지로 이동
+        targetUrl = data.url || '/discovery';
+    } else {
+        // 알림 본문 클릭 시 뉴스 리다이렉트 페이지를 경유하여 원문으로 이동
+        if (data.news_url) {
+            targetUrl = `/news-redirect?url=${encodeURIComponent(data.news_url)}&symbol=${data.symbol || ''}`;
+        }
+    }
+
     const fullUrl = new URL(targetUrl, self.location.origin).href;
     const baseOrigin = self.location.origin;
 
