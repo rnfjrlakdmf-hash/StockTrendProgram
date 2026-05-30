@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://stock-trend-program.co.kr/api/:path*"
+      "destination": "http://13.209.99.170.nip.io/api/:path*"
     }
   ]
 }
