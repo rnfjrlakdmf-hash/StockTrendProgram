@@ -674,8 +674,6 @@ def get_naver_market_index_data():
         return _RAPID_INDEX_CACHE
 
     indices_to_fetch = [
-        {"ticker": "^KS11", "label": "KOSPI", "is_rate": False},
-        {"ticker": "^KQ11", "label": "KOSDAQ", "is_rate": False},
         {"ticker": "^GSPC", "label": "S&P 500", "is_rate": False},
         {"ticker": "^IXIC", "label": "NASDAQ", "is_rate": False},
         {"ticker": "^DJI", "label": "DOW JONES", "is_rate": False},
