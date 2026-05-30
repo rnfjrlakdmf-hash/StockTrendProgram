@@ -1,0 +1,2125 @@
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="content-language" content="kr" />
+<meta http-equiv="content-style-type" content="text/css" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="imagetoolbar" content="no" />
+<meta name="copyright" content="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND(c)2014" />
+<meta name="description" content="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND" />
+<meta name="keywords" content="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND" />
+<title>������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND</title>
+<link rel="shortcut icon" href="../images/kind.ico" />
+<link rel="stylesheet" type="text/css" href="../js/jquery/themes-base/jquery-ui.min.css" media="all" />
+<link rel="stylesheet" type="text/css" href="../css/default_new.css" media="all" />
+<link rel="stylesheet" type="text/css" href="../css/common.css?version=20251219" media="all" />
+<link rel="stylesheet" type="text/css" href="../css/style.css?version=20250509" media="all" />
+<link rel="stylesheet" type="text/css" href="../esg/notoSans.css?20240524" media="all" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="../js/html5shiv.js"></script>
+<![endif]-->
+<script type="text/javascript" src="../js/dtree.js"></script>
+<script type="text/javascript" src="../js/trans.js"></script>
+<script type="text/javascript" src="../js/jquery/jquery.js" ></script>
+<script type="text/javascript" src="../js/jquery/jquery-ui.min.js"></script>
+<script type="text/javascript" src="../js/jquery/jquery.placeholder.js"></script>
+<script type="text/javascript" src="../js/common.js?version=20251219"></script>
+<script type="text/javascript" src="../js/common-ajax.js"></script>
+<script type="text/javascript" src="../js/JCommon.js?version=20260417"></script>
+<script type="text/javascript" src="../js/common-sort.js"></script>
+
+</head>
+
+	
+	
+	
+		<body>
+		
+  
+<!-- ���硫� ������/異���� ������ START-->
+
+
+<section class="notice popup modal type-00 hide">
+	<div class="container">
+		<div class="wrapper">
+			<hgroup class="handle"><h2>���硫� ������/異���� ������</h2></hgroup>
+			<a href="#" class="btn-pop-close btn_close">��リ린</a>
+			<section class="body">
+				<ul class="msg type-99 fc01">
+					<li>��� IE8 ��댄����� ��밸����쇱�곗����������� ��ㅼ��怨� 媛���� 諛⑸����쇰�� ���硫댁�� ������/異���� 湲곕�μ�� ��댁�⑺����� ��� �����듬�����.</li>
+				</ul>
+				<img src="../images/common/notice.png"  alt="���硫댄����� ���硫댁�����" />				
+			</section>
+		</div>
+		<img src="../images/common/pop-type-00-tl.png" class="tl" alt="諛곌꼍��대�몄��"/>
+		<img src="../images/common/pop-type-00-bl.png" class="bl" alt="諛곌꼍��대�몄��"/>
+		<img src="../images/common/pop-type-00-tr.png" class="tr" alt="諛곌꼍��대�몄��"/>
+		<img src="../images/common/pop-type-00-br.png" class="br" alt="諛곌꼍��대�몄��"/>
+		<div class="tm"></div>
+		<div class="lm"></div>
+		<div class="bm"></div>
+		<div class="rm"></div>
+	</div>
+</section>
+ 
+<!-- HEADER ������ START -->
+<header class="container">
+	
+
+
+
+
+
+
+
+<div class="container_line">
+	<div class="wrapper-super">
+		<hgroup>
+			<h1 class="logo"><a href="/main.do?method=loadInitPage&scrnmode=1" title="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND"><img src="../images/main/logo.gif" alt="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND"/></a></h1>
+		</hgroup>
+		<ul class="util">
+			<li class="first"><a href="/common/JLDDST35000.html" onclick="winCommPopOpen('1'); return false;" title="KIND ���媛� ���李�"><img src="../images/common/util_intro.gif" alt="KIND ���媛�"/></a></li>
+			<li>
+				<a href="https://engkind.krx.co.kr/" title="KIND ���臾몄�ъ�댄�� 諛�濡�媛�湲�" target="_blank"><img src="../images/common/util_eng.gif" alt="ENGLISH KIND"/></a>
+			</li>
+			<li class="btn-group">
+				<img src="../images/common/ttl_screen.gif" class="ttl" alt="���硫댄�ш린"/>
+				<a href="#" class="plus zoom_btn-in"><span>������</span></a>
+				<a href="#" class="reset zoom_btn-reset"><span>���������濡�</span></a>
+				<a href="#" class="minus zoom_btn-out"><span>異����</span></a>
+			</li>
+		</ul>
+		<div class="clear"></div>
+		<form id="AKCFrm" name="AKCFrm">
+		<input type="hidden" name="method"			id="method" 		value="disclosureSimpleSearchMain"/>
+		<input type="hidden" name="searchCodeType"	id="searchCodeType" value=""/>
+		<input type="hidden" name="repIsuSrtCd"		id="repIsuSrtCd" 	value=""/>
+		<input type="hidden" name="isurCd"			id="isurCd" 		value=""/>
+		<input type="hidden" name="AKCKwdCode"		id="AKCKwdCode" 	value=""/>
+		<section class="search auto_complete top-akc-sub">
+			<div class="autoKey">
+				<input type="text" id="AKCKwdTop" name="searchCorpName" placeholder="�����щ�� ������ 醫�紐⑹�����瑜� �����ν�� 二쇱�몄��." class="search-txt dval" onblur="chkValidChar_top(this); fnMainCorpType();" autocomplete=off />
+				<div class="tselect">
+					<img id="AKCArrowTop" class="autoc_open" src="../images/common/icn_autoc_open.gif" alt="������������ ��닿린" />
+					<div id="AKCDivTop" class="AKCDivTop" style="display:none;">
+						<iframe id="AKCIfrmTop" name="AKCIfrmTop" title="������������" src="../common/akc_top.html?version=20220624" frameborder="0" scrolling="no" ></iframe>
+					</div>
+				</div>
+			</div>
+			<input type="image" src="../images/common/btn_search.gif" alt="寃����" class="submit" onclick="fnTopAKCKwdSearch(); return false;"/>
+			<div class="clear"></div>
+		</section>
+		</form>
+		<a href="#" class="btn sitemap open"><img src="../images/common/btn_sitemap.gif" alt="���泥대����대낫湲�"/></a>
+	</div>
+</div>
+
+<div class="sitemap-wrapper">
+	<!-- TOP MENU START -->
+	
+
+
+
+
+
+<section class="sitemap">
+	<article class="mymenu">
+		<h3><img src="../images/common/ttl_sitemap_my.png" alt="���留���� 硫����"/></h3>
+		<div class="list">
+			<ul id="myMenuTop">
+				<li class="active"><a href="/disclosure/todaydisclosure.do?method=searchTodayDisclosureMain">��ㅻ�����怨듭��</a></li>
+				<li><a href="/disclosure/searchdisclosurebycorp.do?method=searchDisclosureByCorpMain">�����щ��寃����</a></li>
+				<li><a href="/disclosure/searchtotalinfo.do?method=searchTotalInfoMain">��듯�⑷�����</a></li>
+				<li><a href="/disclosure/details.do?method=searchDetailsMain">�����멸�����</a></li>
+				<li><a href="/corpdetail/totalinfo.do?method=loadInitPage">醫���⑹��蹂�</a></li>
+			</ul>
+		</div>
+		<a href="#" class="btn_sitemap-set"><img src="../images/common/btn_sitemap_set.png" alt="��ㅼ��"/></a>
+	</article>
+	<section class="list-wrapper links">
+		<article class="list">
+			<h3>怨듭��</h3>
+			<ul>
+				<li><a href="/disclosure/todaydisclosure.do?method=searchTodayDisclosureMain" class="first">��ㅻ�����怨듭��</a></li>
+				<li><a href="/disclosure/searchdisclosurebycorp.do?method=searchDisclosureByCorpMain" class="first">�����щ��寃����</a></li>
+				<li><a href="/disclosure/details.do?method=searchDetailsMain" class="first">�����멸�����</a></li>
+				<li><a href="#" onclick="krxPaPago_open(); return false;" class="first">KRX-Papago踰����湲�</a></li>
+				<li><a href="/disclosure/searchtotalinfo.do?method=searchTotalInfoMain" class="first">��듯�⑷�����</a></li>
+				<li><a href="/disclosure/searchbondcorpdisclosure.do?method=searchBondCorpDisclosureMain" class="first">梨�沅�怨듭��</a></li>
+				<li style="height:32px;"><a href="#" class="more">ETF/ELW/ETN/<br>�����ν�������듭��沅�<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li> <!-- �����ν�������듭��沅���� 異�媛� ���硫댁�� 媛�寃⑹“������ ������ ��대�� 硫���대�� �����대�� 34px濡� ��≪�� 2025.02.14 -->
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeEtf">ETF</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeElw">ELW</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeEtn">ETN</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypePf">�����ν�������듭��沅�</A>
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>
+				<li><a href="#" class="more">������怨듭��<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeRestinvstcom">遺������고�ъ��������</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeShipinvstcom">���諛���ъ��������</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeInvstcom">��ъ��������</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeBenfcert">�����듭��沅�</A>
+									<A class="lmn" href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeBdc">BDC</A>
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>	
+				<li><a href="/disclosure/misccorpdiscls.do?method=searchMiscCorpDisclsMain" class="first">湲고��踰���멸났���</a></li>
+				<li><a href="#" class="more">���寃곌�������ш났���<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/disclosure/disclosurebyvote.do?method=searchDisclosurebyVoteMain">���寃곌�������ш났���</A>	
+									<A class="lmn" href="https://dis.kofia.or.kr/websquare/index.jsp?w2xPath=/wq/compann/DISFndVoteRightView.xml&divisionId=MDIS02003010000000&serviceId=SDIS02003010000#!" target="_blank">��댁�⑹�� ���������寃곌�������ш났���</A>
+									<A class="lmn" href="https://dis.kofia.or.kr/websquare/index.jsp?w2xPath=/wq/compann/DISFndVoteRightViewDet.xml&divisionId=MDIS02003011000000&serviceId=SDIS02003011000" target="_blank">������蹂� ���寃곌�������ш났���</A>									
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>					
+				
+			
+				<li><a href="/corpdetail/chart.do?method=loadInitPage" class="first">怨듭��李⑦��</a></li>
+			
+				<li><a href="/disclosure/searchErrorTradeRelief.do?method=searchErrorTradeReliefMain" class="first">李⑹�ㅻℓ留ㅺ뎄������泥�</a></li>
+
+				<!-- ���醫�利�沅� 硫���� ������ -->
+				<!--<li><a href="#" class="more">���醫�利�沅�<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1">
+							<DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/digital/digitalList.do?method=digitalList">鍮�湲���������������듭��沅�</A>
+									<A class="lmn" href="/digital/digitalInvstList.do?method=digitalInvstList">��ъ��怨���쎌��沅�</A>
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" />
+								</DIV>
+							</DIV>
+							</DD>
+							</DL>
+							</nav>
+						</DIV>			
+						-->				
+			</ul>
+		</article>
+		<article class="list">
+			<h3>�����λ����몄����몄��蹂�</h3>
+			<ul>
+						
+				<li><a href="/corpdetail/totalinfo.do?method=loadInitPage" class="first">醫���⑹��蹂�</a></li>
+				<li><a href="/corpgeneral/listedIssueStatus.do?method=loadInitPage" class="first">�����μ��紐⑺�����</a></li>
+							
+				<li><a href="/corpgeneral/corpList.do?method=loadInitPage" class="first">�����λ����몃ぉ濡�</a></li>									
+				<li><a href="/corpgeneral/stockissuelist.do?method=loadInitPage" class="first">二쇱��諛������댁��</a></li>
+				<li><a href="#" class="more">湲곗��吏�諛곌뎄議�<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/corpgeneral/companyGovernance.do?method=loadInitPage">湲곗��吏�諛곌뎄議� 蹂닿�����</A>
+									<A class="lmn" href="http://www.cgs.or.kr/business/esg_tab04.jsp" target="_blank">ESG��깃��</A>									
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>
+				<li><a href="/corpgeneral/treasurystk.do?method=loadInitPage" class="first">�����ъ＜痍⑤��/泥�遺�</a></li>
+				<li><a href="#" class="more">IR��쇱��/IR���猷����<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/corpgeneral/irschedule.do?method=searchIRScheduleMain&gubun=iRSchedule">IR��쇱��</A>
+									<A class="lmn" href="/corpgeneral/irschedule.do?method=searchIRScheduleMain&gubun=iRMaterials">IR���猷����</A>
+									<A class="lmn" href="https://www.youtube.com/playlist?list=PLAgvDyD2zN6ry9AVlh2emmvoJy4K39KT7" target="_blank">���������猷�</A>
+									<A class="lmn" href="/corpgeneral/irschedule.do?method=searchIRScheduleMain&gubun=iRScheduleCalendar">IR��쇱�� ��щ��</A>
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>				
+			
+				<li><a href="#" class="more">湲곗��遺����蹂닿�����<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/corpgeneral/companyAnalysisReport.do?method=listingForeignCompanyMain&searchGubun=companyAnalysisReport">湲곗��遺����由ы�ы��</A>
+									<A class="lmn" href="/corpgeneral/newListingForeignCompany.do?method=listingForeignCompanyMain&searchGubun=newListingForeignCompany">���洹������κ린���遺����蹂닿�����</A>
+									<A class="lmn" href="/corpgeneral/growthReport.do?method=listingForeignCompanyMain&searchGubun=growthReport">��ъ��紐⑤�� ���媛�蹂닿����� 諛� 湲곗�� 怨������� 蹂닿�����</A>
+									
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>				
+			
+				<li><a href="/corpgeneral/corpGroup.do?method=loadInitPage" class="first">湲곗��吏����</a></li>				
+				<li><a href="#" class="more">諛곕�뱀��蹂�<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+				<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/disclosureinfo/dividendinfo.do?method=searchDividendInfoMain">諛곕�뱀��蹂�</A>
+									<A class="lmn" href="http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201010107" target="_blank">���醫�諛곕�뱀����듬��</A>									
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>
+				<li><a href="/compfinance/financialinfo.do?method=loadInitPage&searchgubun=corporation" class="first">�����ъ�щТ鍮�援�</a></li>
+				<li><a href="/corpgeneral/excntDisclsCompany.do?method=loadInitPage" class="first">怨듭����곗��踰����</a></li>
+				<li><a href="/corpdetail/ventureFundInvest.do?method=corpListMain" class="first">踰ㅼ����������ъ��湲곗��(肄�)</a></li>
+				<!-- ���醫�利�沅� 硫���� ������ -->
+				<!--<li><a href="/digital/digitalCorpList.do?method=digitalCorpList" class="first">�����μ��紐�(���醫�利�沅�)</a></li>-->
+			</ul>
+		</article>
+		<article class="list">
+			<h3>湲곗�� 諛몃����� ���蹂�</h3>
+			<ul>
+				<li><a href="/valueup/intro.do?method=valueupIntroMain" class="first">湲곗�� 諛몃����� ���媛�</a></li>
+				<li><a href="/valueup/notice.do?method=valueupNoticeMain" class="first">怨듭����ы��</a></li>
+				<li><a href="/valueup/disclsstat.do?method=valueupDisclsStatMain" class="first">怨듭��������</a></li>
+			
+				<li><a href="#" class="more">��ъ��吏����<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+								<DD>
+								<DIV class="lnb">
+								<DIV class="wrapper">
+								<A class="lmn" href="/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain">���醫�蹂� ��ъ��吏���� ������</A>
+								<A class="lmn" href="/valueup/invstindicstocks.do?method=valueupInvstIndicRankIsuMain">醫�紐⑸�� ��ъ��吏���� 異����</A>
+								<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+								<IMG class="tl" src="../images/common/lnb_tl.png" />
+								<IMG class="tr" src="../images/common/lnb_tr.png" />
+								<IMG class="bl" src="../images/common/lnb_bl.png" />
+								<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+								</DIV>
+								</DD>
+							</DL></nav>
+						</DIV>
+				<li><a href="/valueup/idx.do?method=valueupIdxMain" class="first">��몃�깆��</a></li>
+			
+				<li><a href="/valueup/dividend.do?method=valueupHighDividendMain" class="first">怨�諛곕�밴린���</a></li>
+				<li><a href="/valueup/excntcorp.do?method=valueupExcntCorpMain" class="first">諛몃����� ��곗��湲곗��</a></li>
+				<li><a href="https://www.kirs.or.kr/research/valueup.html" class="first" target="_blank">諛몃����� 蹂닿�����</a></li>
+				<li><a href="/valueup/resoroom.do?method=valueupResoroomMain" class="first">���猷����</a></li>
+			</ul>
+		</article>		
+		
+		<article class="list weight">
+			<h3>��ъ����������ы��</h3>
+			<ul>
+				<li><a href="/investwarn/adminissue.do?method=searchAdminIssueList" class="first">愿�由ъ��紐�</a></li>
+				<li><a href="/investwarn/hwangiissue.do?method=searchHwangiIssueMain" class="first">��ъ��二쇱�����湲곗��紐�(肄�)</a></li>
+							
+				<li><a href="/investwarn/tradinghaltissue.do?method=searchTradingHaltIssueMain" class="first">留ㅻℓ嫄곕�����吏�醫�紐�</a></li>
+			
+				<li><a href="/investwarn/undisclosure.do?method=searchUnfaithfulDisclosureCorpList" class="first">遺���깆�ㅺ났���踰����</a></li>
+			
+				<li><a href="/investwarn/investattentwarnrisky.do?method=investattentwarnriskyMain" class="first">��ъ��二쇱��/寃쎄��/������醫�紐�</a></li>
+			
+				<li><a href="/corpgeneral/delistRealInvstg.do?method=searchDelistRealInvstgMain" class="first">��ㅼ����ъ�щ�����</a></li>
+				<li><a href="/investwarn/investattentEmbezzlement.do?method=searchInvestAttentEmbezzlementMain" class="first">��〓�� ���</a></li>
+				<li><a href="/investwarn/investattentLargeShareChange.do?method=searchInvestAttentLargeShareChangeMain" class="first">理����二쇱＜蹂�寃�2�����댁��</a></li>
+				<li><a href="#" class="more">湲고����ы��<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+							<DD>
+							<DIV class="lnb">
+								<DIV class="wrapper">
+									<A class="lmn" href="/investwarn/investattentEtcMarket.do?method=searchInvestAttentEtcMarketMain">湲고�� �����μ�����</A>
+									<A class="lmn" href="/investwarn/prtdepoStat.do?method=searchPrtdepoStatMain">���臾대낫���������(���媛�)</A>
+									<A class="lmn" href="/investwarn/penalty.do?method=searchPenaltyImprovementList">踰����諛�媛����怨������� ������</A>
+									<A class="lmn" href="/investwarn/delcompany.do?method=searchDelCompanyMain">�����ν��吏�������</A>
+									<A class="lmn" href="/investwarn/delListDelibRec.do?method=searchDelListDelibRecMain">�����ν��吏�理�醫���ъ�������щ��</A>
+									<A class="lmn" href="/investwarn/investwarnGuide.do?method=searchInvestGuideMain">��ъ��������������</A>
+									
+									<A class="lmn" href="/disclosureinfo/nfaithdisclsdecl.do?method=insertNfaithdisclsDeclMain">遺���깆�ㅺ났��� ���怨���ъ��</A>
+									 
+									<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+									<IMG class="tl" src="../images/common/lnb_tl.png" />
+									<IMG class="tr" src="../images/common/lnb_tr.png" />
+									<IMG class="bl" src="../images/common/lnb_bl.png" />
+									<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+							</DIV>
+							</DD>
+							</DL></nav>
+						</DIV>
+			</ul>
+		</article>
+		<article class="list">
+			<h3>IPO������</h3>
+			<ul>
+			
+				<li><a href="/listinvstg/listinvstgcom.do?method=searchListInvstgCorpMain" class="first">���鍮���ъ�ш린���</a></li>
+				<li><a href="/listinvstg/listapplcom.do?method=searchListApplCorpMain" class="first">肄���μ�� �����μ��泥�湲곗��</a></li>
+				<li><a href="#" class="more">怨듬え湲곗��<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+								<DD>
+								<DIV class="lnb">
+								<DIV class="wrapper">
+								<A class="lmn" href="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain">怨듬え湲곗��������</A>
+								<A class="lmn" href="/listinvstg/pubofrschdl.do?method=searchPubofrScholMain">怨듬え��쇱��</A>
+								<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+								<IMG class="tl" src="../images/common/lnb_tl.png" />
+								<IMG class="tr" src="../images/common/lnb_tr.png" />
+								<IMG class="bl" src="../images/common/lnb_bl.png" />
+								<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+								</DIV>
+								</DD>
+							</DL></nav>
+						</DIV>			
+				<li><a href="#" class="more">���洹������κ린���<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+								<DD>
+								<DIV class="lnb">
+								<DIV class="wrapper">
+								<A class="lmn" href="/listinvstg/listingcompany.do?method=searchListingTypeMain">���洹������κ린���������</A>
+								<A class="lmn" href="/listinvstg/mergeListingCompany.do?method=searchMergeListingCompMain">��⑸�������κ린���������</A>
+								<A class="lmn " href="/listinvstg/genfinance.do?method=searchGenFinanaceMain">��щТ������</A>
+								<A class="lmn " href="/listinvstg/pubprcCmpStkprcByIssue.do?method=pubprcCmpStkprcByIssueMain">怨듬え媛����鍮�二쇨�����蹂�</A> 
+								<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+								<IMG class="tl" src="../images/common/lnb_tl.png" />
+								<IMG class="tr" src="../images/common/lnb_tr.png" />
+								<IMG class="bl" src="../images/common/lnb_bl.png" />
+								<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+								</DIV>
+								</DD>
+							</DL></nav>
+						</DIV>
+								
+				<li><a href="#" class="more">���洹������ν�듦��<span><img src="../images/common/bg_gnb_gmn2.gif" alt="硫���� ���蹂닿린"/></span></a></li>
+						<DIV id="sub" class="gnb1-wrapper">
+							<nav id="gnb1"><DL>
+								<DD>
+								<DIV class="lnb">
+								<DIV class="wrapper">
+								<A class="lmn" href="/listinvstg/listtypestat.do?method=searchListTypeStatusMain">�����ν�듦��</A>
+								
+								<A class="lmn " href="/listinvstg/puboframt.do?method=searchPubofrAmtMain">怨듬え��듦��</A>
+								<A class="lmn " href="/listinvstg/ipoprfm.do?method=searchIpoPrfmMain">�����μ＜������ IPO��ㅼ��</A>
+								
+								<A class="lmn " href="/listinvstg/advseripoprfm.do?method=searchAdvserIpoPrfmMain">吏�������臾몄�� �����μ�ㅼ��</A>
+								<IMG class="arrow" src="../images/common/lnb_arrow_sub.png" />
+								<IMG class="tl" src="../images/common/lnb_tl.png" />
+								<IMG class="tr" src="../images/common/lnb_tr.png" />
+								<IMG class="bl" src="../images/common/lnb_bl.png" />
+								<IMG class="br" src="../images/common/lnb_br.png" /> 
+								</DIV>
+								</DIV>
+								</DD>
+							</DL></nav>
+						</DIV>				
+				<li><a href="/listinvstg/listinvstginfo.do?method=searchListInvstgInfoMain" class="first">�����μ�ъ�ш����대��</a></li>
+			</ul>
+			<h3>���蹂댁��</h3>
+			<ul>
+				<li><a href="/disclosureinfo/notice.do?method=searchNoticeMain" class="first">怨듭����ы��</a></li>
+				<!-- li><a href="/news/searchnews.do?method=searchNewsMain" class="first">利������댁��</a></li -->
+				<li><a href="/disclosureinfo/explanationsystem.do?method=searchSysInfo" class="first">��������댁��</a></li>
+				<li><a href="/disclosureinfo/searchmaterials.do?method=searchMaterialsMain" class="first">���猷����</a></li>
+			</ul>			
+		</article>		
+	</section>
+	<section class="list-wrapper config"><!-- ���留���� 硫���� ��ㅼ�� -->
+		<article class="list">
+			<h3>怨듭��</h3>
+			<ul>
+				<li><input type="checkbox" id="chkEdit01" name="checkboxMenu" value="ULDDST00000" /> <label for="chkEdit01">��ㅻ�����怨듭��</label></li>
+				<li><input type="checkbox" id="chkEdit02" name="checkboxMenu" value="ULDDST00100" /> <label for="chkEdit02">�����щ��寃����</label></li>
+				<li><input type="checkbox" id="chkEdit03" name="checkboxMenu" value="ULDDST00300" /> <label for="chkEdit03">�����멸�����</label></li>
+				<li><input type="checkbox" id="chkEdit04" name="checkboxMenu" value="ULDDST00200" /> <label for="chkEdit04">��듯�⑷�����</label></li>
+				<li><input type="checkbox" id="chkEdit05" name="checkboxMenu" value="ULDDST00700" /> <label for="chkEdit05">梨�沅�怨듭��</label></li>
+				<li style="height:32px;"><input type="checkbox" id="chkEdit06" name="checkboxMenu" value="ULDDST00400" /> <label for="chkEdit06">ETF ELW ETN <br>�����ν�������듭��沅�</label></li>
+				<li><input type="checkbox" id="chkEdit07" name="checkboxMenu" value="JLDDST00403" /> <label for="chkEdit07">������怨듭��</label></li>
+				<li><input type="checkbox" id="chkEdit08" name="checkboxMenu" value="ULDDST01300" /> <label for="chkEdit08">湲고��踰���멸났���</label></li>
+				<li><input type="checkbox" id="chkEdit010" name="checkboxMenu" value="ULDDST01500" /> <label for="chkEdit010">���寃곌�������ш났���</label></li>
+			
+				<li><input type="checkbox" id="chkEdit09" name="checkboxMenu" value="ULDDST10400" /> <label for="chkEdit09">怨듭��李⑦��</label></li>
+			
+			<li><input type="checkbox" id="chkEdit40" name="checkboxMenu" value="ULDDST01600" /> <label for="chkEdit40">李⑹�ㅻℓ留ㅺ뎄������泥�</label></li>
+			<!-- ���醫�利�沅� 硫���� ������ -->
+			<!--<li><input type="checkbox" id="chkEdit50" name="checkboxMenu" value="ULDDST20000" /><label for="chkEdit50">���醫�利�沅�</label></li>-->
+			</ul>
+		</article>
+		<article class="list">
+			<h3>�����λ����몄����몄��蹂�</h3>
+			<ul>
+						
+				<li><input type="checkbox" id="chkEdit10" name="checkboxMenu" value="ULDDST10000" /> <label for="chkEdit10">醫���⑹��蹂�</label></li>
+				<li><input type="checkbox" id="chkEdit11" name="checkboxMenu" value="ULDDST05000" /> <label for="chkEdit11">�����μ��紐⑺�����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit12" name="checkboxMenu" value="ULDDST05100" /> <label for="chkEdit12">�����λ����몃ぉ濡�</label></li>
+				<li><input type="checkbox" id="chkEdit13" name="checkboxMenu" value="ULDDST06000" /> <label for="chkEdit13">二쇱��諛������댁��</label></li>
+				<li><input type="checkbox" id="chkEdit41" name="checkboxMenu" value="ULDDST38150" /> <label for="chkEdit41">湲곗��吏�諛곌뎄議�</label></li>
+				<li><input type="checkbox" id="chkEdit14" name="checkboxMenu" value="ULDDST05300" /> <label for="chkEdit14">�����ъ＜痍⑤��泥�遺�</label></li>
+				<li><input type="checkbox" id="chkEdit15" name="checkboxMenu" value="ULDDST05600" /> <label for="chkEdit15">IR��쇱��IR���猷����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit16" name="checkboxMenu" value="ULDDST38010" /> <label for="chkEdit16">湲곗��遺����蹂닿�����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit17" name="checkboxMenu" value="ULDDST05800" /> <label for="chkEdit17">湲곗��吏����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit18" name="checkboxMenu" value="ULDDST36400" /> <label for="chkEdit18">諛곕�뱀��蹂�</label></li>
+			
+				<li><input type="checkbox" id="chkEdit19" name="checkboxMenu" value="ULDDST15400" /> <label for="chkEdit19">�����ъ�щТ鍮�援�</label></li>
+				<li><input type="checkbox" id="chkEdit39" name="checkboxMenu" value="JLDDST38140" /> <label for="chkEdit39">怨듭����곗��踰����</label></li>
+				<li><input type="checkbox" id="chkEdit42" name="checkboxMenu" value="JLDDST11000" /> <label for="chkEdit42">踰ㅼ����������ъ��������湲곗��(肄�)</label></li>
+				<!-- ���醫�利�沅� 硫���� ������ -->
+				<!--<li><input type="checkbox" id="chkEdit43" name="checkboxMenu" value="JLDDST30200" /> <label for="chkEdit43">�����μ��紐�(���醫�利�沅�)</label></li>-->
+			</ul>
+		</article>
+		<article class="list">
+			<h3>湲곗�� 諛몃����� ���蹂�</h3>
+			<ul>	
+				<li><input type="checkbox" id="chkEdit44" name="checkboxMenu" value="ULDDST80100" /> <label for="chkEdit44">湲곗�� 諛몃����� ���媛�</label></li>
+				<li><input type="checkbox" id="chkEdit45" name="checkboxMenu" value="ULDDST80200" /> <label for="chkEdit45">怨듭����ы��</label></li>
+				<li><input type="checkbox" id="chkEdit46" name="checkboxMenu" value="ULDDST80300" /> <label for="chkEdit46">怨듭��������</label></li>
+								
+				<li><input type="checkbox" id="chkEdit47" name="checkboxMenu" value="ULDDST80400" /> <label for="chkEdit47">��ъ��吏����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit48" name="checkboxMenu" value="ULDDST80500" /> <label for="chkEdit48">��몃�깆��</label></li>
+				<li><input type="checkbox" id="chkEdit52" name="checkboxMenu" value="ULDDST80800" /> <label for="chkEdit52">怨�諛곕�밴린���</label></li>
+				<li><input type="checkbox" id="chkEdit49" name="checkboxMenu" value="ULDDST80600" /> <label for="chkEdit49">諛몃����� ��곗��湲곗��</label></li>
+				<li><input type="checkbox" id="chkEdit51" name="checkboxMenu" value="ULDDST80X00" /> <label for="chkEdit51">諛몃����� 蹂닿�����</label></li>
+				<li><input type="checkbox" id="chkEdit50" name="checkboxMenu" value="ULDDST80700" /> <label for="chkEdit50">���猷����</label></li>
+			</ul>
+		</article>
+		<article class="list">
+			<h3>��ъ����������ы��</h3>
+			<ul>
+				<li><input type="checkbox" id="chkEdit25" name="checkboxMenu" value="ULDDST30000" /> <label for="chkEdit25">愿�由ъ��紐�</label></li>
+				<li><input type="checkbox" id="chkEdit26" name="checkboxMenu" value="ULDDST30900" /> <label for="chkEdit26">��ъ��二쇱�����湲곗��紐�(肄�)</label></li>
+							
+				<li><input type="checkbox" id="chkEdit27" name="checkboxMenu" value="ULDDST30400" /> <label for="chkEdit27">留ㅻℓ嫄곕�����吏�醫�紐�</label></li>
+							
+				<li><input type="checkbox" id="chkEdit28" name="checkboxMenu" value="ULDDST30100" /> <label for="chkEdit28">遺���깆�ㅺ났���踰����</label></li>
+			
+				<li><input type="checkbox" id="chkEdit29" name="checkboxMenu" value="ULDDST30500" /> <label for="chkEdit29">��ъ��二쇱��寃쎄��������</label></li>
+			
+				<li><input type="checkbox" id="chkEdit30" name="checkboxMenu" value="ULDDST05900" /> <label for="chkEdit30">��ㅼ����ъ�щ�����</label></li>
+				<li><input type="checkbox" id="chkEdit31" name="checkboxMenu" value="ULDDST30301" /> <label for="chkEdit31">��〓�� ���</label></li>
+				<li><input type="checkbox" id="chkEdit32" name="checkboxMenu" value="ULDDST30302" /> <label for="chkEdit32">理����二쇱＜蹂�寃�2�����댁��</label></li>
+				<li><input type="checkbox" id="chkEdit33" name="checkboxMenu" value="ULDDST30301" /> <label for="chkEdit33">湲고����ы��</label></li>
+			</ul>
+		</article>
+		<article class="list">
+			<h3>IPO������</h3>
+			<ul>
+						
+				<li><input type="checkbox" id="chkEdit20" name="checkboxMenu" value="ULDDST71000" /> <label for="chkEdit20">���鍮���ъ�ш린���</label></li>
+				
+				<li><input type="checkbox" id="chkEdit38" name="checkboxMenu" value="ULDDST71100" /> <label for="chkEdit38">肄���μ�� �����μ��泥�湲곗��</label></li>
+				<li><input type="checkbox" id="chkEdit21" name="checkboxMenu" value="ULDDST72000" /> <label for="chkEdit21">怨듬え湲곗��</label></li>
+							
+				<li><input type="checkbox" id="chkEdit22" name="checkboxMenu" value="ULDDST70000" /> <label for="chkEdit22">���洹������κ린���</label></li>
+								
+				<li><input type="checkbox" id="chkEdit23" name="checkboxMenu" value="ULDDST73000" /> <label for="chkEdit23">���洹������ν�듦��</label></li>
+				<li><input type="checkbox" id="chkEdit24" name="checkboxMenu" value="ULDDST75000" /> <label for="chkEdit24">�����μ�ъ�ш����대��</label></li>
+			</ul>
+			<h3>���蹂댁��</h3>
+			<ul>
+				<li><input type="checkbox" id="chkEdit34" name="checkboxMenu" value="ULDDST35100" /> <label for="chkEdit34">怨듭����ы��</label></li>
+				<!-- li><input type="checkbox" id="chkEdit35" name="checkboxMenu" value="ULDDST25000" /> <label for="chkEdit35">利������댁��</label></li -->
+				<li><input type="checkbox" id="chkEdit36" name="checkboxMenu" value="ULDDST35400" /> <label for="chkEdit36">��������댁��</label></li>
+				<li><input type="checkbox" id="chkEdit37" name="checkboxMenu" value="ULDDST35700" /> <label for="chkEdit37">���猷����</label></li>
+			</ul>			
+		</article>		
+
+	</section>
+	<div class="clear"></div>
+	<div class="wrapper-close">
+		<a href="#" class="btn_sitemap-close"><img src="../images/common/btn_sitemap_close.gif" alt="���泥대����대�リ린"/></a>
+	</div>
+</section>
+<script type="text/javascript">
+$(document).ready(function(){
+	fnInMyMenu();
+	sitemap_init();
+});
+var cnt=0;
+function sitemap_init()
+{					
+	if($('section.sitemap').length<1) return;
+	/*$('a.btn.sitemap.open').bind("click",function(e){
+		e.preventDefault();
+		$(this).addClass('hide');
+		setTimeout(function(){
+			$('section.sitemap').slideToggle(400);
+		},200);
+	});*/
+	
+	$('a.btn.sitemap.open').bind("click focus",function(e){
+		e.preventDefault();		
+		if(cnt==0){
+			$(this).addClass('hide');
+			cnt=1;
+			setTimeout(function(){
+				$('section.sitemap').slideToggle(400);
+			},200);
+		}else if(cnt==1){
+			setTimeout(function(){
+				$('section.sitemap').slideToggle(400);				
+			},200);			
+			setTimeout(function(){
+				$('a.btn.sitemap.open').removeClass('hide');
+			},400);
+			
+			cnt=0;
+		}
+	});
+	$('a.btn_sitemap-close').bind("click",function(e){
+		e.preventDefault();
+		setTimeout(function(){
+			$('section.sitemap').slideToggle(400,function(){
+				cnt=0;
+				$('a.btn.sitemap.open').removeClass('hide');
+			});
+		},100);
+	});
+	
+	$('section.sitemap a.first').bind("mouseover focus",function(){
+		$('section.sitemap article').removeClass("active");
+		$(this).parent().addClass("active");
+		$(this).parent().parent().parent().addClass("active");
+	});
+	$('section.sitemap a.first').bind("mouseout focusout",function(){
+		$(this).parent().removeClass("active");
+	});
+
+	$('section.sitemap span , section.sitemap input[type=checkbox]').bind("mouseover focus",function(){
+		$('section.sitemap article').removeClass("active");
+		$(this).parent().parent().addClass("active");
+		$(this).parent().parent().parent().parent().addClass("active");
+	});
+	$('section.sitemap span , section.sitemap input[type=checkbox]').bind("mouseout focusout",function(){
+		$(this).parent().parent().removeClass("active");
+	});
+
+	$('section.sitemap article').bind("mouseleave focusout",function(){
+		$(this).removeClass("active");
+	});
+	$('section.sitemap a.btn_sitemap-set').click(function(e){
+		e.preventDefault();
+		if(!$('section.sitemap').hasClass("chkon"))
+		{
+			$('section.sitemap section.list-wrapper.links').hide();
+			$('section.sitemap section.list-wrapper.config').show();
+			$('section.sitemap').addClass("chkon");
+			$(this).children("img").attr("src",$(this).children("img").attr("src").replace("_set","_active"));
+			$(this).children("img").attr("alt","������");
+		}
+		else
+		{
+			fnSetCookieMyMenu();
+			$('section.sitemap section.list-wrapper.links').show();
+			$('section.sitemap section.list-wrapper.config').hide();
+			$('section.sitemap').removeClass("chkon");
+			$(this).children("img").attr("src",$(this).children("img").attr("src").replace("_active","_set"));
+			$(this).children("img").attr("alt","��ㅼ��");
+		}
+	});
+	
+	try
+	{
+		if($.browser.msie && $.browser.version == "7.0") {
+			$('div.gnb1-wrapper').css("top"	, -3);
+		}
+
+		var btnMore = $('div.gnb1-wrapper'); //submenu
+		var imgArrow = $('#sub nav#gnb1 div.lnb div.wrapper img.arrow'); //�����댄��
+		$('section.sitemap a.first').bind("mouseover focus",function(){
+			fnSubClose(btnMore, -1); //紐⑤�� submenu ��リ린
+		});
+
+		$('section.sitemap article li a.more').each(function(i) {
+			$(this).bind("mouseover focus",function(){	
+				$(this).parent().addClass("active");
+				$(this).parent().parent().parent().addClass("active");
+				$(this).children("span").children("img").attr("src","../images/common/bg_gnb_gmn2_active.gif");
+										
+				fnSubClose(btnMore, i) //紐⑤�� submenu ��リ린
+
+				var left1	= $(this).parent().offset().left;				
+				var left2	= $(this).children("span").children("img").offset().left;
+				var leftVal = left2 - left1 - 2;
+				if(i == 7){
+					leftVal = leftVal - 6;
+				}
+				imgArrow.eq(i).css("left", leftVal);    
+				btnMore.eq(i).show();
+			});
+
+			btnMore.eq(i).bind("mouseleave",function(){
+				btnMore.eq(i).hide();
+			});
+			
+			$(this).bind("mouseout focusout",function(){
+				$(this).parent().removeClass("active");
+				$(this).children("span").children("img").attr("src","../images/common/bg_gnb_gmn2.gif");
+			});						
+		});
+			
+	}catch(e){console.error(e.message);}
+		
+}
+
+function fnInMyMenu(){
+	var cookies = GetCookie('krxMenu');
+	var cookieValue = "";
+	if(cookies == null ){
+		cookieValue = cookieValue + "ULDDST00000,��ㅻ�����怨듭��/";
+		cookieValue = cookieValue + "ULDDST00100,�����щ��寃����/";
+		cookieValue = cookieValue + "ULDDST00300,�����멸�����/";
+		cookieValue = cookieValue + "ULDDST00200,��듯�⑷�����/";
+		cookieValue = cookieValue + "ULDDST71000,���鍮���ъ�ш린���/";
+		SetCookie('krxMenu',cookieValue ,'7');
+	} else {
+
+	}
+
+	fnUpdateInMyMenu();
+}
+
+function fnSetCookieMyMenu(){
+	var cookieValue = "";
+	$('input:checkbox[name="checkboxMenu"]:checked').each(function(){
+		var menuName = $("label[for="+this.id+"]").text().replace("/","");
+		cookieValue += $(this).val()+","+menuName+"/";
+	});
+	SetCookie('krxMenu',cookieValue ,'7');
+	fnUpdateInMyMenu();
+}
+
+function fnUpdateInMyMenu(){
+	var cookies = GetCookie('krxMenu');
+	if(cookies != null ){
+		$("#myMenuTop").empty();
+		var items = cookies.split("/");
+		for(var i in items){
+			var item = items[i].split(",");
+			var menuId	 = item[0];
+			var menuName = item[1];
+			if(undefined != menuName){
+				var url = fnGetInMyMenuUrl(menuId);
+				// My Menu ��ㅼ����� 留���� ��댁�� ��ㅽ�щ·��� ���寃쇱�� 寃쎌�� 湲몄�닿�� 8��� ��댁����� 硫���대����� ��ы�⑤����� �����쇰㈃ 硫���� 遺�遺���� 源⑥����� ��������� �����댁�� ..��쇰�� 泥�由ы��.
+				if(menuId == "ULDDST00400") {		// 'ETF ETN ELW �����ν�������듭��沅�' 硫���대����� �����대�� 援ъ�깅����� �����댁�� 6���由� 蹂대�� 11���由щ�� 吏�由�. 
+					menuName = menuName.substring(0,11) + "..";
+				}
+				else {
+					if(menuName.length >= '8') {
+						menuName = menuName.substring(0,6) + "..";
+					}
+				}
+				
+				// ���洹� 異�媛� ��� 諛몃����� 蹂닿�������� 留���щ�� ���李쎌����� ��대�ㅼ�� ���湲� ���臾몄�� target 異�媛����. 2025.08.29
+				if(menuId == "ULDDST80X00") {
+					$("#myMenuTop").append("<li><a href='"+url+"' target='_brank'>"+menuName+"</a></li>");
+				} 
+				else {
+					$("#myMenuTop").append("<li><a href='"+url+"'>"+menuName+"</a></li>");
+				}
+				
+			}
+
+			$('input:checkbox[name="checkboxMenu"]').each(function(){
+				if($(this).val() == menuId)
+					this.checked = true;
+			});
+		}
+	}
+}
+
+function fnGetInMyMenuUrl(menuId){
+
+	var url = {
+			"ULDDST00000":"/disclosure/todaydisclosure.do?method=searchTodayDisclosureMain",											/*��ㅻ�����怨듭��*/
+			"ULDDST00100":"/disclosure/searchdisclosurebycorp.do?method=searchDisclosureByCorpMain",									/*�����щ��寃����*/
+			"ULDDST00300":"/disclosure/details.do?method=searchDetailsMain",															/*�����멸�����*/
+			"ULDDST00200":"/disclosure/searchtotalinfo.do?method=searchTotalInfoMain",													/*��듯�⑷�����*/
+			"ULDDST00700":"/disclosure/searchbondcorpdisclosure.do?method=searchBondCorpDisclosureMain",								/*梨�沅�怨듭��*/
+			"ULDDST00400":"/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeEtf",									/*ETF/ELW/ETN*/
+			"JLDDST00403":"/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeRestinvstcom",						/*������怨듭��*/
+			"ULDDST01300":"/disclosure/misccorpdiscls.do?method=searchMiscCorpDisclsMain",												/*湲고��踰���멸났���*/
+			"ULDDST01500":"/disclosure/disclosurebyvote.do?method=searchDisclosurebyVoteMain",											/*���寃곌��怨듭��*/
+			"ULDDST10400":"/corpdetail/chart.do?method=loadInitPage",																	/*怨듭��李⑦��*/
+			"ULDDST01600":"/disclosure/searchErrorTradeRelief.do?method=searchErrorTradeReliefMain",									/*李⑹�ㅻℓ留ㅺ뎄������泥�*/
+			"ULDDST10000":"/corpdetail/totalinfo.do?method=loadInitPage",																/*醫���⑹��蹂�*/
+			"ULDDST05000":"/corpgeneral/listedIssueStatus.do?method=loadInitPage",														/*�����μ��紐⑺�����*/
+			"ULDDST05100":"/corpgeneral/corpList.do?method=loadInitPage",																/*�����λ����몃ぉ濡�*/
+			"ULDDST38150":"/corpgeneral/companyGovernance.do?method=loadInitPage",		 												/*湲곗��吏�諛곌뎄議�*/	
+			//"ULDDST20000":"/digital/digitalList.do?method=digitalList",																/* ���醫�利�沅� 硫���� ������ */
+			"ULDDST06000":"/corpgeneral/stockissuelist.do?method=loadInitPage",															/*二쇱��諛������댁��*/
+			"ULDDST05300":"/corpgeneral/treasurystk.do?method=loadInitPage",															/*�����ъ��痍⑤��泥�遺�*/
+			"ULDDST05600":"/corpgeneral/irschedule.do?method=searchIRScheduleMain&gubun=iRScheduleCalendar",							/*IR��쇱��IR���猷����*/
+			"ULDDST38010":"/corpgeneral/companyAnalysisReport.do?method=listingForeignCompanyMain&searchGubun=companyAnalysisReport",	/*湲곗��遺����蹂닿�����*/
+			"ULDDST05800":"/corpgeneral/corpGroup.do?method=loadInitPage",																/*湲곗��吏����*/
+			"ULDDST36400":"/disclosureinfo/dividendinfo.do?method=searchDividendInfoMain",												/*諛곕�뱀��蹂�*/
+			"ULDDST15400":"/compfinance/financialinfo.do?method=loadInitPage&searchgubun=corporation",									/*�����ъ�щТ鍮�援�*/
+			"JLDDST38140":"/corpgeneral/excntDisclsCompany.do?method=loadInitPage",														/*怨듭����곗��踰����*/	
+			"JLDDST11000":"/corpdetail/ventureFundInvest.do?method=corpListMain",														/*踰ㅼ����������ъ��湲곗��(肄�)*/	
+			//"JLDDST30200":"/digital/digitalCorpList.do?method=digitalCorpList",														/*���醫�利�沅� �����μ��紐�(���醫�利�沅�) - ���醫�利�沅� 硫���� ������*/
+
+			"ULDDST80100":"/valueup/intro.do?method=valueupIntroMain",							/*湲곗��諛몃��������媛�*/
+			"ULDDST80200":"/valueup/notice.do?method=valueupNoticeMain",						/*怨듭����ы��*/
+			"ULDDST80300":"/valueup/disclsstat.do?method=valueupDisclsStatMain",				/*怨듭��������*/
+			"ULDDST80400":"/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain",	/*��ъ��吏����*/
+			"ULDDST80500":"/valueup/idx.do?method=valueupIdxMain",								/*��몃�깆��*/
+			"ULDDST80800":"/valueup/dividend.do?method=valueupHighDividendMain",				/*湲곗�� 諛몃����� 怨�諛곕�밴린���*/
+			"ULDDST80600":"/valueup/excntcorp.do?method=valueupExcntCorpMain",					/*湲곗�� 諛몃����� ��곗��踰����*/
+			"ULDDST80X00":"https://www.kirs.or.kr/research/valueup.html",						/*諛몃����� 蹂닿�����*/
+			"ULDDST80700":"/valueup/resoroom.do?method=valueupResoroomMain",					/*���猷����*/
+
+			"ULDDST30000":"/investwarn/adminissue.do?method=searchAdminIssueList",										/*愿�由ъ��紐�*/
+			"ULDDST30900":"/investwarn/hwangiissue.do?method=searchHwangiIssueMain",									/*��ъ��二쇱�����湲곗��紐�(肄�)*/
+			"ULDDST30400":"/investwarn/tradinghaltissue.do?method=searchTradingHaltIssueMain",							/*留ㅻℓ嫄곕�����吏�醫�紐�*/
+			"ULDDST30100":"/investwarn/undisclosure.do?method=searchUnfaithfulDisclosureCorpList",						/*遺���깆�ㅺ났���踰����*/
+			"ULDDST30500":"/investwarn/investattentwarnrisky.do?method=investattentwarnriskyMain",						/*��ъ��二쇱��-寃쎄��-������醫�紐�*/
+			"ULDDST05900":"/corpgeneral/delistRealInvstg.do?method=searchDelistRealInvstgMain",							/*��ㅼ����ъ�щ�����*/
+			"ULDDST30301":"/investwarn/investattentEmbezzlement.do?method=searchInvestAttentEmbezzlementMain",			/*��〓�� ���*/
+			"ULDDST30302":"/investwarn/investattentLargeShareChange.do?method=searchInvestAttentLargeShareChangeMain",	/*理����二쇱＜蹂�寃�2�����댁��*/
+			"ULDDST30301":"/investwarn/investattentEtcMarket.do?method=searchInvestAttentEtcMarketMain",				/*湲고����ы��*/
+
+			"ULDDST71000":"/listinvstg/listinvstgcom.do?method=searchListInvstgCorpMain",		/*���鍮���ъ�ш린���*/
+			"ULDDST71100":"/listinvstg/listapplcom.do?method=searchListApplCorpMain",			/*肄���μ�ㅼ����μ��泥�湲곗��*/
+			"ULDDST72000":"/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain",		/*怨듬え湲곗��*/
+			"ULDDST70000":"/listinvstg/listingcompany.do?method=searchListingTypeMain",			/*���洹������κ린���*/
+			"ULDDST73000":"/listinvstg/listtypestat.do?method=searchListTypeStatusMain",		/*���洹������ν�듦��*/
+			"ULDDST75000":"/listinvstg/listinvstginfo.do?method=searchListInvstgInfoMain",		/*�����μ�ъ�ш����대��*/		
+					
+			"ULDDST35100":"/disclosureinfo/notice.do?method=searchNoticeMain",				/*怨듭����ы��*/
+			//"ULDDST25000":"/news/searchnews.do?method=searchNewsMain", /*利������댁��*/
+			"ULDDST35400":"/disclosureinfo/explanationsystem.do?method=searchSysInfo",		/*��������댁��*/
+			"ULDDST35700":"/disclosureinfo/searchmaterials.do?method=searchMaterialsMain"	/*���猷����*/
+
+	}
+
+	return url[menuId];
+}
+
+function fnSubClose(array, i)
+{
+	for(var a=0;a<array.length;a++){
+		if(a != i){ array.eq(a).hide(); }
+	}
+}
+
+</script>
+	<!-- TOP MENU END -->
+</div>
+	<div class="gnb-wrapper">
+		<nav id="gnb">
+			<dl>
+				<dt><a href="/">���</a></dt>
+				
+				
+					
+					<!-- Lv1 -->
+					
+					
+						<dd>
+							<a href="#" class="gmn">IPO������</a>
+							<div class="lnb">
+								<div class="wrapper">
+								
+									
+										
+										
+										<a href="/disclosure/todaydisclosure.do?method=searchTodayDisclosureMain" class="lmn ">怨듭��</a>
+										
+									
+								
+									
+										
+										
+										<a href="/corpdetail/totalinfo.do?method=loadInitPage" class="lmn ">�����λ����몄����몄��蹂�</a>
+										
+									
+								
+									
+										
+										
+										<a href="/valueup/intro.do?method=valueupIntroMain" class="lmn ">湲곗�� 諛몃����� ���蹂�</a>
+										
+									
+								
+									
+										
+										
+										<a href="/investwarn/adminissue.do?method=searchAdminIssueList" class="lmn ">��ъ����������ы��</a>
+										
+									
+								
+									
+										
+										
+										<a href="/listinvstg/listinvstgcom.do?method=searchListInvstgCorpMain" class="lmn active">IPO������</a>
+										
+									
+								
+									
+										
+										
+										<a href="/disclosureinfo/notice.do?method=searchNoticeMain" class="lmn ">���蹂댁��</a>
+										
+									
+								
+									<img src="../images/common/lnb_arrow.png" class="arrow" />
+									<img src="../images/common/lnb_tl.png" class="tl" />
+									<img src="../images/common/lnb_tr.png" class="tr" />
+									<img src="../images/common/lnb_bl.png" class="bl" />
+									<img src="../images/common/lnb_br.png" class="br" />
+								</div>
+							</div>
+						</dd>
+					
+					
+					
+					<!-- Lv2 -->
+					
+					
+						<dd>
+							<a href="#" class="gmn">怨듬え湲곗��</a>
+							<div class="lnb">
+								<div class="wrapper">
+									
+										
+											
+											
+											
+												<a href="/listinvstg/listinvstgcom.do?method=searchListInvstgCorpMain" class="lmn ">���鍮���ъ�ш린���</a>
+											
+										
+									
+										
+											
+											
+											
+												<a href="/listinvstg/listapplcom.do?method=searchListApplCorpMain" class="lmn ">肄���μ�� �����μ��泥�湲곗��</a>
+											
+										
+									
+										
+											
+											
+											
+												<a href="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain" class="lmn active">怨듬え湲곗��</a>
+											
+										
+									
+										
+											
+											
+											
+												<a href="/listinvstg/listingcompany.do?method=searchListingTypeMain" class="lmn ">���洹������κ린���</a>
+											
+										
+									
+										
+											
+											
+											
+												<a href="/listinvstg/listtypestat.do?method=searchListTypeStatusMain" class="lmn ">���洹������ν�듦��</a>
+											
+										
+									
+										
+											
+											
+											
+												<a href="/listinvstg/listinvstginfo.do?method=searchListInvstgInfoMain" class="lmn ">�����μ�ъ�ш����대��</a>
+											
+										
+									
+									<img src="../images/common/lnb_arrow.png" class="arrow" />
+									<img src="../images/common/lnb_tl.png" class="tl" />
+									<img src="../images/common/lnb_tr.png" class="tr" />
+									<img src="../images/common/lnb_bl.png" class="bl" />
+									<img src="../images/common/lnb_br.png" class="br" />
+								</div>
+							</div>
+						</dd>
+					
+					
+					<!-- Lv3 -->
+					
+					
+						<dd>
+							<a href="#" class="gmn">怨듬え湲곗��������</a>
+							<div class="lnb">
+								<div class="wrapper">
+								
+									
+										
+										
+												
+															
+														
+										
+											<a href="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain" class="lmn active">怨듬え湲곗��������</a>
+										
+										
+								
+									
+										
+										
+												
+															
+														
+										
+											<a href="/listinvstg/pubofrschdl.do?method=searchPubofrScholMain" class="lmn ">怨듬え��쇱��</a>
+										
+										
+								
+									<img src="../images/common/lnb_arrow.png" class="arrow" />
+									<img src="../images/common/lnb_tl.png" class="tl" />
+									<img src="../images/common/lnb_tr.png" class="tr" />
+									<img src="../images/common/lnb_bl.png" class="bl" />
+									<img src="../images/common/lnb_br.png" class="br" />
+								</div>
+							</div>
+						</dd>
+					
+					
+					<!-- Lv4 -->
+					
+					
+					
+				
+				
+				
+			</dl>
+		</nav>
+	</div>
+	
+
+<nav class="aside">
+	<dl>
+		<dt><a href="#"><span>留���댄����댁��</span></a></dt>
+		<dd class="mymenu first">
+			<a href="#" class="bmn"><span>���留���� 硫����</span></a>
+			<div class="list">
+				<a href="#" class="btn-prev"><span>��댁��</span></a>
+				<div class="inner">
+					<ul id="myMenu" class="slider">
+						<li></li>
+					</ul>
+				</div>
+				<a href="#" class="btn-next"><span>��ㅼ��</span></a>
+			</div>
+		</dd>
+		<dd class="cache_company">
+			<a href="#" class="bmn"><span>��닿�� 蹂� ������</span></a>
+			<div class="list">
+				<a href="#" class="btn-prev"><span>��댁��</span></a>
+				<div class="inner">
+					<ul id="myMenuCorp" class="slider">
+						<li></li>
+					</ul>
+				</div>
+				<a href="#" class="btn-next"><span>��ㅼ��</span></a>
+			</div>
+		</dd>
+		<dd class="cache_disclosure">
+			<a href="#" class="bmn"><span>��닿�� 蹂� 怨듭��</span></a>
+			<div class="list">
+				<a href="#" class="btn-prev"><span>��댁��</span></a>
+				<div class="inner">
+					<ul id="myMenuDisclosure" class="slider">
+						<li><a href="#"></a></li>
+					</ul>
+				</div>
+				<a href="#" class="btn-next"><span>��ㅼ��</span></a>
+			</div>
+		</dd>		
+		<dd class="link_top">
+			<a href="#" class="bmn top"><span>���濡�</span></a>
+		</dd>
+	</dl>
+</nav>
+<script type="text/javascript">
+$(document).ready(function(){	
+	fnMyPage();
+	fnMyCrop();
+	fnMyDisclosure();
+});
+
+function fnMyPage(){
+	var cookies = GetCookie('krxMenu');
+	if(cookies != null ){
+		$("#myMenu").empty();
+		var items = cookies.split("/");
+		for(var i in items){
+			var item = items[i].split(",");
+			var menuId	 = item[0];
+			var menuName = item[1];
+			if(undefined != menuName){
+				var url = fnGetInMyMenuUrl(menuId);
+				$("#myMenu").append("<li><a href='"+url+"' title='"+menuName+"'>"+menuName+"</a></li>");
+			}
+		}
+	}	
+}
+
+function fnMyCrop(){
+	var cookieName	= "krxComp";
+	var cookies		= GetCookie(cookieName);
+	if(cookies != null ){
+		$("#myMenuCorp").empty();
+		var items = cookies.split("/");
+		for(var i in items){
+			var item = items[i].split(",");
+			var repIsuSrtCd	= item[1];
+			var corpName	= item[2];
+			var isurcd		= item[3];
+			if(undefined != corpName || undefined != isurcd){
+				var url = "/disclosureSimpleSearch.do?method=disclosureSimpleSearchMain&repIsuSrtCd="+repIsuSrtCd+"&isurCd="+isurcd+"&searchCorpName="+corpName;
+				$("#myMenuCorp").append("<li><a href=\""+url+"\" title=\""+corpName+" 寃����\">"+corpName+"</a></li>");
+			}
+		}
+	}
+}
+
+function fnMyDisclosure(){
+	var cookies = GetCookie('krxDisc');
+	if(cookies != null ){
+		$("#myMenuDisclosure").empty();
+		var items = cookies.split("/");
+		for(var i in items){
+			var item = items[i].split(",");
+			var acptNo	= item[1];
+			var title	= item[0];
+			if("" != title && undefined != acptNo){
+				$("#myMenuDisclosure").append("<li class='ellipsis'><a href=\"#\" onclick=\"openDisclsViewer('"+acptNo+"','');\">"+title+"</a></li>");
+			}
+		}
+	}
+}
+
+function fnGuidePop(){
+	window.open("../common/guide.html","KIND���媛�","top=100,left=100,width=870,height=700,scrollbars=yes,toolbar=no,resizable=yes");
+}
+
+</script>
+</header>
+<!-- HEADER ������ END -->
+
+<section class="wrapper-contents">
+	<!-- 蹂몃Ц������ START -->
+	<section class="contents">
+		<hgroup class="title type-00">
+			<h1 id="titleValue">怨듬え湲곗��������</h1>
+		</hgroup>
+		
+
+
+
+
+<form name="searchForm" id="searchForm" method="post">
+<input type="hidden" id="method"          name="method"          value=""/>
+<input type="hidden" id="currentPageSize" name="currentPageSize" value=""/>
+<input type="hidden" id="pageIndex"       name="pageIndex"       value=""/>
+<input type="hidden" id="orderMode"       name="orderMode"       value=""/>
+<input type="hidden" id="orderStat"       name="orderStat"       value=""/>
+<input type="hidden" id="searchMode"      name="searchMode"      value=""/>
+<input type="hidden" id="searchCodeType"  name="searchCodeType"  value=""/>
+<input type="hidden" id="searchCorpName"  name="searchCorpName"  value=""/>
+<input type="hidden" id="isurCd"          name="isurCd"          value=""/>
+<input type="hidden" id="repIsuSrtCd"     name="repIsuSrtCd"     value=""/>
+<input type="hidden" id="bzProcsNo"       name="bzProcsNo"       value=""/>
+<input type="hidden" id="detailMarket"    name="detailMarket"    value=""/>
+<input type="hidden" id="forward"         name="forward"         value=""/>
+
+<section class="search-group type-00">
+	<div class="wrapper">
+		<div class="form-search type-00 type-multi">
+			<table summary="�����κ뎄遺�,�����щ��,�����μ＜������,���怨�������異����">
+				<caption>怨듬え湲곗��������</caption>
+				<colgroup>
+					<col width="100" />
+					<col width="44%" />
+					<col width="60" />
+					<col width="*" />
+				</colgroup>
+				<tbody>
+					<tr class="first">
+						<th scope="row"><label for="rAll">�����κ뎄遺�</label></th>
+						<td>
+							<input type="radio" class="rad-00" id="rAll"        name="marketType" value=""  title="���泥�" checked="checked" /> <label for="rAll">���泥�</label>
+							<input type="radio" class="rad-00" id="rWertpapier" name="marketType" value="1" title="���媛�利�沅�" /> <label for="rWertpapier">���媛�利�沅�</label>
+							<input type="radio" class="rad-00" id="rKosdaq"     name="marketType" value="2" title="肄���ㅻ��" /> <label for="rKosdaq">肄���ㅻ��</label>
+							<input type="radio" class="rad-00" id="rKonex"      name="marketType" value="6" title="肄���μ��" /> <label for="rKonex">肄���μ��</label>
+							<a href="#" title="GO" class="btn-set btn-go vmiddle" onclick="fnMenuSetting(true); return false;"><span>GO</span></a>
+						</td>
+						<th scope="row"><label for="AKCKwd">�����щ��</label></th>
+						<td>
+							<section class="auto_complete company">
+								<div class="autoKey">
+									<input class="txt middle" type="text" id="AKCKwd" name="searchCorpNameTmp" value="" title="�����щ�� 李얘린" alt="�����щ�� 李얘린" onblur="chkValidChar(this);" />
+								</div>
+								<a href="#" class="btn-sprite type-01 vmiddle btn-company" onclick="fnFindCorpName(); return false;" title="�����щ�� 李얘린"><span>李얘린</span></a>
+								<div class="clear"></div>
+							</section>
+						</td>
+					</tr>
+					<tr id="trRepMajAgntDesignAdvserComp">
+						<th scope="row"><label for="select_1_0">�����μ＜������/<br/>吏�������臾몄��</label></th>
+						<td >
+							<select class="middle" id="repMajAgntDesignAdvserComp" name="repMajAgntDesignAdvserComp" title="�����μ＜������/吏�������臾몄��" style="width:95%">
+							<option value="">���泥�</option>
+							
+							<option value="(援�)��������ъ��利�沅�(二�)">(援�)��������ъ��利�沅�(二�)</option>
+							
+							<option value="(二�)BNK��ъ��利�沅�">(二�)BNK��ъ��利�沅�</option>
+							
+							<option value="(二�)鍮����耳���댄�ъ��利�沅�">(二�)鍮����耳���댄�ъ��利�沅�</option>
+							
+							<option value="(二�)��������몄��沅�">(二�)��������몄��沅�</option>
+							
+							<option value="CLSA KOREA利�沅�(二�)">CLSA KOREA利�沅�(二�)</option>
+							
+							<option value="CS利�沅� �����몄�����">CS利�沅� �����몄�����</option>
+							
+							<option value="DB利�沅�(二�)">DB利�沅�(二�)</option>
+							
+							<option value="DB利�沅�二쇱��������">DB利�沅�二쇱��������</option>
+							
+							<option value="IBK��ъ��利�沅�(二�)">IBK��ъ��利�沅�(二�)</option>
+							
+							<option value="KB利�沅�(二�)">KB利�沅�(二�)</option>
+							
+							<option value="SK利�沅�(二�)">SK利�沅�(二�)</option>
+							
+							<option value="iM利�沅�">iM利�沅�</option>
+							
+							<option value="怨⑤��留������ㅼ��沅� �����몄�����">怨⑤��留������ㅼ��沅� �����몄�����</option>
+							
+							<option value="援�蹂댁��沅�(二�)">援�蹂댁��沅�(二�)</option>
+							
+							<option value="援용え���2">援용え���2</option>
+							
+							<option value="��ㅼ�ы�ъ��利�沅� 二쇱��������">��ㅼ�ы�ъ��利�沅� 二쇱��������</option>
+							
+							<option value="��ㅼ�ы�ъ��利�沅�(二�)">��ㅼ�ы�ъ��利�沅�(二�)</option>
+							
+							<option value="��ㅼ�댁��利�沅�罹���쇳��留�耳�肄�由ъ��(二�)">��ㅼ�댁��利�沅�罹���쇳��留�耳�肄�由ъ��(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="�����댁��利�沅�(二�)">�����댁��利�沅�(二�)</option>
+							
+							<option value="硫�由ъ��醫���⑷����듭��沅�(二�)">硫�由ъ��醫���⑷����듭��沅�(二�)</option>
+							
+							<option value="硫�由ъ��利�沅� 二쇱��������">硫�由ъ��利�沅� 二쇱��������</option>
+							
+							<option value="硫�由대┛移���명�곕�댁�������������⑥��沅� �����몄�����">硫�由대┛移���명�곕�댁�������������⑥��沅� �����몄�����</option>
+							
+							<option value="紐④����ㅽ��由ъ�명�곕�댁�����利�沅������� �����몄�����">紐④����ㅽ��由ъ�명�곕�댁�����利�沅������� �����몄�����</option>
+							
+							<option value="誘몃��������利�沅� 二쇱��������">誘몃��������利�沅� 二쇱��������</option>
+							
+							<option value="誘몃��������利�沅�(二�)">誘몃��������利�沅�(二�)</option>
+							
+							<option value="遺�援�利�沅�(二�)">遺�援�利�沅�(二�)</option>
+							
+							<option value="釉�由우��1">釉�由우��1</option>
+							
+							<option value="��쇱�깆��沅�(二�)">��쇱�깆��沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅� 二쇱��������">��������ъ��利�沅� 二쇱��������</option>
+							
+							<option value="��������ъ��利�沅�(二�)">��������ъ��利�沅�(二�)</option>
+							
+							<option value="��⑦�곌렇猷밴��濡�踰�留�耳�利�沅�(二�)">��⑦�곌렇猷밴��濡�踰�留�耳�利�沅�(二�)</option>
+							
+							<option value="�����대��耳���댄�ъ��利�沅�(二�)">�����대��耳���댄�ъ��利�沅�(二�)</option>
+							
+							<option value="��������댁����ъ��利�沅�(二�)">��������댁����ъ��利�沅�(二�)</option>
+							
+							<option value="��������댁����ъ��利�沅�(二�)(������)">��������댁����ъ��利�沅�(二�)(������)</option>
+							
+							<option value="��������ㅼ��沅� 二쇱��������">��������ㅼ��沅� 二쇱��������</option>
+							
+							<option value="��������ㅼ��沅�(二�)">��������ㅼ��沅�(二�)</option>
+							
+							<option value="���鍮������ㅼ��沅� 由щ�명�곕�� �����몄�����">���鍮������ㅼ��沅� 由щ�명�곕�� �����몄�����</option>
+							
+							<option value="���������利�沅�(二�)">���������利�沅�(二�)</option>
+							
+							<option value="���吏���ъ��利�沅�(二�)">���吏���ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="�����댄�쇰え媛�利�沅������� �����몄�����">�����댄�쇰え媛�利�沅������� �����몄�����</option>
+							
+							<option value="二쇱�������� ��������몄��沅�">二쇱�������� ��������몄��沅�</option>
+							
+							<option value="二쇱�������� �����댁��利�沅�">二쇱�������� �����댁��利�沅�</option>
+							
+							<option value="耳���대����ъ��利�沅�(二�)">耳���대����ъ��利�沅�(二�)</option>
+							
+							<option value="耳���댄����ъ��利�沅�二쇱��������">耳���댄����ъ��利�沅�二쇱��������</option>
+							
+							<option value="��ㅼ��利�沅�(二�)">��ㅼ��利�沅�(二�)</option>
+							
+							<option value="��몃Ⅴ��댁��">��몃Ⅴ��댁��</option>
+							
+							<option value="������IB利�沅�二쇱��������">������IB利�沅�二쇱��������</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="������利�沅�二쇱��������">������利�沅�二쇱��������</option>
+							
+							<option value="���援�利�沅�">���援�利�沅�</option>
+							
+							<option value="���援���ъ��利�沅�(二�)">���援���ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅�(二�)">��������ъ��利�沅�(二�)</option>
+							
+							<option value="������李⑥��沅�(二�)">������李⑥��沅�(二�)</option>
+							
+							<option value="������李⑥��沅�二쇱��������">������李⑥��沅�二쇱��������</option>
+							
+							<option value="���肄⑹�������댁��沅� �����몄�����">���肄⑹�������댁��沅� �����몄�����</option>
+							
+							</select>
+						</td>
+						<th scope="row"></th>
+						<td >
+						</td>
+					</tr>
+					<tr id="trRepMajAgntComp" style="display:none;">
+						<th scope="row"><label for="select_1_0">�����μ＜������</label></th>
+						<td >
+							<select class="middle" id="repMajAgntComp" name="repMajAgntComp" title="�����μ＜������" style="width:95%">
+							<option value="">���泥�</option>
+							
+							<option value="(援�)��������ъ��利�沅�(二�)">(援�)��������ъ��利�沅�(二�)</option>
+							
+							<option value="(二�)鍮����耳���댄�ъ��利�沅�">(二�)鍮����耳���댄�ъ��利�沅�</option>
+							
+							<option value="CLSA KOREA利�沅�(二�)">CLSA KOREA利�沅�(二�)</option>
+							
+							<option value="CS利�沅� �����몄�����">CS利�沅� �����몄�����</option>
+							
+							<option value="DB利�沅�二쇱��������">DB利�沅�二쇱��������</option>
+							
+							<option value="IBK��ъ��利�沅�(二�)">IBK��ъ��利�沅�(二�)</option>
+							
+							<option value="KB利�沅�(二�)">KB利�沅�(二�)</option>
+							
+							<option value="SK利�沅�(二�)">SK利�沅�(二�)</option>
+							
+							<option value="iM利�沅�">iM利�沅�</option>
+							
+							<option value="怨⑤��留������ㅼ��沅� �����몄�����">怨⑤��留������ㅼ��沅� �����몄�����</option>
+							
+							<option value="援�蹂댁��沅�(二�)">援�蹂댁��沅�(二�)</option>
+							
+							<option value="援용え���2">援용え���2</option>
+							
+							<option value="��ㅼ�ы�ъ��利�沅� 二쇱��������">��ㅼ�ы�ъ��利�沅� 二쇱��������</option>
+							
+							<option value="��ㅼ�댁��利�沅�罹���쇳��留�耳�肄�由ъ��(二�)">��ㅼ�댁��利�沅�罹���쇳��留�耳�肄�由ъ��(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="�����댁��利�沅�(二�)">�����댁��利�沅�(二�)</option>
+							
+							<option value="硫�由ъ��醫���⑷����듭��沅�(二�)">硫�由ъ��醫���⑷����듭��沅�(二�)</option>
+							
+							<option value="硫�由ъ��利�沅� 二쇱��������">硫�由ъ��利�沅� 二쇱��������</option>
+							
+							<option value="硫�由대┛移���명�곕�댁�������������⑥��沅� �����몄�����">硫�由대┛移���명�곕�댁�������������⑥��沅� �����몄�����</option>
+							
+							<option value="紐④����ㅽ��由ъ�명�곕�댁�����利�沅������� �����몄�����">紐④����ㅽ��由ъ�명�곕�댁�����利�沅������� �����몄�����</option>
+							
+							<option value="誘몃��������利�沅� 二쇱��������">誘몃��������利�沅� 二쇱��������</option>
+							
+							<option value="誘몃��������利�沅�(二�)">誘몃��������利�沅�(二�)</option>
+							
+							<option value="遺�援�利�沅�(二�)">遺�援�利�沅�(二�)</option>
+							
+							<option value="釉�由우��1">釉�由우��1</option>
+							
+							<option value="��쇱�깆��沅�(二�)">��쇱�깆��沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅� 二쇱��������">��������ъ��利�沅� 二쇱��������</option>
+							
+							<option value="��⑦�곌렇猷밴��濡�踰�留�耳�利�沅�(二�)">��⑦�곌렇猷밴��濡�踰�留�耳�利�沅�(二�)</option>
+							
+							<option value="��������댁����ъ��利�沅�(二�)">��������댁����ъ��利�沅�(二�)</option>
+							
+							<option value="��������댁����ъ��利�沅�(二�)(������)">��������댁����ъ��利�沅�(二�)(������)</option>
+							
+							<option value="��������ㅼ��沅� 二쇱��������">��������ㅼ��沅� 二쇱��������</option>
+							
+							<option value="���鍮������ㅼ��沅� 由щ�명�곕�� �����몄�����">���鍮������ㅼ��沅� 由щ�명�곕�� �����몄�����</option>
+							
+							<option value="���������利�沅�(二�)">���������利�沅�(二�)</option>
+							
+							<option value="���吏���ъ��利�沅�(二�)">���吏���ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="�����댄�쇰え媛�利�沅������� �����몄�����">�����댄�쇰え媛�利�沅������� �����몄�����</option>
+							
+							<option value="二쇱�������� ��������몄��沅�">二쇱�������� ��������몄��沅�</option>
+							
+							<option value="耳���대����ъ��利�沅�(二�)">耳���대����ъ��利�沅�(二�)</option>
+							
+							<option value="耳���댄����ъ��利�沅�二쇱��������">耳���댄����ъ��利�沅�二쇱��������</option>
+							
+							<option value="��ㅼ��利�沅�(二�)">��ㅼ��利�沅�(二�)</option>
+							
+							<option value="��몃Ⅴ��댁��">��몃Ⅴ��댁��</option>
+							
+							<option value="������IB利�沅�二쇱��������">������IB利�沅�二쇱��������</option>
+							
+							<option value="������利�沅�二쇱��������">������利�沅�二쇱��������</option>
+							
+							<option value="���援�利�沅�">���援�利�沅�</option>
+							
+							<option value="���援���ъ��利�沅�(二�)">���援���ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅�(二�)">��������ъ��利�沅�(二�)</option>
+							
+							<option value="������李⑥��沅�二쇱��������">������李⑥��沅�二쇱��������</option>
+							
+							<option value="���肄⑹�������댁��沅� �����몄�����">���肄⑹�������댁��沅� �����몄�����</option>
+							
+							</select>
+						</td>
+						<th scope="row"></th>
+						<td >
+						</td>
+					</tr>
+					<tr id="trDesignAdvserComp" style="display:none;">
+						<th scope="row"><label for="select_1_0">吏�������臾몄��</label></th>
+						<td >
+							<select class="middle" id="designAdvserComp" name="designAdvserComp" title="吏�������臾몄��" style="width:95%">
+							<option value="">���泥�</option>
+							
+							<option value="(二�)BNK��ъ��利�沅�">(二�)BNK��ъ��利�沅�</option>
+							
+							<option value="(二�)��������몄��沅�">(二�)��������몄��沅�</option>
+							
+							<option value="DB利�沅�(二�)">DB利�沅�(二�)</option>
+							
+							<option value="KB利�沅�(二�)">KB利�沅�(二�)</option>
+							
+							<option value="SK利�沅�(二�)">SK利�沅�(二�)</option>
+							
+							<option value="援�蹂댁��沅�(二�)">援�蹂댁��沅�(二�)</option>
+							
+							<option value="��ㅼ�ы�ъ��利�沅�(二�)">��ㅼ�ы�ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="誘몃��������利�沅�(二�)">誘몃��������利�沅�(二�)</option>
+							
+							<option value="誘몃��������利�沅�(二�)">誘몃��������利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅�(二�)">��������ъ��利�沅�(二�)</option>
+							
+							<option value="�����대��耳���댄�ъ��利�沅�(二�)">�����대��耳���댄�ъ��利�沅�(二�)</option>
+							
+							<option value="��������댁����ъ��利�沅�(二�)">��������댁����ъ��利�沅�(二�)</option>
+							
+							<option value="��������ㅼ��沅�(二�)">��������ㅼ��沅�(二�)</option>
+							
+							<option value="���������利�沅�(二�)">���������利�沅�(二�)</option>
+							
+							<option value="���吏���ъ��利�沅�(二�)">���吏���ъ��利�沅�(二�)</option>
+							
+							<option value="二쇱�������� �����댁��利�沅�">二쇱�������� �����댁��利�沅�</option>
+							
+							<option value="耳���대����ъ��利�沅�(二�)">耳���대����ъ��利�沅�(二�)</option>
+							
+							<option value="��ㅼ��利�沅�(二�)">��ㅼ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="���援���ъ��利�沅�(二�)">���援���ъ��利�沅�(二�)</option>
+							
+							<option value="������利�沅�(二�)">������利�沅�(二�)</option>
+							
+							<option value="��������ъ��利�沅�(二�)">��������ъ��利�沅�(二�)</option>
+							
+							<option value="������李⑥��沅�(二�)">������李⑥��沅�(二�)</option>
+							
+							</select>
+						</td>
+						<th scope="row"></th>
+						<td >
+						</td>
+					</tr>					
+					<tr>
+						<th scope="row"><label for="cal_00">���怨�������異����</label></th>
+						<td colspan="3">
+							<div class="fleft">	
+								<input type="text" id="fromDate" name="fromDate" value="" class="txt  input-calendar" alt="���怨�������異���� 湲곌�� ������ 泥ル��吏�" title="���怨�������異���� 湲곌�� ������ 泥ル��吏�" size="10" onfocus="cal_offMask('document.searchForm.fromDate');return false;" onchange="fnChkLmtDate();return false;"  onkeyup="fnChkLmtDate();return false;" /> ~ <input type="text" id="toDate" name="toDate" value="" class="txt  input-calendar" alt="���怨�������異���� 湲곌�� ������ ���踰�吏�" title="���怨�������異���� 湲곌�� ������ ���踰�吏�" size="10" onfocus="cal_offMask('document.searchForm.toDate');return false;" onkeyup="chkDate('document.searchForm.toDate');return false;" />
+							</div>
+
+							<div class="fleft pl10" id="search-btn-dates"></div>
+
+							<div class="clear"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="clear"></div>
+		<div class="btn-group type-bt">
+			<a href="#" class="btn-sprite type-00 vmiddle search-btn" onclick="fnSearchCorpName(); return false;" title="寃����"><span>寃����</span></a>&nbsp;&nbsp;<a href="#" class="btn-sprite type-00 vmiddle xls-btn" onclick="fnDownload(); return false;" title="EXCEL"><span>EXCEL</span></a>
+		</div>
+	</div>
+</section>
+</form>
+
+<article id="main-contents" class="pcontents">
+</article>
+
+<!-- ��명�щ����댁�� START -->
+<dl class="info-group type-00 pt10">
+	<dt>���湲� ��댁�⑹�� 2012��� 5���遺���� �����μ＜������(利�沅����) ���怨� ���猷����������.</dt>	
+</dl>
+<!-- ��명�щ����댁�� END -->
+
+<dl class="info-group type-01 pt10">
+	<dt>蹂� ���蹂대�� <strong>��ъ�� 李멸�� ��ы��</strong>��대ŉ, ��ㅻ��媛� 諛�������嫄곕�� 吏���곕�� ��� �����듬�����. ���怨듬�� ���蹂댁�� ������ <strong>��ъ��寃곌낵��� ������ 踰������� 梨����</strong>��� 吏�吏� �����듬�����.</dt>
+</dl>
+
+<script type="text/javascript">
+document.onkeypress = function(e){
+	var result = "";
+	if(typeof(e)!='undefined'){
+		result = e.which;
+	}else{
+		result = event.keyCode;
+	}
+	keyEvent(result);
+}
+
+function keyEvent(e){
+	if(document.all){//IE
+		if(window.event.keyCode==13){
+			var obj =  eval(document.searchForm.searchCorpNameTmp);
+			chkValidChar(obj);
+			fnSearchCorpName();
+		}
+	}else{
+		if(e==13){
+			var obj =  eval(document.searchForm.searchCorpNameTmp);
+			chkValidChar(obj);
+			fnSearchCorpName();
+		}
+	}
+}
+
+$(document).ready(function() {
+	fnInit();
+  $(".ord-07").attr("onclick","fnSetSearchDate5('2000-01-01', '1'); fnSwapSearchBtnDates('7'); return false;");
+  $("#fromDate").change(function(){
+		chkPeriod2Mil($(this).val()); 
+	});
+});
+
+/*
+ *
+ *泥���� 濡���⑹�� �����ъ����� 吏����
+*/
+function fnInit(){
+	fnDisplaySearchBtnDates(3);
+	fnSearchInit();
+}
+
+function fnSearchInit() {
+	fnOrder("1", "D");
+}
+
+/*
+ *
+ *踰���몃�� 吏������� order by 議곌굔
+*/
+function fnOrder(mode, stat){
+	$("#searchForm > #orderMode").val(mode);
+	$("#searchForm > #orderStat").val(stat);
+	$("#searchForm > #pageIndex").val("1");
+
+	//fnSearchCorpName();
+	fnSearch();
+}
+
+/*
+ *
+ *寃����踰���� ��대┃���
+*/
+function fnSearch() {
+	fnMenuSetting(false);
+
+	if(!chkPeriod2Mil($("#searchForm").find("input:text[name=fromDate]").val())) return;
+
+	if(!fCheckDate($("#searchForm").find("input:text[name=fromDate]").val())){
+		alert("��������쇱�� ��������� ���由쎈�����");
+		return;
+	}
+	if(!fCheckDate($("#searchForm").find("input:text[name=toDate]").val())){
+		alert("醫�猷���쇱�� ��������� ���由쎈�����");
+		return;
+	}
+	if($("#searchForm").find("input:text[name=fromDate]").val() != "" && $("#searchForm").find("input:text[name=toDate]").val() != ""){
+		if(!chkPeriod_Emedit($("#searchForm").find("input:text[name=fromDate]").val(), $("#searchForm").find("input:text[name=toDate]").val())){
+			return;
+		}
+	}
+
+   	$("#searchForm > #searchCorpName").val($("#searchForm").find("input:text[name=searchCorpNameTmp]").val());
+	if($(document).find("select[id=currentPageSize]").val() != undefined) {
+		$("#searchForm > #currentPageSize").val($(document).find("select[id=currentPageSize]").val());
+	}
+	$("#searchForm > #method").val("searchPubofrProgComSub");
+	$("#searchForm > #forward").val("pubofrprogcom_sub");
+
+	$("#searchForm").ajaxSubmit({
+		  ajaxUrl : '/listinvstg/pubofrprogcom.do'
+		, ajaxCallBack: fnSearchCallBack
+	});
+}
+
+function fnSearchCallBack(data){
+	$("#main-contents").empty().append(data);
+	$("tr:odd").addClass("active");
+	
+	//踰�濡�������
+	fnLegendTooltip();
+}
+
+/*
+ *
+ *������踰���� ��대┃���
+*/
+function fnDownload() {
+	fnMenuSetting(false);
+	
+	if(!chkPeriod2Mil($("#searchForm").find("input:text[name=fromDate]").val())) return;
+
+	if(!fCheckDate($("#searchForm").find("input:text[name=fromDate]").val())){
+		alert("��������쇱�� ��������� ���由쎈�����");
+		return;
+	}
+	if(!fCheckDate($("#searchForm").find("input:text[name=toDate]").val())){
+		alert("醫�猷���쇱�� ��������� ���由쎈�����");
+		return;
+	}
+	if($("#searchForm").find("input:text[name=fromDate]").val() != "" && $("#searchForm").find("input:text[name=toDate]").val() != ""){
+		if(!chkPeriod_Emedit($("#searchForm").find("input:text[name=fromDate]").val(), $("#searchForm").find("input:text[name=toDate]").val())){
+			return;
+		}
+	}
+
+   	$("#searchForm > #searchCorpName").val($("#searchForm").find("input:text[name=searchCorpNameTmp]").val());
+	$("#searchForm > #currentPageSize").val("3000");
+	$("#searchForm > #pageIndex").val("1");	
+	$("#searchForm > #method").val("searchPubofrProgComSub");
+	$("#searchForm > #forward").val("pubofrprogcom_down");
+	$("#searchForm").attr('action', '/listinvstg/pubofrprogcom.do').submit();
+}
+
+function fnMenuSetting(flag) {
+	var		val = $("#searchForm").find("input:radio[name=marketType]:checked").val();
+	if(val == '6') {
+		$("#searchForm").find("tr[id=trRepMajAgntDesignAdvserComp]").hide();
+		$("#repMajAgntDesignAdvserComp option:first").attr("selected", "selected");
+		
+		$("#searchForm").find("tr[id=trRepMajAgntComp]").hide();
+		$("#repMajAgntComp option:first").attr("selected", "selected");
+
+		$("#searchForm").find("tr[id=trDesignAdvserComp]").show();
+		if(flag) {
+			$("#designAdvserComp option:first").attr("selected", "selected");
+		}
+	} else if(val == '') {
+		$("#searchForm").find("tr[id=trRepMajAgntDesignAdvserComp]").show();
+		if(flag) {
+			$("#repMajAgntDesignAdvserComp option:first").attr("selected", "selected");
+		}
+
+		$("#searchForm").find("tr[id=trRepMajAgntComp]").hide();
+		$("#repMajAgntComp option:first").attr("selected", "selected");
+
+		$("#searchForm").find("tr[id=trDesignAdvserComp]").hide();
+		$("#designAdvserComp option:first").attr("selected", "selected");
+	} else {
+		$("#searchForm").find("tr[id=trRepMajAgntDesignAdvserComp]").hide();
+		$("#repMajAgntDesignAdvserComp option:first").attr("selected", "selected");
+
+		$("#searchForm").find("tr[id=trRepMajAgntComp]").show();
+		if(flag) {
+			$("#repMajAgntComp option:first").attr("selected", "selected");
+		}
+
+		$("#searchForm").find("tr[id=trDesignAdvserComp]").hide();
+		$("#designAdvserComp option:first").attr("selected", "selected");
+	}
+}
+
+/*
+ *
+ *���吏� 泥댄��
+*/
+function fnChkLmtDate() {
+	chkPeriod2Mil($("#searchForm").find("input:text[name=fromDate]").val());
+
+	//���吏���щĸ 怨듯�듯�⑥��
+	chkDate('document.searchForm.fromDate');
+}
+
+/*
+ *
+ *怨듬え吏����湲곗�� ������
+*/
+function fnDetailView(bzProcsNo){
+	var url = "/listinvstg/pubofrprogcomdetail.do?method=searchProgComDetailMain&bzProcsNo=" + bzProcsNo;
+	window.open(url,'怨듬え湲곗�������⑹�����','scrollbars=yes,toolbar=no,resizable=no,width=865,height=700,left=0,top=0,status=no');
+}
+
+function fnSearch1() {
+	$("#searchForm > #pageIndex").val("1");
+	$("#searchForm > #currentPageSize").val($(document).find("select[id=currentPageSize]").val());
+	fnSearch();
+}
+
+//寃����踰���� ���������寃쎌�� 踰���몃�� 癒쇱�� 議고��������
+function fnSearchCorpName(){
+	$("#searchForm > #searchMode").val("1");
+
+	var	val = $("#searchForm").find("input:text[name=searchCorpNameTmp]").val();
+	if(val!=""){
+	   	$("#searchForm > #searchCorpName").val($("#searchForm").find("input:text[name=searchCorpNameTmp]").val());
+    	fnAKCKwdSearchCorpNameAll();		
+	}else{
+		$("#searchForm > #isurCd").val("");
+		fnSearchInit();
+	}
+
+	$("#searchForm > #repIsuSrtCd").val("");
+}
+
+function fnSearchCorpNameAllCallBack(items)  { 
+	$("#searchForm > #isurCd").val('');
+	if(items.length == 1) {
+		$("#searchForm > #isurCd").val(items[0].isurcd);
+		fnSearchCorpCode();
+	} else if(items.length > 1) {
+		fnFindCorpName();
+	} else {
+		fnSearchCorpCode();
+	}
+}
+
+//踰���몃�� 議고�� 寃곌낵
+function fnSearchCorpCode(){
+	
+	fnSearchInit();
+
+	//var isurCd = $("#searchForm > #isurCd").val();
+	//if(isurCd == ""){
+	//	alert("議고����� �����щ����� 議댁�ы��吏� �����듬�����. \n��������� �����щ����� �����ν�� 二쇱�몄��. \n�����щ����� ���������吏� �����쇱��硫� �����щ�� 寃������� ��댁�⑺�댁＜��몄��.");
+	//}else{
+	//	fnSearchInit();
+	//}
+}
+
+/** 踰���몃��李얘린 ��������� ���諛���ㅽ�щ┰��몄����� ��몄�������� Callback ��⑥�� */
+function setCorpInfo(isurCd, kisComCd, repIsuSrtCd, comNm, comAbbrv, isurSymbl, fssUnqNo){
+	var  str = "";
+		str += "isurCd : " + isurCd + "\n";
+		str += "kisComCd : " + kisComCd + "\n";
+		str += "repIsuSrtCd : " + repIsuSrtCd + "\n";
+		str += "comNm : " + comNm + "\n";
+		str += "comAbbrv : " + comAbbrv + "\n";
+		str += "isurSymbl : " + isurSymbl + "\n";
+		str += "fssUnqNo : " + fssUnqNo + "\n";
+
+	if(repIsuSrtCd == "")	repIsuSrtCd = isurCd;
+
+	$("#searchForm").find("input:text[name=searchCorpNameTmp]").val(comAbbrv);	//踰���몃��
+	$("#searchForm > #isurCd").val(isurCd);				//諛����湲곌��肄����
+	$("#searchForm > #repIsuSrtCd").val(repIsuSrtCd);	//������醫�紐⑸�⑥��肄����
+}
+
+</script>
+	</section>
+	<!-- 蹂몃Ц������ END -->
+
+	<!-- ��ㅻⅨ履� 硫���� START -->
+	<aside class="contents">
+	
+	
+		
+		
+		
+			
+			
+				<h3><span class="">怨듬え湲곗��</span></h3>
+			
+		
+		<ul>
+			
+				
+				
+				
+				
+									
+									
+				
+				
+				
+							
+				
+					<li><a href="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain" class="active">怨듬え湲곗��������</a><div class="dash"></div></li>	
+					
+				
+			
+			
+				
+				
+				
+				
+									
+									
+				
+				
+				
+							
+				
+					<li><a href="/listinvstg/pubofrschdl.do?method=searchPubofrScholMain" class="">怨듬え��쇱��</a><div class="dash"></div></li>	
+					
+				
+			
+			
+		</ul>
+		<form name="menuUrlFrm" >
+			<input type="hidden" name="menuUrl" value="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain"/>
+		</form>
+	
+	
+	</aside>
+	<!-- ��ㅻⅨ履� 硫���� END -->
+	<div class="clear"></div>
+</section>
+
+<!-- FOOTER ������ START -->
+<footer class="container">
+	
+
+
+
+
+
+<section class="footer_map">
+	<div class="wrapper">
+		<article class="list first">
+			<h3>怨듭��</h3>
+			<ul>
+				<li><a href="/disclosure/todaydisclosure.do?method=searchTodayDisclosureMain">��ㅻ�����怨듭��</a></li>
+				<li><a href="/disclosure/searchdisclosurebycorp.do?method=searchDisclosureByCorpMain">�����щ��寃����</a></li>
+				<li><a href="/disclosure/details.do?method=searchDetailsMain">�����멸�����</a></li>
+				<li><a href="#" onclick="krxPaPago_open(); return false;">KRX-Papago踰����湲�</a></li>
+				<li><a href="/disclosure/searchtotalinfo.do?method=searchTotalInfoMain">��듯�⑷�����</a></li>
+				<li><a href="/disclosure/searchbondcorpdisclosure.do?method=searchBondCorpDisclosureMain">梨�沅�怨듭��</a></li>
+				<li><a href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeEtf">ETF/ELW/ETN/�����ν�������듭��沅�</a></li> <!-- 2025.10 ��ㅽ��. 二쇱�� ���硫� ���.-->
+				<li><a href="/disclosure/disclosurebystocktype.do?method=searchDisclosureByStockTypeRestinvstcom">������怨듭��</a></li>
+				<li><a href="/disclosure/misccorpdiscls.do?method=searchMiscCorpDisclsMain">湲고��踰���멸났���</a></li>
+				<li><a href="/disclosure/disclosurebyvote.do?method=searchDisclosurebyVoteMain">���寃곌�������ш났���</a></li>
+				
+				<li><a href="/corpdetail/chart.do?method=loadInitPage">怨듭��李⑦��</a></li>
+			
+			<li><a href="/disclosure/searchErrorTradeRelief.do?method=searchErrorTradeReliefMain">李⑹�ㅻℓ留ㅺ뎄������泥�</a></li>
+			<!-- ���醫�利�沅� 硫���� ������ -->
+			<!--<li><a href="/digital/digitalList.do?method=digitalList">���醫�利�沅�</a></li>--><!-- 20231201 ���醫�利�沅� 異�媛� -->
+			</ul>
+		</article>
+		<article class="list">
+			<h3>�����λ����몄����몄��蹂�</h3>
+			<ul>
+				
+				<li><a href="/corpdetail/totalinfo.do?method=loadInitPage">醫���⑹��蹂�</a></li>
+				<li><a href="/corpgeneral/listedIssueStatus.do?method=loadInitPage">�����μ��紐⑺�����</a></li>
+			
+				<li><a href="/corpgeneral/corpList.do?method=loadInitPage">�����λ����몃ぉ濡�</a></li>
+				<li><a href="/corpgeneral/stockissuelist.do?method=loadInitPage">二쇱��諛������댁��</a></li>
+				<li><a href="/corpgeneral/companyGovernance.do?method=loadInitPage">湲곗��吏�諛곌뎄議�</a></li>
+				<li><a href="/corpgeneral/treasurystk.do?method=loadInitPage">�����ъ＜痍⑤��/泥�遺�</a></li>
+				<li><a href="/corpgeneral/irschedule.do?method=searchIRScheduleMain&gubun=iRScheduleCalendar">IR��쇱��/IR���猷����</a></li>
+				
+				<li><a href="/corpgeneral/companyAnalysisReport.do?method=listingForeignCompanyMain&searchGubun=companyAnalysisReport">湲곗��遺����蹂닿�����</a></li>
+			
+				<li><a href="/corpgeneral/corpGroup.do?method=loadInitPage">湲곗��吏����</a></li>
+				<li><a href="/disclosureinfo/dividendinfo.do?method=searchDividendInfoMain">諛곕�뱀��蹂�</a></li>
+				<li><a href="/compfinance/financialinfo.do?method=loadInitPage&searchgubun=corporation">�����ъ�щТ鍮�援�</a></li>
+				<li><a href="/corpgeneral/excntDisclsCompany.do?method=loadInitPage">怨듭����곗��踰����</a></li>
+				<li><a href="/corpdetail/ventureFundInvest.do?method=corpListMain">踰ㅼ����������ъ��������湲곗��(肄�)</a></li>
+				<!-- ���醫�利�沅� 硫���� ������ -->
+				<!--<li><a href="/digital/digitalCorpList.do?method=digitalCorpList">�����μ��紐�(���醫�利�沅�)</a></li>--><!-- 20231201 ���醫�利�沅� 異�媛� -->
+			</ul>
+		</article>
+		<article class="list">
+			<h3>湲곗�� 諛몃����� ���蹂�</h3>
+			<ul>
+				<li><a href="/valueup/intro.do?method=valueupIntroMain">湲곗�� 諛몃����� ���媛�</a></li>
+				<li><a href="/valueup/notice.do?method=valueupNoticeMain">怨듭����ы��</a></li>
+				<li><a href="/valueup/disclsstat.do?method=valueupDisclsStatMain">怨듭��������</a></li>
+				
+				<li><a href="/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain">��ъ��吏����</a></li>
+				<li><a href="/valueup/idx.do?method=valueupIdxMain">��몃�깆��</a></li>
+				
+				<li><a href="/valueup/dividend.do?method=valueupHighDividendMain">怨�諛곕�밴린���</a></li>
+				<li><a href="/valueup/excntcorp.do?method=valueupExcntCorpMain">諛몃����� ��곗��湲곗��</a></li>
+				<li><a href="https://www.kirs.or.kr/research/valueup.html" target="_blank">諛몃����� 蹂닿�����</a></li>
+				<li><a href="/valueup/resoroom.do?method=valueupResoroomMain">���猷����</a></li>
+			</ul>
+		</article>
+		<article class="list">
+			<h3>��ъ����������ы��</h3>
+			<ul>
+				<li><a href="/investwarn/adminissue.do?method=searchAdminIssueList">愿�由ъ��紐�</a></li>
+				<li><a href="/investwarn/hwangiissue.do?method=searchHwangiIssueMain">��ъ��二쇱�����湲곗��紐�(肄�)</a></li>
+				
+				<li><a href="/investwarn/tradinghaltissue.do?method=searchTradingHaltIssueMain">留ㅻℓ嫄곕�����吏�醫�紐�</a></li>
+			
+				<li><a href="/investwarn/undisclosure.do?method=searchUnfaithfulDisclosureCorpList">遺���깆�ㅺ났���踰����</a></li>
+				
+				<li><a href="/investwarn/investattentwarnrisky.do?method=investattentwarnriskyMain">��ъ��二쇱��/寃쎄��/������醫�紐�</a></li>
+			
+				<li><a href="/corpgeneral/delistRealInvstg.do?method=searchDelistRealInvstgMain">��ㅼ����ъ�щ�����</a></li>
+				<li><a href="/investwarn/investattentEmbezzlement.do?method=searchInvestAttentEmbezzlementMain">��〓�� ���</a></li>
+				<li><a href="/investwarn/investattentLargeShareChange.do?method=searchInvestAttentLargeShareChangeMain">理����二쇱＜蹂�寃�2�����댁��</a></li>
+				<li><a href="/investwarn/investattentEtcMarket.do?method=searchInvestAttentEtcMarketMain">湲고����ы��</a></li>
+			</ul>
+		</article>
+		<article class="list">
+			<h3>IPO������</h3>
+			<ul>
+				
+				<li><a href="/listinvstg/listinvstgcom.do?method=searchListInvstgCorpMain">���鍮���ъ�ш린���</a></li>
+				<li><a href="/listinvstg/listapplcom.do?method=searchListApplCorpMain">肄���μ�� �����μ��泥�湲곗��</a></li>
+				<li><a href="/listinvstg/pubofrprogcom.do?method=searchPubofrProgComMain">怨듬え湲곗��</a></li>
+				<li><a href="/listinvstg/listingcompany.do?method=searchListingTypeMain">���洹������κ린���</a></li>
+								
+				<li><a href="/listinvstg/listtypestat.do?method=searchListTypeStatusMain">���洹������ν�듦��</a></li>
+				<li><a href="/listinvstg/listinvstginfo.do?method=searchListInvstgInfoMain">�����μ�ъ�ш����대��</a></li>
+			</ul>
+			<br>
+			<h3>���蹂댁��</h3>
+			<ul>
+				<li><a href="/disclosureinfo/notice.do?method=searchNoticeMain">怨듭����ы��</a></li>
+				<!--  li><a href="/news/searchnews.do?method=searchNewsMain">利������댁��</a></li -->
+				<li><a href="/disclosureinfo/explanationsystem.do?method=searchSysInfo">��������댁��</a></li>
+				<li><a href="/disclosureinfo/searchmaterials.do?method=searchMaterialsMain">���猷����</a></li>
+			</ul>
+		</article>
+		<div class="clear"></div>
+	</div>
+</section>
+
+<section class="footer">
+	<div class="wrapper">
+		<h5 class="logo"><img src="../images/main/logo_bt.gif" alt="������誘쇨뎅 ������ 湲곗��怨듭��梨���� KIND"/></h5>
+		<nav class="util">
+			<ul>
+				<li class="first"><a href="#" onclick="winCommPopOpen('2'); return false;">��댁��湲곌��������</a></li>
+				<li><a href="http://info.krx.co.kr/contents/KRX/06/06070600/KRX06070600.jsp" target="_blank" title="��댁�⑹����������ы�� ���李�">��댁�⑹����������ы��</a></li>
+				<li><a href="http://info.krx.co.kr/contents/KRX/06/06070200/KRX06070200.jsp"  target="_blank" title="踰����怨�吏� ���李�">踰����怨�吏�</a></li>
+				<li><a href="http://info.krx.co.kr/contents/KRX/06/06070100/KRX06070100.jsp"   target="_blank" title="媛���몄��蹂댁��由щ갑移� ���李�">媛���몄��蹂댁��由щ갑移�</a></li>
+				<li><a href="#" onclick="winCommPopOpen('5'); return false;">酉곗�대�ㅼ�대�����</a></li>
+			</ul>
+			<div class="clear"></div>
+		</nav>
+		
+		<div class="copyright">
+		蹂� ��� : (���) 48400 遺���곌�������� ��④뎄 臾명��湲���듬�� 40(臾명�����)  TEL : 051-662-2000   ��ъ�������깅��踰���� : 602-81-35420 <br/>
+		��� ��� : (���) 07329 �����명�밸����� �����깊�ш뎄 ��ъ�����猷⑤�� 76(��ъ��������)  TEL : 1577-0088, 02-3774-9000 / ��듭�����留ㅼ�����怨� 遺���곕��援�004���<br/>
+		Copyright(c) 2014 by KOREA EXCHANGE. All rights reserved.
+		</div>
+	</div>
+</section>
+
+</footer>
+<!-- FOOTER ������ START -->
+
+<!-- 踰�濡� START -->
+
+    
+<div style="position:absolute; display:none" id="marketSection">
+	<section class="icn_tbox" style="width:400px;top:-30px; left:10px">
+		<ul>
+			<li>
+				<img src="../images/common/icn_t_yu.gif" class="vmiddle" alt="���媛�利�沅�" /> ���媛�利�沅�
+			</li>
+			<li>
+				<img src="../images/common/icn_t_ko.gif" class="vmiddle" alt="肄���ㅻ��" /> 肄���ㅻ��
+			</li>
+			<li>
+				<img src="../images/common/icn_t_konex.gif" class="vmiddle" alt="肄���μ��" /> 肄���μ��
+			</li>
+			<li>
+				<img src="../images/common/icn_t_kwan.gif" class="vmiddle" alt="愿�由ъ��紐�" /> 愿�由ъ��紐�
+			</li>
+			<li>
+				<img src="../images/common/icn_t_hwan.gif" class="vmiddle" alt="��ъ��二쇱�����湲곗��紐�" /> ��ъ��二쇱�����湲곗��紐�
+			</li>
+			<li>
+				<img src="../images/common/icn_t_bul.gif" class="vmiddle" alt="遺���깆�ㅺ났���踰����" /> 遺���깆�ㅺ났���踰����
+			</li>
+			<li>
+				<img src="../images/common/icn_t_pe.gif" class="vmiddle" alt="���吏�踰����" /> ���吏�踰����
+			</li>
+			<li>
+				<img src="../images/common/icn_t_v100.gif" class="vmiddle" alt="肄�由ъ��諛몃�����" /> 肄�由ъ��諛몃�����
+			</li>
+			<li>
+				<img src="../images/common/icn_t_k200.gif" class="vmiddle" alt="KOSPI200" /> KOSPI200
+			</li>
+			<li>
+				<img src="../images/common/icn_t_q150.gif" class="vmiddle" alt="KOSDAQ150" /> KOSDAQ150
+			</li>
+			<li>
+				<img src="../images/common/icn_t_x300.gif" class="vmiddle" alt="KRX300" /> KRX300
+			</li>
+			<li>
+				<img src="../images/common/icn_t_ktop.gif" class="vmiddle" alt="KTOP30" /> KTOP30
+			</li>
+			<li>
+				<img src="../images/common/icn_t_jung.gif" class="vmiddle" alt="������������" /> ������������
+			</li>
+			<li>
+				<img src="../images/common/icn_t_joo.gif" class="vmiddle" alt="��ъ��二쇱��" /> ��ъ��二쇱��
+			</li>
+			<li>
+				<img src="../images/common/icn_t_kyung.gif" class="vmiddle" alt="��ъ��寃쎄��" /> ��ъ��寃쎄��
+			</li>
+			<li>
+				<img src="../images/common/icn_t_wii.gif" class="vmiddle" alt="��ъ��������" /> ��ъ��������
+			</li>
+		</ul>
+		<div class="clear"></div>
+		<img src="../images/common/icn_tbox_tl.png" class="tl" alt="" />
+		<img src="../images/common/icn_tbox_bl.gif" class="bl" alt="" />
+		<img src="../images/common/icn_tbox_tr.gif" class="tr" alt="" />
+		<img src="../images/common/icn_tbox_br.gif" class="br" alt="" />
+		<div class="tm"></div>
+		<div class="lm"></div>
+		<div class="bm"></div>
+		<div class="rm"></div>		
+	</section>
+</div>
+<!-- 踰�濡� END -->
+
+<div id='dialog-loading' title='���猷�瑜� 議고�� 以����������.' class='loading' style="display: none;">
+	<span>
+		<img src='/images/loader/ajax-loader01.gif' />
+	</span>
+</div>
+
+<div id='dialog-message' style="display: none;"></div>
+
+<div id='dialog-alert' style="display: none;">
+	<div id="img"></div>
+	<div id="msg" class="ui-message"></div>
+</div>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+		$('input').placeholder();
+	});
+	
+</script>		
+</body>
+</html>

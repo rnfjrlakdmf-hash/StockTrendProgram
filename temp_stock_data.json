@@ -1,0 +1,250 @@
+{
+  "name": "삼성중공업",
+  "description": "삼성중공업(주)는 전 세계적으로 조선, 해양, 에너지 및 인프라 사업을 영위하고 있습니다. 이 회사는 LNG 운반선, LNG-FSRU, 소형 LNG 운반선/LNG 벙커링 선박, VLEC 에탄 운반선, VLAC 암모니아 운반선, LCO2, 컨테이너선, 원유 탱커, 셔틀 탱커, 북극 셔틀 탱커, 석유 운반선/화학 운반선, 풍력 터빈 설치 선박을 포함한 조선 제품을 제공합니다. 해양 프로젝트에는 FLNG와 같은 제품 및 서비스가 포함됩니다. 부유식 생산, 저장 및 하역 시설; 부유식 생산 장치(FPU) 및 TLP; 드릴십; 반잠수정; 잭업 장비; 고정식 해양 플랫폼. 또한 스마트십, 자율운항 및 선박, 가상현실 기술 솔루션 등 디지털 솔루션도 제공하고 있다. 엔지니어링, 로봇 용접, 파이프 용접, 화물 격납, 케이블 부설 및 로봇 프로세스 자동화 솔루션으로 구성된 스마트 야드 솔루션; 디자인 엔지니어링 및 시장 조사 서비스; 대체 연료, CCS 기술, 에너지 절약 장치 등 친환경 솔루션을 제공합니다. 삼성중공업주식회사는 1974년에 설립되었으며 대한민국 성남시에 본사를 두고 있습니다.",
+  "symbol": "010140.KS",
+  "price": "28,400",
+  "price_krw": "28,400",
+  "currency": "KRW",
+  "change": "[정규] -3.57%",
+  "change_percent": "[정규] -3.57%",
+  "change_val": "-1050.0",
+  "change_rate": "-3.5653650254668934",
+  "final_labeled_change": "[정규] -3.57%",
+  "summary": "삼성중공업 데이터 분석 요약 중입니다.",
+  "sector": "Domestic Stock",
+  "market_status": "장마감",
+  "nxt_data": null,
+  "after_market_data": null,
+  "regular_close": 28400.0,
+  "regular_change_val": -1050.0,
+  "regular_change_pct": -3.5653650254668934,
+  "financials": {
+    "pe_ratio": 45.01,
+    "pbr": 5.37,
+    "market_cap": "24조 2,578억원",
+    "score": 69
+  },
+  "details": {
+    "prev_close": 29450.0,
+    "market_cap": "24조 2,578억원",
+    "pe_ratio": 45.01,
+    "eps": 631.0,
+    "pbr": 5.37,
+    "dividend_yield": null,
+    "open": 29800.0,
+    "day_high": 29950.0,
+    "day_low": 27500.0,
+    "volume": 5280605,
+    "year_high": 35350.0,
+    "year_low": 15610.0,
+    "forward_pe": 16.206202,
+    "forward_eps": null,
+    "bps": null,
+    "dividend_rate": null,
+    "health_score": 69,
+    "market_status": "장마감",
+    "regular_close": 28400.0,
+    "nxt_data": null,
+    "after_market_data": null
+  },
+  "daily_prices": [
+    {
+      "date": "2026-05-28",
+      "close": 28400,
+      "change": -3.5653650254668934,
+      "change_val": -1050,
+      "open": 29800,
+      "high": 29950,
+      "low": 27500,
+      "volume": 4914422
+    },
+    {
+      "date": "2026-05-27",
+      "close": 29450,
+      "change": -3.284072249589491,
+      "change_val": -1000,
+      "open": 30050,
+      "high": 30250,
+      "low": 29350,
+      "volume": 5494897
+    },
+    {
+      "date": "2026-05-26",
+      "close": 30450,
+      "change": 3.2203389830508473,
+      "change_val": 950,
+      "open": 30300,
+      "high": 30950,
+      "low": 29850,
+      "volume": 5655369
+    },
+    {
+      "date": "2026-05-22",
+      "close": 29500,
+      "change": 2.966841186736475,
+      "change_val": 850,
+      "open": 29150,
+      "high": 29700,
+      "low": 28800,
+      "volume": 3959836
+    },
+    {
+      "date": "2026-05-21",
+      "close": 28650,
+      "change": 3.616636528028933,
+      "change_val": 1000,
+      "open": 28550,
+      "high": 28900,
+      "low": 28250,
+      "volume": 3871343
+    },
+    {
+      "date": "2026-05-20",
+      "close": 27650,
+      "change": -3.1523642732049035,
+      "change_val": -900,
+      "open": 28650,
+      "high": 28900,
+      "low": 27200,
+      "volume": 5243143
+    },
+    {
+      "date": "2026-05-19",
+      "close": 28550,
+      "change": -3.3840947546531304,
+      "change_val": -1000,
+      "open": 29800,
+      "high": 29950,
+      "low": 28000,
+      "volume": 4786989
+    },
+    {
+      "date": "2026-05-18",
+      "close": 29550,
+      "change": 0.8532423208191127,
+      "change_val": 250,
+      "open": 28950,
+      "high": 30050,
+      "low": 27800,
+      "volume": 6497447
+    },
+    {
+      "date": "2026-05-15",
+      "close": 29300,
+      "change": -2.8192371475953566,
+      "change_val": -850,
+      "open": 30850,
+      "high": 30850,
+      "low": 28750,
+      "volume": 8257612
+    },
+    {
+      "date": "2026-05-14",
+      "close": 30150,
+      "change": -2.898550724637681,
+      "change_val": -900,
+      "open": 31250,
+      "high": 31350,
+      "low": 29900,
+      "volume": 8383407
+    }
+  ],
+  "news": [
+    {
+      "title": "[단독] 한국카본, 천궁-III 납품 임박…방산 매출 1천억 노린다",
+      "description": "액화천연가스(LNG) 보냉재 사업으로 1분기 역대 최대 실적을 쓴 한국카본이 방산으로 영역 확장에 나섰습니다. 중거리 지대공 유도 무기인 '천궁-II'에 미사일 부품을 납품하는 데 더해, 차세대 '천궁-III'의 양산 직전 테스트까지 진행 중인 것으로... ",
+      "link": "https://n.news.naver.com/mnews/article/215/0001253599",
+      "publisher": "한국경제TV",
+      "published": "2026-05-28 14:28"
+    }
+  ],
+  "score": 69,
+  "metrics": {
+    "supplyDemand": 50,
+    "financials": 69,
+    "news": 50
+  },
+  "health_data": {
+    "success": true,
+    "symbol": "010140.KS",
+    "company_name": "Samsung Heavy Industries Co., Ltd.",
+    "score": 69,
+    "grade": "종합 지표 보통",
+    "character": "📋",
+    "message": "재무 지표가 평균적인 수준이며 특이 사항이 적습니다.",
+    "color": "yellow",
+    "details": {
+      "profitability": {
+        "score": 20,
+        "max": 30,
+        "breakdown": {
+          "profit_margin": {
+            "value": 5.02,
+            "score": 10,
+            "max": 15
+          },
+          "roe": {
+            "value": 13.21,
+            "score": 10,
+            "max": 15
+          }
+        },
+        "label": "수익성"
+      },
+      "stability": {
+        "score": 15,
+        "max": 30,
+        "breakdown": {
+          "debt_to_equity": {
+            "value": 32.7,
+            "score": 15,
+            "max": 15
+          },
+          "current_ratio": {
+            "value": 0.83,
+            "score": 0,
+            "max": 15
+          }
+        },
+        "label": "안정성"
+      },
+      "growth": {
+        "score": 14,
+        "max": 20,
+        "breakdown": {
+          "revenue_growth": {
+            "value": 7.54,
+            "score": 4,
+            "max": 10
+          },
+          "income_growth": {
+            "value": 71.52,
+            "score": 10,
+            "max": 10
+          }
+        },
+        "label": "성장성"
+      },
+      "cashflow": {
+        "score": 20,
+        "max": 20,
+        "breakdown": {
+          "operating_cashflow": {
+            "value": "플러스",
+            "score": 10,
+            "max": 10
+          },
+          "free_cashflow": {
+            "value": "플러스",
+            "score": 10,
+            "max": 10
+          }
+        },
+        "label": "현금흐름"
+      }
+    },
+    "raw_data": null,
+    "analyzed_at": "2026-05-28T18:50:05.482291",
+    "disclaimer": "본 분석 결과는 객관적 재무 지표를 알고리즘에 따라 산출한 수치이며, 특정 종목에 대한 투자 권유나 추천이 아닙니다."
+  }
+}

@@ -2791,10 +2791,22 @@ def get_exchange_rate(currency="USD"):
 @turbo_cache(ttl_seconds=3600)
 def get_ipo_data():
     """
-    [DART 공식 API 적용 버전]
-    금융감독원 공시 원본(증권신고서)을 직접 파싱하여 
-    청약일과 공모가 밴드를 추출합니다.
+    공모주 스케줄 반환
+    (백그라운드에서 주기적으로 수집한 ipo_cache.json을 최우선으로 읽음)
     """
+    import os
+    import json
+    try:
+        cache_file = os.path.join(os.path.dirname(__file__), 'ipo_cache.json')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if data:
+                    return data
+    except Exception as e:
+        print(f"[IPO] 캐시 읽기 에러: {e}")
+
+    # 캐시가 없거나 실패한 경우 DART 파싱 시도 (한도초과 대비)
     try:
         from dart_ipo import fetch_dart_ipo_schedule
         return fetch_dart_ipo_schedule()
