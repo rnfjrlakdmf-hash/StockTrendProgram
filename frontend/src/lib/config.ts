@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   }
 } else {
   // SSR
-  apiBase = process.env.NODE_ENV === 'development' ? "http://localhost:8000" : "http://13.209.99.170";
+  apiBase = process.env.NODE_ENV === 'development' ? "http://localhost:8000" : "http://13.209.99.170.nip.io";
 }
 
 export const API_BASE_URL = apiBase;
