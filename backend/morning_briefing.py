@@ -118,40 +118,52 @@ class MorningBriefingService:
         cons_list = analysis.get('cons', [])[:3]
         ai_opinion = analysis.get('ai_opinion', '신중한 판단 필요')
 
-        # === 1. 호재 알림 발송 ===
-        title_pro = f"⚖️ [호재] {stock_name} AI 브리핑"
-        pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
-        body_pro = f"{pros_str}{investor_summary}"
-        
-        send_multicast_notification(
-            tokens=tokens,
-            title=title_pro,
-            body=body_pro,
-            data={
-                "type": "morning_briefing_pro",
-                "symbol": symbol,
-                "url": f"/discovery?q={symbol}"
-            }
-        )
+        has_pros = len(pros_list) > 0
+        has_cons = len(cons_list) > 0
 
-        # 알림이 꼬이거나 씹히는 것을 방지하기 위해 0.5초 대기
-        await asyncio.sleep(0.5)
+        # 호재도 악재도 없으면 발송 생략 (빈 알림 방지)
+        if not has_pros and not has_cons:
+            print(f"[MorningBriefing] No pros/cons for {stock_name}, skipping push.")
+            return
+
+        # === 1. 호재 알림 발송 ===
+        if has_pros:
+            title_pro = f"⚖️ [호재] {stock_name} AI 브리핑"
+            pros_str = "\n".join([f"🟢 {p}" for p in pros_list])
+            body_pro = f"{pros_str}{investor_summary}"
+            
+            send_multicast_notification(
+                tokens=tokens,
+                title=title_pro,
+                body=body_pro,
+                data={
+                    "type": "morning_briefing_pro",
+                    "symbol": symbol,
+                    "url": f"/discovery?q={symbol}"
+                }
+            )
+            # 알림이 꼬이거나 씹히는 것을 방지하기 위해 0.5초 대기
+            await asyncio.sleep(0.5)
 
         # === 2. 악재 알림 발송 ===
-        title_con = f"⚖️ [악재/리스크] {stock_name} AI 브리핑"
-        cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
-        body_con = f"{cons_str}\n🤖 {ai_opinion}\n⚠️ 본 정보는 참고용입니다."
+        if has_cons:
+            title_con = f"⚖️ [악재/리스크] {stock_name} AI 브리핑"
+            cons_str = "\n".join([f"🔴 {c}" for c in cons_list])
+            
+            # 만약 호재가 없어서 수급 정보를 못 보냈다면, 악재 알림에 수급 정보를 붙임
+            inv_str = investor_summary if not has_pros else ""
+            body_con = f"{cons_str}\n🤖 {ai_opinion}{inv_str}\n⚠️ 본 정보는 참고용입니다."
 
-        send_multicast_notification(
-            tokens=tokens,
-            title=title_con,
-            body=body_con,
-            data={
-                "type": "morning_briefing_con",
-                "symbol": symbol,
-                "url": f"/discovery?q={symbol}"
-            }
-        )
+            send_multicast_notification(
+                tokens=tokens,
+                title=title_con,
+                body=body_con,
+                data={
+                    "type": "morning_briefing_con",
+                    "symbol": symbol,
+                    "url": f"/discovery?q={symbol}"
+                }
+            )
         
         print(f"[MorningBriefing] Sent split briefing (pro/con) for {stock_name} to {user_id}")
 
