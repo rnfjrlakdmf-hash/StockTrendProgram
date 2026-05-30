@@ -293,7 +293,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             fontWeight: 700,
                             padding: { left: 8, right: 8, top: 2, bottom: 2 }
                         },
-                        text: `최고 ${(highest.high || 0).toLocaleString()} (${new Date(highest.date).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}) ↓`
+                        text: `최고 ${(highest.high || 0).toLocaleString()} (${new Date(highest.date).getFullYear()}년 ${new Date(highest.date).getMonth() + 1}월 ${new Date(highest.date).getDate()}일) ↓`
                     }
                 }] : []),
                 // Lowest Point Annotation
@@ -316,7 +316,7 @@ export default function StoryChart({ symbol, period: initialPeriod = "1y" }: Sto
                             fontWeight: 700,
                             padding: { left: 8, right: 8, top: 1, bottom: 1 }
                         },
-                        text: `↑ 최저 ${(lowest.low || 0).toLocaleString()} (${new Date(lowest.date).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })})`
+                        text: `↑ 최저 ${(lowest.low || 0).toLocaleString()} (${new Date(lowest.date).getFullYear()}년 ${new Date(lowest.date).getMonth() + 1}월 ${new Date(lowest.date).getDate()}일)`
                     }
                 }] : []),
                 // Historical Stories

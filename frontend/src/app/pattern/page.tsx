@@ -436,12 +436,14 @@ export default function PatternPage() {
                         const n = result.history.length;
                         const isStart = idx < n * 0.15;
                         const isEnd = idx > n * 0.85;
+                        const d = new Date(highest.date);
+                        const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
                         return {
                             x: new Date(highest.date).getTime(),
                             y: highest.high,
                             marker: { size: 0 },
                             label: {
-                                text: `최고 ${formatPrice(highest.high)} (${new Date(highest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}) ↓`,
+                                text: `최고 ${formatPrice(highest.high)} (${dateStr}) ↓`,
                                 borderColor: '#ef4444',
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
                                 style: { color: '#fff', background: '#ef4444' }
@@ -454,12 +456,14 @@ export default function PatternPage() {
                         const n = result.history.length;
                         const isStart = idx < n * 0.15;
                         const isEnd = idx > n * 0.85;
+                        const d = new Date(lowest.date);
+                        const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
                         return {
                             x: new Date(lowest.date).getTime(),
                             y: lowest.low,
                             marker: { size: 0 },
                             label: {
-                                text: `↑ 최저 ${formatPrice(lowest.low)} (${new Date(lowest.date).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})})`,
+                                text: `↑ 최저 ${formatPrice(lowest.low)} (${dateStr})`,
                                 borderColor: '#3b82f6',
                                 offsetY: 40,
                                 offsetX: isStart ? +60 : (isEnd ? -60 : 0),
