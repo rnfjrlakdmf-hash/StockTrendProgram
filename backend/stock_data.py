@@ -2024,19 +2024,32 @@ def get_real_stock_events():
             print(f"[DART Events] Error: {e}")
 
     # 2. yfinance 보완 (기존 주요 종목 추정치)
-    major_stocks = [
-        {"symbol": "005930.KS", "code": "005930", "name": "삼성전자"},
-        {"symbol": "000660.KS", "code": "000660", "name": "SK하이닉스"},
-        {"symbol": "035420.KS", "code": "035420", "name": "NAVER"},
-        {"symbol": "051910.KS", "code": "051910", "name": "LG화학"},
-        {"symbol": "006400.KS", "code": "006400", "name": "삼성SDI"},
-        {"symbol": "105560.KS", "code": "105560", "name": "KB금융"},
-        {"symbol": "055550.KS", "code": "055550", "name": "신한지주"},
-        {"symbol": "086790.KS", "code": "086790", "name": "하나금융지주"},
-        {"symbol": "373220.KS", "code": "373220", "name": "LG에너지솔루션"},
-        {"symbol": "068270.KS", "code": "068270", "name": "셀트리온"},
-        {"symbol": "035720.KS", "code": "035720", "name": "카카오"},
-    ]
+    try:
+        from korea_data import get_top_market_cap_stocks
+        top_stocks = get_top_market_cap_stocks(limit=15) # KOSPI 15, KOSDAQ 15 = 30 stocks
+        major_stocks = []
+        for s in top_stocks:
+            market_suffix = ".KQ" if s.get("market") == "KOSDAQ" else ".KS"
+            major_stocks.append({
+                "symbol": s["code"] + market_suffix,
+                "code": s["code"],
+                "name": s["name"]
+            })
+    except:
+        # Fallback if scraping fails
+        major_stocks = [
+            {"symbol": "005930.KS", "code": "005930", "name": "삼성전자"},
+            {"symbol": "000660.KS", "code": "000660", "name": "SK하이닉스"},
+            {"symbol": "035420.KS", "code": "035420", "name": "NAVER"},
+            {"symbol": "051910.KS", "code": "051910", "name": "LG화학"},
+            {"symbol": "006400.KS", "code": "006400", "name": "삼성SDI"},
+            {"symbol": "105560.KS", "code": "105560", "name": "KB금융"},
+            {"symbol": "055550.KS", "code": "055550", "name": "신한지주"},
+            {"symbol": "086790.KS", "code": "086790", "name": "하나금융지주"},
+            {"symbol": "373220.KS", "code": "373220", "name": "LG에너지솔루션"},
+            {"symbol": "068270.KS", "code": "068270", "name": "셀트리온"},
+            {"symbol": "035720.KS", "code": "035720", "name": "카카오"},
+        ]
     
     for stock in major_stocks:
         # DART에서 이미 확정 데이터를 가져온 경우 yfinance는 건너뜀 (데이터 중복 방지)
