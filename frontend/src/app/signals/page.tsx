@@ -772,7 +772,7 @@ function CalendarTab({ router }: { router: any }) {
     const fetchWatched = async () => {
         try {
             const userId = user?.id || (user as any)?.uid || "guest";
-            const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
+            const res = await fetch(`${API_BASE_URL}/api/ipo_watchlist`, {
                 headers: { "X-User-Id": userId }
             });
             const json = await res.json();
@@ -794,7 +794,7 @@ function CalendarTab({ router }: { router: any }) {
 
         try {
             if (isWatched) {
-                const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist/${encodeURIComponent(ipoName)}`, {
+                const res = await fetch(`${API_BASE_URL}/api/ipo_watchlist/${encodeURIComponent(ipoName)}`, {
                     method: "DELETE",
                     headers: { "X-User-Id": userId }
                 });
@@ -805,7 +805,7 @@ function CalendarTab({ router }: { router: any }) {
                     alert(`${ipoName} 알림이 해제되었습니다.`);
                 }
             } else {
-                const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
+                const res = await fetch(`${API_BASE_URL}/api/ipo_watchlist`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
