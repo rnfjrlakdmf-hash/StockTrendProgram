@@ -12,7 +12,6 @@ import {
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
     Star, Globe, Trash2, X, Bell, BellRing
 } from "lucide-react";
-import { toast } from "react-toastify";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
@@ -803,7 +802,7 @@ function CalendarTab({ router }: { router: any }) {
                     const newSet = new Set(watchedIpos);
                     newSet.delete(ipoName);
                     setWatchedIpos(newSet);
-                    toast.success(`${ipoName} 알림이 해제되었습니다.`, { autoClose: 2000 });
+                    alert(`${ipoName} 알림이 해제되었습니다.`);
                 }
             } else {
                 const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
@@ -818,12 +817,12 @@ function CalendarTab({ router }: { router: any }) {
                     const newSet = new Set(watchedIpos);
                     newSet.add(ipoName);
                     setWatchedIpos(newSet);
-                    toast.success(`${ipoName} 알림이 등록되었습니다.`, { autoClose: 2000 });
+                    alert(`${ipoName} 알림이 등록되었습니다.`);
                 }
             }
         } catch (e) {
             console.error(e);
-            toast.error("알림 설정 중 오류가 발생했습니다.", { autoClose: 2000 });
+            alert("알림 설정 중 오류가 발생했습니다.");
         }
     };
 

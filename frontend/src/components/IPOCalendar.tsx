@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config";
 import { Loader2, Megaphone, Bell, BellRing } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "react-toastify";
 
 export default function IPOCalendar() {
     const [ipos, setIpos] = useState<any[]>([]);
@@ -71,7 +70,7 @@ export default function IPOCalendar() {
                     const newSet = new Set(watchedIpos);
                     newSet.delete(ipoName);
                     setWatchedIpos(newSet);
-                    toast.success(`${ipoName} 알림이 해제되었습니다.`, { autoClose: 2000 });
+                    alert(`${ipoName} 알림이 해제되었습니다.`);
                 }
             } else {
                 const res = await fetch(`${API_BASE_URL}/api/user/ipo_watchlist`, {
@@ -86,12 +85,12 @@ export default function IPOCalendar() {
                     const newSet = new Set(watchedIpos);
                     newSet.add(ipoName);
                     setWatchedIpos(newSet);
-                    toast.success(`${ipoName} 알림이 등록되었습니다.`, { autoClose: 2000 });
+                    alert(`${ipoName} 알림이 등록되었습니다.`);
                 }
             }
         } catch (e) {
             console.error(e);
-            toast.error("알림 설정 중 오류가 발생했습니다.", { autoClose: 2000 });
+            alert("알림 설정 중 오류가 발생했습니다.");
         }
     };
 
