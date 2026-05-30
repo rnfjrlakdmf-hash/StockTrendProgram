@@ -18,10 +18,8 @@ if (typeof window !== 'undefined') {
     apiBase = ""; 
   }
 } else {
-  // 서버 사이드 (Build/SSR)
-  apiBase = process.env.BACKEND_URL || "https://stock-trend-program.co.kr";
+  // SSR
+  apiBase = process.env.NODE_ENV === 'development' ? "http://localhost:8000" : "http://13.209.99.170";
 }
 
 export const API_BASE_URL = apiBase;
-
-
