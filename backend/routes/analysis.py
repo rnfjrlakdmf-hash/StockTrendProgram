@@ -22,15 +22,15 @@ def stock_company_overview(symbol: str):
         return {"status": "error", "message": str(e)}
 
 @router.get("/stock/{symbol}/extended-hours")
-@turbo_cache(ttl_seconds=10)  # [Cache] 10초 캐시: 많은 유저가 동시 접속해도 Naver API는 10초에 1회만 호출
+@turbo_cache(ttl_seconds=60)  # [Cache] 60초 캐시: 상업용 우회 목적으로 yfinance 호출 최소화
 def stock_extended_hours(symbol: str):
     """
     [New] 해외 주식 세션별 가격 정보: 프리마켓 / 정규장 / 에프터마켓
-    나스닥, S&P500 등 미국 주식 및 주요 해외 지수에 대응합니다.
+    나스닥, S&P500 등 미국 주식 및 주요 해외 지수에 대응합니다. (yfinance 사용으로 완전 무료화)
     """
-    import re
     try:
         from rank_data import get_world_stock_integration
+        import yfinance as yf
         
         # 해외 종목 여부 확인
         clean_code = symbol.split('.')[0]
@@ -39,31 +39,91 @@ def stock_extended_hours(symbol: str):
         if is_domestic:
             return {"status": "error", "message": "국내 종목은 extended-hours 데이터가 제공되지 않습니다."}
         
-        # 네이버 해외 주식 통합 API 호출
-        raw = get_world_stock_integration([symbol])
-        item = raw.get(symbol) if raw else None
+        # [우회 로직] 해외 주식은 네이버 대신 yfinance 활용
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
         
-        if not item:
-            return {"status": "error", "message": f"해외 주식 데이터를 찾을 수 없습니다: {symbol}"}
-        
-        over = item.get("overMarketPriceInfo") or {}
-        
-        # 세션 타입 결정
-        session_type = over.get("tradingSessionType", "")  # PRE_MARKET or AFTER_HOURS
-        over_status = over.get("overMarketStatus", "CLOSE")  # OPEN or CLOSE
-        market_status = item.get("marketStatus", "CLOSE")    # OPEN or CLOSE
-        
-        # 정규장 데이터
-        regular_price = float(item.get("currentPrice", 0))
-        regular_change = float(item.get("fluctuations", 0))
-        regular_change_pct = float(item.get("fluctuationsRatio", 0))
-        prev_close = float(item.get("lastClosePrice", regular_price - regular_change))
-        
-        # 시외 데이터 (프리마켓 또는 에프터마켓)
-        over_price = float(over.get("overPrice", 0)) if over.get("overPrice") else None
-        over_change = float(over.get("fluctuations", 0)) if over.get("fluctuations") else None
-        over_change_pct = float(over.get("fluctuationsRatio", 0)) if over.get("fluctuationsRatio") else None
-        over_update_time = over.get("localTradedAt", "")
+        if not info or 'regularMarketPrice' not in info:
+            # yfinance 실패 시 fallback으로 네이버 API 활용
+            raw = get_world_stock_integration([symbol])
+            item = raw.get(symbol) if raw else None
+            if not item:
+                return {"status": "error", "message": f"해외 주식 데이터를 찾을 수 없습니다: {symbol}"}
+            
+            # (Fallback 로직: 기존 네이버 API 활용 로직 유지)
+            over = item.get("overMarketPriceInfo") or {}
+            session_type = over.get("tradingSessionType", "")
+            over_status = over.get("overMarketStatus", "CLOSE")
+            market_status = item.get("marketStatus", "CLOSE")
+            regular_price = float(item.get("currentPrice", 0))
+            regular_change = float(item.get("fluctuations", 0))
+            regular_change_pct = float(item.get("fluctuationsRatio", 0))
+            prev_close = float(item.get("lastClosePrice", regular_price - regular_change))
+            over_price = float(over.get("overPrice", 0)) if over.get("overPrice") else None
+            over_change = float(over.get("fluctuations", 0)) if over.get("fluctuations") else None
+            over_change_pct = float(over.get("fluctuationsRatio", 0)) if over.get("fluctuationsRatio") else None
+            over_update_time = over.get("localTradedAt", "")
+            currency_code = item.get("currencyType", "USD")
+            name = item.get("stockName", symbol)
+            open_price = float(item.get("openPrice", 0)) if item.get("openPrice") else None
+            high_price = float(item.get("highPrice", 0)) if item.get("highPrice") else None
+            low_price = float(item.get("lowPrice", 0)) if item.get("lowPrice") else None
+            volume = int(item.get("accumulatedTradingVolume", 0)) if item.get("accumulatedTradingVolume") else None
+            per = item.get("per")
+            pbr = item.get("pbr")
+            dividend_yield = item.get("dividendYieldRatio")
+            market_cap = item.get("marketValue")
+            exchange = item.get("stockExchangeType", "")
+            
+        else:
+            # yfinance 성공 시 (우회 핵심)
+            name = info.get('shortName') or info.get('longName') or symbol
+            currency_code = info.get('currency', 'USD')
+            market_state = info.get('marketState', 'CLOSED')
+            
+            market_status = "OPEN" if market_state == "REGULAR" else "CLOSE"
+            regular_price = info.get('regularMarketPrice', 0)
+            regular_change = info.get('regularMarketChange', 0)
+            regular_change_pct = info.get('regularMarketChangePercent', 0)
+            prev_close = info.get('regularMarketPreviousClose', regular_price - regular_change)
+            
+            # yfinance는 퍼센트 값이 소수점(예: 0.05 = 5%)이므로 100을 곱해줌
+            if regular_change_pct:
+                regular_change_pct = regular_change_pct * 100
+            
+            # 프리/에프터마켓 데이터
+            session_type = ""
+            over_status = "CLOSE"
+            over_price = None
+            over_change = None
+            over_change_pct = None
+            
+            # PRE MARKET
+            if 'preMarketPrice' in info and info['preMarketPrice'] is not None:
+                session_type = "PRE_MARKET"
+                over_status = "OPEN" if market_state in ["PRE", "PREPRE"] else "CLOSE"
+                over_price = info['preMarketPrice']
+                over_change = info.get('preMarketChange', 0)
+                over_change_pct = info.get('preMarketChangePercent', 0) * 100 if info.get('preMarketChangePercent') else 0
+            
+            # AFTER MARKET (POST)
+            elif 'postMarketPrice' in info and info['postMarketPrice'] is not None:
+                session_type = "AFTER_HOURS"
+                over_status = "OPEN" if market_state in ["POST", "POSTPOST"] else "CLOSE"
+                over_price = info['postMarketPrice']
+                over_change = info.get('postMarketChange', 0)
+                over_change_pct = info.get('postMarketChangePercent', 0) * 100 if info.get('postMarketChangePercent') else 0
+                
+            over_update_time = ""
+            open_price = info.get('regularMarketOpen')
+            high_price = info.get('regularMarketDayHigh')
+            low_price = info.get('regularMarketDayLow')
+            volume = info.get('regularMarketVolume')
+            per = info.get('trailingPE')
+            pbr = info.get('priceToBook')
+            dividend_yield = info.get('dividendYield')
+            market_cap = info.get('marketCap')
+            exchange = info.get('exchange', "")
         
         # 세션 라벨 결정
         if market_status == "OPEN":
@@ -74,16 +134,15 @@ def stock_extended_hours(symbol: str):
             current_session = "에프터마켓 (After Hours)"
         else:
             current_session = "장마감 (Market Closed)"
-        
+            
         # [v2] 원화 환산용 환율 추가
         from korea_data import get_exchange_rate
-        currency_code = item.get("currencyType", "USD")
         usd_krw = get_exchange_rate("USD") if currency_code == "USD" else None
         
         result = {
-            "symbol": item.get("symbolCode", symbol),
-            "name": item.get("stockName", symbol),
-            "exchange": item.get("stockExchangeType", ""),
+            "symbol": symbol,
+            "name": name,
+            "exchange": exchange,
             "currency": currency_code,
             "usd_krw": usd_krw,          # ← 원화 환산용 환율 (USD 종목만)
             "current_session": current_session,
@@ -95,12 +154,12 @@ def stock_extended_hours(symbol: str):
                 "change": regular_change,
                 "change_pct": regular_change_pct,
                 "prev_close": prev_close,
-                "open": float(item.get("openPrice", 0)) if item.get("openPrice") else None,
-                "high": float(item.get("highPrice", 0)) if item.get("highPrice") else None,
-                "low": float(item.get("lowPrice", 0)) if item.get("lowPrice") else None,
-                "volume": int(item.get("accumulatedTradingVolume", 0)) if item.get("accumulatedTradingVolume") else None,
+                "open": open_price,
+                "high": high_price,
+                "low": low_price,
+                "volume": volume,
                 "is_active": market_status == "OPEN",
-                "updated_at": item.get("localTradedAt", ""),
+                "updated_at": "",
             },
             
             # 시외 거래 (프리마켓 or 에프터마켓)
@@ -115,10 +174,10 @@ def stock_extended_hours(symbol: str):
             } if over_price else None,
             
             # 추가 정보
-            "per": item.get("per"),
-            "pbr": item.get("pbr"),
-            "dividend_yield": item.get("dividendYieldRatio"),
-            "market_cap": item.get("marketValue"),
+            "per": per,
+            "pbr": pbr,
+            "dividend_yield": dividend_yield,
+            "market_cap": market_cap,
         }
         
         return {"status": "success", "data": result}
