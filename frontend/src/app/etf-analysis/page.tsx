@@ -642,10 +642,16 @@ function EtfAnalysisContent() {
                                                             const item = history[dataPointIndex];
                                                             if (!item) return "";
                                             
-                                                            const rawDate = new Date(item.date);
-                                                            const yyyy = rawDate.getFullYear();
-                                                            const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
-                                                            const dd = String(rawDate.getDate()).padStart(2, '0');
+                                                            const dateStr = item.date || "";
+                                                            let yyyy = "", mm = "", dd = "";
+                                                            if (dateStr.includes('-')) {
+                                                                [yyyy, mm, dd] = dateStr.split('-');
+                                                            } else {
+                                                                const rawDate = new Date(item.date);
+                                                                yyyy = String(rawDate.getFullYear());
+                                                                mm = String(rawDate.getMonth() + 1).padStart(2, '0');
+                                                                dd = String(rawDate.getDate()).padStart(2, '0');
+                                                            }
                                                             const dateHeader = `${yyyy}. ${mm}. ${dd}.`;
                                             
                                                             const volumeStr = item.volume?.toLocaleString() || "0";
@@ -689,11 +695,11 @@ function EtfAnalysisContent() {
                                                     legend: { show: true, position: 'top', horizontalAlign: 'left' }
                                                 }}
                                                 series={[
-                                                    { name: '시세', type: 'candlestick', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: [d.open, d.high, d.low, d.close] })) },
-                                                    { name: 'MA5', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma5 || null })) },
-                                                    { name: 'MA20', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma20 || null })) },
-                                                    { name: 'MA60', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma60 || null })) },
-                                                    { name: 'MA120', type: 'line', data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma120 || null })) },
+                                                    { name: '시세', type: 'candlestick', data: filteredChartData.map((d: any) => ({ x: d.date.includes('-') ? new Date(Number(d.date.split('-')[0]), Number(d.date.split('-')[1])-1, Number(d.date.split('-')[2])).getTime() : new Date(d.date).getTime(), y: [d.open, d.high, d.low, d.close] })) },
+                                                    { name: 'MA5', type: 'line', data: filteredChartData.map((d: any) => ({ x: d.date.includes('-') ? new Date(Number(d.date.split('-')[0]), Number(d.date.split('-')[1])-1, Number(d.date.split('-')[2])).getTime() : new Date(d.date).getTime(), y: d.ma5 || null })) },
+                                                    { name: 'MA20', type: 'line', data: filteredChartData.map((d: any) => ({ x: d.date.includes('-') ? new Date(Number(d.date.split('-')[0]), Number(d.date.split('-')[1])-1, Number(d.date.split('-')[2])).getTime() : new Date(d.date).getTime(), y: d.ma20 || null })) },
+                                                    { name: 'MA60', type: 'line', data: filteredChartData.map((d: any) => ({ x: d.date.includes('-') ? new Date(Number(d.date.split('-')[0]), Number(d.date.split('-')[1])-1, Number(d.date.split('-')[2])).getTime() : new Date(d.date).getTime(), y: d.ma60 || null })) },
+                                                    { name: 'MA120', type: 'line', data: filteredChartData.map((d: any) => ({ x: d.date.includes('-') ? new Date(Number(d.date.split('-')[0]), Number(d.date.split('-')[1])-1, Number(d.date.split('-')[2])).getTime() : new Date(d.date).getTime(), y: d.ma120 || null })) },
                                                 ]}
                                                 type="line"
                                                 height="100%"
