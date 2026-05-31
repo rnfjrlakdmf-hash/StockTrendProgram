@@ -45,8 +45,14 @@ def stock_extended_hours(symbol: str):
         
         if not info or 'regularMarketPrice' not in info:
             # yfinance 실패 시 fallback으로 네이버 API 활용
-            raw = get_world_stock_integration([symbol])
-            item = raw.get(symbol) if raw else None
+            fallback_symbols = [symbol, f"{symbol}.O", f"{symbol}.N", f"{symbol}.A"]
+            raw = get_world_stock_integration(fallback_symbols)
+            item = None
+            for fs in fallback_symbols:
+                if raw and fs in raw:
+                    item = raw[fs]
+                    break
+                    
             if not item:
                 return {"status": "error", "message": f"해외 주식 데이터를 찾을 수 없습니다: {symbol}"}
             

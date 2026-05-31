@@ -1067,7 +1067,7 @@ function DiscoveryContent() {
                                                             price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
                                                                 (stock.currency === 'KRW'
                                                                 ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                                : stock.regular_price || stock.regular_close || stock.price)}
+                                                                : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
                                                             className="text-white bg-transparent"
                                                         />
                                                     </span>
