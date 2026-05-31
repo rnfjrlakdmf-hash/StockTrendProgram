@@ -768,6 +768,24 @@ function CalendarTab({ router }: { router: any }) {
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
     const [watchedIpos, setWatchedIpos] = useState<Set<string>>(new Set());
+    const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (watchlistSymbols.length === 0) {
+            (async () => {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+                try {
+                    const r = await fetch(`${API_BASE_URL}/api/watchlist`, { headers: { "x-user-id": token } });
+                    const j = await r.json();
+                    if (j.status === "success" && j.data) {
+                        setWatchlistSymbols(j.data.map((item: any) => item.symbol));
+                    }
+                } catch { }
+            })();
+        }
+    }, [watchlistSymbols.length]);
+
 
     const fetchWatched = async () => {
         try {
