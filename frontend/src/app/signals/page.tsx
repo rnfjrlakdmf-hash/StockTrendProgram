@@ -241,12 +241,12 @@ function SignalsFeedTab({ router }: { router: any }) {
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
 
-    const watchlistSignals = signals.filter(sig => {
+    const watchlistSignals = (Array.isArray(signals) ? signals : []).filter(sig => {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
         return matchSearch && watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
 
-    const otherSignals = signals.filter(sig => {
+    const otherSignals = (Array.isArray(signals) ? signals : []).filter(sig => {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
         return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
     });
@@ -301,7 +301,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                         </span>
                     </div>
                     <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                        {riskAlerts.map((alert, idx) => {
+                        {(Array.isArray(riskAlerts) ? riskAlerts : []).map((alert, idx) => {
                             const badge = getRiskBadge(alert.category);
                             return (
                                 <a
@@ -631,7 +631,7 @@ function HeatmapTab({ router }: { router: any }) {
             {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                        {data.map((item: any, i: number) => (
+                        {(Array.isArray(data) ? data : []).map((item: any, i: number) => (
                             <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
                                 <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
                                     <div
@@ -705,7 +705,7 @@ function MarketInsightsTab({ router }: { router: any }) {
     const renderList = (title: string, items: any[], color: string, icon: any, sliceNum: number = 10) => (
         <div className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
             <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
-            {(items || []).slice(0, sliceNum).map((item: any, i: number) => (
+            {(Array.isArray(items) ? items : []).slice(0, sliceNum).map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer"
                     onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}>
                     <span className="font-medium truncate max-w-[120px]">{i + 1}. {item.name}</span>
@@ -985,7 +985,7 @@ function CalendarTab({ router }: { router: any }) {
     }, [mainTab]);
 
     // 실적·배당 달력 계산
-    const filtered = events.filter(e => e.type === calTab);
+    const filtered = (Array.isArray(events) ? events : []).filter(e => e.type === calTab);
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
     const isToday = (d: number) => {
@@ -994,7 +994,7 @@ function CalendarTab({ router }: { router: any }) {
     };
     const getEventsForDay = (d: number) => {
         const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-        return filtered.filter(e => e.date === ds);
+        return (Array.isArray(filtered) ? filtered : []).filter(e => e.date === ds);
     };
     const icon = (t: string) => t === "earnings" ? "📈" : t === "dividend" ? "💰" : "📋";
 
@@ -1027,7 +1027,7 @@ function CalendarTab({ router }: { router: any }) {
                             <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
                         ) : globalAssets && globalAssets.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {globalAssets.map((asset: any, i: number) => {
+                                {(Array.isArray(globalAssets) ? globalAssets : []).map((asset: any, i: number) => {
                                     // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
                                     const changeStr = String(asset.change || "");
                                     const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
@@ -1075,7 +1075,7 @@ function CalendarTab({ router }: { router: any }) {
                             </div>
                         ) : (
                             <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
-                                {macroEvents.map((evt, i) => (
+                                {(Array.isArray(macroEvents) ? macroEvents : []).map((evt, i) => (
                                     <div key={i} className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 rounded-xl transition-all border border-white/5 group">
                                         <div className="flex flex-col items-center min-w-[45px]">
                                             <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
@@ -1144,7 +1144,7 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-2.5">
-                            {filtered.sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(0, 12).map((ev, i) => {
+                            {(Array.isArray(filtered) ? filtered : []).sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(0, 12).map((ev, i) => {
                                 const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
                                 return (
                                     <div key={i} 
@@ -1241,7 +1241,7 @@ function CalendarTab({ router }: { router: any }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5 text-sm">
-                                        {ipos.map((ipo, idx) => {
+                                        {(Array.isArray(ipos) ? ipos : []).map((ipo, idx) => {
                                             const formatIpoDate = (rawStr: any) => {
                                                 const dateStr = String(rawStr || "");
                                                 if (!dateStr || dateStr === "null" || dateStr === "undefined") return "-";
