@@ -236,6 +236,36 @@ class FCMTestRequest(BaseModel):
 def simple_fcm_test():
     return {"status": "success", "message": "Simple FCM Test OK"}
 
+@router.get("/fcm/news-test")
+def trigger_news_test(x_user_id: str = Header(None), user_id_param: str = Query(None, alias="user_id")):
+    """라이브 서버에서 뉴스 속보 테스트를 강제로 발송하는 엔드포인트"""
+    if user_id_param:
+        x_user_id = user_id_param
+    user_id = x_user_id or "guest"
+    
+    from firebase_config import send_multicast_notification
+    from db_manager import get_user_fcm_tokens
+    
+    tokens_data = get_user_fcm_tokens(user_id)
+    tokens = [t['token'] for t in tokens_data if t.get('token')]
+    
+    if not tokens:
+        return {"status": "error", "message": f"토큰이 없습니다. 앱/웹에서 푸시 권한을 허용해주세요. (user_id: {user_id})"}
+        
+    res = send_multicast_notification(
+        tokens=tokens,
+        title='📰 삼성전자 뉴스 속보',
+        body='단독 어닝 서프라이즈 발표 🏢 한국경제',
+        data={
+            'type': 'news_alert',
+            'symbol': '005930',
+            'url': '/discovery?q=005930',
+            'news_url': 'https://finance.naver.com',
+            'is_global': 'false'
+        }
+    )
+    return {"status": "success", "message": "테스트 뉴스 속보 발송 완료!", "result": res}
+
 @router.get("/fcm/diagnose")
 def diagnose_fcm(x_user_id: str = Header(None), user_id_param: str = Query(None, alias="user_id")):
     # URL ?user_id=xxx 로도 접근 가능하게
