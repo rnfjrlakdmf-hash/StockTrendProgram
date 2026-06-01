@@ -73,18 +73,44 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    // 종목발굴 페이지 URL 가져오기
     const data = event.notification.data || {};
-    let targetUrl = data.url || '/discovery';
+    const alertType = data.type || '';
+    const symbol = data.symbol || '';
+    const newsUrl = data.news_url || '';
+    const dartUrl = data.dart_url || '';
+    const notifTitle = event.notification.body?.split('\n')[0] || '';
 
-    if (event.action === 'view') {
-        // '종목 보기' 버튼 클릭 시 해당 종목 페이지로 이동
-        targetUrl = data.url || '/discovery';
-    } else {
-        // 알림 본문 클릭 시 뉴스 리다이렉트 페이지를 경유하여 원문으로 이동
-        if (data.news_url) {
-            targetUrl = `/news-redirect?url=${encodeURIComponent(data.news_url)}&symbol=${data.symbol || ''}`;
+    let targetUrl;
+
+    if (alertType === 'disclosure_alert') {
+        // 공시 알림: 직접 DART/SEC 원문 또는 종목 페이지
+        if (event.action === 'view' && dartUrl) {
+            // 공시 보기 버튼 -> DART 원문
+            targetUrl = dartUrl;
+        } else {
+            // 본문 클릭 -> 종목 분석 페이지
+            targetUrl = data.url || '/discovery';
         }
+    } else if (alertType === 'news_alert') {
+        // 뉴스 속보: 중간 경유 페이지 또는 종목 페이지
+        if (event.action === 'view') {
+            // 종목 보기 버튼 -> 종목 분석 페이지
+            targetUrl = data.url || '/discovery';
+        } else {
+            // 본문 클릭 -> 뉴스 중간 경유 페이지 (고급스러운 UI 포함)
+            if (newsUrl) {
+                const params = new URLSearchParams();
+                params.set('url', newsUrl);
+                if (symbol) params.set('symbol', symbol);
+                if (notifTitle) params.set('title', notifTitle);
+                targetUrl = `/news-redirect?${params.toString()}`;
+            } else {
+                targetUrl = data.url || '/discovery';
+            }
+        }
+    } else {
+        // 기타 알림 (장시작가 등)
+        targetUrl = data.url || '/';
     }
 
     const fullUrl = new URL(targetUrl, self.location.origin).href;
