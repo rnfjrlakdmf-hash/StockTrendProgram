@@ -144,18 +144,19 @@ class MorningBriefingService:
             return
 
         # === 단일 알림 발송 ===
-        title = f"🔔 {stock_name} AI 브리핑"
+        title = f"[AI 브리핑] {stock_name}"
         body_parts = []
         
         if has_pros:
-            body_parts.append("\n".join([f"🟢 {p}" for p in pros_list]))
+            body_parts.append("\n".join([f"상승 요인: {p}" for p in pros_list]))
         if has_cons:
-            body_parts.append("\n".join([f"🔴 {c}" for c in cons_list]))
+            body_parts.append("\n".join([f"하락 요인: {c}" for c in cons_list]))
             
-        body_parts.append(f"🤖 {ai_opinion}")
+        body_parts.append(f"종합: {ai_opinion}")
         
         if investor_summary:
-            body_parts.append(investor_summary)
+            clean_investor = investor_summary.replace("📊", "").replace("  ", " ").strip()
+            body_parts.append(f"\n[수급] {clean_investor}")
             
         body = "\n".join(body_parts)
 

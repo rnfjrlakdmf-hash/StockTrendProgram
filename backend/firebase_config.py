@@ -76,16 +76,15 @@ def sanitize_notification_text(title: str, body: str):
     # 1. 스마트워치 및 모바일 공통 타이틀 슬림화
     if "장시작" in clean_title:
         market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
-        clean_title = f"☀️ 장시작: {market_name}" if market_name else "☀️ 장시작 알림"
+        clean_title = f"[장시작] {market_name}" if market_name else "[장시작 알림]"
         
     elif "장마감" in clean_title:
         market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
-        emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
-        clean_title = f"🌕 장마감: {market_name} {emoji}".strip()
+        clean_title = f"[장마감] {market_name}".strip()
         
     elif "마켓 밸런스 브리핑" in clean_title:
-        stock_part = clean_title.replace("⚖️", "").replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
-        clean_title = f"⚖️ AI 브리핑: {stock_part}" if stock_part else "⚖️ AI 브리핑"
+        stock_part = clean_title.replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
+        clean_title = f"[AI 브리핑] {stock_part}" if stock_part else "[AI 브리핑]"
 
     # 일반 모바일 제목 길이 제한 완화 (충분히 한눈에 들어오도록 40자까지 허용)
     max_title_len = 40
