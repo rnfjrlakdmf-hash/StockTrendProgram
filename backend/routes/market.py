@@ -748,21 +748,21 @@ def test_push_notification(type: str = "generic"):
             return {"status": "error", "message": "등록된 기기(토큰)가 없습니다. 먼저 브라우저에서 알림을 허용해주세요."}
             
         if type == "news_naver":
-            title = "🇰🇷 삼성전자 속보!"
-            body = "[매일경제] 삼성전자, 차세대 AI 반도체 양산 시작... 글로벌 시장 정조준"
+            title = "📰 [뉴스 속보] 삼성전자"
+            body = "삼성전자, 차세대 AI 반도체 양산 시작... 글로벌 시장 정조준\n\n출처: 매일경제"
             data = {"url": "/discovery?q=005930"}
         elif type == "news_google":
-            title = "🌍 애플(AAPL) 속보!"
-            body = "[블룸버그] Apple unveils groundbreaking AI features for the next iPhone"
+            title = "📰 [뉴스 속보] 애플(AAPL)"
+            body = "Apple unveils groundbreaking AI features for the next iPhone\n\n출처: Bloomberg"
             data = {"url": "/discovery?q=AAPL"}
+        elif type == "disclosure":
+            title = "📢 [공시 속보] 카카오"
+            body = "자기주식취득결정 (1,000억원 규모)\n\n출처: DART"
+            data = {"url": "/discovery?q=035720"}
         elif type == "price_up":
             title = "🚀 급등 포착 (현대차)"
             body = "주식 가격이 5.2% 올랐어요! (253,000원)"
             data = {"url": "/discovery?q=005380"}
-        elif type == "price_high":
-            title = "🏆 신고가 경신 (카카오)"
-            body = "최근 1년 중 최고가를 기록했어요! (65,400원)"
-            data = {"url": "/discovery?q=035720"}
         else:
             title = "🔔 시스템 테스트 알림"
             body = "유저님! 정상적으로 푸시 알림이 연결되었습니다. 앞으로 관심종목 시세/뉴스 알림이 이곳으로 도착합니다!"
