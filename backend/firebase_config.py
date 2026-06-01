@@ -339,6 +339,14 @@ def send_multicast_notification(
             )
         )
         
+        # APNs 설정 (iOS)
+        apns_config = messaging.APNSConfig(
+            headers={'apns-priority': '10'},
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(sound='default', badge=1)
+            )
+        )
+        
         # 개별 발송 (SDK 버전 호환성 최대화)
         success_count = 0
         failure_count = 0
