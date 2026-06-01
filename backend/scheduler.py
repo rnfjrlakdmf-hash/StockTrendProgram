@@ -106,15 +106,14 @@ async def check_and_notify_disclosures():
             elif any(kw in report_title for kw in ["배당", "주주총회"]):
                 emoji = "💸"
 
-            noti_title = f"{emoji} [공시 속보] {corp}"
+            noti_title = f"{emoji} {corp} 공시 속보"
             noti_body = f"📋 {report_title}"
             if rcept_dt:
                 try:
-                    dt_fmt = f"{rcept_dt[:4]}-{rcept_dt[4:6]}-{rcept_dt[6:8]}"
-                    noti_body += f" ({dt_fmt})"
+                    dt_fmt = f"{rcept_dt[4:6]}/{rcept_dt[6:8]}"
+                    noti_body += f" (📅 {dt_fmt})"
                 except Exception:
                     pass
-            noti_body += "\n\n관심종목에 새 공시가 등록되었습니다."
 
             data_payload = {
                 "type": "disclosure_alert",
@@ -223,15 +222,14 @@ async def check_and_notify_sec_disclosures():
                     if not all_tokens:
                         continue
 
-                    noti_title = f"📢 [SEC 공시] {ticker}"
+                    noti_title = f"📢 {ticker} SEC 공시"
                     noti_body = f"📋 {title_el}"
                     if updated:
                         try:
                             dt = datetime.fromisoformat(updated[:10])
-                            noti_body += f" ({dt.strftime('%m/%d')})"
+                            noti_body += f" (📅 {dt.strftime('%m/%d')})"
                         except Exception:
                             pass
-                    noti_body += "\n\n관심종목에 새 SEC 공시가 등록되었습니다."
 
                     data_payload = {
                         "type": "disclosure_alert",
@@ -341,8 +339,8 @@ async def check_and_notify_ipos():
                     schedule = ipo.get('date', '')
                     underwriter = ipo.get('detail', '')
 
-                    noti_title = f"🚀 [신규 공모주] {name}"
-                    noti_body = f"희망공모가: {band}원\n청약일: {schedule}\n주관사: {underwriter}"
+                    noti_title = f"🚀 {name} 신규 공모주 청약"
+                    noti_body = f"💰 희망가: {band}원 | 📅 청약일: {schedule} | 🏢 주관사: {underwriter}"
                     data_payload = {
                         "type": "IPO_ALERT",
                         "url": "/market"
