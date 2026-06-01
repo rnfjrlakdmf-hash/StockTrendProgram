@@ -630,13 +630,13 @@ class BatchNewsSystem:
             clean_title = _re.sub(r'\[([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})\]\s*', '', title_text).strip()
             clean_title = _html.unescape(clean_title)
 
-            # 알림 제목: 특수문자 없이 깔끔하게
-            push_title = f"[뉴스 속보] {kr_name}"
+            # 알림 제목: [뉴스 속보] 형식에서 가독성을 높인 직관적 형태로 변경
+            push_title = f"📰 {kr_name} 뉴스 속보"
 
-            # 본문: 제목 + 언론사 출처
+            # 본문: 제목 + 언론사 출처 (모바일 알림창에서 한눈에 보이도록 가로형 배치)
             push_body = clean_title
             if publisher:
-                push_body += f" (출처: {publisher})"
+                push_body += f" | 🏢 {publisher}"
 
             # 뉴스 알림 허용한 이용자 토큰만 수집
             all_tokens = []

@@ -108,14 +108,14 @@ class PriceAlertMonitor:
             loss_pct = ((current_price - buy_price) / buy_price) * 100
             if loss_pct <= -threshold:
                 triggered = True
-                message = f"[손절 조건 도달] {alert['symbol']}이(가) {abs(loss_pct):.2f}% 하락했습니다."
+                message = f"🚨 손절 조건 도달! {alert['symbol']}이(가) {abs(loss_pct):.2f}% 하락했습니다."
         
         # 익절 조건 체크
         elif alert_type == 'take_profit':
             profit_pct = ((current_price - buy_price) / buy_price) * 100
             if profit_pct >= threshold:
                 triggered = True
-                message = f"[익절 조건 도달] {alert['symbol']}이(가) {profit_pct:.2f}% 상승했습니다."
+                message = f"🎉 익절 조건 도달! {alert['symbol']}이(가) {profit_pct:.2f}% 상승했습니다."
         
         # 목표가 도달 체크
         elif alert_type == 'target_price':
