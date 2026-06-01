@@ -865,74 +865,75 @@ def get_etf_ranking(market="KR", category=None):
         from concurrent.futures import ThreadPoolExecutor, as_completed
         from stock_data import get_simple_quote
 
-        # [Commercial Protection] 네이버 ETF API 호출(etfItemList.nhn) 전면 비활성화
-        # 상업적 이용 시 법적 리스크(DB권 침해)를 방지하기 위해 거래량 상위 75개 하드코딩
-        kr_etf_symbols = [
-            '252670', '114800', '252710', '462330', '233740', '251340', '229200', '396500', '069500', '412570', '379800', '122630', '360750', '395160', '364980', '487240', '305720', '498400', '271050', '395270', '123310', '462010', '091160', '253230', '329200', '488080', '494310', '472150', '232080', '292150', '486290', '379810', '102110', '466920', '144600', '411060', '381180', '252420', '455850', '448330', '498410', '102970', '091180', '462900', '117700', '233160', '228790', '445290', '161510', '453850', '490590', '466930', '461950', '458730', '364970', '494670', '367760', '475720', '471990', '138540', '284430', '253160', '305540', '469150', '471760', '476550', '157500', '494300', '489030', '278530', '217770', '472160', '148020', '469170', '139220'
-        ]
-
         current_time = time.time()
         if CACHE_KR_ETFS["data"] and (current_time - CACHE_KR_ETFS["timestamp"] < CACHE_KR_ETFS_DURATION):
             results = CACHE_KR_ETFS["data"]
         else:
-            def fetch_kr_quote_safe(sym):
-                try:
-                    q = get_simple_quote(sym)
-                    if q:
-                        import re
-                        change_percent = str(q.get("change_percent", q.get("change", "0"))).replace('%', '').replace('+', '')
-                        raw_name = q.get("name", f"ETF-{sym}")
-                        
-                        clean_name = raw_name
-                        clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
-                        clean_name = clean_name.replace("미래에셋맵스운용 - 미래에셋타이거", "TIGER")
-                        clean_name = clean_name.replace("미래에셋자산운용 - 타이거", "TIGER")
-                        clean_name = clean_name.replace("미래에셋자산운용 - 미래에셋타이거", "TIGER")
-                        clean_name = clean_name.replace("미래에셋자산운용 - TIGER", "TIGER")
-                        clean_name = clean_name.replace("미래에셋 TIGER", "TIGER")
-                        clean_name = clean_name.replace("미래에셋운용 - 미래에셋타이거", "TIGER")
-                        clean_name = clean_name.replace("삼성코덱스", "KODEX")
-                        clean_name = clean_name.replace("삼성 Kodex", "KODEX")
-                        clean_name = clean_name.replace("삼성 KODEX", "KODEX")
-                        clean_name = clean_name.replace("삼성자산운용 - 삼성KODEX", "KODEX")
-                        clean_name = clean_name.replace("김킨덱스", "KINDEX")
-                        clean_name = clean_name.replace("- 주식파생상품", "").replace(" - ", " ").strip()
-                        clean_name = clean_name.replace(" ETF", "").replace(" Etf", "").replace(" etf", "")
-                        clean_name = clean_name.replace("이차전지", "2차전지")
-                        clean_name = clean_name.replace("Us Nasdaq", "미국나스닥")
-                        clean_name = clean_name.replace("USA 나스닥", "미국나스닥")
-                        clean_name = clean_name.replace("Inverse2x", "인버스2X")
-                        clean_name = clean_name.replace("Inverse", "인버스")
-                        
-                        if sym == "091160": clean_name = "KODEX 반도체"
-                        if sym == "114800": clean_name = "KODEX 인버스"
-                        if sym == "161510": clean_name = "ARIRANG 고배당주"
-                        if sym == "438220": clean_name = "KODEX 미국배당다우존스"
-                        if sym == "418120": clean_name = "TIGER 미국배당+3%다우존스"
-                        
-                        clean_name = re.sub(r'\s+', ' ', clean_name).strip()
-
-                        return {
-                            "symbol": q.get("symbol", sym),
-                            "name": clean_name,
-                            "price": str(q.get("price", "0.00")),
-                            "change": str(q.get("change", "0.00%")),
-                            "change_percent": float(change_percent) if change_percent else 0.0,
-                            "volume": str(q.get("volume", "0"))
-                        }
-                except Exception as e:
-                    pass
-                return None
-
             results = []
-            with ThreadPoolExecutor(max_workers=20) as executor:
-                unique_symbols = list(set(kr_etf_symbols))
-                futures = {executor.submit(fetch_kr_quote_safe, sym): sym for sym in unique_symbols}
-                for f in as_completed(futures):
-                    try:
-                        res = f.result(timeout=10)
-                        if res: results.append(res)
-                    except: pass
+            try:
+                import json
+                import urllib.request
+                url = 'https://finance.naver.com/api/sise/etfItemList.nhn'
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                response = urllib.request.urlopen(req, timeout=10)
+                json_data = json.loads(response.read().decode('cp949'))
+                items = json_data.get('result', {}).get('etfItemList', [])
+                
+                for item in items:
+                    sym = item.get('itemcode', '')
+                    raw_name = item.get('itemname', '')
+                    price = item.get('nowVal', 0)
+                    change_percent = item.get('changeRate', 0.0)
+                    change_val = item.get('changeVal', 0)
+                    volume = item.get('quant', 0)
+                    
+                    clean_name = raw_name
+                    clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
+                    clean_name = clean_name.replace("미래에셋맵스운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - 타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("미래에셋자산운용 - TIGER", "TIGER")
+                    clean_name = clean_name.replace("미래에셋 TIGER", "TIGER")
+                    clean_name = clean_name.replace("미래에셋운용 - 미래에셋타이거", "TIGER")
+                    clean_name = clean_name.replace("삼성코덱스", "KODEX")
+                    clean_name = clean_name.replace("삼성 Kodex", "KODEX")
+                    clean_name = clean_name.replace("삼성 KODEX", "KODEX")
+                    clean_name = clean_name.replace("삼성자산운용 - 삼성KODEX", "KODEX")
+                    clean_name = clean_name.replace("김킨덱스", "KINDEX")
+                    clean_name = clean_name.replace("- 주식파생상품", "").replace(" - ", " ").strip()
+                    clean_name = clean_name.replace(" ETF", "").replace(" Etf", "").replace(" etf", "")
+                    clean_name = clean_name.replace("이차전지", "2차전지")
+                    clean_name = clean_name.replace("Us Nasdaq", "미국나스닥")
+                    clean_name = clean_name.replace("USA 나스닥", "미국나스닥")
+                    clean_name = clean_name.replace("Inverse2x", "인버스2X")
+                    clean_name = clean_name.replace("Inverse", "인버스")
+                    
+                    if sym == "091160": clean_name = "KODEX 반도체"
+                    if sym == "114800": clean_name = "KODEX 인버스"
+                    if sym == "161510": clean_name = "ARIRANG 고배당주"
+                    if sym == "438220": clean_name = "KODEX 미국배당다우존스"
+                    if sym == "418120": clean_name = "TIGER 미국배당+3%다우존스"
+                    
+                    clean_name = re.sub(r'\s+', ' ', clean_name).strip()
+                    
+                    if change_percent > 0:
+                        change_str = f"▲{abs(change_val):,} ({abs(change_percent):.2f}%)"
+                    elif change_percent < 0:
+                        change_str = f"▼{abs(change_val):,} ({change_percent:.2f}%)"
+                    else:
+                        change_str = "0.00%"
+
+                    results.append({
+                        "symbol": sym,
+                        "name": clean_name,
+                        "price": f"{price:,}",
+                        "change": change_str,
+                        "change_percent": float(change_percent),
+                        "volume": str(volume)
+                    })
+            except Exception as e:
+                print(f"ETF Fetch Error: {e}")
+                pass
 
             # Sort by volume to mimic ranking
             results.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
@@ -978,17 +979,25 @@ def get_etf_ranking(market="KR", category=None):
             # 1. Define comprehensive list of major US ETFs by sector
             us_symbols = [
                 # Index (Major)
-                "SPY", "QQQ", "DIA", "IWM", "VOO", "VTI",
+                "SPY", "QQQ", "DIA", "IWM", "VOO", "VTI", "IVV", "QQQM", "RSP", "MDY", "IJR", "VUG", "VTV", "IWF", "IWD", "IJH", "ITOT", "SCHX", "SCHB", "SPLG", "SPYG", "SPYV",
                 # Inverse
-                "SQQQ", "PSQ", "SH", "SDS",
+                "SQQQ", "PSQ", "SH", "SDS", "SPXU", "QID", "DOG", "DXD", "SDOW", "SRTY", "TZA", "HIBS", "RWM", "FAZ", "TECS", "SOXS", "SPXS", "UVXY", "VIXY", "SVXY", "REW", "PST",
                 # Leverage
-                "TQQQ", "SOXL", "UPRO", "TECL", "FAS",
+                "TQQQ", "SOXL", "UPRO", "TECL", "FAS", "SSO", "QLD", "USD", "CURE", "RETL", "NAIL", "DPST", "LABU", "JNUG", "UCO", "BOIL", "YINN", "CWEB", "NUGT", "UYG", "DRN",
                 # Dividend
-                "SCHD", "JEPI", "VIG", "VYM", "JEPQ",
+                "SCHD", "JEPI", "VIG", "VYM", "JEPQ", "DVY", "SPYD", "SDY", "HDV", "FVD", "NOBL", "DGRO", "PEY", "PGX", "VYMI", "IDV", "IQLT", "RDIV", "SPHD", "DON", "DGRW", "PFF",
                 # Bond
-                "TLT", "BND", "AGG", "TMF",
+                "TLT", "BND", "AGG", "TMF", "IEF", "SHY", "LQD", "HYG", "MUB", "VCIT", "BSV", "GOVT", "MBB", "BNDX", "JNK", "SJNK", "FLOT", "BKLN", "SRLN", "SPAB", "VGIT", "VCSH",
                 # Sector & Theme (Popular)
-                "XLK", "SMH", "SOXX", "LIT", "ARKK", "XLV", "XLE", "IBIT", "GLD"
+                "XLK", "SMH", "SOXX", "LIT", "ARKK", "XLV", "XLE", "IBIT", "GLD", "XLF", "XLY", "XLP", "XLU", "XLI", "XLB", "XLC", "VNQ", "SLV", "URNM", "URA", "COPX",
+                # Battery / Energy
+                "BATT", "ICLN", "PBW", "QCLN", "TAN", "FAN", "ACES", "XOP", "OIH", "VDE", "ERX", "ERY", "DRIP", "GUSH", "AMJ", "AMLP", "KRA", "RYE", "FENY", "NLR",
+                # AI / IT
+                "BOTZ", "ROBO", "IRBO", "ARKQ", "IGV", "SKYY", "CIBR", "HACK", "AIQ", "BUG", "WCLD", "XT", "KOMP", "TECB", "CLOU", "FCLD", "LNZ", "THNQ", "CHAT", "AI", "SOXX",
+                # Semiconductor
+                "XSD", "PSI", "FTXL", "SOXQ", "SMH", "SOXX", "SOXL", "SOXS", "USD", "SSG", "CHPS", "SEMI",
+                # Healthcare
+                "VHT", "IYH", "ARKG", "XBI", "IBB", "PPH", "XHS", "XLV", "CURE", "LABU", "LABD", "RXD", "RXL", "SBIO", "BBC", "BBP", "PILL", "GERN"
             ]
             
             # Parallel fetch quotes
@@ -1011,7 +1020,7 @@ def get_etf_ranking(market="KR", category=None):
                 return None
 
             # Reduced max_workers to avoid aggressive burst
-            with ThreadPoolExecutor(max_workers=10) as executor: # Increase workers for faster fetch
+            with ThreadPoolExecutor(max_workers=20) as executor: # Increase workers for faster fetch
                 unique_symbols = list(set(us_symbols))
                 # Add timeout to map
                 futures = {executor.submit(fetch_quote_safe, sym): sym for sym in unique_symbols}
@@ -1027,7 +1036,7 @@ def get_etf_ranking(market="KR", category=None):
             # Update Cache
             if us_etfs:
                 # Sort by Volume (Descending) to match "거래량 상위" title
-                us_etfs.sort(key=lambda x: int(x.get('volume', 0)), reverse=True)
+                us_etfs.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
                 for i, item in enumerate(us_etfs):
                     item['rank'] = i + 1
                 CACHE_US_ETFS["data"] = us_etfs
@@ -1039,28 +1048,28 @@ def get_etf_ranking(market="KR", category=None):
         if category:
             keywords = []
             if category == "inverse":
-                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS", "QID", "DXD", "RWM", "SDS"]
+                keywords = ["Short", "Inverse", "Bear", "SQQQ", "PSQ", "SOXS", "QID", "DXD", "RWM", "SDS", "SDOW", "SRTY", "TZA", "HIBS", "FAZ", "TECS"]
             elif category == "index":
-                keywords = ["SPY", "QQQ", "IVV", "VOO", "S&P", "Nasdaq", "Core", "Total", "Index", "IWM", "DIA"]
+                keywords = ["SPY", "QQQ", "IVV", "VOO", "S&P", "Nasdaq", "Core", "Total", "Index", "IWM", "DIA", "RSP", "MDY", "IJR", "VUG", "VTV"]
             elif category == "sector":
                 keywords = ["Semiconductor", "IT", "Tech", "Energy", "Materials", "Financial", "Bond", "Treasury", "Health", "Technology", "Financials", "Utilities"]
             elif category == "leverage":
-                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "UPRO", "Leverage", "Double", "Triple", "2x", "3x"]
+                keywords = ["UltraPro", "Bull", "TQQQ", "SOXL", "UPRO", "Leverage", "Double", "Triple", "2x", "3x", "TECL", "FAS", "SSO", "QLD", "CURE", "RETL", "NAIL", "DPST", "LABU", "JNUG"]
             elif category == "dividend":
-                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI", "DGRO", "VIG", "JEPQ", "VYM"]
+                keywords = ["Dividend", "Income", "Yield", "SCHD", "JEPI", "DGRO", "VIG", "JEPQ", "VYM", "DVY", "SPYD", "SDY", "HDV", "FVD", "NOBL", "PEY", "PGX"]
             elif category == "bond":
-                keywords = ["Bond", "Treasury", "TLT", "IEF", "Fixed Income", "BND", "AGG", "TMF", "Corporate", "Bills", "SHY"]
+                keywords = ["Bond", "Treasury", "TLT", "IEF", "Fixed Income", "BND", "AGG", "TMF", "Corporate", "Bills", "SHY", "LQD", "HYG", "MUB", "VCIT", "BSV", "GOVT", "MBB", "BNDX", "JNK"]
             elif category == "battery":
-                keywords = ["Battery", "Lithium", "LIT", "REMX", "Metals", "Clean Energy", "Solar", "Energy"]
+                keywords = ["Battery", "Lithium", "LIT", "REMX", "Metals", "Clean Energy", "Solar", "Energy", "BATT", "ICLN", "PBW", "QCLN", "TAN", "FAN", "ACES", "XOP", "OIH", "VDE"]
             elif category == "ai":
-                keywords = ["AI", "Artificial Intelligence", "ROBO", "BOTZ", "GXG", "Tech", "Software", "Cloud", "Data", "Computing"]
+                keywords = ["AI", "Artificial Intelligence", "ROBO", "BOTZ", "GXG", "Tech", "Software", "Cloud", "Data", "Computing", "IRBO", "ARKQ", "IGV", "SKYY", "CIBR", "HACK", "AIQ", "BUG", "WCLD"]
             elif category == "semiconductor":
-                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "SOXX", "NVDA", "Broadcom", "Chips"]
+                keywords = ["Semiconductor", "Chip", "SOXL", "SOXS", "SMH", "SOXX", "NVDA", "Broadcom", "Chips", "XSD", "PSI", "FTXL", "SOXQ"]
             elif category == "healthcare":
-                keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech", "Pharma", "Medical"]
+                keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech", "Pharma", "Medical", "IYH", "XBI", "IBB", "PPH", "XHS"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
-            return filtered
+            return filtered[:20]
             
         return us_etfs[:20]
     
