@@ -164,15 +164,15 @@ def send_push_notification(
         else:
             fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         
-        if alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
+        if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
             import urllib.parse
-            news_url = (data or {}).get('news_url', '')
+            target_url = (data or {}).get('news_url', '') if alert_type != 'disclosure_alert' else (data or {}).get('dart_url', '')
             notif_title = title.split('\n')[0] if title else ''
             
-            # 테스트 알림 호환성을 위해 news_url이 없으면 임시 구글 링크라도 넣음
-            if not news_url: news_url = 'https://news.google.com'
+            # 테스트 알림 호환성을 위해 target_url이 없으면 임시 구글 링크라도 넣음
+            if not target_url: target_url = 'https://news.google.com'
                 
-            params = {'url': news_url}
+            params = {'url': target_url}
             if symbol: params['symbol'] = symbol
             if notif_title: params['title'] = notif_title
             click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
@@ -299,14 +299,14 @@ def send_multicast_notification(
         else:
             fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         
-        # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보는 경유 페이지로 가도록 강제 처리
-        if alert_type == 'news_alert':
+        # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보 및 공시는 경유 페이지로 가도록 강제 처리
+        if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
             import urllib.parse
-            news_url = (data or {}).get('news_url', '')
+            target_url = (data or {}).get('news_url', '') if alert_type != 'disclosure_alert' else (data or {}).get('dart_url', '')
             notif_title = title.split('\n')[0] if title else ''
             
-            if news_url:
-                params = {'url': news_url}
+            if target_url:
+                params = {'url': target_url}
                 if symbol: params['symbol'] = symbol
                 if notif_title: params['title'] = notif_title
                 click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
