@@ -564,6 +564,86 @@ def save_ai_analysis_cache(symbol: str, ai_result: dict):
     finally:
         conn.close()
 
+# ─────────────────────────────────────────────
+# [Cost-Save Cache] 공급망/테마/나비효과 분석 캐시 (24시간)
+# - 유저 100명이 같은 종목/테마를 봐도 AI 호출은 1번만 하고 나머지는 캐시 사용
+# ─────────────────────────────────────────────
+GENERAL_AI_CACHE_TTL_HOURS = 24
+
+def _get_general_cache(cache_type: str, key: str):
+    """공통 AI 캐시 조회 (supply_chain / theme / scenario)"""
+    import json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 테이블 없으면 자동 생성
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ai_general_cache (
+                cache_type TEXT NOT NULL,
+                cache_key  TEXT NOT NULL,
+                result_json TEXT NOT NULL,
+                cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (cache_type, cache_key)
+            )
+        ''')
+        conn.commit()
+        cursor.execute("""
+            SELECT result_json FROM ai_general_cache
+            WHERE cache_type = ? AND cache_key = ?
+              AND cached_at >= datetime('now', ?, 'utc')
+        """, (cache_type, key.upper(), f'-{GENERAL_AI_CACHE_TTL_HOURS} hours'))
+        row = cursor.fetchone()
+        if row:
+            print(f"[Cost-Save] Cache HIT: {cache_type}/{key}")
+            return json.loads(row[0])
+        return None
+    except Exception as e:
+        print(f"[Cost-Save] Cache Read Error: {e}")
+        return None
+    finally:
+        conn.close()
+
+def _save_general_cache(cache_type: str, key: str, data: dict):
+    """공통 AI 캐시 저장 (supply_chain / theme / scenario)"""
+    import json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ai_general_cache (
+                cache_type TEXT NOT NULL,
+                cache_key  TEXT NOT NULL,
+                result_json TEXT NOT NULL,
+                cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (cache_type, cache_key)
+            )
+        ''')
+        cursor.execute("""
+            INSERT INTO ai_general_cache (cache_type, cache_key, result_json, cached_at)
+            VALUES (?, ?, ?, datetime('now', 'utc'))
+            ON CONFLICT(cache_type, cache_key) DO UPDATE SET
+                result_json = excluded.result_json,
+                cached_at   = excluded.cached_at
+        """, (cache_type, key.upper(), json.dumps(data, ensure_ascii=False)))
+        conn.commit()
+        print(f"[Cost-Save] Cache SAVED: {cache_type}/{key} (TTL={GENERAL_AI_CACHE_TTL_HOURS}h)")
+    except Exception as e:
+        print(f"[Cost-Save] Cache Write Error: {e}")
+    finally:
+        conn.close()
+
+# 공급망 분석 캐시
+def get_cached_supply_chain(symbol: str): return _get_general_cache("supply_chain", symbol)
+def save_supply_chain_cache(symbol: str, data: dict): _save_general_cache("supply_chain", symbol, data)
+
+# 테마 분석 캐시
+def get_cached_theme(keyword: str): return _get_general_cache("theme", keyword)
+def save_theme_cache(keyword: str, data: dict): _save_general_cache("theme", keyword, data)
+
+# 나비효과 시나리오 캐시
+def get_cached_scenario(keyword: str, target: str = ""): return _get_general_cache("scenario", f"{keyword}__{target}")
+def save_scenario_cache(keyword: str, target: str, data: dict): _save_general_cache("scenario", f"{keyword}__{target}", data)
+
 def get_score_history(symbol):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()

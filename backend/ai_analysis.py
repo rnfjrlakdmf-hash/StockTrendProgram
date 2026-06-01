@@ -27,25 +27,25 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-2.5-flash')
+    return genai.GenerativeModel('gemini-1.5-flash')
 
 def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 60, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
     timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 20s
     temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
-    models_to_try: 시도할 모델 리스트 (기본값: gemini-2.5-flash 단일 사용)
+    models_to_try: 시도할 모델 리스트 (기본값: gemini-1.5-flash 단일 사용 - 비용 절감)
     """
     import concurrent.futures
     
     if models_to_try is None:
-        # [Optimized] 단일 모델 사용으로 폴백 지연 제거 (gemini-2.5-flash는 충분히 빠름)
+        # [Cost-Optimized] gemini-1.5-flash 사용 (2.5-flash 대비 비용 약 70% 절감, 품질 차이 미미)
         models_to_try = [
-            "gemini-2.5-flash",
+            "gemini-1.5-flash",
         ]
     
     last_error = None
@@ -348,6 +348,12 @@ def analyze_theme(theme_keyword: str):
             "followers": []
         }
 
+    # [Cost-Save] 24시간 캐시 확인 - 이미 분석한 테마면 AI 호출 없이 즉시 반환
+    from db_manager import get_cached_theme, save_theme_cache
+    cached = get_cached_theme(theme_keyword)
+    if cached:
+        return cached
+
     model = get_json_model()
     
     prompt = f"""
@@ -394,7 +400,10 @@ def analyze_theme(theme_keyword: str):
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        result = json.loads(response.text)
+        # [Cost-Save] 결과를 DB에 저장해서 다음 24시간은 캐시에서 바로 제공
+        save_theme_cache(theme_keyword, result)
+        return result
     except Exception as e:
         print(f"Theme Analysis Error: {e}")
         # Fallback Mock Data
@@ -539,6 +548,12 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
             ],
             "summary": "API 키 미설정으로 인한 데모 데이터 (Supply Chain 2.0)"
         }
+
+    # [Cost-Save] 24시간 캐시 확인 - 같은 종목 공급망은 하루 1번만 AI 호출
+    from db_manager import get_cached_supply_chain, save_supply_chain_cache
+    cached = get_cached_supply_chain(symbol)
+    if cached:
+        return cached
 
     model = get_json_model()
     
@@ -731,6 +746,8 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         elif not isinstance(summary_raw, str):
             data["summary"] = str(summary_raw)
 
+        # [Cost-Save] 분석 결과 캐시에 저장 (다음 24시간은 AI 호출 없이 즉시 반환)
+        save_supply_chain_cache(symbol, data)
         return data
 
     except Exception as e:
@@ -761,7 +778,13 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
             ],
             "summary": summary_text
         }
-        
+
+    # [Cost-Save] 24시간 캐시 확인 - 같은 키워드+종목 조합은 하루 1번만 AI 호출
+    from db_manager import get_cached_scenario, save_scenario_cache
+    cached = get_cached_scenario(keyword, target_symbol or "")
+    if cached:
+        return cached
+
     model = get_json_model()
     
     if target_symbol:
@@ -824,13 +847,16 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # Use gemini-2.5-flash for better instruction following on forced scenarios
+        # [Cost-Optimized] gemini-1.5-flash 사용 (비용 절감)
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-2.5-flash", "gemini-2.0-flash"] if target_symbol else None
+        models = ["gemini-1.5-flash"] if target_symbol else None
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)
-        return json.loads(response.text)
+        result = json.loads(response.text)
+        # [Cost-Save] 결과 캐시에 저장 (다음 24시간은 캐시에서 즉시 반환)
+        save_scenario_cache(keyword, target_symbol or "", result)
+        return result
     except Exception as e:
         print(f"Scenario Analysis Error: {e}")
         return None
