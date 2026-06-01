@@ -19,9 +19,20 @@ function NewsRedirectContent() {
     const title = searchParams.get('title') || '';
     const publisher = searchParams.get('publisher') || '';
 
-    const decodedUrl = url ? decodeURIComponent(url) : '';
-    const decodedTitle = title ? decodeURIComponent(title) : '';
-    const decodedPublisher = publisher ? decodeURIComponent(publisher) : '';
+    // Next.js searchParams.get() 이미 디코딩된 문자열을 반환하므로 추가 디코딩 시 에러(URIError)가 발생할 수 있습니다.
+    // 만약 한 번 더 인코딩되어 넘어온 특이 케이스를 대비해 안전하게 디코딩을 시도합니다.
+    const safeDecode = (str: string) => {
+        if (!str) return '';
+        try {
+            return decodeURIComponent(str);
+        } catch (e) {
+            return str;
+        }
+    };
+
+    const decodedUrl = safeDecode(url);
+    const decodedTitle = safeDecode(title);
+    const decodedPublisher = safeDecode(publisher);
 
     // 사이트 표시용 도메인 추출
     const urlDomain = decodedUrl ? (() => {
