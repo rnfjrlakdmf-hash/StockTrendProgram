@@ -244,10 +244,20 @@ def trigger_news_test(x_user_id: str = Header(None), user_id_param: str = Query(
     user_id = x_user_id or "guest"
     
     from firebase_config import send_multicast_notification
-    from db_manager import get_user_fcm_tokens
+    from db_manager import get_user_fcm_tokens, get_db_connection
     
-    tokens_data = get_user_fcm_tokens(user_id)
-    tokens = [t['token'] for t in tokens_data if t.get('token')]
+    tokens = []
+    if user_id == "all":
+        # 모든 유저에게 발송 (테스트용)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT token FROM fcm_tokens WHERE token IS NOT NULL")
+        rows = cursor.fetchall()
+        conn.close()
+        tokens = [r[0] for r in rows]
+    else:
+        tokens_data = get_user_fcm_tokens(user_id)
+        tokens = [t['token'] for t in tokens_data if t.get('token')]
     
     if not tokens:
         return {"status": "error", "message": f"토큰이 없습니다. 앱/웹에서 푸시 권한을 허용해주세요. (user_id: {user_id})"}
