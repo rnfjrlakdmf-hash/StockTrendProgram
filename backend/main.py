@@ -137,8 +137,8 @@ async def startup_event():
             # 개선: 종목별 1회 수집 → 이용자별 분류 발송 (API 최소화)
             print("[Background] Starting batch news system...")
             from batch_news_system import batch_news_system
-            asyncio.create_task(batch_news_system.start(interval_minutes=10))
-            print("[Background] batch_news_system task created.")
+            asyncio.create_task(batch_news_system.start(interval_minutes=5))
+            print("[Background] batch_news_system task created. (5 min interval)")
         except Exception as e:
             print(f"[Background] Error starting batch news system: {e}")
             traceback.print_exc()

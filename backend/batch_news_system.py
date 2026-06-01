@@ -80,11 +80,11 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
 NAVER_NEWS_API_URL = "https://openapi.naver.com/v1/search/news.json"
 
 # ─── 인기 종목 판단 기준 ────────────────────────────────────────────────────
-TOP_STOCK_MIN_USERS = 5   # 5명 이상 관심 등록 → 인기 종목 (30분 주기)
-OTHER_STOCK_INTERVAL = 120  # 나머지 종목: 2시간(120분) 주기
+TOP_STOCK_MIN_USERS = 1   # 1명 이상 관심 등록 → 인기 종목 (10분 주기)
+OTHER_STOCK_INTERVAL = 15  # 그 외 예외상황: 15분 주기
 
 # ─── 뉴스 캐시 유효 시간 ────────────────────────────────────────────────────
-NEWS_CACHE_TTL_MINUTES = 30   # 30분간 캐시 유지
+NEWS_CACHE_TTL_MINUTES = 10   # 10분간 캐시 유지
 
 # ─── 해외 종목 영문명 매핑 ──────────────────────────────────────────────────
 GLOBAL_ENGLISH_NAMES = {
@@ -280,10 +280,10 @@ class BatchNewsSystem:
 
         elapsed_minutes = (datetime.now() - last).total_seconds() / 60
 
-        # 인기 종목 (5명 이상 관심): 30분 주기
+        # 누군가 관심종목에 등록했다면 10분마다 즉시 스캔 (초고속 알림)
         if user_count >= TOP_STOCK_MIN_USERS:
-            return elapsed_minutes >= 30
-        # 일반 종목: 2시간 주기
+            return elapsed_minutes >= 10
+        # 그 외의 경우: 15분 주기
         else:
             return elapsed_minutes >= OTHER_STOCK_INTERVAL
 
