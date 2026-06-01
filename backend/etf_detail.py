@@ -98,7 +98,12 @@ def get_etf_detail(symbol: str):
     
     # Normalize symbol for market detection (Internal use only)
     clean_sym = symbol.split('.')[0]
-    is_us = not clean_sym.isdigit()
+    
+    # [BugFix] 한국 ETF/ETN은 6자리이며 숫자로 시작함 (영문 포함 가능, 예: 0183V0)
+    # 기존 is_us = not clean_sym.isdigit() 로직은 영문이 포함된 한국 코드를 모두 미국으로 오인함.
+    import re
+    is_kr_format = bool(re.match(r'^\d[A-Z0-9]{5}$', clean_sym.upper()))
+    is_us = not is_kr_format
     
     if is_us:
         try:
