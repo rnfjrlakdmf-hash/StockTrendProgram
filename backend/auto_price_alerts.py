@@ -180,6 +180,12 @@ class AutoPriceMonitor:
         
         state = self.notified_events[today_str][symbol]
         
+        # 해외 주식 여부 판별
+        is_foreign = '.' in symbol or not (symbol.isdigit() and len(symbol) == 6)
+        
+        # 통화 포맷팅
+        curr_str = f"${current:,.2f}" if is_foreign else f"{int(current):,}원"
+        
         # 1. 등락률 계산
         change_pct = ((current - prev_close) / prev_close) * 100
         
@@ -190,7 +196,7 @@ class AutoPriceMonitor:
             state["up_5"] = True
             alerts_to_send.append({
                 "title": "🚀 급등 포착",
-                "body": f"주식 가격이 {change_pct:.1f}% 올랐어요! ({int(current):,}원)" if current >= 100 else f"주식 가격이 {change_pct:.1f}% 올랐어요! (${current:.2f})",
+                "body": f"주식 가격이 {change_pct:.1f}% 올랐어요! ({curr_str})",
                 "type": "surge"
             })
 
@@ -199,7 +205,7 @@ class AutoPriceMonitor:
             state["down_5"] = True
             alerts_to_send.append({
                 "title": "📉 급락 포착",
-                "body": f"주식 가격이 {abs(change_pct):.1f}% 떨어졌어요. ({int(current):,}원)" if current >= 100 else f"주식 가격이 {abs(change_pct):.1f}% 떨어졌어요. (${current:.2f})",
+                "body": f"주식 가격이 {abs(change_pct):.1f}% 떨어졌어요. ({curr_str})",
                 "type": "drop"
             })
 
@@ -208,7 +214,7 @@ class AutoPriceMonitor:
             state["high_52"] = True
             alerts_to_send.append({
                 "title": "🏆 신고가 경신",
-                "body": f"최근 1년 중 최고가를 기록했어요! ({int(current):,}원)" if current >= 100 else f"최근 1년 중 최고가를 기록했어요! (${current:.2f})",
+                "body": f"최근 1년 중 최고가를 기록했어요! ({curr_str})",
                 "type": "high_52"
             })
 
