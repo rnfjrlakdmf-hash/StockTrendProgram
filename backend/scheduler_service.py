@@ -206,7 +206,7 @@ def send_closing_notification(market: str):
         print(f"[Scheduler-Error] Failed to get KR market indices: {e}")
     
     # 안전 지표 조회 헬퍼 (차단 대비)
-    def get_safe_quote(sym: str, default_price="확인불가", default_change="0.00%"):
+    def get_safe_quote(sym: str, default_price="확인불가", default_change="0.00%", default_change_val="0.00"):
         try:
             # 봇 필터 회피 지연
             time.sleep(0.1)
@@ -225,20 +225,46 @@ def send_closing_notification(market: str):
                 return {
                     "price": cached_data.get("price", default_price),
                     "change": cached_data.get("change", default_change),
-                    "change_percent": cached_data.get("change_percent", default_change)
+                    "change_percent": cached_data.get("change_percent", default_change),
+                    "regular_change": cached_data.get("regular_change", default_change_val)
                 }
         except:
             pass
             
-        return {"price": default_price, "change": default_change, "percent": default_change}
+        return {"price": default_price, "change": default_change, "percent": default_change, "regular_change": default_change_val}
+
+    # Extract KOSPI and KOSDAQ info safely
+    kospi_info = kr_indices.get("kospi", {}) if isinstance(kr_indices, dict) else {}
+    kosdaq_info = kr_indices.get("kosdaq", {}) if isinstance(kr_indices, dict) else {}
+    
+    def _format_index(idx_info, default_name):
+        if not idx_info: return f"{default_name}: 확인불가"
+        val = idx_info.get("value", "0.00")
+        chg = idx_info.get("change", "0.00")
+        pct = idx_info.get("percent", "0.00%")
+        sign = "+" if idx_info.get("direction") == "Up" else "-" if idx_info.get("direction") == "Down" else ""
+        return f"{default_name}: {val} ({sign}{chg} / {pct})"
+        
+    def _format_us_index(quote, default_name):
+        if not quote or quote.get("price") == "확인불가": return f"{default_name}: 확인불가"
+        val = quote.get("price", "0.00")
+        pct = quote.get("change_percent", quote.get("change", "0.00%"))
+        chg_val = quote.get("regular_change", 0)
+        try:
+             chg_val_f = float(chg_val)
+             sign = "+" if chg_val_f >= 0 else ""
+             chg_str = f"{sign}{chg_val_f:.2f}"
+        except:
+             chg_str = "0.00"
+        return f"{default_name}: {val} ({chg_str} / {pct})"
 
     common = {
-        "KOSPI": {"change": kr_indices.get("kospi", {}).get("percent", "0.00%") if isinstance(kr_indices, dict) else "0.00%"},
-        "KOSDAQ": {"change": kr_indices.get("kosdaq", {}).get("percent", "0.00%") if isinstance(kr_indices, dict) else "0.00%"},
-        "DOW": get_safe_quote("^DJI"),
-        "NASDAQ": get_safe_quote("^IXIC"),
-        "SP500": get_safe_quote("^GSPC"),
-        "SOX": get_safe_quote("^SOX"),
+        "KOSPI": _format_index(kospi_info, "코스피"),
+        "KOSDAQ": _format_index(kosdaq_info, "코스닥"),
+        "DOW": _format_us_index(get_safe_quote("^DJI"), "다우존스"),
+        "NASDAQ": _format_us_index(get_safe_quote("^IXIC"), "나스닥"),
+        "SP500": _format_us_index(get_safe_quote("^GSPC"), "S&P500"),
+        "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수"),
         "TNX": get_safe_quote("^TNX", default_price="4.50"),
         "OIL": get_safe_quote("CL=F"),
         "FX": get_safe_quote("USDKRW=X", default_price="1,350"),
@@ -260,16 +286,16 @@ def send_closing_notification(market: str):
             
             # 1. 기본 지수 구성 (KR: 코스피/코스닥/환율, US: 다우/나스닥/S&P)
             if market == "KR":
-                base_str = f"📊 코스피: {common['KOSPI'].get('change')} | 코스닥: {common['KOSDAQ'].get('change')}\n" \
+                base_str = f"📊 {common['KOSPI']}\n📊 {common['KOSDAQ']}\n" \
                            f"💵 환율: {common['FX'].get('price')}원"
             else:
-                base_str = f"🇺🇸 나스닥: {common['NASDAQ'].get('change')} | S&P500: {common['SP500'].get('change')}"
+                base_str = f"🇺🇸 {common['NASDAQ']}\n🇺🇸 {common['SP500']}"
 
             # 2. 맞춤형 및 필수 원자재 추가 (유가는 기본 포함)
             extra_list = [f"🛢️ 유가: {common['OIL'].get('change')}"]
             
             if any(s in ['005930', '000660', 'NVDA', 'AMD', 'TSM'] for s in symbols):
-                extra_list.append(f"💻 반도체: {common['SOX'].get('change')}")
+                extra_list.append(f"💻 반도체: {common['SOX']}")
             if any(s in ['247540', '086520', '373220', 'TSLA'] for s in symbols):
                 extra_list.append(f"🔋 테슬라: {common['TSLA'].get('change')}")
             if any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL'] for s in symbols) or market == "US":
@@ -306,10 +332,28 @@ def send_closing_notification(market: str):
             price_list = []
             for item in perf["items"][:8]:
                 change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
-                line = f"• {item['name']}: {item['current_price']} ({change_emoji}{abs(item['daily_change']):.1f}%)"
-                if item.get('price_diff') is not None:
+                
+                # Format current_price nicely
+                curr_price_str = f"{item['current_price']:,.0f}" if market == "KR" else f"{item['current_price']:,.2f}"
+                
+                # Format absolute daily change (e.g., 900원)
+                chg_val = item.get('daily_change_val', 0)
+                if chg_val:
+                    try:
+                         chg_val_f = float(chg_val)
+                         chg_val_str = f"{abs(chg_val_f):,.0f}원" if market == "KR" else f"${abs(chg_val_f):,.2f}"
+                    except:
+                         chg_val_str = ""
+                else:
+                    # Approximation if missing
+                    approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
+                    chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
+                
+                line = f"• {item['name']}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
+                if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                     diff = item['price_diff']
-                    line += f" [{diff:+,.0f}]"
+                    diff_str = f"{diff:+,.0f}" if market == "KR" else f"{diff:+,.2f}"
+                    line += f"\n  ↳ 💰수익: {diff_str}{unit}"
                 price_list.append(line)
                 
             body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
