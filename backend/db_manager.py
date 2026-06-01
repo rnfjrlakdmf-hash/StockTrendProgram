@@ -1006,18 +1006,17 @@ def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_na
         return False
     
     try:
+        # [강력 조치] 유저당 무조건 1개의 기기(토큰)만 허용 (중복 알림 원천 차단)
+        # 새로운 기기(또는 앱)에서 접속하면 기존 기기의 알림은 모두 끊어버림
+        cursor.execute("DELETE FROM fcm_tokens WHERE user_id = ?", (clean_user_id,))
+        
         cursor.execute("""
             INSERT INTO fcm_tokens (user_id, token, device_type, device_name, last_used)
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(token) DO UPDATE SET
-                user_id = excluded.user_id,
-                device_type = excluded.device_type,
-                device_name = excluded.device_name,
-                last_used = CURRENT_TIMESTAMP
         """, (clean_user_id, token, device_type, device_name))
         
         conn.commit()
-        print(f"[FCM-Save] Token saved: user_id='{clean_user_id}', device={device_type}, token={token[:20]}...")
+        print(f"[FCM-Save] Token saved (1 token per user enforced): user_id='{clean_user_id}', token={token[:20]}...")
         return True
     except Exception as e:
         print(f"[DB] Save FCM token error: {e}")
