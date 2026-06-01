@@ -187,9 +187,10 @@ def send_opening_notification(market: str):
             
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
-            tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
+            # 장시작 알림은 pref_price(가격알림) 권한으로 필터 (pref_closing 아님!)
+            tokens = [t['token'] for t in tokens_data if t.get('pref_price', True)]
             if tokens:
-                send_multicast_notification(tokens, title, body, {"url": "/watchlist"})
+                send_multicast_notification(tokens, title, body, {"type": "price_alert", "url": "/watchlist"})
 
 def send_closing_notification(market: str):
     """시장 마감 리포트 발송 로직 (기본 지수 + 맞춤형 지수 하이브리드)"""
@@ -482,77 +483,95 @@ def run_market_scheduler():
     kst = pytz.timezone('Asia/Seoul')
     initialize_firebase()
     
+    last_run_dart_cache = None
+    last_run_daily_report = None
+    last_run_morning_kr = None
+    last_run_morning_us = None
+    last_run_ipo = None
+    last_run_open_kr = None
+    last_run_close_kr = None
+    last_run_open_us = None
+    last_run_close_us = None
+    
     while True:
         try:
             now = datetime.now(kst)
             day_of_week = now.weekday()
+            current_date = now.strftime('%Y-%m-%d')
             
-            # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱 (장 시작 2시간 30분 전)
-            if now.hour == 6 and now.minute == 30:
+            # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
+            if now.hour == 6 and now.minute == 30 and current_date != last_run_dart_cache:
                 try:
                     run_dart_daily_cache_update()
                 except Exception as e:
                     print(f"[Scheduler] DART 캐싱 오류: {e}")
-                time.sleep(60)
+                last_run_dart_cache = current_date
 
             # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
-            if now.hour == 23 and now.minute == 59:
+            if now.hour == 23 and now.minute == 59 and current_date != last_run_daily_report:
                 send_daily_analytics_report()
-                time.sleep(60)
+                last_run_daily_report = current_date
             
-            # [매일 발송] AI 모닝 브리핑 (주말/공휴일 포함 뉴스 요약)
-            if now.hour == 8 and now.minute == 0:
+            # [매일 발송] AI 모닝 브리핑 (KR)
+            if now.hour == 8 and now.minute == 0 and current_date != last_run_morning_kr:
                 asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
-                time.sleep(60)
+                last_run_morning_kr = current_date
 
-            # [매일 발송] 공모주 청약 일정 알림 (평일 오전 8:15)
+            # [매일 발송] 공모주 청약 일정 알림
             if day_of_week <= 4:
-                if now.hour == 8 and now.minute == 15 and not is_market_holiday("KR"):
+                if now.hour == 8 and now.minute == 15 and current_date != last_run_ipo and not is_market_holiday("KR"):
                     try:
                         from batch_ipo_alerts import send_ipo_alerts
                         send_ipo_alerts()
                     except Exception as e:
                         print(f"[Scheduler] IPO 알림 오류: {e}")
-                    time.sleep(60)
+                    last_run_ipo = current_date
             
-            if now.hour == 21 and now.minute == 30:
+            # [매일 발송] AI 모닝 브리핑 (US)
+            if now.hour == 21 and now.minute == 30 and current_date != last_run_morning_us:
                 asyncio.run(morning_briefing_service.run_daily_briefing("US"))
-                time.sleep(60)
+                last_run_morning_us = current_date
 
-            # 1. 국내 장시작 시가 알림 (평일 월~금, 한국시간 오전 09:05)
+            # 1. 국내 장시작 시가 알림
             if day_of_week <= 4:
-                if now.hour == 9 and now.minute == 5 and not is_market_holiday("KR"):
+                if now.hour == 9 and now.minute == 5 and current_date != last_run_open_kr and not is_market_holiday("KR"):
                     send_opening_notification("KR")
-                    time.sleep(60)
+                    last_run_open_kr = current_date
 
-            # 2. 국내 장마감 종가 리포트 (평일 월~금, 한국시간 오후 15:40)
+            # 2. 국내 장마감 종가 리포트
             if day_of_week <= 4:
-                if now.hour == 15 and now.minute == 40 and not is_market_holiday("KR"):
+                if now.hour == 15 and now.minute == 40 and current_date != last_run_close_kr and not is_market_holiday("KR"):
                     send_closing_notification("KR")
-                    time.sleep(60)
+                    last_run_close_kr = current_date
             
             # 미국 서머타임(DST) 적용 여부 확인 (미국 동부 시간 기준)
             ny_tz = pytz.timezone('America/New_York')
             ny_time = datetime.now(ny_tz)
             is_dst = ny_time.dst().total_seconds() != 0
-            
+            ny_date = ny_time.strftime('%Y-%m-%d')  # 미국 날짜 (장마감 다음날다룼 계산용)
+
             # 서머타임 시: KST 22:35 개장 알림 / KST 04:10 마감 알림
             # 표준시간 시: KST 23:35 개장 알림 / KST 05:10 마감 알림
             us_open_hour = 22 if is_dst else 23
             us_close_hour = 4 if is_dst else 5
-            
-            # 3. 미국 장시작 시가 알림 (평일 월~금, 개장 5분 후)
-            if day_of_week <= 4:
-                if now.hour == us_open_hour and now.minute == 35 and not is_market_holiday("US"):
-                    send_opening_notification("US")
-                    time.sleep(60)
 
-            # 4. 미국 장마감 종가 리포트 (한국시간 화~토요일 새벽 마감 10분 후)
-            # 미국 금요일 장마감은 한국 시간 토요일 새벽(day_of_week == 5)에 오므로 1 <= day_of_week <= 5 조건으로 처리
-            if 1 <= day_of_week <= 5:
-                if now.hour == us_close_hour and now.minute == 10 and not is_market_holiday("US"):
+            # 3. 미국 장시작 시가 알림
+            # - 서머타임: KST 22:35 = 미국 09:35 → KST 월~토(0~5) 모두 필요
+            # - 표준시: KST 23:35 = 미국 09:35 → KST 월~금(0~4)
+            us_open_days = list(range(0, 6)) if is_dst else list(range(0, 5))
+            if day_of_week in us_open_days:
+                if now.hour == us_open_hour and now.minute == 35 and current_date != last_run_open_us and not is_market_holiday("US"):
+                    send_opening_notification("US")
+                    last_run_open_us = current_date
+
+            # 4. 미국 장마감 종가 리포트
+            # - KST 새벽 4~5시는 미국 전날입니다
+            # - ny_date(미국 날짜)를 기준으로 중복 발송 방지
+            us_close_days = list(range(1, 6)) if is_dst else list(range(1, 6))
+            if day_of_week in us_close_days:
+                if now.hour == us_close_hour and now.minute == 10 and ny_date != last_run_close_us and not is_market_holiday("US"):
                     send_closing_notification("US")
-                    time.sleep(60)
+                    last_run_close_us = ny_date
             
             time.sleep(30)
             
