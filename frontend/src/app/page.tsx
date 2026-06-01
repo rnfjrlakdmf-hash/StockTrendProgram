@@ -109,6 +109,21 @@ export default function Home() {
                   <span>{stockData.change.includes('+') ? "▲" : stockData.change.includes('-') ? "▼" : ""}</span>
                   <span>{stockData.change}</span>
                 </div>
+                {(stockData.is_extended_hours || stockData.market_status?.includes('시간외') || stockData.market_status?.includes('프리') || stockData.market_status?.includes('NXT') || stockData.market_status?.includes('애프터')) && (
+                   <div className="mt-2 inline-flex flex-col items-end border-t border-white/10 pt-2">
+                     <span className={`text-xs font-bold px-2 py-0.5 rounded-md mb-1 uppercase ${stockData.market_status?.includes('프리') || stockData.market_status?.includes('PRE') ? 'bg-amber-500/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
+                       {stockData.market_status?.includes('프리') || stockData.market_status?.includes('PRE') ? 'PRE-MARKET 프리마켓' : 'AFTER-MARKET 애프터마켓'}
+                     </span>
+                     <p className="text-2xl font-bold text-gray-300">
+                        {(() => {
+                           const nxt = (stockData.market_status?.includes('야간') || stockData.market_status?.includes('NXT')) ? stockData.nxt_data : stockData.after_market_data;
+                           const extPrice = stockData.extended_price || nxt?.price;
+                           if (!extPrice) return '';
+                           return Number(String(extPrice).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stockData.currency === 'KRW' ? 0 : 2});
+                        })()}
+                     </p>
+                   </div>
+                )}
               </div>
             </div>
 

@@ -15,6 +15,12 @@ export interface StockData {
         financials: number;
         news: number;
     };
+    market_status?: string;
+    is_extended_hours?: boolean;
+    extended_price?: number;
+    regular_price?: number;
+    after_market_data?: { price: number; change_val: number; change_pct: number; };
+    nxt_data?: { price: number; change_val: number; change_pct: number; };
 }
 export async function fetchStockFast(symbol: string): Promise<StockData | null> {
     try {
