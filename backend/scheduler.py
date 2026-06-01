@@ -105,13 +105,13 @@ async def check_and_notify_disclosures():
                 emoji = "📊"
             elif any(kw in report_title for kw in ["배당", "주주총회"]):
                 emoji = "💸"
-
             noti_title = f"{emoji} {corp} 공시 속보"
-            noti_body = f"📋 {report_title}"
+            safe_report_title = report_title.replace("[", "").replace("]", "").replace("|", "")
+            noti_body = f"📋 {safe_report_title}"
             if rcept_dt:
                 try:
-                    dt_fmt = f"{rcept_dt[4:6]}/{rcept_dt[6:8]}"
-                    noti_body += f" (📅 {dt_fmt})"
+                    dt_fmt = f"{rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
+                    noti_body += f" 📅 {dt_fmt}"
                 except Exception:
                     pass
 
@@ -223,11 +223,12 @@ async def check_and_notify_sec_disclosures():
                         continue
 
                     noti_title = f"📢 {ticker} SEC 공시"
-                    noti_body = f"📋 {title_el}"
+                    safe_title_el = title_el.replace("[", "").replace("]", "").replace("|", "")
+                    noti_body = f"📋 {safe_title_el}"
                     if updated:
                         try:
                             dt = datetime.fromisoformat(updated[:10])
-                            noti_body += f" (📅 {dt.strftime('%m/%d')})"
+                            noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
                         except Exception:
                             pass
 
@@ -340,7 +341,7 @@ async def check_and_notify_ipos():
                     underwriter = ipo.get('detail', '')
 
                     noti_title = f"🚀 {name} 신규 공모주 청약"
-                    noti_body = f"💰 희망가: {band}원 | 📅 청약일: {schedule} | 🏢 주관사: {underwriter}"
+                    noti_body = f"💰 희망가 {band}원 📅 청약일 {schedule} 🏢 주관사 {underwriter}"
                     data_payload = {
                         "type": "IPO_ALERT",
                         "url": "/market"

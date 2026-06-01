@@ -148,14 +148,15 @@ class MorningBriefingService:
         body_parts = []
         
         if has_pros:
-            body_parts.append("\n".join([f"🟢 {p}" for p in pros_list]))
+            body_parts.append("\n".join([f"🟢 {p.replace('[', '').replace(']', '')}" for p in pros_list]))
         if has_cons:
-            body_parts.append("\n".join([f"🔴 {c}" for c in cons_list]))
+            body_parts.append("\n".join([f"🔴 {c.replace('[', '').replace(']', '')}" for c in cons_list]))
             
-        body_parts.append(f"🤖 {ai_opinion}")
+        body_parts.append(f"🤖 {ai_opinion.replace('[', '').replace(']', '')}")
         
         if investor_summary:
-            body_parts.append(investor_summary)
+            clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
+            body_parts.append(f"\n{clean_investor}")
             
         body = "\n".join(body_parts)
 
