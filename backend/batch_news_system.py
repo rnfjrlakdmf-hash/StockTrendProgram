@@ -133,16 +133,26 @@ def fetch_naver_news_official(query: str, display: int = 100) -> List[dict]:
         if res.status_code == 200:
             data = res.json()
             items = data.get("items", [])
-            # HTML 태그 제거
+            # HTML 태그 제거 + 제목에서 [도메인] 패턴 제거
             cleaned = []
             for item in items:
                 title = re.sub(r'<[^>]+>', '', item.get("title", ""))
+                # [www.site.com] 또는 [site.com] 같은 도메인 태그 제거
+                title = re.sub(r'\[([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})\]\s*', '', title).strip()
+                # HTML 엔티티 디코딩 (&amp; &lt; &gt; &quot; 등)
+                import html as html_lib
+                title = html_lib.unescape(title)
                 desc = re.sub(r'<[^>]+>', '', item.get("description", ""))
+                desc = html_lib.unescape(desc)
+                # 언론사 도메인에서 깔끔한 이름 추출 (www. 제거)
+                original_link = item.get("originallink", "")
+                raw_domain = original_link.split("/")[2] if original_link else ""
+                publisher = raw_domain.replace("www.", "").split(".")[0] if raw_domain else "네이버 뉴스"
                 cleaned.append({
                     "title": title,
                     "description": desc,
                     "link": item.get("link", ""),
-                    "publisher": item.get("originallink", "").split("/")[2] if item.get("originallink") else "네이버 뉴스",
+                    "publisher": publisher,
                     "pubDate": item.get("pubDate", ""),
                 })
             return cleaned
@@ -609,6 +619,11 @@ class BatchNewsSystem:
             title_text = news_item.get("title", "새로운 소식")
             publisher = news_item.get("publisher", "뉴스")
 
+            # 혹시 title에 남아있는 도메인 패턴 한 번 더 제거 (이중 방어)
+            import re as _re, html as _html
+            clean_title = _re.sub(r'\[([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})\]\s*', '', title_text).strip()
+            clean_title = _html.unescape(clean_title)
+
             # 이모지 결정
             if is_korean:
                 icon = "🇰🇷"
@@ -616,7 +631,7 @@ class BatchNewsSystem:
                 icon = "🌐"
 
             push_title = f"{icon} {kr_name} 속보!"
-            push_body = f"[{publisher}] {title_text}"
+            push_body = f"{clean_title}"
 
             # 뉴스 알림 허용한 이용자 토큰만 수집
             all_tokens = []
