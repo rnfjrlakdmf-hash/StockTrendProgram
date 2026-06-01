@@ -179,6 +179,26 @@ def send_push_notification(
         )
         
         # Web 설정
+        click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
+        alert_type = (data or {}).get('type', '')
+        
+        if alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
+            import urllib.parse
+            news_url = (data or {}).get('news_url', '')
+            symbol = (data or {}).get('symbol', '')
+            notif_title = title.split('\n')[0] if title else ''
+            
+            # 테스트 알림 호환성을 위해 news_url이 없으면 임시 구글 링크라도 넣음
+            if not news_url: news_url = 'https://news.google.com'
+                
+            params = {'url': news_url}
+            if symbol: params['symbol'] = symbol
+            if notif_title: params['title'] = notif_title
+            click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
+
+        if click_url and not click_url.startswith('http'):
+            click_url = f'https://stock-trend-program.co.kr{click_url}'
+            
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
                 title=title,
@@ -188,7 +208,7 @@ def send_push_notification(
                 vibrate=[200, 100, 200]
             ),
             fcm_options=messaging.WebpushFCMOptions(
-                link=data.get('url', 'https://stock-trend-program.vercel.app') if data else 'https://stock-trend-program.vercel.app'
+                link=click_url
             )
         )
         
@@ -293,8 +313,24 @@ def send_multicast_notification(
         
         # Web 설정
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
+        alert_type = (data or {}).get('type', '')
+        
+        # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보는 경유 페이지로 가도록 강제 처리
+        if alert_type == 'news_alert':
+            import urllib.parse
+            news_url = (data or {}).get('news_url', '')
+            symbol = (data or {}).get('symbol', '')
+            notif_title = title.split('\n')[0] if title else ''
+            
+            if news_url:
+                params = {'url': news_url}
+                if symbol: params['symbol'] = symbol
+                if notif_title: params['title'] = notif_title
+                click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
+
         if click_url and not click_url.startswith('http'):
             click_url = f'https://stock-trend-program.co.kr{click_url}'
+            
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
                 title=title,
