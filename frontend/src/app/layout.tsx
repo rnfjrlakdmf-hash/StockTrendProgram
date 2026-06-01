@@ -52,10 +52,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <head>
+    <head>
         {/* Google AdSense 공식 스크립트 */}
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833" crossOrigin="anonymous"></script>
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
+        {/* ✅ iOS PWA 필수 메타태그 - 홈 화면 추가 후 알림 활성화 지원 */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="AI Stock Analyst" />
+        <link rel="apple-touch-icon" href="/icon.png" />
+        <link rel="apple-touch-startup-image" href="/icon.png" />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <AuthProvider>

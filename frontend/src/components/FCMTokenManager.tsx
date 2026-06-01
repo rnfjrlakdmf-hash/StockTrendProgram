@@ -243,7 +243,15 @@ export default function FCMTokenManager() {
             } else if (errMsg === 'TIMEOUT') {
                 alert('❌ 연결 시간 초과\n\n인터넷 연결을 확인하고 다시 시도해주세요.');
             } else if (errMsg === 'FCM_UNAVAILABLE') {
-                alert('❌ 알림을 지원하지 않는 환경입니다.\n\n일반 크롬(Chrome) 또는 엣지(Edge) 브라우저를 이용해주세요.');
+                // iOS 여부 확인 - iOS면 맞춤 안내
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const isStandalone = ('standalone' in navigator && (navigator as any).standalone === true) ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+                if (isIOS && !isStandalone) {
+                    alert('📱 아이폰 알림 받기 안내\n\n아이폰은 홈 화면에 앱을 추가해야 알림을 받을 수 있습니다.\n\n1️⃣ Safari 아래 공유 버튼(↑) 터치\n2️⃣ "홈 화면에 추가" 선택\n3️⃣ 홈 화면 앱으로 다시 실행\n4️⃣ 알림 허용 버튼 누르기\n\n⚠️ 크롬 앱에서는 작동하지 않습니다. 반드시 Safari를 이용하세요.');
+                } else {
+                    alert('❌ 알림을 지원하지 않는 환경입니다.\n\n일반 크롬(Chrome) 또는 엣지(Edge) 브라우저를 이용해주세요.');
+                }
             } else if (errMsg.includes('push service error') || errMsg.includes('Registration failed')) {
                 alert('❌ 브라우저 푸시 서비스가 차단되었습니다.\n\n시크릿 모드를 사용 중이거나, 광고 차단 앱이 알림을 막고 있을 수 있습니다.\n일반 크롬(Chrome) 브라우저에서 다시 시도해주세요.');
             } else {
