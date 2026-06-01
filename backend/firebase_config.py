@@ -152,40 +152,21 @@ def send_push_notification(
             image=image_url
         )
         
-        # Android 설정
-        android_config = messaging.AndroidConfig(
-            priority='high',
-            notification=messaging.AndroidNotification(
-                sound='default',
-                color='#3B82F6',
-                channel_id='price_alerts',
-                priority='high',
-                default_vibrate_timings=True
-            )
-        )
-        
-        # iOS 설정
-        apns_config = messaging.APNSConfig(
-            payload=messaging.APNSPayload(
-                aps=messaging.Aps(
-                    sound='default',
-                    badge=1,
-                    alert=messaging.ApsAlert(
-                        title=title,
-                        body=body
-                    )
-                )
-            )
-        )
-        
-        # Web 설정
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
         alert_type = (data or {}).get('type', '')
+        symbol = (data or {}).get('symbol', '')
+        
+        # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
+        if alert_type == 'disclosure_alert':
+            fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
+        elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
+            fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
+        else:
+            fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         
         if alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
             import urllib.parse
             news_url = (data or {}).get('news_url', '')
-            symbol = (data or {}).get('symbol', '')
             notif_title = title.split('\n')[0] if title else ''
             
             # 테스트 알림 호환성을 위해 news_url이 없으면 임시 구글 링크라도 넣음
@@ -205,10 +186,25 @@ def send_push_notification(
                 body=body,
                 icon='/icon.png',
                 badge='/badge.png',
-                vibrate=[200, 100, 200]
+                vibrate=[200, 100, 200],
+                tag=fcm_tag,
+                renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
+            )
+        )
+        
+        # Android 설정
+        android_config = messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                sound='default',
+                color='#3B82F6',
+                channel_id='price_alerts',
+                priority='high',
+                default_vibrate_timings=True,
+                tag=fcm_tag
             )
         )
         
@@ -291,35 +287,22 @@ def send_multicast_notification(
             image=image_url
         )
         
-        # Android 설정
-        android_config = messaging.AndroidConfig(
-            priority='high',
-            notification=messaging.AndroidNotification(
-                sound='default',
-                color='#3B82F6',
-                channel_id='price_alerts'
-            )
-        )
-        
-        # iOS 설정
-        apns_config = messaging.APNSConfig(
-            payload=messaging.APNSPayload(
-                aps=messaging.Aps(
-                    sound='default',
-                    badge=1
-                )
-            )
-        )
-        
-        # Web 설정
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
         alert_type = (data or {}).get('type', '')
+        symbol = (data or {}).get('symbol', '')
+        
+        # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
+        if alert_type == 'disclosure_alert':
+            fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
+        elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
+            fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
+        else:
+            fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         
         # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보는 경유 페이지로 가도록 강제 처리
         if alert_type == 'news_alert':
             import urllib.parse
             news_url = (data or {}).get('news_url', '')
-            symbol = (data or {}).get('symbol', '')
             notif_title = title.split('\n')[0] if title else ''
             
             if news_url:
@@ -336,10 +319,23 @@ def send_multicast_notification(
                 title=title,
                 body=body,
                 icon='/icon.png',
-                badge='/badge.png'
+                badge='/badge.png',
+                tag=fcm_tag,
+                renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
+            )
+        )
+        
+        # Android 설정 (네이티브 앱용 태그 추가)
+        android_config = messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                sound='default',
+                color='#3B82F6',
+                channel_id='price_alerts',
+                tag=fcm_tag
             )
         )
         
