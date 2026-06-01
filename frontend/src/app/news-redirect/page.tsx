@@ -4,11 +4,12 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ExternalLink, ArrowRight, Newspaper, TrendingUp, X, Loader2, Home } from 'lucide-react';
 import Link from 'next/link';
+import AdBanner from '@/components/AdBanner';
 
 function NewsRedirectContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [countdown, setCountdown] = useState(4);
+    const [countdown, setCountdown] = useState(5);
     const [progress, setProgress] = useState(0);
     const [cancelled, setCancelled] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
@@ -39,8 +40,8 @@ function NewsRedirectContent() {
 
         if (cancelled) return;
 
-        // 4초 카운트다운 + 프로그레스바
-        const TOTAL_MS = 4000;
+        // 5초 카운트다운 + 프로그레스바 (광고 로딩 시간 확보)
+        const TOTAL_MS = 5000;
         const TICK_MS = 50;
         let elapsed = 0;
 
@@ -65,7 +66,7 @@ function NewsRedirectContent() {
     const handleCancel = () => {
         setCancelled(true);
         setProgress(0);
-        setCountdown(4);
+        setCountdown(5);
     };
 
     const handleGoNow = () => {
@@ -86,7 +87,7 @@ function NewsRedirectContent() {
 
     return (
         <div
-            className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #050505 0%, #0a0a12 50%, #050505 100%)' }}
         >
             {/* 배경 글로우 */}
@@ -101,6 +102,11 @@ function NewsRedirectContent() {
                 <Home className="w-4 h-4" />
                 <span>홈으로</span>
             </Link>
+
+            {/* 광고 영역 (상단) — 광고가 로딩될 시간 확보를 위해 최상단 배치 */}
+            <div className="w-full max-w-md mb-4 relative z-10">
+                <AdBanner adSlot="7781033256" adFormat="auto" />
+            </div>
 
             <div
                 className={`relative w-full max-w-md transition-all duration-300 ${isLeaving ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
@@ -209,7 +215,7 @@ function NewsRedirectContent() {
                                 </div>
                                 <div className="w-full rounded-full overflow-hidden" style={{ height: '4px', background: 'rgba(255,255,255,0.08)' }}>
                                     <div
-                                        className="h-full rounded-full transition-all"
+                                        className="h-full rounded-full"
                                         style={{
                                             width: `${progress}%`,
                                             background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
@@ -263,6 +269,11 @@ function NewsRedirectContent() {
                     </div>
                 </div>
 
+                {/* 광고 영역 (하단) */}
+                <div className="mt-4">
+                    <AdBanner adSlot="3412955102" adFormat="auto" />
+                </div>
+
                 {/* 하단 저작권 */}
                 <p className="text-center text-gray-700 text-xs mt-4">
                     © 2025 AI Stock Analyst · 뉴스 원문은 각 언론사에 귀속됩니다
@@ -271,14 +282,8 @@ function NewsRedirectContent() {
 
             <style jsx global>{`
                 @keyframes fadeSlideUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                    from { opacity: 0; transform: translateY(20px); }
+                    to   { opacity: 1; transform: translateY(0); }
                 }
                 .line-clamp-3 {
                     display: -webkit-box;
