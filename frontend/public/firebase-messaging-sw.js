@@ -25,19 +25,33 @@ messaging.onBackgroundMessage((payload) => {
 
     const notificationTitle = payload.notification?.title || '새 알림';
     const symbol = payload.data?.symbol || '';
+    const alertType = payload.data?.type || 'stock-alert';
+
+    // 알림 종류별 태그 분리
+    // - 뉴스 속보: news-{symbol} -> 같은 종목 뉴스만 덜어쓰기
+    // - 공시 속보: disc-{symbol} -> 같은 종목 공시만 덜어쓰기
+    // -> 뉴스와 공시는 서로 덜어쓰지 않고 독립적으로 쌓임
+    let tag;
+    if (alertType === 'disclosure_alert') {
+        tag = symbol ? `disc-${symbol}` : 'disc-alert';
+    } else if (alertType === 'news_alert') {
+        tag = symbol ? `news-${symbol}` : 'news-alert';
+    } else {
+        tag = symbol ? `stock-alert-${symbol}` : 'stock-alert';
+    }
+
     const notificationOptions = {
         body: payload.notification?.body || '',
         icon: '/icon.png',
         badge: '/badge.png',
         vibrate: [200, 100, 200],
         data: payload.data,
-        // 종목별로 태그 분리 → 같은 종목 알림은 덮어쓰기, 다른 종목은 각각 표시
-        tag: symbol ? `stock-alert-${symbol}` : 'stock-alert',
+        tag: tag,
         renotify: true,
         actions: [
             {
                 action: 'view',
-                title: '종목 보기 📈'
+                title: alertType === 'disclosure_alert' ? '공시 보기 📊' : '종목 보기 📈'
             },
             {
                 action: 'close',

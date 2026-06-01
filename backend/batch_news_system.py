@@ -617,21 +617,20 @@ class BatchNewsSystem:
 
             is_korean = is_korean_stock(symbol)
             title_text = news_item.get("title", "새로운 소식")
-            publisher = news_item.get("publisher", "뉴스")
+            publisher = news_item.get("publisher", "")
 
             # 혹시 title에 남아있는 도메인 패턴 한 번 더 제거 (이중 방어)
             import re as _re, html as _html
             clean_title = _re.sub(r'\[([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})\]\s*', '', title_text).strip()
             clean_title = _html.unescape(clean_title)
 
-            # 이모지 결정
-            if is_korean:
-                icon = "🇰🇷"
-            else:
-                icon = "🌐"
+            # 알림 제목: [뉴스 속보] 형식으로 통일
+            push_title = f"📰 [뉴스 속보] {kr_name}"
 
-            push_title = f"{icon} {kr_name} 속보!"
-            push_body = f"{clean_title}"
+            # 본문: 제목 + 언론사 출처
+            push_body = clean_title
+            if publisher:
+                push_body += f"\n\n출처: {publisher}"
 
             # 뉴스 알림 허용한 이용자 토큰만 수집
             all_tokens = []

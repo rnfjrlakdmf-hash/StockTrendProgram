@@ -21,7 +21,7 @@ def load_state():
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load state: {e}")
-    return {"processed_ids": []}
+    return {"processed_ids": [], "sec_processed_ids": []}
 
 def save_state(state):
     try:
@@ -30,104 +30,243 @@ def save_state(state):
     except Exception as e:
         logger.error(f"Failed to save state: {e}")
 
+
 async def check_and_notify_disclosures():
-    """Periodic task to check for new disclosures and send notifications using Open DART API."""
-    logger.info("Running Disclosure Check via Open DART API...")
-    
+    """
+    DART OpenAPI 기반 국내 공시 실시간 체크 (5분마다)
+    - 키워드 필터 없음: 관심종목이면 모든 신규 공시 즉시 알림
+    - 알림 제목: [공시 속보] 형식으로 통일
+    """
+    logger.info("[공시Monitor] DART 공시 체크 시작...")
+
     from dart_api_client import dart_api_client
     if not dart_api_client.is_available():
-        logger.warning("[Scheduler] DART_API_KEY가 존재하지 않아 공시 체크를 건너뜁니다.")
+        logger.warning("[공시Monitor] DART_API_KEY 없음 -> 공시 체크 생략")
         return
 
-    from db_manager import get_all_fcm_tokens
+    from db_manager import get_user_tokens_by_watchlist_symbol
     from firebase_config import send_multicast_notification
 
     try:
-        keywords = ["보호예수", "전환사채", "신주인수권", "무상증자", "유상증자"]
-        new_findings = []
         state = load_state()
         processed_ids = set(state.get("processed_ids", []))
 
-        # 오늘 올라온 공시 목록 조회 (0 = 오늘)
+        # 오늘 올라온 공시 목록 조회 (최대 100건)
         results = dart_api_client.get_realtime_disclosures(days_ago=0)
-        
+        if not results:
+            logger.info("[공시Monitor] 조회된 공시 없음")
+            return
+
+        new_count = 0
+        sent_count = 0
+
         for item in results:
-            doc_id = str(item.get('rcept_no'))  # 접수번호를 고유 ID로 사용
-            if doc_id and doc_id not in processed_ids:
-                title = item.get('report_nm', '')
-                
-                # 관심 키워드가 공시 제목에 포함되어 있는지 확인
-                matched_kw = None
-                for kw in keywords:
-                    if kw in title:
-                        matched_kw = kw
-                        break
-                
-                if matched_kw:
-                    item['keyword'] = matched_kw
-                    item['title'] = title
-                    new_findings.append(item)
-                    processed_ids.add(doc_id)
+            doc_id = str(item.get('rcept_no', ''))
+            if not doc_id or doc_id in processed_ids:
+                continue
 
-        if new_findings:
-            logger.info(f"Found {len(new_findings)} new disclosures.")
-            from db_manager import get_user_tokens_by_watchlist_symbol
+            new_count += 1
+            processed_ids.add(doc_id)
 
-            for item in new_findings:
-                corp = item.get('corp_name', 'Unknown')
-                # DART API가 제공하는 stock_code (6자리) 사용
-                raw_code = item.get('stock_code')
-                if not raw_code:
-                    continue
-                
-                # 종목코드 포맷 맞춤 (국내 주식은 6자리 코드)
-                # korea_data의 watchlist 연동을 위해 .KS 또는 .KQ 추가 판단
-                # 여기서는 단순히 raw_code를 기반으로 watchlist 조회
-                # raw_code가 DB에 들어있는 방식과 매칭해야 함 (대개 005930.KS 또는 005930 형식)
-                # watchlist 테이블에는 보통 symbol이 005930.KS 와 같은 형태로 저장되므로,
-                # 이를 매칭하기 위해 유추 로직을 적용합니다.
-                symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
-                tokens = []
-                matched_symbol = None
-                
-                for sym in symbol_candidates:
-                    t_list = get_user_tokens_by_watchlist_symbol(sym)
-                    if t_list:
-                        tokens = t_list
-                        matched_symbol = sym
-                        break
+            raw_code = item.get('stock_code')
+            corp = item.get('corp_name', '알 수 없음')
+            report_title = item.get('report_nm', '공시')
+            dart_link = item.get('link', '')
+            rcept_dt = item.get('rcept_dt', '')
 
-                if tokens:
-                    category = item.get('keyword', '공시')
-                    title_text = item.get('title', '')
-                    noti_title = f"🚨 [관심종목 {category}] {corp}"
-                    noti_body = f"{title_text}\n\n나의 관심종목에 새로운 공시가 올라왔습니다."
-                    data_payload = {
-                        "type": "DISCLOSURE_ALERT",
-                        "symbol": matched_symbol or raw_code,
-                        "url": f"/discovery?q={raw_code}"
-                    }
-                    logger.info(f"Sending targeted alert for {corp} ({matched_symbol}) to {len(tokens)} tokens")
-                    send_multicast_notification(tokens, noti_title, noti_body, data_payload)
-                    await asyncio.sleep(1)
+            # 비상장 법인(stock_code 없음)은 스킵
+            if not raw_code:
+                continue
 
-            processed_list = list(processed_ids)[-1000:]
-            save_state({"processed_ids": processed_list})
-        else:
-            logger.info("No new disclosures found.")
+            # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
+            symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
+            tokens = []
+            matched_symbol = None
+
+            for sym in symbol_candidates:
+                t_list = get_user_tokens_by_watchlist_symbol(sym)
+                if t_list:
+                    tokens = t_list
+                    matched_symbol = sym
+                    break
+
+            if not tokens:
+                continue  # 관심종목 등록 사용자 없음 -> 스킵
+
+            # 공시 유형별 이모지 결정
+            emoji = "📢"
+            if any(kw in report_title for kw in ["유상증자", "무상증자"]):
+                emoji = "💰"
+            elif any(kw in report_title for kw in ["전환사채", "신주인수권"]):
+                emoji = "🔄"
+            elif any(kw in report_title for kw in ["보호예수", "대량보유"]):
+                emoji = "🔒"
+            elif any(kw in report_title for kw in ["실적", "영업이익", "분기보고서", "사업보고서"]):
+                emoji = "📊"
+            elif any(kw in report_title for kw in ["배당", "주주총회"]):
+                emoji = "💸"
+
+            noti_title = f"{emoji} [공시 속보] {corp}"
+            noti_body = f"📋 {report_title}"
+            if rcept_dt:
+                try:
+                    dt_fmt = f"{rcept_dt[:4]}-{rcept_dt[4:6]}-{rcept_dt[6:8]}"
+                    noti_body += f" ({dt_fmt})"
+                except Exception:
+                    pass
+            noti_body += "\n\n관심종목에 새 공시가 등록되었습니다."
+
+            data_payload = {
+                "type": "disclosure_alert",
+                "symbol": matched_symbol or raw_code,
+                "url": f"/discovery?q={raw_code}",
+                "dart_url": dart_link,
+            }
+
+            logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
+            send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+            sent_count += 1
+            await asyncio.sleep(0.5)
+
+        logger.info(f"[공시Monitor] 완료: 신규 {new_count}건, 알림 {sent_count}건 발송")
+
+        # 상태 저장 (최대 2000건 유지)
+        state["processed_ids"] = list(processed_ids)[-2000:]
+        save_state(state)
 
     except Exception as e:
-        logger.error(f"Scheduler Error in DART Check: {e}")
+        logger.error(f"[공시Monitor] DART 체크 오류: {e}")
+
+
+async def check_and_notify_sec_disclosures():
+    """
+    SEC EDGAR RSS 기반 해외 공시 실시간 체크 (5분마다)
+    - 관심 해외종목 -> CIK 변환 -> 신규 SEC Filing 알림
+    - SEC 공식 RSS 사용 (무료, 인증 불필요)
+    """
+    logger.info("[SEC Monitor] SEC 공시 체크 시작...")
+
+    from db_manager import get_all_users, get_watchlist, get_user_fcm_tokens
+    from firebase_config import send_multicast_notification
+    from sec_api_client import get_cik_by_ticker
+    import requests
+    import xml.etree.ElementTree as ET
+
+    try:
+        state = load_state()
+        sec_processed = set(state.get("sec_processed_ids", []))
+
+        # 모든 사용자의 해외 관심종목 수집 (중복 제거)
+        users = get_all_users()
+        foreign_watchlist = {}  # { symbol: [user_id, ...] }
+
+        for user in users:
+            uid = user.get('user_id') or user.get('id')
+            if not uid:
+                continue
+            wl = get_watchlist(uid)
+            for wl_item in wl:
+                sym = wl_item.get('symbol', '')
+                # 해외 종목: 6자리 숫자가 아닌 영문 티커
+                clean = sym.split('.')[0]
+                if clean and not clean.isdigit():
+                    if sym not in foreign_watchlist:
+                        foreign_watchlist[sym] = []
+                    foreign_watchlist[sym].append(uid)
+
+        if not foreign_watchlist:
+            logger.info("[SEC Monitor] 관심 해외종목 없음")
+            return
+
+        sent_count = 0
+        headers = {"User-Agent": "StockTrendProgram/1.0 (rnfjr@dummy.com)"}
+
+        for symbol, user_ids in foreign_watchlist.items():
+            ticker = symbol.split('.')[0].upper()
+            cik = get_cik_by_ticker(ticker)
+            if not cik:
+                continue
+
+            # SEC EDGAR Atom RSS: 해당 CIK 최신 Filing 5건
+            rss_url = (
+                f"https://www.sec.gov/cgi-bin/browse-edgar"
+                f"?action=getcompany&CIK={cik}&type=&dateb=&owner=include"
+                f"&count=5&search_text=&output=atom"
+            )
+            try:
+                res = requests.get(rss_url, headers=headers, timeout=8)
+                if res.status_code != 200:
+                    continue
+
+                root = ET.fromstring(res.content)
+                ns = {"atom": "http://www.w3.org/2005/Atom"}
+                entries = root.findall("atom:entry", ns)
+
+                for entry in entries:
+                    entry_id = entry.findtext("atom:id", default="", namespaces=ns)
+                    if not entry_id or entry_id in sec_processed:
+                        continue
+
+                    sec_processed.add(entry_id)
+                    title_el = entry.findtext("atom:title", default="New Filing", namespaces=ns)
+                    link_el = entry.find("atom:link", ns)
+                    filing_url = link_el.get("href", "") if link_el is not None else ""
+                    updated = entry.findtext("atom:updated", default="", namespaces=ns)
+
+                    # 사용자 FCM 토큰 수집 (뉴스 알림 허용한 토큰만)
+                    all_tokens = []
+                    for uid in set(user_ids):
+                        for t in get_user_fcm_tokens(uid):
+                            if t.get("pref_news", True) and t.get("token"):
+                                all_tokens.append(t["token"])
+
+                    if not all_tokens:
+                        continue
+
+                    noti_title = f"📢 [SEC 공시] {ticker}"
+                    noti_body = f"📋 {title_el}"
+                    if updated:
+                        try:
+                            dt = datetime.fromisoformat(updated[:10])
+                            noti_body += f" ({dt.strftime('%m/%d')})"
+                        except Exception:
+                            pass
+                    noti_body += "\n\n관심종목에 새 SEC 공시가 등록되었습니다."
+
+                    data_payload = {
+                        "type": "disclosure_alert",
+                        "symbol": ticker,
+                        "url": f"/discovery?q={ticker}",
+                        "dart_url": filing_url,
+                    }
+
+                    logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
+                    send_multicast_notification(all_tokens, noti_title, noti_body, data_payload)
+                    sent_count += 1
+                    await asyncio.sleep(0.5)
+
+                await asyncio.sleep(1)  # SEC rate limit 준수 (초당 10회)
+
+            except Exception as e:
+                logger.warning(f"[SEC Monitor] {ticker} RSS 오류: {e}")
+
+        logger.info(f"[SEC Monitor] 완료: {sent_count}건 SEC 공시 알림 발송")
+
+        state["sec_processed_ids"] = list(sec_processed)[-2000:]
+        save_state(state)
+
+    except Exception as e:
+        logger.error(f"[SEC Monitor] SEC 체크 오류: {e}")
+
 
 async def hourly_briefing_scheduler_loop():
     """
     매 정각 정기 브리핑 생성 (초경량 실시간 전용 모드)
     """
-    # [Safe-Initialization] 루프가 시작된 후 락을 생성하여 이벤트 루프 충돌 방지
     global ANALYSIS_LOCK
     ANALYSIS_LOCK = asyncio.Lock()
-    
-    logger.info("📅 [Resource-Clean] Hourly Scheduler Active.")
+
+    logger.info("[Resource-Clean] Hourly Scheduler Active.")
     import pytz
     kst = pytz.timezone('Asia/Seoul')
     last_run_hour = -1
@@ -139,43 +278,41 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-            # 평일(월~금) 장중/마감 시간에만 동작하여 서버 자원 극도 절약
             is_weekend = (now.weekday() >= 5)
-            
+
             if not is_weekend and current_hour != last_run_hour:
-                logger.info(f"📅 [Scheduler] Starting hourly briefing for: {current_hour}:00")
+                logger.info(f"[Scheduler] Starting hourly briefing for: {current_hour}:00")
                 from utils.global_briefing import generate_market_wide_briefing
-                
+
                 async with ANALYSIS_LOCK:
                     await asyncio.wait_for(
                         generate_market_wide_briefing(),
                         timeout=180.0
                     )
                 last_run_hour = current_hour
-                logger.info(f"📅 [Scheduler] Task completed for {current_hour}:00")
+                logger.info(f"[Scheduler] Task completed for {current_hour}:00")
 
-            # 새벽 시간에 한 번 DB 정리 (선택사항)
             if current_hour == 2 and current_date != last_cleanup_date:
                 from utils.briefing_store import cleanup_old_briefings
                 cleanup_old_briefings()
                 last_cleanup_date = current_date
-            
-            await asyncio.sleep(60) # 1분마다 체크
-        except Exception as e:
-            logger.error(f"📅 [Scheduler] Loop error: {e}")
+
             await asyncio.sleep(60)
+        except Exception as e:
+            logger.error(f"[Scheduler] Loop error: {e}")
+            await asyncio.sleep(60)
+
 
 async def check_and_notify_ipos():
     """Periodic task to check for new IPOs and notify ALL users."""
     logger.info("Running IPO Check...")
-    
-    # Import inside function to avoid circular deps
+
     from dart_ipo import fetch_dart_ipo_schedule
     from db_manager import get_fcm_tokens_for_ipo
     from firebase_config import send_multicast_notification
-    
+
     IPO_STATE_FILE = "/tmp/ipo_state.json" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(os.path.abspath(__file__)), "ipo_state.json")
-    
+
     processed_ipos = []
     if os.path.exists(IPO_STATE_FILE):
         try:
@@ -183,18 +320,17 @@ async def check_and_notify_ipos():
                 processed_ipos = json.load(f).get("processed_ipos", [])
         except Exception:
             pass
-            
+
     try:
-        # Fetch IPOs (will use cache if recently fetched, which is fine)
         ipos = await asyncio.to_thread(fetch_dart_ipo_schedule)
-        
+
         new_ipos = []
         for ipo in ipos:
             ipo_name = ipo.get('name')
             if ipo_name and ipo_name not in processed_ipos:
                 new_ipos.append(ipo)
                 processed_ipos.append(ipo_name)
-                
+
         if new_ipos:
             logger.info(f"Found {len(new_ipos)} new IPO(s). Sending notifications.")
             tokens = get_fcm_tokens_for_ipo()
@@ -204,7 +340,7 @@ async def check_and_notify_ipos():
                     band = ipo.get('band', '')
                     schedule = ipo.get('date', '')
                     underwriter = ipo.get('detail', '')
-                    
+
                     noti_title = f"🚀 [신규 공모주] {name}"
                     noti_body = f"희망공모가: {band}원\n청약일: {schedule}\n주관사: {underwriter}"
                     data_payload = {
@@ -213,28 +349,46 @@ async def check_and_notify_ipos():
                     }
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
                     await asyncio.sleep(1)
-            
-            # Save state
+
             with open(IPO_STATE_FILE, 'w', encoding='utf-8') as f:
                 json.dump({"processed_ipos": processed_ipos[-1000:]}, f, ensure_ascii=False)
         else:
             logger.info("No new IPOs found.")
-            
+
     except Exception as e:
         logger.error(f"Scheduler Error in IPO Check: {e}")
 
+
 async def disclosure_scheduler_loop():
-    """Background loop to run the disclosure check every 30 minutes."""
-    logger.info("Disclosure Scheduler Started.")
+    """
+    공시 실시간 감시 루프
+    - DART 국내 공시: 5분마다 체크
+    - SEC 해외 공시: 5분마다 체크 (DART와 동시)
+    - IPO 공모주: 30분마다 체크
+    """
+    logger.info("[공시Monitor] 공시 실시간 감시 루프 시작 (5분 주기)")
+
+    ipo_check_counter = 0  # 5분 * 6 = 30분마다 IPO 체크
 
     while True:
         try:
-            await asyncio.sleep(1800)  # 30분 간격
+            await asyncio.sleep(300)  # 5분 간격
+
+            # 국내 DART 공시 체크
             await check_and_notify_disclosures()
-            await check_and_notify_ipos()
+
+            # 해외 SEC 공시 체크
+            await check_and_notify_sec_disclosures()
+
+            # IPO는 30분마다 (5분 * 6 = 30분)
+            ipo_check_counter += 1
+            if ipo_check_counter >= 6:
+                await check_and_notify_ipos()
+                ipo_check_counter = 0
+
         except asyncio.CancelledError:
-            logger.info("Disclosure Scheduler stopped.")
+            logger.info("[공시Monitor] 공시 감시 루프 종료")
             break
         except Exception as e:
-            logger.error(f"Disclosure Scheduler crash: {e}")
+            logger.error(f"[공시Monitor] 루프 오류: {e}")
             await asyncio.sleep(60)
