@@ -413,16 +413,33 @@ def gather_naver_stock_data(symbol: str):
             except Exception as e:
                 print(f"[Fallback Scraping] Failed to fetch PER/PBR for {code}: {e}")
 
-        # [Restore] 시간외 거래 데이터 (After-market) 복구
+        # [Restore & Real-time Patch] 네이버 모바일 통합 API(JSON)를 통한 100% 실시간 시세 보정
+        # yfinance의 15~20분 지연(Delay)을 극복하고, 네이버 HTML 크롤링 차단은 피하기 위해
+        # 상업적 이용 제재 가능성이 낮은 모바일 전용 JSON 엔드포인트를 덮어씌우기로 활용
         nxt_data = None
         try:
             url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={code}"
-            headers = {"User-Agent": "Mozilla/5.0"}
+            headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 13)"}
             res = requests.get(url, headers=headers, timeout=2)
             if res.status_code == 200:
                 data_root = res.json()
                 item = data_root.get('domesticKrx', {}).get(code)
                 if item:
+                    # 1. 100% 실시간 정규장 가격 보정 (yfinance 지연 극복)
+                    if item.get('currentPrice'):
+                        price = int(item['currentPrice'].replace(',', ''))
+                    if item.get('lastClosePrice'):
+                        prev_close = int(item['lastClosePrice'].replace(',', ''))
+                    
+                    change_val = price - prev_close
+                    if prev_close > 0:
+                        reg_change_pct = (change_val / prev_close) * 100
+                    else:
+                        reg_change_pct = float(item.get('fluctuationsRatio', 0))
+                        
+                    labeled_change_pct = f"[정규] {reg_change_pct:+.2f}%"
+
+                    # 2. 시간외(After-market) 거래 데이터 추출
                     m_info = item.get('overMarketPriceInfo')
                     if m_info and m_info.get('overPrice'):
                         nxt_data = {
@@ -430,7 +447,7 @@ def gather_naver_stock_data(symbol: str):
                             "change_pct": float(m_info.get('fluctuationsRatio', 0))
                         }
         except Exception as e:
-            print(f"[gather_naver_stock_data] Failed to fetch after_market_data: {e}")
+            print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
 
         res_data = {
             "name": name,
