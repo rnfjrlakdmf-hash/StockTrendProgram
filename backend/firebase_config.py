@@ -108,8 +108,8 @@ def sanitize_notification_text(title: str, body: str):
             line = line[:147] + ".."
         cleaned_lines.append(line)
         
-    # 스마트워치와 모바일 배너 알림 한도에 맞추어 최대 5줄까지만 허용
-    max_lines = 5
+    # 스마트워치와 모바일 배너 알림 한도에 맞추어 최대 15줄까지만 허용 (기존 5줄에서 대폭 늘려 수익률과 종목이 보이게 함)
+    max_lines = 15
     if len(cleaned_lines) > max_lines:
         cleaned_lines = cleaned_lines[:max_lines - 1] + ["💬 상세 내용은 앱에서 확인!"]
         
