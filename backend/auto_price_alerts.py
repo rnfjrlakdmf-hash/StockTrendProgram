@@ -180,8 +180,9 @@ class AutoPriceMonitor:
         
         state = self.notified_events[today_str][symbol]
         
-        # 해외 주식 여부 판별
-        is_foreign = '.' in symbol or not (symbol.isdigit() and len(symbol) == 6)
+        # 해외 주식 여부 판별 (한국 종목은 6자리이며 숫자로 시작, .KS/.KQ 접미사 무시)
+        clean_sym = symbol.split('.')[0]
+        is_foreign = len(clean_sym) != 6 or not clean_sym[0].isdigit()
         
         # 통화 포맷팅
         curr_str = f"${current:,.2f}" if is_foreign else f"{int(current):,}원"
