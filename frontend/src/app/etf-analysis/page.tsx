@@ -34,8 +34,8 @@ function EtfAnalysisContent() {
     const [etfData, setEtfData] = useState<any>(null);
     const [autoRefresh, setAutoRefresh] = useState(false);
 
-    // Check if symbol contains letters (US ETFs have letters, KR ETFs are numbers like 069500)
-    const isUs = etfData?.symbol ? /[a-zA-Z]/.test(etfData.symbol) : false;
+    // Check if symbol is a Korean ETF (starts with digit and is 6 characters long)
+    const isUs = etfData?.symbol ? !/^\d[0-9A-Za-z]{5}$/.test(etfData.symbol) : false;
 
     const renderCurrency = (val: string | number | undefined) => {
         if (!val || val === 'N/A') return isUs ? '$0.00' : '0원';
@@ -592,6 +592,7 @@ function EtfAnalysisContent() {
                                         </div>
                                         <div className="h-[300px] md:h-[400px] w-full">
                                             <ReactApexChart 
+                                                key={chartRange}
                                                 options={{
                                                     chart: { 
                                                         type: 'line', 

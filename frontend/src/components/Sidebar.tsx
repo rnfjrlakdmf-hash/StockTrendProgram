@@ -485,51 +485,71 @@ export default function Sidebar() {
                         {/* Ultra-sleek Micro Global Clocks Grid */}
                         <div className="grid grid-cols-2 gap-2 mt-1">
                             {/* KOR Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isKorOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isKorOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇰🇷</span>
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">SEOUL</span>
-                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.korTime}</span>
+                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isKorOpen ? 'text-emerald-400' : 'text-gray-500'}`}>SEOUL</span>
+                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isKorOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.korTime}</span>
                                     </div>
                                 </div>
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isKorOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
+                                        {clocks.isKorOpen ? 'OPEN' : 'CLOSE'}
+                                    </span>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                </div>
                             </div>
 
                             {/* USA Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUsaOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUsaOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇺🇸</span>
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">NEW YORK</span>
-                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.usaTime}</span>
+                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isUsaOpen ? 'text-emerald-400' : 'text-gray-500'}`}>NEW YORK</span>
+                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUsaOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.usaTime}</span>
                                     </div>
                                 </div>
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isUsaOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
+                                        {clocks.isUsaOpen ? 'OPEN' : 'CLOSE'}
+                                    </span>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                </div>
                             </div>
 
                             {/* JPN Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isJpnOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isJpnOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇯🇵</span>
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">TOKYO</span>
-                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.jpnTime}</span>
+                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isJpnOpen ? 'text-emerald-400' : 'text-gray-500'}`}>TOKYO</span>
+                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isJpnOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.jpnTime}</span>
                                     </div>
                                 </div>
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isJpnOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
+                                        {clocks.isJpnOpen ? 'OPEN' : 'CLOSE'}
+                                    </span>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                </div>
                             </div>
 
                             {/* UK Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUkOpen ? 'border-emerald-500/30' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUkOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇬🇧</span>
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-wider leading-none">LONDON</span>
-                                        <span className="text-[10px] font-mono font-bold text-gray-300 mt-0.5" suppressHydrationWarning>{clocks.ukTime}</span>
+                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isUkOpen ? 'text-emerald-400' : 'text-gray-500'}`}>LONDON</span>
+                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUkOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.ukTime}</span>
                                     </div>
                                 </div>
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isUkOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
+                                        {clocks.isUkOpen ? 'OPEN' : 'CLOSE'}
+                                    </span>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                </div>
                             </div>
                         </div>
                     </div>
