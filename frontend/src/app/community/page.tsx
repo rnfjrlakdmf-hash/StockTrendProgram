@@ -8,8 +8,9 @@ import {
     Users, MessageSquare, ShieldAlert, Send, 
     TrendingUp, TrendingDown, Info, AlertTriangle,
     CheckCircle2, Loader2, Sparkles, X,
-    Search, Flame, ArrowLeft, MessageCircle, ImageIcon
+    Search, Flame, ArrowLeft, MessageCircle, ImageIcon, ThumbsUp, Crown
 } from "lucide-react";
+import { BlogTab } from "./BlogTab";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -18,6 +19,7 @@ interface ChatReply {
     user_name: string;
     text: string;
     timestamp: string;
+    points?: number;
 }
 
 interface ChatMessage {
@@ -27,8 +29,10 @@ interface ChatMessage {
     timestamp: string;
     symbol: string;
     profit?: number; // [New] 수익률 인증
+    likes?: number; // [New] 공감 수
     image_url?: string; // [New] 인증 이미지
     replies?: ChatReply[]; // [New] 답글
+    points?: number; // [New] 인플루언서 뱃지용
 }
 
 interface HotStock {
@@ -50,7 +54,7 @@ function CommunityContent() {
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk'>('lounge');
+    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk' | 'blog'>('lounge');
     
     // Lounge States
     const [chats, setChats] = useState<ChatMessage[]>([]);
@@ -95,6 +99,25 @@ function CommunityContent() {
         setSelectedImage(null);
         setSelectedImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const renderNameWithBadge = (name: string, points?: number) => {
+        const pts = points || 0;
+        if (pts >= 100) {
+            return (
+                <span className="flex items-center gap-1 text-[#FFD700] font-black drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]">
+                    <Crown className="w-3 h-3 fill-[#FFD700]" /> {name}
+                </span>
+            );
+        }
+        if (pts >= 50) {
+            return (
+                <span className="flex items-center gap-1 text-cyan-400 font-bold drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+                    <Sparkles className="w-3 h-3 fill-cyan-400" /> {name}
+                </span>
+            );
+        }
+        return <span className={`text-xs font-black ${name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{name}</span>;
     };
     
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -308,6 +331,7 @@ function CommunityContent() {
                 <div className="flex gap-2 bg-white/5 p-1 rounded-2xl w-fit border border-white/10 shadow-2xl overflow-x-auto no-scrollbar">
                     <TabButton active={activeTab === 'lounge'} onClick={() => setActiveTab('lounge')} icon={<MessageSquare className="w-4 h-4"/>} label="종합 라운지" />
                     <TabButton active={activeTab === 'stock_talk'} onClick={() => setActiveTab('stock_talk')} icon={<MessageCircle className="w-4 h-4"/>} label="종목 토론방" />
+                    <TabButton active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} icon={<Sparkles className="w-4 h-4"/>} label="인사이트 칼럼" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -340,7 +364,7 @@ function CommunityContent() {
                                         chats.map((chat) => (
                                             <div key={chat.id} className="flex flex-col gap-1">
                                                 <div className="flex items-baseline gap-2">
-                                                    <span className={`text-xs font-black ${chat.user_name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{chat.user_name}</span>
+                                                    {renderNameWithBadge(chat.user_name, chat.points)}
                                                     <span className="text-[8px] text-gray-600 font-mono">
                                                         {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
@@ -370,7 +394,7 @@ function CommunityContent() {
                                                         {chat.replies.map(r => (
                                                             <div key={r.id} className="flex flex-col gap-0.5">
                                                                 <div className="flex items-baseline gap-2">
-                                                                    <span className="text-[10px] font-bold text-gray-400">{r.user_name}</span>
+                                                                    {renderNameWithBadge(r.user_name, r.points)}
                                                                     <span className="text-[8px] text-gray-600 font-mono">
                                                                         {new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                     </span>
@@ -481,7 +505,7 @@ function CommunityContent() {
                                                 stockChats.map((chat) => (
                                                     <div key={chat.id} className="flex flex-col gap-1">
                                                         <div className="flex items-baseline gap-2">
-                                                            <span className={`text-xs font-black ${chat.user_name === user?.name ? 'text-blue-400' : 'text-gray-400'}`}>{chat.user_name}</span>
+                                                            {renderNameWithBadge(chat.user_name, chat.points)}
                                                             {chat.profit !== undefined && (
                                                                 <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${chat.profit > 0 ? 'bg-red-500/20 text-red-400' : chat.profit < 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
                                                                     수익 {chat.profit > 0 ? '+' : ''}{chat.profit}%
@@ -511,7 +535,7 @@ function CommunityContent() {
                                                                 {chat.replies.map(r => (
                                                                     <div key={r.id} className="flex flex-col gap-0.5">
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className="text-[10px] font-bold text-gray-400">{r.user_name}</span>
+                                                                            {renderNameWithBadge(r.user_name, r.points)}
                                                                             <span className="text-[8px] text-gray-600 font-mono">
                                                                                 {new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                             </span>
@@ -670,6 +694,10 @@ function CommunityContent() {
                                     </div>
                                 )}
                             </motion.div>
+                        )}
+
+                        {activeTab === 'blog' && (
+                            <BlogTab user={user} />
                         )}
 
                     </div>

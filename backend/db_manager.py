@@ -112,6 +112,16 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning (KIS): {e}")
 
+    # [Migration] Add points if not exists
+    try:
+        cursor.execute("SELECT points FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding points)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
     # Watchlist Table (User Specific)
     # Check if watchlist table has user_id column
     try:
@@ -273,6 +283,73 @@ def init_db():
         )
     ''')
 
+    # [NEW] Community Chats
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS community_chats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            text TEXT NOT NULL,
+            image_url TEXT,
+            profit_verified REAL,
+            parent_id INTEGER,
+            likes INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(parent_id) REFERENCES community_chats(id)
+        )
+    ''')
+
+    # [NEW] Community Likes
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS community_likes (
+            chat_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(chat_id, user_id),
+            FOREIGN KEY(chat_id) REFERENCES community_chats(id)
+        )
+    ''')
+
+    # [NEW] Community Posts (Blog)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS community_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            views INTEGER DEFAULT 0,
+            likes INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # [NEW] Community Post Comments
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS community_post_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(post_id) REFERENCES community_posts(id)
+        )
+    ''')
+    
+    # [NEW] Community Post Likes
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS community_post_likes (
+            post_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(post_id, user_id),
+            FOREIGN KEY(post_id) REFERENCES community_posts(id)
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -312,16 +389,58 @@ def create_user_if_not_exists(user_data):
     finally:
         conn.close()
 
+def get_user_info(user_id):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            is_pro = bool(row[4])
+            pro_expires_at = row[6]
+            points = row[7] if row[7] is not None else 0
+            
+            # 1. 관리자 강제 Pro 부여 (이메일 기반 2차 안전장치)
+            admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+            if row[1] and str(row[1]).lower() in admin_emails:
+                is_pro = True
+                
+            elif is_pro and pro_expires_at:
+                expires = datetime.fromisoformat(pro_expires_at)
+                if datetime.now() > expires:
+                    print(f"[Pro Expired] User {user_id} trial ended.")
+                    is_pro = False
+                    cursor.execute("UPDATE users SET is_pro = 0 WHERE id = ?", (user_id,))
+                    conn.commit()
+
+            return {
+                "id": row[0],
+                "email": row[1],
+                "name": row[2],
+                "picture": row[3],
+                "is_pro": is_pro,
+                "free_trial_count": row[5],
+                "pro_expires_at": pro_expires_at,
+                "points": points
+            }
+        return None
+    except Exception as e:
+        print(f"Error fetching user info: {e}")
+        return None
+    finally:
+        conn.close()
+
 def get_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
             pro_expires_at = row[6]
             email = row[1]
+            points = row[7] if row[7] is not None else 0
             
             # 관리자 계정은 항상 PRO 상태 유지
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -345,7 +464,8 @@ def get_user(user_id):
                 "picture": row[3],
                 "is_pro": is_pro,
                 "free_trial_count": row[5] if row[5] is not None else 2,
-                "pro_expires_at": pro_expires_at
+                "pro_expires_at": pro_expires_at,
+                "points": points
             }
         return None
     except Exception as e:
