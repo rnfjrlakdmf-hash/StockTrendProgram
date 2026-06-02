@@ -549,14 +549,17 @@ export default function SettingsPage() {
                                                     // 딥링크에서 scheme과 host/path 추출 (호스트가 없으면 open 기본값 적용)
                                                     const deepLink = broker.deepLink;
                                                     const scheme = deepLink.split('://')[0];
-                                                    const hostAndPath = deepLink.split('://')[1] || "open";
+                                                    const hostAndPath = deepLink.split('://')[1] || "";
                                                     
-                                                    // 안드로이드 크롬/웹뷰 표준 인텐트 구성:
-                                                    // scheme과 package가 모두 기재되어야 안드로이드 시스템이 앱이 깔려있을 때 100% 정상 실행합니다.
-                                                    // 앱이 없을 경우 S.browser_fallback_url에 지정한 구글 플레이스토어로 정상 리다이렉트됩니다.
+                                                    // 안드로이드 크롬/웹뷰 표준 인텐트 구성
                                                     const intentUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
                                                     
-                                                    window.location.href = intentUrl;
+                                                    // 모바일 브라우저 호환성을 위해 a 태그 생성 및 클릭 유도
+                                                    const link = document.createElement('a');
+                                                    link.href = intentUrl;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
                                                 } else {
                                                     // iOS 처리: 커스텀 딥링크 시도 후 미설치 시 앱스토어 이동 타이머 작동
                                                     const storeUrl = broker.iosStore;
