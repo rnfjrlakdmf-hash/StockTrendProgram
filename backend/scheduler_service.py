@@ -544,7 +544,7 @@ def run_market_scheduler():
             current_date = now.strftime('%Y-%m-%d')
             
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
-            if now.hour == 6 and now.minute == 30 and current_date != last_run_dart_cache:
+            if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
                 try:
                     run_dart_daily_cache_update()
                 except Exception as e:
@@ -552,18 +552,18 @@ def run_market_scheduler():
                 last_run_dart_cache = current_date
 
             # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
-            if now.hour == 23 and now.minute == 59 and current_date != last_run_daily_report:
+            if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
                 send_daily_analytics_report()
                 last_run_daily_report = current_date
             
             # [매일 발송] AI 모닝 브리핑 (KR)
-            if now.hour == 8 and now.minute == 0 and current_date != last_run_morning_kr:
+            if now.hour == 8 and 0 <= now.minute <= 5 and current_date != last_run_morning_kr:
                 asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                 last_run_morning_kr = current_date
 
             # [매일 발송] 공모주 청약 일정 알림
             if day_of_week <= 4:
-                if now.hour == 8 and now.minute == 15 and current_date != last_run_ipo and not is_market_holiday("KR"):
+                if now.hour == 8 and 15 <= now.minute <= 20 and current_date != last_run_ipo and not is_market_holiday("KR"):
                     try:
                         from batch_ipo_alerts import send_ipo_alerts
                         send_ipo_alerts()
@@ -572,19 +572,19 @@ def run_market_scheduler():
                     last_run_ipo = current_date
             
             # [매일 발송] AI 모닝 브리핑 (US)
-            if now.hour == 21 and now.minute == 30 and current_date != last_run_morning_us:
+            if now.hour == 21 and 30 <= now.minute <= 35 and current_date != last_run_morning_us:
                 asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                 last_run_morning_us = current_date
 
             # 1. 국내 장시작 시가 알림
             if day_of_week <= 4:
-                if now.hour == 9 and now.minute == 5 and current_date != last_run_open_kr and not is_market_holiday("KR"):
+                if now.hour == 9 and 5 <= now.minute <= 10 and current_date != last_run_open_kr and not is_market_holiday("KR"):
                     send_opening_notification("KR")
                     last_run_open_kr = current_date
 
             # 2. 국내 장마감 종가 리포트
             if day_of_week <= 4:
-                if now.hour == 15 and now.minute == 40 and current_date != last_run_close_kr and not is_market_holiday("KR"):
+                if now.hour == 15 and 40 <= now.minute <= 45 and current_date != last_run_close_kr and not is_market_holiday("KR"):
                     send_closing_notification("KR")
                     last_run_close_kr = current_date
             
@@ -604,7 +604,7 @@ def run_market_scheduler():
             # - 표준시: KST 23:35 = 미국 09:35 → KST 월~금(0~4)
             us_open_days = list(range(0, 6)) if is_dst else list(range(0, 5))
             if day_of_week in us_open_days:
-                if now.hour == us_open_hour and now.minute == 35 and current_date != last_run_open_us and not is_market_holiday("US"):
+                if now.hour == us_open_hour and 35 <= now.minute <= 40 and current_date != last_run_open_us and not is_market_holiday("US"):
                     send_opening_notification("US")
                     last_run_open_us = current_date
 
@@ -613,7 +613,7 @@ def run_market_scheduler():
             # - ny_date(미국 날짜)를 기준으로 중복 발송 방지
             us_close_days = list(range(1, 6)) if is_dst else list(range(1, 6))
             if day_of_week in us_close_days:
-                if now.hour == us_close_hour and now.minute == 10 and ny_date != last_run_close_us and not is_market_holiday("US"):
+                if now.hour == us_close_hour and 10 <= now.minute <= 15 and ny_date != last_run_close_us and not is_market_holiday("US"):
                     send_closing_notification("US")
                     last_run_close_us = ny_date
             
