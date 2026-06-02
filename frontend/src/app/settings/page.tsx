@@ -545,21 +545,32 @@ export default function SettingsPage() {
                                                 if (isAndroid) {
                                                     const packageName = broker.androidStore.split('id=')[1];
                                                     const fallbackUrl = encodeURIComponent(broker.androidStore);
-                                                    
-                                                    // 딥링크에서 scheme과 host/path 추출 (호스트가 없으면 open 기본값 적용)
                                                     const deepLink = broker.deepLink;
-                                                    const scheme = deepLink.split('://')[0];
-                                                    const hostAndPath = deepLink.split('://')[1] || "";
                                                     
-                                                    // 안드로이드 크롬/웹뷰 표준 인텐트 구성
-                                                    const intentUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
-                                                    
-                                                    // 모바일 브라우저 호환성을 위해 a 태그 생성 및 클릭 유도
-                                                    const link = document.createElement('a');
-                                                    link.href = intentUrl;
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    document.body.removeChild(link);
+                                                    // [추가] 모바일 앱(Capacitor) 환경인지 확인
+                                                    const isNativeApp = typeof window !== 'undefined' && (window as any).Capacitor?.isNative;
+
+                                                    if (isNativeApp) {
+                                                        // Capacitor 모바일 앱일 경우 네이티브 App 객체를 사용하여 앱 실행
+                                                        import('@capacitor/app').then(({ App }) => {
+                                                            App.openUrl({ url: deepLink }).catch((err) => {
+                                                                console.log('App open failed, redirecting to store:', err);
+                                                                App.openUrl({ url: broker.androidStore });
+                                                            });
+                                                        });
+                                                    } else {
+                                                        // 일반 모바일 웹 브라우저(크롬 등)일 경우 표준 Intent 방식 사용
+                                                        const scheme = deepLink.split('://')[0];
+                                                        const hostAndPath = deepLink.split('://')[1] || "";
+                                                        
+                                                        const intentUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
+                                                        
+                                                        const link = document.createElement('a');
+                                                        link.href = intentUrl;
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                    }
                                                 } else {
                                                     // iOS 처리: 커스텀 딥링크 시도 후 미설치 시 앱스토어 이동 타이머 작동
                                                     const storeUrl = broker.iosStore;
