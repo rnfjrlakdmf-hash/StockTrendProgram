@@ -543,8 +543,8 @@ export default function SettingsPage() {
 
                                             if (isMobile) {
                                                 if (isAndroid) {
-                                                    const packageName = (broker as any).packageName;
-                                                    const fallbackUrl = encodeURIComponent(`https://play.google.com/store/apps/details?id=${packageName}`);
+                                                    const packageName = broker.androidStore.split('id=')[1];
+                                                    const fallbackUrl = encodeURIComponent(broker.androidStore);
                                                     
                                                     // 딥링크에서 scheme과 host/path 추출 (호스트가 없으면 open 기본값 적용)
                                                     const deepLink = broker.deepLink;
