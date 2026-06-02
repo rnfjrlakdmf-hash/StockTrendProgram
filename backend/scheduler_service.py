@@ -356,13 +356,25 @@ def send_closing_notification(market: str):
                     line += f"\n  ↳ 💰수익: {diff_str}{unit}"
                 price_list.append(line)
                 
-            body = market_summary + f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
+            body_market = market_summary.strip()
+            title_market = f"🌕 {market_name} 장마감 시황"
+            
+            body_portfolio = f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
+            title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)
             if tokens_data:
                 tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
                 if tokens:
-                    send_multicast_notification(tokens, title, body, {"url": "/watchlist"})
+                    # 1. 시장 지수 요약 알림
+                    send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery"})
+                    
+                    # 0.5초 대기 (푸시 알림 순서 보장을 위해)
+                    import time
+                    time.sleep(0.5)
+                    
+                    # 2. 내 관심종목 수익 현황 알림
+                    send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist"})
         except Exception as user_err:
             print(f"[Scheduler-Error] Failed to send closing notification for user {user_id}: {user_err}")
             continue
