@@ -135,6 +135,7 @@ def send_push_notification(
     PRICE_ALERT_KEYWORDS = ["admin", "관리자", "analytics", "보고서",
                             "급등", "급락", "신고가", "목표", "손절", "익절",
                             "가격", "도달", "auto_price", "포착", "경신",
+                            "장시작", "장마감", "시가", "결산", "시황",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
     if is_night_time_kst() and not is_price_or_admin:
@@ -267,6 +268,7 @@ def send_multicast_notification(
     PRICE_ALERT_KEYWORDS = ["admin", "관리자", "analytics", "보고서",
                             "급등", "급락", "신고가", "목표", "손절", "익절",
                             "가격", "도달", "auto_price", "포착", "경신",
+                            "장시작", "장마감", "시가", "결산", "시황",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
     if is_night_time_kst() and not is_price_or_admin:
