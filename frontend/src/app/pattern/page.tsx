@@ -18,6 +18,7 @@ import AIDisclaimer from "@/components/AIDisclaimer";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 import AdRewardModal from "@/components/AdRewardModal";
+import KakaoShareButton from "@/components/KakaoShareButton";
 
 export default function PatternPage() {
     const [searchInput, setSearchInput] = useState("");
@@ -592,15 +593,13 @@ export default function PatternPage() {
                                 <Download className="w-4 h-4" />
                                 차트 분석 결과 저장
                             </button>
-                            <button
-                                onClick={() => {
-                                    alert("카카오톡 공유 기능은 준비 중입니다. 이미지를 저장하여 카카오톡에 올려보세요!");
-                                }}
+                            <KakaoShareButton 
+                                title={`${result?.stock_info?.symbol || '종목'} 차트 분석 보고서`} 
+                                description={result.weather?.comment || "AI가 분석한 오늘의 차트 흐름을 확인해보세요."}
+                                url={`https://stock-trend-program.co.kr/pattern?q=${result?.stock_info?.symbol || ''}`}
                                 className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
-                            >
-                                <Share2 className="w-4 h-4" />
-                                카카오톡 자랑하기
-                            </button>
+                                buttonText="카카오톡 자랑하기"
+                            />
                         </div>
 
                         {/* Summary Header */}

@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles, Info, X } from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
+import { useAuth } from "@/context/AuthContext";
+import KakaoShareButton from "@/components/KakaoShareButton";
 
 // [Cache System] Ultra-fast navigation for Themes
 const THEME_CACHE: Record<string, { data: any, timestamp: number }> = {};
@@ -331,10 +333,19 @@ export default function ThemePage() {
                                 <div className="absolute top-0 right-0 p-8 opacity-10">
                                     <Layers className="w-64 h-64 text-orange-400 -rotate-12 transform translate-x-12 -translate-y-12" />
                                 </div>
-                                <h3 className="text-3xl font-bold text-orange-100 mb-4 flex items-center gap-3 relative z-10">
-                                    <span className="text-orange-500">#</span> {result.theme}
-                                </h3>
-                                <p className="text-xl text-gray-200 leading-relaxed font-medium relative z-10">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <h3 className="text-2xl md:text-4xl font-black text-white flex items-center gap-3">
+                                        <span className="text-orange-500">#</span> {result.theme}
+                                    </h3>
+                                    <KakaoShareButton 
+                                        title={`[테마 분석] ${result.theme}`}
+                                        description={result.description || "AI가 분석한 이 테마의 핵심 기업과 전망을 확인해보세요."}
+                                        url={`https://stock-trend-program.co.kr/theme?q=${result.theme}`}
+                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full md:w-auto shadow-lg shadow-[#FEE500]/10"
+                                        buttonText="테마 분석 보기"
+                                    />
+                                </div>
+                                <p className="text-lg text-gray-300 leading-relaxed border-l-4 border-orange-500 pl-4 py-1">
                                     {result.description}
                                 </p>
 

@@ -28,6 +28,7 @@ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import MarketNewsWidget from "@/components/MarketNewsWidget";
 import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
+import KakaoShareButton from "@/components/KakaoShareButton";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
@@ -1046,6 +1047,15 @@ function DiscoveryContent() {
                                                     </span>
                                                 )}
                                             </span>
+                                            <div className="ml-auto flex items-center gap-2">
+                                                <KakaoShareButton 
+                                                    title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
+                                                    description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
+                                                    url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
+                                                    className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 md:gap-2 transition-colors shadow-lg shadow-[#FEE500]/10"
+                                                    buttonText="AI 분석 리포트 보기"
+                                                />
+                                            </div>
                                         </h3>
 
                                         {/* 정규장 및 시간외 거래 가격 분리 레이아웃 */}

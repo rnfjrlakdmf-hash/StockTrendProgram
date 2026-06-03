@@ -8,6 +8,9 @@ import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
 import FCMWrapper from "@/components/FCMWrapper";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import KakaoScript from "@/components/KakaoScript";
+import AppInstallBanner from "@/components/AppInstallBanner";
+import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
@@ -64,6 +67,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/icon.png" />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+        <KakaoScript />
         {/* [v4] isPro 강제 삭제 - 결제 기능 완전 폐지로 인한 캐시 초기화 */}
         <script dangerouslySetInnerHTML={{ __html: `try { localStorage.removeItem('isPro'); localStorage.removeItem('proExpiry'); } catch(e) {}` }} />
         <AuthProvider>
@@ -79,6 +83,8 @@ export default function RootLayout({
 
               {/* Closing Report Banner */}
               <ClosingBanner />
+              <AppInstallBanner />
+              <LeadGenerationPopup />
 
               {/* Site Footer - AdSense 정책 준수 필수 링크 */}
               <footer className="border-t border-white/5 mt-8 px-6 py-6 text-center">
