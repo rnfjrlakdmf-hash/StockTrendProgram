@@ -40,13 +40,10 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         return parseInt(val.replace(/,/g, '')).toLocaleString();
     };
 
-    // Filter data if keyword exists
-    const displayData = (Array.isArray(data) && filterKeyword)
-        ? data.filter(item => 
-            (item.name && item.name.toLowerCase().includes(filterKeyword.toLowerCase())) || 
-            (item.symbol && item.symbol.toLowerCase().includes(filterKeyword.toLowerCase()))
-          )
-        : (Array.isArray(data) ? data : []);
+    // Backend already returns filtered results by category.
+    // Client-side filterKeyword is only used as a UI hint (for KR keyword matching).
+    // We do NOT re-filter here to avoid reducing the 20-item backend result further.
+    const displayData = Array.isArray(data) ? data : [];
 
     return (
         <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden">
@@ -58,7 +55,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         Market <span className="text-blue-400">Statistics</span>
                         {filterKeyword && (
                             <span className="text-[10px] px-2 py-0.5 bg-blue-600 rounded-full text-white uppercase tracking-widest animate-pulse ml-2">
-                                FILTER: {filterKeyword}
+                                FILTER ON
                             </span>
                         )}
                     </h2>
