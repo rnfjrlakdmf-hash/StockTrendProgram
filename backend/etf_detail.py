@@ -63,6 +63,57 @@ def calculate_performance(hist):
         
     return perf_data
 
+
+def calculate_risk_stats(hist, risk_free_annual=0.035):
+    """
+    과거 주가 히스토리를 기반으로 리스크 지표를 계산합니다.
+    ※ 모든 수치는 과거 데이터 기반 통계치이며 미래 성과를 보장하지 않습니다.
+    """
+    stats = {
+        "volatility": "N/A",
+        "mdd": "N/A",
+        "sharpe": "N/A",
+        "avg_volume_30d": "N/A",
+        "position_pct": None,
+        "high52": None,
+        "low52": None,
+    }
+    if hist.empty or len(hist) < 20:
+        return stats
+    try:
+        close = hist['Close'].dropna()
+        daily_returns = close.pct_change().dropna()
+        if len(daily_returns) >= 20:
+            vol = daily_returns.std() * (252 ** 0.5) * 100
+            stats["volatility"] = f"{vol:.2f}%"
+        if len(close) >= 2:
+            rolling_max = close.cummax()
+            drawdown = (close - rolling_max) / rolling_max * 100
+            mdd = drawdown.min()
+            stats["mdd"] = f"{mdd:.2f}%"
+        if len(daily_returns) >= 20:
+            rf_daily = risk_free_annual / 252
+            excess = daily_returns - rf_daily
+            if excess.std() > 0:
+                sharpe = (excess.mean() / excess.std()) * (252 ** 0.5)
+                stats["sharpe"] = f"{sharpe:.2f}"
+        if len(close) >= 2:
+            current = float(close.iloc[-1])
+            high52 = float(close.tail(252).max())
+            low52 = float(close.tail(252).min())
+            if high52 > low52:
+                pos = (current - low52) / (high52 - low52) * 100
+                stats["position_pct"] = round(pos, 1)
+                stats["high52"] = round(high52, 2)
+                stats["low52"] = round(low52, 2)
+        if 'Volume' in hist.columns and len(hist) >= 20:
+            avg_vol = int(hist['Volume'].tail(30).mean())
+            stats["avg_volume_30d"] = f"{avg_vol:,}"
+    except Exception as e:
+        print(f"Risk stats calculation error: {e}")
+    return stats
+
+
 @turbo_cache(ttl_seconds=3600) # Detail data is cached for 1 hour
 def get_etf_detail(symbol: str):
     symbol = symbol.upper().strip()
@@ -93,7 +144,9 @@ def get_etf_detail(symbol: str):
         "holdings": [],
         "performance": {},
         "chart_data": [],
-        "similar_etfs": []
+        "similar_etfs": [],
+        "risk_stats": {},
+        "sector_weights": [],
     }
     
     # Normalize symbol for market detection (Internal use only)
@@ -262,6 +315,36 @@ def get_etf_detail(symbol: str):
             # [Fix] Calculate performance for US ETFs
             data["performance"] = calculate_performance(hist)
 
+            # [NEW] Risk Stats (MDD, Volatility, Sharpe, 52-week position)
+            data["risk_stats"] = calculate_risk_stats(hist)
+
+            # [NEW] Sector Weights for US ETFs
+            try:
+                raw_sectors = info.get('sectorWeightings', [])
+                if raw_sectors and isinstance(raw_sectors, list):
+                    SECTOR_KO = {
+                        "Technology": "기술", "Healthcare": "헬스케어", "Financial Services": "금융",
+                        "Consumer Cyclical": "경기소비재", "Industrials": "산업재",
+                        "Communication Services": "통신서비스", "Consumer Defensive": "필수소비재",
+                        "Energy": "에너지", "Basic Materials": "소재", "Real Estate": "부동산",
+                        "Utilities": "유틸리티", "realestate": "부동산", "technology": "기술",
+                        "healthcare": "헬스케어", "financialServices": "금융",
+                        "consumerCyclical": "경기소비재", "industrials": "산업재",
+                        "communicationServices": "통신서비스", "consumerDefensive": "필수소비재",
+                        "energy": "에너지", "basicMaterials": "소재", "utilities": "유틸리티",
+                    }
+                    sector_list = []
+                    for item in raw_sectors:
+                        if isinstance(item, dict):
+                            for k, v in item.items():
+                                label = SECTOR_KO.get(k, k)
+                                pct = round(float(v) * 100, 1) if float(v) <= 1 else round(float(v), 1)
+                                if pct > 0.1:
+                                    sector_list.append({"name": label, "value": pct})
+                    sector_list.sort(key=lambda x: x["value"], reverse=True)
+                    data["sector_weights"] = sector_list[:10]
+            except Exception as se:
+                print(f"Sector weights error: {se}")
             # [NEW] Populate Similar ETFs for US ETFs
             PEER_GROUPS = {
                 "S&P 500": [{"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust"}, {"symbol": "IVV", "name": "iShares Core S&P 500 ETF"}, {"symbol": "VOO", "name": "Vanguard S&P 500 ETF"}, {"symbol": "SPLG", "name": "SPDR Portfolio S&P 500 ETF"}],
@@ -331,6 +414,8 @@ def get_etf_detail(symbol: str):
                         "ma120": safe_to_float(row['ma120']) if pd.notna(row['ma120']) else None
                     } for idx, row in hist.iterrows()
                 ]
+                # [NEW] KR ETF 리스크 지표
+                data["risk_stats"] = calculate_risk_stats(hist)
         except: pass
 
         # 2. Naver Mobile API (Primary Data Source)
