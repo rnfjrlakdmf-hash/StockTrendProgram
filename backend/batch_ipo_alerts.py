@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pytz
 from db_manager import get_db_connection, get_fcm_tokens_for_ipo, get_user_fcm_tokens, get_user_ipo_watchlist
 from firebase_config import send_multicast_notification, initialize_firebase
+from holiday_checker import exit_if_holiday
 
 def parse_ipo_dates(date_str):
     """
@@ -45,6 +46,7 @@ def parse_ipo_dates(date_str):
 
 def send_ipo_alerts():
     """공모주 일정에 따른 알림 발송"""
+    exit_if_holiday("kor", "IPO Alerts")
     initialize_firebase()
     print("[IPO-Alerts] Checking IPO schedules for notifications...")
     

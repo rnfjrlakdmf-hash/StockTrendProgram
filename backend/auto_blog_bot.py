@@ -11,7 +11,7 @@ from firebase_admin import firestore
 
 from ai_analysis import generate_with_retry
 from stock_data import fetch_google_news
-import holidays
+from holiday_checker import exit_if_holiday
 
 # 환경 변수 로드
 load_dotenv()
@@ -68,26 +68,8 @@ def get_compliance_prompt():
     JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
     """
 
-def check_holiday(market_type):
-    """지정된 시장의 오늘(마감일 기준)이 공휴일인지 확인합니다."""
-    kst = timezone(timedelta(hours=9))
-    if market_type == "kor":
-        today_date = datetime.now(kst).date()
-        kr_holidays = holidays.KR()
-        if today_date in kr_holidays:
-            print(f"✅ [KOR] 오늘은 한국 휴장일({kr_holidays.get(today_date)})이므로 포스팅을 생략합니다.")
-            sys.exit(0)
-    elif market_type == "us":
-        # 미국 시장은 현지 시간(뉴욕) 기준으로 판별 (간단히 KST - 13시간 적용)
-        ny_time = datetime.now(kst) - timedelta(hours=13)
-        us_today = ny_time.date()
-        us_holidays = holidays.US()
-        if us_today in us_holidays:
-            print(f"✅ [US] 오늘은 미국 휴장일({us_holidays.get(us_today)})이므로 포스팅을 생략합니다.")
-            sys.exit(0)
-
 def generate_market_post(market_type):
-    check_holiday(market_type)
+    exit_if_holiday(market_type, "Auto Blog Bot")
     
     kst = timezone(timedelta(hours=9))
     today_dt = datetime.now(kst)

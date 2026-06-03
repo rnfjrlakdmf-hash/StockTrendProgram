@@ -29,11 +29,16 @@ import os
 import re
 import time
 import requests
+import pytz
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Dict, List, Set, Optional
 from collections import defaultdict
-from db_manager import get_db_connection
+from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
+from ai_analysis import generate_with_retry
+from firebase_config import send_multicast_notification
+from stock_data import get_korean_stock_name, get_naver_flash_news_api
+from holiday_checker import is_holiday
 
 # ─── 일반 시장 기사 및 스팸/봇 기사 제외 패턴 ────────────────────────────
 # 이런 기사들은 특정 종목 이름이 나와도 단순 시세 나열이거나 기계 생성(봇) 기사일 확률이 높음
@@ -464,6 +469,10 @@ class BatchNewsSystem:
         return relevant[:10]
 
     async def collect_and_distribute(self):
+        if is_holiday("kor"):
+            print("[BatchNews] 오늘은 한국 휴장일이므로 뉴스 수집/발송을 생략합니다.")
+            return
+
         """
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         핵심 메서드: 배치 수집 → 이용자별 분류 발송

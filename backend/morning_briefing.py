@@ -11,6 +11,7 @@ from typing import List, Dict, Any
 import requests
 from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens, get_all_users
 from ai_analysis import generate_with_retry
+from holiday_checker import is_holiday
 from firebase_config import send_multicast_notification
 from stock_data import get_korean_stock_name, fetch_google_news, GLOBAL_KOREAN_NAMES
 
@@ -19,13 +20,14 @@ class MorningBriefingService:
         self.is_running = False
 
     async def run_daily_briefing(self, market_type: str = 'KR'):
-        """
-        매일 정해진 시간에 실행되는 브리핑 발송 로직
-        market_type: 'KR' (08:30) or 'US' (22:00)
-        """
-        print(f"[MorningBriefing] Starting {market_type} briefing process...")
-        
-        # 1. 모든 유저 정보 가져오기
+        """Runs the morning briefing job for a specific market"""
+        print(f"[MorningBriefing] Starting {market_type} morning briefing process...")
+        market_str = "kor" if market_type.upper() == "KR" else "us"
+        if is_holiday(market_str):
+            print(f"[MorningBriefing] 오늘은 {market_type} 시장 휴장일이므로 브리핑을 생략합니다.")
+            return
+
+        conn = get_db_connection()      # 1. 모든 유저 정보 가져오기
         users = get_all_users()
         if not users:
             print("[MorningBriefing] No users found.")

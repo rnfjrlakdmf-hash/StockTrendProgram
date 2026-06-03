@@ -3,6 +3,7 @@ import logging
 import json
 import os
 from datetime import datetime, timedelta
+from holiday_checker import is_holiday
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -277,7 +278,7 @@ async def hourly_briefing_scheduler_loop():
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
 
-            is_weekend = (now.weekday() >= 5)
+            is_weekend = is_holiday("kor")
 
             if not is_weekend and current_hour != last_run_hour:
                 logger.info(f"[Scheduler] Starting hourly briefing for: {current_hour}:00")
