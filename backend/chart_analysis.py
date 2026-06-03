@@ -149,51 +149,91 @@ def get_yf_ticker(symbol: str) -> str:
         yf_ticker = f"{code}.KQ"
     return yf_ticker
 
-def generate_beginner_insight(df):
+def generate_beginner_insight(df, ticker="알 수 없는 종목"):
     """
-    Generate very easy metaphors for beginners based on technical indicators.
+    Generate very easy metaphors for beginners based on technical indicators using LLM.
+    Strictly adheres to compliance rules to avoid unauthorized investment advisory (유사투자자문업).
     """
+    from ai_analysis import generate_with_retry
+    import json
+    
     if df.empty or len(df) < 120:
         return {"text": "데이터가 충분하지 않아 상세 가이드를 제공할 수 없어요. 조금만 더 지켜봐 주세요!", "status": "normal", "tips": []}
 
-    last_row = df.iloc[-1]
-    ma5 = df['Close'].rolling(5).mean().iloc[-1]
-    ma20 = df['Close'].rolling(20).mean().iloc[-1]
-    ma60 = df['Close'].rolling(60).mean().iloc[-1]
-    ma120 = df['Close'].rolling(120).mean().iloc[-1]
-    current_price = last_row['Close']
+    # 최근 30영업일의 데이터를 추출 (LLM 토큰 절약 및 단기/중기 트렌드 파악 목적)
+    recent_df = df.tail(30).copy()
     
-    insight = ""
-    status = "normal"
+    # 5, 20, 60, 120 이평선은 전체 df에서 계산 후 tail로 가져옴
+    recent_df['ma5'] = df['Close'].rolling(5).mean().tail(30)
+    recent_df['ma20'] = df['Close'].rolling(20).mean().tail(30)
+    recent_df['ma60'] = df['Close'].rolling(60).mean().tail(30)
+    recent_df['ma120'] = df['Close'].rolling(120).mean().tail(30)
     
-    if ma5 > ma20 > ma60 > ma120:
-        insight = "현재 이동평균선(5일, 20일, 60일, 120일)이 정배열 상태입니다. 단기 주가가 장기 평균선 위에 위치해 있습니다. "
-        status = "positive"
-    elif ma5 < ma20 < ma60 < ma120:
-        insight = "현재 이동평균선(5일, 20일, 60일, 120일)이 역배열 상태입니다. 단기 주가가 장기 평균선 아래에 위치해 있습니다. "
-        status = "negative"
+    # 날짜를 문자열로 변환하여 JSON 형태로 만듦
+    # Date 인덱스가 있는 경우 처리
+    if isinstance(recent_df.index, pd.DatetimeIndex):
+        recent_df['date_str'] = recent_df.index.strftime('%Y-%m-%d')
     else:
-        insight = "현재 이동평균선이 혼재된 상태(횡보 추세)입니다. 뚜렷한 상승이나 하락 방향성이 통계적으로 나타나지 않고 있습니다. "
-    
-    if current_price > ma20:
-        insight += "오늘 종가는 최근 20일 평균 가격선 위에 형성되어 있습니다. "
-    else:
-        insight += "오늘 종가는 최근 20일 평균 가격선 아래에 형성되어 있습니다. "
-        
-    avg_vol = df['Volume'].tail(20).mean()
-    if last_row['Volume'] > avg_vol * 1.5:
-        insight += "오늘 거래량은 최근 20일 평균 거래량 대비 1.5배 이상 수치입니다. "
-    
-    insight += "\n\n<small>* 본 지표는 과거 데이터를 바탕으로 기계적으로 산출된 통계값이며, 투자를 권유하거나 미래 수익을 보장하지 않습니다. 모든 투자 결정의 책임은 본인에게 있습니다.</small>"
+        recent_df['date_str'] = recent_df['Date'].dt.strftime('%Y-%m-%d') if 'Date' in recent_df.columns else "Unknown"
 
+    chart_data_list = []
+    for _, row in recent_df.iterrows():
+        chart_data_list.append({
+            "date": row['date_str'],
+            "open": int(row['Open']) if not pd.isna(row['Open']) else 0,
+            "high": int(row['High']) if not pd.isna(row['High']) else 0,
+            "low": int(row['Low']) if not pd.isna(row['Low']) else 0,
+            "close": int(row['Close']) if not pd.isna(row['Close']) else 0,
+            "volume": int(row['Volume']) if not pd.isna(row['Volume']) else 0,
+            "ma5": int(row['ma5']) if not pd.isna(row['ma5']) else 0,
+            "ma20": int(row['ma20']) if not pd.isna(row['ma20']) else 0,
+            "ma60": int(row['ma60']) if not pd.isna(row['ma60']) else 0
+        })
+
+    prompt = f"""
+당신은 대한민국 최고의 '기술적 차트 분석 전문가(Technical Analyst)'입니다.
+다음은 {ticker}의 최근 30영업일 캔들, 거래량, 이동평균선(ma) 데이터입니다.
+이 데이터를 바탕으로 주식 초보자도 이해하기 쉽게 입체적인 차트 분석 브리핑을 작성해 주세요.
+
+[차트 데이터 (최근 30일)]
+{json.dumps(chart_data_list[-15:], ensure_ascii=False)} # 최근 15일치만 프롬프트에 포함하여 핵심 집중
+* 참고: 데이터의 마지막 항목이 오늘(가장 최근) 데이터입니다.
+
+[⚠️ 매우 중요: 유사투자자문업 법적 준수 사항]
+당신은 투자 자문가가 아닙니다. 불특정 다수에게 팩트만 전달하는 AI 브리핑 도구입니다.
+1. "매수하세요", "매도하세요", "보유하세요", "비중을 확대하세요", "관심있게 지켜보세요" 등의 행동 지시어나 추천/권유 표현을 절대 사용하지 마세요.
+2. "목표가", "손절가", "진입점" 등 특정 가격을 제시하지 마세요.
+3. 오직 캔들 패턴(예: 밑꼬리가 길다, 장대양봉 등), 거래량 추이, 이동평균선의 상태(돌파, 지지, 저항, 골든크로스, 데드크로스) 등 '기술적 지표의 객관적 상태'만 해석하세요.
+4. 초보자가 읽기 편하게 HTML <b>, <strong>, 혹은 Markdown **강조** 등을 섞어 3~4문장으로 깔끔하게 작성하세요.
+5. 분석 내용 가장 마지막(하단)에 반드시 다음 면책 조항을 `<br><br><small class="text-red-400 font-bold">⚠️ 본 분석은 기계적으로 산출된 통계 및 기술적 지표일 뿐, 투자 권유나 자문이 아니며 모든 투자 판단의 책임은 본인에게 있습니다.</small>` 형태로 똑같이 포함시키세요.
+
+출력은 반드시 아래 JSON 형식을 엄격하게 지켜주세요:
+{{
+    "text": "차트 분석 결과 내용 (HTML 태그 및 면책조항 포함)",
+    "status": "positive 또는 negative 또는 normal 중 하나 (차트 분위기 파악)",
+    "tips": [
+        {{"label": "핵심 키워드1 (예: 골든크로스)", "desc": "해당 키워드에 대한 초보자용 짧은 설명"}},
+        {{"label": "핵심 키워드2 (예: 장대양봉)", "desc": "설명..."}}
+    ]
+}}
+"""
+    try:
+        response = generate_with_retry(prompt, json_mode=True, timeout=30)
+        # Gemini API returns a GenerateContentResponse object, we need to extract and parse its text
+        response_text = response.text
+        response_data = json.loads(response_text)
+        
+        if isinstance(response_data, dict) and "text" in response_data:
+            return response_data
+    except Exception as e:
+        print(f"Beginner Insight AI Gen Error: {e}")
+        
+    # AI 생성 실패 시 기존 하드코딩된 폴백 메시지 반환
     return {
-        "text": insight,
-        "status": status,
+        "text": "현재 차트 데이터를 기반으로 AI 분석 엔진이 정보를 갱신하고 있습니다. 이동평균선과 거래량 추이를 통해 추세를 관찰해 보세요.<br><br><small class='text-red-400 font-bold'>⚠️ 본 분석은 기술적 지표일 뿐, 투자 권유나 자문이 아니며 모든 투자 판단의 책임은 본인에게 있습니다.</small>",
+        "status": "normal",
         "tips": [
-            {"label": "5일선", "desc": "최근 5영업일 간의 종가 평균을 이은 선입니다."},
-            {"label": "20일선", "desc": "최근 20영업일 간의 종가 평균을 이은 선입니다."},
-            {"label": "60일선", "desc": "최근 60영업일 간의 종가 평균을 이은 선입니다."},
-            {"label": "120일선", "desc": "최근 120영업일 간의 종가 평균을 이은 선입니다."}
+            {"label": "이동평균선", "desc": "과거 일정 기간 동안의 주가 평균을 선으로 연결한 지표입니다."}
         ]
     }
 
@@ -251,7 +291,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             insight_df = df
             if interval != "1d" or yf_period != "1y":
                 insight_df = yf.Ticker(yf_ticker).history(period="1y", interval="1d")
-            beginner_insight = generate_beginner_insight(insight_df)
+            beginner_insight = generate_beginner_insight(insight_df, ticker=yf_ticker)
         
         weather = chart_analyzer.analyze_weather_forecast(yf_ticker, df=df)
         
@@ -264,5 +304,5 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         "history": history,
         "stories": stories,
         "beginner_insight": beginner_insight,
-        "debug_v": "v2.1"
+        "debug_v": "v2.2"
     }
