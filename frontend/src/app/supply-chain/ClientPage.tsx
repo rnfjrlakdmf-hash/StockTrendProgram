@@ -354,7 +354,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
-                                                        <div className="absolute bottom-full right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
+                                                        <div className="absolute bottom-full left-0 md:left-auto md:right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
                                                             <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
                                                                 {node.event.name}
@@ -374,7 +374,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                             </div>
 
                             {/* Center: Target Stock */}
-                            <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-8 lg:py-0">
+                            <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-8 lg:py-0 order-first lg:order-none">
                                 <div className="relative">
                                     {/* Target Node */}
                                     <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative">
@@ -523,7 +523,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
-                                                        <div className="absolute bottom-full left-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
+                                                        <div className="absolute bottom-full right-0 md:right-auto md:left-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
                                                             <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
                                                                 {node.event.name}
