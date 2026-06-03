@@ -549,12 +549,11 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
             "summary": "API 키 미설정으로 인한 데모 데이터 (Supply Chain 2.0)"
         }
 
-    # [Cost-Save] 24시간 캐시 확인 - 같은 종목 공급망은 하루 1번만 AI 호출
+    # [Cost-Save] 캐시 확인 - 같은 종목 공급망은 TTL 이내에 1번만 AI 호출
     from db_manager import get_cached_supply_chain, save_supply_chain_cache
     cached = get_cached_supply_chain(symbol)
     if cached:
-        # 캐시가 있어도 가격 갱신(enrich)은 새로 돌려서 반환합니다.
-        return _enrich_supply_chain_data(cached)
+        return cached
 
     model = get_json_model()
     
@@ -620,11 +619,13 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         elif not isinstance(summary_raw, str):
             data["summary"] = str(summary_raw)
 
-        # [Cost-Save] 분석 결과 캐시에 원본 저장 (가격 연동 전 순수 AI 데이터)
-        save_supply_chain_cache(symbol, data)
+        # 가격 연동
+        enriched_data = _enrich_supply_chain_data(data)
         
-        # 가격 연동 및 반환
-        return _enrich_supply_chain_data(data)
+        # [Cost-Save] 분석 결과 캐시에 가격 연동 완료된 상태로 저장 (즉시 반환 목적)
+        save_supply_chain_cache(symbol, enriched_data)
+        
+        return enriched_data
 
     except Exception as e:
         import traceback

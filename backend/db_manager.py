@@ -685,10 +685,10 @@ def save_ai_analysis_cache(symbol: str, ai_result: dict):
         conn.close()
 
 # ─────────────────────────────────────────────
-# [Cost-Save Cache] 공급망/테마/나비효과 분석 캐시 (24시간)
+# [Cost-Save Cache] 공급망/테마/나비효과 분석 캐시 (3시간)
 # - 유저 100명이 같은 종목/테마를 봐도 AI 호출은 1번만 하고 나머지는 캐시 사용
 # ─────────────────────────────────────────────
-GENERAL_AI_CACHE_TTL_HOURS = 24
+GENERAL_AI_CACHE_TTL_HOURS = 3
 
 def _get_general_cache(cache_type: str, key: str):
     """공통 AI 캐시 조회 (supply_chain / theme / scenario)"""
