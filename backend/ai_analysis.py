@@ -553,7 +553,8 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     from db_manager import get_cached_supply_chain, save_supply_chain_cache
     cached = get_cached_supply_chain(symbol)
     if cached:
-        return cached
+        # 캐시가 있어도 가격 갱신(enrich)은 새로 돌려서 반환합니다.
+        return _enrich_supply_chain_data(cached)
 
     model = get_json_model()
     
@@ -607,190 +608,213 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         response = generate_with_retry(prompt, json_mode=True, timeout=60)
         data = json.loads(response.text)
 
-        # [New] Enrich with Real-time Stock Data (Nodes & Commodities)
-        import yfinance as yf
-        
-        import concurrent.futures
-
-        def enrich_node(node):
-            ticker_sym = node.get("ticker")
-            if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
-                node["price_display"] = "확인불가"
-                node["invalid"] = True
-                return
-            try:
-                if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
-                if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
-                
-                yt = yf.Ticker(ticker_sym)
-                price = getattr(yt.fast_info, 'last_price', None)
-                prev = getattr(yt.fast_info, 'previous_close', None)
-                
-                if not price or not prev:
-                    hist = yt.history(period="5d")
-                    if len(hist) >= 2:
-                        price = float(hist['Close'].iloc[-1])
-                        prev = float(hist['Close'].iloc[-2])
-                
-                if price and prev:
-                    change = ((price - prev) / prev) * 100
-                    
-                    try:
-                        currency = getattr(yt.fast_info, 'currency', 'USD')
-                    except:
-                        currency = 'USD'
-                        
-                    if ".KS" in ticker_sym or ".KQ" in ticker_sym:
-                        currency = "KRW"
-                        
-                    ex_rates = {"USD": 1350, "JPY": 9, "HKD": 175, "EUR": 1450, "TWD": 42, "CNY": 190, "KRW": 1}
-                    curr_symbols = {"USD": "$", "JPY": "¥", "HKD": "HK$", "EUR": "€", "TWD": "NT$", "CNY": "¥", "KRW": "₩"}
-                    
-                    rate = ex_rates.get(currency, 1350)
-                    curr_sym = curr_symbols.get(currency, "$")
-                    
-                    if currency == "KRW":
-                        node["price_display"] = f"₩{price:,.0f}"
-                    else:
-                        krw_est = int(price * rate)
-                        krw_man = krw_est // 10000
-                        krw_uk = krw_est // 100000000
-                        
-                        if krw_uk > 0:
-                            krw_str = f"{krw_uk}억 {krw_man % 10000}만원" if krw_man % 10000 > 0 else f"{krw_uk}억원"
-                        elif krw_man > 0:
-                            krw_str = f"{krw_man:,}만원"
-                        else:
-                            krw_str = f"{krw_est:,}원"
-                            
-                        node["price_display"] = f"{curr_sym}{price:,.2f} (약 {krw_str})"
-                        
-                    node["change_display"] = f"{change:+.2f}%"
-                    node["change_value"] = change
-
-                    # [Upgrade] Fetch basic financial metrics
-                    try:
-                        info = yt.info
-                        node["market_cap"] = info.get("marketCap", "N/A")
-                        node["pe_ratio"] = info.get("trailingPE", "N/A")
-                        margin = info.get("operatingMargins", "N/A")
-                        node["operating_margin"] = f"{margin*100:.1f}%" if isinstance(margin, (int, float)) else "N/A"
-                    except:
-                        pass
-                        
-                    # [Upgrade] Quick News Sentiment Evaluation
-                    node["sentiment"] = "Neutral"
-                    if change < -3.0:
-                        node["sentiment"] = "Negative"
-                    elif change > 3.0:
-                        node["sentiment"] = "Positive"
-                    
-                    try:
-                        from stock_data import fetch_google_news
-                        recent_news = fetch_google_news(ticker_sym, period='1d')
-                        if recent_news:
-                            bad_keywords = ["하락", "급락", "악재", "파업", "화재", "차질", "소송", "매도", "부진", "우려"]
-                            good_keywords = ["상승", "급등", "호재", "돌파", "계약", "수주", "승인", "흑자", "기대"]
-                            bad_count = 0
-                            good_count = 0
-                            for n in recent_news[:5]:
-                                title = n.get("title", "")
-                                if any(bk in title for bk in bad_keywords): bad_count += 1
-                                if any(gk in title for gk in good_keywords): good_count += 1
-                            if bad_count > good_count and bad_count >= 1:
-                                node["sentiment"] = "Negative"
-                            elif good_count > bad_count and good_count >= 1:
-                                node["sentiment"] = "Positive"
-                    except:
-                        pass
-
-
-                    # [Fix] Safety Filter: If Korean stock price is suspiciously low (e.g., < 10 KRW) or missing, mark as invalid
-                    if currency == "KRW" and price < 10:
-                         node["price_display"] = "N/A"
-                         node["invalid"] = True
-                else:
-                    # [Fix] If price or prev is missing, it's invalid
-                    node["price_display"] = "확인불가"
-                    node["invalid"] = True
-            except Exception as e: 
-                print(f"[enrich_node] Error for {ticker_sym}: {e}")
-                node["price_display"] = "확인불가"
-                node["invalid"] = True
-
-        def enrich_comm(comm):
-            ticker_sym = comm.get("ticker")
-            if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
-                comm["price_display"] = "확인불가"
-                return
-            try:
-                yt = yf.Ticker(ticker_sym)
-                price = getattr(yt.fast_info, 'last_price', None)
-                prev = getattr(yt.fast_info, 'previous_close', None)
-                
-                if not price or not prev:
-                    hist = yt.history(period="5d")
-                    if len(hist) >= 2:
-                        price = float(hist['Close'].iloc[-1])
-                        prev = float(hist['Close'].iloc[-2])
-
-                if price and prev:
-                    change = ((price - prev) / prev) * 100
-                    krw_est = int(price * 1350)
-                    krw_man = krw_est // 10000
-                    krw_str = f"{krw_man:,}만원" if krw_man > 0 else f"{krw_est:,}원"
-                    
-                    comm["price_display"] = f"${price:,.2f} (약 {krw_str})"
-                    comm["change_display"] = f"{change:+.2f}%"
-                    comm["change_value"] = change
-            except: pass
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-            n_list = data.get("nodes") or []
-            futures = [executor.submit(enrich_node, node) for node in n_list]
-            
-            c_list = data.get("commodities") or []
-            futures.extend([executor.submit(enrich_comm, comm) for comm in c_list])
-            
-            # [Fix] Also enrich leaders and followers safely
-            l_list = data.get("leaders") or []
-            futures.extend([executor.submit(enrich_node, s) for s in l_list])
-            
-            f_list = data.get("followers") or []
-            futures.extend([executor.submit(enrich_node, s) for s in f_list])
-            
-            concurrent.futures.wait(futures)
-
-        # [Fix] Final Filter: Remove nodes/stocks that failed validation (delisted or unlisted)
-        leaders_list = data.get("leaders")
-        data["leaders"] = [s for s in leaders_list if not s.get("invalid")] if leaders_list else []
-        
-        followers_list = data.get("followers")
-        data["followers"] = [s for s in followers_list if not s.get("invalid")] if followers_list else []
-        
-        nodes_list = data.get("nodes")
-        data["nodes"] = [n for n in nodes_list if not n.get("invalid")] if nodes_list else []
         # 3. Ensure array properties exist to prevent frontend crashes
         data["nodes"] = data.get("nodes") or []
         data["links"] = data.get("links") or []
         data["commodities"] = data.get("commodities") or []
 
-        # [Fix] Ensure summary is always a string to prevent frontend split errors
+        # Ensure summary is always a string to prevent frontend split errors
         summary_raw = data.get("summary", "")
         if isinstance(summary_raw, list):
             data["summary"] = "\n".join(str(s) for s in summary_raw)
         elif not isinstance(summary_raw, str):
             data["summary"] = str(summary_raw)
 
-        # [Cost-Save] 분석 결과 캐시에 저장 (다음 24시간은 AI 호출 없이 즉시 반환)
+        # [Cost-Save] 분석 결과 캐시에 원본 저장 (가격 연동 전 순수 AI 데이터)
         save_supply_chain_cache(symbol, data)
-        return data
+        
+        # 가격 연동 및 반환
+        return _enrich_supply_chain_data(data)
 
     except Exception as e:
         import traceback
         err_msg = f"Supply Chain Analysis Error: {e}\n{traceback.format_exc()}"
         print(err_msg)
         return {"error": str(e), "traceback": traceback.format_exc()}
+
+def _enrich_supply_chain_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
+    import yfinance as yf
+    import concurrent.futures
+    import copy
+
+    data = copy.deepcopy(raw_data)
+
+    def enrich_node(node):
+        ticker_sym = node.get("ticker")
+        if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
+            node["price_display"] = "N/A"
+            node["invalid"] = True
+            return
+        try:
+            if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
+            original_ticker = ticker_sym
+            if ticker_sym.isdigit() and len(ticker_sym) == 6: ticker_sym += ".KS"
+            
+            yt = yf.Ticker(ticker_sym)
+            price = getattr(yt.fast_info, 'last_price', None)
+            prev = getattr(yt.fast_info, 'previous_close', None)
+            
+            if not price or not prev:
+                hist = yt.history(period="5d")
+                if len(hist) >= 2:
+                    price = float(hist['Close'].iloc[-1])
+                    prev = float(hist['Close'].iloc[-2])
+
+            # [Fix] Fallback to KOSDAQ if KOSPI fails
+            if (not price or not prev) and ticker_sym.endswith(".KS"):
+                ticker_sym = original_ticker + ".KQ"
+                yt = yf.Ticker(ticker_sym)
+                price = getattr(yt.fast_info, 'last_price', None)
+                prev = getattr(yt.fast_info, 'previous_close', None)
+                if not price or not prev:
+                    hist = yt.history(period="5d")
+                    if len(hist) >= 2:
+                        price = float(hist['Close'].iloc[-1])
+                        prev = float(hist['Close'].iloc[-2])
+            
+            if price:
+                node["ticker"] = ticker_sym
+
+                
+            if price and prev:
+                change = ((price - prev) / prev) * 100
+                
+                try:
+                    currency = getattr(yt.fast_info, 'currency', 'USD')
+                except:
+                    currency = 'USD'
+                    
+                if ".KS" in ticker_sym or ".KQ" in ticker_sym:
+                    currency = "KRW"
+                    
+                ex_rates = {"USD": 1350, "JPY": 9, "HKD": 175, "EUR": 1450, "TWD": 42, "CNY": 190, "KRW": 1}
+                curr_symbols = {"USD": "$", "JPY": "¥", "HKD": "HK$", "EUR": "€", "TWD": "NT$", "CNY": "¥", "KRW": "₩"}
+                
+                rate = ex_rates.get(currency, 1350)
+                curr_sym = curr_symbols.get(currency, "$")
+                
+                if currency == "KRW":
+                    node["price_display"] = f"₩{price:,.0f}"
+                else:
+                    krw_est = int(price * rate)
+                    krw_man = krw_est // 10000
+                    krw_uk = krw_est // 100000000
+                    
+                    if krw_uk > 0:
+                        krw_str = f"{krw_uk}억 {krw_man % 10000}만원" if krw_man % 10000 > 0 else f"{krw_uk}억원"
+                    elif krw_man > 0:
+                        krw_str = f"{krw_man:,}만원"
+                    else:
+                        krw_str = f"{krw_est:,}원"
+                        
+                    node["price_display"] = f"{curr_sym}{price:,.2f} (약 {krw_str})"
+                    
+                node["change_display"] = f"{change:+.2f}%"
+                node["change_value"] = change
+
+                # [Upgrade] Fetch basic financial metrics
+                try:
+                    info = yt.info
+                    node["market_cap"] = info.get("marketCap", "N/A")
+                    node["pe_ratio"] = info.get("trailingPE", "N/A")
+                    margin = info.get("operatingMargins", "N/A")
+                    node["operating_margin"] = f"{margin*100:.1f}%" if isinstance(margin, (int, float)) else "N/A"
+                except:
+                    pass
+                    
+                # [Upgrade] Quick News Sentiment Evaluation
+                node["sentiment"] = "Neutral"
+                if change < -3.0:
+                    node["sentiment"] = "Negative"
+                elif change > 3.0:
+                    node["sentiment"] = "Positive"
+                
+                try:
+                    from stock_data import fetch_google_news
+                    recent_news = fetch_google_news(ticker_sym, period='1d')
+                    if recent_news:
+                        bad_keywords = ["하락", "급락", "악재", "파업", "화재", "차질", "소송", "매도", "부진", "우려"]
+                        good_keywords = ["상승", "급등", "호재", "돌파", "계약", "수주", "승인", "흑자", "기대"]
+                        bad_count = 0
+                        good_count = 0
+                        for n in recent_news[:5]:
+                            title = n.get("title", "")
+                            if any(bk in title for bk in bad_keywords): bad_count += 1
+                            if any(gk in title for gk in good_keywords): good_count += 1
+                        if bad_count > good_count and bad_count >= 1:
+                            node["sentiment"] = "Negative"
+                        elif good_count > bad_count and good_count >= 1:
+                            node["sentiment"] = "Positive"
+                except:
+                    pass
+
+                # [Fix] Safety Filter: If Korean stock price is suspiciously low (e.g., < 10 KRW) or missing, mark as invalid
+                if currency == "KRW" and price < 10:
+                        node["price_display"] = "N/A"
+                        node["invalid"] = True
+            else:
+                # [Fix] If price or prev is missing, it's invalid
+                node["price_display"] = "N/A"
+                node["invalid"] = True
+        except Exception as e: 
+            print(f"[enrich_node] Error for {ticker_sym}: {e}")
+            node["price_display"] = "N/A"
+            node["invalid"] = True
+
+    def enrich_comm(comm):
+        ticker_sym = comm.get("ticker")
+        if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
+            comm["price_display"] = "N/A"
+            return
+        try:
+            yt = yf.Ticker(ticker_sym)
+            price = getattr(yt.fast_info, 'last_price', None)
+            prev = getattr(yt.fast_info, 'previous_close', None)
+            
+            if not price or not prev:
+                hist = yt.history(period="5d")
+                if len(hist) >= 2:
+                    price = float(hist['Close'].iloc[-1])
+                    prev = float(hist['Close'].iloc[-2])
+
+            if price and prev:
+                change = ((price - prev) / prev) * 100
+                krw_est = int(price * 1350)
+                krw_man = krw_est // 10000
+                krw_str = f"{krw_man:,}만원" if krw_man > 0 else f"{krw_est:,}원"
+                
+                comm["price_display"] = f"${price:,.2f} (약 {krw_str})"
+                comm["change_display"] = f"{change:+.2f}%"
+                comm["change_value"] = change
+        except: pass
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+        n_list = data.get("nodes") or []
+        futures = [executor.submit(enrich_node, node) for node in n_list]
+        
+        c_list = data.get("commodities") or []
+        futures.extend([executor.submit(enrich_comm, comm) for comm in c_list])
+        
+        l_list = data.get("leaders") or []
+        futures.extend([executor.submit(enrich_node, s) for s in l_list])
+        
+        f_list = data.get("followers") or []
+        futures.extend([executor.submit(enrich_node, s) for s in f_list])
+        
+        concurrent.futures.wait(futures)
+
+    # Final Filter: Remove nodes/stocks that failed validation
+    leaders_list = data.get("leaders")
+    data["leaders"] = [s for s in leaders_list if not s.get("invalid")] if leaders_list else []
+    
+    followers_list = data.get("followers")
+    data["followers"] = [s for s in followers_list if not s.get("invalid")] if followers_list else []
+    
+    nodes_list = data.get("nodes")
+    data["nodes"] = [n for n in nodes_list if not n.get("invalid")] if nodes_list else []
+
+    return data
+
 
 def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Dict[str, Any]:
     """
