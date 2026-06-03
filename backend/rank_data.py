@@ -1001,6 +1001,7 @@ def get_etf_ranking(market="KR", category=None):
             ]
             
             # Parallel fetch quotes
+            from concurrent.futures import ThreadPoolExecutor, as_completed
             from stock_data import get_simple_quote
             
             def fetch_quote_safe(sym):
