@@ -359,24 +359,29 @@ def analyze_theme(theme_keyword: str):
     prompt = f"""
     Analyze the Stock Theme '{theme_keyword}' for the Korean Market (KOSPI/KOSDAQ).
 
+    [⚠️ 매우 중요: 유사투자자문업 법적 준수 사항]
+    1. 당신은 특정 주식을 추천하거나 투자 자문을 하는 것이 아닙니다. 웹상의 이슈와 뉴스 빈도를 기계적으로 분석하여 연관성을 요약하는 AI입니다.
+    2. "추천", "매수", "매도", "목표가", "수혜주" 등 투자를 유도하는 자극적인 단어 사용을 절대 금지합니다.
+    3. 종목 선정 이유('reason') 작성 시 객관적 팩트(예: "해당 기술 특허 보유", "관련 부문 매출 발생")만 서술하세요.
+
     Instructions:
     1. Identify the 'Theme Description' and 'Key Risk Factor'.
-    2. **[New] Theme Lifecycle Clock**: Determine the current phase of this theme.
+    2. **Theme Lifecycle Clock**: Determine the current phase of this theme.
        - 'Morning' (07:00): Birth/Early Stage (태동기) - High Potential, High Risk.
        - 'Noon' (12:00): Growth/Explosion (성장기) - Everyone knows it, prices soaring.
        - 'Evening' (18:00): Maturity (성숙기) - Growth slowing, established players dominate.
        - 'Night' (23:00): Decline/Bubble Burst (쇠퇴기) - Hype over, prices falling. 
        - Provide 'phase' (Morning/Noon/Evening/Night) and 'time' (e.g., "07:00").
-       - Provide short 'comment' (e.g., "지금은 파티가 끝나는 시간입니다.").
-    3. List 3 'Leaders' (대장주) and 3 'Followers' (부대장주).
+       - Provide short 'comment' (e.g., "현재 시장에서 새롭게 주목받고 있는 단계입니다.").
+    3. List 3 'Primary' (핵심 연관 기업) and 3 'Secondary' (주변 연관 기업).
        - **ONLY INCLUDE CURRENTLY TRADABLE KOREAN STOCKS (KOSPI/KOSDAQ)**.
        - **STRICTLY EXCLUDE UNLISTED COMPANIES (e.g., Kurly, Oasis, K-Bank, Viva Republica)**.
        - **STRICTLY EXCLUDE DELISTED OR SUSPENDED COMPANIES (e.g., Meritz Fire, Ssangyong C&E)**.
        - **Ensure EVERY recommended stock has a valid 6-digit KRX ticker symbol.**
-    4. **[New] Real vs Fake Detector**: For EACH stock, determine if it's a REAL beneficiary or FAKE (Hype only).
+    4. **Real vs Fake Detector**: For EACH stock, determine if it's a REAL beneficiary or FAKE (Hype only).
        - 'is_real': true if >10% revenue comes from this theme or core tech exists.
        - 'is_real': false if just news/rumors without logic.
-       - 'reason': Short reason (e.g., "매출 90% 배터리" or "단순 지분 투자설").
+       - 'reason': Short, objective reason (e.g., "해당 부문 매출 비중 40% 이상" or "단순 테마성 기사 언급").
     5. Translate everything to Korean.
 
     Response Format (JSON):
@@ -387,13 +392,13 @@ def analyze_theme(theme_keyword: str):
         "lifecycle": {{
             "phase": "Morning",
             "time": "07:00",
-            "comment": "남들 모를 때 선점하세요!"
+            "comment": "현재 시장에서 새롭게 주목받고 있는 단계입니다."
         }},
         "leaders": [
-            {{"name": "Stock A", "symbol": "005930", "is_real": true, "reason": "Global No.1 Market Share"}}
+            {{"name": "Stock A", "symbol": "005930", "is_real": true, "reason": "Objective fact..."}}
         ],
         "followers": [
-            {{"name": "Stock B", "symbol": "000660", "is_real": false, "reason": "No direct revenue yet"}}
+            {{"name": "Stock B", "symbol": "000660", "is_real": false, "reason": "Objective fact..."}}
         ]
     }}
     """

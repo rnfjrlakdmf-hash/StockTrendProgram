@@ -450,7 +450,7 @@ export default function ThemePage() {
                                 <div className="bg-gradient-to-r from-orange-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
                                     <h4 className="text-xl font-black text-white flex items-center gap-2">
                                         <TrendingUp className="w-6 h-6 text-orange-400" />
-                                        주요 대장주 (Leaders) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
+                                        핵심 연관 기업 (Primary) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.6</span>
                                     </h4>
                                 </div>
                                 <CleanStockList
@@ -479,7 +479,7 @@ export default function ThemePage() {
                                         <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
                                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                                         </div>
-                                        주요 관련주 (Followers) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.2</span>
+                                        주변 연관 기업 (Secondary) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.6</span>
                                     </h4>
                                 </div>
                                 <CleanStockList
@@ -499,6 +499,20 @@ export default function ThemePage() {
                                     onItemClick={(sym) => router.push(`/discovery?q=${sym}`)}
                                     hideLabels={true}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Legal Disclaimer Box */}
+                        <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-5 mt-8 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                            <div className="bg-red-500/20 p-3 rounded-full shrink-0">
+                                <AlertTriangle className="w-6 h-6 text-red-400" />
+                            </div>
+                            <div>
+                                <h5 className="text-red-400 font-bold text-sm mb-1">면책 조항 (투자 권유 아님)</h5>
+                                <p className="text-gray-400 text-xs leading-relaxed">
+                                    본 테마 분석은 뉴스, 검색어 등 웹상의 공개 데이터를 기계적으로 취합한 결과일 뿐, 특정 종목에 대한 매수/매도 등 <strong>투자 권유나 자문이 아닙니다.</strong> 
+                                    찐수혜/주의 뱃지 역시 객관적 사실(매출 비중, 기사 빈도)을 단순 분류한 것이며 맹신하지 마세요. 모든 투자 판단과 책임은 투자자 본인에게 있습니다.
+                                </p>
                             </div>
                         </div>
                     </div>
