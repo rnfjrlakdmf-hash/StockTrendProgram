@@ -1,7 +1,7 @@
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
 import Link from "next/link";
-import { Clock, ArrowLeft, Share2 } from "lucide-react";
+import { Clock, ArrowLeft, Share2, UserCheck } from "lucide-react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import KakaoShareButton from "@/components/KakaoShareButton";
@@ -24,7 +24,7 @@ async function getBlogPost(slug: string) {
             content: data.content || "",
             createdAt: data.createdAt?.toDate?.() || new Date(),
             tags: data.tags || [],
-            author: data.author || "AI 퀀트봇",
+            author: data.author || "관리자",
             slug: data.slug || snapshot.id
         };
     } catch (error) {
@@ -113,10 +113,10 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
                 
                 <div className="flex items-center gap-6 text-sm text-gray-400 font-medium">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                            AI
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
+                            <UserCheck className="w-4 h-4" />
                         </div>
-                        <span className="text-gray-300">{post.author}</span>
+                        <span className="text-gray-300 font-bold">{post.author}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />

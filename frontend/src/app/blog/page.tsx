@@ -6,7 +6,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "마켓 뷰 (Blog) | StockTrendProgram",
-    description: "AI가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트",
+    description: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트",
 };
 
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
@@ -45,7 +45,7 @@ export default async function BlogListPage() {
                     Market View
                 </h1>
                 <p className="text-lg md:text-xl text-gray-400 font-medium relative z-10">
-                    상위 1% 투자자들을 위한 AI 증시 요약 리포트
+                    상위 1% 투자자들을 위한 전문가 증시 요약 리포트
                 </p>
             </div>
 

@@ -66,7 +66,7 @@ def get_market_summary():
     today_str = today_dt.strftime("%Y년 %m월 %d일")
     date_id = today_dt.strftime("%Y%m%d")
     
-    title = f"[AI 마켓 뷰] {today_str} 국내 및 글로벌 증시 핵심 요약"
+    title = f"[마켓 뷰] {today_str} 국내 및 글로벌 증시 핵심 요약"
     
     prompt = f"""
     당신은 객관적인 금융 데이터 분석가입니다. 아래 제공된 지수 데이터를 바탕으로,
@@ -84,13 +84,13 @@ def get_market_summary():
     2. "추천", "매수", "수익 보장", "무조건 오릅니다" 등의 자극적인 투자 유도 단어를 절대 사용하지 마세요.
     3. 대신 "시장 관심 집중", "외국인/기관 수급 유입", "강세 흐름", "섹터 부각" 등의 객관적이고 건조한 단어를 사용하세요.
     4. 글의 최하단에는 반드시 다음 면책 조항(Disclaimer)을 포함하세요:
-       "본 리포트는 AI 알고리즘에 의해 시장 데이터를 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
+       "본 리포트는 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
 
     [출력 형식: HTML]
     - Next.js 프론트엔드 (Tailwind CSS)에 렌더링하기 좋은 형태로 만들어주세요.
     - <div>, <h2>, <h3>, <ul>, <li>, <p>, <strong> 태그를 적절히 사용하세요.
     - 테일윈드 클래스는 'text-gray-300', 'text-blue-400', 'font-bold' 등을 적절히 섞어주세요.
-    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다.
+    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다. 인사말은 "안녕하세요! 주식 분석기 관리자입니다." 로 통일하세요.
     - 제목(h2)은 "🚀 {today_str} 국내/글로벌 증시 마감 요약" 으로 해주세요.
 
     JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
@@ -111,8 +111,8 @@ def get_market_summary():
         content = f"""
         <div class="prose prose-invert max-w-none space-y-6">
             <h2 class="text-2xl font-bold text-white pb-2">🚀 {today_str} 증시 마감 요약</h2>
-            <p class="text-gray-300">현재 AI API 연결 지연으로 인해 상세 시황을 불러오지 못했습니다.</p>
-            <p class="text-gray-400 text-sm mt-8 border-t border-gray-700 pt-4">본 리포트는 AI 알고리즘에 의해 시장 데이터를 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.</p>
+            <p class="text-gray-300">현재 데이터 수집 지연으로 인해 상세 시황을 불러오지 못했습니다.</p>
+            <p class="text-gray-400 text-sm mt-8 border-t border-gray-700 pt-4">본 리포트는 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.</p>
         </div>
         """
         
