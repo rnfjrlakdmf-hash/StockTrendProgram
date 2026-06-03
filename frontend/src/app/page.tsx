@@ -240,6 +240,26 @@ export default function Home() {
                 </p>
               </div>
             </div>
+
+            {/* Guide Links for SEO Crawlers & Users */}
+            <div className="mt-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md">
+              <h2 className="text-xl font-bold text-white mb-4">📚 AI 투자 가이드 (추천 칼럼)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link href="/guide/ai-investing" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
+                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">초보자를 위한 AI 주식 투자 가이드</h3>
+                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">감정을 배제하고 데이터를 기반으로 판단하는 인공지능 분석의 원리를 알아봅니다.</p>
+                </Link>
+                <Link href="/guide/supply-chain-analysis" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
+                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">공급망 지도 분석 방법론</h3>
+                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">공급사, 고객사, 경쟁사의 역학 관계가 기업의 주가와 실적에 미치는 나비효과를 파악합니다.</p>
+                </Link>
+                <Link href="/guide/risk-management" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
+                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">포트폴리오 변동성 관리와 헷징</h3>
+                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">현대 포트폴리오 이론(MPT)을 바탕으로 리스크를 통제하는 분산 투자법을 안내합니다.</p>
+                </Link>
+              </div>
+            </div>
+
           </div>
         )}
 

@@ -88,11 +88,22 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">5. 쿠키(Cookie) 사용 안내</h2>
-            <p>
+            <h2 className="text-xl font-bold text-white mb-3">5. 쿠키(Cookie) 사용 및 광고 게재 안내</h2>
+            <p className="mb-2">
               본 서비스는 사용자 경험 향상 및 광고 서비스 제공을 위해 쿠키를 사용합니다.
               브라우저 설정에서 쿠키 저장을 거부할 수 있으나, 일부 서비스 이용이 제한될 수 있습니다.
             </p>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-sm mt-3">
+              <strong className="text-white block mb-2">Google 애드센스 및 제3자(Third-party) 쿠키 정책</strong>
+              <ul className="list-disc ml-5 space-y-2 text-gray-400">
+                <li>제3자 공급업체(Google 포함)는 쿠키를 사용하여 귀하가 이전에 본 웹사이트나 다른 웹사이트를 방문한 실적을 바탕으로 광고를 게재합니다.</li>
+                <li>Google은 광고 쿠키를 사용하여 본 웹사이트 또는 인터넷의 다른 웹사이트 방문 실적을 기반으로 귀하에게 맞춤 광고를 제공할 수 있습니다.</li>
+                <li>
+                  사용자는 <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">광고 설정</a> 페이지를 방문하여 맞춤 광고를 선택 해제할 수 있습니다.
+                  또는 <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">www.aboutads.info</a>를 방문하여 개인 맞춤 광고에 사용되는 제3자 공급업체의 쿠키 사용을 선택 해제할 수 있습니다.
+                </li>
+              </ul>
+            </div>
           </section>
 
           <section>
