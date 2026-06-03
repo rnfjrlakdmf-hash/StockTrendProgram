@@ -38,7 +38,7 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
-          pip install firebase-admin google-generativeai yfinance python-dotenv GoogleNews
+          pip install firebase-admin google-generativeai yfinance python-dotenv GoogleNews holidays
 
       - name: Firebase 키 파일 생성 (Secret에서 가져오기)
         env:
