@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 // 환경에 따라 백엔드 URL 자동 선택
-const BACKEND_URL = 'http://localhost:8000'; // 강제로 로컬 백엔드 바라보게 수정 (테스트용)
+const BACKEND_URL = process.env.NODE_ENV === 'development'
+    ? 'http://localhost:8000'
+    : 'http://13.209.99.170.nip.io';
 
 const nextConfig: NextConfig = {
   distDir: '.next',
