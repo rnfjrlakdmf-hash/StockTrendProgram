@@ -139,7 +139,7 @@ def post_to_firestore():
         "content": content,
         "slug": slug,
         "createdAt": firestore.SERVER_TIMESTAMP,
-        "author": "AI 퀀트봇",
+        "author": "관리자",
         "tags": ["시황", "국내증시", "미국증시", "마켓뷰"],
         "viewCount": 0
     }
