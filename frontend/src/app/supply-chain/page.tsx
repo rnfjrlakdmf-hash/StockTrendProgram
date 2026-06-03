@@ -349,7 +349,7 @@ export default function SupplyChainPage() {
                                                     {node.event && (
                                                         <div className="absolute bottom-full right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
-                                                            <div className="text-[9px] font-normal opacity-90 leading-none mt-0.5 max-w-[80px] truncate">
+                                                            <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
                                                                 {node.event.name}
                                                             </div>
                                                             {node.event.date && node.event.date !== 'Unknown' && (
@@ -518,7 +518,7 @@ export default function SupplyChainPage() {
                                                     {node.event && (
                                                         <div className="absolute bottom-full left-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
-                                                            <div className="text-[9px] font-normal opacity-90 leading-none mt-0.5 max-w-[80px] truncate">
+                                                            <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
                                                                 {node.event.name}
                                                             </div>
                                                             {node.event.date && node.event.date !== 'Unknown' && (
