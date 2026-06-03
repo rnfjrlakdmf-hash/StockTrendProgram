@@ -144,7 +144,16 @@ def send_opening_notification(market: str):
             if quote:
                 price = quote.get('price', 0)
                 name = get_korean_stock_name(symbol) or symbol
-                items_info.append(f"• {name}: {price}")
+                
+                # Add currency formatting
+                if market == "US":
+                    # For US, add $ prefix if not already present
+                    price_str = f"${price}" if not str(price).startswith("$") else str(price)
+                else:
+                    # For KR, add 원 suffix if not already present
+                    price_str = f"{price}원" if not str(price).endswith("원") else str(price)
+                    
+                items_info.append(f"• {name}: {price_str}")
         
         if not items_info: continue
         
