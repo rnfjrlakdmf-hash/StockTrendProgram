@@ -19,6 +19,12 @@ const navigation = [
         desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
     },
     { 
+        name: "마켓 뷰 (블로그)", 
+        href: "/blog", 
+        icon: Newspaper,
+        desc: "AI가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다."
+    },
+    { 
         name: "글로벌 마켓 시그널", 
         href: "/signals", 
         icon: Activity,

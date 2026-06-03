@@ -5,6 +5,7 @@
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getFirestore } from 'firebase/firestore';
 
 // Firebase 설정
 const firebaseConfig = {
@@ -18,20 +19,13 @@ const firebaseConfig = {
 };
 
 // Singleton instances
-let app: FirebaseApp | null = null;
+export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+
 let messaging: Messaging | null = null;
 
 function getFirebaseMessaging(): Messaging | null {
     if (typeof window === 'undefined') return null;
-
-    if (!app) {
-        try {
-            app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-        } catch (error) {
-            console.error('[Firebase] App initialization failed:', error);
-            return null;
-        }
-    }
 
     if (!messaging && 'serviceWorker' in navigator) {
         try {
