@@ -107,8 +107,8 @@ def post_to_firestore():
         doc_ref = db.collection("blog_posts").document(slug)
         doc_ref.set(post_data)
         
-        print(f"✅ 블로그 포스팅 완료! (ID: {slug})")
-        print(f"👉 URL: https://stock-trend-program.co.kr/blog/{slug}")
+        print(f"[SUCCESS] 블로그 포스팅 완료! (ID: {slug})")
+        print(f"URL: https://stock-trend-program.co.kr/blog/{slug}")
         return True
     except Exception as e:
         print(f"Firestore 저장 중 에러 발생: {e}")
