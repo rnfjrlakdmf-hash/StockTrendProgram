@@ -39,21 +39,21 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
 
     const handleActivate = async () => {
         if (!user?.is_pro && (alertsCount || 0) >= 3) {
-            setMessage("👑 일반 회원은 알림을 3개까지만 등록할 수 있습니다.");
+            setMessage("⚡ 기본 모드에서는 알림을 3개까지만 등록할 수 있습니다.");
             setShowAd(true);
             return;
         }
 
         // Pro check for Sniper
         if (mode === 'sniper' && !user?.is_pro) {
-            setMessage("👑 스나이퍼 모드는 프리미엄 전용 기능입니다.");
+            setMessage("⚡ 스나이퍼 모드는 AI 고급 기능입니다.");
             setShowAd(true);
             return;
         }
 
         // Pro check for Target Price
         if (targetPriceEnabled && !user?.is_pro) {
-            setMessage("👑 최종 목표가 설정은 프리미엄 전용 기능입니다.");
+            setMessage("⚡ 최종 목표가 설정은 AI 고급 기능입니다.");
             setShowAd(true);
             return;
         }
@@ -185,14 +185,14 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                     <button
                         onClick={() => {
                             if (!user?.is_pro) {
-                                setMessage("👑 스나이퍼 모드는 프리미엄 회원 전용 기능입니다.");
+                                setMessage("⚡ 스나이퍼 모드는 AI 고급 기능입니다.");
                                 return;
                             }
                             setMode('sniper');
                         }}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'sniper' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                     >
-                        {user?.is_pro ? '스나이퍼' : '👑 스나이퍼'}
+                        {user?.is_pro ? '스나이퍼' : '⚡ 스나이퍼'}
                     </button>
                 </div>
             </div>
@@ -339,7 +339,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                                 checked={targetPriceEnabled}
                                 onChange={(e) => {
                                     if (e.target.checked && !user?.is_pro) {
-                                        setMessage("👑 최종 목표가 설정은 프리미엄 회원 전용 기능입니다.");
+                                        setMessage("⚡ 최종 목표가 설정은 AI 고급 기능입니다.");
                                         return;
                                     }
                                     setTargetPriceEnabled(e.target.checked);
@@ -348,7 +348,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                             />
                             <div className="flex items-center gap-2">
                                 <Target className="w-5 h-5 text-blue-400" />
-                                <span className="text-white font-bold">{user?.is_pro ? '최종 목표가 (Target)' : '👑 최종 목표가 (Target)'}</span>
+                                <span className="text-white font-bold">{user?.is_pro ? '최종 목표가 (Target)' : '⚡ 최종 목표가 (Target)'}</span>
                             </div>
                         </label>
 
@@ -390,7 +390,7 @@ export default function PriceAlertSetup({ symbol, currentPrice, buyPrice, quanti
                 <RewardAdModal 
                     onClose={() => setShowAd(false)} 
                     onSuccess={() => {
-                        setMessage("🎉 1시간 무료 Pro 권한이 활성화되었습니다! 다시 시도해 보세요.");
+                        setMessage("🎉 1시간 AI 고급 분석 권한이 활성화되었습니다! 다시 시도해 보세요.");
                         setShowAd(false);
                     }} 
                 />

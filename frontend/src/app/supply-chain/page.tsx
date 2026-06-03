@@ -57,8 +57,7 @@ export default function SupplyChainPage() {
         if (!query) return;
 
         // Check for Pro Mode or Active Reward
-        const isPro = localStorage.getItem("isPro") === "true";
-        if (!isPro && !isFreeModeEnabled() && !checkReward()) {
+        if (!isFreeModeEnabled() && !checkReward()) {
             setShowAdModal(true);
             return;
         }
@@ -249,6 +248,11 @@ export default function SupplyChainPage() {
                                             : 'bg-red-900/40 border-red-500/30 text-red-100'
                                             }`}>
                                             {comm.reason}
+                                            {comm.sensitivity && (
+                                                <div className="mt-1.5 pt-1.5 border-t border-white/20 text-[11px] font-normal text-white/80 leading-tight">
+                                                    <span className="font-bold text-yellow-300">민감도:</span> {comm.sensitivity}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Connecting Line (Visual Only) */}
@@ -305,7 +309,7 @@ export default function SupplyChainPage() {
                                             return (
                                                 <div key={node.id} className="relative group">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-green-300' : 'w-2 h-2'}`}></div>
+                                                        <div className={`rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-green-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-center">
                                                                 <span 
@@ -437,9 +441,12 @@ export default function SupplyChainPage() {
                                                     >
                                                         {node.label}
                                                     </span>
-                                                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+                                                    <div className={`w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] ${node.sentiment === 'Negative' ? 'animate-pulse bg-orange-500 ring-orange-500 shadow-orange-500' : ''}`}></div>
                                                 </div>
-                                                <div className="text-xs text-gray-500">{(data.links || []).find((l: any) => l.target === node.id)?.value}</div>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    {node.market_share && <span className="bg-white/10 px-1.5 rounded text-white">{node.market_share}</span>}
+                                                    <span>{(data.links || []).find((l: any) => l.target === node.id)?.value}</span>
+                                                </div>
                                                 {/* Price Badge */}
                                                 {node.price_display && (
                                                     <div className="flex items-center gap-2 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5">
@@ -505,7 +512,7 @@ export default function SupplyChainPage() {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className={`rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'}`}></div>
+                                                        <div className={`rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
@@ -591,7 +598,28 @@ export default function SupplyChainPage() {
                                             </div>
                                         </section>
 
-                                        {/* 3. Themes & Tip */}
+                                        {/* 3. Financials (If available) */}
+                                        {(selectedNode.market_cap || selectedNode.operating_margin) && (
+                                            <section className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">재무 지표</h3>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[10px] text-gray-400 mb-1">시가총액</div>
+                                                        <div className="text-sm font-bold text-white">{selectedNode.market_cap !== 'N/A' ? (selectedNode.market_cap / 1e9).toFixed(1) + 'B' : 'N/A'}</div>
+                                                    </div>
+                                                    <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[10px] text-gray-400 mb-1">영업이익률</div>
+                                                        <div className="text-sm font-bold text-white">{selectedNode.operating_margin}</div>
+                                                    </div>
+                                                    <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[10px] text-gray-400 mb-1">PER</div>
+                                                        <div className="text-sm font-bold text-white">{typeof selectedNode.pe_ratio === 'number' ? selectedNode.pe_ratio.toFixed(1) : selectedNode.pe_ratio}</div>
+                                                    </div>
+                                                </div>
+                                            </section>
+                                        )}
+
+                                        {/* 4. Themes & Tip */}
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <section>
                                                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">핵심 테마</h3>

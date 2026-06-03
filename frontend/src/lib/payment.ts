@@ -23,7 +23,7 @@ export const requestPayment = (onSuccess: () => void) => {
     // 2. 일반 웹 브라우저 환경
     window.open(GUMROAD_LINK, "_blank");
 
-    if (confirm("결제 페이지가 새 창에서 열렸습니다.\n결제를 완료하셨습니까?\n(확인을 누르면 프로 모드가 활성화됩니다)")) {
+    if (confirm("결제 페이지가 새 창에서 열렸습니다.\n결제를 완료하셨습니까?\n(확인을 누르면 AI 고급 모드가 활성화됩니다)")) {
         onSuccess();
     }
 };

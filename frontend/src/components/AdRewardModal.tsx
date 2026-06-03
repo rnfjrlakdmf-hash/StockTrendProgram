@@ -150,8 +150,6 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
         }
     };
 
-    const proPriceUsd = 3.5;
-    const proPriceKrw = Math.floor(proPriceUsd * exchangeRate / 10) * 10;
 
     if (!isOpen) return null;
 
@@ -207,20 +205,7 @@ export default function AdRewardModal({ isOpen, onClose, onReward, featureName }
                     </button>
                 )}
 
-                <div className="pt-6 border-t border-white/5 space-y-3">
-                    <button
-                        onClick={() => {
-                            requestPayment(() => {
-                                localStorage.setItem("isPro", "true");
-                                alert("결제가 완료되었습니다! 프로 기능이 활성화됩니다.");
-                                window.location.reload();
-                            });
-                        }}
-                        className="w-full py-3 bg-gradient-to-r from-gray-800 to-gray-700 text-gray-300 rounded-xl font-bold text-sm hover:text-white transition-all flex items-center justify-center gap-2"
-                    >
-                        <Zap className="w-4 h-4" /> 귀찮으신가요? 평생 소장하기 (${proPriceUsd})
-                    </button>
-                </div>
+
             </div>
         </div>
     );

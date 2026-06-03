@@ -162,6 +162,10 @@ def send_push_notification(
             fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
         elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
             fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
+        elif alert_type == 'market_summary':
+            fcm_tag = 'market-summary'
+        elif alert_type == 'portfolio_summary':
+            fcm_tag = 'portfolio-summary'
         else:
             fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         
@@ -298,6 +302,10 @@ def send_multicast_notification(
             fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
         elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
             fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
+        elif alert_type == 'market_summary':
+            fcm_tag = 'market-summary'
+        elif alert_type == 'portfolio_summary':
+            fcm_tag = 'portfolio-summary'
         else:
             fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
         

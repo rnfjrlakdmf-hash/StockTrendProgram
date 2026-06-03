@@ -27,25 +27,25 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-2.5-flash')
 
 def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 60, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
     timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 20s
     temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
-    models_to_try: 시도할 모델 리스트 (기본값: gemini-1.5-flash 단일 사용 - 비용 절감)
+    models_to_try: 시도할 모델 리스트 (기본값: gemini-2.5-flash 단일 사용 - 비용 절감)
     """
     import concurrent.futures
     
     if models_to_try is None:
-        # [Cost-Optimized] gemini-1.5-flash 사용 (2.5-flash 대비 비용 약 70% 절감, 품질 차이 미미)
+        # [Cost-Optimized] gemini-2.5-flash 단일 사용 (비용 폭탄 방지)
         models_to_try = [
-            "gemini-1.5-flash",
+            "gemini-2.5-flash"
         ]
     
     last_error = None
@@ -562,38 +562,37 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     Current Date: {today}
 
     Instructions:
-    1. Identify key 'Suppliers' (Tier 1/2), 'Customers' (Major Clients), and 'Competitors'.
+    1. Identify key 'Suppliers' (Tier 1 AND Tier 2), 'Customers' (Tier 1 AND Tier 2), and 'Competitors'.
     2. Define relationships (Supply, Sales, Compete).
     3. **Revenue Dependency**: Estimate dependency weight (0.1-1.0) and width_type (artery/capillary).
     4. **Commodities**: Identify 1-2 key raw materials (Benefit/Risk).
        - **Name**: Must be in Korean logic (e.g., "국제 유가", "구리", "리튬").
        - **Reason**: Brief context in Korean (e.g., "원자재 비용 상승", "판매가 인상 수혜").
-    5. **[New] Themes & Risks per Node**:
-       - For EACH company (Target, Supplier, Customer, Competitor), identify 1-2 key **themes** they belong to (e.g., "#AI칩", "#2차전지", "#자율주행").
-       - These should be short, hashtag-style Korean labels.
-    6. **[New] Risk Score**:
-       - Calculate an overall 'risk_score' (0-100) for this supply chain based on dependencies, geopolitical factors, and commodity trends.
-    7. **Upcoming Events (D-Day) for ALL Nodes**: 
+       - **Sensitivity**: Estimate sensitivity to a 10% price increase ("High/Medium/Low" and a short Korean explanation).
+    5. **Themes & Risks per Node**:
+       - For EACH company, identify 1-2 key **themes** (e.g., "#AI칩", "#2차전지").
+    6. **Market Share**:
+       - For 'Competitor' group ONLY, estimate their Market Share (%) and include in 'market_share' property (e.g., "25%").
+    7. **Risk Score**:
+       - Calculate an overall 'risk_score' (0-100).
+    8. **Upcoming Events (D-Day) for ALL Nodes**: 
        - Identify 1 pivotal upcoming event for **EACH** company.
-       - e.g. "Earnings", "New Model Launch", "Litigation".
-       - **Date**: Provide the specific date (YYYY-MM-DD) if known.
-       - **Label**: 'd_day' (e.g. D-14, D-30) relative to {today}.
-       - If exact date unknown, use "D-??" and date="Unknown".
-    8. Provide a 'Supply Chain Summary' in Korean (3 bullet points).
-    9. Translate node labels to sensible Korean/English.
-    10. **CRITICAL**: Provide the Stock Ticker for each company if public.
+    9. Provide a 'Supply Chain Summary' in Korean (3 bullet points).
+    10. Translate node labels to sensible Korean/English.
+    11. **CRITICAL**: Provide the Stock Ticker for each company if public.
 
     Response Format (JSON):
     {{
         "symbol": "{symbol}",
         "risk_score": <0-100>,
         "commodities": [
-            {{"name": "국제 유가", "type": "Risk", "ticker": "CL=F", "reason": "운송 및 제조 원가 상승 부담"}}
+            {{"name": "국제 유가", "type": "Risk", "ticker": "CL=F", "reason": "운송 및 제조 원가 상승 부담", "sensitivity": "High (유가 10% 상승 시 마진 2% 하락 가능성)"}}
         ],
         "nodes": [
             {{
-                "id": "{symbol}", "group": "target", "label": "{symbol} (Kor Name)", "ticker": "{symbol}",
+                "id": "{symbol}", "group": "target", "tier": 1, "label": "{symbol} (Kor Name)", "ticker": "{symbol}",
                 "themes": ["#AI가속기", "#HBM"],
+                "market_share": "N/A",
                 "event": {{"name": "신제품 발표", "d_day": "D-30", "date": "2024-06-15"}} 
             }}
         ],
@@ -668,6 +667,43 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
                         
                     node["change_display"] = f"{change:+.2f}%"
                     node["change_value"] = change
+
+                    # [Upgrade] Fetch basic financial metrics
+                    try:
+                        info = yt.info
+                        node["market_cap"] = info.get("marketCap", "N/A")
+                        node["pe_ratio"] = info.get("trailingPE", "N/A")
+                        margin = info.get("operatingMargins", "N/A")
+                        node["operating_margin"] = f"{margin*100:.1f}%" if isinstance(margin, (int, float)) else "N/A"
+                    except:
+                        pass
+                        
+                    # [Upgrade] Quick News Sentiment Evaluation
+                    node["sentiment"] = "Neutral"
+                    if change < -3.0:
+                        node["sentiment"] = "Negative"
+                    elif change > 3.0:
+                        node["sentiment"] = "Positive"
+                    
+                    try:
+                        from stock_data import fetch_google_news
+                        recent_news = fetch_google_news(ticker_sym, period='1d')
+                        if recent_news:
+                            bad_keywords = ["하락", "급락", "악재", "파업", "화재", "차질", "소송", "매도", "부진", "우려"]
+                            good_keywords = ["상승", "급등", "호재", "돌파", "계약", "수주", "승인", "흑자", "기대"]
+                            bad_count = 0
+                            good_count = 0
+                            for n in recent_news[:5]:
+                                title = n.get("title", "")
+                                if any(bk in title for bk in bad_keywords): bad_count += 1
+                                if any(gk in title for gk in good_keywords): good_count += 1
+                            if bad_count > good_count and bad_count >= 1:
+                                node["sentiment"] = "Negative"
+                            elif good_count > bad_count and good_count >= 1:
+                                node["sentiment"] = "Positive"
+                    except:
+                        pass
+
 
                     # [Fix] Safety Filter: If Korean stock price is suspiciously low (e.g., < 10 KRW) or missing, mark as invalid
                     if currency == "KRW" and price < 10:
@@ -847,9 +883,9 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # [Cost-Optimized] gemini-1.5-flash 사용 (비용 절감)
+        # [Cost-Optimized] gemini-2.5-flash 사용 (비용 절감)
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-1.5-flash"] if target_symbol else None
+        models = ["gemini-2.5-flash"] if target_symbol else None
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)

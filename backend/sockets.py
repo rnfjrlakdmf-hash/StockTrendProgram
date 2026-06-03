@@ -97,6 +97,20 @@ class ConnectionManager:
         
         for conn in to_remove:
             await self.disconnect(conn)
+
+    async def broadcast_chat_message(self, data: dict):
+        """Broadcast chat message to all connected clients."""
+        import json
+        message = json.dumps(data, ensure_ascii=False)
+        to_remove = []
+        for connection in list(self.active_connections.keys()):
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                logger.warning(f"[WS] Chat Broadcast failed: {e}")
+                to_remove.append(connection)
+        for conn in to_remove:
+            await self.disconnect(conn)
                 
     async def broadcast_to_symbol_public(self, symbol: str, data: dict):
         """

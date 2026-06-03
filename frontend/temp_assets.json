@@ -1,0 +1,457 @@
+{
+  "status": "success",
+  "data": {
+    "Forex": [
+      {
+        "name": "미국 USD",
+        "symbol": "FX_USDKRW",
+        "price": "1,507.00",
+        "change": "0.70",
+        "risefall": "RISING",
+        "unit": "KRW"
+      },
+      {
+        "name": "유럽 EUR",
+        "symbol": "FX_EURKRW",
+        "price": "1,757.46",
+        "change": "0.80",
+        "risefall": "RISING",
+        "unit": "KRW"
+      },
+      {
+        "name": "일본 JPY",
+        "symbol": "FX_JPYKRW",
+        "price": "946.22",
+        "change": "0.70",
+        "risefall": "RISING",
+        "unit": "KRW"
+      },
+      {
+        "name": "중국 CNY",
+        "symbol": "FX_CNYKRW",
+        "price": "222.78",
+        "change": "0.82",
+        "risefall": "RISING",
+        "unit": "KRW"
+      },
+      {
+        "name": "달러인덱스",
+        "symbol": ".DXY",
+        "price": "98.91",
+        "change": "-0.11",
+        "risefall": "FALLING",
+        "unit": ""
+      },
+      {
+        "name": "유로/달러",
+        "symbol": "EURUSD",
+        "price": "1.1659",
+        "change": "0.09",
+        "risefall": "RISING",
+        "unit": "USD"
+      },
+      {
+        "name": "달러/일본 엔",
+        "symbol": "USDJPY",
+        "price": "159.2600",
+        "change": "0.03",
+        "risefall": "RISING",
+        "unit": "JPY"
+      },
+      {
+        "name": "영국 파운드/달러",
+        "symbol": "GBPUSD",
+        "price": "1.3459",
+        "change": "0.13",
+        "risefall": "RISING",
+        "unit": "USD"
+      }
+    ],
+    "Commodity": [
+      {
+        "name": "WTI",
+        "symbol": "CLcv1",
+        "price": "87.36",
+        "change": "-1.73",
+        "risefall": "FALLING",
+        "unit": "USD/BBL"
+      },
+      {
+        "name": "브렌트유",
+        "symbol": "LCOcv1",
+        "price": "92.05",
+        "change": "-1.77",
+        "risefall": "FALLING",
+        "unit": "USD/BBL"
+      },
+      {
+        "name": "RBOB 가솔린",
+        "symbol": "RBcv1",
+        "price": "3.0344",
+        "change": "-2.14",
+        "risefall": "FALLING",
+        "unit": "USD/U GAL"
+      },
+      {
+        "name": "난방유",
+        "symbol": "HOcv1",
+        "price": "3.4886",
+        "change": "-1.79",
+        "risefall": "FALLING",
+        "unit": "USD/U GAL"
+      },
+      {
+        "name": "경유",
+        "symbol": "OIL_LO",
+        "price": "2,005.21",
+        "change": "-0.01",
+        "risefall": "FALLING",
+        "unit": "원/리터"
+      },
+      {
+        "name": "휘발유",
+        "symbol": "OIL_GSL",
+        "price": "2,010.70",
+        "change": "0.00",
+        "risefall": "FALLING",
+        "unit": "원/리터"
+      },
+      {
+        "name": "고급휘발유",
+        "symbol": "OIL_HGSL",
+        "price": "2,442.06",
+        "change": "0.00",
+        "risefall": "FALLING",
+        "unit": "원/리터"
+      },
+      {
+        "name": "두바이유",
+        "symbol": "DCBc1",
+        "price": "88.38",
+        "change": "0.86",
+        "risefall": "RISING",
+        "unit": "USD/BBL"
+      },
+      {
+        "name": "미니 크루드 오일",
+        "symbol": "QMcv1",
+        "price": "87.35",
+        "change": "-1.74",
+        "risefall": "FALLING",
+        "unit": "USD/BBL"
+      },
+      {
+        "name": "미니 난방유",
+        "symbol": "QHc1",
+        "price": "3.49",
+        "change": "-1.77",
+        "risefall": "FALLING",
+        "unit": "USD/U GAL"
+      },
+      {
+        "name": "가스오일",
+        "symbol": "LGOcv1",
+        "price": "1,001.25",
+        "change": "-1.93",
+        "risefall": "FALLING",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "천연가스",
+        "symbol": "NGcv1",
+        "price": "3.29",
+        "change": "0.15",
+        "risefall": "RISING",
+        "unit": "USD/MMBTU"
+      },
+      {
+        "name": "미니 천연가스",
+        "symbol": "QGcv1",
+        "price": "3.29",
+        "change": "0.15",
+        "risefall": "RISING",
+        "unit": "USD/MMBTU"
+      },
+      {
+        "name": "국제 금",
+        "symbol": "GCcv1",
+        "price": "4,593.00",
+        "change": "1.34",
+        "risefall": "RISING",
+        "unit": "USD/OZS"
+      },
+      {
+        "name": "국내 금",
+        "symbol": "M04020000",
+        "price": "216,500",
+        "change": "3.09",
+        "risefall": "RISING",
+        "unit": "원/g"
+      },
+      {
+        "name": "은",
+        "symbol": "SIcv1",
+        "price": "75.88",
+        "change": "-0.05",
+        "risefall": "FALLING",
+        "unit": "USD/OZS"
+      },
+      {
+        "name": "구리(선물)",
+        "symbol": "HGcv1",
+        "price": "6.3890",
+        "change": "-0.58",
+        "risefall": "FALLING",
+        "unit": "USD/LBS"
+      },
+      {
+        "name": "백금",
+        "symbol": "PLcv1",
+        "price": "1,929.50",
+        "change": "0.11",
+        "risefall": "RISING",
+        "unit": "USD/OZS"
+      },
+      {
+        "name": "팔라듐",
+        "symbol": "PAcv1",
+        "price": "1,381.90",
+        "change": "-0.99",
+        "risefall": "FALLING",
+        "unit": "USD/OZS"
+      },
+      {
+        "name": "철광석",
+        "symbol": "TIOc1",
+        "price": "108.82",
+        "change": "-0.20",
+        "risefall": "FALLING",
+        "unit": "USD/DMT"
+      },
+      {
+        "name": "구리(현물)",
+        "symbol": "CMCU0",
+        "price": "13,599.71",
+        "change": "-0.41",
+        "risefall": "FALLING",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "알루미늄 합금",
+        "symbol": "CMAA0",
+        "price": "3,325.00",
+        "change": "0.00",
+        "risefall": "UNCHANGED",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "납",
+        "symbol": "CMPB0",
+        "price": "2,007.67",
+        "change": "-0.27",
+        "risefall": "FALLING",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "아연",
+        "symbol": "CMZN0",
+        "price": "3,518.35",
+        "change": "-0.28",
+        "risefall": "FALLING",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "니켈",
+        "symbol": "CMNI0",
+        "price": "18,867.15",
+        "change": "-0.18",
+        "risefall": "FALLING",
+        "unit": "USD/TONNE"
+      },
+      {
+        "name": "주석",
+        "symbol": "CMSN0",
+        "price": "55,229.00",
+        "change": "0.63",
+        "risefall": "RISING",
+        "unit": "USD/TONNE"
+      }
+    ],
+    "Bonds": [
+      {
+        "name": "미국 국채 10년",
+        "symbol": "US10YT=RR",
+        "price": "4.4370",
+        "change": "-0.40",
+        "risefall": "FALLING",
+        "unit": ""
+      },
+      {
+        "name": "한국 국채 10년",
+        "symbol": "KR10YT=RR",
+        "price": "4.0710",
+        "change": "-3.26",
+        "risefall": "FALLING",
+        "unit": ""
+      },
+      {
+        "name": "일본 국채 10년",
+        "symbol": "JP10YT=RR",
+        "price": "2.6610",
+        "change": "0.04",
+        "risefall": "RISING",
+        "unit": ""
+      },
+      {
+        "name": "독일 국채 10년",
+        "symbol": "DE10YT=RR",
+        "price": "2.9530",
+        "change": "0.68",
+        "risefall": "RISING",
+        "unit": ""
+      },
+      {
+        "name": "중국 국채 10년",
+        "symbol": "CN10YT=RR",
+        "price": "1.7300",
+        "change": "0.23",
+        "risefall": "RISING",
+        "unit": ""
+      }
+    ],
+    "Interest": [
+      {
+        "name": "미국연방준비은행",
+        "symbol": "USFOMC=ECIX",
+        "price": "3.75",
+        "change": "-",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "한국은행",
+        "symbol": "KROCRT=ECIX",
+        "price": "2.50",
+        "change": "-",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "유럽중앙은행",
+        "symbol": "EUECBR=ECIX",
+        "price": "2.15",
+        "change": "-",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "영국은행",
+        "symbol": "GBBOEI=ECIX",
+        "price": "3.75",
+        "change": "-",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "일본은행",
+        "symbol": "JPINTN=ECIX",
+        "price": "0.75",
+        "change": "-",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "콜금리 (1일)",
+        "symbol": "KRCALLBOKK",
+        "price": "2.535",
+        "change": "-0.58",
+        "risefall": "FALLING",
+        "unit": ""
+      },
+      {
+        "name": "CD금리 (91일)",
+        "symbol": "KFIA114000",
+        "price": "2.850",
+        "change": "0.00",
+        "risefall": "UNCHANGED",
+        "unit": ""
+      },
+      {
+        "name": "COFIX 신규취급액",
+        "symbol": "KRCOFIXMANF",
+        "price": "2.890",
+        "change": "2.84",
+        "risefall": "RISING",
+        "unit": ""
+      },
+      {
+        "name": "COFIX 잔액",
+        "symbol": "KRCOFIXOUTB",
+        "price": "2.870",
+        "change": "0.70",
+        "risefall": "RISING",
+        "unit": ""
+      },
+      {
+        "name": "COFIX 신잔액",
+        "symbol": "KRNCOFIXOUTB",
+        "price": "2.490",
+        "change": "1.63",
+        "risefall": "RISING",
+        "unit": ""
+      }
+    ],
+    "Indices": [],
+    "Crypto": [
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 109256000,
+        "change": -0.13,
+        "risefall": null,
+        "unit": "USD"
+      },
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 2993000,
+        "change": -0.07,
+        "risefall": null,
+        "unit": "USD"
+      },
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 1479,
+        "change": -0.27,
+        "risefall": null,
+        "unit": "USD"
+      },
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 1979,
+        "change": -0.35,
+        "risefall": null,
+        "unit": "USD"
+      },
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 1480,
+        "change": -0.27,
+        "risefall": null,
+        "unit": "USD"
+      },
+      {
+        "name": "Unknown",
+        "symbol": null,
+        "price": 122500,
+        "change": "0.00",
+        "risefall": null,
+        "unit": "USD"
+      }
+    ],
+    "updatedAt": "11:18:32"
+  }
+}

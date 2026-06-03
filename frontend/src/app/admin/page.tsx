@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -370,12 +370,25 @@ export default function AdminPage() {
 
                 {/* Premium Help & Daily Report Info Grid */}
                 <div className="grid md:grid-cols-2 gap-6 mt-12">
-                     {/* Premium management */}
-                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-white/5 flex flex-col justify-between">
+                     {/* Premium management & Marketing */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-white/5 flex flex-col justify-between space-y-6">
                           <div>
                              <UserCheck className="w-10 h-10 text-blue-500 mb-6" />
                              <h3 className="text-xl font-bold text-white mb-2">프리미엄 관리 및 권한 조절</h3>
-                             <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들에게 Pro 등급을 활성화하여 제공할 수 있습니다. 스위치를 클릭하면 해당 등급 설정이 백엔드 DB와 대시보드 화면에 즉시 동기화 적용됩니다.</p>
+                             <p className="text-sm text-gray-400 leading-relaxed">사용자들에게 Pro 등급을 활성화하여 제공할 수 있습니다. 스위치를 클릭하면 해당 등급 설정이 백엔드 DB와 대시보드 화면에 즉시 동기화 적용됩니다.</p>
+                          </div>
+                          
+                          <div className="pt-6 border-t border-white/10">
+                              <Megaphone className="w-10 h-10 text-orange-500 mb-6" />
+                              <h3 className="text-xl font-bold text-white mb-2">SNS 마케팅 봇</h3>
+                              <p className="text-sm text-gray-400 leading-relaxed mb-6">원클릭으로 블로그, 커뮤니티, 쇼츠용 홍보 문구를 자동 생성합니다.</p>
+                              <button
+                                  onClick={() => router.push('/admin/marketing')}
+                                  className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg text-sm"
+                              >
+                                  <Megaphone className="w-4 h-4" />
+                                  마케팅 봇 실행하기
+                              </button>
                           </div>
                      </div>
 

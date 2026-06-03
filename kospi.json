@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-05-30",
+    "time": "장마감",
+    "event_kr": "[한국] KOSPI 지수",
+    "actual": "2,825.38",
+    "category": "🌍 글로벌 지수",
+    "impact": "high",
+    "change": "+3.55%",
+    "change_val": 0
+  },
+  {
+    "date": "2026-05-30",
+    "time": "장마감",
+    "event_kr": "[한국] 🏦 KOSPI 지수",
+    "actual": "8,476.15",
+    "category": "🏦 주가지수",
+    "impact": "high",
+    "change": "+3.55%",
+    "change_val": 3.55
+  }
+]

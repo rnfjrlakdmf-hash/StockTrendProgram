@@ -1,0 +1,41 @@
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성중공업 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 SK하이닉스 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 SK하이닉스 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 SK하이닉스 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 SK하이닉스 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🌐 구글 Class A 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🌐 엔비디아 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 22:55:36 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase-NightBlock] Skipped multicast notification during night time: 🇰🇷 삼성전자 속보!
+May 31 23:00:11 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Starting KR briefing process...
+May 31 23:00:25 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:00:25 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Sent split briefing (pro/con) for SK하이닉스 to 100957523954792251373
+May 31 23:00:25 ip-172-31-34-224 stocktrend-backend[2152338]: INFO:scheduler:📅 [Scheduler] Starting hourly briefing for: 8:00
+May 31 23:00:37 ip-172-31-34-224 stocktrend-backend[2152338]: INFO:scheduler:📅 [Scheduler] Task completed for 8:00
+May 31 23:00:43 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:00:43 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Sent split briefing (pro/con) for 삼성전자 to 100957523954792251373
+May 31 23:00:54 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:00:54 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Sent split briefing (pro/con) for 삼성전기 to 100957523954792251373
+May 31 23:01:06 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] No valid pros/cons for 주식회사 서남, skipping push.
+May 31 23:01:19 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:01:19 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Sent split briefing (pro/con) for SK하이닉스 to 115316570647279011868
+May 31 23:01:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 10/10 successful
+May 31 23:01:42 ip-172-31-34-224 stocktrend-backend[2152338]: [MorningBriefing] Sent split briefing (pro/con) for 삼성중공업 to 110418985320259217419
+May 31 23:05:41 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 10/10 successful
+May 31 23:05:41 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 2/2 successful
+May 31 23:05:41 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 2/2 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 2/2 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 2/2 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:42 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:43 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:43 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:43 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:05:43 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful
+May 31 23:06:51 ip-172-31-34-224 stocktrend-backend[2152338]: [Firebase] Sent: 1/1 successful

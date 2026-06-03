@@ -44,11 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (isAdminEmail(parsedUser.email)) {
                     parsedUser.is_pro = true;
                 }
-                if (parsedUser.is_pro) {
-                    localStorage.setItem("isPro", "true");
-                } else {
-                    localStorage.removeItem("isPro");
-                }
+                // [v4] isPro localStorage 신호 삭제 - reward.ts에서 더 이상 사용 안 함
+                localStorage.removeItem("isPro");
                 setUser(parsedUser);
                 
                 // [Self-Healing] Silent background sync to ensure the backend DB 'users' table is populated
@@ -69,11 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (isAdminEmail(serverUser.email)) {
                             serverUser.is_pro = true;
                         }
-                        if (serverUser.is_pro) {
-                            localStorage.setItem("isPro", "true");
-                        } else {
-                            localStorage.removeItem("isPro");
-                        }
+                        // [v4] isPro 신호 사용 안 함
+                        localStorage.removeItem("isPro");
                         localStorage.setItem("stock_user", JSON.stringify(serverUser));
                         localStorage.setItem("user_id", serverUser.id);
                         setUser(prev => {
@@ -127,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = useCallback(async (googleUser: any): Promise<boolean> => {
         setIsMigrating(true);
-        // 1단계: 구글 정보로 즉시 로컬 상태 설정 (UI 즉각 반응)
+        // 1단계: 구글 정보로 즉시 로컈 상태 설정 (UI 즉각 반응)
         const immediateUser: User = {
             id: googleUser.id,
             email: googleUser.email,
@@ -138,11 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(immediateUser);
         localStorage.setItem("stock_user", JSON.stringify(immediateUser));
-        if (immediateUser.is_pro) {
-            localStorage.setItem("isPro", "true");
-        } else {
-            localStorage.removeItem("isPro");
-        }
+        // [v4] isPro localStorage 신호 사용 안 함
+        localStorage.removeItem("isPro");
 
         // 2단계: 백엔드 동기화 및 마이그레이션 순차 대기
         try {
@@ -164,11 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (isAdminEmail(serverUser.email)) {
                         serverUser.is_pro = true;
                     }
-                    if (serverUser.is_pro) {
-                        localStorage.setItem("isPro", "true");
-                    } else {
-                        localStorage.removeItem("isPro");
-                    }
+                    // [v4] isPro localStorage 신호 사용 안 함
+                    localStorage.removeItem("isPro");
                     setUser(serverUser);
                     localStorage.setItem("stock_user", JSON.stringify(serverUser));
                     localStorage.setItem("user_id", serverUser.id);

@@ -377,7 +377,7 @@ function AnalysisContent() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-black notranslate" translate="no">
-            <Header title="프로 분석" subtitle="데이터 기반 종목 정밀 검진" />
+            <Header title="AI 정밀 분석" subtitle="데이터 기반 종목 정밀 검진" />
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
                 <div className="max-w-3xl mx-auto w-full">

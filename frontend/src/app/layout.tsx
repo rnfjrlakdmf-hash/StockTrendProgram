@@ -64,6 +64,8 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/icon.png" />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+        {/* [v4] isPro 강제 삭제 - 결제 기능 완전 폐지로 인한 캐시 초기화 */}
+        <script dangerouslySetInnerHTML={{ __html: `try { localStorage.removeItem('isPro'); localStorage.removeItem('proExpiry'); } catch(e) {}` }} />
         <AuthProvider>
           <AnalyticsTracker />
           <div className="flex min-h-screen">

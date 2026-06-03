@@ -1,10 +1,10 @@
 export const checkReward = (): boolean => {
     if (typeof window === 'undefined') return false;
 
-    // Pro User Check
-    const isPro = localStorage.getItem("isPro") === "true";
-    if (isPro) return true;
+    // [v4.1] 애드센스 승인 전까지 전면 무료 개방
+    return true;
 
+    /* (기존 로직 주석 처리)
     // Time-based Reward Check
     const expiry = localStorage.getItem("rewardExpiry");
     if (expiry) {
@@ -15,6 +15,7 @@ export const checkReward = (): boolean => {
         localStorage.removeItem("rewardExpiry");
     }
     return false;
+    */
 };
 
 export const MAX_REWARD_HOURS = 10;

@@ -245,7 +245,22 @@ def send_closing_notification(market: str):
         sign = "+" if idx_info.get("direction") == "Up" else "-" if idx_info.get("direction") == "Down" else ""
         return f"{default_name}: {val} ({sign}{chg} / {pct})"
         
-    def _format_us_index(quote, default_name):
+    # 글로벌 마켓 데이터 캐시 활용 (나스닥, S&P500 등)
+    try:
+        from stock_data import get_market_data
+        md = get_market_data()
+        md_dict = {item['label']: item for item in md}
+    except:
+        md_dict = {}
+
+    def _format_us_index(quote, default_name, md_label=None):
+        # 1. 우선적으로 안정적인 get_market_data() 결과 사용
+        if md_label and md_label in md_dict:
+            data = md_dict[md_label]
+            if data.get("value") not in ["준비중", "확인불가", "0.00"]:
+                return f"{default_name}: {data['value']} ({data['change']})"
+        
+        # 2. 실패 시 개별 yfinance 호출 (get_safe_quote)
         if not quote or quote.get("price") == "확인불가": return f"{default_name}: 확인불가"
         val = quote.get("price", "0.00")
         pct = quote.get("change_percent", quote.get("change", "0.00%"))
@@ -262,9 +277,9 @@ def send_closing_notification(market: str):
         "KOSPI": _format_index(kospi_info, "코스피"),
         "KOSDAQ": _format_index(kosdaq_info, "코스닥"),
         "DOW": _format_us_index(get_safe_quote("^DJI"), "다우존스"),
-        "NASDAQ": _format_us_index(get_safe_quote("^IXIC"), "나스닥"),
-        "SP500": _format_us_index(get_safe_quote("^GSPC"), "S&P500"),
-        "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수"),
+        "NASDAQ": _format_us_index(get_safe_quote("^IXIC"), "나스닥", "NASDAQ"),
+        "SP500": _format_us_index(get_safe_quote("^GSPC"), "S&P500", "S&P 500"),
+        "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수", "SOX"),
         "TNX": get_safe_quote("^TNX", default_price="4.50"),
         "OIL": get_safe_quote("CL=F"),
         "FX": get_safe_quote("USDKRW=X", default_price="1,350"),
@@ -367,14 +382,14 @@ def send_closing_notification(market: str):
                 tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
                 if tokens:
                     # 1. 시장 지수 요약 알림
-                    send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery"})
+                    send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery", "type": "market_summary"})
                     
                     # 0.5초 대기 (푸시 알림 순서 보장을 위해)
                     import time
                     time.sleep(0.5)
                     
                     # 2. 내 관심종목 수익 현황 알림
-                    send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist"})
+                    send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist", "type": "portfolio_summary"})
         except Exception as user_err:
             print(f"[Scheduler-Error] Failed to send closing notification for user {user_id}: {user_err}")
             continue

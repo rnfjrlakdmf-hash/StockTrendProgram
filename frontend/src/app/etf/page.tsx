@@ -25,7 +25,7 @@ export default function EtfAnalysisPage() {
                 ? `${baseUrl}/api/market/rank/etf?market=${m}&category=${cat}` 
                 : `${baseUrl}/api/market/rank/etf?market=${m}`;
                 
-            const response = await fetch(url);
+            const response = await fetch(url, { cache: 'no-store' });
             const res = await response.json();
             if (res.status === 'success') {
                 setData(res.data);
@@ -57,7 +57,7 @@ export default function EtfAnalysisPage() {
         }, 30000);
         
         return () => clearInterval(interval);
-    }, [market]);
+    }, [market, apiCategoryKey]);
 
     return (
         <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-black to-black">

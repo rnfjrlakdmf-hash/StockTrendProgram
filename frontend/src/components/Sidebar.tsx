@@ -278,50 +278,9 @@ export default function Sidebar() {
     // [New] Real-time Countdown Timer
     useEffect(() => {
         const updateTimer = () => {
-            // Check Pro & Admin Free Mode
-            const localPro = localStorage.getItem('isPro') === 'true';
-            const adminFree = sessionStorage.getItem('admin_free_mode') === 'true';
-
-            // Admin Free Mode overrides everything
-            if (adminFree) {
-                setIsPro(true);
-                setTimeLeftStr("관리자 모드 (무제한)");
-                return;
-            }
-
-            setIsPro(localPro || user?.is_pro === true);
-
-            if (localPro || user?.is_pro) {
-                setTimeLeftStr("무제한 (PRO)");
-                return;
-            }
-
-            // Check Reward Expiry
-            const expiry = localStorage.getItem('rewardExpiry'); // Used for both reward time and pro trial
-            if (expiry) {
-                const expTime = parseInt(expiry);
-                const now = Date.now();
-                const diff = expTime - now;
-
-                if (diff > 0) {
-                    const h = Math.floor(diff / (1000 * 60 * 60));
-                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const s = Math.floor((diff % (1000 * 60)) / 1000);
-                    setTimeLeftStr(`${h}시간 ${m}분 ${s}초`);
-                } else {
-                    localStorage.removeItem('rewardExpiry');
-                    // Note: 'proExpiry' was used previously, now let's standardize on rewardExpiry for logic
-                    // If you used proExpiry before, you might want to check that too
-                    const proExpiry = localStorage.getItem('proExpiry');
-                    if (proExpiry) {
-                        // ... logic for legacy proExpiry if needed
-                        localStorage.removeItem('proExpiry');
-                    }
-                    setTimeLeftStr(null);
-                }
-            } else {
-                setTimeLeftStr(null);
-            }
+            // [v4.1] 애드센스 승인 전까지 전면 무료 개방 안내 표시
+            setIsPro(true);
+            setTimeLeftStr("🎉 출시 기념 전면 무료 개방 중!");
         };
 
         updateTimer();
@@ -653,12 +612,12 @@ export default function Sidebar() {
                 
                 {/* Bottom Section */}
                 <div className="mt-auto space-y-3 pt-3 border-t border-white/10">
-                    {/* 1. Pro Membership upgrade block */}
+                    {/* 1. Reward/Timer block (No Payment) */}
                     {isPro ? (
                         <div className="rounded-xl bg-gradient-to-br from-blue-900/40 to-black p-2.5 border border-blue-500/30 shadow-lg flex flex-col gap-1.5">
                             <div className="flex items-center gap-2 text-blue-300 font-bold text-xs">
-                                <Crown className="w-3.5 h-3.5 text-yellow-400" />
-                                <span>PRO 멤버십 이용중</span>
+                                <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                                <span>AI 혜택 이용중</span>
                             </div>
                             <p className="text-[9px] text-gray-400 leading-normal">모든 프리미엄 기능을 제한없이 이용하고 계십니다.</p>
                         </div>
@@ -671,16 +630,10 @@ export default function Sidebar() {
                             <div className="flex justify-between items-start mb-1.5">
                                 <div>
                                     <p className="text-[11px] font-bold text-blue-200 mb-0.5 flex items-center gap-1.5">
-                                        <Crown className="w-3 h-3 text-yellow-400" /> PRO 요금제
+                                        <Zap className="w-3 h-3 text-yellow-400" /> AI 분석 무료 이용
                                     </p>
-                                    <p className="text-[9px] text-gray-400">AI 통찰력 무제한 이용</p>
+                                    <p className="text-[9px] text-gray-400">광고 시청 시 기능 개방</p>
                                 </div>
-                                <button
-                                    onClick={() => setShowProModal(true)}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors"
-                                >
-                                    UP
-                                </button>
                             </div>
 
                             {/* Timer / Reward Section */}
@@ -762,109 +715,6 @@ export default function Sidebar() {
 
             <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
             <AdRewardModal isOpen={showAdRewardModal} onClose={() => setShowAdRewardModal(false)} onReward={() => { }} featureName="SidebarCharge" />
-
-            {showProModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="relative bg-[#111] border border-white/20 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-600/20 to-transparent" />
-
-                        <div className="p-8 relative">
-                            <button
-                                onClick={() => setShowProModal(false)}
-                                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-
-                            <div className="text-center mb-6">
-                                <div className="inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-black px-3 py-1 rounded-full mb-4 animate-bounce">
-                                    🚀 GRAND LAUNCH SPECIAL
-                                </div>
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 mb-4 shadow-lg shadow-blue-500/30">
-                                    <Crown className="w-8 h-8 text-white" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-white mb-2">PRO 멤버십 혜택</h2>
-                                <p className="text-gray-400 text-sm">상위 1% 투자자를 위한 프리미엄 기능을 잠금 해제하세요.</p>
-                            </div>
-
-                            <div className="space-y-4 mb-8">
-                                <BenefitItem
-                                    icon={<Zap className="w-5 h-5 text-yellow-400" />}
-                                    title="무제한 AI 데이터 분석"
-                                    desc="하루 제한 없이 종목 발굴과 포트폴리오 분석을 이용하세요."
-                                />
-                                <BenefitItem
-                                    icon={<LineChart className="w-5 h-5 text-green-400" />}
-                                    title="스나이퍼 알림"
-                                    desc="RSI, 골든크로스 등 기술 지표 변동을 분석합니다."
-                                />
-                                <BenefitItem
-                                    icon={<Newspaper className="w-5 h-5 text-blue-400" />}
-                                    title="심층 리포트 & 공급망 분석"
-                                    desc="기업의 숨겨진 리스크와 공급망 관계를 한눈에 파악하세요."
-                                />
-                            </div>
-
-                            {user && user.free_trial_count !== undefined && user.free_trial_count > 0 && (
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            const res = await fetch(`${API_BASE_URL}/api/auth/use-ticket`, {
-                                                method: "POST",
-                                                headers: { "X-User-ID": user.id }
-                                            });
-                                            const data = await res.json();
-                                            if (data.status === "success") {
-                                                // Sync frontend rewardExpiry
-                                                const now = Date.now();
-                                                let baseTime = now;
-                                                const currentExpiry = localStorage.getItem("rewardExpiry");
-                                                if (currentExpiry && parseInt(currentExpiry) > now) {
-                                                    baseTime = parseInt(currentExpiry);
-                                                }
-                                                localStorage.setItem("rewardExpiry", (baseTime + 60 * 60 * 1000).toString());
-                                                
-                                                alert(data.message);
-                                                setShowProModal(false);
-                                                window.location.reload();
-                                            } else {
-                                                alert(data.message);
-                                            }
-                                        } catch (e) {
-                                            alert("서버 통신 오류가 발생했습니다.");
-                                        }
-                                    }}
-                                    className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold text-white text-sm mb-3 transition-colors flex items-center justify-center gap-2 border border-white/20"
-                                >
-                                    🎁 1시간 PRO 무료 이용권 사용하기 (남은 횟수: {user.free_trial_count}번)
-                                </button>
-                            )}
-
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        await requestPayment(() => {
-                                            localStorage.setItem("isPro", "true");
-                                            alert("결제가 완료되었습니다! 프로 기능이 활성화됩니다.");
-                                            setShowProModal(false);
-                                            window.location.reload();
-                                        });
-                                    } catch (e: any) {
-                                        alert("결제 요청 실패: " + e.message);
-                                    }
-                                }}
-                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-[1.02] shadow-lg shadow-blue-600/30 flex flex-col items-center justify-center gap-1"
-                            >
-                                <span className="text-blue-200 text-xs font-normal line-through">$10.00/mo</span>
-                                <span suppressHydrationWarning>월 ${proPriceUsd} (약 ₩{proPriceKrw.toLocaleString()})으로 시작하기</span>
-                            </button>
-                            <p className="text-center text-xs text-gray-500 mt-4" suppressHydrationWarning>
-                                * 최신 환율({exchangeRate.toLocaleString()}원/$) 적용
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

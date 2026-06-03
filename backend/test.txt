@@ -1,0 +1,1 @@
+[{'date': '2026-05-30', 'time': '장마감', 'event_kr': '미국 USD 환율', 'actual': '1,507.00', 'category': '💵 외환', 'impact': 'high', 'change': '0.70', 'change_val': 0.7}]

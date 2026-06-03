@@ -7,8 +7,9 @@ import {
     Search, LineChart, Target, Shield, AlertTriangle, Loader2, Lock, 
     PlayCircle, Crown, Sun, CloudSun, CloudRain, 
     PieChart, BarChart3, TrendingUp, TrendingDown, Clock,
-    TowerControl, Activity
+    TowerControl, Activity, Download, Share2
 } from "lucide-react";
+import html2canvas from "html2canvas";
 import dynamic from "next/dynamic";
 
 // ApexCharts is heavy and needs window, so load it dynamically
@@ -16,8 +17,6 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import AIDisclaimer from "@/components/AIDisclaimer";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
-import { isPremiumUnlocked } from "@/lib/adminMode";
-import ProModal from "@/components/ProModal";
 import AdRewardModal from "@/components/AdRewardModal";
 
 export default function PatternPage() {
@@ -53,46 +52,9 @@ export default function PatternPage() {
         if (stored !== null) setShowDocent(stored === "true");
     }, []);
 
-    // [Pro & Ad] - Keep existing logic
-    const [showProModal, setShowProModal] = useState(false);
+    // [v4] 일일 횟수 제한 시스템 완전 제거 - checkReward/isFreeModeEnabled 기반으로 교체
     const [showAdModal, setShowAdModal] = useState(false);
-    const [dailyCount, setDailyCount] = useState(0);
-    const [dailyLimit, setDailyLimit] = useState(1);
-    const [isPro, setIsPro] = useState(false);
 
-    useEffect(() => {
-        const checkStatus = () => {
-            const localPro = localStorage.getItem("isPro") === "true";
-            const adminPro = isPremiumUnlocked();
-            setIsPro(localPro || adminPro);
-            const today = new Date().toDateString();
-
-            const usageStored = localStorage.getItem("patternUsage");
-            if (usageStored) {
-                const { date, count } = JSON.parse(usageStored);
-                if (date === today) {
-                    setDailyCount(count);
-                } else {
-                    setDailyCount(0);
-                    localStorage.setItem("patternUsage", JSON.stringify({ date: today, count: 0 }));
-                }
-            }
-
-            const limitStored = localStorage.getItem("patternLimit");
-            if (limitStored) {
-                const { date, limit } = JSON.parse(limitStored);
-                if (date === today) {
-                    setDailyLimit(limit);
-                } else {
-                    setDailyLimit(1);
-                    localStorage.setItem("patternLimit", JSON.stringify({ date: today, limit: 1 }));
-                }
-            } else {
-                localStorage.setItem("patternLimit", JSON.stringify({ date: today, limit: 1 }));
-            }
-        };
-        checkStatus();
-    }, []);
 
     // [Cache Object]
     const PATTERN_CACHE: Record<string, { data: any, timestamp: number }> = useMemo(() => ({}), []);
@@ -125,10 +87,7 @@ export default function PatternPage() {
 
         if (!symbolToSearch) return;
 
-        if (!isPro && dailyCount >= dailyLimit) {
-            setShowAdModal(true);
-            return;
-        }
+        // [v4] 더 이상 잊금 체크 없음 - 누구나 무료로 차트 분석 가능
 
         const isNewSearch = typeof targetSymbol === 'string' && !targetParams;
         if (isNewSearch) {
@@ -138,14 +97,7 @@ export default function PatternPage() {
             setUpdating(true);
         }
 
-        if (!isPro && (typeof targetSymbol === 'string' || !targetParams)) {
-            const newCount = dailyCount + 1;
-            setDailyCount(newCount);
-            localStorage.setItem("patternUsage", JSON.stringify({
-                date: new Date().toDateString(),
-                count: newCount
-            }));
-        }
+        // [v4] dailyCount 토큰 업데이트 제거 (dailyCount 상태자체를 제거함)
 
         const ticker = getTickerFromKorean(symbolToSearch).toUpperCase();
 
@@ -206,17 +158,40 @@ export default function PatternPage() {
     }, [linePeriod, candleInterval, chartType]);
 
     const handleAdReward = () => {
-        const newLimit = dailyLimit + 1;
-        setDailyLimit(newLimit);
-        localStorage.setItem("patternLimit", JSON.stringify({
-            date: new Date().toDateString(),
-            limit: newLimit
-        }));
         setShowAdModal(false);
-        alert("광고 보상 완료! 분석 기회가 1회 추가되었습니다. 🎉");
     };
 
-    const isLocked = !isPro && dailyCount >= dailyLimit;
+    // [v4] 차트 페이지 잊금 완전 제거 - isLocked 항상 false
+    const isLocked = false;
+
+    const handleDownloadImage = async () => {
+        const captureEl = document.getElementById("capture-area");
+        if (!captureEl) return;
+
+        try {
+            const buttons = captureEl.querySelectorAll('.hide-on-capture');
+            buttons.forEach(btn => (btn as HTMLElement).style.display = 'none');
+
+            const canvas = await html2canvas(captureEl, {
+                backgroundColor: "#000000",
+                scale: 2,
+                logging: false,
+                useCORS: true
+            });
+
+            buttons.forEach(btn => (btn as HTMLElement).style.display = '');
+
+            const url = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.download = `pattern_analysis_${result?.stock_info?.symbol || 'result'}.png`;
+            link.href = url;
+            link.click();
+        } catch (e) {
+            console.error(e);
+            alert("이미지 저장에 실패했습니다.");
+        }
+    };
+
 
     const isUS = useMemo(() => {
         const symbol = result?.stock_info?.symbol || searchInput || "";
@@ -520,7 +495,7 @@ export default function PatternPage() {
     return (
         <div className="min-h-screen pb-20 bg-[#0a0a0a]">
             <Header />
-            <ProModal isOpen={showProModal} onClose={() => setShowProModal(false)} />
+
             <AdRewardModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} onReward={handleAdReward} featureName="PatternAnalytics" />
 
             <div className="p-6 max-w-5xl mx-auto space-y-8">
@@ -528,7 +503,7 @@ export default function PatternPage() {
                 <div className="text-center space-y-4 pt-8">
                     <h1 className="text-5xl font-black text-white flex items-center justify-center gap-4">
                         <LineChart className="w-12 h-12 text-emerald-500" />
-                        AI 차트 분석 <span className="text-emerald-500">PRO</span>
+                        AI 차트 분석 <span className="text-emerald-500">고급</span>
                     </h1>
                     <p className="text-gray-400 text-lg">AI가 분석하는 스마트한 차트 리포트.</p>
                     
@@ -606,7 +581,28 @@ export default function PatternPage() {
                 )}
 
                 {result && (
-                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-8">
+                    <div id="capture-area" className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-8 bg-black pb-6 rounded-3xl">
+                        
+                        {/* Viral Sharing Buttons */}
+                        <div className="flex gap-3 justify-end hide-on-capture mt-4">
+                            <button
+                                onClick={handleDownloadImage}
+                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                차트 분석 결과 저장
+                            </button>
+                            <button
+                                onClick={() => {
+                                    alert("카카오톡 공유 기능은 준비 중입니다. 이미지를 저장하여 카카오톡에 올려보세요!");
+                                }}
+                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                카카오톡 자랑하기
+                            </button>
+                        </div>
+
                         {/* Summary Header */}
                         <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-white/10 p-8 flex flex-col md:flex-row items-center gap-8">
                              <div className="flex-shrink-0"><LineChart className="w-20 h-20 text-emerald-400" /></div>
@@ -663,8 +659,6 @@ export default function PatternPage() {
 
                         {/* Professional Chart Section */}
                         <div className="rounded-3xl bg-black border border-white/10 p-4 md:p-8">
-                            {/* Chart Controls */}
-                            <div className="flex flex-col gap-4 mb-8">
                                 <div className="flex items-center gap-4 bg-white/5 p-1.5 rounded-2xl w-fit border border-white/10">
                                     <button onClick={() => setChartType('line')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'line' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>선차트</button>
                                     <button onClick={() => setChartType('candle')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'candle' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>봉차트</button>
@@ -724,7 +718,6 @@ export default function PatternPage() {
                                         </>
                                     )}
                                 </div>
-                            </div>
 
                             <div className="flex flex-wrap gap-4 mb-6 text-[10px] md:text-xs text-gray-400">
                                 {chartType === 'candle' ? (
@@ -811,6 +804,11 @@ export default function PatternPage() {
                             </div>
                         )}
                         <AIDisclaimer className="mt-8" />
+                        {/* Viral Watermark (Included in capture) */}
+                        <div className="pt-4 mt-8 border-t border-white/10 flex justify-between items-center text-gray-500 text-xs font-medium px-4">
+                            <span>AI 주식 비서 - 내 종목 차트 분석하러 가기 👉</span>
+                            <span className="font-bold text-emerald-500/70">stock-trend-program.co.kr</span>
+                        </div>
                     </div>
                 )}
             </div>

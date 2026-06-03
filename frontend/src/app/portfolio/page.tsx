@@ -279,8 +279,7 @@ export default function PortfolioPage() {
     const tH = overrideHoldings || holdings;
     const syms = tH.map(h => h.symbol).filter(Boolean);
     if (syms.length < 1) { setError("최소 1개 이상의 종목이 필요합니다."); return; }
-    const isPro = localStorage.getItem("isPro") === "true";
-    if (!isPro && !checkReward() && !hasPaid && !isFreeModeEnabled()) { setShowAdModal(true); return; }
+    if (!checkReward() && !hasPaid && !isFreeModeEnabled()) { setShowAdModal(true); return; }
     setLoading(true); setError(""); setResult(null); setAnalysisResult(null);
     try {
       if (syms.length >= 2) {

@@ -6,6 +6,7 @@ const WS_URL = API_BASE_URL.replace("http", "ws") + "/ws";
 
 export function useStockSocket(symbol: string | null) {
     const [realtimeData, setRealtimeData] = useState<any>(null);
+    const [chatMessage, setChatMessage] = useState<any>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -118,6 +119,8 @@ export function useStockSocket(symbol: string | null) {
 
                     if (message.type === "update") {
                         setRealtimeData(message.data);
+                    } else if (message.type === "chat_message") {
+                        setChatMessage(message.chat);
                     } else if (message.type === "subscribed") {
                         console.log("[WS] Subscribed to:", message.symbol);
                     } else if (message.type === "pong") {
@@ -251,6 +254,7 @@ export function useStockSocket(symbol: string | null) {
 
     return {
         realtimeData,
+        chatMessage,
         isConnected,
         error,
         reconnectAttempts

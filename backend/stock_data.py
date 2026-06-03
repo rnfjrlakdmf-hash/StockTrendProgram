@@ -1411,6 +1411,7 @@ def get_market_data():
         {"symbol": "^KQ11", "label": "KOSDAQ", "naver_code": "KOSDAQ", "icon": "🇰🇷"},
         {"symbol": "^IXIC", "label": "NASDAQ", "naver_code": "NAS@IXIC", "icon": "🇺🇸"},
         {"symbol": "^GSPC", "label": "S&P 500", "naver_code": "SPI@SPX", "icon": "🇺🇸"},
+        {"symbol": "^SOX", "label": "SOX", "naver_code": "NAS@SOX", "icon": "💻"},
         {"symbol": "USDKRW=X", "label": "USD/KRW", "naver_code": "FX_USDKRW", "icon": "💵"},
         {"symbol": "^TNX", "label": "미 10년 국채금리", "naver_code": "US10Y", "icon": "📉"}, 
         {"symbol": "CL=F", "label": "WTI 유가", "naver_code": "OIL_WTI", "icon": "🛢️"},

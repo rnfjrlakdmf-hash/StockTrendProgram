@@ -67,7 +67,7 @@ export default function RewardAdModal({ onClose, onSuccess }: RewardAdModalProps
                             <Sparkles className="w-10 h-10 text-blue-400" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-white">Pro 기능 1시간 무료체험</h3>
+                            <h3 className="text-2xl font-black text-white">AI 고급 기능 1시간 오픈</h3>
                             <p className="text-gray-400 text-sm leading-relaxed">
                                 짧은 광고 한 편을 시청하시면<br />
                                 1시간 동안 모든 스나이퍼 모드와 알림 기능을<br />
@@ -129,7 +129,7 @@ export default function RewardAdModal({ onClose, onSuccess }: RewardAdModalProps
                             <h3 className="text-2xl font-black text-white">잠금 해제 완료!</h3>
                             <p className="text-gray-400 text-sm">
                                 지금부터 1시간 동안<br />
-                                <span className="text-emerald-400 font-bold">Premium Pro 멤버십</span> 혜택이 적용됩니다.
+                                <span className="text-emerald-400 font-bold">AI 고급 분석</span> 기능이 활성화되었습니다.
                             </p>
                         </div>
                         <button
