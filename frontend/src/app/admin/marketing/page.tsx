@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2 } from "lucide-react";
+import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ export default function MarketingAdminPage() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [copied, setCopied] = useState<string | null>(null);
+    const [publishing, setPublishing] = useState<string | null>(null); // 'blog' or 'telegram'
 
     // [Security] Strict administrator check
     useEffect(() => {
@@ -64,6 +65,34 @@ export default function MarketingAdminPage() {
         navigator.clipboard.writeText(text);
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
+    };
+
+    const handlePublish = async (channel: string, title: string, content: string) => {
+        if (!confirm(`${channel === 'tistory' ? '티스토리 블로그' : channel}에 지금 바로 발행하시겠습니까?`)) return;
+        
+        setPublishing(channel);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/marketing/publish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    channel: channel,
+                    title: title,
+                    content: content
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || "발행 중 오류가 발생했습니다.");
+            }
+
+            alert(`✅ 발행 성공!\nURL: ${data.url}`);
+        } catch (e: any) {
+            alert(`🛑 발행 실패: ${e.message}\n(서버 환경변수에 API 토큰이 제대로 설정되었는지 확인하세요)`);
+        } finally {
+            setPublishing(null);
+        }
     };
 
     if (authLoading) return <div className="min-h-screen bg-black" />;
@@ -132,9 +161,20 @@ export default function MarketingAdminPage() {
                                     <div className="p-2 bg-green-500/10 rounded-lg"><FileText className="w-5 h-5 text-green-400" /></div>
                                     <h3 className="font-bold text-white">블로그 포스팅용</h3>
                                 </div>
-                                <button onClick={() => handleCopy(`${result.blog.title}\n\n${result.blog.content}`, 'blog')} className="text-gray-400 hover:text-white">
-                                    {copied === 'blog' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => handlePublish('tistory', result.blog.title, result.blog.content)} 
+                                        disabled={publishing === 'tistory'}
+                                        className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs font-bold hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                                        title="티스토리 블로그에 바로 발행하기"
+                                    >
+                                        {publishing === 'tistory' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                        바로 발행
+                                    </button>
+                                    <button onClick={() => handleCopy(`${result.blog.title}\n\n${result.blog.content}`, 'blog')} className="text-gray-400 hover:text-white p-1">
+                                        {copied === 'blog' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
                                 <div className="font-bold text-green-400 text-lg leading-tight">{result.blog.title}</div>

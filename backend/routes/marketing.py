@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import json
 import asyncio
+import aiohttp
+import os
 
 # 기존 AI 인프라 재사용 (gemini api key 설정 및 재시도 로직)
 from ai_analysis import generate_with_retry, get_json_model
@@ -60,3 +62,54 @@ async def generate_marketing_content(request: MarketingRequest):
     except Exception as e:
         print(f"[Marketing Bot] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class PublishRequest(BaseModel):
+    channel: str # "tistory"
+    title: str
+    content: str
+    blog_name: str = None # 티스토리용 블로그 이름 (선택적)
+
+@router.post("/publish")
+async def publish_marketing_content(request: PublishRequest):
+    if request.channel == "tistory":
+        access_token = os.getenv("TISTORY_ACCESS_TOKEN")
+        blog_name = request.blog_name or os.getenv("TISTORY_BLOG_NAME")
+        
+        if not access_token or not blog_name:
+            raise HTTPException(
+                status_code=400, 
+                detail="서버에 티스토리 API 토큰(TISTORY_ACCESS_TOKEN) 또는 블로그 이름(TISTORY_BLOG_NAME)이 설정되지 않았습니다."
+            )
+            
+        url = "https://www.tistory.com/apis/post/write"
+        data = {
+            "access_token": access_token,
+            "output": "json",
+            "blogName": blog_name,
+            "title": request.title,
+            "content": request.content,
+            "visibility": "3", # 0: 비공개, 3: 공개발행
+            "category": "0"
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=data) as resp:
+                    # 티스토리 API는 HTML을 포함할 수 있으므로 에러 핸들링 유의
+                    try:
+                        result = await resp.json()
+                    except:
+                        text = await resp.text()
+                        raise HTTPException(status_code=500, detail=f"티스토리 응답 파싱 실패: {text}")
+
+                    if resp.status == 200 and result.get("tistory", {}).get("status") == "200":
+                        return {"status": "success", "url": result["tistory"].get("url", "")}
+                    else:
+                        raise HTTPException(status_code=500, detail=f"티스토리 발행 실패: {result}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"티스토리 서버 통신 오류: {e}")
+            
+    else:
+        raise HTTPException(status_code=400, detail="지원하지 않는 채널입니다.")
