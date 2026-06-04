@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send, Sparkles, Instagram } from "lucide-react";
+import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send, Sparkles, Instagram, AlertTriangle } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -162,6 +162,19 @@ export default function MarketingAdminPage() {
                                 생성하기
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Legal Disclaimer Alert */}
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-5 flex items-start gap-4 backdrop-blur-md">
+                    <AlertTriangle className="w-6 h-6 text-orange-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5">
+                        <h4 className="text-orange-400 font-bold text-sm">⚠️ 법적 책임 및 유사투자자문업 관련 주의 안내</h4>
+                        <p className="text-orange-200/80 text-xs leading-relaxed">
+                            AI가 생성한 텍스트에 <strong>특정 종목의 매수/매도 추천, 목표가 제시, 수익률 보장</strong> 등의 리딩성 발언이 포함되어 있는지 업로드 전 반드시 확인해주세요. <br/>
+                            AI는 최대한 객관적인 분석 유도로 작성하도록 엄격히 통제되나, 자극적인 어그로성 문구를 사용할 경우 법적으로 오해의 소지가 있을 수 있습니다. <br/>
+                            반드시 각 글의 끝에 <strong>면책 조항(본 정보는 참고용이며 투자 책임은 본인에게 있음)</strong>이 포함되어 있는지 확인하시고, 모든 게시글의 최종 법적 책임은 게시자 본인에게 있습니다.
+                        </p>
                     </div>
                 </div>
 
