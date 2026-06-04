@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 import { Star, Plus, Zap, Loader2, Calendar, Activity, X, AlertTriangle, TrendingUp, TrendingDown, Info, ShieldCheck, Coins, BarChart3 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import AdRewardModal from "@/components/AdRewardModal";
@@ -556,6 +556,15 @@ export default function PortfolioPage() {
                   desc={result?.metrics ? `과거 1년 기준 연간 가격 변동폭: ${volatility}% (통계 참고용)` : "종목 2개 이상 입력 시 통계 계산됩니다"}
                   color="bg-purple-900/20 border-purple-500/20"
                 />
+
+                {/* [추가] 평균 포트폴리오 최대낙폭(MDD) */}
+                <StatCard
+                  icon={<AlertTriangle className="w-4 h-4 text-red-400" />}
+                  label="통합 리스크 (평균 MDD)"
+                  value={analysisResult?.portfolio_mdd ? `${analysisResult.portfolio_mdd}%` : "—"}
+                  desc="과거 가장 큰 하락장에서 현재 구성 종목들의 평균 낙폭 (시뮬레이션 참고용)"
+                  color="bg-red-900/20 border-red-500/20"
+                />
               </div>
 
               {/* AI 리포트 */}
@@ -609,6 +618,62 @@ export default function PortfolioPage() {
                     {radarData.length === 0 && <p className="text-gray-500 text-sm text-center py-8">진단하기 후 표시됩니다</p>}
                   </div>
                 </div>
+
+                {/* [추가] 섹터 비중 파이 차트 */}
+                {analysisResult?.composition?.composition && analysisResult.composition.composition.length > 0 && (
+                  <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 md:col-span-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BarChart3 className="w-4 h-4 text-green-400" />
+                      <span className="font-bold text-white text-sm">자산 분산 비중 분석</span>
+                      <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">포트폴리오 균형성</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mb-4">어떤 성격의 자산에 얼마나 투자하고 있는지 파악하여 위험을 분산해 보세요.</p>
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                      <div className="w-full md:w-1/2 h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={analysisResult.composition.composition}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              innerRadius={50}
+                              paddingAngle={2}
+                            >
+                              {analysisResult.composition.composition.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip 
+                              contentStyle={{ backgroundColor: '#1a1a24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
+                              formatter={(val: any) => [`${val}%`, '비중']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="w-full md:w-1/2 flex flex-col gap-2">
+                        {analysisResult.composition.composition.map((entry: any, index: number) => (
+                          <div key={index} className="flex flex-col gap-1 text-sm bg-white/5 p-2 rounded-lg border border-white/5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.fill }} />
+                                <span className="font-bold text-gray-200">{entry.name}</span>
+                              </div>
+                              <span className="font-black text-white">{entry.value}%</span>
+                            </div>
+                            {entry.symbols && entry.symbols.length > 0 && (
+                              <div className="text-[10px] text-gray-500 pl-5">
+                                {entry.symbols.join(", ")}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 배당 캘린더 */}
@@ -680,12 +745,13 @@ export default function PortfolioPage() {
 
               {/* 법적 고지문 (Legal Disclaimer) */}
               <div className="mt-8 pt-6 border-t border-white/5">
-                <div className="flex gap-2 text-gray-500 bg-white/5 p-4 rounded-xl">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <div className="text-[10px] leading-relaxed">
-                    <p className="font-bold mb-1 text-gray-400">[투자 유의사항 및 법적 고지]</p>
-                    <p>본 서비스에서 제공하는 포트폴리오 진단 및 AI 리포트는 과거의 데이터와 알고리즘을 바탕으로 한 통계적 분석 결과이며, 특정 종목에 대한 매수 또는 매도 권유가 아닙니다.</p>
-                    <p className="mt-1">모든 투자 결정과 그에 따른 책임은 투자자 본인에게 있으며, 본 시스템의 분석 결과는 투자 참고용으로만 활용하시기 바랍니다. 금융위원회 등록 투자자문업자가 아니며, 개별적인 투자 상담을 제공하지 않습니다.</p>
+                <div className="flex gap-2 text-red-300 bg-red-900/20 border border-red-500/30 p-5 rounded-xl shadow-lg">
+                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
+                  <div className="text-xs leading-relaxed">
+                    <p className="font-black mb-2 text-red-400 text-sm">[투자 유의사항 및 강력한 법적 고지]</p>
+                    <p className="mb-1"><strong>본 서비스(AI 포트폴리오 진단)는 유사투자자문업 등에 해당하지 않으며, 투자에 대한 매수·매도 등 특정 종목의 추천이나 수익률을 보장하지 않습니다.</strong></p>
+                    <p className="mb-1">모든 분석 지표(건강점수, 최대낙폭, 변동성, 레이더 차트 등)는 오로지 <strong>과거의 통계 데이터에 기반한 기계적 연산 및 단순 요약 정보</strong>일 뿐입니다. 미래의 실제 수익이나 손실을 예견하는 것이 아님을 명확히 고지합니다.</p>
+                    <p>투자 행위에 대한 결정은 전적으로 고객님 본인의 독립적인 판단에 따라야 하며, 본 서비스에서 제공된 정보로 인한 어떠한 손실이나 피해에 대해서도 당사는 법적 책임을 지지 않습니다. (본 서비스는 금융위원회 등록 투자자문업자가 아니며, 1:1 상담이나 금전적 대가에 의한 조언을 제공하지 않습니다.)</p>
                   </div>
                 </div>
               </div>

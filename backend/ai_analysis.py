@@ -1492,20 +1492,39 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
         
     portfolio_str = ", ".join(portfolio_items)
     
-    # 1. Run Data Analysis (Composition, Dividend, Factors)
     try:
         composition_data = analyze_portfolio_composition(portfolio_items)
         calendar_data = get_dividend_calendar(portfolio_items)
         factor_data = analyze_portfolio_factors(portfolio_items)
+        
+        # [New] 개별 종목 리스크 분석 (MDD, 변동성 등)
+        from risk_analyzer import analyze_stock_risk
+        import numpy as np
+        portfolio_risks = {}
+        mdds = []
+        for sym in portfolio_items:
+            try:
+                r_data = analyze_stock_risk(sym)
+                portfolio_risks[sym] = r_data
+                if r_data and r_data.get('max_drawdown'):
+                    mdds.append(r_data['max_drawdown'])
+            except Exception as e:
+                print(f"Risk error for {sym}: {e}")
+                
+        portfolio_mdd = round(np.nanmean(mdds), 2) if mdds else 0.0
+
     except Exception as e:
         print(f"Portfolio Data Analysis Error: {e}")
         composition_data = {}
         calendar_data = []
         factor_data = {}
+        portfolio_risks = {}
+        portfolio_mdd = 0.0
 
     # Prepare Context for AI
     composition_summary = f"Asset Composition Breakdown: {composition_data.get('composition', [])}"
     factor_summary = f"Factor Scores (0-100): {factor_data}"
+    risk_summary = f"Average Portfolio MDD: {portfolio_mdd}%"
     
     model = get_json_model()
     
@@ -1550,6 +1569,8 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
         result["composition"] = composition_data
         result["calendar"] = calendar_data if isinstance(calendar_data, list) else []
         result["factors"] = factor_data if isinstance(factor_data, dict) else {}
+        result["risk_data"] = portfolio_risks
+        result["portfolio_mdd"] = portfolio_mdd
         
         # Sanitize numeric fields to avoid NaN/Infinity JSON serialization errors
         import math
@@ -1571,6 +1592,8 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
             "composition": composition_data if isinstance(composition_data, dict) else {},
             "calendar": calendar_data if isinstance(calendar_data, list) else [],
             "factors": factor_data if isinstance(factor_data, dict) else {},
+            "risk_data": portfolio_risks if isinstance(portfolio_risks, dict) else {},
+            "portfolio_mdd": portfolio_mdd if isinstance(portfolio_mdd, (int, float)) else 0.0,
         }
 
 def analyze_node_detail(symbol: str, name: str = None) -> Dict[str, Any]:
