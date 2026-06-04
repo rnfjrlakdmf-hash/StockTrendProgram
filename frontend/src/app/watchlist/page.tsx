@@ -603,7 +603,7 @@ export default function WatchlistPage() {
                                     if (token) {
                                         const res = await fetch(`${API_BASE_URL}/api/fcm/register`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id || (user as any).uid },
+                                            headers: { 'Content-Type': 'application/json', 'X-User-Id': user?.id || (user as any)?.uid || "" },
                                             body: JSON.stringify({ token, device_type: 'web', device_name: navigator.userAgent })
                                         });
                                         const data = await res.json();

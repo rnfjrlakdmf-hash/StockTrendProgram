@@ -110,6 +110,13 @@ interface StockData {
         change_val: number;
         change_pct: string;
     };
+    regular_price?: number;
+    regular_change?: number;
+    regular_change_percent?: number;
+    is_extended_hours?: boolean;
+    extended_price?: number;
+    extended_change?: number;
+    extended_change_percent?: number;
     daily_prices?: {
         date: string;
         open: number;
@@ -1104,7 +1111,7 @@ function DiscoveryContent() {
                                                                     return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
                                                                 }
                                                                 const pct = stock.regular_change_percent || stock.regular_change_pct;
-                                                                if (!pct || pct === 0 || pct === '0.00%') {
+                                                                if (!pct || pct === 0) {
                                                                     const raw = String(stock.change_percent || stock.change || '0.00%');
                                                                     const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
                                                                     return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
@@ -1226,12 +1233,9 @@ function DiscoveryContent() {
                                                                         return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
                                                                     }
                                                                     const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                    const rawPct = nxt?.change_pct_str || nxt?.change_pct || "0.00%";
-                                                                    if (typeof rawPct === 'number') return `${rawPct > 0 ? '+' : ''}${rawPct.toFixed(2)}%`;
-                                                                    if (typeof rawPct === 'string') {
-                                                                        const num = parseFloat(rawPct.replace(/[^\d.-]/g, ''));
-                                                                        if (!isNaN(num)) return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
-                                                                    }
+                                                                    const rawPct = nxt?.change_pct || "0.00%";
+                                                                    const num = typeof rawPct === 'number' ? rawPct : parseFloat(String(rawPct).replace(/[^\d.-]/g, ''));
+                                                                    if (!isNaN(num)) return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
                                                                     return rawPct;
                                                                 })()})
                                                             </span>

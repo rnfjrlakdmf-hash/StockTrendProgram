@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import KakaoShareButton from "@/components/KakaoShareButton";
 
 // [Cache System] Ultra-fast navigation for Themes
-const THEME_CACHE: Record<string, { data: any, timestamp: number }> = {};
+const THEME_CACHE: Record<string, { data: any, timestamp: number, quotes?: Record<string, any> }> = {};
 const CACHE_DURATION = 60 * 1000 * 5; // 5 minute cache
 
 export default function ThemePage() {

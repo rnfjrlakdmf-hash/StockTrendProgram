@@ -73,7 +73,6 @@ export async function GET(req: NextRequest) {
                             style={{
                                 fontSize: 60,
                                 fontWeight: 800,
-                                color: '#e2e8f0', // slate-200
                                 marginTop: 0,
                                 background: 'linear-gradient(to right, #06b6d4, #3b82f6)',
                                 backgroundClip: 'text',

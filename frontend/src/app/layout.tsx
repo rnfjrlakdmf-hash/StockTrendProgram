@@ -10,7 +10,7 @@ import FCMWrapper from "@/components/FCMWrapper";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import KakaoScript from "@/components/KakaoScript";
 import AppInstallBanner from "@/components/AppInstallBanner";
-import LeadGenerationPopup from "@/components/LeadGenerationPopup";
+
 
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
@@ -84,7 +84,7 @@ export default function RootLayout({
               {/* Closing Report Banner */}
               <ClosingBanner />
               <AppInstallBanner />
-              <LeadGenerationPopup />
+
 
               {/* Site Footer - AdSense 정책 준수 필수 링크 */}
               <footer className="border-t border-white/5 mt-8 px-6 py-6 text-center">

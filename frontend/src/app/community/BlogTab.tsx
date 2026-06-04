@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config";
 import { motion } from "framer-motion";
-import { MessageSquare, ThumbsUp, Eye, Image as ImageIcon, Send, Loader2, ArrowLeft, Crown, Sparkles } from "lucide-react";
+import { MessageSquare, ThumbsUp, Eye, Image as ImageIcon, Send, Loader2, ArrowLeft, Crown, Sparkles, X } from "lucide-react";
 
 interface User {
     id: string;

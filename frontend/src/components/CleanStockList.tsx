@@ -206,7 +206,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         }}
                                         title="진입가 및 수량 설정/수정"
                                     >
-                                        {item.added_price > 0 || (item.quantity && item.quantity > 0) ? (
+                                        {(item.added_price || 0) > 0 || (item.quantity && item.quantity > 0) ? (
                                             <>
                                                 {(() => {
                                                     const isUSD = item.currency && item.currency !== 'KRW';

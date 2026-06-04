@@ -553,9 +553,9 @@ export default function SettingsPage() {
                                                     if (isNativeApp) {
                                                         // Capacitor 모바일 앱일 경우 네이티브 App 객체를 사용하여 앱 실행
                                                         import('@capacitor/app').then(({ App }) => {
-                                                            App.openUrl({ url: deepLink }).catch((err) => {
+                                                            (App as any).openUrl({ url: deepLink }).catch((err: any) => {
                                                                 console.log('App open failed, redirecting to store:', err);
-                                                                App.openUrl({ url: broker.androidStore });
+                                                                (App as any).openUrl({ url: broker.androidStore });
                                                             });
                                                         });
                                                     } else {

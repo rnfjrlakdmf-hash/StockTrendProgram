@@ -97,7 +97,21 @@ export default function DashboardMarketClock() {
     let activeMarketsCount = 0;
     const marketStatuses = MARKETS.map(m => {
         const localTime = times[m.name];
-        if (!localTime) return { ...m, isOpen: false, formattedTime: "00:00:00", formattedDate: "", progress: 0, isHoliday: false };
+        if (!localTime) return { 
+            ...m, 
+            isOpen: false, 
+            formattedTime: "00:00:00", 
+            formattedDate: "", 
+            progress: 0, 
+            isHoliday: false,
+            hh: "00",
+            mm: "00",
+            ss: "00",
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            isWeekday: false
+        };
 
         const hours = localTime.getHours();
         const minutes = localTime.getMinutes();
@@ -166,6 +180,18 @@ export default function DashboardMarketClock() {
             seconds,
             isWeekday,
             isHoliday
+        } as MarketTime & {
+            isOpen: boolean,
+            hh: string,
+            mm: string,
+            ss: string,
+            formattedDate: string,
+            progress: number,
+            hours: number,
+            minutes: number,
+            seconds: number,
+            isWeekday: boolean,
+            isHoliday: boolean
         };
     });
 

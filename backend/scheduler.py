@@ -392,3 +392,43 @@ async def disclosure_scheduler_loop():
         except Exception as e:
             logger.error(f"[공시Monitor] 루프 오류: {e}")
             await asyncio.sleep(60)
+
+
+async def auto_blog_scheduler_loop():
+    """
+    매일 지정된 시간에 블로그 포스팅 봇을 자동 호출
+    - KOR (국내장): 16:00
+    - US (미국장): 07:00
+    """
+    logger.info("[AutoBlog] Auto Blog Scheduler Active.")
+    import pytz
+    import subprocess
+    kst = pytz.timezone('Asia/Seoul')
+    last_run_date_kor = ""
+    last_run_date_us = ""
+    
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_blog_bot.py")
+
+    while True:
+        try:
+            now = datetime.now(kst)
+            current_date = now.strftime("%Y-%m-%d")
+            
+            # 오후 16시 정각 (한국장 마감 포스팅)
+            if now.hour == 16 and last_run_date_kor != current_date:
+                if not is_holiday("kor"):
+                    logger.info("[AutoBlog] Triggering KOR market blog post...")
+                    await asyncio.to_thread(subprocess.run, ["python", script_path, "kor"])
+                last_run_date_kor = current_date
+            
+            # 오전 07시 정각 (미국장 마감 포스팅)
+            if now.hour == 7 and last_run_date_us != current_date:
+                if not is_holiday("us"):
+                    logger.info("[AutoBlog] Triggering US market blog post...")
+                    await asyncio.to_thread(subprocess.run, ["python", script_path, "us"])
+                last_run_date_us = current_date
+
+            await asyncio.sleep(60) # 1분 대기
+        except Exception as e:
+            logger.error(f"[AutoBlog] Loop error: {e}")
+            await asyncio.sleep(60)
