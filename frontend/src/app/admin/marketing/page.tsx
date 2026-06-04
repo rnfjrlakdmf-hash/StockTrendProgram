@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send, Sparkles } from "lucide-react";
+import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send, Sparkles, Instagram } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -177,7 +177,7 @@ export default function MarketingAdminPage() {
                 )}
 
                 {result && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                         
                         {/* 1. Blog */}
                         <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 flex flex-col h-full hover:border-green-500/50 transition-colors">
@@ -240,6 +240,25 @@ export default function MarketingAdminPage() {
                                 <div className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{result.shorts.script}</div>
                             </div>
                         </div>
+
+                        {/* 4. Instagram */}
+                        {result.instagram && (
+                            <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 flex flex-col h-full hover:border-pink-500/50 transition-colors">
+                                <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-pink-500/10 rounded-lg"><Instagram className="w-5 h-5 text-pink-400" /></div>
+                                        <h3 className="font-bold text-white">인스타 피드 / 쓰레즈</h3>
+                                    </div>
+                                    <button onClick={() => handleCopy(`${result.instagram.title}\n\n${result.instagram.content}`, 'instagram')} className="text-gray-400 hover:text-white">
+                                        {copied === 'instagram' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                                <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+                                    <div className="font-bold text-pink-400 text-lg leading-tight">{result.instagram.title}</div>
+                                    <div className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{result.instagram.content}</div>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
                 )}

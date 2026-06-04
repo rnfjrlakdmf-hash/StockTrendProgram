@@ -37,7 +37,7 @@ async def get_auto_keyword():
 async def generate_marketing_content(request: MarketingRequest):
     prompt = f"""
     당신은 주식 시장 최고의 1타 바이럴 마케터입니다.
-    다음 키워드 혹은 주제를 바탕으로 3가지 다른 채널에 올릴 홍보글을 작성해주세요.
+    다음 키워드 혹은 주제를 바탕으로 4가지 다른 채널에 올릴 홍보글을 작성해주세요.
     우리의 목적은 '이 글을 본 사람들이 무조건 우리 사이트(AI 주식 비서, stock-trend-program.co.kr)로 와서 검색해보게 만드는 것'입니다.
 
     키워드/주제: {request.keyword}
@@ -52,10 +52,16 @@ async def generate_marketing_content(request: MarketingRequest):
     - 짧고 굵게, 은어를 섞어서 극강의 바이럴 유도.
     - "AI 주식 비서에서 차트 돌려보니까 팩폭 꽂히더라" 같은 내용 포함.
 
-    채널 3. 유튜브 쇼츠 / 인스타 릴스 대본 (Shorts)
+    채널 3. 유튜브 쇼츠 / 틱톡 대본 (Shorts)
     - 첫 3초 시선을 끄는 강력한 훅(Hook).
     - 60초 이내에 읽을 수 있는 짧은 대본.
-    - "링크는 프로필에 있습니다" 또는 "댓글 링크 확인" 유도.
+    - "링크는 프로필에 있습니다" 유도.
+
+    채널 4. 인스타그램 피드/쓰레즈 (Instagram)
+    - 시각적인 이모지를 다수 사용하고, 줄바꿈을 깔끔하게 하여 모바일 가독성을 극대화.
+    - 감성적이거나 트렌디한 문구 사용.
+    - 하단에 검색 유입을 위한 주식 관련 해시태그 10개 이상 꽉꽉 채워넣음 (#주식스타그램 #주린이 #AI주식비서 등).
+    - "프로필 링크 클릭" 유도.
 
     반드시 아래 JSON 형식으로만 응답해주세요. (다른 텍스트 추가 금지)
     {{
@@ -68,8 +74,12 @@ async def generate_marketing_content(request: MarketingRequest):
             "content": "커뮤니티 본문"
         }},
         "shorts": {{
-            "title": "릴스용 훅 제목",
+            "title": "숏츠용 훅 제목",
             "script": "쇼츠 대본"
+        }},
+        "instagram": {{
+            "title": "인스타그램 제목/첫줄",
+            "content": "인스타그램 본문 및 해시태그"
         }}
     }}
     """
