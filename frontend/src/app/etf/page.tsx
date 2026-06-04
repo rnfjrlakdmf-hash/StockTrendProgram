@@ -30,15 +30,17 @@ export default function EtfAnalysisPage() {
             const response = await fetch(url, { cache: 'no-store' });
             const res = await response.json();
             
-            // [버그 픽스] 비동기 Race Condition 방지
-            // KR 요청이 지연되어 US 탭 전환 후에 응답이 왔을 때, KODEX 데이터가 US 화면을 덮어쓰는 현상 차단
-            setMarket(currentMarket => {
-                if (currentMarket === m && res.status === 'success') {
+            if (res.status === 'success') {
+                // [리액트 크래시 방지 & Race Condition 완벽 차단]
+                // 늦게 도착한 과거 요청 데이터가 화면을 덮어쓰는 것을 막기 위해, 데이터 본문(종목 코드)을 검열합니다.
+                // 국내 ETF(KR) 심볼은 6자리 숫자, 미국 ETF(US) 심볼은 영문자입니다.
+                const isKoreanData = res.data.length > 0 && /^\d+$/.test(res.data[0].symbol);
+                
+                if ((m === 'KR' && isKoreanData) || (m === 'US' && !isKoreanData)) {
                     setData(res.data);
                     setLastUpdate(new Date());
                 }
-                return currentMarket;
-            });
+            }
         } catch (error) {
             console.error('Failed to fetch ETF rankings:', error);
         } finally {
