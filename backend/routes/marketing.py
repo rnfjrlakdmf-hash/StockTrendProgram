@@ -14,6 +14,25 @@ class MarketingRequest(BaseModel):
     keyword: str
     tone: str = "aggressive" # aggressive, professional, emotional
 
+@router.get("/auto-keyword")
+async def get_auto_keyword():
+    prompt = """
+    당신은 한국 주식 시장 트렌드 분석가입니다.
+    현재 시점에서 주식 시장(한국 및 미국)에서 가장 뜨거운 트렌드, 급등 테마, 또는 핵심 이슈 1개를 선정하여 바이럴 마케팅 키워드(주제) 형태로 작성해주세요.
+    길이는 10자~35자 사이로, 검색어 최적화 및 사람들의 호기심을 유발할 수 있게 작성해주세요.
+    예시: "엔비디아 역대급 실적, HBM 수혜주 폭등", "트럼프 당선 수혜주 총정리", "원전 르네상스 대장주 총정리"
+    
+    오직 키워드 문장 한 줄만 응답하세요. 다른 부연 설명이나 따옴표는 넣지 마세요.
+    """
+    try:
+        response = await asyncio.to_thread(generate_with_retry, prompt, False, 15, 0.9) # temperature 조금 높게 주어 매번 다양한 주제 추출
+        keyword = response.text.strip().replace('"', '').replace("'", "")
+        return {"keyword": keyword}
+    except Exception as e:
+        print(f"[Marketing Bot] Auto keyword error: {e}")
+        return {"keyword": "삼성전자 AI 칩 수혜주, 시장 주도주 분석"}
+
+
 @router.post("/generate")
 async def generate_marketing_content(request: MarketingRequest):
     prompt = f"""

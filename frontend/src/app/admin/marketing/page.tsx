@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send } from "lucide-react";
+import { Megaphone, Copy, Loader2, FileText, MessageCircle, Video, CheckCircle2, Send, Sparkles } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -61,6 +61,21 @@ export default function MarketingAdminPage() {
         }
     };
 
+    const handleAutoKeyword = async () => {
+        setKeyword("🔥 실시간 핫 트렌드 분석 중...");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/marketing/auto-keyword`);
+            if (res.ok) {
+                const data = await res.json();
+                setKeyword(data.keyword);
+            } else {
+                setKeyword("엔비디아 실적발표 및 AI 반도체 수혜주");
+            }
+        } catch (e) {
+            setKeyword("반도체 슈퍼사이클 핵심 대장주 총정리");
+        }
+    };
+
     const handleCopy = (text: string, id: string) => {
         navigator.clipboard.writeText(text);
         setCopied(id);
@@ -106,7 +121,17 @@ export default function MarketingAdminPage() {
                 <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
                     <div className="flex flex-col md:flex-row gap-6">
                         <div className="flex-1 space-y-2">
-                            <label className="text-gray-400 font-bold text-sm">홍보 키워드 또는 주제</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-gray-400 font-bold text-sm">홍보 키워드 또는 주제</label>
+                                <button 
+                                    onClick={handleAutoKeyword}
+                                    className="flex items-center gap-1 text-xs font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded transition-colors"
+                                    title="AI가 오늘 가장 핫한 주식 시장 트렌드를 찾아 자동으로 입력해줍니다."
+                                >
+                                    <Sparkles className="w-3 h-3" />
+                                    AI 자동 추천
+                                </button>
+                            </div>
                             <input 
                                 type="text"
                                 value={keyword}
