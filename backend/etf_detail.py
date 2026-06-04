@@ -345,6 +345,20 @@ def get_etf_detail(symbol: str):
                     data["sector_weights"] = sector_list[:10]
             except Exception as se:
                 print(f"Sector weights error: {se}")
+                
+            # [NEW] Holdings for US ETFs
+            try:
+                if hasattr(ticker, 'funds_data') and hasattr(ticker.funds_data, 'top_holdings'):
+                    funds_holdings = ticker.funds_data.top_holdings
+                    if funds_holdings is not None and not funds_holdings.empty:
+                        for idx, row in funds_holdings.head(10).iterrows():
+                            name = str(row.get('Name', idx))
+                            pct = row.get('Holding Percent', 0)
+                            if pct > 0:
+                                data["holdings"].append({"name": name, "weight": f"{pct*100:.2f}%"})
+            except Exception as he:
+                print(f"US Holdings error: {he}")
+                
             # [NEW] Populate Similar ETFs for US ETFs
             PEER_GROUPS = {
                 "S&P 500": [{"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust"}, {"symbol": "IVV", "name": "iShares Core S&P 500 ETF"}, {"symbol": "VOO", "name": "Vanguard S&P 500 ETF"}, {"symbol": "SPLG", "name": "SPDR Portfolio S&P 500 ETF"}],
@@ -469,9 +483,38 @@ def get_etf_detail(symbol: str):
                     data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
         except: pass
 
-        # 3. [Commercial Protection] WiseReport 크롤링 차단 (나이스평가정보 저작권 보호)
-        # 상업적 운영에 따른 법적 위험 방지를 위해 비활성화.
-        pass
+        # 3. [NEW] 한국 ETF 구성 종목(Holdings) 스크래핑
+        try:
+            import io
+            import pandas as pd
+            url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
+            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            resp.encoding = 'euc-kr'
+            
+            tables = pd.read_html(io.StringIO(resp.text))
+            for t in tables:
+                if len(t) > 3 and len(t.columns) >= 3:
+                    try:
+                        sample_val = str(t.iloc[1, 2]).strip()
+                        if "%" in sample_val or t.iloc[0].isna().all():
+                            holdings = []
+                            for idx, row in t.iterrows():
+                                if pd.isna(row.iloc[0]): continue
+                                name = str(row.iloc[0]).strip()
+                                if name == "nan" or not name or "데이터가" in name: continue
+                                
+                                weight_val = str(row.iloc[2]).strip()
+                                if "%" not in weight_val and len(row) > 3:
+                                    weight_val = str(row.iloc[3]).strip()
+                                    
+                                holdings.append({"name": name, "weight": weight_val if "%" in weight_val else f"{weight_val}%"})
+                                if len(holdings) >= 10: break
+                            if holdings:
+                                data["holdings"] = holdings
+                                break
+                    except: pass
+        except Exception as he:
+            print(f"KR Holdings error: {he}")
 
 
         # 5. Populate Similar ETFs for KR ETFs
