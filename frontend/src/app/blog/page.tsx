@@ -1,7 +1,7 @@
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import Link from "next/link";
-import { Clock, TrendingUp, ChevronRight } from "lucide-react";
+import { Clock, TrendingUp, ChevronRight, Eye } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -24,7 +24,8 @@ async function getBlogPosts() {
                 content: data.content || "",
                 createdAt: data.createdAt?.toDate?.() || new Date(),
                 tags: data.tags || [],
-                slug: data.slug || doc.id
+                slug: data.slug || doc.id,
+                viewCount: data.viewCount || 0
             };
         });
     } catch (error) {
@@ -82,6 +83,8 @@ export default async function BlogListPage() {
                                             month: 'long',
                                             day: 'numeric'
                                         })}
+                                        <Eye className="w-3.5 h-3.5 ml-4 mr-1 text-gray-500" />
+                                        <span>{post.viewCount}</span>
                                     </div>
                                 </div>
                                 <div className="hidden md:flex shrink-0 items-center justify-center w-12 h-12 rounded-full bg-white/5 group-hover:bg-blue-600 transition-colors z-10">

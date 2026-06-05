@@ -1,10 +1,11 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
-import { Clock, ArrowLeft, Share2, UserCheck } from "lucide-react";
+import { Clock, ArrowLeft, Share2, UserCheck, Eye } from "lucide-react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import KakaoShareButton from "@/components/KakaoShareButton";
+import BlogViewTracker from "@/components/BlogViewTracker";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
@@ -25,7 +26,8 @@ async function getBlogPost(slug: string) {
             createdAt: data.createdAt?.toDate?.() || new Date(),
             tags: data.tags || [],
             author: data.author || "관리자",
-            slug: data.slug || snapshot.id
+            slug: data.slug || snapshot.id,
+            viewCount: data.viewCount || 0
         };
     } catch (error) {
         console.error("블로그 포스트 상세 로딩 에러:", error);
@@ -66,18 +68,9 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
         notFound();
     }
 
-    // 조회수 증가 로직 (서버 사이드에서 실행)
-    try {
-        const docRef = doc(db, "blog_posts", params.id);
-        await updateDoc(docRef, {
-            viewCount: increment(1)
-        });
-    } catch (e) {
-        console.error("조회수 증가 실패:", e);
-    }
-
     return (
         <article className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-4xl mx-auto animate-in fade-in duration-500">
+            <BlogViewTracker id={post.slug} />
             {/* Header / Back */}
             <div className="mb-8 flex justify-between items-center">
                 <Link 
@@ -128,6 +121,10 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
                                 weekday: 'long'
                             })}
                         </time>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Eye className="w-4 h-4" />
+                        <span>{post.viewCount} 읽음</span>
                     </div>
                 </div>
             </header>
