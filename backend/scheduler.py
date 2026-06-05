@@ -166,7 +166,7 @@ async def check_and_notify_sec_disclosures():
                 continue
             wl = get_watchlist(uid)
             for wl_item in wl:
-                sym = wl_item.get('symbol', '')
+                sym = wl_item[0] if isinstance(wl_item, tuple) else wl_item.get('symbol', '')
                 # 해외 종목: 6자리 숫자가 아닌 영문 티커
                 clean = sym.split('.')[0]
                 if clean and not clean.isdigit():
