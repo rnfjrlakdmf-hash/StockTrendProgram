@@ -13,6 +13,13 @@ error_counters = {
     "firebase_db": 0
 }
 
+# 스케줄러 하트비트 보관용 딕셔너리 (초 단위 타임스탬프)
+scheduler_heartbeats = {}
+
+def update_heartbeat(module_name: str):
+    """각 스케줄러 봇이 자신이 살아있음을 신고 (1분마다 호출)"""
+    scheduler_heartbeats[module_name] = time.time()
+
 def get_admin_fcm_tokens():
     """Firestore에서 관리자 이메일 계정의 FCM 토큰 수집"""
     init_firebase_admin()
@@ -95,10 +102,22 @@ def check_firebase_db():
         if error_counters["firebase_db"] == 2:
             send_admin_alert("Firebase Database", str(e))
 
+def check_scheduler_heartbeats():
+    """스케줄러 봇들의 생존 신고를 15분 타임아웃 기준으로 검사"""
+    now = time.time()
+    for module_name, last_beat in list(scheduler_heartbeats.items()):
+        # 15분(900초) 이상 하트비트가 없으면 다운된 것으로 간주
+        if now - last_beat > 900:
+            print(f"[Watchdog] {module_name} 봇의 하트비트가 끊어졌습니다! (15분 초과)")
+            send_admin_alert(f"🤖 {module_name} 스케줄러", "15분 이상 생존 신고(Heartbeat)가 없습니다. 루프가 다운(Crash)되었거나 멈췄습니다.")
+            # 푸시 알림 폭탄을 막기 위해 하트비트 타임을 현재로 리셋 (15분 뒤 다시 울림)
+            scheduler_heartbeats[module_name] = now
+
 def run_health_checks():
     """모든 시스템 상태 검사 실행"""
     print("[Watchdog] Running system health checks...")
     check_firebase_db()
     check_yahoo_finance()
     check_fx_api()
-    print(f"[Watchdog] Check complete. Current Error Counters: {error_counters}")
+    check_scheduler_heartbeats()
+    print(f"[Watchdog] Check complete. Errors: {error_counters}, Heartbeats: {scheduler_heartbeats}")

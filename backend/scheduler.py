@@ -2,8 +2,10 @@ import asyncio
 import logging
 import json
 import os
+import urllib.parse
 from datetime import datetime, timedelta
 from holiday_checker import is_holiday
+from system_watchdog import update_heartbeat
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -302,6 +304,7 @@ async def hourly_briefing_scheduler_loop():
 
     while True:
         try:
+            update_heartbeat("Hourly_Briefing")
             now = datetime.now(kst)
             current_hour = now.hour
             current_date = now.strftime("%Y-%m-%d")
@@ -400,6 +403,7 @@ async def disclosure_scheduler_loop():
 
     while True:
         try:
+            update_heartbeat("Disclosure_Monitor")
             await asyncio.sleep(300)  # 5분 간격
 
             # 국내 DART 공시 체크
@@ -439,6 +443,7 @@ async def auto_blog_scheduler_loop():
 
     while True:
         try:
+            update_heartbeat("Auto_Blog_Bot")
             now = datetime.now(kst)
             current_date = now.strftime("%Y-%m-%d")
             

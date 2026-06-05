@@ -2,10 +2,13 @@ import time
 import threading
 from datetime import datetime
 import pytz
-from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
+from firebase_admin import messaging
+from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens, get_all_users
 from stock_data import get_simple_quote, get_korean_stock_name
 from firebase_config import send_multicast_notification, initialize_firebase
 from fx_api import get_alpha_vantage_fx
+from holiday_checker import is_holiday
+from system_watchdog import update_heartbeat
 
 def is_korean_stock(symbol: str) -> bool:
     """숫자 6자리의 한국 주식 코드(접미사 .KS/.KQ 포함) 판별"""
@@ -618,6 +621,7 @@ def run_market_scheduler():
     
     while True:
         try:
+            update_heartbeat("Main_Alert_Scheduler")
             now = datetime.now(kst)
             day_of_week = now.weekday()
             current_date = now.strftime('%Y-%m-%d')
