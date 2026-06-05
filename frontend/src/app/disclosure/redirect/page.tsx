@@ -7,7 +7,7 @@ import Image from "next/image";
 export default function DisclosureRedirectPage() {
   const searchParams = useSearchParams();
   const targetUrl = searchParams.get("url");
-  const [countdown, setCountdown] = useState(2);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (!targetUrl) return;
@@ -52,7 +52,7 @@ export default function DisclosureRedirectPage() {
         <div className="w-full bg-gray-800 rounded-full h-2 mb-4 overflow-hidden">
           <div 
             className="bg-blue-500 h-2 rounded-full transition-all duration-1000 ease-linear"
-            style={{ width: countdown === 2 ? '33%' : countdown === 1 ? '66%' : '100%' }}
+            style={{ width: `${(1 - (countdown / 5)) * 100}%` }}
           ></div>
         </div>
         
