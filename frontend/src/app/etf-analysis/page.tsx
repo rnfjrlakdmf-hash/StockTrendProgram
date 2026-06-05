@@ -535,7 +535,7 @@ function EtfAnalysisContent() {
                                     )}
 
                                     {/* 구성 종목 테이블 */}
-                                    {Array.isArray(etfData.holdings) && etfData.holdings.length > 0 ? (
+                                    {Array.isArray(etfData.holdings) && etfData.holdings.length > 0 && (
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left border-collapse">
                                                 <thead>
