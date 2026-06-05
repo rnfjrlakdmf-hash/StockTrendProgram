@@ -27,6 +27,30 @@ def is_holiday(market_type: str) -> bool:
         
     return False
 
+def is_market_open_hours(market_type: str) -> bool:
+    """
+    현재 시간(KST)이 정규장 및 시간외(프리/애프터마켓 포함 넉넉한 범위) 운영 시간인지 확인합니다.
+    """
+    kst = timezone(timedelta(hours=9))
+    now = datetime.now(kst)
+    current_time = now.time()
+    
+    if market_type == "kor":
+        # 한국: 09:00 ~ 15:30 (동시호가 및 시간외 단일가 오류 방지를 위해 15:40까지만 허용)
+        # 09:00부터 15:40까지
+        if current_time >= datetime.strptime("09:00", "%H:%M").time() and current_time <= datetime.strptime("15:40", "%H:%M").time():
+            return True
+        return False
+        
+    elif market_type == "us":
+        # 미국: KST 기준 22:00 ~ 익일 08:00 (서머타임 무관하게 프리/애프터 넉넉히 커버)
+        # 22:00 이후이거나 08:00 이전
+        if current_time >= datetime.strptime("22:00", "%H:%M").time() or current_time <= datetime.strptime("08:00", "%H:%M").time():
+            return True
+        return False
+        
+    return True
+
 def exit_if_holiday(market_type: str, script_name: str = "Script"):
     """휴장일이면 프로세스를 종료합니다 (단독 스크립트용)"""
     if is_holiday(market_type):

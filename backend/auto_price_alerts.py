@@ -9,6 +9,7 @@ from typing import Dict, List, Set
 import yfinance as yf
 from db_manager import get_db_connection
 from stock_data import get_korean_stock_name
+from holiday_checker import is_holiday, is_market_open_hours
 
 class AutoPriceMonitor:
     def __init__(self):
@@ -94,6 +95,16 @@ class AutoPriceMonitor:
 
     async def check_and_alert(self, symbol: str, users: List[str], today_str: str):
         """단일 종목의 가격을 조회하고 알림 조건 검사"""
+        
+        # 0. 해외 주식 여부 판별
+        clean_sym = symbol.split('.')[0]
+        is_foreign = len(clean_sym) != 6 or not clean_sym[0].isdigit()
+        market_type = "us" if is_foreign else "kor"
+        
+        # 1. 휴장일 및 정규장 시간 외(새벽 등) 필터링
+        if is_holiday(market_type) or not is_market_open_hours(market_type):
+            return
+
         def _fetch_price_data():
             # 1. 네이버 API 우선 사용 (차단 방지 및 빠름)
             try:
@@ -190,6 +201,11 @@ class AutoPriceMonitor:
         # 1. 등락률 계산
         change_pct = ((current - prev_close) / prev_close) * 100
         
+        # [방어 로직] 30% 이상 폭등/폭락은 상하한가를 초과하는 비정상 데이터(액면분할, API 야간 오류 등)로 간주하여 스킵
+        if abs(change_pct) >= 30.0:
+            print(f"[AutoPriceAlert] Outlier detected for {symbol}: {change_pct:.1f}% -> Skipped")
+            return
+            
         alerts_to_send = []
 
         # 🚀 5% 이상 상승 포착 (오늘 알림을 안 보낸 경우)
