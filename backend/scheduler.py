@@ -120,7 +120,7 @@ async def check_and_notify_disclosures():
                 "type": "disclosure_alert",
                 "symbol": matched_symbol or raw_code,
                 "url": f"/discovery?q={raw_code}",
-                "dart_url": dart_link,
+                "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
             }
 
             logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
@@ -265,7 +265,7 @@ async def check_and_notify_sec_disclosures():
                         "type": "disclosure_alert",
                         "symbol": ticker,
                         "url": f"/discovery?q={ticker}",
-                        "dart_url": filing_url,
+                        "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
                     }
 
                     logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
