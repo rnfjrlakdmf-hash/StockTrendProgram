@@ -6,6 +6,8 @@ import io
 import re
 import yfinance as yf
 from deep_translator import GoogleTranslator
+from datetime import datetime, timedelta
+import logging
 
 from turbo_engine import turbo_cache
 
@@ -17,6 +19,28 @@ AMC_MAP = {
     "Invesco": "인베스코", "Charles Schwab": "찰스 슈왑", "ProShares": "프로셰어즈",
     "Direxion": "디렉시온", "JPMorgan": "제이피모건"
 }
+
+def get_naver_daily_prices(symbol, days=252):
+    try:
+        now = datetime.now()
+        start = now - timedelta(days=days+100)
+        url = f"https://api.finance.naver.com/siseJson.naver?symbol={symbol}&requestType=1&startTime={start.strftime('%Y%m%d')}&endTime={now.strftime('%Y%m%d')}&timeframe=day"
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+        text = resp.content.decode('euc-kr', 'replace')
+        import re
+        matches = re.findall(r'\["(20\d{6})",\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)', text)
+        if not matches: return pd.DataFrame()
+        data_list = []
+        for m in matches:
+            dt = f"{m[0][:4]}-{m[0][4:6]}-{m[0][6:]}"
+            data_list.append({"Date": dt, "Open": float(m[1]), "High": float(m[2]), "Low": float(m[3]), "Close": float(m[4]), "Volume": float(m[5])})
+        df = pd.DataFrame(data_list)
+        if df.empty: return df
+        df.set_index("Date", inplace=True)
+        df.sort_index(inplace=True)
+        return df.tail(days)
+    except:
+        return pd.DataFrame()
 
 def safe_to_float(val):
     if val is None: return 0.0
@@ -402,10 +426,18 @@ def get_etf_detail(symbol: str):
         clean_sym = symbol.split('.')[0]
         
         # 1. Chart Data (Optional/Non-blocking)
+        hist = pd.DataFrame()
         try:
             # Try KS then KQ
             hist = yf.Ticker(f"{clean_sym}.KS").history(period="1y")
-            if hist.empty: hist = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
+            if hist.empty or len(hist) < 20: 
+                hist_kq = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
+                if not hist_kq.empty and len(hist_kq) > len(hist):
+                    hist = hist_kq
+            
+            # Fallback to Naver API if yfinance fails or data is too short
+            if hist.empty or len(hist) < 20:
+                hist = get_naver_daily_prices(clean_sym, 252)
             
             if not hist.empty:
                 hist['ma5'] = hist['Close'].rolling(window=5).mean()
@@ -464,6 +496,16 @@ def get_etf_detail(symbol: str):
                         if k in ind:
                             f_val = safe_to_float(ind[k])
                             data["performance"][v] = f"{'+' if f_val > 0 else ''}{f_val:.2f}%"
+
+                if not data["performance"] and not hist.empty and len(hist) > 1:
+                    try:
+                        last_close = hist['Close'].iloc[-1]
+                        for p_label, d_offset in [("1개월", 21), ("3개월", 63), ("6개월", 126), ("1년", 252)]:
+                            if len(hist) > d_offset:
+                                past_close = hist['Close'].iloc[-(d_offset+1)]
+                                ret = ((last_close - past_close) / past_close) * 100
+                                data["performance"][p_label] = f"{'+' if ret > 0 else ''}{ret:.2f}%"
+                    except: pass
 
                 # Additional Info (Index, Listing Date)
                 for info in api_json.get("totalInfos", []):
