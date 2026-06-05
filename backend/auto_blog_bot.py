@@ -95,14 +95,13 @@ def get_compliance_prompt():
        "본 리포트는 객관적인 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
 
     [출력 형식 및 구조 (반드시 아래 양식을 지켜주세요!)]
-    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6 text-gray-300"> 입니다.
-    - 첫 줄은 반드시 `<p class="text-gray-400 text-sm">안녕하세요! 마켓 뷰 수석 전략가입니다.</p>` 로 시작하세요.
-    - 지수 마감 요약(개요)을 한 문단으로 씁니다 (`<p class="leading-relaxed">...</p>`).
-    - 지수별 세부 분석은 `<h3 class="text-xl font-semibold text-white mt-8 border-b border-gray-700 pb-2">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터에 이미 색상이 포함되어 있으니, 지수 자체는 덮어쓰지 마세요)
-    - 테마 분석 섹션의 제목은 `<h3 class="text-xl font-semibold text-white mt-10 mb-4 border-b border-gray-700 pb-2">📌 오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요. (깔끔하게 흰색 사용)
-    - 각 테마별 소제목은 `<strong class="text-blue-400 text-lg block mt-6 mb-2">테마 이름:</strong>` 로 은은한 파란색을 사용하여 가독성을 높이세요.
-    - 본문 안에서 무지개색(빨강, 분홍, 노랑 등)은 절대 사용하지 마세요. 오직 가장 중요한 1~2개의 핵심 키워드나 종목명에만 `<strong class="text-gray-100">` (밝은 흰색) 또는 `<strong class="text-blue-300">` (연한 파랑)을 사용하여 절제된 강조를 하세요.
-    - 과도한 색상 남용으로 정신사납게 만들지 마세요. 금융 전문가의 리포트처럼 묵직하고 가독성 높은 깔끔한 디자인을 유지해야 합니다.
+    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다.
+    - 첫 줄은 반드시 `<p class="text-gray-300">안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다.</p>` 로 시작하세요.
+    - 지수 마감 요약(개요)을 한 문단으로 씁니다 (`<p class="text-gray-300">...</p>`).
+    - 지수별 세부 분석은 `<h3 class="text-xl font-bold text-blue-400 mt-6">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터에 이미 색상이 포함되어 있으니, 지수 자체는 파란색으로 덮어쓰지 마세요)
+    - 테마 분석 섹션의 제목은 `<h3 class="text-xl font-bold text-blue-400 mt-8 mb-4">오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요. (깔끔한 파란색 사용)
+    - 각 테마별 항목은 `<div>` 또는 `<p>`로 묶고, 소제목은 `<strong class="text-blue-400 text-lg block mt-4 mb-1">테마 이름:</strong>` 로 파란색을 사용하여 가독성을 높이세요.
+    - 본문 안에서 긍정적인 내용, 강세 섹터, 중요한 이유는 `<strong class="text-blue-400">` 로 파란색 색상을 입혀서 한눈에 들어오도록 강조하세요.
     - 테일윈드 클래스를 적절히 사용하세요. JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
     """
 
