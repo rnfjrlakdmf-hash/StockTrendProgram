@@ -15,7 +15,7 @@ def get_exim_fx():
         print("⚠️ EXIM_AUTH_KEY 가 설정되지 않았습니다. 기본값을 반환합니다.")
         return {"price": "1,350", "change": "0.00%"}
         
-    url = "https://www.koreaexim.go.kr/site/program/financial/exchangeJSON"
+    url = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
     
     # 수출입은행은 비영업일(주말 등) 및 당일 오전 11시 이전엔 데이터를 반환하지 않을 수 있음
     # 그럴 경우 날짜를 뒤로 미루며 찾는 로직이 필요하지만, 여기서는 최신 호출로 시도
