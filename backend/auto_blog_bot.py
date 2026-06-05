@@ -34,6 +34,7 @@ def init_firebase():
 
 import requests
 from bs4 import BeautifulSoup
+from fx_api import get_alpha_vantage_fx
 
 def fetch_index_data(ticker_symbol):
     try:
@@ -95,13 +96,13 @@ def get_compliance_prompt():
        "본 리포트는 객관적인 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
 
     [출력 형식 및 구조 (반드시 아래 양식을 지켜주세요!)]
-    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다.
-    - 첫 줄은 반드시 `<p class="text-gray-300">안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다.</p>` 로 시작하세요.
-    - 지수 마감 요약(개요)을 한 문단으로 씁니다 (`<p class="text-gray-300">...</p>`).
-    - 지수별 세부 분석은 `<h3 class="text-xl font-bold text-blue-400 mt-6">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터에 이미 색상이 포함되어 있으니, 지수 자체는 파란색으로 덮어쓰지 마세요)
-    - 테마 분석 섹션의 제목은 `<h3 class="text-xl font-bold text-blue-400 mt-8 mb-4">오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요. (깔끔한 파란색 사용)
-    - 각 테마별 항목은 `<div>` 또는 `<p>`로 묶고, 소제목은 `<strong class="text-blue-400 text-lg block mt-4 mb-1">테마 이름:</strong>` 로 파란색을 사용하여 가독성을 높이세요.
-    - 본문 안에서 긍정적인 내용, 강세 섹터, 중요한 이유는 `<strong class="text-blue-400">` 로 파란색 색상을 입혀서 한눈에 들어오도록 강조하세요.
+    - 가독성을 높이기 위해 텍스트 크기를 키웁니다. 전체를 묶는 최상위 태그는 <div class="prose prose-lg prose-invert max-w-none space-y-6"> 입니다.
+    - 첫 줄은 반드시 `<p class="text-gray-300 text-lg">안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다.</p>` 로 시작하세요.
+    - 지수 마감 요약(개요)과 일반 본문은 모두 `<p class="text-gray-300 text-lg">...</p>` 태그로 작성하세요. (글자 크기 text-lg 필수)
+    - 지수별 세부 분석은 `<h3 class="text-2xl font-bold text-blue-400 mt-6">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터 색상 보존, 폰트는 text-2xl로 크게)
+    - 테마 분석 섹션의 제목은 `<h3 class="text-2xl font-bold text-blue-400 mt-8 mb-4">오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요.
+    - 각 테마별 항목은 `<div>` 또는 `<p class="text-gray-300 text-lg">`로 묶고, 소제목은 `<strong class="text-blue-400 text-xl block mt-4 mb-1">테마 이름:</strong>` 로 파란색을 사용하여 크게 강조하세요.
+    - 본문 안에서 긍정적인 내용, 강세 섹터, 중요한 이유는 `<strong class="text-blue-400 text-lg">` 로 파란색 색상을 입혀서 한눈에 들어오도록 강조하세요.
     - 테일윈드 클래스를 적절히 사용하세요. JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
     """
 
@@ -119,7 +120,8 @@ def generate_market_post(market_type):
         print("[KOR] 국내 증시 데이터 수집 시작...")
         kospi = fetch_index_data("^KS11")
         kosdaq = fetch_index_data("^KQ11")
-        fx_rate = fetch_index_data("USDKRW=X")
+        fx_dict = get_alpha_vantage_fx()
+        fx_rate = f"{fx_dict['price']}원"
         
         try:
             news_items = fetch_google_news("국내 증시 특징주 테마", period="1d")
@@ -153,7 +155,8 @@ def generate_market_post(market_type):
         print("[US] 미국 증시 데이터 수집 시작...")
         sp500 = fetch_index_data("^GSPC")
         nasdaq = fetch_index_data("^IXIC")
-        fx_rate = fetch_index_data("USDKRW=X")
+        fx_dict = get_alpha_vantage_fx()
+        fx_rate = f"{fx_dict['price']}원"
         
         try:
             news_items = fetch_google_news("미국 증시 나스닥 특징주 테마", period="1d")

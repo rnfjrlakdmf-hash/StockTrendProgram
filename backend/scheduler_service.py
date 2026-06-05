@@ -5,6 +5,7 @@ import pytz
 from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
 from stock_data import get_simple_quote, get_korean_stock_name
 from firebase_config import send_multicast_notification, initialize_firebase
+from fx_api import get_alpha_vantage_fx
 
 def is_korean_stock(symbol: str) -> bool:
     """숫자 6자리의 한국 주식 코드(접미사 .KS/.KQ 포함) 판별"""
@@ -322,7 +323,7 @@ def send_closing_notification(market: str):
         "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수", "SOX"),
         "TNX": get_safe_quote("^TNX", default_price="4.50"),
         "OIL": _get_raw_val(get_safe_quote("CL=F", default_price="0.00"), "0.00", "WTI"),
-        "FX": _get_raw_val(get_safe_quote("USDKRW=X", default_price="1,350"), "1,350", "USD/KRW"),
+        "FX": get_alpha_vantage_fx(),
         "TSLA": get_safe_quote("TSLA")
     }
 
