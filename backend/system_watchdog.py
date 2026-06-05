@@ -2,7 +2,7 @@ import time
 import requests
 import yfinance as yf
 from firebase_admin import firestore, messaging
-from firebase_config import init_firebase_admin
+from firebase_config import initialize_firebase
 
 ADMIN_EMAILS = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
 
@@ -30,7 +30,7 @@ def update_heartbeat(module_name: str):
 
 def get_admin_fcm_tokens():
     """Firestore에서 관리자 이메일 계정의 FCM 토큰 수집"""
-    init_firebase_admin()
+    initialize_firebase()
     db = firestore.client()
     tokens = []
     
@@ -99,7 +99,7 @@ def check_fx_api():
 def check_firebase_db():
     """Firebase Firestore 연결 체크"""
     try:
-        init_firebase_admin()
+        initialize_firebase()
         db = firestore.client()
         # 간단히 서버 시간 가져오는 컬렉션 하나 찌르기
         list(db.collection("users").limit(1).stream())
