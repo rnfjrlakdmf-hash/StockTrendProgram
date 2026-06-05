@@ -122,6 +122,15 @@ def send_opening_notification(market: str):
     initialize_firebase()
     print(f"[Scheduler] Sending {market} market opening prices...")
     
+    fx_rate = 1350.0
+    if market == "US":
+        try:
+            fx_quote = get_simple_quote("USDKRW=X")
+            if fx_quote and fx_quote.get('price') and fx_quote['price'] != "확인불가":
+                fx_rate = float(str(fx_quote['price']).replace(',', ''))
+        except Exception as e:
+            print(f"[Scheduler] Failed to fetch fx_rate: {e}")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT DISTINCT user_id FROM watchlist")
@@ -147,11 +156,23 @@ def send_opening_notification(market: str):
                 
                 # Add currency formatting
                 if market == "US":
-                    # For US, add $ prefix if not already present
-                    price_str = f"${price}" if not str(price).startswith("$") else str(price)
+                    try:
+                        price_float = float(price)
+                        price_str = f"${price_float:,.2f}"
+                        krw_price = price_float * fx_rate
+                        if krw_price >= 10000:
+                            krw_str = f"약 {krw_price/10000:,.1f}만원"
+                        else:
+                            krw_str = f"약 {krw_price:,.0f}원"
+                        price_str += f" ({krw_str})"
+                    except ValueError:
+                        price_str = f"${price}" if not str(price).startswith("$") else str(price)
                 else:
-                    # For KR, add 원 suffix if not already present
-                    price_str = f"{price}원" if not str(price).endswith("원") else str(price)
+                    try:
+                        price_float = float(price)
+                        price_str = f"{price_float:,.0f}원"
+                    except ValueError:
+                        price_str = f"{price}원" if not str(price).endswith("원") else str(price)
                     
                 items_info.append(f"• {name}: {price_str}")
         
@@ -217,6 +238,7 @@ def send_closing_notification(market: str):
     # 안전 지표 조회 헬퍼 (차단 대비)
     def get_safe_quote(sym: str, default_price="확인불가", default_change="0.00%", default_change_val="0.00"):
         try:
+            import time
             # 봇 필터 회피 지연
             time.sleep(0.1)
             quote = get_simple_quote(sym)
@@ -282,6 +304,15 @@ def send_closing_notification(market: str):
              chg_str = "0.00"
         return f"{default_name}: {val} ({chg_str} / {pct})"
 
+    def _get_raw_val(quote, fallback, md_label):
+        if md_label and md_label in md_dict:
+            d = md_dict[md_label]
+            if d.get("value") not in ["준비중", "확인불가", "0.00"]:
+                return {"price": str(d["value"]), "change": str(d.get("change", "0.00%"))}
+        if not quote or quote.get("price") == "확인불가":
+            return {"price": fallback, "change": "0.00%"}
+        return quote
+
     common = {
         "KOSPI": _format_index(kospi_info, "코스피"),
         "KOSDAQ": _format_index(kosdaq_info, "코스닥"),
@@ -290,8 +321,8 @@ def send_closing_notification(market: str):
         "SP500": _format_us_index(get_safe_quote("^GSPC"), "S&P500", "S&P 500"),
         "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수", "SOX"),
         "TNX": get_safe_quote("^TNX", default_price="4.50"),
-        "OIL": get_safe_quote("CL=F"),
-        "FX": get_safe_quote("USDKRW=X", default_price="1,350"),
+        "OIL": _get_raw_val(get_safe_quote("CL=F", default_price="0.00"), "0.00", "WTI"),
+        "FX": _get_raw_val(get_safe_quote("USDKRW=X", default_price="1,350"), "1,350", "USD/KRW"),
         "TSLA": get_safe_quote("TSLA")
     }
 
@@ -358,7 +389,12 @@ def send_closing_notification(market: str):
                 change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
                 
                 # Format current_price nicely
-                curr_price_str = f"{item['current_price']:,.0f}" if market == "KR" else f"{item['current_price']:,.2f}"
+                if market == "US":
+                    krw_curr = item['current_price'] * fx_rate
+                    krw_curr_str = f"{krw_curr/10000:,.1f}만원" if krw_curr >= 10000 else f"{krw_curr:,.0f}원"
+                    curr_price_str = f"{item['current_price']:,.2f} (약 {krw_curr_str})"
+                else:
+                    curr_price_str = f"{item['current_price']:,.0f}"
                 
                 # Format absolute daily change (e.g., 900원)
                 chg_val = item.get('daily_change_val', 0)
@@ -376,7 +412,13 @@ def send_closing_notification(market: str):
                 line = f"• {item['name']}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
                 if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                     diff = item['price_diff']
-                    diff_str = f"{diff:+,.0f}" if market == "KR" else f"{diff:+,.2f}"
+                    if market == "US":
+                        krw_diff = diff * fx_rate
+                        sign = "+" if krw_diff > 0 else "-" if krw_diff < 0 else ""
+                        krw_diff_str = f"{sign}{abs(krw_diff)/10000:,.1f}만원" if abs(krw_diff) >= 10000 else f"{sign}{abs(krw_diff):,.0f}원"
+                        diff_str = f"{diff:+,.2f} (약 {krw_diff_str})"
+                    else:
+                        diff_str = f"{diff:+,.0f}"
                     line += f"\n  ↳ 💰수익: {diff_str}{unit}"
                 price_list.append(line)
                 
@@ -393,9 +435,9 @@ def send_closing_notification(market: str):
                     # 1. 시장 지수 요약 알림
                     send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery", "type": "market_summary"})
                     
-                    # 0.5초 대기 (푸시 알림 순서 보장을 위해)
+                    # 2초 대기 (모바일 환경에서 두 개의 푸시가 씹히지 않고 연속으로 뜨도록 순서 보장)
                     import time
-                    time.sleep(0.5)
+                    time.sleep(2.0)
                     
                     # 2. 내 관심종목 수익 현황 알림
                     send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist", "type": "portfolio_summary"})
