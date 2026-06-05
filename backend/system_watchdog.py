@@ -13,6 +13,14 @@ error_counters = {
     "firebase_db": 0
 }
 
+# 오토 힐링 기능 활성화 플래그
+AUTO_HEAL_ENABLED = True
+
+def toggle_auto_heal():
+    global AUTO_HEAL_ENABLED
+    AUTO_HEAL_ENABLED = not AUTO_HEAL_ENABLED
+    return AUTO_HEAL_ENABLED
+
 # 스케줄러 하트비트 보관용 딕셔너리 (초 단위 타임스탬프)
 scheduler_heartbeats = {}
 
@@ -109,8 +117,30 @@ def check_scheduler_heartbeats():
         # 15분(900초) 이상 하트비트가 없으면 다운된 것으로 간주
         if now - last_beat > 900:
             print(f"[Watchdog] {module_name} 봇의 하트비트가 끊어졌습니다! (15분 초과)")
-            send_admin_alert(f"🤖 {module_name} 스케줄러", "15분 이상 생존 신고(Heartbeat)가 없습니다. 루프가 다운(Crash)되었거나 멈췄습니다.")
-            # 푸시 알림 폭탄을 막기 위해 하트비트 타임을 현재로 리셋 (15분 뒤 다시 울림)
+            
+            if AUTO_HEAL_ENABLED:
+                print(f"[Watchdog] 오토힐링 발동! {module_name} 봇 강제 부활 시도...")
+                send_admin_alert(f"🤖 {module_name} 봇", f"15분 이상 응답이 없어 오토 힐링(자가치유)을 발동하여 봇을 강제 재가동 시킵니다!")
+                
+                # 순환 참조 방지를 위해 지연 임포트
+                import scheduler
+                import scheduler_service
+                import asyncio
+                import threading
+                
+                if module_name == "Auto_Blog_Bot":
+                    asyncio.create_task(scheduler.auto_blog_scheduler_loop())
+                elif module_name == "Hourly_Briefing":
+                    asyncio.create_task(scheduler.hourly_briefing_scheduler_loop())
+                elif module_name == "Disclosure_Monitor":
+                    asyncio.create_task(scheduler.disclosure_scheduler_loop())
+                elif module_name == "Main_Alert_Scheduler":
+                    # 메인 알림 스케줄러는 일반 Thread 방식임
+                    threading.Thread(target=scheduler_service.start_scheduler, daemon=True).start()
+            else:
+                send_admin_alert(f"🤖 {module_name} 스케줄러", "15분 이상 생존 신고(Heartbeat)가 없습니다. 루프가 다운(Crash)되었거나 멈췄습니다.")
+            
+            # 푸시 알림 폭탄을 막기 위해 하트비트 타임을 현재로 리셋 (15분 뒤 다시 검사)
             scheduler_heartbeats[module_name] = now
 
 def run_health_checks():

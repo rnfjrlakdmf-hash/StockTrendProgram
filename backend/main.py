@@ -69,6 +69,7 @@ else:
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 from routes.marketing import router as marketing_router
+from routes.master import router as master_router
 
 app.include_router(system_router, prefix="/api/system", tags=["System"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
@@ -79,6 +80,7 @@ app.include_router(user_router, prefix="/api", tags=["User"])
 app.include_router(signals_router, prefix="/api", tags=["Signals"])
 app.include_router(alerts_router, prefix="/api", tags=["Alerts"])
 app.include_router(marketing_router, prefix="/api/marketing", tags=["Marketing"])
+app.include_router(master_router, prefix="/api/master", tags=["Master"])
 
 
 import traceback

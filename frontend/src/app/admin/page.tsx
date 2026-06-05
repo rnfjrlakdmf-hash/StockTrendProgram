@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,56 @@ export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [reportSending, setReportSending] = useState(false);
+    const [autoHealEnabled, setAutoHealEnabled] = useState(false);
+
+    const fetchMasterStatus = async () => {
+        if (!currentUser) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/master/status?user_id=${currentUser.uid}&email=${currentUser.email}`);
+            const json = await res.json();
+            if (json.status === "success") {
+                setAutoHealEnabled(json.auto_heal_enabled);
+            }
+        } catch (e) { console.error("Failed to fetch master status"); }
+    };
+
+    const handleToggleAutoHeal = async () => {
+        if (!currentUser) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/master/toggle-auto-heal`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.uid, email: currentUser.email })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                setAutoHealEnabled(json.auto_heal_enabled);
+                alert(`로봇 설정이 변경되었습니다.\n${json.message}`);
+            } else {
+                alert("설정 변경에 실패했습니다: " + json.message);
+            }
+        } catch (e) { alert("오류가 발생했습니다."); }
+    };
+
+    const handleRebootServer = async () => {
+        if (!currentUser) return;
+        if (!window.confirm("🚨 [경고] 정말로 백엔드 서버를 재부팅 하시겠습니까?\n약 5~10초간 앱 서비스가 전면 중단됩니다.")) return;
+        if (!window.confirm("⚠️ [이중 확인] 재부팅 시 현재 진행 중인 블로그 포스팅이나 브리핑 발송이 중간에 끊길 수 있습니다. 그래도 진행할까요?")) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/master/restart`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.uid, email: currentUser.email })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert("✅ 서버 재부팅 명령이 하달되었습니다. 2초 뒤 서버가 재시작됩니다.");
+            } else {
+                alert("🛑 재부팅 명령 실패: " + json.message);
+            }
+        } catch (e) { alert("서버와 통신할 수 없습니다."); }
+    };
 
     const handleTestDailyReport = async () => {
         setReportSending(true);
@@ -128,10 +178,14 @@ export default function AdminPage() {
         fetchUsers();
         fetchAnalytics();
         
+        if (currentUser && (currentUser.email?.toLowerCase() === "rnfjr@gmail.com" || currentUser.email?.toLowerCase() === "rnfjrlakdmf@gmail.com")) {
+            fetchMasterStatus();
+        }
+
         // 10초마다 실시간 동시접속자수 및 방문통계 동기화
         const interval = setInterval(fetchAnalytics, 10000);
         return () => clearInterval(interval);
-    }, []);
+    }, [currentUser]);
 
     const filteredUsers = users.filter(u => 
         u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -369,7 +423,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Premium Help & Daily Report Info Grid */}
-                <div className="grid md:grid-cols-2 gap-6 mt-12">
+                <div className="grid md:grid-cols-3 gap-6 mt-12">
                      {/* Premium management & Marketing */}
                      <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-white/5 flex flex-col justify-between space-y-6">
                           <div>
@@ -420,6 +474,47 @@ export default function AdminPage() {
                                              ⚡ 지금 즉시 보고서 발송 테스트
                                          </>
                                      )}
+                                 </button>
+                             </div>
+                          </div>
+                     </div>
+                     
+                     {/* Master Control Room (긴급 마스터 키) */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-red-600/10 to-transparent border border-red-500/20 flex flex-col justify-between">
+                          <div>
+                             <AlertTriangle className="w-10 h-10 text-red-500 mb-6" />
+                             <h3 className="text-xl font-bold text-white mb-2">긴급 마스터 컨트롤 룸</h3>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                                 모바일 기기에서 원격으로 백엔드 서버를 껐다 켜거나 자가치유(오토힐링) 로봇을 제어할 수 있는 최상위 권한 컨트롤 패널입니다.
+                             </p>
+                             
+                             <div className="space-y-4 pt-4 border-t border-red-500/10">
+                                 {/* 자가치유 토글 */}
+                                 <div className="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-white/5">
+                                     <div className="flex items-center gap-3">
+                                         <div className={`p-2 rounded-lg ${autoHealEnabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                            <RefreshCw className={`w-5 h-5 ${autoHealEnabled ? 'animate-spin-slow' : ''}`} />
+                                         </div>
+                                         <div>
+                                             <div className="text-sm font-bold text-white">오토 힐링 (자가 치유)</div>
+                                             <div className="text-[10px] text-gray-500">스케줄러 다운 시 로봇이 자동 부활시킴</div>
+                                         </div>
+                                     </div>
+                                     <button 
+                                        onClick={handleToggleAutoHeal}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoHealEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
+                                     >
+                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoHealEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                     </button>
+                                 </div>
+                                 
+                                 {/* 강제 서버 재부팅 버튼 */}
+                                 <button
+                                     onClick={handleRebootServer}
+                                     className="flex items-center justify-center gap-2 w-full mt-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black tracking-widest py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-red-500/20 active:scale-95 text-sm"
+                                 >
+                                     <Power className="w-5 h-5" />
+                                     서버 강제 재부팅 (REBOOT)
                                  </button>
                              </div>
                           </div>
