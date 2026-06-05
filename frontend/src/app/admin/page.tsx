@@ -42,7 +42,7 @@ export default function AdminPage() {
     const fetchMasterStatus = async () => {
         if (!currentUser) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/master/status?user_id=${currentUser.uid}&email=${currentUser.email}`);
+            const res = await fetch(`${API_BASE_URL}/api/master/status?user_id=${currentUser.id}&email=${currentUser.email}`);
             const json = await res.json();
             if (json.status === "success") {
                 setAutoHealEnabled(json.auto_heal_enabled);
@@ -56,7 +56,7 @@ export default function AdminPage() {
             const res = await fetch(`${API_BASE_URL}/api/master/toggle-auto-heal`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: currentUser.uid, email: currentUser.email })
+                body: JSON.stringify({ user_id: currentUser.id, email: currentUser.email })
             });
             const json = await res.json();
             if (json.status === "success") {
@@ -77,7 +77,7 @@ export default function AdminPage() {
             const res = await fetch(`${API_BASE_URL}/api/master/restart`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: currentUser.uid, email: currentUser.email })
+                body: JSON.stringify({ user_id: currentUser.id, email: currentUser.email })
             });
             const json = await res.json();
             if (json.status === "success") {
