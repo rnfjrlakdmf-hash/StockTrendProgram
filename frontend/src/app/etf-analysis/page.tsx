@@ -571,7 +571,7 @@ function EtfAnalysisContent() {
                                 )}
 
                                 {/* 유사 ETF 비교 카드 */}
-                                <div className="p-5 md:p-7 rounded-3xl bg-gray-900 border border-gray-800">
+                                <div className={`p-5 md:p-7 rounded-3xl bg-gray-900 border border-gray-800 ${!(etfData.holdings?.length > 0 || etfData.sector_weights?.length > 0) ? "lg:col-span-2" : ""}`}>
                                     <h3 className="text-lg font-black text-white mb-2 flex items-center gap-2">
                                         <BarChart3 className="w-5 h-5 text-blue-400" />
                                         유사 ETF 참고 목록
