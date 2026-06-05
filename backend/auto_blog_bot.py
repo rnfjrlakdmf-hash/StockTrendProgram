@@ -119,6 +119,7 @@ def generate_market_post(market_type):
         print("[KOR] 국내 증시 데이터 수집 시작...")
         kospi = fetch_index_data("^KS11")
         kosdaq = fetch_index_data("^KQ11")
+        fx_rate = fetch_index_data("USDKRW=X")
         
         try:
             news_items = fetch_google_news("국내 증시 특징주 테마", period="1d")
@@ -134,13 +135,14 @@ def generate_market_post(market_type):
         [국내 시장 데이터]
         - 코스피 (KOSPI): {kospi}
         - 코스닥 (KOSDAQ): {kosdaq}
+        - 원/달러 환율: {fx_rate}
 
         [오늘의 핵심 테마/특징주 뉴스 헤드라인]
         {news_text}
 
         작성 가이드:
         1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 국내 증시 마감 요약</h2>` 로 작성하세요.
-        2. "코스피 (KOSPI) 마감 분석: {kospi}" 와 "코스닥 (KOSDAQ) 마감 분석: {kosdaq}" 라는 명확한 섹션 구분을 두고 분석을 적으세요.
+        2. "코스피 (KOSPI) 마감 분석: {kospi}" 와 "코스닥 (KOSDAQ) 마감 분석: {kosdaq}" 라는 명확한 섹션 구분을 두고 분석을 적으세요. 또한, 원/달러 환율({fx_rate}) 변동이 증시나 테마에 미쳤을 영향도 살짝 언급해 전문성을 높이세요.
         3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
         
         {get_compliance_prompt()}
@@ -151,6 +153,7 @@ def generate_market_post(market_type):
         print("[US] 미국 증시 데이터 수집 시작...")
         sp500 = fetch_index_data("^GSPC")
         nasdaq = fetch_index_data("^IXIC")
+        fx_rate = fetch_index_data("USDKRW=X")
         
         try:
             news_items = fetch_google_news("미국 증시 나스닥 특징주 테마", period="1d")
@@ -166,13 +169,14 @@ def generate_market_post(market_type):
         [미국 시장 데이터]
         - S&P 500: {sp500}
         - 나스닥 (NASDAQ): {nasdaq}
+        - 원/달러 환율: {fx_rate}
 
         [오늘의 핵심 테마/특징주 뉴스 헤드라인]
         {news_text}
 
         작성 가이드:
         1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 미국 증시 마감 요약</h2>` 로 작성하세요.
-        2. "S&P 500 마감 분석: {sp500}" 와 "나스닥 (NASDAQ) 마감 분석: {nasdaq}" 이라는 명확한 섹션 구분을 두고 분석을 적으세요.
+        2. "S&P 500 마감 분석: {sp500}" 와 "나스닥 (NASDAQ) 마감 분석: {nasdaq}" 이라는 명확한 섹션 구분을 두고 분석을 적으세요. 또한, 원/달러 환율({fx_rate}) 흐름이 글로벌 자산 시장에 주는 의미를 살짝 덧붙여 전문성을 높이세요.
         3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
         
         {get_compliance_prompt()}
