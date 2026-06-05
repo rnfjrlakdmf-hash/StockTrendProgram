@@ -37,7 +37,7 @@ from collections import defaultdict
 from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
 from ai_analysis import generate_with_retry
 from firebase_config import send_multicast_notification
-from stock_data import get_korean_stock_name, get_naver_flash_news_api
+from stock_data import get_korean_stock_name
 from holiday_checker import is_holiday
 
 # ─── 일반 시장 기사 및 스팸/봇 기사 제외 패턴 ────────────────────────────
