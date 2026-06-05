@@ -48,6 +48,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# [Security Watchdog Middleware]
+from security_middleware import SecurityWatchdogMiddleware
+app.add_middleware(SecurityWatchdogMiddleware)
+
 @app.middleware("http")
 async def log_requests(request, call_next):
     print(f"[Request] {request.method} {request.url.path}")
