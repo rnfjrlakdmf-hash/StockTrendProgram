@@ -460,3 +460,15 @@ async def auto_blog_scheduler_loop():
         except Exception as e:
             logger.error(f"[AutoBlog] Loop error: {e}")
             await asyncio.sleep(60)
+
+async def watchdog_scheduler_loop():
+    """10분 주기로 시스템 워치독 실행"""
+    logger.info("[Watchdog] System Watchdog Active. Checking every 10 mins.")
+    import system_watchdog
+    while True:
+        try:
+            await asyncio.to_thread(system_watchdog.run_health_checks)
+            await asyncio.sleep(600) # 10분 대기
+        except Exception as e:
+            logger.error(f"[Watchdog] Loop error: {e}")
+            await asyncio.sleep(60)
