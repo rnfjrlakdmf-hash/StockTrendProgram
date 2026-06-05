@@ -513,11 +513,12 @@ function EtfAnalysisContent() {
                                 </div>
 
                                 {/* 구성 종목 / 섹터 도넛 */}
-                                <div className="p-5 md:p-7 rounded-3xl bg-gray-900 border border-gray-800">
-                                    <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2">
-                                        <PieChart className="w-5 h-5 text-indigo-400" />
-                                        {etfData.holdings?.length > 0 ? "구성 종목 (CU)" : etfData.sector_weights?.length > 0 ? "섹터별 구성 비중" : "구성 종목"}
-                                    </h3>
+                                {(etfData.holdings?.length > 0 || etfData.sector_weights?.length > 0) && (
+                                    <div className="p-5 md:p-7 rounded-3xl bg-gray-900 border border-gray-800">
+                                        <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2">
+                                            <PieChart className="w-5 h-5 text-indigo-400" />
+                                            {etfData.holdings?.length > 0 ? "구성 종목 (CU)" : "섹터별 구성 비중"}
+                                        </h3>
 
                                     {/* 섹터 도넛 차트 (미국 ETF) */}
                                     {etfData.sector_weights?.length > 0 && (
@@ -565,13 +566,9 @@ function EtfAnalysisContent() {
                                                 </tbody>
                                             </table>
                                         </div>
-                                    ) : !etfData.sector_weights?.length && (
-                                        <div className="py-8 text-center text-gray-500 text-xs font-bold">
-                                            구성 종목 정보를 불러올 수 없습니다.<br />
-                                            <span className="text-gray-600">미국 상장 ETF는 구성 종목 조회가 제한될 수 있습니다.</span>
-                                        </div>
                                     )}
                                 </div>
+                                )}
 
                                 {/* 유사 ETF 비교 카드 */}
                                 <div className="p-5 md:p-7 rounded-3xl bg-gray-900 border border-gray-800">
