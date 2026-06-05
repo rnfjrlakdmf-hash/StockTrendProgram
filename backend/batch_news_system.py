@@ -529,12 +529,15 @@ class BatchNewsSystem:
 
         fetched_count = 0
         for symbol, users in sorted_symbols:
-            if not self._should_fetch(symbol, len(users)):
-                continue  # 이미 최근에 수집했거나 한도 초과
+            try:
+                if not self._should_fetch(symbol, len(users)):
+                    continue  # 이미 최근에 수집했거나 한도 초과
 
-            kr_name = kr_names.get(symbol)
-            self.fetch_and_cache_news(symbol, kr_name)
-            fetched_count += 1
+                kr_name = kr_names.get(symbol)
+                self.fetch_and_cache_news(symbol, kr_name)
+                fetched_count += 1
+            except Exception as e:
+                print(f"[BatchNews] 종목({symbol}) 수집 중 오류 (무시됨): {e}")
 
             # API 과부하 방지: 종목 간 0.3초 지연
             await asyncio.sleep(0.3)
