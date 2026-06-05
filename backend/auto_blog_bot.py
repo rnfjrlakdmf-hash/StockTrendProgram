@@ -32,19 +32,53 @@ def init_firebase():
             print(f"Firebase 초기화 에러: {e}")
             print("자체 블로그 포스팅을 위해 Firebase Service Account Key가 필요합니다.")
 
+import requests
+from bs4 import BeautifulSoup
+
 def fetch_index_data(ticker_symbol):
     try:
-        t = yf.Ticker(ticker_symbol)
-        hist = t.history(period="2d")
-        if len(hist) < 2:
-            return "데이터 없음"
+        # 네이버 금융에서 실시간 지수 가져오기 (KOSPI/KOSDAQ)
+        if ticker_symbol == "^KS11":
+            url = "https://finance.naver.com/sise/sise_index.naver?code=KOSPI"
+        elif ticker_symbol == "^KQ11":
+            url = "https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ"
+        else:
+            # 미국 지수는 기존 yfinance 방식
+            t = yf.Ticker(ticker_symbol)
+            hist = t.history(period="2d")
+            if len(hist) < 2:
+                return "데이터 없음"
+            close_price = hist['Close'].iloc[-1]
+            prev_close = hist['Close'].iloc[-2]
+            change_pct = ((close_price - prev_close) / prev_close) * 100
+            sign = "+" if change_pct > 0 else ""
+            return f"{close_price:,.2f} ({sign}{change_pct:.2f}%)"
+            
+        res = requests.get(url)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, 'html.parser')
         
-        close_price = hist['Close'].iloc[-1]
-        prev_close = hist['Close'].iloc[-2]
-        change_pct = ((close_price - prev_close) / prev_close) * 100
+        now_value = soup.select_one('#now_value').text.strip()
+        change_val_str = soup.select_one('#change_value_and_rate').text.strip()
         
-        sign = "+" if change_pct > 0 else ""
-        return f"{close_price:,.2f} ({sign}{change_pct:.2f}%)"
+        # change_val_str = "12.34 하락 (-1.23%)" 같은 형태
+        # 부호 결정을 위해 텍스트 파싱
+        if "상승" in change_val_str or "+" in change_val_str:
+            sign = "+"
+            color_class = "text-red-500" # 한국은 상승이 빨강
+        elif "하락" in change_val_str or "-" in change_val_str:
+            sign = "-"
+            color_class = "text-blue-500"
+        else:
+            sign = ""
+            color_class = "text-gray-300"
+            
+        # 괄호 안의 퍼센트 추출
+        import re
+        pct_match = re.search(r'\((.*?)\)', change_val_str)
+        pct = pct_match.group(1) if pct_match else "0.00%"
+        
+        return f"<span class='{color_class} font-bold'>{now_value} ({sign}{pct})</span>"
     except Exception as e:
         print(f"Index fetch error for {ticker_symbol}: {e}")
         return "데이터 확인 불가"
@@ -60,12 +94,16 @@ def get_compliance_prompt():
     5. 글의 최하단에는 반드시 다음 면책 조항(Disclaimer)을 포함하세요:
        "본 리포트는 객관적인 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
 
-    [출력 형식: HTML]
-    - Next.js 프론트엔드 (Tailwind CSS)에 렌더링하기 좋은 형태로 만들어주세요.
-    - <div>, <h2>, <h3>, <ul>, <li>, <p>, <strong> 태그를 적절히 사용하세요.
-    - 테일윈드 클래스는 'text-gray-300', 'text-blue-400', 'font-bold' 등을 적절히 섞어주세요.
-    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다. 인사말은 "안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다." 로 통일하세요.
-    JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
+    [출력 형식 및 구조 (반드시 아래 양식을 지켜주세요!)]
+    - 전체를 묶는 최상위 태그는 <div class="prose prose-invert max-w-none space-y-6"> 입니다.
+    - 첫 줄은 반드시 `<p class="text-gray-300">안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다.</p>` 로 시작하세요.
+    - 지수 마감 요약(개요)을 한 문단으로 씁니다 (`<p class="text-gray-300">...</p>`).
+    - 지수별 세부 분석은 `<h3 class="text-xl font-bold text-blue-400 mt-6">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터에 이미 색상이 포함되어 있으니, 지수 자체는 파란색으로 덮어쓰지 마세요)
+    - 테마 분석 섹션의 제목은 `<h3 class="text-xl font-bold text-yellow-400 mt-8 mb-4">🔥 오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요. (아이콘과 노란색 사용)
+    - 각 테마별 소제목은 `<strong class="text-pink-400 text-lg">테마 이름:</strong>` 로 분홍색/보라색 계열로 아주 돋보이게 만들어주세요.
+    - 본문 안에서 긍정적인 내용이나 강세 섹터는 `<strong class="text-red-400">` 로, 하락이나 우려 사항은 `<strong class="text-blue-400">` 로 색상을 입혀서 가독성을 극대화하세요. (한국 주식 시장 기준: 상승=빨강, 하락=파랑)
+    - 흰색(text-gray-300) 글씨만 나열되는 것을 절대 피하고, 시각적으로 아주 화려하고 깔끔하게 요약된 리포트처럼 보이게 하세요.
+    - 테일윈드 클래스를 적절히 사용하세요. JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
     """
 
 def generate_market_post(market_type):
@@ -74,6 +112,8 @@ def generate_market_post(market_type):
     kst = timezone(timedelta(hours=9))
     today_dt = datetime.now(kst)
     today_str = today_dt.strftime("%Y년 %m월 %d일")
+    time_str = today_dt.strftime("%H시 %M분")
+    full_date_str = f"{today_str} {time_str} 기준"
     date_id = today_dt.strftime("%Y%m%d")
     
     if market_type == "kor":
@@ -99,8 +139,11 @@ def generate_market_post(market_type):
         [오늘의 핵심 테마/특징주 뉴스 헤드라인]
         {news_text}
 
-        위 헤드라인들을 반드시 참고하여, 오늘 국내 시장을 주도했던 핵심 테마와 상승/하락의 주요 원인을 '전문가의 시각'으로 분석해서 글 내용에 풍성하게 포함해 주세요.
-        제목(h2)은 "🚀 {today_str} 국내 증시 마감 요약" 으로 해주세요.
+        작성 가이드:
+        1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 국내 증시 마감 요약</h2>` 로 작성하세요.
+        2. "코스피 (KOSPI) 마감 분석: {kospi}" 와 "코스닥 (KOSDAQ) 마감 분석: {kosdaq}" 라는 명확한 섹션 구분을 두고 분석을 적으세요.
+        3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
+        
         {get_compliance_prompt()}
         """
         tags = ["국내증시", "시황", "코스피", "코스닥", "마켓뷰"]
@@ -128,8 +171,11 @@ def generate_market_post(market_type):
         [오늘의 핵심 테마/특징주 뉴스 헤드라인]
         {news_text}
 
-        위 헤드라인들을 반드시 참고하여, 간밤 미국 시장을 주도했던 핵심 테마와 상승/하락의 주요 원인을 '전문가의 시각'으로 분석해서 글 내용에 풍성하게 포함해 주세요.
-        제목(h2)은 "🚀 {today_str} 미국 증시 마감 요약" 으로 해주세요.
+        작성 가이드:
+        1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 미국 증시 마감 요약</h2>` 로 작성하세요.
+        2. "S&P 500 마감 분석: {sp500}" 와 "나스닥 (NASDAQ) 마감 분석: {nasdaq}" 이라는 명확한 섹션 구분을 두고 분석을 적으세요.
+        3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
+        
         {get_compliance_prompt()}
         """
         tags = ["미국증시", "시황", "나스닥", "S&P500", "마켓뷰"]
