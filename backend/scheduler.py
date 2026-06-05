@@ -151,6 +151,33 @@ async def check_and_notify_sec_disclosures():
     from sec_api_client import get_cik_by_ticker
     import requests
     import xml.etree.ElementTree as ET
+    
+    def translate_sec_title(title: str) -> str:
+        t = title.lower()
+        if "4 - " in t and "beneficial ownership" in t:
+            return "내부자 주식 매수/매도 (지분 변동) 📉📈"
+        elif "13g" in t:
+            return "대주주 지분 신고 (단순 투자) 🐳"
+        elif "13d" in t:
+            return "대주주 지분 신고 (경영 참여) 🐳"
+        elif "10-q" in t and "quarterly" in t:
+            return "분기 실적 보고서 📊"
+        elif "10-k" in t and "annual" in t:
+            return "연간 실적 보고서 📊"
+        elif "8-k" in t and "current report" in t:
+            return "주요 경영사항 발생 (수시공시) 📢"
+        elif "14a" in t:
+            return "주주총회 소집 공고 🏢"
+        elif "s-8" in t:
+            return "임직원 스톡옵션 (주식 보상) 🎁"
+        elif "3 - " in t and "initial statement" in t:
+            return "신규 내부자 지분 신고 👤"
+            
+        try:
+            from deep_translator import GoogleTranslator
+            return GoogleTranslator(source='en', target='ko').translate(title)
+        except Exception:
+            return title
 
     try:
         state = load_state()
@@ -225,7 +252,8 @@ async def check_and_notify_sec_disclosures():
 
                     noti_title = f"📢 {ticker} SEC 공시"
                     safe_title_el = title_el.replace("[", "").replace("]", "").replace("|", "")
-                    noti_body = f"📋 {safe_title_el}"
+                    kor_title = translate_sec_title(safe_title_el)
+                    noti_body = f"📋 {kor_title}"
                     if updated:
                         try:
                             dt = datetime.fromisoformat(updated[:10])
