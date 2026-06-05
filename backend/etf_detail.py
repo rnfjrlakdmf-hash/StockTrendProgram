@@ -483,38 +483,10 @@ def get_etf_detail(symbol: str):
                     data["market_data"]["change_percent"] = bj.get("fluctuationsRatio", "0.00")
         except: pass
 
-        # 3. [NEW] 한국 ETF 구성 종목(Holdings) 스크래핑
-        try:
-            import io
-            import pandas as pd
-            url = f"https://finance.naver.com/item/main.naver?code={clean_sym}"
-            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-            resp.encoding = 'euc-kr'
-            
-            tables = pd.read_html(io.StringIO(resp.text))
-            for t in tables:
-                if len(t) > 3 and len(t.columns) >= 3:
-                    try:
-                        sample_val = str(t.iloc[1, 2]).strip()
-                        if "%" in sample_val or t.iloc[0].isna().all():
-                            holdings = []
-                            for idx, row in t.iterrows():
-                                if pd.isna(row.iloc[0]): continue
-                                name = str(row.iloc[0]).strip()
-                                if name == "nan" or not name or "데이터가" in name: continue
-                                
-                                weight_val = str(row.iloc[2]).strip()
-                                if "%" not in weight_val and len(row) > 3:
-                                    weight_val = str(row.iloc[3]).strip()
-                                    
-                                holdings.append({"name": name, "weight": weight_val if "%" in weight_val else f"{weight_val}%"})
-                                if len(holdings) >= 10: break
-                            if holdings:
-                                data["holdings"] = holdings
-                                break
-                    except: pass
-        except Exception as he:
-            print(f"KR Holdings error: {he}")
+        # 3. 한국 ETF 구성 종목(Holdings) 스크래핑
+        # [BugFix] 기존 HTML 파싱 방식이 호가 테이블 등을 구성종목으로 오인해 
+        # 비정상적인 비중(800만%)과 인코딩 에러(글자 깨짐)를 발생시켰으므로 삭제합니다.
+        # 빈 배열을 반환하여 프론트엔드에서 '정보 없음'으로 안전하게 렌더링되도록 처리.
 
 
         # 5. Populate Similar ETFs for KR ETFs
