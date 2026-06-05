@@ -205,7 +205,7 @@ def send_opening_notification(market: str):
             except Exception as e:
                 print(f"[Scheduler-Error] Failed to fetch events for opening notification: {e}")
         
-        market_name = "국내" if market == "KR" else "미국"
+        market_name = "국내" if market == "KR" else "해외"
         title = f"☀️ {market_name} 장시작! 시가 알림"
         body = f"오늘 {market_name} 관심종목 시가입니다.\n\n" + "\n".join(items_info[:10])
         if len(items_info) > 10:
@@ -362,7 +362,7 @@ def send_closing_notification(market: str):
             avg_change = perf["avg_daily_change"]
             total_profit = perf.get("total_profit_amt", 0)
             unit = "원" if market == "KR" else "$"
-            market_name = "국내" if market == "KR" else "미국"
+            market_name = "국내" if market == "KR" else "해외"
             emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
             title = f"🌕 {market_name} 장마감 리포트 {emoji}"
             
