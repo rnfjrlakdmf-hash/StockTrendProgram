@@ -38,6 +38,7 @@ export default function AdminPage() {
     const [error, setError] = useState<string | null>(null);
     const [reportSending, setReportSending] = useState(false);
     const [autoHealEnabled, setAutoHealEnabled] = useState(false);
+    const [pingSending, setPingSending] = useState(false);
 
     const fetchMasterStatus = async () => {
         if (!currentUser) return;
@@ -108,6 +109,25 @@ export default function AdminPage() {
         } finally {
             setReportSending(false);
         }
+    };
+
+    const handlePingTest = async () => {
+        if (!currentUser) return;
+        setPingSending(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/master/ping-push`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.id, email: currentUser.email })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert(`🟢 테스트 발송 성공!\n${json.message}`);
+            } else {
+                alert(`🛑 발송 실패: ${json.message}`);
+            }
+        } catch (e) { alert("서버와 통신할 수 없습니다."); }
+        finally { setPingSending(false); }
     };
 
     // [Security] Strict administrator check (rnfjr@gmail.com & rnfjrlakdmf@gmail.com allowed)
@@ -507,6 +527,16 @@ export default function AdminPage() {
                                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoHealEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
                                      </button>
                                  </div>
+                                 
+                                 {/* 푸시 핑(Ping) 테스트 버튼 */}
+                                 <button
+                                     onClick={handlePingTest}
+                                     disabled={pingSending}
+                                     className="flex items-center justify-center gap-2 w-full mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold tracking-wide py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-cyan-500/20 active:scale-95 text-sm disabled:opacity-50"
+                                 >
+                                     {pingSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                                     내 폰으로 테스트 알림 쏘기 (Ping)
+                                 </button>
                                  
                                  {/* 강제 서버 재부팅 버튼 */}
                                  <button
