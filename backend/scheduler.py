@@ -435,6 +435,7 @@ async def auto_blog_scheduler_loop():
     logger.info("[AutoBlog] Auto Blog Scheduler Active.")
     import pytz
     import subprocess
+    import sys
     kst = pytz.timezone('Asia/Seoul')
     last_run_date_kor = ""
     last_run_date_us = ""
@@ -451,14 +452,14 @@ async def auto_blog_scheduler_loop():
             if now.hour == 16 and last_run_date_kor != current_date:
                 if not is_holiday("kor"):
                     logger.info("[AutoBlog] Triggering KOR market blog post...")
-                    await asyncio.to_thread(subprocess.run, ["python", script_path, "kor"])
+                    await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "kor"])
                 last_run_date_kor = current_date
             
             # 오전 07시 정각 (미국장 마감 포스팅)
             if now.hour == 7 and last_run_date_us != current_date:
                 if not is_holiday("us"):
                     logger.info("[AutoBlog] Triggering US market blog post...")
-                    await asyncio.to_thread(subprocess.run, ["python", script_path, "us"])
+                    await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "us"])
                 last_run_date_us = current_date
 
             await asyncio.sleep(60) # 1분 대기
