@@ -123,7 +123,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-bold text-white mb-3">7. 개인정보 보호책임자</h2>
             <div className="bg-white/5 rounded-xl p-5 border border-white/10">
               <p className="text-gray-300">개인정보 관련 문의사항은 아래로 연락해 주세요.</p>
-              <p className="mt-2 text-gray-400">이메일: support@ai-stock-analyst.com</p>
+              <p className="mt-2 text-gray-400">이메일: rnfjrlakdmf@gmail.com</p>
             </div>
           </section>
 
