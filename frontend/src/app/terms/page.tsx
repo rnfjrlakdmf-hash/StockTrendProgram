@@ -8,7 +8,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#09090b] text-gray-200">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-black text-white mb-2">이용약관</h1>
-        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2025년 1월 1일</p>
+        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 6월 10일</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
 
@@ -103,9 +103,11 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-16 pt-8 border-t border-white/10 text-center text-gray-600 text-sm">
-          <p>© 2025 AI 주식 분석 플랫폼. All rights reserved.</p>
+          <p>© 2026 StockTrend. All rights reserved.</p>
           <div className="flex justify-center gap-6 mt-3">
             <a href="/privacy-policy" className="hover:text-gray-400 transition-colors">개인정보처리방침</a>
+            <a href="/about" className="hover:text-gray-400 transition-colors">서비스 소개</a>
+            <a href="/contact" className="hover:text-gray-400 transition-colors">문의하기</a>
             <a href="/" className="hover:text-gray-400 transition-colors">홈으로</a>
           </div>
         </div>
