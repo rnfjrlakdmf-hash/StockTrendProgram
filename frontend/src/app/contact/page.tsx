@@ -32,7 +32,7 @@ export default function ContactPage() {
         {/* 빠른 연락 방법 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           {[
-            { icon: "📧", label: "이메일", value: "rnfjr@gmail.com", sub: "영업일 기준 1~2일 내 답변" },
+            { icon: "📧", label: "이메일", value: "rnfjrlakdmf@gmail.com", sub: "영업일 기준 1~2일 내 답변" },
             { icon: "🐛", label: "버그 신고", value: "문의 양식 이용", sub: "서비스 오류·데이터 이상 신고" },
             { icon: "💡", label: "기능 제안", value: "문의 양식 이용", sub: "새로운 기능 아이디어 환영" },
           ].map((item) => (

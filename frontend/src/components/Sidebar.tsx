@@ -712,7 +712,26 @@ export default function Sidebar() {
 
 
 
-                    {/* 4. Version info */}
+                    {/* 5. About & Contact links */}
+                    <div className="flex justify-center gap-4 pt-1">
+                        <Link
+                            href="/about"
+                            onClick={() => setIsMobileOpen(false)}
+                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
+                        >
+                            서비스 소개
+                        </Link>
+                        <span className="text-gray-700 text-[10px]">|</span>
+                        <Link
+                            href="/contact"
+                            onClick={() => setIsMobileOpen(false)}
+                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
+                        >
+                            문의하기
+                        </Link>
+                    </div>
+
+                    {/* 6. Version info */}
                     <div className="opacity-30 text-center">
                         <span className="text-[8px] font-mono text-gray-500">v3.8.0-READY</span>
                     </div>

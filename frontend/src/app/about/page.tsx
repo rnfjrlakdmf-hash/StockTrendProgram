@@ -114,7 +114,7 @@ export default function AboutPage() {
             </p>
             <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
               <p className="text-sm text-gray-400">
-                📧 문의 및 피드백:{" "}
+                📧 문의 이메일: rnfjrlakdmf@gmail.com 또는{" "}
                 <Link href="/contact" className="text-blue-400 hover:underline">
                   문의하기 페이지
                 </Link>
