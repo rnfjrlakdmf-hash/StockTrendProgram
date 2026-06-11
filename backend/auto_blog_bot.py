@@ -143,7 +143,8 @@ def generate_market_post(market_type):
         {news_text}
 
         작성 가이드:
-        1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 국내 증시 마감 요약</h2>` 로 작성하세요.
+        1. 맨 첫 줄에 반드시 사람들의 클릭을 유도할 수 있는 SEO 최적화된 매력적인 제목(예: "삼성전자 급등 이유 및 6월 10일 코스피 마감 시황")을 <title-seo>여기에 작성</title-seo> 형태로 출력하세요.
+        2. 본문 첫 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
         2. "코스피 (KOSPI) 마감 분석: {kospi}" 와 "코스닥 (KOSDAQ) 마감 분석: {kosdaq}" 라는 명확한 섹션 구분을 두고 분석을 적으세요. 또한, 원/달러 환율({fx_rate}) 변동이 증시나 테마에 미쳤을 영향도 살짝 언급해 전문성을 높이세요.
         3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
         
@@ -178,7 +179,8 @@ def generate_market_post(market_type):
         {news_text}
 
         작성 가이드:
-        1. 전체 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 {full_date_str} 미국 증시 마감 요약</h2>` 로 작성하세요.
+        1. 맨 첫 줄에 반드시 사람들의 클릭을 유도할 수 있는 SEO 최적화된 매력적인 제목(예: "엔비디아 폭등 이유 및 미 증시 마감 시황")을 <title-seo>여기에 작성</title-seo> 형태로 출력하세요.
+        2. 본문 첫 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
         2. "S&P 500 마감 분석: {sp500}" 와 "나스닥 (NASDAQ) 마감 분석: {nasdaq}" 이라는 명확한 섹션 구분을 두고 분석을 적으세요. 또한, 원/달러 환율({fx_rate}) 흐름이 글로벌 자산 시장에 주는 의미를 살짝 덧붙여 전문성을 높이세요.
         3. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
         
@@ -192,7 +194,16 @@ def generate_market_post(market_type):
     try:
         response = generate_with_retry(prompt, json_mode=False, timeout=60)
         content = response.text.replace("```html", "").replace("```", "").strip()
-        print("Gemini AI 시황 분석 완료!")
+        
+        # [SEO] 동적 제목 추출
+        import re
+        seo_match = re.search(r'<title-seo>(.*?)</title-seo>', content)
+        if seo_match:
+            title = seo_match.group(1).strip()
+            # 제목 태그 본문에서 제거
+            content = re.sub(r'<title-seo>.*?</title-seo>\s*', '', content).strip()
+            
+        print(f"Gemini AI 시황 분석 완료! (제목: {title})")
     except Exception as e:
         print(f"Gemini API 호출 에러: {e}")
         content = f"""
@@ -235,6 +246,37 @@ def post_to_firestore(market_type):
         
         print(f"[SUCCESS] 블로그 포스팅 완료! (ID: {slug})")
         print(f"URL: https://stock-trend-program.co.kr/blog/{slug}")
+        
+        # --- 푸시 알림 발송 로직 시작 ---
+        try:
+            from firebase_config import send_multicast_notification
+            
+            # Firestore에서 fcm_tokens 모두 가져오기
+            tokens_ref = db.collection("fcm_tokens").stream()
+            tokens = []
+            for doc_snap in tokens_ref:
+                t = doc_snap.to_dict().get("token")
+                if t:
+                    tokens.append(t)
+            
+            if tokens:
+                push_title = f"📢 [시황 요약] {title}"
+                # 본문은 간단하게 요약 (HTML 태그 제거)
+                import re
+                clean_body = re.sub(r'<[^>]*>?', '', content)
+                push_body = clean_body[:100] + "..."
+                
+                print(f"[푸시 발송] {len(tokens)}명에게 알림 발송 중...")
+                send_multicast_notification(
+                    tokens=tokens,
+                    title=push_title,
+                    body=push_body,
+                    data={"url": f"/blog/{slug}", "type": "blog_alert"}
+                )
+        except Exception as push_err:
+            print(f"[푸시 발송 에러]: {push_err}")
+        # --- 푸시 알림 발송 로직 끝 ---
+        
         return True
     except Exception as e:
         print(f"Firestore 저장 중 에러 발생: {e}")

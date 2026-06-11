@@ -8,7 +8,7 @@ import {
     Users, MessageSquare, ShieldAlert, Send, 
     TrendingUp, TrendingDown, Info, AlertTriangle,
     CheckCircle2, Loader2, Sparkles, X,
-    Search, Flame, ArrowLeft, MessageCircle, ImageIcon, ThumbsUp, Crown
+    Search, Flame, ArrowLeft, MessageCircle, ImageIcon, ThumbsUp, Crown, Camera, User, Heart
 } from "lucide-react";
 import { BlogTab } from "./BlogTab";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,7 +54,11 @@ function CommunityContent() {
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk' | 'blog'>('lounge');
+    const [activeTab, setActiveTab] = useState<'lounge' | 'stock_talk' | 'blog' | 'hall_of_fame'>('lounge');
+    
+    // Hall of Fame States
+    const [hallOfFameChats, setHallOfFameChats] = useState<ChatMessage[]>([]);
+    const [hofLoading, setHofLoading] = useState(false);
     
     // Lounge States
     const [chats, setChats] = useState<ChatMessage[]>([]);
@@ -145,6 +149,11 @@ function CommunityContent() {
             const interval = setInterval(fetchHotStocks, 10000);
             return () => clearInterval(interval);
         }
+        if (activeTab === 'hall_of_fame') {
+            fetchHallOfFame();
+            const interval = setInterval(fetchHallOfFame, 10000);
+            return () => clearInterval(interval);
+        }
     }, [activeTab]);
 
     // Auto-refresh stock talk room
@@ -199,6 +208,16 @@ function CommunityContent() {
         finally { setHotLoading(false); }
     };
 
+    const fetchHallOfFame = async () => {
+        setHofLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/community/hall-of-fame`);
+            const json = await res.json();
+            if (json.status === "success") setHallOfFameChats(json.data);
+        } catch (e) { console.error(e); }
+        finally { setHofLoading(false); }
+    };
+
     const fetchWatchlist = async () => {
         if (!user) return;
         try {
@@ -233,6 +252,64 @@ function CommunityContent() {
             const json = await res.json();
             if (json.status === "success") { setInputText(""); clearImage(); fetchChats(); }
             else if (json.status === "blocked") { alert(json.message); setInputText(""); clearImage(); }
+        } catch (e) { console.error(e); }
+        finally { setSending(false); }
+    };
+
+    const handleLike = async (messageId: number) => {
+        if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/community/lounge/${messageId}/like`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: user.id })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                if (activeTab === 'hall_of_fame') fetchHallOfFame();
+                else if (activeTab === 'lounge') fetchChats();
+                else if (targetSymbol) fetchStockChats(targetSymbol);
+            } else if (json.message === "이미 좋아요를 눌렀습니다.") {
+                // Ignore silently or show toast
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleSendHofMessage = async () => {
+        if (!profitInput || !selectedImage || sending) {
+            alert("수익률(%)과 인증 이미지를 모두 등록해주세요!");
+            return;
+        }
+        if (!user) { alert("로그인이 필요한 서비스입니다."); return; }
+        setSending(true);
+        try {
+            let uploadedUrl = null;
+            const formData = new FormData();
+            formData.append("file", selectedImage);
+            const uploadRes = await fetch(`${API_BASE_URL}/api/community/upload`, { method: "POST", body: formData });
+            const uploadJson = await uploadRes.json();
+            if (uploadJson.status === "success") uploadedUrl = uploadJson.url;
+
+            const payload: any = { 
+                user_id: user.id, 
+                text: inputText || "수익 인증합니다!", 
+                symbol: "global",
+                profit: parseFloat(profitInput),
+                image_url: uploadedUrl
+            };
+            
+            const res = await fetch(`${API_BASE_URL}/api/community/lounge`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.status === "success") { 
+                setInputText(""); 
+                setProfitInput(""); 
+                clearImage(); 
+                fetchHallOfFame(); 
+            }
         } catch (e) { console.error(e); }
         finally { setSending(false); }
     };
@@ -329,6 +406,7 @@ function CommunityContent() {
 
                 {/* Tabs */}
                 <div className="flex gap-2 bg-white/5 p-1 rounded-2xl w-fit border border-white/10 shadow-2xl overflow-x-auto no-scrollbar">
+                    <TabButton active={activeTab === 'hall_of_fame'} onClick={() => setActiveTab('hall_of_fame')} icon={<Crown className="w-4 h-4 text-yellow-400"/>} label="명예의 전당" />
                     <TabButton active={activeTab === 'lounge'} onClick={() => setActiveTab('lounge')} icon={<MessageSquare className="w-4 h-4"/>} label="종합 라운지" />
                     <TabButton active={activeTab === 'stock_talk'} onClick={() => setActiveTab('stock_talk')} icon={<MessageCircle className="w-4 h-4"/>} label="종목 토론방" />
                     <TabButton active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} icon={<Sparkles className="w-4 h-4"/>} label="인사이트 칼럼" />
@@ -337,6 +415,149 @@ function CommunityContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Left/Main Column */}
                     <div className="lg:col-span-2 space-y-6">
+                        
+                        {/* ─── 🏆 명예의 전당 (수익 인증) ─── */}
+                        {activeTab === 'hall_of_fame' && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                                className="bg-white/5 rounded-3xl border border-white/10 overflow-hidden flex flex-col h-[650px] shadow-2xl"
+                            >
+                                <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-yellow-500/20 p-2 rounded-xl">
+                                            <Crown className="w-5 h-5 text-yellow-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="font-bold text-white">🏆 명예의 전당</h2>
+                                            <p className="text-xs text-white/50">"나 오늘 얼마 벌었어!" 자랑하고 랭킹에 도전하세요</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                                    {hofLoading && hallOfFameChats.length === 0 ? (
+                                        <div className="flex justify-center items-center h-full text-white/50">데이터를 불러오는 중...</div>
+                                    ) : hallOfFameChats.length === 0 ? (
+                                        <div className="flex flex-col justify-center items-center h-full text-white/50">
+                                            <Crown className="w-12 h-12 text-yellow-500/20 mb-3" />
+                                            <p>아직 수익 인증이 없습니다. 첫 번째로 명예의 전당에 올라보세요!</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {hallOfFameChats.map((chat, idx) => (
+                                                <motion.div 
+                                                    key={chat.id} 
+                                                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                                                    className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg relative group"
+                                                >
+                                                    {/* Ranking Badge */}
+                                                    <div className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10 font-bold text-white shadow-xl">
+                                                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                                                    </div>
+                                                    
+                                                    {/* Profit Badge Overlay */}
+                                                    {chat.profit && (
+                                                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-red-500 to-rose-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg shadow-red-500/30">
+                                                            수익률 {chat.profit}%
+                                                        </div>
+                                                    )}
+
+                                                    {chat.image_url ? (
+                                                        <div className="h-48 overflow-hidden bg-black/50 relative">
+                                                            <img src={`${API_BASE_URL}${chat.image_url}`} alt="수익 인증" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-48 bg-gradient-to-br from-white/5 to-white/10 flex items-center justify-center">
+                                                            <ImageIcon className="w-10 h-10 text-white/20" />
+                                                        </div>
+                                                    )}
+
+                                                    <div className="p-4">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg border border-white/10">
+                                                                <User className="w-4 h-4 text-white" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-white text-sm flex items-center gap-1">
+                                                                    {chat.user_name}
+                                                                </p>
+                                                                <p className="text-[10px] text-white/40">{new Date(chat.timestamp).toLocaleString()}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-sm text-white/80 line-clamp-2">{chat.text}</p>
+                                                        
+                                                        <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+                                                            <button 
+                                                                onClick={() => handleLike(chat.id)}
+                                                                className="flex items-center gap-1.5 text-xs text-white/60 hover:text-rose-400 transition-colors"
+                                                            >
+                                                                <Heart className={`w-4 h-4 ${chat.likes ? 'fill-rose-500 text-rose-500' : ''}`} />
+                                                                부러워요 {chat.likes > 0 && chat.likes}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* HOF Input Form */}
+                                <div className="p-4 border-t border-white/10 bg-white/5">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    placeholder="수익률(%)"
+                                                    value={profitInput}
+                                                    onChange={e => setProfitInput(e.target.value)}
+                                                    className="w-28 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 text-sm">%</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="text"
+                                                    placeholder="자랑하고 싶은 코멘트를 남겨주세요!"
+                                                    value={inputText}
+                                                    onChange={e => setInputText(e.target.value)}
+                                                    onKeyPress={e => e.key === 'Enter' && handleSendHofMessage()}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Image Upload Area */}
+                                        <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl border border-white/5">
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center gap-2 text-sm">
+                                                    <Camera className="w-4 h-4" /> 인증샷 필수 첨부
+                                                </button>
+                                                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+                                                
+                                                {selectedImagePreview && (
+                                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-white/20">
+                                                        <img src={selectedImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                                        <button onClick={clearImage} className="absolute top-0 right-0 bg-black/60 p-0.5 rounded-bl-lg">
+                                                            <X className="w-3 h-3 text-white" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={handleSendHofMessage}
+                                                disabled={sending || !profitInput || !selectedImage}
+                                                className="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                                            >
+                                                {sending ? '등록 중...' : '인증하기'} <Send className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                         
                         {/* ─── 종합 라운지 ─── */}
                         {activeTab === 'lounge' && (

@@ -19,7 +19,8 @@ import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
 import AdBanner from "@/components/AdBanner";
 import { getTickerFromKorean } from "@/lib/stockMapping";
-
+import StockChatBoard from "@/components/StockChatBoard";
+import { MessageSquare } from "lucide-react";
 
 // [v4.9.5] Deep-Sector-Matrix Analysis Dashboard
 function AnalysisContent() {
@@ -39,7 +40,7 @@ function AnalysisContent() {
             setSymbol(urlSymbol);
         }
     }, [urlSymbol]);
-    const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer">("quant");
+    const [activeTab, setActiveTab] = useState<"quant" | "financial" | "sector" | "peer" | "community">("quant");
 
     // Quant State
     const [quantData, setQuantData] = useState<any>(null);
@@ -589,7 +590,8 @@ function AnalysisContent() {
                             { id: "quant", label: "TurboQuant", icon: Zap },
                             { id: "financial", label: "재무 분석", icon: Shield },
                             { id: "sector", label: "섹터 분석", icon: PieChart },
-                            { id: "peer", label: "동종비교", icon: Users }
+                            { id: "peer", label: "동종비교", icon: Users },
+                            { id: "community", label: "종목 토론방", icon: MessageSquare }
                         ].map((tab: any) => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
@@ -1040,6 +1042,12 @@ function AnalysisContent() {
                         </div>
                     )}
 
+                    {activeTab === "community" && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <StockChatBoard symbol={secSymbol || finSymbol || quantSymbol || symbol} />
+                        </div>
+                    )}
+                    
                     {activeTab === "peer" && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">

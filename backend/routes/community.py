@@ -7,6 +7,21 @@ import os
 import uuid
 import sqlite3
 from db_manager import get_db_connection
+import hashlib
+import random
+
+ADJECTIVES = ["배고픈", "물린", "익절한", "손절한", "행복한", "우울한", "존버하는", "떡상한", "풀매수한", "기도하는", "관망하는", "불타는"]
+NOUNS = ["워렌버핏", "개미", "주린이", "머스크", "침팬지", "기관", "외인", "세력", "돈사본", "주주", "고수", "흑우"]
+
+def generate_anon_name(user_id: str) -> str:
+    if not user_id or user_id == "unknown":
+        return f"{random.choice(ADJECTIVES)} {random.choice(NOUNS)}#{random.randint(1000, 9999)}"
+    
+    hash_val = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
+    adj = ADJECTIVES[hash_val % len(ADJECTIVES)]
+    noun = NOUNS[(hash_val // len(ADJECTIVES)) % len(NOUNS)]
+    code = str(hash_val % 10000).zfill(4)
+    return f"{adj} {noun}#{code}"
 
 router = APIRouter()
 
@@ -67,7 +82,7 @@ def post_lounge_chat(data: dict, request: Request):
     if not text: return {"status": "error", "message": "내용 없음"}
     
     user_id = data.get("user_id", "unknown")
-    user_name = data.get("user_name", "익명")
+    user_name = generate_anon_name(user_id)
     symbol = data.get("symbol", "global")
     profit_verified = data.get("profit")
     image_url = data.get("image_url")
@@ -117,7 +132,7 @@ def post_lounge_reply(message_id: int, data: dict):
     if not text: return {"status": "error", "message": "내용 없음"}
     
     user_id = data.get("user_id", "unknown")
-    user_name = data.get("user_name", "익명")
+    user_name = generate_anon_name(user_id)
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -201,6 +216,40 @@ def get_hot_stocks():
     finally:
         conn.close()
 
+@router.get("/community/hall-of-fame")
+def get_hall_of_fame():
+    """수익 인증/명예의 전당 (수익률 높은 순)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT c.id, c.symbol, c.user_name, c.text, c.image_url, c.profit_verified, c.likes, c.created_at, COALESCE(u.points, 0)
+            FROM community_chats c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.profit_verified IS NOT NULL
+            ORDER BY c.profit_verified DESC, c.created_at DESC
+            LIMIT 50
+        ''')
+        rows = cursor.fetchall()
+        data = []
+        for r in rows:
+            data.append({
+                "id": r[0],
+                "symbol": r[1],
+                "user_name": r[2],
+                "text": r[3],
+                "image_url": r[4],
+                "profit": r[5],
+                "likes": r[6],
+                "timestamp": r[7],
+                "points": r[8]
+            })
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+
 # ---------------------------------------------------------
 # Community Posts (Blog / Insight Column) APIs
 # ---------------------------------------------------------
@@ -245,7 +294,7 @@ def get_posts(sort: str = "newest"):
 @router.post("/community/posts")
 def create_post(data: dict):
     user_id = data.get("user_id")
-    user_name = data.get("user_name")
+    user_name = generate_anon_name(user_id) if user_id else "익명"
     title = data.get("title", "").strip()
     content = data.get("content", "").strip()
     image_url = data.get("image_url")
@@ -318,7 +367,7 @@ def get_post_detail(post_id: int):
 @router.post("/community/posts/{post_id}/comments")
 def add_post_comment(post_id: int, data: dict):
     user_id = data.get("user_id")
-    user_name = data.get("user_name")
+    user_name = generate_anon_name(user_id) if user_id else "익명"
     content = data.get("content", "").strip()
     
     if not user_id or not content:

@@ -812,3 +812,13 @@ def read_market_scanner():
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@router.get("/rankings/live")
+def get_live_rankings():
+    """KRX API 기반 실시간 Top 10 거래대금 랭킹 (플립 애니메이션용)"""
+    from krx_api import fetch_krx_live_ranking
+    try:
+        data = fetch_krx_live_ranking()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

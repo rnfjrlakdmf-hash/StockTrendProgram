@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Clock, ArrowLeft, Share2, UserCheck, Eye } from "lucide-react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import KakaoShareButton from "@/components/KakaoShareButton";
+import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
+import PushSubscribeButton from "@/components/PushSubscribeButton";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
@@ -51,12 +52,21 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
             description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
             type: "article",
             publishedTime: post.createdAt.toISOString(),
-            authors: [post.author]
+            authors: [post.author],
+            images: [
+                {
+                    url: `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`,
+                    width: 1200,
+                    height: 630,
+                    alt: post.title,
+                }
+            ]
         },
         twitter: {
             card: "summary_large_image",
             title: post.title,
             description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
+            images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`]
         }
     };
 }
@@ -81,12 +91,11 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
                     목록으로 돌아가기
                 </Link>
                 
-                <KakaoShareButton 
+                <SocialShareButtons 
                     title={post.title}
                     description={post.content.replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
                     url={`https://stock-trend-program.co.kr/blog/${post.slug}`}
-                    buttonText="리포트 보기"
-                    className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 md:gap-2 transition-colors shadow-lg shadow-[#FEE500]/10"
+                    imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`}
                 />
             </div>
 
@@ -134,6 +143,11 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
                 className="blog-content leading-loose"
                 dangerouslySetInnerHTML={{ __html: post.content }}
             />
+            
+            {/* 푸시 알림 구독 버튼 (본문 끝난 후) */}
+            <div className="mt-16 mb-8">
+                <PushSubscribeButton />
+            </div>
             
             {/* Global Styles specific to Blog Content */}
             <style dangerouslySetInnerHTML={{
