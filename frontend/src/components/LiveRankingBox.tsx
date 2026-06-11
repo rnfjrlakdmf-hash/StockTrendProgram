@@ -32,10 +32,12 @@ export default function LiveRankingBox() {
     const [rankings, setRankings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [market, setMarket] = useState<"KR" | "US">("KR");
+    const [category, setCategory] = useState<"amount" | "volume">("amount");
 
-    const fetchRankings = async () => {
+    const fetchRankings = async (currentMarket = market, currentCategory = category) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/rankings/live`);
+            const res = await fetch(`${API_BASE_URL}/api/market/rankings/live?market=${currentMarket}&category=${currentCategory}`);
             const json = await res.json();
             if (json.status === "success" && json.data) {
                 setRankings(json.data);
@@ -49,10 +51,11 @@ export default function LiveRankingBox() {
     };
 
     useEffect(() => {
-        fetchRankings();
-        const interval = setInterval(fetchRankings, 5000); // 5초마다 갱신
+        setLoading(true);
+        fetchRankings(market, category);
+        const interval = setInterval(() => fetchRankings(market, category), 5000); // 5초마다 갱신
         return () => clearInterval(interval);
-    }, []);
+    }, [market, category]);
 
     if (loading && rankings.length === 0) {
         return (
@@ -64,17 +67,41 @@ export default function LiveRankingBox() {
 
     return (
         <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
-            {/* Header */}
-            <div className="bg-indigo-900/40 border-b border-indigo-500/20 px-5 py-3 flex justify-between items-center">
+            {/* Header with Tabs */}
+            <div className="bg-indigo-900/40 border-b border-indigo-500/20 px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <Activity className="w-5 h-5 text-indigo-400" />
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </div>
-                    <h2 className="font-black text-white tracking-tight text-sm md:text-base">
-                        KRX 실시간 거래대금 TOP 10
-                    </h2>
+                    <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                        <button 
+                            onClick={() => { setMarket("KR"); setCategory("amount"); }}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${market === "KR" && category === "amount" ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+                        >
+                            🇰🇷 거래대금
+                        </button>
+                        <button 
+                            onClick={() => { setMarket("KR"); setCategory("volume"); }}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${market === "KR" && category === "volume" ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+                        >
+                            🇰🇷 인기거래
+                        </button>
+                        <div className="w-px bg-white/10 mx-1 my-1"></div>
+                        <button 
+                            onClick={() => { setMarket("US"); setCategory("amount"); }}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${market === "US" && category === "amount" ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+                        >
+                            🇺🇸 거래대금
+                        </button>
+                        <button 
+                            onClick={() => { setMarket("US"); setCategory("volume"); }}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${market === "US" && category === "volume" ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white"}`}
+                        >
+                            🇺🇸 인기거래
+                        </button>
+                    </div>
                 </div>
                 {lastUpdated && (
                     <div className="text-[10px] text-gray-500 font-mono flex items-center gap-1 bg-black/50 px-2 py-1 rounded-md">
@@ -115,7 +142,9 @@ export default function LiveRankingBox() {
 
                                 <div className="flex flex-col items-end flex-shrink-0 ml-2">
                                     <div className={`font-mono font-black text-sm md:text-base flex items-center gap-1 ${colorClass}`}>
-                                        <AnimatedNumber value={item.price_num || item.price} isPrice={true} />원
+                                        {market === "US" && <span>$</span>}
+                                        <AnimatedNumber value={item.price_num || item.price} isPrice={true} />
+                                        {market === "KR" && <span>원</span>}
                                     </div>
                                     <div className="flex items-center gap-1 mt-0.5">
                                         <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${bgClass} ${colorClass}`}>

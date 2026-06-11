@@ -814,11 +814,31 @@ def read_market_scanner():
         return {"status": "error", "message": str(e)}
 
 @router.get("/rankings/live")
-def get_live_rankings():
-    """KRX API 기반 실시간 Top 10 거래대금 랭킹 (플립 애니메이션용)"""
-    from krx_api import fetch_krx_live_ranking
+def get_live_rankings(market: str = "KR", category: str = "amount"):
+    """
+    KRX 및 해외 실시간 Top 10 랭킹 (플립 애니메이션용)
+    market: 'KR' (국내) 또는 'US' (해외)
+    category: 'amount' (거래대금) 또는 'volume' (인기거래/거래량)
+    """
+    from rank_data import get_global_ranking
     try:
-        data = fetch_krx_live_ranking()
+        # market 파라미터 매핑
+        market_map = {"KR": "KOSPI", "US": "USA"}
+        target_market = market_map.get(market.upper(), "KOSPI")
+        
+        # category 파라미터 매핑
+        cat_map = {"amount": "trading_amount", "volume": "trading_volume"}
+        target_category = cat_map.get(category.lower(), "trading_amount")
+        
+        data = get_global_ranking(target_market, target_category)
+        
+        # 데이터가 없을 경우 에러 처리를 위한 방어 코드
+        if not data:
+            # Fallback: 기존 KRX API 데이터 시도
+            from krx_api import fetch_krx_live_ranking
+            if market == "KR" and category == "amount":
+                data = fetch_krx_live_ranking()
+                
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
