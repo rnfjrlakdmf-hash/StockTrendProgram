@@ -292,6 +292,27 @@ def read_root():
 def health_check():
     return {"status": "ok", "timestamp": time.time()}
 
+@app.post("/api/blog/{blog_id}/view")
+def increment_blog_view(blog_id: str):
+    """
+    [v6.5.0 Fix] Frontend sends POST to /api/blog/{id}/view but next.config.ts rewrites ALL /api requests to backend.
+    Therefore, the backend must handle this to increment the Firestore view count.
+    """
+    import firebase_admin
+    from firebase_admin import firestore
+    
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized"}
+        
+    try:
+        db = firestore.client()
+        doc_ref = db.collection("blog_posts").document(blog_id)
+        doc_ref.update({"viewCount": firestore.Increment(1)})
+        return {"success": True, "message": "View count updated"}
+    except Exception as e:
+        print(f"[Blog View] Error updating view count for {blog_id}: {e}")
+        return {"success": False, "message": str(e)}
+
 @app.get("/api/admin/news-stats")
 def news_api_stats():
     """배치 뉴스 시스템 API 호출 통계 (관리자용)"""
