@@ -38,8 +38,9 @@ async function getBlogPost(slug: string) {
 }
 
 // 동적 메타데이터 생성 (SEO 핵심)
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-    const post = await getBlogPost(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const resolvedParams = await params;
+    const post = await getBlogPost(resolvedParams.id);
     
     if (!post) {
         return { title: "포스트를 찾을 수 없습니다" };
@@ -72,8 +73,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     };
 }
 
-export default async function BlogPostPage({ params }: { params: { id: string } }) {
-    const post = await getBlogPost(params.id);
+export default async function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+    const resolvedParams = await params;
+    const post = await getBlogPost(resolvedParams.id);
 
     if (!post) {
         notFound();

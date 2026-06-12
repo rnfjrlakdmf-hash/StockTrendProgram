@@ -2,9 +2,10 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const decodedId = decodeURIComponent(params.id);
+        const resolvedParams = await params;
+        const decodedId = decodeURIComponent(resolvedParams.id);
         const docRef = doc(db, "blog_posts", decodedId);
         await updateDoc(docRef, {
             viewCount: increment(1)
