@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -443,7 +443,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Premium Help & Daily Report Info Grid */}
-                <div className="grid md:grid-cols-3 gap-6 mt-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
                      {/* Premium management & Marketing */}
                      <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-white/5 flex flex-col justify-between space-y-6">
                           <div>
@@ -545,6 +545,27 @@ export default function AdminPage() {
                                  >
                                      <Power className="w-5 h-5" />
                                      서버 강제 재부팅 (REBOOT)
+                                 </button>
+                             </div>
+                          </div>
+                     </div>
+                     
+                     {/* Google AdSense Shortcut Card */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-green-600/10 to-transparent border border-green-500/20 flex flex-col justify-between">
+                          <div>
+                             <DollarSign className="w-10 h-10 text-green-500 mb-6" />
+                             <h3 className="text-xl font-bold text-white mb-2">구글 애드센스 (수익 확인)</h3>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                                 매일 들어오는 달러 수익과 클릭률(CTR), 트래픽 지표를 구글 애드센스 공식 대시보드에서 실시간으로 확인합니다.
+                             </p>
+                             
+                             <div className="space-y-4 pt-4 border-t border-green-500/10 mt-auto">
+                                 <button
+                                     onClick={() => window.open('https://www.google.com/adsense/new/u/0/pub-656335224088/home', '_blank')}
+                                     className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold tracking-wide py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-green-500/20 active:scale-95 text-sm"
+                                 >
+                                     <ExternalLink className="w-5 h-5" />
+                                     수익 확인하러 가기
                                  </button>
                              </div>
                           </div>
