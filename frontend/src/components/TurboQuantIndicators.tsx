@@ -10,7 +10,7 @@ import {
     BarChart3, Activity, Zap, Plus, Minus 
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170.nip.io';
 
 interface IndicatorsResponse {
     status: string;
