@@ -9,8 +9,7 @@ import {
     Loader2, TrendingUp, ShieldCheck, AlertCircle, ChevronDown, 
     BarChart3, Activity, Zap, Plus, Minus 
 } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+import { API_BASE_URL } from '@/lib/config';
 
 interface IndicatorsResponse {
     status: string;
