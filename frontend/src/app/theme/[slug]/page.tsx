@@ -7,7 +7,7 @@ export const revalidate = 21600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}`);
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}?v=2`, { next: { revalidate: 21600 } });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
@@ -50,7 +50,7 @@ export async function generateStaticParams() {
 export default async function ThemeDetailPage({ params }: { params: { slug: string } }) {
     let themeData = null;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}`, { next: { revalidate: 21600 } });
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}?v=2`, { next: { revalidate: 21600 } });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
