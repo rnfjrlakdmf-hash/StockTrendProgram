@@ -23,7 +23,7 @@ export default async function ThemeIndexPage() {
             <div className="max-w-7xl mx-auto px-6 pt-24">
                 <div className="mb-12">
                     <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
-                        주식 테마 <span className="text-cyan-400">총람</span>
+                        주식 테마 <span className="text-cyan-400">총람!</span>
                     </h1>
                     <p className="text-gray-400 text-lg">
                         현재 시장을 주도하는 핵심 테마와 관련 대장주를 한눈에 파악하세요.
