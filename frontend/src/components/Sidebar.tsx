@@ -19,6 +19,12 @@ const navigation = [
         desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
     },
     { 
+        name: "🧮 물타기 생존 계산기", 
+        href: "/calculator", 
+        icon: Activity,
+        desc: "내 불쌍한 계좌 살려낼 물타기 금액은? 친구들과 공유하며 재미있게 평단가를 계산해보세요!"
+    },
+    { 
         name: "전문가 마켓 리포트", 
         href: "/blog", 
         icon: Newspaper,
