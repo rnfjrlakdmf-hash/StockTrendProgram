@@ -467,6 +467,36 @@ async def auto_blog_scheduler_loop():
             logger.error(f"[AutoBlog] Loop error: {e}")
             await asyncio.sleep(60)
 
+async def seo_blog_scheduler_loop():
+    """
+    SEO 최적화 자동 포스팅 봇 스케줄러 (하루 N회 실행)
+    - 매일 오전 10시, 오후 2시 등에 트래픽 확보를 위해 실행
+    """
+    logger.info("[SEOBlog] SEO Blog Scheduler Active.")
+    import pytz
+    import subprocess
+    import sys
+    kst = pytz.timezone('Asia/Seoul')
+    last_run_hour = -1
+    
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo_blog_bot.py")
+
+    while True:
+        try:
+            update_heartbeat("SEO_Blog_Bot")
+            now = datetime.now(kst)
+            
+            # 매일 오전 11시, 오후 15시 실행 (하루 2번)
+            if now.hour in [11, 15] and last_run_hour != now.hour:
+                logger.info(f"[SEOBlog] Triggering SEO blog post for hour {now.hour}...")
+                await asyncio.to_thread(subprocess.run, [sys.executable, script_path])
+                last_run_hour = now.hour
+
+            await asyncio.sleep(60)
+        except Exception as e:
+            logger.error(f"[SEOBlog] Loop error: {e}")
+            await asyncio.sleep(60)
+
 async def watchdog_scheduler_loop():
     """10분 주기로 시스템 워치독 실행"""
     logger.info("[Watchdog] System Watchdog Active. Checking every 10 mins.")

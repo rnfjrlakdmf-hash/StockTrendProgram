@@ -209,10 +209,11 @@ async def startup_event():
 
         # 5. 공시 및 시간별 브리핑 스케줄러 시작
         try:
-            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop
+            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop
             asyncio.create_task(disclosure_scheduler_loop())
             asyncio.create_task(hourly_briefing_scheduler_loop())
             asyncio.create_task(auto_blog_scheduler_loop())
+            asyncio.create_task(seo_blog_scheduler_loop())
             asyncio.create_task(watchdog_scheduler_loop())
         except: pass
 
