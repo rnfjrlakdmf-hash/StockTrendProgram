@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
     try {
-        const docRef = doc(db, "blog_posts", params.id);
+        const decodedId = decodeURIComponent(params.id);
+        const docRef = doc(db, "blog_posts", decodedId);
         await updateDoc(docRef, {
             viewCount: increment(1)
         });

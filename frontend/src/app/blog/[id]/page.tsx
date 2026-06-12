@@ -12,7 +12,8 @@ export const revalidate = 60; // 60초마다 갱신 (ISR)
 
 async function getBlogPost(slug: string) {
     try {
-        const docRef = doc(db, "blog_posts", slug);
+        const decodedSlug = decodeURIComponent(slug);
+        const docRef = doc(db, "blog_posts", decodedSlug);
         const snapshot = await getDoc(docRef);
         
         if (!snapshot.exists()) {
