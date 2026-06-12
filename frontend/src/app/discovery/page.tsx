@@ -915,9 +915,7 @@ function DiscoveryContent() {
                         </div>
 
                         {/* Market Traffic Light & Health Check Entry */}
-                        <div className="w-full">
-                            <MarketSignalWidget />
-                        </div>
+                        {/* Moved into MarketScannerDashboard */}
 
                         {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}
                         <div className="w-full">

@@ -42,6 +42,7 @@ function getSentiment(score: number) {
 
 export default function MarketScannerDashboard() {
     const [data, setData] = useState<MarketScannerData | null>(null);
+    const [signal, setSignal] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,12 +53,21 @@ export default function MarketScannerDashboard() {
         setIsRefreshing(true);
         setAnimateBars(false);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/scanner`);
-            const resData = await res.json();
+            const [resScanner, resSignal] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/market/scanner`),
+                fetch(`${API_BASE_URL}/api/market/status`)
+            ]);
+            
+            const resData = await resScanner.json();
+            const sigData = await resSignal.json();
+            
             if (resData.status === 'success') {
                 setData(resData.data);
                 setLastUpdated(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
                 setTimeout(() => setAnimateBars(true), 100); // 데이터 로드 후 애니메이션 트리거
+            }
+            if (sigData.status === 'success') {
+                setSignal(sigData.data);
             }
         } catch (err) {
             console.error('Market scanner fetch error', err);
@@ -216,12 +226,12 @@ export default function MarketScannerDashboard() {
 
                 <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4 w-full md:w-auto">
-                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner ${
+                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner shrink-0 ${
                             combinedScore >= 55 ? 'bg-red-500/15' : combinedScore >= 45 ? 'bg-gray-500/15' : 'bg-blue-500/15'
                         }`}>
                             <Zap className={`w-7 h-7 md:w-8 md:h-8 ${combined.color} group-hover:scale-110 transition-transform`} />
                         </div>
-                        <div>
+                        <div className="whitespace-nowrap">
                             <p className="text-[12px] md:text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">
                                 KOREA FEAR & GREED INDEX
                             </p>
@@ -230,6 +240,28 @@ export default function MarketScannerDashboard() {
                             </h2>
                         </div>
                     </div>
+
+                    {/* 시장 데이터 요약 (Market Signal) - 빈 공간에 배치 */}
+                    {signal && (
+                        <div className="flex-1 flex flex-col justify-center items-center md:items-start px-0 md:px-6 w-full text-center md:text-left border-y border-white/5 md:border-y-0 py-4 md:py-0 my-2 md:my-0">
+                            <h3 className={`text-sm md:text-base font-bold leading-tight flex items-center gap-2 ${
+                                signal.signal === 'red' ? 'text-red-400' :
+                                signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
+                            }`}>
+                                {signal.signal === 'red' ? '🛑 ' : signal.signal === 'yellow' ? '⚠️ ' : '🚀 '}
+                                {signal.message}
+                            </h3>
+                            {signal.reason && (
+                                <p className="text-[11px] md:text-xs text-gray-400 mt-1.5 break-keep">
+                                    <span className="font-bold text-gray-300">핵심 원인: </span>{signal.reason}
+                                </p>
+                            )}
+                            <div className="flex items-center justify-center md:justify-start gap-2 mt-2.5 text-[10px] font-mono text-gray-500">
+                                <span className="bg-white/5 px-2 py-1 rounded-md border border-white/5 shadow-sm">KOSPI <strong className="text-gray-300 ml-1">{signal.details?.kospi}</strong></span>
+                                <span className="bg-white/5 px-2 py-1 rounded-md border border-white/5 shadow-sm">USD/KRW <strong className="text-gray-300 ml-1">{signal.details?.usd}</strong></span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 온도 게이지 */}
                     <div className="flex-1 w-full max-w-md">
