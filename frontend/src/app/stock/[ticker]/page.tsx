@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from "@/components/Header";
+import FomoWidget from "@/components/FomoWidget";
+import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -101,7 +103,13 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                         </ul>
                     </div>
                 </div>
+
+                {/* Stock Discussion Board */}
+                <StockDiscussionBoard ticker={params.ticker} name={name} />
             </main>
+
+            {/* FOMO Widget */}
+            <FomoWidget />
         </div>
     );
 }
