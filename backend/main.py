@@ -25,6 +25,7 @@ from routes.system import router as system_router
 from routes.sockets import router as sockets_router
 from routes.signals import router as signals_router
 from routes.alerts import router as alerts_router
+from routes.seo import router as seo_router
 
 # Initialize FastAPI
 app = FastAPI(
@@ -81,6 +82,7 @@ app.include_router(signals_router, prefix="/api", tags=["Signals"])
 app.include_router(alerts_router, prefix="/api", tags=["Alerts"])
 app.include_router(marketing_router, prefix="/api/marketing", tags=["Marketing"])
 app.include_router(master_router, prefix="/api/master", tags=["Master"])
+app.include_router(seo_router, prefix="/api", tags=["SEO"])
 
 
 import traceback

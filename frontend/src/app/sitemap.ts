@@ -1,9 +1,9 @@
 import { MetadataRoute } from 'next';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
     
-    return [
+    const routes: MetadataRoute.Sitemap = [
         {
             url: `${baseUrl}`,
             lastModified: new Date(),
@@ -65,4 +65,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.5,
         },
     ];
+
+    try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 } });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.data && Array.isArray(data.data)) {
+                data.data.forEach((stock: any) => {
+                    routes.push({
+                        url: `${baseUrl}/stock/${stock.ticker}`,
+                        lastModified: new Date(),
+                        changeFrequency: 'weekly',
+                        priority: 0.6,
+                    });
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to generate stock sitemap:", e);
+    }
+
+    return routes;
 }
