@@ -7,32 +7,48 @@ export const runtime = 'nodejs';
 
 const BACKEND_URL = 'http://13.209.99.170.nip.io';
 
-export async function GET(
-    request: NextRequest,
-    context: { params: Promise<{ path: string[] }> }
-) {
+import { NextRequest, NextResponse } from 'next/server';
+
+// ✅ Vercel 타임아웃 60초 설정
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+const BACKEND_URL = 'http://13.209.99.170.nip.io';
+
+async function proxyRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }, method: string) {
     const params = await context.params;
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams.toString();
     const targetUrl = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`;
 
-    console.log(`[API-Proxy] GET ${targetUrl}`);
+    console.log(`[API-Proxy] ${method} ${targetUrl}`);
 
     const proxyHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-    const adminKey = request.headers.get('X-Admin-Key');
-    if (adminKey) proxyHeaders['X-Admin-Key'] = adminKey;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) proxyHeaders['Authorization'] = authHeader;
+    
+    // 포워딩할 헤더 목록
+    const headersToForward = ['X-Admin-Key', 'Authorization', 'X-User-ID'];
+    for (const h of headersToForward) {
+        const val = request.headers.get(h);
+        if (val) proxyHeaders[h] = val;
+    }
 
     try {
+        let body = undefined;
+        if (method !== 'GET' && method !== 'HEAD') {
+            body = await request.text().catch(() => null);
+        }
+
         const response = await fetch(targetUrl, {
+            method,
             headers: proxyHeaders,
+            body: body || undefined,
             signal: AbortSignal.timeout(55000),
             cache: 'no-store',
         });
 
-        const data = await response.json();
-        return NextResponse.json(data, {
+        const data = await response.json().catch(() => null);
+        return NextResponse.json(data || {}, {
             status: response.status,
             headers: {
                 'Cache-Control': 'no-store, no-cache',
@@ -40,7 +56,7 @@ export async function GET(
             },
         });
     } catch (error: any) {
-        console.error(`[API-Proxy] Error for ${targetUrl}:`, error?.message);
+        console.error(`[API-Proxy] ${method} Error for ${targetUrl}:`, error?.message);
         return NextResponse.json(
             { status: 'error', message: `서버 연결 실패: ${error?.message}` },
             { status: 503 }
@@ -48,38 +64,18 @@ export async function GET(
     }
 }
 
-export async function POST(
-    request: NextRequest,
-    context: { params: Promise<{ path: string[] }> }
-) {
-    const params = await context.params;
-    const path = params.path.join('/');
-    const searchParams = request.nextUrl.searchParams.toString();
-    const targetUrl = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`;
+export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+    return proxyRequest(req, ctx, 'GET');
+}
 
-    const proxyHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-    const adminKey = request.headers.get('X-Admin-Key');
-    if (adminKey) proxyHeaders['X-Admin-Key'] = adminKey;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) proxyHeaders['Authorization'] = authHeader;
+export async function POST(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+    return proxyRequest(req, ctx, 'POST');
+}
 
-    try {
-        const body = await request.json().catch(() => null);
-        const response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: proxyHeaders,
-            body: body ? JSON.stringify(body) : undefined,
-            signal: AbortSignal.timeout(55000),
-            cache: 'no-store',
-        });
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+    return proxyRequest(req, ctx, 'DELETE');
+}
 
-        const data = await response.json();
-        return NextResponse.json(data, { status: response.status });
-    } catch (error: any) {
-        console.error(`[API-Proxy] POST Error for ${targetUrl}:`, error?.message);
-        return NextResponse.json(
-            { status: 'error', message: `서버 연결 실패: ${error?.message}` },
-            { status: 503 }
-        );
-    }
+export async function PUT(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+    return proxyRequest(req, ctx, 'PUT');
 }
