@@ -241,28 +241,6 @@ export default function MarketScannerDashboard() {
                         </div>
                     </div>
 
-                    {/* 시장 데이터 요약 (Market Signal) - 빈 공간에 배치 */}
-                    {signal && (
-                        <div className="flex-1 flex flex-col justify-center items-center md:items-start px-0 md:px-6 w-full text-center md:text-left border-y border-white/5 md:border-y-0 py-4 md:py-0 my-2 md:my-0">
-                            <h3 className={`text-lg md:text-xl lg:text-2xl font-black leading-tight flex items-center gap-2 drop-shadow-md ${
-                                signal.signal === 'red' ? 'text-red-400' :
-                                signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
-                            }`}>
-                                {signal.signal === 'red' ? '🛑 ' : signal.signal === 'yellow' ? '⚠️ ' : '🚀 '}
-                                {signal.message}
-                            </h3>
-                            {signal.reason && (
-                                <p className="text-sm md:text-base text-gray-300 mt-2 break-keep font-medium">
-                                    <span className="font-bold text-white">핵심 원인: </span>{signal.reason}
-                                </p>
-                            )}
-                            <div className="flex items-center justify-center md:justify-start gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400">
-                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
-                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
-                            </div>
-                        </div>
-                    )}
-
                     {/* 온도 게이지 */}
                     <div className="flex-1 w-full max-w-md">
                         <div className="flex justify-between text-xs text-gray-400 font-bold mb-2">
@@ -289,6 +267,28 @@ export default function MarketScannerDashboard() {
                             <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
                         </div>
                     </div>
+
+                    {/* 시장 데이터 요약 (Market Signal) - 빈 공간에 배치 */}
+                    {signal && (
+                        <div className="flex-1 flex flex-col justify-center items-center md:items-start px-0 md:px-6 w-full text-center md:text-left border-y border-white/5 md:border-y-0 py-4 md:py-0 my-2 md:my-0">
+                            <h3 className={`text-lg md:text-xl lg:text-2xl font-black leading-tight flex items-center gap-2 drop-shadow-md ${
+                                signal.signal === 'red' ? 'text-red-400' :
+                                signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
+                            }`}>
+                                {signal.signal === 'red' ? '🛑 ' : signal.signal === 'yellow' ? '⚠️ ' : '🚀 '}
+                                {signal.message}
+                            </h3>
+                            {signal.reason && (
+                                <p className="text-sm md:text-base text-gray-300 mt-2 break-keep font-medium">
+                                    <span className="font-bold text-white">핵심 원인: </span>{signal.reason}
+                                </p>
+                            )}
+                            <div className="flex items-center justify-center md:justify-start gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400">
+                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
+                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 
                 {/* 갱신 시각 및 바이럴 버튼 */}
