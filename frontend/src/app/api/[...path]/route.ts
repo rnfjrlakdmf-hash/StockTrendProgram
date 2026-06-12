@@ -27,11 +27,12 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     const proxyHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
     
     // 포워딩할 헤더 목록
-    const headersToForward = ['X-Admin-Key', 'Authorization', 'X-User-ID'];
+    const headersToForward = ['x-admin-key', 'authorization', 'x-user-id'];
     for (const h of headersToForward) {
         const val = request.headers.get(h);
         if (val) proxyHeaders[h] = val;
     }
+    console.log(`[API-Proxy] Forwarded X-User-ID:`, proxyHeaders['x-user-id'] || 'None');
 
     try {
         let body = undefined;
