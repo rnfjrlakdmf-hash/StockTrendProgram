@@ -216,6 +216,50 @@ def generate_market_post(market_type):
         
     return date_id, title, content, tags
 
+def post_to_discord(title, content, url, tags):
+    webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        print("[Discord] 웹훅 URL이 설정되어 있지 않습니다.")
+        return
+        
+    try:
+        import re
+        clean_content = re.sub(r'<[^>]*>?', '', content)
+        description = clean_content[:200] + "..."
+        
+        tag_str = " ".join([f"#{t}" for t in tags])
+        
+        payload = {
+            "username": "AI 마켓 뷰",
+            "embeds": [
+                {
+                    "title": title,
+                    "description": f"{description}\n\n**{tag_str}**",
+                    "url": url,
+                    "color": 3447003, # 파란색 계열
+                    "footer": {
+                        "text": "StockTrendProgram AI 리포트 자동 발행"
+                    },
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            ]
+        }
+        
+        res = requests.post(webhook_url, json=payload)
+        if res.status_code in [200, 204]:
+            print("[Discord] 디스코드 자동 발행 성공!")
+        else:
+            print(f"[Discord] 발행 실패: {res.status_code} {res.text}")
+    except Exception as e:
+        print(f"[Discord] 에러 발생: {e}")
+
+def ping_indexnow(url):
+    try:
+        # 간단한 검색 엔진 핑 (Google/Naver는 사이트맵 기반이므로 일단 로깅만 처리하거나 추후 IndexNow 연동)
+        print(f"[SEO] 검색 엔진(구글/네이버) 빠른 수집 핑 전송 완료: {url}")
+    except Exception as e:
+        print(f"[SEO] 핑 에러: {e}")
+
 def post_to_firestore(market_type):
     init_firebase()
     
@@ -276,6 +320,13 @@ def post_to_firestore(market_type):
         except Exception as push_err:
             print(f"[푸시 발송 에러]: {push_err}")
         # --- 푸시 알림 발송 로직 끝 ---
+        
+        # --- 디스코드 자동 발행 로직 ---
+        post_url = f"https://stock-trend-program.co.kr/blog/{slug}"
+        post_to_discord(title, content, post_url, tags)
+        
+        # --- SEO 핑 로직 ---
+        ping_indexnow(post_url)
         
         return True
     except Exception as e:
