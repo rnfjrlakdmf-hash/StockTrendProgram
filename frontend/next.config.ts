@@ -1,10 +1,5 @@
 import type { NextConfig } from "next";
 
-// 환경에 따라 백엔드 URL 자동 선택
-const BACKEND_URL = process.env.NODE_ENV === 'development'
-    ? 'http://localhost:8000'
-    : 'http://13.209.99.170.nip.io';
-
 const nextConfig: NextConfig = {
   distDir: '.next',
   images: {
@@ -30,14 +25,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${BACKEND_URL}/api/:path*`,
-      },
-    ];
-  },
+  // ✅ rewrites 제거: src/app/api/[...path]/route.ts 의 60초 프록시가 대신 처리
 };
 
 export default nextConfig;
