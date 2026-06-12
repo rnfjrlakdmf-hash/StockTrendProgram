@@ -28,12 +28,18 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${BACKEND_URL}/api/:path*`,
-      },
-    ];
+    return {
+      // ✅ afterFiles: API Route(60초 프록시)가 먼저 처리하고,
+      //    매칭 안되는 경로만 여기서 AWS로 직접 전달 (fallback)
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          source: '/api/:path*',
+          destination: `${BACKEND_URL}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 
