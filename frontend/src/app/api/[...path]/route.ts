@@ -7,14 +7,6 @@ export const runtime = 'nodejs';
 
 const BACKEND_URL = 'http://13.209.99.170.nip.io';
 
-import { NextRequest, NextResponse } from 'next/server';
-
-// ✅ Vercel 타임아웃 60초 설정
-export const maxDuration = 60;
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-const BACKEND_URL = 'http://13.209.99.170.nip.io';
 
 async function proxyRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }, method: string) {
     const params = await context.params;
