@@ -346,7 +346,11 @@ export default function MarketScannerDashboard() {
                 </div>
                 
                 {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className={`grid gap-3 ${
+                        data.disclosures.length === 1 ? 'grid-cols-1' :
+                        data.disclosures.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                    }`}>
                         {data.disclosures.slice(0, 9).map((item, idx) => (
                             <a
                                 key={idx}
