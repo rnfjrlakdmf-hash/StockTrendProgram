@@ -3661,17 +3661,23 @@ def get_korean_investment_indicators(
     years_to_check = [str(current_year - 1), str(current_year - 2), str(current_year - 3), str(current_year - 4)]
 
     raw_results = {}
-    for y in years_to_check:
+    
+    import concurrent.futures
+
+    def fetch_dart_year(y):
         try:
-            # 11011: 사업보고서 (연간 정기 공시)
             items = dart_api_client.get_financial_sheets(corp_code, y, reprt_code="11011")
-            if items:
-                raw_results[y] = items
-                # 3개년치를 모았으면 루프 조기 종료 (API 사용량 절약)
-                if len(raw_results) >= 3:
-                    break
+            return y, items
         except Exception as e:
             print(f"[DART-Indicators] Error fetching {y} for {symbol}: {e}")
+            return y, None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(fetch_dart_year, y): y for y in years_to_check}
+        for future in concurrent.futures.as_completed(futures):
+            y, items = future.result()
+            if items:
+                raw_results[y] = items
 
     # 데이터가 존재하는 연도들만 내림차순 정렬 후 최근 3개년 선택
     available_years = sorted([y for y, items in raw_results.items() if len(items) > 0], reverse=True)[:3]
