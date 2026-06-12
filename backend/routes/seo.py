@@ -86,6 +86,8 @@ def get_cached_stock_info(ticker: str):
             "summary": summary
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logger.error(f"Error fetching info for {ticker}: {e}")
         return {
             "status": "success", # Return dummy success to prevent 404 in frontend
