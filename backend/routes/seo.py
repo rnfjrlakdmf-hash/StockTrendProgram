@@ -72,12 +72,12 @@ def get_cached_stock_info(ticker: str):
             "summary": "해당 종목에 대한 분석 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 주가 전망 및 목표가를 제공합니다."
         }
 
-@router.get("/api/seo/stocks")
+@router.get("/seo/stocks")
 def get_seo_stocks():
     """Returns all KOSPI/KOSDAQ stocks for sitemap generation"""
     return get_all_kospi_kosdaq()
 
-@router.get("/api/seo/stock-info/{ticker}")
+@router.get("/seo/stock-info/{ticker}")
 def get_seo_stock_info(ticker: str):
     """Fast cache-friendly endpoint for individual stock SEO page rendering"""
     return get_cached_stock_info(ticker)
