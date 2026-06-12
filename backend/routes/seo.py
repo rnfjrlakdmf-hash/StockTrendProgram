@@ -27,35 +27,63 @@ def get_all_kospi_kosdaq():
         logger.error(f"Error fetching stock list: {e}")
         return {"status": "error", "message": str(e)}
 
+import requests
+from bs4 import BeautifulSoup
+
 # Cache for 6 hours to prevent rate limits
 @cached(cache=TTLCache(maxsize=2000, ttl=21600))
 def get_cached_stock_info(ticker: str):
     try:
-        yf_ticker = f"{ticker}.KS" if ticker.isdigit() else ticker
-        stock = yf.Ticker(yf_ticker)
+        url = f"https://finance.naver.com/item/main.naver?code={ticker}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get(url, headers=headers, timeout=5)
+        soup = BeautifulSoup(res.text, 'lxml')
         
-        # Use fast_info to avoid yfinance hanging issues
-        try:
-            fi = stock.fast_info
-            price = fi.last_price
-        except:
-            # Fallback to KOSDAQ if KOSPI fails
-            yf_ticker = f"{ticker}.KQ"
-            stock = yf.Ticker(yf_ticker)
-            fi = stock.fast_info
-            price = fi.last_price
+        # name
+        name_el = soup.select_one('.wrap_company h2 a')
+        name = name_el.text.strip() if name_el else f"종목 {ticker}"
+        
+        # price
+        price_el = soup.select_one('.no_today .blind')
+        price = int(price_el.text.replace(',', '')) if price_el else 0
+        
+        # prev close
+        prev_el = soup.select_one('td.first .blind')
+        prev = int(prev_el.text.replace(',', '')) if prev_el else 0
+        
+        # PER, PBR, DIV
+        per_el = soup.select_one('#_per')
+        pbr_el = soup.select_one('#_pbr')
+        div_el = soup.select_one('#_dvr')
+        
+        def parse_float(el):
+            if not el or not el.text.strip(): return 0.0
+            try: return float(el.text.replace(',', ''))
+            except: return 0.0
             
+        per = parse_float(per_el)
+        pbr = parse_float(pbr_el)
+        div = parse_float(div_el) / 100.0 if div_el else 0.0
+        
+        # summary
+        summary_el = soup.select_one('.summary_info p')
+        summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
+        
+        # market cap
+        cap_el = soup.select_one('#_market_sum')
+        cap = int(cap_el.text.replace(',', '')) * 100000000 if cap_el else 0
+        
         return {
             "status": "success",
             "ticker": ticker,
-            "name": f"종목 {ticker}", # For Korean name we might need to rely on frontend params or simple fallback
-            "price": getattr(fi, 'last_price', 0),
-            "previousClose": getattr(fi, 'previous_close', 0),
-            "per": 0,
-            "pbr": 0,
-            "dividendYield": 0,
-            "marketCap": getattr(fi, 'market_cap', 0),
-            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
+            "name": name,
+            "price": price,
+            "previousClose": prev,
+            "per": per,
+            "pbr": pbr,
+            "dividendYield": div,
+            "marketCap": cap,
+            "summary": summary
         }
     except Exception as e:
         logger.error(f"Error fetching info for {ticker}: {e}")
