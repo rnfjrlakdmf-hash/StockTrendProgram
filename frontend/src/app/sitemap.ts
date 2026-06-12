@@ -66,8 +66,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
     ];
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
+
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
         const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 } });
         if (res.ok) {
             const data = await res.json();
@@ -84,6 +85,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
     } catch (e) {
         console.error("Failed to generate stock sitemap:", e);
+    }
+
+    try {
+        const res = await fetch(`${apiUrl}/api/seo/themes`, { next: { revalidate: 86400 } });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.data && Array.isArray(data.data)) {
+                data.data.forEach((theme: any) => {
+                    routes.push({
+                        url: `${baseUrl}/theme/${theme.slug}`,
+                        lastModified: new Date(),
+                        changeFrequency: 'weekly',
+                        priority: 0.8,
+                    });
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to generate theme sitemap:", e);
     }
 
     return routes;

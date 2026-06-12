@@ -116,3 +116,55 @@ def get_seo_stocks():
 def get_seo_stock_info(ticker: str):
     """Fast cache-friendly endpoint for individual stock SEO page rendering"""
     return get_cached_stock_info(ticker)
+
+# ----------------- Theme SEO Data -----------------
+THEMES_DATA = {
+    "ai": {"name": "인공지능(AI)", "desc": "글로벌 AI 경쟁이 심화되며 수혜를 입는 기업군입니다.", "risk": "글로벌 빅테크의 기술 발전 속도에 종속적일 수 있습니다.", "leaders": ["035420", "035720"], "followers": ["005930", "000660", "222800"]},
+    "secondary-battery": {"name": "2차전지", "desc": "전기차 전환 가속화와 함께 폭발적인 성장이 기대되는 배터리 관련 기업들입니다.", "risk": "전기차 수요 캐즘(Chasm) 및 원자재 가격 변동 리스크가 있습니다.", "leaders": ["373220", "006400", "051910"], "followers": ["086520", "247540", "003670"]},
+    "robot": {"name": "로봇/지능형로봇", "desc": "인구 구조 변화와 공장 자동화 수요 증가로 부각되는 로봇 기술 기업군입니다.", "risk": "실제 상용화 시점과 R&D 비용 회수 기간이 길어질 수 있습니다.", "leaders": ["028300", "428140", "058470"], "followers": ["053160", "047310"]},
+    "semiconductor": {"name": "반도체 장비", "desc": "AI 칩 수요 증가와 미세공정 전환에 따른 HBM 및 장비 관련 핵심 기업입니다.", "risk": "글로벌 반도체 사이클(업턴/다운턴)에 매우 민감하게 반응합니다.", "leaders": ["005930", "000660", "042700"], "followers": ["036540", "222800", "253450"]},
+    "superconductor": {"name": "초전도체", "desc": "상온 상압 초전도체 물질 발견 이슈에 따라 변동성이 극대화되는 테마입니다.", "risk": "학계의 검증 결과에 따라 주가가 극단적으로 변동하는 초고위험 테마입니다.", "leaders": ["045970", "066980"], "followers": ["022220", "011280", "118000"]},
+    "low-pbr": {"name": "저PBR (밸류업)", "desc": "정부의 기업 밸류업 프로그램 수혜가 예상되는 자산 가치 대비 저평가 기업들입니다.", "risk": "정부 정책의 연속성 및 기업의 실제 주주환원 의지에 따라 차별화될 수 있습니다.", "leaders": ["055550", "105560", "086790"], "followers": ["316140", "139130", "000810"]},
+    "defense": {"name": "방위산업", "desc": "글로벌 지정학적 긴장 고조와 각국의 국방비 증액에 따라 수출이 급증하는 테마입니다.", "risk": "수주 산업 특성상 대규모 계약 지연이나 무기 체계 결함 발생 시 큰 타격을 받습니다.", "leaders": ["012450", "047810", "004020"], "followers": ["079550", "004090"]},
+    "entertainment": {"name": "엔터테인먼트", "desc": "K-POP의 글로벌 팬덤 확장과 지적재산권(IP) 수익화로 성장하는 기업들입니다.", "risk": "아티스트의 스캔들, 재계약 불발 등 인적 리스크가 실적에 즉각 반영됩니다.", "leaders": ["352820", "035900", "041510"], "followers": ["122870", "073640"]},
+    "bio": {"name": "바이오/제약", "desc": "신약 개발의 폭발적 파급력과 블록버스터 신약 파이프라인을 보유한 제약/바이오 기업입니다.", "risk": "임상 실패 시 주가가 급락하며, 오랜 R&D 기간 동안 막대한 자금이 소요됩니다.", "leaders": ["207940", "068270", "000100"], "followers": ["096530", "008930", "128940"]},
+    "ecommerce": {"name": "이커머스/핀테크", "desc": "디지털 결제 확산과 온라인 쇼핑 침투율 증가의 수혜를 받는 플랫폼 기업입니다.", "risk": "해외 직구 플랫폼의 국내 진출 및 치열한 출혈 경쟁으로 인한 마진 압박이 있습니다.", "leaders": ["035420", "035720"], "followers": ["001120", "041140"]},
+    "shipbuilding": {"name": "조선/해운", "desc": "슈퍼 사이클 도래 및 친환경 선박 교체 수요로 인해 실적 턴어라운드가 진행되는 섹터입니다.", "risk": "원자재(후판) 가격 상승과 노동 인력 부족이 이익 훼손 요인으로 작용할 수 있습니다.", "leaders": ["329180", "042660", "010140"], "followers": ["011200", "011930", "042700"]},
+    "metaverse": {"name": "메타버스", "desc": "가상 현실, 증강 현실 하드웨어 보급 및 가상 세계 플랫폼과 연관된 기술 기업들입니다.", "risk": "아직 대중화 시점이 불확실하며 뚜렷한 수익 모델 구축에 긴 시간이 필요합니다.", "leaders": ["035420", "035720"], "followers": ["032800", "293490", "083500"]},
+    "nuclear": {"name": "원자력 발전", "desc": "탄소 중립 달성과 글로벌 원전 르네상스 시대를 맞아 수출 수혜가 기대되는 테마입니다.", "risk": "정치적 이슈에 따른 정책 변동성과 막대한 초기 자본 투입이 리스크입니다.", "leaders": ["034020", "051600"], "followers": ["032560", "013360", "042660"]},
+    "cloud": {"name": "클라우드 컴퓨팅", "desc": "기업들의 디지털 전환(DX) 가속화로 폭발적으로 성장하는 클라우드 인프라 및 SaaS 기업입니다.", "risk": "아마존, MS 등 글로벌 빅테크와의 직접적인 경쟁에서 점유율 확보가 어렵습니다.", "leaders": ["030200", "035420", "018260"], "followers": ["001810", "110660"]},
+    "gaming": {"name": "게임", "desc": "신작 흥행과 글로벌 IP 확장에 따라 주가 탄력성이 매우 높은 콘텐츠 산업입니다.", "risk": "신작 흥행 실패 시 실적 공백이 길어지며, 중국 등 해외 판호 발급 이슈가 큽니다.", "leaders": ["259960", "036570", "066570"], "followers": ["063080", "293490", "193250"]},
+    "webtoon": {"name": "웹툰/웹소설", "desc": "K-스토리의 글로벌 진출 및 드라마/영화화(OSMU) 판권 수익이 기대되는 테마입니다.", "risk": "작가의 불법 유통 리스크와 주요 플랫폼의 수수료 정책 변화에 민감합니다.", "leaders": ["035420", "035720"], "followers": ["087600", "122870", "293490"]},
+    "beauty": {"name": "화장품 (인디브랜드)", "desc": "미국 및 동남아로 수출 다변화에 성공한 중소형 뷰티 브랜드 및 ODM 기업들입니다.", "risk": "주요 수출국(미국/일본)의 트렌드 변화가 극심하며 진입 장벽이 낮습니다.", "leaders": ["192820", "137310", "090430"], "followers": ["051900", "031430"]},
+    "healthcare": {"name": "원격의료/헬스케어", "desc": "의료 시스템 디지털화 및 비대면 진료 합법화 수혜가 예상되는 헬스케어 테마입니다.", "risk": "의사 협회 등 이익 집단과의 규제 갈등 및 법률 개정 지연 리스크가 존재합니다.", "leaders": ["042000", "033250", "010280"], "followers": ["022100", "005930"]},
+    "aviation": {"name": "항공/여행", "desc": "보복 소비 및 글로벌 이동 정상화에 따라 실적 회복세가 뚜렷한 리오프닝 섹터입니다.", "risk": "유가 상승과 환율(강달러) 변동에 따라 원가 부담이 급증할 수 있습니다.", "leaders": ["003490", "020560", "089860"], "followers": ["039200", "028670", "035250"]},
+    "food": {"name": "K-푸드/음식료", "desc": "해외 수출이 급증하며 글로벌 방어주에서 성장주로 재평가받는 식품 기업입니다.", "risk": "곡물 가격 변동, 기후 위기로 인한 원재료 인플레이션 압박에 취약합니다.", "leaders": ["097950", "004370", "248100"], "followers": ["003230", "005300", "007310"]}
+}
+
+@router.get("/seo/themes")
+def get_seo_themes():
+    """Returns all available themes for sitemap generation"""
+    themes_list = [{"slug": k, "name": v["name"]} for k, v in THEMES_DATA.items()]
+    return {"status": "success", "count": len(themes_list), "data": themes_list}
+
+@router.get("/seo/themes/{slug}")
+def get_seo_theme_detail(slug: str):
+    """Returns detailed information for a specific theme"""
+    if slug not in THEMES_DATA:
+        return {"status": "error", "message": "Theme not found"}
+        
+    theme_info = THEMES_DATA[slug]
+    
+    # We could fetch real stock names here, but for fast SEO we just return the tickers
+    # The frontend can map tickers to names if needed, or we just rely on the ticker string.
+    # To be SEO rich, let's inject dummy names or resolve them from fdr list if needed.
+    # For now, just returning the data.
+    return {
+        "status": "success",
+        "slug": slug,
+        "name": theme_info["name"],
+        "description": theme_info["desc"],
+        "risk_factor": theme_info["risk"],
+        "leaders": theme_info["leaders"],
+        "followers": theme_info["followers"]
+    }
