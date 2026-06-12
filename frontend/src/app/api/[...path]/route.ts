@@ -18,9 +18,15 @@ export async function GET(
 
     console.log(`[API-Proxy] GET ${targetUrl}`);
 
+    const proxyHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    const adminKey = request.headers.get('X-Admin-Key');
+    if (adminKey) proxyHeaders['X-Admin-Key'] = adminKey;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) proxyHeaders['Authorization'] = authHeader;
+
     try {
         const response = await fetch(targetUrl, {
-            headers: { 'Content-Type': 'application/json' },
+            headers: proxyHeaders,
             signal: AbortSignal.timeout(55000),
             cache: 'no-store',
         });
@@ -51,11 +57,17 @@ export async function POST(
     const searchParams = request.nextUrl.searchParams.toString();
     const targetUrl = `${BACKEND_URL}/api/${path}${searchParams ? `?${searchParams}` : ''}`;
 
+    const proxyHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    const adminKey = request.headers.get('X-Admin-Key');
+    if (adminKey) proxyHeaders['X-Admin-Key'] = adminKey;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) proxyHeaders['Authorization'] = authHeader;
+
     try {
         const body = await request.json().catch(() => null);
         const response = await fetch(targetUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: proxyHeaders,
             body: body ? JSON.stringify(body) : undefined,
             signal: AbortSignal.timeout(55000),
             cache: 'no-store',

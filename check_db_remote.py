@@ -1,39 +1,25 @@
+import paramiko
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('13.209.99.170', username='ubuntu', key_filename='StockAI-Server.pem')
+
+python_code = """
 import sqlite3
-import os
+import json
 
 db_path = '/home/ubuntu/StockTrendProgram/backend/stock_app.db'
-print("DB file exists:", os.path.exists(db_path))
-if os.path.exists(db_path):
-    print("DB file size:", os.path.getsize(db_path))
-
-conn = sqlite3.connect(db_path)
-c = conn.cursor()
-
-# 1. tables
-c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-print("Tables:", c.fetchall())
-
-# 2. watchlist
 try:
-    c.execute("SELECT user_id, symbol FROM watchlist")
-    print("Watchlist:", c.fetchall())
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT * FROM site_analytics ORDER BY date DESC LIMIT 5;')
+    rows = [dict(row) for row in c.fetchall()]
+    print(json.dumps(rows, indent=2))
 except Exception as e:
-    print("Watchlist error:", e)
+    print(e)
+"""
 
-# 3. fcm_tokens
-try:
-    c.execute("SELECT user_id, token, pref_news, pref_price FROM fcm_tokens")
-    print("FCM Tokens:", c.fetchall())
-except Exception as e:
-    print("FCM Tokens error:", e)
-
-# 4. news_sent_log
-try:
-    c.execute("SELECT symbol, article_id, title, sent_at FROM news_sent_log ORDER BY sent_at DESC LIMIT 5")
-    print("Recent news sent logs:")
-    for row in c.fetchall():
-        print(row)
-except Exception as e:
-    print("news_sent_log error:", e)
-
-conn.close()
+stdin, stdout, stderr = ssh.exec_command(f"python3 -c \"{python_code}\"")
+print("Output:", stdout.read().decode())
+print("Error:", stderr.read().decode())
