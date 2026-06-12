@@ -55,7 +55,7 @@ def get_cached_stock_info(ticker: str):
             "pbr": 0,
             "dividendYield": 0,
             "marketCap": getattr(fi, 'market_cap', 0),
-            "summary": "해당 종목에 대한 분석 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 주가 전망 및 목표가를 제공합니다."
+            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
         }
     except Exception as e:
         logger.error(f"Error fetching info for {ticker}: {e}")
@@ -69,7 +69,7 @@ def get_cached_stock_info(ticker: str):
             "pbr": 0,
             "dividendYield": 0,
             "marketCap": 0,
-            "summary": "해당 종목에 대한 분석 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 주가 전망 및 목표가를 제공합니다."
+            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
         }
 
 @router.get("/seo/stocks")
