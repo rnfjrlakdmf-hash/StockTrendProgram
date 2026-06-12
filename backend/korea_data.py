@@ -3160,8 +3160,77 @@ def get_market_summary_stats():
         extract_stats('.kospi_area', 'kospi')
         extract_stats('.kosdaq_area', 'kosdaq')
 
+        # === 🚀 공포/탐욕 지수 (Fear & Greed Index) 고퀄리티 알고리즘 ===
+        import yfinance as yf
+        import pandas as pd
+        import math
+
+        # 1. A/D Ratio (상승/하락 비율 점수 - 30% 비중)
+        def calc_ad_score(market_stats):
+            up = market_stats['up']
+            down = market_stats['down']
+            total = up + down
+            if total == 0: return 50
+            ratio = up / total # 0 ~ 1
+            return ratio * 100
+
+        kospi_ad = calc_ad_score(stats['kospi'])
+        kosdaq_ad = calc_ad_score(stats['kosdaq'])
+        ad_score = (kospi_ad + kosdaq_ad) / 2
+
+        # 2. Volatility (VIX 지수 기반 점수 - 30% 비중)
+        # VIX가 높을수록 공포(점수 하락), 낮을수록 탐욕(점수 상승)
+        vix_score = 50
+        try:
+            vix_info = yf.Ticker('^VIX').fast_info
+            vix_price = float(vix_info.get('lastPrice', 20.0))
+            # VIX 기준: 15 이하(탐욕 80+), 30 이상(공포 20-)
+            # 선형 변환: score = 100 - ((vix - 10) / 20 * 100)
+            vix_score_raw = 100 - ((vix_price - 10) / 20 * 100)
+            vix_score = max(0, min(100, vix_score_raw))
+        except:
+            pass
+
+        # 3. Market Momentum (코스피 20일 이동평균선 이격도 - 40% 비중)
+        momentum_score = 50
+        try:
+            ks11 = yf.Ticker('^KS11').history(period='1mo')
+            if not ks11.empty:
+                current_price = ks11['Close'].iloc[-1]
+                ma20 = ks11['Close'].mean()
+                # 이격도 = (현재가 / 20일선) * 100
+                disparity = (current_price / ma20) * 100
+                # 이격도 95 이하면 공포(0~20), 105 이상이면 탐욕(80~100)
+                # 선형 변환: score = (disparity - 95) / 10 * 100
+                mom_score_raw = (disparity - 95) / 10 * 100
+                momentum_score = max(0, min(100, mom_score_raw))
+        except:
+            pass
+
+        # 최종 점수 계산 (가중치 적용)
+        final_score = (ad_score * 0.3) + (vix_score * 0.3) + (momentum_score * 0.4)
+        final_score = int(round(final_score))
+
+        # 라벨 판별
+        if final_score <= 25: label = "극단적 공포"
+        elif final_score <= 45: label = "공포"
+        elif final_score <= 55: label = "중립"
+        elif final_score <= 75: label = "탐욕"
+        else: label = "극단적 탐욕"
+
+        stats['fear_greed'] = {
+            "score": final_score,
+            "label": label,
+            "factors": {
+                "ad_ratio": int(round(ad_score)),
+                "volatility": int(round(vix_score)),
+                "momentum": int(round(momentum_score))
+            }
+        }
+
     except Exception as e:
         print(f"Market stats fetch error: {e}")
+        stats['fear_greed'] = {"score": 50, "label": "중립", "factors": {"ad_ratio": 50, "volatility": 50, "momentum": 50}}
 
     return stats
 

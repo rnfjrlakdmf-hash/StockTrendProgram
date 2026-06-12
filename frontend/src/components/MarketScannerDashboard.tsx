@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Radio, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
+import KakaoShareButton from './KakaoShareButton';
 
 interface MarketStats {
     up: number;
@@ -93,8 +94,19 @@ export default function MarketScannerDashboard() {
 
     const kospiScore = calcSentimentScore(data.stats?.kospi || { up: 0, same: 0, down: 0 });
     const kosdaqScore = calcSentimentScore(data.stats?.kosdaq || { up: 0, same: 0, down: 0 });
-    const combinedScore = Math.round((kospiScore + kosdaqScore) / 2);
-    const combined = getSentiment(combinedScore);
+    
+    // 백엔드에서 내려주는 고퀄리티 공포/탐욕 지수 데이터 사용 (없으면 폴백)
+    const fg = data.stats?.fear_greed;
+    const combinedScore = fg ? fg.score : Math.round((kospiScore + kosdaqScore) / 2);
+    
+    let combined = getSentiment(combinedScore);
+    if (fg) {
+        if (fg.score >= 76) combined = { label: fg.label, color: 'text-red-500', bar: 'from-red-600 to-rose-500', glow: 'shadow-red-500/50' };
+        else if (fg.score >= 56) combined = { label: fg.label, color: 'text-orange-400', bar: 'from-orange-500 to-yellow-400', glow: 'shadow-orange-500/30' };
+        else if (fg.score >= 46) combined = { label: fg.label, color: 'text-gray-400', bar: 'from-gray-500 to-gray-400', glow: 'shadow-gray-500/20' };
+        else if (fg.score >= 26) combined = { label: fg.label, color: 'text-cyan-400', bar: 'from-cyan-500 to-blue-400', glow: 'shadow-cyan-500/30' };
+        else combined = { label: fg.label, color: 'text-blue-500', bar: 'from-blue-600 to-indigo-500', glow: 'shadow-blue-600/50' };
+    }
 
     const renderStatsBar = (stats: MarketStats, name: string) => {
         if (!stats) return null;
@@ -195,52 +207,75 @@ export default function MarketScannerDashboard() {
 
     return (
         <div className="space-y-4 mt-8">
-            {/* 종합 시장 체감 온도 카드 */}
-            <div className={`relative bg-white/[0.03] border border-white/10 rounded-2xl p-5 overflow-hidden`}>
+            {/* 종합 시장 체감 온도 카드 -> 한국판 공포/탐욕 지수 */}
+            <div className={`relative bg-black/40 border border-white/10 rounded-3xl p-6 md:p-8 overflow-hidden shadow-2xl group`}>
                 {/* 배경 글로우 */}
-                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-64 h-16 blur-3xl opacity-20 ${
+                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 blur-[80px] opacity-20 transition-all duration-1000 ${
                     combinedScore >= 55 ? 'bg-red-500' : combinedScore >= 45 ? 'bg-gray-500' : 'bg-blue-500'
                 }`} />
 
-                <div className="relative flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner ${
                             combinedScore >= 55 ? 'bg-red-500/15' : combinedScore >= 45 ? 'bg-gray-500/15' : 'bg-blue-500/15'
                         }`}>
-                            <Zap className={`w-5 h-5 ${combined.color}`} />
+                            <Zap className={`w-7 h-7 md:w-8 md:h-8 ${combined.color} group-hover:scale-110 transition-transform`} />
                         </div>
                         <div>
-                            <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">시장 체감 온도</p>
-                            <p className={`text-xl font-black ${combined.color}`}>{combined.label}</p>
+                            <p className="text-[12px] md:text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">
+                                KOREA FEAR & GREED INDEX
+                            </p>
+                            <h2 className={`text-2xl md:text-3xl font-black ${combined.color} tracking-tight drop-shadow-md`}>
+                                {combined.label} <span className="text-white/80 text-xl font-bold ml-1">{combinedScore}</span>
+                            </h2>
                         </div>
                     </div>
 
                     {/* 온도 게이지 */}
-                    <div className="flex-1 min-w-[160px] max-w-xs">
-                        <div className="flex justify-between text-[10px] text-gray-500 font-mono mb-1">
-                            <span>약세</span>
-                            <span className={`font-black ${combined.color}`}>{combinedScore}점</span>
-                            <span>강세</span>
+                    <div className="flex-1 w-full max-w-md">
+                        <div className="flex justify-between text-xs text-gray-400 font-bold mb-2">
+                            <span className="text-blue-400">극단적 공포</span>
+                            <span className="text-red-400">극단적 탐욕</span>
                         </div>
-                        <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/10">
+                        <div className="h-4 md:h-5 w-full bg-black/50 rounded-full overflow-hidden border border-white/10 shadow-inner relative">
+                            {/* 마커 눈금 */}
+                            <div className="absolute inset-0 flex justify-between px-1 items-center opacity-30">
+                                <div className="w-0.5 h-full bg-white"></div>
+                                <div className="w-0.5 h-full bg-white"></div>
+                                <div className="w-0.5 h-full bg-white"></div>
+                                <div className="w-0.5 h-full bg-white"></div>
+                                <div className="w-0.5 h-full bg-white"></div>
+                            </div>
                             <div
                                 style={{ width: animateBars ? `${combinedScore}%` : '0%' }}
-                                className={`h-full bg-gradient-to-r ${combined.bar} rounded-full transition-all duration-1500 ease-out shadow-lg ${combined.glow}`}
-                            />
+                                className={`h-full bg-gradient-to-r ${combined.bar} rounded-full transition-all duration-[2000ms] ease-out shadow-lg ${combined.glow} relative`}
+                            >
+                                <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/50 rounded-full blur-[1px]"></div>
+                            </div>
                         </div>
-                        <div className="flex justify-between text-[9px] text-gray-600 mt-0.5 font-mono">
+                        <div className="flex justify-between text-[10px] text-gray-500 mt-2 font-mono font-bold px-1">
                             <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
                         </div>
                     </div>
-
-                    {/* 갱신 시각 */}
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                        <span className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
-                        <span>{lastUpdated || '로딩중'}</span>
-                        <button onClick={() => fetchData()} className="ml-1 hover:text-gray-300 transition-colors">
-                            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </div>
+                
+                {/* 갱신 시각 및 바이럴 버튼 */}
+                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center relative z-10">
+                    <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                        <span className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'}`} />
+                        <span>{lastUpdated || '로딩중'} 업데이트됨 (1분 주기)</span>
+                        <button onClick={() => fetchData()} className="ml-2 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
+                    {/* 카카오 공유 버튼 유도 */}
+                    <KakaoShareButton 
+                        title={`오늘의 공포/탐욕 지수: ${combined.label} (${combinedScore}점)`}
+                        description={`코스피/코스닥 시장 분위기를 알려드립니다! 지금 장은 살 때일까요, 팔 때일까요?`}
+                        url={`https://stock-trend-program.co.kr/discovery`}
+                        buttonText="카카오톡으로 시장 분위기 공유하기"
+                        className="text-xs font-bold text-[#391B1B] bg-[#FEE500] hover:bg-[#FEE500]/90 px-3 py-1.5 rounded-lg border border-[#FEE500]/20 transition-all flex items-center gap-1.5"
+                    />
                 </div>
             </div>
 
