@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const BACKEND_URL = 'http://13.209.99.170.nip.io';
-
 const nextConfig: NextConfig = {
   distDir: '.next',
   images: {
@@ -27,20 +25,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return {
-      // ✅ afterFiles: API Route(60초 프록시)가 먼저 처리하고,
-      //    매칭 안되는 경로만 여기서 AWS로 직접 전달 (fallback)
-      beforeFiles: [],
-      afterFiles: [],
-      fallback: [
-        {
-          source: '/api/:path*',
-          destination: `${BACKEND_URL}/api/:path*`,
-        },
-      ],
-    };
-  },
+  // rewrites 완전 제거 - src/app/api/[...path]/route.ts 가 모든 /api/* 처리
 };
 
 export default nextConfig;
