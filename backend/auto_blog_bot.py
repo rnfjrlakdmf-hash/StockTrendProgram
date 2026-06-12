@@ -231,6 +231,7 @@ def post_to_discord(title, content, url, tags):
         
         payload = {
             "username": "AI 마켓 뷰",
+            "content": f"📰 **[새로운 시황 브리핑 업로드]**\n자세히 보기: {url}",
             "embeds": [
                 {
                     "title": title,
