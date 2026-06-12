@@ -260,7 +260,7 @@ export default function MarketScannerDashboard() {
                 </div>
                 
                 {/* 갱신 시각 및 바이럴 버튼 */}
-                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center relative z-10">
+                <div className="mt-6 pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
                     <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
                         <span className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'}`} />
                         <span>{lastUpdated || '로딩중'} 업데이트됨 (1분 주기)</span>
@@ -268,85 +268,82 @@ export default function MarketScannerDashboard() {
                             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
-                    {/* 카카오 공유 버튼 유도 */}
                     <KakaoShareButton 
                         title={`오늘의 공포/탐욕 지수: ${combined.label} (${combinedScore}점)`}
                         description={`코스피/코스닥 시장 분위기를 알려드립니다! 지금 장은 살 때일까요, 팔 때일까요?`}
                         url={`https://stock-trend-program.co.kr/discovery`}
                         buttonText="카카오톡으로 시장 분위기 공유하기"
-                        className="text-xs font-bold text-[#391B1B] bg-[#FEE500] hover:bg-[#FEE500]/90 px-3 py-1.5 rounded-lg border border-[#FEE500]/20 transition-all flex items-center gap-1.5"
+                        className="text-xs font-bold text-[#391B1B] bg-[#FEE500] hover:bg-[#FEE500]/90 px-3 py-1.5 rounded-lg border border-[#FEE500]/20 transition-all flex items-center gap-1.5 w-full md:w-auto justify-center"
                     />
                 </div>
-            </div>
 
-            {/* 메인 그리드 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* 증시 스캐너 */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Activity className="w-4 h-4 text-emerald-400" />
-                        <h3 className="text-base font-bold text-white">Today&apos;s 증시 스캐너</h3>
+                {/* 통합된 KOSPI/KOSDAQ 스캐너 */}
+                <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Activity className="w-5 h-5 text-emerald-400" />
+                        <h3 className="text-base font-bold text-white">상세 시장 수급 현황 (Today's 증시 스캐너)</h3>
                     </div>
                     <p className="text-[11px] text-gray-500 mb-5 leading-relaxed">
-                        📈 <strong className="text-gray-400">빨강(상승)</strong>이 넓을수록 수익 내기 좋은 장,
-                        📉 <strong className="text-gray-400">파랑(하락)</strong>이 압도적이면 현금 비중 확대 고려.
-                        <span className="text-gray-600"> (1분 자동갱신)</span>
+                        📈 <strong className="text-gray-400">상승(빨강)</strong> 비율이 높을수록 투자 심리가 안정된 상태입니다.
                     </p>
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
                         {data.stats?.kospi && renderStatsBar(data.stats.kospi, 'KOSPI (코스피)')}
                         {data.stats?.kosdaq && renderStatsBar(data.stats.kosdaq, 'KOSDAQ (코스닥)')}
                     </div>
                 </div>
+            </div>
 
-                {/* 공시 속보 */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md flex flex-col h-[320px]">
-                    <div className="flex justify-between items-center mb-1 shrink-0">
-                        <div className="flex items-center gap-2">
-                            <Radio className={`w-4 h-4 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
+            {/* 공시 속보 (Full Width Grid) */}
+            <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Radio className={`w-5 h-5 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
                             <h3 className="text-base font-bold text-white">특이 공시 속보</h3>
                         </div>
-                        {lastUpdated && (
-                            <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                                {lastUpdated}
-                            </span>
-                        )}
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                            유상증자·수주·계약 등 호재/악재 공시를 신속하게 포착합니다.
+                        </p>
                     </div>
-                    <p className="text-[11px] text-gray-500 mb-3 pb-3 border-b border-white/10 shrink-0 leading-relaxed">
-                        유상증자·수주·계약 등 호재/악재 공시를 신속하게 포착합니다.
-                    </p>
-                    <div className="overflow-y-auto pr-1 custom-scrollbar flex-1 space-y-2">
-                        {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
-                            data.disclosures.map((item, idx) => (
-                                <a
-                                    key={idx}
-                                    href={item.link}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="block p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-white/10 transition-all group"
-                                >
-                                    <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-1">
-                                        <div className="flex items-center">
-                                            <span className="text-amber-400/70 font-bold px-1.5 py-0.5 bg-amber-400/10 rounded-md">
-                                                {item.press}
-                                            </span>
-                                            {getNewsBadge(item.title)}
-                                        </div>
-                                        <span className="text-gray-600">{item.date}</span>
-                                    </div>
-                                    <h4 className="text-xs font-bold text-gray-300 group-hover:text-amber-300 leading-snug transition-colors">
-                                        {item.title}
-                                    </h4>
-                                </a>
-                            ))
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600 text-xs space-y-2">
-                                <AlertCircle className="w-7 h-7 opacity-40" />
-                                <p>현재 포착된 특이 공시가 없습니다.</p>
-                            </div>
-                        )}
-                    </div>
+                    {lastUpdated && (
+                        <span className="text-xs text-gray-500 font-mono flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full">
+                            <span className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                            {lastUpdated}
+                        </span>
+                    )}
                 </div>
+                
+                {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {data.disclosures.slice(0, 9).map((item, idx) => (
+                            <a
+                                key={idx}
+                                href={item.link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex flex-col p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all group h-full"
+                            >
+                                <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-2">
+                                    <div className="flex items-center">
+                                        <span className="text-amber-400/80 font-bold px-2 py-0.5 bg-amber-400/10 rounded-md">
+                                            {item.press}
+                                        </span>
+                                        {getNewsBadge(item.title)}
+                                    </div>
+                                    <span className="text-gray-500 bg-black/20 px-2 py-0.5 rounded-md">{item.date}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-gray-300 group-hover:text-amber-300 leading-snug transition-colors line-clamp-2">
+                                    {item.title}
+                                </h4>
+                            </a>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="py-12 flex flex-col items-center justify-center text-gray-600 text-sm space-y-3 bg-black/20 rounded-2xl border border-white/5">
+                        <AlertCircle className="w-8 h-8 opacity-40" />
+                        <p>현재 포착된 특이 공시가 없습니다.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
