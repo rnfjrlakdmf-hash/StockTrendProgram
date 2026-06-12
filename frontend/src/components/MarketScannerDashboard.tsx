@@ -244,7 +244,7 @@ export default function MarketScannerDashboard() {
                     {/* 시장 데이터 요약 (Market Signal) - 빈 공간에 배치 */}
                     {signal && (
                         <div className="flex-1 flex flex-col justify-center items-center md:items-start px-0 md:px-6 w-full text-center md:text-left border-y border-white/5 md:border-y-0 py-4 md:py-0 my-2 md:my-0">
-                            <h3 className={`text-sm md:text-base font-bold leading-tight flex items-center gap-2 ${
+                            <h3 className={`text-lg md:text-xl lg:text-2xl font-black leading-tight flex items-center gap-2 drop-shadow-md ${
                                 signal.signal === 'red' ? 'text-red-400' :
                                 signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
                             }`}>
@@ -252,13 +252,13 @@ export default function MarketScannerDashboard() {
                                 {signal.message}
                             </h3>
                             {signal.reason && (
-                                <p className="text-[11px] md:text-xs text-gray-400 mt-1.5 break-keep">
-                                    <span className="font-bold text-gray-300">핵심 원인: </span>{signal.reason}
+                                <p className="text-sm md:text-base text-gray-300 mt-2 break-keep font-medium">
+                                    <span className="font-bold text-white">핵심 원인: </span>{signal.reason}
                                 </p>
                             )}
-                            <div className="flex items-center justify-center md:justify-start gap-2 mt-2.5 text-[10px] font-mono text-gray-500">
-                                <span className="bg-white/5 px-2 py-1 rounded-md border border-white/5 shadow-sm">KOSPI <strong className="text-gray-300 ml-1">{signal.details?.kospi}</strong></span>
-                                <span className="bg-white/5 px-2 py-1 rounded-md border border-white/5 shadow-sm">USD/KRW <strong className="text-gray-300 ml-1">{signal.details?.usd}</strong></span>
+                            <div className="flex items-center justify-center md:justify-start gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400">
+                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
+                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
                             </div>
                         </div>
                     )}
