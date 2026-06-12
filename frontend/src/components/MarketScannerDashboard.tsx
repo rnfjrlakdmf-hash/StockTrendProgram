@@ -283,9 +283,10 @@ export default function MarketScannerDashboard() {
                                     <span className="font-bold text-white">핵심 원인: </span>{signal.reason}
                                 </p>
                             )}
-                            <div className="flex items-center justify-center md:justify-start gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400">
-                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
-                                <span className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
+                            <div className="flex items-center justify-center md:justify-start gap-2 lg:gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400 flex-wrap">
+                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
+                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSDAQ <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kosdaq}</strong></span>
+                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
                             </div>
                         </div>
                     )}

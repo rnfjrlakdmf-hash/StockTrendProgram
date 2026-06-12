@@ -2439,6 +2439,9 @@ def get_market_status():
         kospi_val = kospi.get('value', '-')
         kospi_percent = kospi.get('percent', '0.00%')
 
+        kosdaq = indices.get('kosdaq', {})
+        kosdaq_val = kosdaq.get('value', '-')
+
         usd_rate = get_exchange_rate("USD")
         # 환율: 숫자이면 포맷, 아니면 그대로 표시
         try:
@@ -2468,6 +2471,7 @@ def get_market_status():
             "reason": reason,
             "details": {
                 "kospi": kospi_val if kospi_val else '-',
+                "kosdaq": kosdaq_val if kosdaq_val else '-',
                 "usd": usd_display
             }
         }
@@ -2477,5 +2481,5 @@ def get_market_status():
             "signal": "yellow",
             "message": "시장 데이터 로딩 중",
             "reason": "잠시 후 다시 시도해 주세요.",
-            "details": {"kospi": "-", "usd": "-"}
+            "details": {"kospi": "-", "kosdaq": "-", "usd": "-"}
         }
