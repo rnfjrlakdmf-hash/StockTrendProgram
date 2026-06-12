@@ -137,76 +137,58 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
     const [error, setError] = useState<string | null>(null);
     const [isFullView, setIsFullView] = useState(false); // 요약/전체보기 상태
 
-    const fetchData = async (retryCount = 0) => {
+    const fetchData = async () => {
         if (!symbol) return;
         setLoading(true);
         setError(null);
-        if (retryCount === 0) setData(null);
-        try {
-            const cleanSymbol = symbol.split('.')[0];
-            const timestamp = Date.now();
-            const response = await fetch(`${API_BASE_URL}/api/analysis/stock/${cleanSymbol}/indicators?freq=${freq}&finGubun=${finGubun}&category=${category}&t=${timestamp}`);
-            
-            // 응답 텍스트를 먼저 받아서 파싱 오류도 잡음
-            const text = await response.text();
-            let result: any;
+        setData(null);
+
+        const cleanSymbol = symbol.split('.')[0];
+        const MAX_ATTEMPTS = 4;
+        let lastErrorMsg = '';
+
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            // 첫 시도 빼고는 3초 대기 (백엔드가 캐시 채울 시간)
+            if (attempt > 0) {
+                await new Promise(r => setTimeout(r, 3000));
+            }
             try {
-                result = JSON.parse(text);
-            } catch (parseErr) {
-                console.error('[TurboQuant] JSON 파싱 실패:', text.substring(0, 300));
-                // 3번까지 자동 재시도
-                if (retryCount < 3) {
-                    console.log(`[TurboQuant] ${retryCount + 1}번째 재시도 중...`);
-                    setTimeout(() => fetchData(retryCount + 1), 2000);
-                    return;
+                const response = await fetch(
+                    `${API_BASE_URL}/api/analysis/stock/${cleanSymbol}/indicators?freq=${freq}&finGubun=${finGubun}&category=${category}&t=${Date.now()}`
+                );
+                const text = await response.text();
+                let result: any;
+                try {
+                    result = JSON.parse(text);
+                } catch {
+                    lastErrorMsg = `파싱오류(${response.status}): ${text.substring(0, 80)}`;
+                    console.error(`[TurboQuant] attempt ${attempt + 1} 파싱실패:`, lastErrorMsg);
+                    continue; // 재시도
                 }
-                setError(`응답 파싱 오류 (HTTP ${response.status}): ${text.substring(0, 100)}`);
-                setLoading(false);
-                return;
-            }
-            
-            if (result.status === 'success') {
-                setData(result.data);
-            } else {
-                // status가 error인 경우도 재시도
-                if (retryCount < 3) {
-                    console.log(`[TurboQuant] 서버 오류, ${retryCount + 1}번째 재시도:`, result.message);
-                    setTimeout(() => fetchData(retryCount + 1), 2000);
-                    return;
+                if (result.status === 'success') {
+                    setData(result.data);
+                    setLoading(false);
+                    return; // 성공 종료
                 }
-                setError(result.message || '데이터를 불러오는데 실패했습니다.');
-            }
-        } catch (err: any) {
-            console.error('[TurboQuant] fetch 오류:', err?.message, err);
-            // 네트워크 오류도 재시도
-            if (retryCount < 3) {
-                console.log(`[TurboQuant] 네트워크 오류, ${retryCount + 1}번째 재시도 중...`);
-                setTimeout(() => fetchData(retryCount + 1), 2000);
-                return;
-            }
-            setError(`서버 통신 중 오류가 발생했습니다. (${err?.message || '알 수 없는 오류'})`);
-        } finally {
-            // 재시도 중에는 loading 유지
-            if (retryCount >= 3) setLoading(false);
-            else if (retryCount === 0) {
-                // 첫 번째 시도 실패 시 loading은 재시도를 위해 유지
+                lastErrorMsg = result.message || '알 수 없는 서버 오류';
+                console.warn(`[TurboQuant] attempt ${attempt + 1} 서버오류:`, lastErrorMsg);
+            } catch (err: any) {
+                lastErrorMsg = err?.message || '네트워크 오류';
+                console.error(`[TurboQuant] attempt ${attempt + 1} 통신오류:`, lastErrorMsg);
             }
         }
-    };
 
-    // fetchData 완료 처리를 위한 별도 함수
-    const fetchDataWithCleanup = async () => {
-        setLoading(true);
-        setError(null);
-        setData(null);
-        await fetchData(0);
+        // 4번 모두 실패
+        setError(`데이터를 불러오지 못했습니다. (${lastErrorMsg})`);
         setLoading(false);
     };
 
     useEffect(() => {
-        fetchDataWithCleanup();
+        fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [symbol, freq, finGubun, category]);
+
+
 
 
     // 지표 필터링 로직 (요약 모드인 경우 핵심 지표만)
