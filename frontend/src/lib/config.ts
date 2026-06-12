@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   }
 } else {
   // SSR
-  apiBase = "http://localhost:8000"; // 강제로 로컬 백엔드 바라보게 수정
+  apiBase = process.env.NEXT_PUBLIC_API_URL || "http://13.209.99.170:8000"; // SSR 시 실제 백엔드 주소 바라보게 수정
 }
 
 export const API_BASE_URL = apiBase;
