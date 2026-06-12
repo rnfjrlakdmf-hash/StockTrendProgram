@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     
     const name = data.name || params.ticker;
     return {
-        title: `${name}(${params.ticker}) 주가 전망 및 배당금 완벽 분석 - StockTrendProgram`,
-        description: `월스트리트 출신 AI 애널리스트가 분석한 ${name} 주식의 핵심 전망, 실시간 가격, PER/PBR, 그리고 목표가 및 배당금 요약입니다.`,
+        title: `${name}(${params.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`,
+        description: `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 등 객관적 지표 현황입니다.`,
     };
 }
 
@@ -57,7 +57,7 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                     <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 mb-2">
                         {name} ({params.ticker})
                     </h1>
-                    <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 종목 리포트 및 주가 전망</p>
+                    <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 기업 현황 리포트</p>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
@@ -79,24 +79,24 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                     </div>
 
                     <div className="prose prose-invert max-w-none">
-                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-4">📈 핵심 비즈니스 요약</h2>
+                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-4">📈 비즈니스 요약</h2>
                         <p className="text-slate-300 leading-relaxed text-lg">
                             {data.summary}
                         </p>
                         
-                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mt-10 mb-4">💡 AI 투자 포인트 (Programmatic SEO)</h2>
+                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mt-10 mb-4">💡 주요 지표 브리핑 (Programmatic SEO)</h2>
                         <ul className="space-y-3 text-slate-300">
                             <li className="flex items-start">
                                 <span className="text-blue-400 mr-2">✓</span>
-                                <span>{name}의 현재가는 {price}원으로 직전 종가({prevClose}원) 대비 변동성을 보이고 있습니다.</span>
+                                <span>{name}의 현재가는 {price}원으로 직전 종가({prevClose}원) 대비 변동폭을 기록하고 있습니다.</span>
                             </li>
                             <li className="flex items-start">
                                 <span className="text-blue-400 mr-2">✓</span>
-                                <span>PER {per} 수준으로 동종 업계 대비 밸류에이션 매력을 점검할 필요가 있습니다.</span>
+                                <span>PER {per} 수준으로 해당 업종의 객관적인 밸류에이션 지표를 나타내고 있습니다.</span>
                             </li>
                             <li className="flex items-start">
                                 <span className="text-blue-400 mr-2">✓</span>
-                                <span>검색엔진 최적화(SEO)를 통해 유입된 투자자들에게 제공되는 실시간 요약 페이지입니다.</span>
+                                <span>본 페이지는 단순 정보 제공 목적이며, 투자를 권유하거나 특정 종목을 추천하지 않습니다.</span>
                             </li>
                         </ul>
                     </div>
