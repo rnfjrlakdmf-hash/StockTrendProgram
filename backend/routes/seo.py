@@ -69,9 +69,14 @@ def get_cached_stock_info(ticker: str):
         summary_el = soup.select_one('.summary_info p')
         summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
         
-        # market cap
+        # Market cap
         cap_el = soup.select_one('#_market_sum')
-        cap = int(cap_el.text.replace(',', '')) * 100000000 if cap_el else 0
+        if cap_el:
+            import re
+            cap_str = re.sub(r'[^0-9]', '', cap_el.text)
+            cap = int(cap_str) * 100000000 if cap_str else 0
+        else:
+            cap = 0
         
         return {
             "status": "success",
