@@ -561,7 +561,7 @@ export default function AdminPage() {
                              
                              <div className="space-y-4 pt-4 border-t border-green-500/10 mt-auto">
                                  <button
-                                     onClick={() => window.open('https://www.google.com/adsense/new/u/0/pub-656335224088/home', '_blank')}
+                                     onClick={() => window.open('https://www.google.com/adsense/', '_blank')}
                                      className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold tracking-wide py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-green-500/20 active:scale-95 text-sm"
                                  >
                                      <ExternalLink className="w-5 h-5" />
