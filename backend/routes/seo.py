@@ -155,16 +155,22 @@ def get_seo_theme_detail(slug: str):
         
     theme_info = THEMES_DATA[slug]
     
-    # We could fetch real stock names here, but for fast SEO we just return the tickers
-    # The frontend can map tickers to names if needed, or we just rely on the ticker string.
-    # To be SEO rich, let's inject dummy names or resolve them from fdr list if needed.
-    # For now, just returning the data.
+    # Get stock names mapping
+    all_stocks = get_all_kospi_kosdaq()
+    ticker_to_name = {}
+    if all_stocks.get("status") == "success":
+        for stock in all_stocks.get("data", []):
+            ticker_to_name[stock["ticker"]] = stock["name"]
+            
+    def map_tickers(tickers):
+        return [{"ticker": t, "name": ticker_to_name.get(t, f"종목 {t}")} for t in tickers]
+    
     return {
         "status": "success",
         "slug": slug,
         "name": theme_info["name"],
         "description": theme_info["desc"],
         "risk_factor": theme_info["risk"],
-        "leaders": theme_info["leaders"],
-        "followers": theme_info["followers"]
+        "leaders": map_tickers(theme_info["leaders"]),
+        "followers": map_tickers(theme_info["followers"])
     }

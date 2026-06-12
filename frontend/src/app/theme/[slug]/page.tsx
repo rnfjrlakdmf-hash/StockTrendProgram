@@ -101,15 +101,15 @@ export default async function ThemeDetailPage({ params }: { params: { slug: stri
                             <TrendingUp className="text-red-400 w-6 h-6" /> 대장주 (Leaders)
                         </h2>
                         <div className="space-y-4">
-                            {themeData.leaders.map((ticker: string, i: number) => (
-                                <Link href={`/stock/${ticker}`} key={ticker} className="block group">
+                            {themeData.leaders.map((stock: any, i: number) => (
+                                <Link href={`/stock/${stock.ticker}`} key={stock.ticker} className="block group">
                                     <div className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-white/5 hover:border-red-500/30 transition-colors">
                                         <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center font-bold text-red-400 group-hover:bg-red-500 group-hover:text-white transition-colors">
                                             {i + 1}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-white group-hover:text-red-400 transition-colors">종목 {ticker}</div>
-                                            <div className="text-sm text-gray-500 mt-1">{ticker}</div>
+                                            <div className="font-bold text-lg text-white group-hover:text-red-400 transition-colors">{stock.name}</div>
+                                            <div className="text-sm text-gray-500 mt-1">{stock.ticker}</div>
                                         </div>
                                     </div>
                                 </Link>
@@ -123,15 +123,15 @@ export default async function ThemeDetailPage({ params }: { params: { slug: stri
                             <Layers className="text-blue-400 w-6 h-6" /> 관련주 (Related)
                         </h2>
                         <div className="space-y-4">
-                            {themeData.followers.map((ticker: string, i: number) => (
-                                <Link href={`/stock/${ticker}`} key={ticker} className="block group">
+                            {themeData.followers.map((stock: any, i: number) => (
+                                <Link href={`/stock/${stock.ticker}`} key={stock.ticker} className="block group">
                                     <div className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-white/5 hover:border-blue-500/30 transition-colors">
                                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                                             {i + 1}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-white group-hover:text-blue-400 transition-colors">종목 {ticker}</div>
-                                            <div className="text-sm text-gray-500 mt-1">{ticker}</div>
+                                            <div className="font-bold text-lg text-white group-hover:text-blue-400 transition-colors">{stock.name}</div>
+                                            <div className="text-sm text-gray-500 mt-1">{stock.ticker}</div>
                                         </div>
                                     </div>
                                 </Link>
