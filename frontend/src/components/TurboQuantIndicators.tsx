@@ -144,7 +144,8 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
         setData(null);
         try {
             const cleanSymbol = symbol.split('.')[0];
-            const response = await fetch(`${API_BASE_URL}/api/analysis/stock/${cleanSymbol}/indicators?freq=${freq}&finGubun=${finGubun}&category=${category}`);
+            const timestamp = Date.now();
+            const response = await fetch(`${API_BASE_URL}/api/analysis/stock/${cleanSymbol}/indicators?freq=${freq}&finGubun=${finGubun}&category=${category}&t=${timestamp}`);
             const result = await response.json();
             
             if (result.status === 'success') {
