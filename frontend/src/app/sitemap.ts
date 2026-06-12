@@ -67,7 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
 
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
         const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 } });
         if (res.ok) {
             const data = await res.json();

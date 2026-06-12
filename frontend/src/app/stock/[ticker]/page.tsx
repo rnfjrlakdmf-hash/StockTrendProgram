@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Header from "@/components/Header";
 
 const getApiBaseUrl = () => {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
 };
 
 async function getStockInfo(ticker: string) {
