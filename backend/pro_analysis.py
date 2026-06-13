@@ -170,17 +170,59 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
 
         total_score = round((value_score + growth_score + momentum_score + quality_score + stability_score) / 5)
 
+        # Format metrics neatly
+        def format_metric(val, is_percent=False):
+            if val == 0 or val == 0.0: return "N/A"
+            if is_percent: return f"{val:.1f}%"
+            return round(val, 2)
+
+        factors = {
+            "value": {
+                "score": value_score,
+                "label": "가치",
+                "metrics": {
+                    "PER": format_metric(per_f),
+                    "PBR": format_metric(pbr_f)
+                }
+            },
+            "growth": {
+                "score": growth_score,
+                "label": "성장",
+                "metrics": {
+                    "매출성장률": format_metric(rev_g * 100, True),
+                    "이익성장률": format_metric(earn_g * 100, True)
+                }
+            },
+            "momentum": {
+                "score": round(momentum_score, 2),
+                "label": "모멘텀",
+                "metrics": {
+                    "3개월수익률": format_metric(ret_3m, True)
+                }
+            },
+            "quality": {
+                "score": quality_score,
+                "label": "수익성",
+                "metrics": {
+                    "ROE": format_metric(roe_pct, True),
+                    "영업이익률": format_metric(margin_pct, True)
+                }
+            },
+            "stability": {
+                "score": stability_score,
+                "label": "안정성",
+                "metrics": {
+                    "부채비율": format_metric(de_ratio, True),
+                    "Beta": format_metric(beta_f) if beta_f != 1 else "N/A"
+                }
+            }
+        }
+        
         return {
             "symbol": symbol,
             "name": name,
             "total_score": total_score,
-            "factors": {
-                "value": {"score": value_score, "label": "가치", "metrics": {"PER": round(per_f, 1), "PBR": round(pbr_f, 2)}},
-                "growth": {"score": growth_score, "label": "성장", "metrics": {"매출성장률": f"{rev_g*100:.1f}%", "이익성장률": f"{earn_g*100:.1f}%"}},
-                "momentum": {"score": momentum_score, "label": "모멘텀", "metrics": {"3개월수익률": f"{ret_3m:.1f}%"}},
-                "quality": {"score": quality_score, "label": "수익성", "metrics": {"ROE": f"{roe_pct:.1f}%", "영업이익률": f"{margin_pct:.1f}%"}},
-                "stability": {"score": stability_score, "label": "안정성", "metrics": {"부채비율": f"{de_ratio:.0f}%", "Beta": round(beta_f, 2)}}
-            },
+            "factors": factors,
             "grade": "S" if total_score >= 85 else "A" if total_score >= 70 else "B" if total_score >= 55 else "C" if total_score >= 40 else "D",
             "disclaimer": "본 데이터는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
         }
