@@ -11,13 +11,35 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
+                const title = `${data.name} 대장주 및 관련주 총정리 - StockTrend AI`;
+                const description = data.description;
+                
+                const ogUrl = new URL(`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
+                ogUrl.searchParams.set('title', data.name);
+                ogUrl.searchParams.set('subtitle', 'AI가 분석한 테마별 대장주 및 매수 시그널');
+                ogUrl.searchParams.set('theme', '🔥 핫 랭킹 테마');
+
                 return {
-                    title: `${data.name} 대장주 및 관련주 총정리 - StockTrend AI`,
-                    description: data.description,
+                    title,
+                    description,
                     openGraph: {
-                        title: `${data.name} 대장주 및 관련주 총정리 - StockTrend AI`,
-                        description: data.description,
-                    }
+                        title,
+                        description,
+                        images: [
+                            {
+                                url: ogUrl.toString(),
+                                width: 1200,
+                                height: 630,
+                                alt: `${data.name} 테마 분석`,
+                            },
+                        ],
+                    },
+                    twitter: {
+                        card: 'summary_large_image',
+                        title,
+                        description,
+                        images: [ogUrl.toString()],
+                    },
                 };
             }
         }

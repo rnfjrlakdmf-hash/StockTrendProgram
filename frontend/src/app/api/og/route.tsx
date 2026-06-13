@@ -3,163 +3,129 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
-// 한국어 폰트 (Pretendard Bold) 로드
-async function getFont() {
-  try {
-    const res = await fetch(
-      'https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/public/static/Pretendard-Bold.ttf'
-    );
-    return await res.arrayBuffer();
-  } catch (e) {
-    console.error('폰트 로드 실패:', e);
-    return null;
-  }
-}
+// Font fetcher - fetches Pretendard Bold TTF
+const getFont = async () => {
+  const res = await fetch(
+    'https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/public/static/Pretendard-Bold.ttf'
+  );
+  return res.arrayBuffer();
+};
 
 export async function GET(req: NextRequest) {
-    try {
-        const { searchParams } = new URL(req.url);
-        
-        // 범용 파라미터 받기
-        const title = searchParams.get('title') || 'StockTrend AI 주식 분석';
-        const subtitle = searchParams.get('subtitle') || '기관급 데이터와 AI가 분석한 객관적 리포트';
-        const tag = searchParams.get('tag') || '시황 리포트';
-        const symbol = searchParams.get('symbol'); // 공급망 등에서 사용
+  try {
+    const { searchParams } = new URL(req.url);
+    
+    // 파라미터 파싱 (종목명, 테마명, 서브타이틀 등)
+    const title = searchParams.get('title') || '스톡 트렌드 프로그램';
+    const subtitle = searchParams.get('subtitle') || '실시간 AI 매수 시그널 포착';
+    const theme = searchParams.get('theme') || '오늘의 특징주';
+    
+    const fontData = await getFont();
 
-        const fontData = await getFont();
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0f172a', // slate-900 (다크 모드 배경)
+            backgroundImage: 'radial-gradient(circle at 50% 120%, #3b82f6 0%, #0f172a 60%)', // 블루 그라데이션 하이라이트
+            fontFamily: '"Pretendard"',
+            padding: '40px 80px',
+            color: 'white',
+          }}
+        >
+          {/* 상단 라벨 (테마명) */}
+          <div
+            style={{
+              display: 'flex',
+              padding: '12px 24px',
+              backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
+              border: '2px solid rgba(59, 130, 246, 0.5)',
+              borderRadius: '9999px',
+              color: '#60a5fa', // blue-400
+              fontSize: '32px',
+              fontWeight: 700,
+              marginBottom: '40px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            🔥 {theme}
+          </div>
 
-        const options: any = {
-            width: 1200,
-            height: 630,
-        };
+          {/* 메인 타이틀 (종목명) */}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '110px',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              textAlign: 'center',
+              marginBottom: '30px',
+              color: '#ffffff',
+              textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            }}
+          >
+            [{title}]
+          </div>
 
-        if (fontData) {
-            options.fonts = [
-                {
-                    name: 'Pretendard',
-                    data: fontData,
-                    style: 'normal',
-                },
-            ];
-        }
+          {/* 서브 타이틀 (시그널 요약) */}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '48px',
+              fontWeight: 700,
+              color: '#cbd5e1', // slate-300
+              textAlign: 'center',
+            }}
+          >
+            {subtitle}
+          </div>
 
-        return new ImageResponse(
-            (
-                <div
-                    style={{
-                        height: '100%',
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-                        backgroundColor: '#0f172a', // Slate 900
-                        backgroundImage: 'radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.05) 2%, transparent 0%), radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.05) 2%, transparent 0%)',
-                        backgroundSize: '100px 100px',
-                        padding: '80px',
-                        fontFamily: fontData ? '"Pretendard", sans-serif' : 'sans-serif',
-                    }}
-                >
-                    {/* 상단 태그 배지 */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                            padding: '12px 32px',
-                            borderRadius: '32px',
-                            border: '2px solid rgba(59, 130, 246, 0.4)',
-                            color: '#93c5fd',
-                            fontSize: 32,
-                            fontWeight: 800,
-                            marginBottom: 40,
-                            letterSpacing: '1px',
-                        }}
-                    >
-                        #{tag} {symbol ? `· ${symbol}` : ''}
-                    </div>
-
-                    {/* 메인 타이틀 */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            fontSize: 72,
-                            fontWeight: 900,
-                            color: 'white',
-                            lineHeight: 1.3,
-                            letterSpacing: '-0.02em',
-                            marginBottom: 30,
-                            wordBreak: 'keep-all',
-                            maxWidth: '1000px',
-                        }}
-                    >
-                        {title.slice(0, 45)}{title.length > 45 ? '...' : ''}
-                    </div>
-
-                    {/* 서브 타이틀 (티저) */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            fontSize: 40,
-                            fontWeight: 700,
-                            background: 'linear-gradient(to right, #60a5fa, #a78bfa)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            color: 'transparent',
-                            marginBottom: 60,
-                        }}
-                    >
-                        {subtitle}
-                    </div>
-
-                    {/* 하단 브랜드 로고 영역 */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            width: '100%',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            borderTop: '2px solid rgba(255,255,255,0.1)',
-                            paddingTop: '40px',
-                            marginTop: 'auto',
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                            <div
-                                style={{
-                                    width: '56px',
-                                    height: '56px',
-                                    borderRadius: '16px',
-                                    background: 'linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                    fontSize: 32,
-                                    fontWeight: 'bold',
-                                }}
-                            >
-                                S
-                            </div>
-                            <div style={{ display: 'flex', fontSize: 38, fontWeight: 800, color: '#f8fafc' }}>
-                                StockTrend AI
-                            </div>
-                        </div>
-                        
-                        <div style={{ display: 'flex', fontSize: 32, fontWeight: 600, color: '#64748b' }}>
-                            stock-trend-program.co.kr
-                        </div>
-                    </div>
-
-                    {/* 배경 그라데이션 장식 */}
-                    <div style={{ position: 'absolute', top: -100, right: -100, width: 500, height: 500, background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)', borderRadius: '50%', zIndex: -1 }}></div>
-                </div>
-            ),
-            options
-        );
-    } catch (e: any) {
-        console.error('OG Image Generation Error:', e);
-        return new Response(`Failed to generate OG image`, { status: 500 });
-    }
+          {/* 하단 사이트명 및 장식 */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              bottom: '40px',
+              width: '100%',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0 80px',
+            }}
+          >
+            <div style={{ display: 'flex', fontSize: '32px', color: '#94a3b8', fontWeight: 700 }}>
+              📈 Stock Trend Program
+            </div>
+            <div style={{ display: 'flex', fontSize: '32px', color: '#3b82f6', fontWeight: 700 }}>
+              지금 확인하기 →
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+        fonts: [
+          {
+            name: 'Pretendard',
+            data: fontData,
+            style: 'normal',
+            weight: 700,
+          },
+        ],
+      }
+    );
+  } catch (e: any) {
+    console.error(`[OG Image Error]: ${e.message}`);
+    return new Response(`Failed to generate the image`, {
+      status: 500,
+    });
+  }
 }
