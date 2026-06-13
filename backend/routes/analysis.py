@@ -273,12 +273,27 @@ def read_pro_summary(symbol: str):
     from korea_data import get_naver_investor_data, gather_naver_stock_data, get_korean_investment_indicators
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        is_korean = symbol.isdigit() or symbol.endswith('.KS') or symbol.endswith('.KQ')
+        
         f1 = executor.submit(get_quant_scorecard, symbol)
         f2 = executor.submit(get_financial_health, symbol)
-        f3 = executor.submit(get_naver_investor_data, symbol, 20)
-        f4 = executor.submit(gather_naver_stock_data, symbol)
-        f5 = executor.submit(get_korean_investment_indicators, symbol, "0", "IFRSL", "1")
-        q_d, h_d, i_r, s_d, ind_r = f1.result(), f2.result(), f3.result(), f4.result(), f5.result()
+        
+        if is_korean:
+            f3 = executor.submit(get_naver_investor_data, symbol, 20)
+            f4 = executor.submit(gather_naver_stock_data, symbol)
+            f5 = executor.submit(get_korean_investment_indicators, symbol, "0", "IFRSL", "1")
+            q_d = f1.result()
+            h_d = f2.result()
+            i_r = f3.result()
+            s_d = f4.result()
+            ind_r = f5.result()
+        else:
+            q_d = f1.result()
+            h_d = f2.result()
+            i_r = {}
+            # US stocks can get info from yfinance or just pass minimal dict
+            s_d = {"name": symbol, "code": symbol, "current_price": 0} 
+            ind_r = {}
     
     fin_charts = []
     if ind_r and ind_r.get("status") == "success":
