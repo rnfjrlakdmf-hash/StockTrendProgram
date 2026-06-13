@@ -636,7 +636,17 @@ function AnalysisContent() {
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade || "N/A"}</div>
-                                                    <div><h3 className="text-lg font-bold">5축 퀀트 정밀 진단</h3><p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p></div>
+                                                    <div>
+                                                        <h3 className="text-lg font-bold flex items-center gap-2">
+                                                            5축 퀀트 정밀 진단
+                                                            {quantData.tags && quantData.tags.map((tag: string, idx: number) => (
+                                                                <span key={idx} className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </h3>
+                                                        <p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p>
+                                                    </div>
                                                 </div>
                                                 <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score || 0)}`}>{quantData.total_score || 0}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
                                             </div>

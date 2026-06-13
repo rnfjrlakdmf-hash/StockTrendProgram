@@ -61,7 +61,13 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
 
         t = yf.Ticker(ticker_sym)
         info = t.info or {}
-        hist = t.history(period="6mo")
+        hist = t.history(period="1y")
+
+        tags = []
+        if info.get("quoteType") == "ETF":
+            tags.append("ETF")
+        elif len(hist) > 0 and len(hist) < 200:
+            tags.append("신규상장")
 
         # 2. Extract Key Metrics (Prefer Naver for Korean stocks)
         if naver_data:
@@ -230,6 +236,7 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
             "total_score": total_score,
             "factors": factors,
             "grade": "S" if total_score >= 85 else "A" if total_score >= 70 else "B" if total_score >= 55 else "C" if total_score >= 40 else "D",
+            "tags": tags,
             "disclaimer": "본 데이터는 투자 참고용이며, 특정 종목의 매수·매도를 권유하지 않습니다."
         }
     except Exception as e:
