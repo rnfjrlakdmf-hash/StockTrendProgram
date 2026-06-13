@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from "@/components/Header";
-import FomoWidget from "@/components/FomoWidget";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 import StockVotingBoard from "@/components/StockVotingBoard";
 
@@ -141,8 +140,6 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                 <StockDiscussionBoard ticker={params.ticker} name={name} />
             </main>
 
-            {/* FOMO Widget */}
-            <FomoWidget />
         </div>
     );
 }

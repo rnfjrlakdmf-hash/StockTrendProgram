@@ -10,8 +10,7 @@ import FCMWrapper from "@/components/FCMWrapper";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import KakaoScript from "@/components/KakaoScript";
 import AppInstallBanner from "@/components/AppInstallBanner";
-
-
+import FomoWidget from "@/components/FomoWidget";
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
   title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
@@ -25,7 +24,7 @@ export const metadata: Metadata = {
     siteName: 'AI Stock Analyst',
     images: [
       {
-        url: '/og-image.png',
+        url: 'https://stock-trend-program.co.kr/api/og?title=AI%20%EC%A3%BC%EC%8B%9D%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C',
         width: 1200,
         height: 630,
         alt: 'AI Stock Analyst Dashboard Preview',
@@ -38,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스",
     description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요.",
-    images: ['/og-image.png'],
+    images: ['https://stock-trend-program.co.kr/api/og?title=AI%20%EC%A3%BC%EC%8B%9D%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C'],
     creator: '@StockTrendAI',
   },
   icons: {
@@ -110,6 +109,7 @@ export default function RootLayout({
 
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
+            <FomoWidget />
           </div>
         </AuthProvider>
         <Analytics />
