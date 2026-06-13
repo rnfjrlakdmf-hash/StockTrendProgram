@@ -419,20 +419,20 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
                             f = float(s.replace(",", ""))
                             if f > 0: return f
                         except: continue
-                    return 0.0
+                    return "N/A"
                 
                 per_val = pick_ratio(dart_per, naver_per_raw, info.get("trailingPE") or info.get("forwardPE"))
                 pbr_val = pick_ratio(dart_pbr, naver_pbr_raw, info.get("priceToBook"))
                 
                 ratios = {
-                    "PER": round(per_val, 1),
-                    "PBR": round(pbr_val, 2),
-                    "ROE": f"{roe_val:.1f}%",
-                    "부채비율": f"{debt_ratio:.0f}%",
+                    "PER": round(per_val, 1) if isinstance(per_val, (int, float)) else per_val,
+                    "PBR": round(pbr_val, 2) if isinstance(pbr_val, (int, float)) else pbr_val,
+                    "ROE": f"{roe_val:.1f}%" if roe_val != 0 else "N/A",
+                    "부채비율": f"{debt_ratio:.0f}%" if debt_ratio != 0 else "N/A",
                     "유동비율": "150%",
-                    "영업이익률": f"{operating_margin:.1f}%",
-                    "매출총이익률": f"{operating_margin * 1.5:.1f}%", # Estimate gross margin
-                    "자산회전율": f"{asset_turnover:.2f}"
+                    "영업이익률": f"{operating_margin:.1f}%" if operating_margin != 0 else "N/A",
+                    "매출총이익률": f"{operating_margin * 1.5:.1f}%" if operating_margin != 0 else "N/A", # Estimate gross margin
+                    "자산회전율": f"{asset_turnover:.2f}" if asset_turnover != 0 else "N/A"
                 }
                 
                 health_score = round((min(z_score, 5) / 5 * 40) + (f_score / 9 * 60))
