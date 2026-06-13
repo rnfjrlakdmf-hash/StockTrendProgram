@@ -34,50 +34,72 @@ from bs4 import BeautifulSoup
 @cached(cache=TTLCache(maxsize=2000, ttl=21600))
 def get_cached_stock_info(ticker: str):
     try:
-        url = f"https://finance.naver.com/item/main.naver?code={ticker}"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        res = requests.get(url, headers=headers, timeout=5)
-        soup = BeautifulSoup(res.text, 'lxml')
+        is_us_stock = not ticker.isdigit()
         
-        # name
-        name_el = soup.select_one('.wrap_company h2 a')
-        name = name_el.text.strip() if name_el else f"종목 {ticker}"
-        
-        # price
-        price_el = soup.select_one('.no_today .blind')
-        price = int(price_el.text.replace(',', '')) if price_el else 0
-        
-        # prev close
-        prev_el = soup.select_one('td.first .blind')
-        prev = int(prev_el.text.replace(',', '')) if prev_el else 0
-        
-        # PER, PBR, DIV
-        per_el = soup.select_one('#_per')
-        pbr_el = soup.select_one('#_pbr')
-        div_el = soup.select_one('#_dvr')
-        
-        def parse_float(el):
-            if not el or not el.text.strip(): return 0.0
-            try: return float(el.text.replace(',', ''))
-            except: return 0.0
+        if is_us_stock:
+            # Handle US Stock via yfinance
+            t = yf.Ticker(ticker)
+            info = t.info
+            cal = t.calendar or {}
             
-        per = parse_float(per_el)
-        pbr = parse_float(pbr_el)
-        div = parse_float(div_el) / 100.0 if div_el else 0.0
-        
-        # summary
-        summary_el = soup.select_one('.summary_info p')
-        summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
-        
-        # Market cap
-        cap_el = soup.select_one('#_market_sum')
-        if cap_el:
-            import re
-            cap_str = re.sub(r'[^0-9]', '', cap_el.text)
-            cap = int(cap_str) * 100000000 if cap_str else 0
+            name = info.get('shortName') or info.get('longName') or f"종목 {ticker}"
+            price = info.get('currentPrice') or info.get('regularMarketPrice') or 0
+            prev = info.get('previousClose') or 0
+            per = info.get('trailingPE') or 0.0
+            pbr = info.get('priceToBook') or 0.0
+            div = info.get('dividendYield') or 0.0
+            cap = info.get('marketCap') or 0
+            summary = info.get('longBusinessSummary') or f"{name} 기업의 핵심 비즈니스 정보 및 주가 동향 리포트입니다."
+            
+            # Dividend Schedule
+            ex_div_date = cal.get('Ex-Dividend Date')
+            pay_date = cal.get('Dividend Date')
+            ex_div_str = ex_div_date.strftime('%Y-%m-%d') if ex_div_date else None
+            pay_str = pay_date.strftime('%Y-%m-%d') if pay_date else None
+            
         else:
-            cap = 0
-        
+            # Handle Korean Stock via Naver
+            url = f"https://finance.naver.com/item/main.naver?code={ticker}"
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            res = requests.get(url, headers=headers, timeout=5)
+            soup = BeautifulSoup(res.text, 'lxml')
+            
+            name_el = soup.select_one('.wrap_company h2 a')
+            name = name_el.text.strip() if name_el else f"종목 {ticker}"
+            
+            price_el = soup.select_one('.no_today .blind')
+            price = int(price_el.text.replace(',', '')) if price_el else 0
+            
+            prev_el = soup.select_one('td.first .blind')
+            prev = int(prev_el.text.replace(',', '')) if prev_el else 0
+            
+            per_el = soup.select_one('#_per')
+            pbr_el = soup.select_one('#_pbr')
+            div_el = soup.select_one('#_dvr')
+            
+            def parse_float(el):
+                if not el or not el.text.strip(): return 0.0
+                try: return float(el.text.replace(',', ''))
+                except: return 0.0
+                
+            per = parse_float(per_el)
+            pbr = parse_float(pbr_el)
+            div = parse_float(div_el) / 100.0 if div_el else 0.0
+            
+            summary_el = soup.select_one('.summary_info p')
+            summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
+            
+            cap_el = soup.select_one('#_market_sum')
+            if cap_el:
+                import re
+                cap_str = re.sub(r'[^0-9]', '', cap_el.text)
+                cap = int(cap_str) * 100000000 if cap_str else 0
+            else:
+                cap = 0
+                
+            ex_div_str = None
+            pay_str = None
+
         return {
             "status": "success",
             "ticker": ticker,
@@ -88,14 +110,16 @@ def get_cached_stock_info(ticker: str):
             "pbr": pbr,
             "dividendYield": div,
             "marketCap": cap,
-            "summary": summary
+            "summary": summary,
+            "exDividendDate": ex_div_str,
+            "paymentDate": pay_str
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
         logger.error(f"Error fetching info for {ticker}: {e}")
         return {
-            "status": "success", # Return dummy success to prevent 404 in frontend
+            "status": "success",
             "ticker": ticker,
             "name": f"종목 {ticker}",
             "price": 0,
@@ -104,7 +128,9 @@ def get_cached_stock_info(ticker: str):
             "pbr": 0,
             "dividendYield": 0,
             "marketCap": 0,
-            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
+            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다.",
+            "exDividendDate": None,
+            "paymentDate": None
         }
 
 @router.get("/seo/stocks")

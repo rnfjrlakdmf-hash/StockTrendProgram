@@ -131,6 +131,36 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                     </div>
                 </div>
 
+                {/* 배당 정보 섹션 (해외주식/배당주) */}
+                {(data.exDividendDate || data.paymentDate || data.dividendYield > 0) && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl">
+                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-6">💰 {name} 배당 정보</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-2">다음 배당락일 (Ex-Dividend)</div>
+                                <div className="text-xl font-bold text-white">
+                                    {data.exDividendDate ? data.exDividendDate : "예정된 배당락일 없음"}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-2">이 날짜 전까지 매수해야 배당을 받습니다.</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-2">배당 지급일 (Payment Date)</div>
+                                <div className="text-xl font-bold text-blue-400">
+                                    {data.paymentDate ? data.paymentDate : "미정"}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-2">실제로 계좌에 배당금이 입금되는 날입니다.</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-2">예상 배당 수익률 (연간)</div>
+                                <div className="text-xl font-bold text-emerald-400">
+                                    {data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : "N/A"}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-2">현재 주가 대비 1년간 받는 배당금의 비율입니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Stock Voting Board */}
                 <div className="mb-8">
                     <StockVotingBoard ticker={params.ticker} stockName={name} />
