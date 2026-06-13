@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Header from "@/components/Header";
 import FomoWidget from "@/components/FomoWidget";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
+import StockVotingBoard from "@/components/StockVotingBoard";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -31,9 +32,36 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     }
     
     const name = data.name || params.ticker;
+    const title = `${name}(${params.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`;
+    const description = `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 등 객관적 지표 현황입니다.`;
+    
+    // OG Image URL 생성
+    const ogUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
+    ogUrl.searchParams.set('title', name);
+    ogUrl.searchParams.set('subtitle', '지금 당장 확인해야 할 AI 매수 시그널 포착!');
+    ogUrl.searchParams.set('theme', '오늘의 특징주');
+
     return {
-        title: `${name}(${params.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`,
-        description: `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 등 객관적 지표 현황입니다.`,
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            images: [
+                {
+                    url: ogUrl.toString(),
+                    width: 1200,
+                    height: 630,
+                    alt: `${name} 분석 차트`,
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: [ogUrl.toString()],
+        },
     };
 }
 
@@ -102,6 +130,11 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                             </li>
                         </ul>
                     </div>
+                </div>
+
+                {/* Stock Voting Board */}
+                <div className="mb-8">
+                    <StockVotingBoard ticker={params.ticker} stockName={name} />
                 </div>
 
                 {/* Stock Discussion Board */}
