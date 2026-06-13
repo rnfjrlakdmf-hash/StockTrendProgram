@@ -99,6 +99,22 @@ def get_cached_stock_info(ticker: str):
                 
             ex_div_str = None
             pay_str = None
+            
+            # Fetch dividend schedule for Korean stocks using yfinance
+            try:
+                cal = yf.Ticker(f"{ticker}.KS").calendar
+                if not cal:
+                    cal = yf.Ticker(f"{ticker}.KQ").calendar
+                
+                if cal:
+                    ex_div_date = cal.get('Ex-Dividend Date')
+                    pay_date = cal.get('Dividend Date')
+                    if ex_div_date:
+                        ex_div_str = ex_div_date.strftime('%Y-%m-%d')
+                    if pay_date:
+                        pay_str = pay_date.strftime('%Y-%m-%d')
+            except:
+                pass
 
         return {
             "status": "success",
