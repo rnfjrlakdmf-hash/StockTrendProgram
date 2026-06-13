@@ -508,3 +508,51 @@ async def watchdog_scheduler_loop():
         except Exception as e:
             logger.error(f"[Watchdog] Loop error: {e}")
             await asyncio.sleep(60)
+
+async def google_indexer_scheduler_loop():
+    """매일 새벽 2시에 구글 인덱서 실행"""
+    logger.info("[GoogleIndexer] Google Indexer Scheduler Active.")
+    import subprocess
+    import sys
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "google_indexer.py")
+    last_run_day = -1
+    
+    while True:
+        try:
+            now = datetime.now()
+            # 매일 새벽 2시에 한 번 실행
+            if now.hour == 2 and last_run_day != now.day:
+                logger.info(f"[GoogleIndexer] Triggering Google Indexing for today...")
+                await asyncio.to_thread(subprocess.run, [sys.executable, script_path])
+                last_run_day = now.day
+                
+            await asyncio.sleep(60 * 30) # 30분 주기로 체크 (자주 돌 필요 없음)
+        except Exception as e:
+            logger.error(f"[GoogleIndexer] Loop error: {e}")
+            await asyncio.sleep(60)
+
+async def dividend_alerts_scheduler_loop():
+    """매일 저녁 18:00 KST에 배당락일 D-1 푸시 알림 실행"""
+    logger.info("[DividendAlerts] Dividend Alerts Scheduler Active.")
+    import subprocess
+    import sys
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dividend_alerts.py")
+    last_run_day = -1
+    
+    # 시간대 처리
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    
+    while True:
+        try:
+            now = datetime.now(kst)
+            # 매일 오후 18시에 1번 실행 (18:00 ~ 18:59 사이 최초 도달 시)
+            if now.hour == 18 and last_run_day != now.day:
+                logger.info(f"[DividendAlerts] Triggering Dividend Alerts for today...")
+                await asyncio.to_thread(subprocess.run, [sys.executable, script_path])
+                last_run_day = now.day
+                
+            await asyncio.sleep(60 * 30) # 30분 주기로 체크
+        except Exception as e:
+            logger.error(f"[DividendAlerts] Loop error: {e}")
+            await asyncio.sleep(60)
