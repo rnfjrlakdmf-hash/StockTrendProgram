@@ -52,6 +52,12 @@ def get_quant_scorecard(symbol: str) -> Dict[str, Any]:
         else:
             if symbol.isdigit() and len(symbol) == 6:
                 ticker_sym = f"{symbol}.KS"
+            else:
+                # Clean US tickers (e.g., AAPL.O -> AAPL) for yfinance
+                for suffix in [".O", ".N", ".A", ".OQ"]:
+                    if ticker_sym.endswith(suffix):
+                        ticker_sym = ticker_sym.replace(suffix, "")
+                        break
 
         t = yf.Ticker(ticker_sym)
         info = t.info or {}
@@ -282,6 +288,12 @@ def get_financial_health(symbol: str) -> Dict[str, Any]:
                 # Fallback: Guess market type if Naver call fails
                 if len(symbol) == 6 and symbol.isdigit():
                     ticker_sym = f"{symbol}.KS"
+        else:
+            # Clean US tickers for yfinance (e.g. AAPL.O -> AAPL)
+            for suffix in [".O", ".N", ".A", ".OQ"]:
+                if ticker_sym.endswith(suffix):
+                    ticker_sym = ticker_sym.replace(suffix, "")
+                    break
         
         if not naver_data: naver_data = {}
         
@@ -782,6 +794,11 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
             else:
                 if ticker_sym.isdigit() and len(ticker_sym) == 6:
                     ticker_sym = f"{ticker_sym}.KS"
+                else:
+                    for suffix in [".O", ".N", ".A", ".OQ"]:
+                        if ticker_sym.endswith(suffix):
+                            ticker_sym = ticker_sym.replace(suffix, "")
+                            break
 
             try:
                 t = yf.Ticker(ticker_sym)
