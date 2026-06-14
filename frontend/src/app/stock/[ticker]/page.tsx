@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Header from "@/components/Header";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 import StockVotingBoard from "@/components/StockVotingBoard";
+import KakaoShareButton from "@/components/KakaoShareButton";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -40,6 +41,12 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     ogUrl.searchParams.set('title', name);
     ogUrl.searchParams.set('subtitle', '지금 당장 확인해야 할 AI 매수 시그널 포착!');
     ogUrl.searchParams.set('theme', '오늘의 특징주');
+    
+    if (data.price && data.previousClose) {
+        const changePercent = ((data.price - data.previousClose) / data.previousClose) * 100;
+        const sign = changePercent > 0 ? '+' : '';
+        ogUrl.searchParams.set('change', `${sign}${changePercent.toFixed(2)}%`);
+    }
 
     return {
         title,
@@ -96,6 +103,17 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
         }
     };
 
+    // Calculate dynamic change for Share button imageUrl if needed
+    const shareOgUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
+    shareOgUrl.searchParams.set('title', name);
+    shareOgUrl.searchParams.set('subtitle', '지금 당장 확인해야 할 AI 매수 시그널 포착!');
+    shareOgUrl.searchParams.set('theme', '오늘의 특징주');
+    if (data.price && data.previousClose) {
+        const changePercent = ((data.price - data.previousClose) / data.previousClose) * 100;
+        const sign = changePercent > 0 ? '+' : '';
+        shareOgUrl.searchParams.set('change', `${sign}${changePercent.toFixed(2)}%`);
+    }
+
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <script
@@ -104,10 +122,20 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
             />
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-12">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl">
-                    <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 mb-2">
-                        {name} ({params.ticker})
-                    </h1>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
+                            {name} ({params.ticker})
+                        </h1>
+                        <KakaoShareButton 
+                            title={`[종목 분석] ${name} (${params.ticker})`}
+                            description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
+                            url={`https://stock-trend-program.co.kr/stock/${params.ticker}`}
+                            imageUrl={shareOgUrl.toString()}
+                            className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full md:w-auto shadow-lg shadow-[#FEE500]/10"
+                            buttonText="분석 결과 보기"
+                        />
+                    </div>
                     <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 기업 현황 리포트</p>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
@@ -17,6 +18,8 @@ async function getBlogPost(slug: string) {
         const snapshot = await getDoc(docRef);
         
         if (!snapshot.exists()) {
+            const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
+            if (staticPost) return staticPost;
             return null;
         }
 

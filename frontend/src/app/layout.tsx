@@ -90,7 +90,7 @@ export default function RootLayout({
                 <p className="text-gray-600 text-xs mb-2">
                   ⚠️ 본 서비스에서 제공하는 정보는 투자 참고용이며 투자 권유가 아닙니다. 투자의 최종 책임은 본인에게 있습니다.
                 </p>
-                <div className="flex justify-center gap-4 text-xs text-gray-600">
+                <div className="flex justify-center gap-4 text-xs text-gray-600 flex-wrap">
                   <a href="/about" className="hover:text-gray-400 transition-colors">서비스 소개</a>
                   <span>|</span>
                   <a href="/contact" className="hover:text-gray-400 transition-colors">문의하기</a>
@@ -98,6 +98,8 @@ export default function RootLayout({
                   <a href="/privacy-policy" className="hover:text-gray-400 transition-colors">개인정보처리방침</a>
                   <span>|</span>
                   <a href="/terms" className="hover:text-gray-400 transition-colors">이용약관</a>
+                  <span>|</span>
+                  <a href="/disclaimer" className="hover:text-gray-400 transition-colors">면책 조항(Disclaimer)</a>
                   <span>|</span>
                   <span>© 2026 StockTrend</span>
                 </div>

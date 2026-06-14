@@ -15,12 +15,27 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     
-    // 파라미터 파싱 (종목명, 테마명, 서브타이틀 등)
+    // 파라미터 파싱
     const title = searchParams.get('title') || '스톡 트렌드 프로그램';
     const subtitle = searchParams.get('subtitle') || '실시간 AI 매수 시그널 포착';
     const theme = searchParams.get('theme') || '오늘의 특징주';
+    const change = searchParams.get('change'); // e.g. "+25.4%"
     
     const fontData = await getFont();
+
+    // 상승/하락에 따른 색상 변경
+    const isUp = change && change.startsWith('+');
+    const isDown = change && change.startsWith('-');
+    
+    let highlightColor = '#3b82f6'; // 기본 파란색
+    let bgColor = '#0f172a';
+    if (isUp) {
+      highlightColor = '#ef4444'; // 빨간색 (상승)
+      bgColor = '#1e1b4b'; // 딥 퍼플/블랙
+    } else if (isDown) {
+      highlightColor = '#3b82f6'; // 파란색 (하락)
+      bgColor = '#0f172a';
+    }
 
     return new ImageResponse(
       (
@@ -32,8 +47,8 @@ export async function GET(req: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#0f172a', // slate-900 (다크 모드 배경)
-            backgroundImage: 'radial-gradient(circle at 50% 120%, #3b82f6 0%, #0f172a 60%)', // 블루 그라데이션 하이라이트
+            backgroundColor: bgColor,
+            backgroundImage: `radial-gradient(circle at 50% 120%, ${highlightColor} 0%, ${bgColor} 60%)`,
             fontFamily: '"Pretendard"',
             padding: '40px 80px',
             color: 'white',
@@ -43,14 +58,14 @@ export async function GET(req: NextRequest) {
           <div
             style={{
               display: 'flex',
-              padding: '12px 24px',
-              backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
-              border: '2px solid rgba(59, 130, 246, 0.5)',
+              padding: '12px 32px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              border: `2px solid ${highlightColor}`,
               borderRadius: '9999px',
-              color: '#60a5fa', // blue-400
+              color: isUp ? '#fca5a5' : '#93c5fd',
               fontSize: '32px',
               fontWeight: 700,
-              marginBottom: '40px',
+              marginBottom: change ? '20px' : '40px',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}
@@ -58,11 +73,28 @@ export async function GET(req: NextRequest) {
             🔥 {theme}
           </div>
 
+          {/* 등락률 (change 파라미터가 있을 때만 표시) */}
+          {change && (
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '130px',
+                fontWeight: 800,
+                color: isUp ? '#f87171' : '#60a5fa',
+                textShadow: `0 0 40px ${isUp ? 'rgba(248,113,113,0.5)' : 'rgba(96,165,250,0.5)'}`,
+                marginBottom: '10px',
+                lineHeight: 1,
+              }}
+            >
+              {change}
+            </div>
+          )}
+
           {/* 메인 타이틀 (종목명) */}
           <div
             style={{
               display: 'flex',
-              fontSize: '110px',
+              fontSize: change ? '90px' : '110px',
               fontWeight: 700,
               letterSpacing: '-0.02em',
               lineHeight: 1.1,
@@ -81,8 +113,11 @@ export async function GET(req: NextRequest) {
               display: 'flex',
               fontSize: '48px',
               fontWeight: 700,
-              color: '#cbd5e1', // slate-300
+              color: '#e2e8f0',
               textAlign: 'center',
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              padding: '10px 30px',
+              borderRadius: '20px',
             }}
           >
             {subtitle}
@@ -101,9 +136,9 @@ export async function GET(req: NextRequest) {
             }}
           >
             <div style={{ display: 'flex', fontSize: '32px', color: '#94a3b8', fontWeight: 700 }}>
-              📈 Stock Trend Program
+              📈 AI Stock Analyst
             </div>
-            <div style={{ display: 'flex', fontSize: '32px', color: '#3b82f6', fontWeight: 700 }}>
+            <div style={{ display: 'flex', fontSize: '32px', color: highlightColor, fontWeight: 700 }}>
               지금 확인하기 →
             </div>
           </div>

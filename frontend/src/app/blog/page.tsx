@@ -3,6 +3,7 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import Link from "next/link";
 import { Clock, TrendingUp, ChevronRight, Eye } from "lucide-react";
 import { Metadata } from "next";
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const metadata: Metadata = {
     title: "전문가 마켓 리포트 | StockTrendProgram",
@@ -16,7 +17,7 @@ async function getBlogPosts() {
         const q = query(collection(db, "blog_posts"), orderBy("createdAt", "desc"), limit(20));
         const snapshot = await getDocs(q);
         
-        return snapshot.docs.map(doc => {
+        const dbPosts = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -28,9 +29,14 @@ async function getBlogPosts() {
                 viewCount: data.viewCount || 0
             };
         });
+
+        if (dbPosts.length === 0) {
+            return STATIC_POSTS;
+        }
+        return dbPosts;
     } catch (error) {
         console.error("블로그 포스트 로딩 에러:", error);
-        return [];
+        return STATIC_POSTS;
     }
 }
 

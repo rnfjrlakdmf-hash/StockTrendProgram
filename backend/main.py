@@ -203,6 +203,45 @@ async def startup_event():
             print(f"[Background] Error starting auto_heal_loop: {e}")
             traceback.print_exc()
 
+        try:
+            # [Theme Precacher] 인기 테마 10개를 3시간마다 사전 캐싱하여 응답 속도 최적화
+            async def theme_precache_loop():
+                print("[ThemePrecacheLoop] Popular theme precacher started")
+                await asyncio.sleep(90) # 서버 안정화 후 시작
+                
+                popular_themes = [
+                    "인공지능", "반도체", "비만치료제", "전고체배터리", "로봇", 
+                    "자율주행", "저PBR", "원전", "화장품", "우주항공"
+                ]
+                
+                while True:
+                    try:
+                        from db_manager import get_cached_theme
+                        from ai_analysis import analyze_theme
+                        
+                        for theme in popular_themes:
+                            cached = await asyncio.to_thread(get_cached_theme, theme)
+                            if not cached:
+                                print(f"[ThemePrecacheLoop] Precaching uncached/expired theme: {theme}")
+                                # analyze_theme 내부에 save_theme_cache 로직이 있어 자동 캐싱됨
+                                await asyncio.to_thread(analyze_theme, theme)
+                                # 연속적인 API 호출로 인한 Rate Limit 방지용 대기
+                                await asyncio.sleep(10)
+                            else:
+                                print(f"[ThemePrecacheLoop] Theme '{theme}' is already cached.")
+                                
+                    except Exception as e:
+                        print(f"[ThemePrecacheLoop] Error: {e}")
+                        
+                    # 3시간(10800초) 대기 후 다시 확인 (DB 캐시 수명이 3시간이므로)
+                    await asyncio.sleep(10800)
+                    
+            asyncio.create_task(theme_precache_loop())
+            print("[Background] theme_precache_loop task created.")
+        except Exception as e:
+            print(f"[Background] Error starting theme_precache_loop: {e}")
+            traceback.print_exc()
+
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
         try:
             from scheduler_service import start_scheduler

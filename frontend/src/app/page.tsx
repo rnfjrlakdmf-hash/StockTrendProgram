@@ -265,6 +265,25 @@ export default function Home() {
               </div>
             </div>
 
+            {/* FAQ Section for SEO */}
+            <div className="mt-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md mb-10">
+              <h2 className="text-xl font-bold text-white mb-6">💡 자주 묻는 질문 (FAQ)</h2>
+              <div className="space-y-6 text-gray-300 text-sm">
+                <div>
+                  <h3 className="font-bold text-blue-400 mb-2">Q. StockTrend의 AI 주식 분석은 어떻게 이루어지나요?</h3>
+                  <p className="leading-relaxed">A. 당사의 AI 시스템은 수십만 건의 재무제표, 증권사 리포트 원문, 뉴스 기사를 자연어처리(NLP) 기술로 분석합니다. 이를 통해 인간이 파악하기 힘든 투자 심리(Sentiment)와 숨겨진 리스크를 감지하여 0~100점의 투자 매력도 점수로 제공합니다.</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-400 mb-2">Q. 미국 나스닥과 S&P 500 주식도 분석 가능한가요?</h3>
+                  <p className="leading-relaxed">A. 네, 가능합니다. 코스피와 코스닥 등 국내 증시뿐만 아니라, 테슬라, 엔비디아, 마이크로소프트 등 미국 주요 빅테크 종목 및 글로벌 주식들의 실시간 데이터와 실적 분석 리포트를 모두 무료로 확인하실 수 있습니다.</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-400 mb-2">Q. 푸시 알림 서비스는 어떻게 신청하나요?</h3>
+                  <p className="leading-relaxed">A. 관심 있는 주식을 검색한 후 별모양 아이콘을 눌러 '관심 종목'으로 등록하면, 해당 기업의 주가가 급변하거나 주요 공시, 분기 실적 발표가 있을 때 스마트폰 브라우저 푸시 알림으로 가장 빠르게 속보를 받아보실 수 있습니다.</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
