@@ -169,48 +169,54 @@ export default function ThemePage() {
             <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
                 {/* Search Hero */}
-                <div className="text-center space-y-6 py-10">
-                    <div className="flex items-center justify-center gap-2">
-                        <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-orange-400 to-red-400">
-                            What's Trending Now? (v2.6)
+                <div className="text-center space-y-8 py-12 relative">
+                    {/* Background Glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+
+                    <div className="flex items-center justify-center gap-3">
+                        <h2 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-500 tracking-tight drop-shadow-lg">
+                            What's Trending Now? <span className="text-2xl text-blue-400/80 font-bold align-top ml-1">(v2.6)</span>
                         </h2>
                         <button 
                             onClick={() => setShowHelp(true)}
-                            className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                            className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-cyan-400/50 rounded-full transition-all text-gray-400 hover:text-cyan-300 shadow-lg"
                             title="화면 설명 보기"
                         >
                             <Info className="w-5 h-5" />
                         </button>
                     </div>
-                    <p className="text-gray-400 text-lg">
-                        관심있는 테마 키워드를 입력하면<br className="md:hidden" /> AI가 대장주와 리스크를 분석해드립니다.
+                    <p className="text-gray-400 text-lg md:text-xl font-medium tracking-wide">
+                        관심있는 테마 키워드를 입력하면<br className="md:hidden" /> AI가 <span className="text-cyan-400/90 font-bold">대장주와 리스크</span>를 즉각적으로 분석합니다.
                     </p>
 
-                    <div className="relative max-w-2xl mx-auto">
-                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                            <Search className="h-6 w-6 text-gray-500" />
+                    <div className="relative max-w-2xl mx-auto group">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-indigo-500/20 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
+                        <div className="relative flex items-center">
+                            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+                                <Search className="h-6 w-6 text-cyan-400/70" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="예: 비만치료제, 온디바이스AI..."
+                                className="w-full pl-16 pr-20 py-5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-xl font-bold outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all text-white placeholder-gray-600 shadow-2xl"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                            />
+                            <button
+                                onClick={handleAnalyze}
+                                disabled={loading}
+                                className="absolute right-3 top-3 bottom-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-6 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)] disabled:opacity-50 disabled:shadow-none"
+                            >
+                                {loading ? <Loader2 className="animate-spin text-white" /> : <ArrowRight className="text-white w-6 h-6" />}
+                            </button>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="예: 비만치료제, 온디바이스AI..."
-                            className="w-full pl-14 pr-6 py-5 bg-white/10 border border-white/20 rounded-2xl text-xl font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all text-white placeholder-gray-500 shadow-2xl"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
-                        <button
-                            onClick={handleAnalyze}
-                            disabled={loading}
-                            className="absolute right-3 top-3 bottom-3 bg-orange-500 hover:bg-orange-600 px-6 rounded-xl font-bold transition-colors disabled:opacity-50"
-                        >
-                            {loading ? <Loader2 className="animate-spin" /> : <ArrowRight />}
-                        </button>
                     </div>
 
-                    <div className="flex flex-wrap justify-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-                        <span className="text-gray-500 font-medium flex items-center gap-1.5 mr-2">
-                            <Sparkles className="w-4 h-4 text-orange-500/70" />
-                            인기 검색:
+                    <div className="flex flex-wrap justify-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 pt-4">
+                        <span className="text-gray-500 font-bold flex items-center gap-1.5 mr-2 tracking-wider text-xs uppercase">
+                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                            실시간 인기 검색
                         </span>
                         {trendingThemes.slice(0, 10).map((t, idx) => (
                             <button
@@ -224,25 +230,30 @@ export default function ThemePage() {
                                     setKeyword(name); 
                                     handleAnalyze(name); 
                                 }}
-                                className="group px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-orange-500/10 border border-white/10 hover:border-orange-500/30 transition-all hover:-translate-y-0.5 text-gray-400 hover:text-white flex items-center gap-3 text-left"
+                                className="group relative px-5 py-2.5 rounded-xl bg-white/[0.02] backdrop-blur-sm hover:bg-cyan-900/20 border border-white/5 hover:border-cyan-500/40 transition-all hover:-translate-y-1 text-left overflow-hidden"
                             >
-                                <span className="text-xs font-black text-gray-600 group-hover:text-orange-500/50 transition-colors shrink-0">
-                                    {String(idx + 1).padStart(2, '0')}
-                                </span>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-gray-200 group-hover:text-white">{typeof t === 'string' ? t : t.name}</span>
-                                        {typeof t !== 'string' && t.change && (
-                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-white/5 ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
-                                                {t.change}
+                                {/* Hover Glow Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] pointer-events-none"></div>
+                                
+                                <div className="relative z-10 flex items-center gap-3">
+                                    <span className="text-xs font-black text-gray-600 group-hover:text-cyan-400/80 transition-colors shrink-0">
+                                        {String(idx + 1).padStart(2, '0')}
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-300 group-hover:text-white transition-colors">{typeof t === 'string' ? t : t.name}</span>
+                                            {typeof t !== 'string' && t.change && (
+                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded bg-black/40 border border-white/5 ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
+                                                    {t.change}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {typeof t !== 'string' && t.desc && (
+                                            <span className="text-[10px] text-gray-500 group-hover:text-cyan-200/60 mt-0.5 font-medium transition-colors">
+                                                {t.desc}
                                             </span>
                                         )}
                                     </div>
-                                    {typeof t !== 'string' && t.desc && (
-                                        <span className="text-[10px] text-gray-500 group-hover:text-orange-200/70 mt-0.5">
-                                            {t.desc}
-                                        </span>
-                                    )}
                                 </div>
                             </button>
                         ))}
