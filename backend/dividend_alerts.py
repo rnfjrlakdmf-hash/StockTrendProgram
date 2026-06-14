@@ -24,7 +24,7 @@ def get_users_watching_stock(symbol: str):
         SELECT f.token 
         FROM watchlist w
         JOIN fcm_tokens f ON w.user_id = f.user_id
-        WHERE w.symbol = ?
+        WHERE w.symbol = ? AND f.pref_dividend = 1
     """
     cursor.execute(query, (symbol,))
     tokens = [row[0] for row in cursor.fetchall() if row[0]]

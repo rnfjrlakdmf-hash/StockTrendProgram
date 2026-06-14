@@ -1262,7 +1262,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
 def get_fcm_preferences(token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_dividend, user_id FROM fcm_tokens WHERE token = ?", (token,))
+    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, user_id FROM fcm_tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -1272,8 +1272,7 @@ def get_fcm_preferences(token: str):
             "pref_price": bool(row[2]), 
             "pref_news": bool(row[3]) if len(row) > 3 else True, 
             "pref_watch_compact": bool(row[4]) if len(row) > 4 else False,
-            "pref_dividend": bool(row[5]) if len(row) > 5 else True,
-            "user_id": row[6] if len(row) > 6 else "guest"
+            "user_id": row[5] if len(row) > 5 else "guest"
         }
     return None
 
@@ -1283,7 +1282,7 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1291,7 +1290,6 @@ def update_fcm_preferences(token: str, prefs: dict):
             1 if prefs.get('pref_price', True) else 0,
             1 if prefs.get('pref_news', True) else 0,
             1 if prefs.get('pref_watch_compact', False) else 0,
-            1 if prefs.get('pref_dividend', True) else 0,
             token
         ))
         conn.commit()

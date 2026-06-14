@@ -20,7 +20,7 @@ export default function FCMTokenManager() {
 
     const [isVisible, setIsVisible] = useState(true);
     const [currentToken, setCurrentToken] = useState<string | null>(null);
-    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true });
+    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true });
 
     useEffect(() => {
         // [Critical] Explicit Service Worker Registration
@@ -452,6 +452,32 @@ export default function FCMTokenManager() {
                                                     </div>
                                                 </button>
                                             </div>
+
+                                            {/* 배당락일 알림 */}
+                                            <div className="flex items-center justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-purple-500/20 p-1.5 rounded-lg text-purple-400 text-xs mt-0.5">💰</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">배당락일 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">관심종목의 배당락일 전날 잊지 않게 미리 알림</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_dividend')}
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_dividend 
+                                                            ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_dividend ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_dividend ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
 
                                             {/* 신규 공모주 알림 */}
                                             <div className="flex items-center justify-between gap-2.5">

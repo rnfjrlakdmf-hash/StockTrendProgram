@@ -116,6 +116,17 @@ def get_cached_stock_info(ticker: str):
             except:
                 pass
 
+        # Generate internal links (Related Stocks) to enhance Crawl Depth
+        all_stocks_res = get_all_kospi_kosdaq()
+        related_stocks = []
+        if all_stocks_res["status"] == "success":
+            import random
+            stocks_list = all_stocks_res["data"]
+            # Pick 4 random stocks to link to
+            if len(stocks_list) > 4:
+                random_picks = random.sample(stocks_list, 4)
+                related_stocks = [{"ticker": s["ticker"], "name": s["name"]} for s in random_picks]
+
         return {
             "status": "success",
             "ticker": ticker,
@@ -128,7 +139,8 @@ def get_cached_stock_info(ticker: str):
             "marketCap": cap,
             "summary": summary,
             "exDividendDate": ex_div_str,
-            "paymentDate": pay_str
+            "paymentDate": pay_str,
+            "relatedStocks": related_stocks
         }
     except Exception as e:
         import traceback
@@ -146,7 +158,8 @@ def get_cached_stock_info(ticker: str):
             "marketCap": 0,
             "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다.",
             "exDividendDate": None,
-            "paymentDate": None
+            "paymentDate": None,
+            "relatedStocks": []
         }
 
 @router.get("/seo/stocks")

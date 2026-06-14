@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import Header from "@/components/Header";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 import StockVotingBoard from "@/components/StockVotingBoard";
@@ -43,6 +44,7 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     return {
         title,
         description,
+        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", params.ticker],
         openGraph: {
             title,
             description,
@@ -77,9 +79,29 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
     const pbr = data.pbr?.toFixed(2) || 'N/A';
     const per = data.per?.toFixed(2) || 'N/A';
     const divYield = data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : 'N/A';
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "FinancialProduct",
+        "name": name,
+        "description": `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약 및 객관적 지표 현황입니다.`,
+        "provider": {
+            "@type": "Organization",
+            "name": "StockTrendProgram",
+            "url": "https://stock-trend-program.co.kr"
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": data.price || 0,
+            "priceCurrency": "KRW"
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 text-white">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-12">
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl">
@@ -157,6 +179,23 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                                 </div>
                                 <div className="text-xs text-slate-500 mt-2">현재 주가 대비 1년간 받는 배당금의 비율입니다.</div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Internal Linking for SEO (Related Stocks) */}
+                {data.relatedStocks && data.relatedStocks.length > 0 && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl">
+                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-6">🔗 시장 인기 테마 및 연관 주식</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {data.relatedStocks.map((rs: any, idx: number) => (
+                                <Link href={`/stock/${rs.ticker}`} key={idx} className="block group">
+                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 hover:bg-slate-800 hover:border-blue-500/50 transition-all duration-300">
+                                        <div className="text-sm font-bold text-white group-hover:text-blue-400">{rs.name}</div>
+                                        <div className="text-xs text-slate-400 mt-1">{rs.ticker}</div>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     </div>
                 )}

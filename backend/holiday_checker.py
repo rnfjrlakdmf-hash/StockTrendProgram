@@ -54,5 +54,5 @@ def is_market_open_hours(market_type: str) -> bool:
 def exit_if_holiday(market_type: str, script_name: str = "Script"):
     """휴장일이면 프로세스를 종료합니다 (단독 스크립트용)"""
     if is_holiday(market_type):
-        print(f"✅ [{market_type.upper()}] 오늘은 휴장일(주말 또는 공휴일)이므로 {script_name} 실행을 생략합니다.")
+        print(f"[{market_type.upper()}] 오늘은 휴장일(주말 또는 공휴일)이므로 {script_name} 실행을 생략합니다.")
         sys.exit(0)
