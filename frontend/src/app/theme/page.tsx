@@ -213,52 +213,56 @@ export default function ThemePage() {
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap justify-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 pt-4">
-                        <span className="text-gray-500 font-bold flex items-center gap-1.5 mr-2 tracking-wider text-xs uppercase">
-                            <Sparkles className="w-4 h-4 text-cyan-400" />
-                            실시간 인기 검색
-                        </span>
-                        {trendingThemes.slice(0, 10).map((t, idx) => (
-                            <button
-                                key={idx}
-                                onMouseEnter={() => {
-                                    const name = typeof t === 'string' ? t : t.name;
-                                    prefetchTheme(name);
-                                }}
-                                onClick={() => { 
-                                    const name = typeof t === 'string' ? t : t.name;
-                                    setKeyword(name); 
-                                    handleAnalyze(name); 
-                                }}
-                                className="group relative px-5 py-2.5 rounded-xl bg-white/[0.02] backdrop-blur-sm hover:bg-cyan-900/20 border border-white/5 hover:border-cyan-500/40 transition-all hover:-translate-y-1 text-left overflow-hidden"
-                            >
-                                {/* Hover Glow Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] pointer-events-none"></div>
-                                
-                                <div className="relative z-10 flex items-center gap-3">
-                                    <span className="text-xs font-black text-gray-600 group-hover:text-cyan-400/80 transition-colors shrink-0">
-                                        {String(idx + 1).padStart(2, '0')}
-                                    </span>
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gray-300 group-hover:text-white transition-colors">{typeof t === 'string' ? t : t.name}</span>
-                                            {typeof t !== 'string' && t.change && (
-                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded bg-black/40 border border-white/5 ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
-                                                    {t.change}
-                                                </span>
-                                            )}
-                                        </div>
+                    <div className="pt-8 w-full max-w-5xl mx-auto">
+                        <div className="flex items-center justify-center gap-2 mb-6">
+                            <Sparkles className="w-5 h-5 text-cyan-400 animate-pulse" />
+                            <span className="text-gray-300 font-bold text-sm tracking-widest uppercase">
+                                실시간 인기 테마 TOP 10
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+                            {trendingThemes.slice(0, 10).map((t, idx) => (
+                                <button
+                                    key={idx}
+                                    onMouseEnter={() => {
+                                        const name = typeof t === 'string' ? t : t.name;
+                                        prefetchTheme(name);
+                                    }}
+                                    onClick={() => { 
+                                        const name = typeof t === 'string' ? t : t.name;
+                                        setKeyword(name); 
+                                        handleAnalyze(name); 
+                                    }}
+                                    className="group relative p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 hover:bg-cyan-950/40 hover:border-cyan-500/50 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(6,182,212,0.15)] text-left overflow-hidden flex flex-col justify-between h-full min-h-[96px]"
+                                >
+                                    {/* Hover Subtlety */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/0 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                    
+                                    <div className="flex justify-between items-start mb-2 z-10 w-full">
+                                        <span className={`text-xs font-black px-2 py-0.5 rounded-md transition-colors ${idx < 3 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'bg-white/5 text-gray-500 border border-white/5 group-hover:text-gray-300'}`}>
+                                            {String(idx + 1).padStart(2, '0')}
+                                        </span>
+                                        {typeof t !== 'string' && t.change && (
+                                            <span className={`text-[12px] font-black tracking-tight ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
+                                                {t.change}
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="z-10 flex flex-col w-full">
+                                        <span className="font-bold text-gray-200 group-hover:text-white text-[15px] transition-colors truncate w-full">
+                                            {typeof t === 'string' ? t : t.name}
+                                        </span>
                                         {typeof t !== 'string' && t.desc && (
-                                            <span className="text-[10px] text-gray-500 group-hover:text-cyan-200/60 mt-0.5 font-medium transition-colors">
+                                            <span className="text-[11px] text-gray-500 group-hover:text-cyan-200/70 mt-1 line-clamp-1 transition-colors w-full">
                                                 {t.desc}
                                             </span>
                                         )}
                                     </div>
-                                </div>
-                            </button>
-                        ))}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
                 {error && (
                     <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-200 text-center">
