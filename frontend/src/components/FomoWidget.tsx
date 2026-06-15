@@ -120,7 +120,7 @@ export default function FomoWidget() {
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className="fixed bottom-6 left-6 z-50 max-w-sm w-[calc(100%-3rem)] md:w-auto"
                 >
-                    <Link href={currentItem.ticker === 'theme' ? '/trending' : `/stock/${currentItem.ticker}`}>
+                    <Link href={currentItem.ticker === 'theme' ? '/themes' : `/stock/${currentItem.ticker}`}>
                         <div className="bg-black/85 backdrop-blur-md border border-cyan-500/30 shadow-[0_8px_30px_rgba(6,182,212,0.2)] rounded-2xl p-4 cursor-pointer hover:bg-slate-900/90 hover:border-cyan-400/50 transition-all flex items-start gap-3 group">
                             <div className="flex-shrink-0 mt-0.5 p-2 bg-slate-800/50 rounded-full group-hover:scale-110 transition-transform">
                                 {getIcon(currentItem.type)}
