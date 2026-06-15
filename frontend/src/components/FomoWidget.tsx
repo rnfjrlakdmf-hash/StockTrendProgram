@@ -118,7 +118,7 @@ export default function FomoWidget() {
                     animate={{ opacity: 1, y: 0, x: 0 }}
                     exit={{ opacity: 0, y: 20, x: -50 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className="fixed bottom-6 left-6 z-50 max-w-sm w-[calc(100%-3rem)] md:w-auto"
+                    className="fixed bottom-6 left-6 md:left-[344px] z-[60] max-w-sm w-[calc(100%-3rem)] md:w-auto"
                 >
                     <Link href={currentItem.ticker === 'theme' ? '/themes' : `/stock/${currentItem.ticker}`}>
                         <div className="bg-black/85 backdrop-blur-md border border-cyan-500/30 shadow-[0_8px_30px_rgba(6,182,212,0.2)] rounded-2xl p-4 cursor-pointer hover:bg-slate-900/90 hover:border-cyan-400/50 transition-all flex items-start gap-3 group">
