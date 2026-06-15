@@ -242,6 +242,47 @@ async def startup_event():
             print(f"[Background] Error starting theme_precache_loop: {e}")
             traceback.print_exc()
 
+        try:
+            # [Signal Precacher] 최근 글로벌 마켓 시그널 상위 20개 브리핑 사전 캐싱 (타임아웃 방지)
+            async def signal_precache_loop():
+                print("[SignalPrecacheLoop] Global market signal precacher started")
+                await asyncio.sleep(120) # 서버 안정화 후 시작
+                
+                while True:
+                    try:
+                        from db_manager import get_recent_signals
+                        from turbo_engine import turbo_engine
+                        from routes.signals import get_signal_briefing
+                        
+                        # 최근 시그널 20개 가져오기
+                        signals = await asyncio.to_thread(get_recent_signals, 20)
+                        
+                        # 중복되지 않는 symbol 목록 추출
+                        symbols = list(set([s.get("symbol") for s in signals if s.get("symbol")]))
+                        
+                        for sym in symbols:
+                            cache_key = f"signal_briefing_{sym}"
+                            cached = turbo_engine.get_cache(cache_key)
+                            
+                            if not cached:
+                                print(f"[SignalPrecacheLoop] Precaching uncached signal briefing: {sym}")
+                                # get_signal_briefing 내부에 AI 분석 및 캐싱 로직이 포함됨
+                                await asyncio.to_thread(get_signal_briefing, sym)
+                                # AI 분석이 무겁기 때문에 종목 간 15초 대기
+                                await asyncio.sleep(15)
+                                
+                    except Exception as e:
+                        print(f"[SignalPrecacheLoop] Error: {e}")
+                        
+                    # 1시간 대기 후 재스캔
+                    await asyncio.sleep(3600)
+                    
+            asyncio.create_task(signal_precache_loop())
+            print("[Background] signal_precache_loop task created.")
+        except Exception as e:
+            print(f"[Background] Error starting signal_precache_loop: {e}")
+            traceback.print_exc()
+
         # 4. 장마감 결산 리포트 서비스 시작 (KST 15:40 / 06:10)
         try:
             from scheduler_service import start_scheduler
