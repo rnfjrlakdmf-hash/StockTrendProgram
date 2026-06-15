@@ -111,6 +111,9 @@ app.include_router(sockets_router, tags=["WebSocket"])
 
 @app.on_event("startup")
 async def startup_event():
+    import concurrent.futures
+    loop = asyncio.get_running_loop()
+    loop.set_default_executor(concurrent.futures.ThreadPoolExecutor(max_workers=50))
     """서버 생존(Port Binding)을 최우선으로 하여 가장 쾌적하게 기동합니다."""
     print(f"\n[Startup] Nuclear Stability Mode active on PID: {os.getpid()}")
     
