@@ -9,6 +9,7 @@ import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkle
 import CleanStockList from "@/components/CleanStockList";
 import { useAuth } from "@/context/AuthContext";
 import KakaoShareButton from "@/components/KakaoShareButton";
+import { TrendingThemesSkeleton, ThemeAnalysisSkeleton } from "@/components/SkeletonCard";
 
 // [Cache System] Ultra-fast navigation for Themes
 const THEME_CACHE: Record<string, { data: any, timestamp: number, quotes?: Record<string, any> }> = {};
@@ -227,7 +228,13 @@ export default function ThemePage() {
                             </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {trendingThemes.slice(0, 10).map((t, idx) => (
+                            {trendingThemes.length === 0 ? (
+                                // 스켈레톤 로딩 - 인기 테마가 아직 로드되지 않은 경우
+                                Array.from({ length: 10 }).map((_, i) => (
+                                    <div key={i} className="skeleton-shimmer rounded-2xl h-24" />
+                                ))
+                            ) : (
+                            trendingThemes.slice(0, 10).map((t, idx) => (
                                 <button
                                     key={idx}
                                     onMouseEnter={() => {
@@ -267,6 +274,7 @@ export default function ThemePage() {
                                     </div>
                                 </button>
                             ))}
+                            )}
                         </div>
                     </div>
                 </div>
@@ -345,8 +353,13 @@ export default function ThemePage() {
                     </div>
                 )}
 
+                {/* Analysis Loading Skeleton */}
+                {loading && (
+                    <ThemeAnalysisSkeleton />
+                )}
+
                 {/* Analysis Result */}
-                {result && (
+                {result && !loading && (
                     <div className="space-y-8 animate-in zoom-in-95 duration-500">
                         {/* Summary Card & Clock */}
                         <div className="grid md:grid-cols-3 gap-6">

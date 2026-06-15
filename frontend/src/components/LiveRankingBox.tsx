@@ -1,10 +1,9 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, TrendingDown, Activity, RefreshCw } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
+import { RankingBoxSkeleton } from "./SkeletonCard";
 
 function AnimatedNumber({ value, isPrice = false, prefix = "" }: { value: number | string, isPrice?: boolean, prefix?: string }) {
     // If it's a string (like "+1.23%"), just animate opacity. If number, we can do flip.
@@ -58,11 +57,7 @@ export default function LiveRankingBox() {
     }, [market, category]);
 
     if (loading && rankings.length === 0) {
-        return (
-            <div className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 flex justify-center items-center h-40">
-                <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
-            </div>
-        );
+        return <RankingBoxSkeleton />;
     }
 
     return (

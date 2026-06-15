@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Radio, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from './KakaoShareButton';
+import { MarketScannerSkeleton } from './SkeletonCard';
 
 interface MarketStats {
     up: number;
@@ -90,16 +91,8 @@ export default function MarketScannerDashboard() {
     if (loading) {
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                {[0, 1].map(i => (
-                    <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 animate-pulse">
-                        <div className="h-5 w-40 bg-white/10 rounded mb-4" />
-                        <div className="h-3 w-full bg-white/5 rounded mb-6" />
-                        <div className="space-y-4">
-                            <div className="h-8 w-full bg-white/5 rounded" />
-                            <div className="h-8 w-full bg-white/5 rounded" />
-                        </div>
-                    </div>
-                ))}
+                <MarketScannerSkeleton />
+                <MarketScannerSkeleton />
             </div>
         );
     }
