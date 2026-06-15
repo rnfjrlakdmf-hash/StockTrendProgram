@@ -273,7 +273,7 @@ export default function ThemePage() {
                                         )}
                                     </div>
                                 </button>
-                            ))}
+                                ))
                             )}
                         </div>
                     </div>
