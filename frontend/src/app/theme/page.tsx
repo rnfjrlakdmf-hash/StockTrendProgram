@@ -12,6 +12,7 @@ import KakaoShareButton from "@/components/KakaoShareButton";
 
 // [Cache System] Ultra-fast navigation for Themes
 const THEME_CACHE: Record<string, { data: any, timestamp: number, quotes?: Record<string, any> }> = {};
+const TRENDING_CACHE: { data: any[], timestamp: number } = { data: [], timestamp: 0 };
 const CACHE_DURATION = 60 * 1000 * 5; // 5 minute cache
 
 export default function ThemePage() {
@@ -102,25 +103,30 @@ export default function ThemePage() {
     };
 
 
-    const [trendingThemes, setTrendingThemes] = useState<any[]>([]);
+    const [trendingThemes, setTrendingThemes] = useState<any[]>(TRENDING_CACHE.data || []);
 
     useEffect(() => {
-        const fetchTrending = async () => {
+        const fetchTrending = async (force = false) => {
+            if (!force && TRENDING_CACHE.data.length > 0 && (Date.now() - TRENDING_CACHE.timestamp < CACHE_DURATION)) {
+                return; // Use cache
+            }
             try {
                 // [Fix] 실시간 테마 및 인기 검색 키워드 수집 (상세 데이터 포함)
                 const res = await fetch(`${API_BASE_URL}/api/market/rank/themes`);
                 const json = await res.json();
                 if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
                     setTrendingThemes(json.data); 
+                    TRENDING_CACHE.data = json.data;
+                    TRENDING_CACHE.timestamp = Date.now();
                 }
             } catch (err) {
                 console.error("Failed to fetch trending themes:", err);
             }
         };
-        fetchTrending();
+        fetchTrending(false);
         
         // 1분마다 실시간 인기 검색어 갱신
-        const interval = setInterval(fetchTrending, 60000);
+        const interval = setInterval(() => fetchTrending(true), 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -220,7 +226,7 @@ export default function ThemePage() {
                                 실시간 인기 테마 TOP 10
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {trendingThemes.slice(0, 10).map((t, idx) => (
                                 <button
                                     key={idx}
