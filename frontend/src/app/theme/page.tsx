@@ -62,28 +62,28 @@ export default function ThemePage() {
             const json = await res.json();
 
             if (json.status === "success" && json.data) {
-                // INSTANTLY display the text analysis
-                setResult(json.data);
-                setLoading(false); 
-
+                // Fetch quotes instantly using the multi-quote endpoint
+                let newQuotes = {};
                 const allSymbols = [
                     ...(json.data.leaders || []).map((s: any) => s.symbol),
                     ...(json.data.followers || []).map((s: any) => s.symbol)
                 ];
 
                 if (allSymbols.length > 0) {
-                    fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${allSymbols.join(',')}`)
-                        .then(res => res.json())
-                        .then(quoteJson => {
-                            if (quoteJson.status === "success" && quoteJson.data) {
-                                setQuotes(quoteJson.data);
-                                THEME_CACHE[searchKeyword] = { data: json.data, quotes: quoteJson.data, timestamp: Date.now() };
-                            }
-                        })
-                        .catch(e => console.error("Failed to fetch multi quotes:", e));
-                } else {
-                    THEME_CACHE[searchKeyword] = { data: json.data, quotes: {}, timestamp: Date.now() };
+                    try {
+                        const quoteRes = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${allSymbols.join(',')}`);
+                        const quoteJson = await quoteRes.json();
+                        if (quoteJson.status === "success" && quoteJson.data) {
+                            newQuotes = quoteJson.data;
+                            setQuotes(newQuotes);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch multi quotes:", e);
+                    }
                 }
+
+                setResult(json.data);
+                THEME_CACHE[searchKeyword] = { data: json.data, quotes: newQuotes, timestamp: Date.now() };
             } else {
                 setError(json.message || "분석 정보를 불러오지 못했습니다. 키워드를 변경해보세요.");
             }
@@ -263,6 +263,7 @@ export default function ThemePage() {
                             ))}
                         </div>
                     </div>
+                </div>
 
                 {error && (
                     <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-200 text-center">
