@@ -69,7 +69,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
 
     try {
-        const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 } });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
             if (data && data.data && Array.isArray(data.data)) {
@@ -88,7 +91,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     try {
-        const res = await fetch(`${apiUrl}/api/seo/themes`, { next: { revalidate: 86400 } });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${apiUrl}/api/seo/themes`, { next: { revalidate: 86400 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
             if (data && data.data && Array.isArray(data.data)) {

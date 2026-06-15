@@ -7,7 +7,10 @@ export const revalidate = 21600;
 export default async function ThemeIndexPage() {
     let themes = [];
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes`, { next: { revalidate: 21600 } });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes`, { next: { revalidate: 21600 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
