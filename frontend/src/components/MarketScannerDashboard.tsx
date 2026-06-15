@@ -16,6 +16,10 @@ interface MarketScannerData {
     stats: {
         kospi: MarketStats;
         kosdaq: MarketStats;
+        fear_greed?: {
+            score: number;
+            label: string;
+        };
     };
     disclosures: Array<{
         title: string;

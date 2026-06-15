@@ -5,9 +5,12 @@ import { Layers, AlertTriangle, TrendingUp, ShieldAlert, ArrowLeft } from 'lucid
 
 export const revalidate = 21600;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}?v=2`, { next: { revalidate: 21600 } });
+        const resolvedParams = await params;
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { next: { revalidate: 21600 } });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
@@ -54,7 +57,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export async function generateStaticParams() {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes`, { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
@@ -69,10 +75,11 @@ export async function generateStaticParams() {
     return [];
 }
 
-export default async function ThemeDetailPage({ params }: { params: { slug: string } }) {
+export default async function ThemeDetailPage({ params }: Props) {
     let themeData = null;
+    const resolvedParams = await params;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${params.slug}?v=2`, { next: { revalidate: 21600 } });
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { next: { revalidate: 21600 } });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {

@@ -23,8 +23,11 @@ async function getStockInfo(ticker: string) {
     }
 }
 
-export async function generateMetadata({ params }: { params: { ticker: string } }): Promise<Metadata> {
-    const data = await getStockInfo(params.ticker);
+type Props = { params: Promise<{ ticker: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const resolvedParams = await params;
+    const data = await getStockInfo(resolvedParams.ticker);
     
     if (!data || data.status === 'error') {
         return {
@@ -32,8 +35,8 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
         };
     }
     
-    const name = data.name || params.ticker;
-    const title = `${name}(${params.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`;
+    const name = data.name || resolvedParams.ticker;
+    const title = `${name}(${resolvedParams.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`;
     const description = `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 등 객관적 지표 현황입니다.`;
     
     // OG Image URL 생성
@@ -51,7 +54,7 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     return {
         title,
         description,
-        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", params.ticker],
+        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", resolvedParams.ticker],
         openGraph: {
             title,
             description,
@@ -73,14 +76,15 @@ export async function generateMetadata({ params }: { params: { ticker: string } 
     };
 }
 
-export default async function StockSeoPage({ params }: { params: { ticker: string } }) {
-    const data = await getStockInfo(params.ticker);
+export default async function StockSeoPage({ params }: Props) {
+    const resolvedParams = await params;
+    const data = await getStockInfo(resolvedParams.ticker);
     
     if (!data || data.status === 'error') {
         notFound();
     }
 
-    const name = data.name || params.ticker;
+    const name = data.name || resolvedParams.ticker;
     const price = data.price?.toLocaleString() || 'N/A';
     const prevClose = data.previousClose?.toLocaleString() || 'N/A';
     const pbr = data.pbr?.toFixed(2) || 'N/A';
@@ -125,12 +129,12 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
-                            {name} ({params.ticker})
+                            {name} ({resolvedParams.ticker})
                         </h1>
                         <KakaoShareButton 
-                            title={`[종목 분석] ${name} (${params.ticker})`}
+                            title={`[종목 분석] ${name} (${resolvedParams.ticker})`}
                             description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
-                            url={`https://stock-trend-program.co.kr/stock/${params.ticker}`}
+                            url={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`}
                             imageUrl={shareOgUrl.toString()}
                             className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full md:w-auto shadow-lg shadow-[#FEE500]/10"
                             buttonText="분석 결과 보기"
@@ -230,11 +234,11 @@ export default async function StockSeoPage({ params }: { params: { ticker: strin
 
                 {/* Stock Voting Board */}
                 <div className="mb-8">
-                    <StockVotingBoard ticker={params.ticker} stockName={name} />
+                    <StockVotingBoard ticker={resolvedParams.ticker} stockName={name} />
                 </div>
 
                 {/* Stock Discussion Board */}
-                <StockDiscussionBoard ticker={params.ticker} name={name} />
+                <StockDiscussionBoard ticker={resolvedParams.ticker} name={name} />
             </main>
 
         </div>

@@ -491,8 +491,8 @@ function CommunityContent() {
                                                                 onClick={() => handleLike(chat.id)}
                                                                 className="flex items-center gap-1.5 text-xs text-white/60 hover:text-rose-400 transition-colors"
                                                             >
-                                                                <Heart className={`w-4 h-4 ${chat.likes ? 'fill-rose-500 text-rose-500' : ''}`} />
-                                                                부러워요 {chat.likes > 0 && chat.likes}
+                                                                <Heart className={`w-4 h-4 ${(chat.likes || 0) > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                                                                부러워요 {(chat.likes || 0) > 0 && chat.likes}
                                                             </button>
                                                         </div>
                                                     </div>
