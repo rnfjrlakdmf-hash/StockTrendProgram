@@ -27,25 +27,25 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-2.5-flash')
+    return genai.GenerativeModel('gemini-1.5-flash')
 
-def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 60, temperature: float = 0.1, models_to_try: list = None):
+def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 15, temperature: float = 0.1, models_to_try: list = None):
     """
     여러 모델을 순차적으로 시도하여 API 제한/오류를 우회합니다.
-    timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 20s
+    timeout: 각 모델 시도당 최대 대기 시간 (초) - [Optimized] 15s
     temperature: 0.0 ~ 1.0 (낮을수록 정해진 답, 높을수록 창의적)
-    models_to_try: 시도할 모델 리스트 (기본값: gemini-2.5-flash 단일 사용 - 비용 절감)
+    models_to_try: 시도할 모델 리스트 (기본값: gemini-1.5-flash 단일 사용 - 비용 절감)
     """
     import concurrent.futures
     
     if models_to_try is None:
-        # [Cost-Optimized] gemini-2.5-flash 단일 사용 (비용 폭탄 방지)
+        # [Cost-Optimized] gemini-1.5-flash 단일 사용 (비용 폭탄 방지)
         models_to_try = [
-            "gemini-2.5-flash"
+            "gemini-1.5-flash"
         ]
     
     last_error = None
@@ -422,11 +422,11 @@ def analyze_theme(theme_keyword: str):
                 "comment": "지금이 가장 뜨거운 시간입니다!"
             },
             "leaders": [
-                {"name": "예시전자", "symbol": "005930.KS", "is_real": true, "reason": "예시: 진짜 수혜주"},
-                {"name": "예시반도체", "symbol": "000660.KS", "is_real": true, "reason": "예시: 핵심 기술 보유"}
+                {"name": "예시전자", "symbol": "005930.KS", "is_real": True, "reason": "예시: 진짜 수혜주"},
+                {"name": "예시반도체", "symbol": "000660.KS", "is_real": True, "reason": "예시: 핵심 기술 보유"}
             ],
             "followers": [
-                {"name": "예시건설", "symbol": "000720.KS", "is_real": false, "reason": "주의: 구체적 사업 없음"}
+                {"name": "예시건설", "symbol": "000720.KS", "is_real": False, "reason": "주의: 구체적 사업 없음"}
             ]
         }
 
@@ -913,12 +913,12 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # [Cost-Optimized] gemini-2.5-flash 사용 (비용 절감)
+        # [Cost-Optimized] gemini-1.5-flash 사용 (비용 절감)
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-2.5-flash"] if target_symbol else None
+        models = ["gemini-1.5-flash"] if target_symbol else None
         
         # Increase timeout for complex reasoning
-        response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=60)
+        response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=15)
         result = json.loads(response.text)
         # [Cost-Save] 결과 캐시에 저장 (다음 24시간은 캐시에서 즉시 반환)
         save_scenario_cache(keyword, target_symbol or "", result)
