@@ -9,6 +9,7 @@ from firebase_config import send_multicast_notification, initialize_firebase
 from fx_api import get_alpha_vantage_fx
 from holiday_checker import is_holiday
 from system_watchdog import update_heartbeat
+from korea_data import get_top_trending_themes
 
 def is_korean_stock(symbol: str) -> bool:
     """숫자 6자리의 한국 주식 코드(접미사 .KS/.KQ 포함) 판별"""
@@ -601,6 +602,41 @@ def send_daily_analytics_report():
         print("[Scheduler] No admin FCM tokens found in the database. Cannot send daily report.")
         return 0
 
+def send_weekend_theme_report():
+    """주말 테마 리포트 알림 발송 (일요일 발송)"""
+    try:
+        themes = get_top_trending_themes(limit=3)
+        if not themes or len(themes) == 0:
+            return 0
+            
+        theme_names = []
+        for t in themes:
+            name = t.get('name', '') if isinstance(t, dict) else t
+            if name:
+                theme_names.append(name)
+                
+        if not theme_names:
+            return 0
+            
+        title = "📈 이번 주말 가장 많이 검색된 주식 테마는?"
+        body = f"1위 {theme_names[0]}, 2위 {theme_names[1] if len(theme_names) > 1 else '...'} 월요일 장 열리기 전 꼭 체크하세요!"
+        
+        # 모든 유저에게 알림 전송
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+        conn.close()
+        
+        if tokens:
+            print(f"[Scheduler] Sending Weekend Theme Report to {len(tokens)} device(s)...")
+            send_multicast_notification(tokens, title, body, {"url": "/theme"})
+            return len(tokens)
+            
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to send weekend theme report: {e}")
+    return 0
+
 def run_market_scheduler():
     """시장별 이벤트 감시 메인 루프"""
     import asyncio
@@ -618,6 +654,7 @@ def run_market_scheduler():
     last_run_close_kr = None
     last_run_open_us = None
     last_run_close_us = None
+    last_run_weekend_report = None
     
     while True:
         try:
@@ -699,6 +736,12 @@ def run_market_scheduler():
                 if now.hour == us_close_hour and 10 <= now.minute <= 15 and ny_date != last_run_close_us and not is_market_holiday("US"):
                     send_closing_notification("US")
                     last_run_close_us = ny_date
+                    
+            # 5. 주말 테마 리포트 (일요일 18:00)
+            if day_of_week == 6: # 일요일 (0:월, ..., 6:일)
+                if now.hour == 18 and 0 <= now.minute <= 5 and current_date != last_run_weekend_report:
+                    send_weekend_theme_report()
+                    last_run_weekend_report = current_date
             
             time.sleep(30)
             
