@@ -131,6 +131,18 @@ export default function ThemePage() {
         return () => clearInterval(interval);
     }, []);
 
+    // [New] URL 파라미터 q= 검색어 자동 실행 (푸시 알림 딥링크용)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            if (q) {
+                setKeyword(q);
+                handleAnalyze(q);
+            }
+        }
+    }, []);
+
     // [New] Prefetch function for hover optimization
     const prefetchTheme = async (themeName: string) => {
         if (!themeName) return;
