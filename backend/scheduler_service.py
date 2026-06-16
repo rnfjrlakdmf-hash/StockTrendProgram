@@ -2,6 +2,7 @@ import time
 import threading
 from datetime import datetime
 import pytz
+import yfinance as yf
 from firebase_admin import messaging
 from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens, get_all_users
 from stock_data import get_simple_quote, get_korean_stock_name
@@ -637,6 +638,49 @@ def send_weekend_theme_report():
         print(f"[Scheduler-Error] Failed to send weekend theme report: {e}")
     return 0
 
+def send_weekend_crypto_report():
+    """주말 가상화폐(비트코인) 흐름 알림 발송 (토요일 발송)"""
+    try:
+        # 비트코인 최근 5일치 종가 가져오기
+        ticker = yf.Ticker('BTC-USD')
+        hist = ticker.history(period='5d')
+        if len(hist) < 2:
+            return 0
+            
+        prev_close = hist['Close'].iloc[-2]
+        curr_close = hist['Close'].iloc[-1]
+        
+        change_pct = ((curr_close - prev_close) / prev_close) * 100
+        
+        if change_pct > 2.0:
+            trend_text = "강세"
+        elif change_pct < -2.0:
+            trend_text = "변동성 확대"
+        elif change_pct > 0:
+            trend_text = "상승 흐름"
+        else:
+            trend_text = "숨고르기"
+            
+        title = f"🚨 비트코인 주말 {trend_text}!"
+        body = "월요일 장 열리기 전 꼭 체크해야 할 가상화폐 관련주는?"
+        
+        # 모든 유저에게 알림 전송
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+        conn.close()
+        
+        if tokens:
+            print(f"[Scheduler] Sending Weekend Crypto Report to {len(tokens)} device(s)...")
+            # /theme 페이지에 검색어 파라미터를 붙여서 가상화폐 테마로 바로 이동
+            send_multicast_notification(tokens, title, body, {"url": "/theme?q=가상화폐"})
+            return len(tokens)
+            
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to send weekend crypto report: {e}")
+    return 0
+
 def run_market_scheduler():
     """시장별 이벤트 감시 메인 루프"""
     import asyncio
@@ -655,6 +699,7 @@ def run_market_scheduler():
     last_run_open_us = None
     last_run_close_us = None
     last_run_weekend_report = None
+    last_run_weekend_crypto = None
     
     while True:
         try:
@@ -742,6 +787,12 @@ def run_market_scheduler():
                 if now.hour == 18 and 0 <= now.minute <= 5 and current_date != last_run_weekend_report:
                     send_weekend_theme_report()
                     last_run_weekend_report = current_date
+                    
+            # 6. 주말 코인 리포트 (토요일 18:00)
+            if day_of_week == 5: # 토요일
+                if now.hour == 18 and 0 <= now.minute <= 5 and current_date != last_run_weekend_crypto:
+                    send_weekend_crypto_report()
+                    last_run_weekend_crypto = current_date
             
             time.sleep(30)
             
