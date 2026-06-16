@@ -749,6 +749,22 @@ function CalendarTab({ router }: { router: any }) {
     // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
     const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
 
+    // [New] AI 테마 자동 매칭 함수
+    const getAiThemeForEvent = (eventName: string) => {
+        if (!eventName) return null;
+        const lower = eventName.toLowerCase();
+        if (lower.includes('cpi') || lower.includes('pce') || lower.includes('물가')) return '금리인하';
+        if (lower.includes('fomc') || lower.includes('파월') || lower.includes('금리')) return '금융';
+        if (lower.includes('고용') || lower.includes('실업') || lower.includes('pmi')) return '경기방어';
+        if (lower.includes('반도체') || lower.includes('엔비디아') || lower.includes('마이크론')) return '반도체';
+        if (lower.includes('애플') || lower.includes('아이폰') || lower.includes('wwdc')) return '애플부품';
+        if (lower.includes('테슬라') || lower.includes('전기차')) return '2차전지';
+        if (lower.includes('바이오') || lower.includes('fda') || lower.includes('학회')) return '바이오';
+        if (lower.includes('ai') || lower.includes('인공지능')) return '인공지능';
+        if (lower.includes('원유') || lower.includes('석유') || lower.includes('opec')) return '정유';
+        return null;
+    };
+
     // 매크로 경제지표 데이터
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
@@ -1085,6 +1101,23 @@ function CalendarTab({ router }: { router: any }) {
                             <div className="text-[10px] text-gray-500">Naver Finance</div>
                         </div>
 
+                        {/* [주말 특별 배너] 캘린더 내부 유도 배너 */}
+                        {(() => {
+                            const day = new Date().getDay();
+                            const hour = new Date().getHours();
+                            const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
+                            if (!isWeekend) return null;
+                            return (
+                                <div className="mb-4 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/30 rounded-xl p-3 flex items-center gap-3">
+                                    <Bot className="w-8 h-8 text-blue-400 animate-bounce" />
+                                    <div>
+                                        <div className="text-[10px] font-bold text-red-400 mb-0.5 tracking-wider">주말 스페셜 기능</div>
+                                        <div className="text-xs font-bold text-white leading-tight">하단 일정표에서 <span className="text-yellow-400">AI 수혜 테마 배지</span>를 클릭해 다음 주 유망 테마를 미리 선점하세요!</div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {macroLoading ? (
                             <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
                         ) : macroEvents.length === 0 ? (
@@ -1094,24 +1127,45 @@ function CalendarTab({ router }: { router: any }) {
                         ) : (
                             <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
                                 {(Array.isArray(macroEvents) ? macroEvents : []).map((evt, i) => (
-                                    <div key={i} className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 rounded-xl transition-all border border-white/5 group">
-                                        <div className="flex flex-col items-center min-w-[45px]">
-                                            <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-1">
-                                            {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className={`font-bold text-xs truncate ${evt.importance >= 3 ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
-                                            <div className="flex gap-3 mt-1 text-[10px] font-bold">
-                                                {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
-                                                {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
-                                                {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
+                                    <div key={i} className="flex flex-col p-3 bg-black/20 hover:bg-black/40 rounded-xl transition-all border border-white/5 group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col items-center min-w-[45px]">
+                                                <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-1">
+                                                {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`font-bold text-xs truncate ${evt.importance >= 3 ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
+                                                <div className="flex gap-3 mt-1 text-[10px] font-bold">
+                                                    {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
+                                                    {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
+                                                    {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Zap className={`w-3.5 h-3.5 ${evt.importance >= 3 ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Zap className={`w-3.5 h-3.5 ${evt.importance >= 3 ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
-                                        </div>
+                                        {/* [New] AI 수혜 테마 배지 (중요도 2 이상이거나 테마가 매칭될 때) */}
+                                        {(() => {
+                                            const aiTheme = getAiThemeForEvent(evt.event_kr || evt.event);
+                                            if (aiTheme && evt.importance >= 2) {
+                                                return (
+                                                    <div 
+                                                        className="mt-3 ml-[60px] text-[10px] font-bold bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-blue-600/40 transition-colors border border-blue-500/30"
+                                                        onClick={(e) => { e.stopPropagation(); router.push(`/theme?q=${aiTheme}`); }}
+                                                    >
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Bot className="w-3.5 h-3.5 text-purple-400" />
+                                                            <span>AI 수혜 테마 예상: <span className="text-white ml-0.5">{aiTheme}</span></span>
+                                                        </div>
+                                                        <span className="text-[9px] text-gray-400 group-hover:text-white">분석보기 〉</span>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
                                 ))}
                             </div>
