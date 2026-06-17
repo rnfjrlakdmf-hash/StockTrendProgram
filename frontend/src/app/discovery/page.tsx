@@ -1167,15 +1167,13 @@ function DiscoveryContent() {
                                                             
                                                             if (isAfterActive) {
                                                                 return (
-                                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ml-auto ${isPreMarket ? 'bg-amber-500/10 border-amber-500/20' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
+                                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isPreMarket ? 'bg-amber-500/10 border-amber-500/20' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
                                                                         <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isPreMarket ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]'}`}></div>
                                                                         <span className={`text-[9px] md:text-[10px] font-bold ${isPreMarket ? 'text-amber-400' : 'text-indigo-400'}`}>거래중</span>
                                                                     </div>
                                                                 );
                                                             } else {
-                                                                return (
-                                                                    <span className={`w-1.5 h-1.5 rounded-full opacity-40 ml-auto ${isPreMarket ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
-                                                                );
+                                                                return null;
                                                             }
                                                         })()}
                                                     </div>
