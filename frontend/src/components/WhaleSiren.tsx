@@ -6,6 +6,7 @@ import { AlertTriangle, Volume2, VolumeX } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/config';
 
 interface WhaleEvent {
     id: string;
@@ -36,52 +37,57 @@ export default function WhaleSiren() {
     }, []);
 
     useEffect(() => {
-        if (!db) return;
+        let isChecking = false;
 
-        const q = query(
-            collection(db, 'live_events'),
-            orderBy('timestamp', 'desc'),
-            limit(1)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const data = change.doc.data();
-                    
-                    // 최근 60초(1분) 이내에 생성된 이벤트만 팝업 허용 (클라이언트 시간 오차 감안)
-                    let isRecent = true;
-                    if (data.timestamp) {
-                        const eventTime = data.timestamp.toMillis ? data.timestamp.toMillis() : Date.now();
-                        // 미래 시간(오차)이거나 과거 60초 이내면 통과
-                        if (Date.now() - eventTime > 60000) {
-                            isRecent = false;
-                        }
-                    }
-
-                    if (isRecent) {
-                        setCurrentEvent({
-                            id: change.doc.id,
-                            corp: data.corp,
-                            title: data.title,
-                            code: data.code,
-                            timestamp: data.timestamp
-                        });
-
-                        if (!isMuted && hasInteracted && audioRef.current) {
-                            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        const checkLatestEvent = async () => {
+            if (isChecking) return;
+            isChecking = true;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/live_events/latest`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.status === 'success' && json.data) {
+                        const data = json.data;
+                        let isRecent = true;
+                        if (data.timestamp) {
+                            if (Date.now() - data.timestamp > 60000) {
+                                isRecent = false;
+                            }
                         }
 
-                        setTimeout(() => {
-                            setCurrentEvent(null);
-                        }, 8000);
+                        // 이미 띄운 이벤트면 스킵
+                        if (isRecent && (!currentEvent || currentEvent.id !== data.id)) {
+                            setCurrentEvent({
+                                id: data.id,
+                                corp: data.corp,
+                                title: data.title,
+                                code: data.code,
+                                timestamp: data.timestamp
+                            });
+
+                            if (!isMuted && hasInteracted && audioRef.current) {
+                                audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+                            }
+
+                            setTimeout(() => {
+                                setCurrentEvent(null);
+                            }, 8000);
+                        }
                     }
                 }
-            });
-        });
+            } catch (e) {
+                console.error("Failed to fetch whale event", e);
+            } finally {
+                isChecking = false;
+            }
+        };
 
-        return () => unsubscribe();
-    }, [isMuted, hasInteracted, mountedTime]);
+        // 처음 1회 실행 후 5초마다 폴링
+        checkLatestEvent();
+        const interval = setInterval(checkLatestEvent, 5000);
+
+        return () => clearInterval(interval);
+    }, [isMuted, hasInteracted, currentEvent]);
 
     return (
         <AnimatePresence>

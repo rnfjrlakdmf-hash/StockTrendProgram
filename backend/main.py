@@ -382,8 +382,26 @@ def read_root():
     return {"status": "success", "message": "Resilient API is Online."}
 
 @app.get("/api/health")
-def health_check():
-    return {"status": "ok", "timestamp": time.time()}
+async def health_check():
+    return {"status": "ok", "version": "v1.0.0"}
+
+@app.get("/api/live_events/latest")
+async def get_latest_live_event():
+    try:
+        from firebase_admin import firestore
+        db = firestore.client()
+        docs = db.collection("live_events").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            if data.get('timestamp'):
+                data['timestamp'] = int(data['timestamp'].timestamp() * 1000)
+            return {"status": "success", "data": data}
+        return {"status": "success", "data": None}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/blog/{blog_id}/view")
 def increment_blog_view(blog_id: str):
