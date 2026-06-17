@@ -1,20 +1,25 @@
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import Link from "next/link";
-import { Clock, TrendingUp, ChevronRight, Eye } from "lucide-react";
-import { Metadata } from "next";
-import { STATIC_POSTS } from "@/lib/staticBlogPosts";
-
-export const metadata: Metadata = {
-    title: "전문가 마켓 리포트 | StockTrendProgram",
-    description: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트",
-};
+import { collection, getDocs, query, orderBy, limit, getCountFromServer } from "firebase/firestore";
 
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
-async function getBlogPosts() {
+async function getBlogPosts(page: number, limitPerPage: number) {
     try {
-        const q = query(collection(db, "blog_posts"), orderBy("createdAt", "desc"), limit(20));
+        const collRef = collection(db, "blog_posts");
+        
+        // 전체 포스트 수 계산
+        const countSnap = await getCountFromServer(collRef);
+        const totalPosts = countSnap.data().count;
+        
+        if (totalPosts === 0) {
+            const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
+            return { posts: staticSliced, totalPages: Math.ceil(STATIC_POSTS.length / limitPerPage) };
+        }
+
+        const totalPages = Math.ceil(totalPosts / limitPerPage);
+
+        // 지정된 페이지까지 모두 가져와서 자르기 (Firebase 페이징 단순화)
+        const q = query(collRef, orderBy("createdAt", "desc"), limit(page * limitPerPage));
         const snapshot = await getDocs(q);
         
         const dbPosts = snapshot.docs.map(doc => {
@@ -30,18 +35,26 @@ async function getBlogPosts() {
             };
         });
 
-        if (dbPosts.length === 0) {
-            return STATIC_POSTS;
-        }
-        return dbPosts;
+        // 현재 페이지에 해당하는 데이터만 잘라서 반환
+        const startIndex = (page - 1) * limitPerPage;
+        const posts = dbPosts.slice(startIndex, startIndex + limitPerPage);
+
+        return { posts, totalPages };
     } catch (error) {
         console.error("블로그 포스트 로딩 에러:", error);
-        return STATIC_POSTS;
+        const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
+        return { posts: staticSliced, totalPages: Math.ceil(STATIC_POSTS.length / limitPerPage) };
     }
 }
 
-export default async function BlogListPage() {
-    const posts = await getBlogPosts();
+type Props = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
+
+export default async function BlogListPage(props: Props) {
+    const searchParams = await props.searchParams;
+    const page = parseInt((searchParams.page as string) || "1", 10);
+    const limitPerPage = 10;
+    
+    const { posts, totalPages } = await getBlogPosts(page, limitPerPage);
 
     return (
         <div className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-5xl mx-auto animate-in fade-in duration-500">
@@ -101,6 +114,46 @@ export default async function BlogListPage() {
                     ))
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-16 pb-8">
+                    {page > 1 && (
+                        <Link href={`/blog?page=${page - 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                            <ChevronRight className="w-5 h-5 rotate-180" />
+                        </Link>
+                    )}
+                    
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        // 현재 페이지 근처 2개씩만 표시하거나, 처음/끝 페이지만 표시 (심플 버전은 전체 표시)
+                        if (pageNum === 1 || pageNum === totalPages || (pageNum >= page - 1 && pageNum <= page + 1)) {
+                            return (
+                                <Link 
+                                    key={pageNum} 
+                                    href={`/blog?page=${pageNum}`}
+                                    className={`flex items-center justify-center w-10 h-10 rounded-xl font-medium transition-all ${
+                                        page === pageNum 
+                                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 border border-blue-400/50' 
+                                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </Link>
+                            );
+                        } else if (pageNum === page - 2 || pageNum === page + 2) {
+                            return <span key={pageNum} className="text-gray-600 px-1">...</span>;
+                        }
+                        return null;
+                    })}
+
+                    {page < totalPages && (
+                        <Link href={`/blog?page=${page + 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                            <ChevronRight className="w-5 h-5" />
+                        </Link>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
