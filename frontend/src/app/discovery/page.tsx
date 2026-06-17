@@ -1150,15 +1150,14 @@ function DiscoveryContent() {
                                                                     ? 'NXT AFTER MARKET 야간거래' 
                                                                     : 'AFTER MARKET 시간외거래'}
                                                         </span>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${
-                                                            extendedHours?.extended?.is_active || stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') || stock.market_status?.includes('NXT')
-                                                            ? 'animate-ping'
-                                                            : ''
-                                                        } ${
-                                                            extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
-                                                            ? 'bg-amber-400'
-                                                            : 'bg-indigo-400'
-                                                        }`}></span>
+                                                        {(extendedHours?.extended?.is_active || stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') || stock.market_status?.includes('NXT')) ? (
+                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 ml-auto">
+                                                                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]'}`}></div>
+                                                                <span className={`text-[9px] md:text-[10px] font-bold ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'text-amber-400' : 'text-indigo-400'}`}>거래중</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className={`w-1.5 h-1.5 rounded-full opacity-50 ml-auto ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center gap-4 mt-1.5">
                                                         <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
@@ -1174,72 +1173,44 @@ function DiscoveryContent() {
                                                                 className="text-white bg-transparent"
                                                             />
                                                         </span>
-                                                        <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${
-                                                            (() => {
-                                                                let val = extendedHours?.extended?.change ?? (() => {
-                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                    let v = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                                    let p = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                    if (v === 0 && p !== 0) {
-                                                                        const priceStr = String(nxt?.price || '0').replace(/,/g, '');
-                                                                        const priceNum = Number(priceStr);
-                                                                        v = priceNum - (priceNum / (1 + (p / 100)));
+                                                        {(() => {
+                                                            let val = extendedHours?.extended?.change;
+                                                            let pct = extendedHours?.extended?.change_pct;
+                                                            
+                                                            if (val === undefined) {
+                                                                const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                                pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                
+                                                                if (stock.currency === 'KRW' && nxt?.price) {
+                                                                    // 한국 주식의 경우 시간외 시세 변동을 전일 종가가 아닌 정규장 종가 대비로 재계산
+                                                                    const regPriceStr = String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, '');
+                                                                    const regPriceNum = Number(regPriceStr);
+                                                                    const aftPriceStr = String(nxt.price).replace(/,/g, '');
+                                                                    const aftPriceNum = Number(aftPriceStr);
+                                                                    if (regPriceNum > 0 && aftPriceNum > 0) {
+                                                                        val = aftPriceNum - regPriceNum;
+                                                                        pct = (val / regPriceNum) * 100;
                                                                     }
-                                                                    return v;
-                                                                })();
-                                                                return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                                       val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                                       'bg-gray-500/10 border-white/10 text-gray-400';
-                                                            })()
-                                                        }`}>
-                                                            <span>
-                                                                {(() => {
-                                                                    let val = extendedHours?.extended?.change ?? (() => {
-                                                                        const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                        let v = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                                        let p = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                        if (v === 0 && p !== 0) {
-                                                                            const priceStr = String(nxt?.price || '0').replace(/,/g, '');
-                                                                            const priceNum = Number(priceStr);
-                                                                            v = priceNum - (priceNum / (1 + (p / 100)));
-                                                                        }
-                                                                        return v;
-                                                                    })();
-                                                                    return val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                                })()}
-                                                                {(() => {
-                                                                    let val = extendedHours?.extended?.change ?? (() => {
-                                                                        const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                        let v = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                                        let p = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                        if (v === 0 && p !== 0) {
-                                                                            const priceStr = String(nxt?.price || '0').replace(/,/g, '');
-                                                                            const priceNum = Number(priceStr);
-                                                                            v = priceNum - (priceNum / (1 + (p / 100)));
-                                                                        }
-                                                                        return v;
-                                                                    })();
-                                                                    return Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
-                                                                })()}
-                                                            </span>
-                                                            <span className="text-xs md:text-sm opacity-80">
-                                                                ({(() => {
-                                                                    if (extendedHours?.extended?.change_pct !== undefined) {
-                                                                        const pct = extendedHours.extended.change_pct;
-                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
-                                                                    }
-                                                                    if (stock.is_extended_hours && stock.extended_change_percent !== undefined) {
-                                                                        const pct = Number(stock.extended_change_percent);
-                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
-                                                                    }
-                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                    const rawPct = nxt?.change_pct || "0.00%";
-                                                                    const num = typeof rawPct === 'number' ? rawPct : parseFloat(String(rawPct).replace(/[^\d.-]/g, ''));
-                                                                    if (!isNaN(num)) return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
-                                                                    return rawPct;
-                                                                })()})
-                                                            </span>
-                                                        </div>
+                                                                } else if (val === 0 && pct !== 0) {
+                                                                    const priceStr = String(nxt?.price || '0').replace(/,/g, '');
+                                                                    const priceNum = Number(priceStr);
+                                                                    val = priceNum - (priceNum / (1 + (pct / 100)));
+                                                                }
+                                                            }
+                                                            
+                                                            const colorClass = val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-gray-500/10 border-white/10 text-gray-400';
+                                                            const arrow = val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                            const valStr = Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
+                                                            const pctStr = isNaN(pct) ? "0.00%" : `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                            
+                                                            return (
+                                                                <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${colorClass}`}>
+                                                                    <span>{arrow}{valStr}</span>
+                                                                    <span className="text-xs md:text-sm opacity-80">({pctStr})</span>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             )}
