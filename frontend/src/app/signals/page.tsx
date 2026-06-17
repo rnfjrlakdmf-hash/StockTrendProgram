@@ -780,6 +780,7 @@ function CalendarTab({ router }: { router: any }) {
     const [krLoading, setKrLoading] = useState(false);
     const [globalAssets, setGlobalAssets] = useState<any>(null);
     const [globalAssetsLoading, setGlobalAssetsLoading] = useState(false);
+    const [showAllGlobalAssets, setShowAllGlobalAssets] = useState(false);
 
     // 실적·배당 데이터
     const [events, setEvents] = useState<any[]>([]);
@@ -1063,12 +1064,22 @@ function CalendarTab({ router }: { router: any }) {
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
                                 🌍 주요 경제 지표 (최신)
                             </h4>
+                            <button 
+                                onClick={() => setShowAllGlobalAssets(!showAllGlobalAssets)}
+                                className="text-xs font-bold text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10"
+                            >
+                                {showAllGlobalAssets ? "핵심만 보기 ▲" : "전체 보기 ▼"}
+                            </button>
                         </div>
                         {globalAssetsLoading ? (
                             <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
                         ) : globalAssets && globalAssets.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {(Array.isArray(globalAssets) ? globalAssets : []).map((asset: any, i: number) => {
+                                {(Array.isArray(globalAssets) ? globalAssets : []).filter(asset => {
+                                    if (showAllGlobalAssets) return true;
+                                    const essential = ['S&P 500', 'NASDAQ', 'KOSPI', 'KOSDAQ', '미 국채 10년물 금리', 'VIX', '미국 USD 환율', 'WTI'];
+                                    return essential.includes(asset.event_kr);
+                                }).map((asset: any, i: number) => {
                                     // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
                                     const changeStr = String(asset.change || "");
                                     const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
