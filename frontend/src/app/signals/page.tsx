@@ -33,8 +33,15 @@ function SignalsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const forceDynamic = searchParams.get('refresh');
+    const tabParam = searchParams.get('tab');
 
     const [activeTab, setActiveTab] = useState<"signals" | "heatmap" | "supply" | "calendar">("signals");
+
+    useEffect(() => {
+        if (tabParam === "calendar" || tabParam === "heatmap" || tabParam === "supply" || tabParam === "signals") {
+            setActiveTab(tabParam);
+        }
+    }, [tabParam]);
 
     // [v5.9.0] 전역 트렌드 컬러 유틸리티 (일관된 시각적 경험 제공)
     const getTrendStyle = (value: string | number | undefined, changeStr?: string) => {
