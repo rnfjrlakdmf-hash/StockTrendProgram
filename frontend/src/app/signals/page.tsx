@@ -1075,7 +1075,7 @@ function CalendarTab({ router }: { router: any }) {
                             <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
                         ) : globalAssets && globalAssets.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {(Array.isArray(globalAssets) ? globalAssets : []).filter(asset => {
+                                {(Array.isArray(globalAssets) ? globalAssets : []).filter((asset: any) => {
                                     if (showAllGlobalAssets) return true;
                                     const essential = ['S&P 500', 'NASDAQ', 'KOSPI', 'KOSDAQ', '미 국채 10년물 금리', 'VIX', '미국 USD 환율', 'WTI'];
                                     return essential.includes(asset.event_kr);
