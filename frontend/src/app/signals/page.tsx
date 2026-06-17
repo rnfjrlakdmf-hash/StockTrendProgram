@@ -1105,7 +1105,8 @@ function CalendarTab({ router }: { router: any }) {
                         {(() => {
                             const day = new Date().getDay();
                             const hour = new Date().getHours();
-                            const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
+                            // const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
+                            const isWeekend = true; // 대표님 확인용 임시 상시 노출
                             if (!isWeekend) return null;
                             return (
                                 <div className="mb-4 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/30 rounded-xl p-3 flex items-center gap-3">

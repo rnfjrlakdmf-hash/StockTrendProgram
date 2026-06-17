@@ -212,11 +212,12 @@ export default function Home() {
           // Default Dashboard Content
           <div className="space-y-8 animate-in fade-in duration-1000">
             
-            {/* [주말 특별 배너] 다음 주 증시 캘린더 유도 (금요일 저녁 ~ 일요일 표시) */}
+            {/* [주말 특별 배너] 다음 주 증시 캘린더 유도 (테스트를 위해 상시 노출) */}
             {(() => {
               const day = new Date().getDay();
               const hour = new Date().getHours();
-              const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
+              // const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
+              const isWeekend = true; // 대표님 확인용 임시 상시 노출
               
               if (!isWeekend) return null;
               
