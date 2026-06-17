@@ -760,15 +760,15 @@ function CalendarTab({ router }: { router: any }) {
     const getAiThemeForEvent = (eventName: string) => {
         if (!eventName) return null;
         const lower = eventName.toLowerCase();
-        if (lower.includes('cpi') || lower.includes('pce') || lower.includes('물가')) return '금리인하';
-        if (lower.includes('fomc') || lower.includes('파월') || lower.includes('금리')) return '금융';
-        if (lower.includes('고용') || lower.includes('실업') || lower.includes('pmi')) return '경기방어';
-        if (lower.includes('반도체') || lower.includes('엔비디아') || lower.includes('마이크론')) return '반도체';
-        if (lower.includes('애플') || lower.includes('아이폰') || lower.includes('wwdc')) return '애플부품';
-        if (lower.includes('테슬라') || lower.includes('전기차')) return '2차전지';
-        if (lower.includes('바이오') || lower.includes('fda') || lower.includes('학회')) return '바이오';
-        if (lower.includes('ai') || lower.includes('인공지능')) return '인공지능';
-        if (lower.includes('원유') || lower.includes('석유') || lower.includes('opec')) return '정유';
+        if (lower.includes('cpi') || lower.includes('pce') || lower.includes('물가')) return { theme: '금리인하', reason: '물가 지표 둔화 시 금리인하 기대감으로 유동성 장세가 연출될 수 있습니다.' };
+        if (lower.includes('fomc') || lower.includes('파월') || lower.includes('금리') || lower.includes('policy rate')) return { theme: '금융', reason: '기준금리 향방은 은행/금융주의 예대마진과 직결되는 핵심 변수입니다.' };
+        if (lower.includes('고용') || lower.includes('실업') || lower.includes('pmi') || lower.includes('구인') || lower.includes('claims')) return { theme: '경기방어', reason: '실물 경기 둔화 우려 시 방어주 성격의 포트폴리오로 자금이 이동하는 경향이 있습니다.' };
+        if (lower.includes('반도체') || lower.includes('엔비디아') || lower.includes('마이크론')) return { theme: '반도체', reason: '글로벌 반도체 밸류체인 실적 발표는 국내 소부장 종목들에 직접적인 낙수효과를 줍니다.' };
+        if (lower.includes('애플') || lower.includes('아이폰') || lower.includes('wwdc')) return { theme: '애플부품', reason: '애플의 신제품/신기술 발표는 국내 카메라모듈, 디스플레이 벤더들의 주가 모멘텀입니다.' };
+        if (lower.includes('테슬라') || lower.includes('전기차')) return { theme: '2차전지', reason: '전방 산업인 글로벌 EV 판매량 지표는 배터리 셀/소재 기업들의 실적 바로미터입니다.' };
+        if (lower.includes('바이오') || lower.includes('fda') || lower.includes('학회')) return { theme: '바이오', reason: '글로벌 학회에서의 임상 데이터 발표나 FDA 승인 모멘텀은 섹터 전반의 투심을 견인합니다.' };
+        if (lower.includes('ai') || lower.includes('인공지능')) return { theme: '인공지능', reason: '글로벌 빅테크들의 AI 투자 확대 스탠스는 국내 AI 소프트웨어/인프라 기업들의 밸류를 높입니다.' };
+        if (lower.includes('원유') || lower.includes('석유') || lower.includes('opec')) return { theme: '정유', reason: '국제 유가 변동은 정제마진에 직접적인 영향을 주어 정유/화학 섹터의 수익성을 결정합니다.' };
         return null;
     };
 
@@ -1116,18 +1116,23 @@ function CalendarTab({ router }: { router: any }) {
                                         </div>
                                         {/* [New] AI 수혜 테마 배지 (중요도 2 이상이거나 테마가 매칭될 때) */}
                                         {(() => {
-                                            const aiTheme = getAiThemeForEvent(evt.event_kr || evt.event);
-                                            if (aiTheme && evt.importance >= 2) {
+                                            const aiData = getAiThemeForEvent(evt.event_kr || evt.event);
+                                            if (aiData && evt.importance >= 2) {
                                                 return (
                                                     <div 
-                                                        className="mt-3 ml-[60px] text-[10px] font-bold bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-blue-600/40 transition-colors border border-blue-500/30"
-                                                        onClick={(e) => { e.stopPropagation(); window.open(`/theme?q=${aiTheme}`, '_blank'); }}
+                                                        className="mt-3 ml-[60px] flex flex-col bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg overflow-hidden cursor-pointer group hover:border-blue-400/50 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); window.open(`/theme?q=${aiData.theme}`, '_blank'); }}
                                                     >
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Bot className="w-3.5 h-3.5 text-purple-400" />
-                                                            <span>AI 수혜 테마 예상: <span className="text-white ml-0.5">{aiTheme}</span></span>
+                                                        <div className="flex items-center justify-between px-2.5 py-1.5 bg-black/20">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Bot className="w-3.5 h-3.5 text-purple-400" />
+                                                                <span className="text-[10px] font-bold text-blue-300">AI 수혜 테마 예상: <span className="text-white ml-0.5">{aiData.theme}</span></span>
+                                                            </div>
+                                                            <span className="text-[9px] text-gray-400 group-hover:text-white transition-colors">분석보기 〉</span>
                                                         </div>
-                                                        <span className="text-[9px] text-gray-400 group-hover:text-white">분석보기 〉</span>
+                                                        <div className="px-2.5 py-1.5 text-[10px] text-gray-400 border-t border-white/5 leading-tight">
+                                                            💡 {aiData.reason}
+                                                        </div>
                                                     </div>
                                                 );
                                             }
