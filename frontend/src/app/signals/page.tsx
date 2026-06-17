@@ -1058,58 +1058,6 @@ function CalendarTab({ router }: { router: any }) {
             {/* 주요 경제 지표 서브탭 */}
             <div className={mainTab === "economic" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                 <div className="space-y-4">
-                    {/* 글로벌 주요 지수 및 자산 (KOSPI/KOSDAQ 등) 복구 */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
-                                🌍 주요 경제 지표 (최신)
-                            </h4>
-                            <button 
-                                onClick={() => setShowAllGlobalAssets(!showAllGlobalAssets)}
-                                className="text-xs font-bold text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10"
-                            >
-                                {showAllGlobalAssets ? "핵심만 보기 ▲" : "전체 보기 ▼"}
-                            </button>
-                        </div>
-                        {globalAssetsLoading ? (
-                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
-                        ) : globalAssets && globalAssets.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {(Array.isArray(globalAssets) ? globalAssets : []).filter((asset: any) => {
-                                    if (showAllGlobalAssets) return true;
-                                    const essential = ['S&P 500', 'NASDAQ', 'KOSPI', 'KOSDAQ', '미 국채 10년물 금리', 'VIX', '미국 USD 환율', 'WTI'];
-                                    return essential.includes(asset.event_kr);
-                                }).map((asset: any, i: number) => {
-                                    // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
-                                    const changeStr = String(asset.change || "");
-                                    const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
-                                    const isDown = changeStr.startsWith('-') || parseFloat(changeStr) < 0;
-                                    
-                                    const colorClass = isUp ? 'text-rose-500' : isDown ? 'text-sky-500' : 'text-gray-400';
-                                    const bgColorClass = isUp ? 'bg-rose-500/10' : isDown ? 'bg-sky-500/10' : 'bg-gray-500/10';
-                                    const borderClass = isUp ? 'border-rose-500/20' : isDown ? 'border-sky-500/20' : 'border-gray-500/20';
-
-                                    return (
-                                        <div key={i} className={`bg-black/40 rounded-xl p-3 border ${borderClass} flex flex-col justify-between hover:bg-white/5 transition-all group shadow-lg shadow-black/20`}>
-                                            <div className="text-[10px] text-gray-500 font-bold mb-1 group-hover:text-gray-300 transition-colors">{asset.event_kr}</div>
-                                            <div className={`text-base font-black ${colorClass} tracking-tighter leading-tight`}>
-                                                {asset.actual}
-                                            </div>
-                                            <div className={`text-[10px] font-bold flex items-center gap-1 mt-1.5 ${bgColorClass} ${colorClass} w-max px-2 py-0.5 rounded-full border ${borderClass}`}>
-                                                {isUp ? '▲' : isDown ? '▼' : '●'} {changeStr || "-"}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-
-                            </div>
-                        ) : (
-                            <div className="text-center py-4 text-gray-500 text-xs">
-                                <p>데이터를 불러올 수 없습니다.</p>
-                            </div>
-                        )}
-                    </div>
-
                     {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -1191,6 +1139,59 @@ function CalendarTab({ router }: { router: any }) {
                         )}
                     </div>
 
+
+
+                    {/* 글로벌 주요 지수 및 자산 (KOSPI/KOSDAQ 등) 복구 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
+                                🌍 주요 경제 지표 (최신)
+                            </h4>
+                            <button 
+                                onClick={() => setShowAllGlobalAssets(!showAllGlobalAssets)}
+                                className="text-xs font-bold text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10"
+                            >
+                                {showAllGlobalAssets ? "핵심만 보기 ▲" : "전체 보기 ▼"}
+                            </button>
+                        </div>
+                        {globalAssetsLoading ? (
+                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
+                        ) : globalAssets && globalAssets.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {(Array.isArray(globalAssets) ? globalAssets : []).filter((asset: any) => {
+                                    if (showAllGlobalAssets) return true;
+                                    const essential = ['S&P 500', 'NASDAQ', 'KOSPI', 'KOSDAQ', '미 국채 10년물 금리', 'VIX', '미국 USD 환율', 'WTI'];
+                                    return essential.includes(asset.event_kr);
+                                }).map((asset: any, i: number) => {
+                                    // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
+                                    const changeStr = String(asset.change || "");
+                                    const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
+                                    const isDown = changeStr.startsWith('-') || parseFloat(changeStr) < 0;
+                                    
+                                    const colorClass = isUp ? 'text-rose-500' : isDown ? 'text-sky-500' : 'text-gray-400';
+                                    const bgColorClass = isUp ? 'bg-rose-500/10' : isDown ? 'bg-sky-500/10' : 'bg-gray-500/10';
+                                    const borderClass = isUp ? 'border-rose-500/20' : isDown ? 'border-sky-500/20' : 'border-gray-500/20';
+
+                                    return (
+                                        <div key={i} className={`bg-black/40 rounded-xl p-3 border ${borderClass} flex flex-col justify-between hover:bg-white/5 transition-all group shadow-lg shadow-black/20`}>
+                                            <div className="text-[10px] text-gray-500 font-bold mb-1 group-hover:text-gray-300 transition-colors">{asset.event_kr}</div>
+                                            <div className={`text-base font-black ${colorClass} tracking-tighter leading-tight`}>
+                                                {asset.actual}
+                                            </div>
+                                            <div className={`text-[10px] font-bold flex items-center gap-1 mt-1.5 ${bgColorClass} ${colorClass} w-max px-2 py-0.5 rounded-full border ${borderClass}`}>
+                                                {isUp ? '▲' : isDown ? '▼' : '●'} {changeStr || "-"}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+
+                            </div>
+                        ) : (
+                            <div className="text-center py-4 text-gray-500 text-xs">
+                                <p>데이터를 불러올 수 없습니다.</p>
+                            </div>
+                        )}
+                    </div>
 
                 </div>
             </div>
