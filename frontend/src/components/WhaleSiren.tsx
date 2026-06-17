@@ -44,40 +44,35 @@ export default function WhaleSiren() {
             limit(1)
         );
 
+        let isInitialLoad = true;
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                return; // 초기 로딩 시점의 과거 데이터는 스킵
+            }
+
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const data = change.doc.data();
                     
-                    // Firestore 서버 타임스탬프와 로컬 마운트 시간 비교하여 과거 데이터는 스킵
-                    // (약 1분 이내의 데이터만 팝업)
-                    let isRecent = true;
-                    if (data.timestamp) {
-                        const eventTime = data.timestamp.toMillis ? data.timestamp.toMillis() : Date.now();
-                        if (Date.now() - eventTime > 60000 || eventTime < mountedTime) {
-                            isRecent = false;
-                        }
+                    setCurrentEvent({
+                        id: change.doc.id,
+                        corp: data.corp,
+                        title: data.title,
+                        code: data.code,
+                        timestamp: data.timestamp
+                    });
+
+                    // 사운드 재생
+                    if (!isMuted && hasInteracted && audioRef.current) {
+                        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
                     }
 
-                    if (isRecent) {
-                        setCurrentEvent({
-                            id: change.doc.id,
-                            corp: data.corp,
-                            title: data.title,
-                            code: data.code,
-                            timestamp: data.timestamp
-                        });
-
-                        // 사운드 재생
-                        if (!isMuted && hasInteracted && audioRef.current) {
-                            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-                        }
-
-                        // 8초 후 닫기
-                        setTimeout(() => {
-                            setCurrentEvent(null);
-                        }, 8000);
-                    }
+                    // 8초 후 닫기
+                    setTimeout(() => {
+                        setCurrentEvent(null);
+                    }, 8000);
                 }
             });
         });
