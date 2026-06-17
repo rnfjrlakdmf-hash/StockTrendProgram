@@ -44,35 +44,38 @@ export default function WhaleSiren() {
             limit(1)
         );
 
-        let isInitialLoad = true;
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (isInitialLoad) {
-                isInitialLoad = false;
-                return; // 초기 로딩 시점의 과거 데이터는 스킵
-            }
-
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const data = change.doc.data();
                     
-                    setCurrentEvent({
-                        id: change.doc.id,
-                        corp: data.corp,
-                        title: data.title,
-                        code: data.code,
-                        timestamp: data.timestamp
-                    });
-
-                    // 사운드 재생
-                    if (!isMuted && hasInteracted && audioRef.current) {
-                        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+                    // 최근 60초(1분) 이내에 생성된 이벤트만 팝업 허용 (클라이언트 시간 오차 감안)
+                    let isRecent = true;
+                    if (data.timestamp) {
+                        const eventTime = data.timestamp.toMillis ? data.timestamp.toMillis() : Date.now();
+                        // 미래 시간(오차)이거나 과거 60초 이내면 통과
+                        if (Date.now() - eventTime > 60000) {
+                            isRecent = false;
+                        }
                     }
 
-                    // 8초 후 닫기
-                    setTimeout(() => {
-                        setCurrentEvent(null);
-                    }, 8000);
+                    if (isRecent) {
+                        setCurrentEvent({
+                            id: change.doc.id,
+                            corp: data.corp,
+                            title: data.title,
+                            code: data.code,
+                            timestamp: data.timestamp
+                        });
+
+                        if (!isMuted && hasInteracted && audioRef.current) {
+                            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+                        }
+
+                        setTimeout(() => {
+                            setCurrentEvent(null);
+                        }, 8000);
+                    }
                 }
             });
         });
