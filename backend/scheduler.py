@@ -556,3 +556,30 @@ async def dividend_alerts_scheduler_loop():
         except Exception as e:
             logger.error(f"[DividendAlerts] Loop error: {e}")
             await asyncio.sleep(60)
+
+async def weekly_blog_bot_scheduler_loop():
+    """매주 토요일 오전 9시 KST에 주간 증시 결산 블로그 포스팅 실행"""
+    logger.info("[WeeklyBlog] Weekly Blog Bot Scheduler Active.")
+    import subprocess
+    import sys
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weekly_blog_bot.py")
+    last_run_week = -1
+    
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    
+    while True:
+        try:
+            now = datetime.now(kst)
+            # 5: 토요일 (weekday()는 월요일이 0, 토요일이 5)
+            # 오전 9시에 1번 실행 (09:00 ~ 09:59 사이)
+            current_week = now.isocalendar()[1]
+            if now.weekday() == 5 and now.hour == 9 and last_run_week != current_week:
+                logger.info(f"[WeeklyBlog] Triggering Weekly Blog Posting for week {current_week}...")
+                await asyncio.to_thread(subprocess.run, [sys.executable, script_path])
+                last_run_week = current_week
+                
+            await asyncio.sleep(60 * 30) # 30분 주기로 체크
+        except Exception as e:
+            logger.error(f"[WeeklyBlog] Loop error: {e}")
+            await asyncio.sleep(60)
