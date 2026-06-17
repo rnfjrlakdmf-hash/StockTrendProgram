@@ -4133,75 +4133,112 @@ def get_market_insights_data():
 
 
 @turbo_cache(ttl_seconds=1800)
-def get_naver_economy_calendar():
+def get_global_economy_calendar():
     """
-    네이버 증권 최신 API를 사용하여 오늘부터 7일 후까지의 글로벌 경제 일정을 수집합니다.
-    URL: https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate
+    무료 글로벌 API(ForexFactory)를 사용하여 이번 주 주요 경제 일정을 수집합니다.
     """
     import datetime
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://stock.naver.com/"}
+    import pytz
+    import xml.etree.ElementTree as ET
 
     events = []
-
     try:
-        # Check from today up to 7 days ahead
-        for i in range(7):
-            target_date = datetime.datetime.now() + datetime.timedelta(days=i)
-            target_str = target_date.strftime("%Y%m%d")
+        url = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code != 200:
+            return []
+            
+        root = ET.fromstring(res.content)
+        eastern = pytz.timezone('US/Eastern')
+        kst = pytz.timezone('Asia/Seoul')
+        
+        ko_trans = {
+            "Core CPI": "근원 소비자물가지수 (CPI)",
+            "CPI": "소비자물가지수 (CPI)",
+            "FOMC": "FOMC (연방공개시장위원회)",
+            "Federal Funds Rate": "미국 기준금리 결정",
+            "Core Retail Sales": "근원 소매판매",
+            "Retail Sales": "소매판매",
+            "Unemployment Rate": "실업률",
+            "Non-Farm Employment Change": "비농업 고용지수",
+            "GDP": "국내총생산 (GDP)",
+            "Services PMI": "서비스업 PMI",
+            "Manufacturing PMI": "제조업 PMI",
+            "PMI": "구매관리자지수 (PMI)",
+            "Initial Jobless Claims": "신규 실업수당 청구건수",
+            "Building Permits": "건축 허가건수",
+            "Crude Oil Inventories": "원유 재고",
+            "Core PPI": "근원 생산자물가지수 (PPI)",
+            "PPI": "생산자물가지수 (PPI)",
+            "JOLTS Job Openings": "JOLTS 구인건수",
+            "CB Consumer Confidence": "CB 소비자신뢰지수",
+            "Fed Chair Powell Speaks": "파월 연준 의장 연설",
+            "Empire State Manufacturing Index": "엠파이어 스테이트 제조업 지수",
+            "ECB President Lagarde Speaks": "라가르드 유럽중앙은행 총재 연설",
+            "BOJ Policy Rate": "일본 BOJ 기준금리 결정",
+            "Monetary Policy Statement": "통화정책 성명",
+            "Unemployment Claims": "실업수당 청구건수",
+            "Philly Fed Manufacturing Index": "필라델피아 연은 제조업 활동지수"
+        }
 
-            url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&nationTypeList=USA&page=1&pageSize=100&releaseDate={target_str}"
-
-            res = requests.get(url, headers=headers, timeout=10)
-            if res.status_code != 200:
+        for event in root.findall('event'):
+            country = event.find('country').text
+            if country not in ['USD', 'KRW', 'EUR', 'CNY', 'JPY']:
                 continue
-
-            data = res.json()
-            indicators = data.get("indicators", [])
-
-            for item in indicators:
-                name = item.get("name", "Unknown")
-                nation = item.get("nationType", "🌐")
-
-                # 시간 형식 변환 (MM/DD HH:MM)
-                raw_time = item.get("releaseTime", "000000")
-                if not raw_time:
-                    raw_time = "000000"
-                time_fmt = f"{raw_time[:2]}:{raw_time[2:4]}" if len(
-                    raw_time) >= 4 else "00:00"
-                date_prefix = target_date.strftime("%m/%d")
-                final_time_str = f"{date_prefix} {time_fmt}"
-
-                importance = item.get("importance", 1)
-                actual = item.get("actualValue", 0)
-                previous = item.get("previousValue", 0)
-
-                actual_str = str(actual) if actual != 0 else "-"
-                prev_str = str(previous) if previous != 0 else "-"
-
-                # 핵심 일정만 표시하기 위해 중요도 1짜리 자잘한 지표(모기지 지수 등) 필터링
-                if importance < 2:
-                    continue
-
-                events.append({
-                    "time": final_time_str,
-                    "country": "US" if nation == "USA" else "KR" if nation == "KOR" else nation,
-                    "event": name,
-                    "event_kr": name,
-                    "importance": importance,
-                    "actual": actual_str,
-                    "forecast": "-",
-                    "previous": prev_str
-                })
-
+                
+            title = event.find('title').text
+            date_str = event.find('date').text
+            time_str = event.find('time').text
+            impact = event.find('impact').text
+            actual = event.find('forecast').text if event.find('forecast') is not None else "-"
+            prev = event.find('previous').text if event.find('previous') is not None else "-"
+            
+            imp_val = 1
+            if impact == 'High': imp_val = 3
+            elif impact == 'Medium': imp_val = 2
+            
+            if imp_val < 2:
+                continue
+                
+            if not time_str or "Day" in time_str:
+                time_str = "12:00am"
+            
+            try:
+                dt_str = f"{date_str} {time_str}"
+                dt_et = datetime.datetime.strptime(dt_str, "%m-%d-%Y %I:%M%p")
+                dt_et = eastern.localize(dt_et)
+                dt_kst = dt_et.astimezone(kst)
+                final_time_str = dt_kst.strftime("%m/%d %H:%M")
+            except:
+                final_time_str = f"{date_str[:5].replace('-','/')} 00:00"
+                
+            event_kr = title
+            for en in sorted(ko_trans.keys(), key=len, reverse=True):
+                ko = ko_trans[en]
+                if en.lower() in title.lower():
+                    event_kr = title.replace(en, ko)
+                    break
+                    
+            event_kr = event_kr.replace("m/m", "(전월대비)").replace("y/y", "(전년동기대비)").replace("q/q", "(전분기대비)")
+            
+            events.append({
+                "time": final_time_str,
+                "country": country[:2], # USD -> US, JPY -> JP
+                "event": title,
+                "event_kr": event_kr,
+                "importance": imp_val,
+                "actual": actual or "-",
+                "forecast": "-",
+                "previous": prev or "-"
+            })
+            
             if len(events) >= 30:
                 break
-
+                
     except Exception as e:
-        print(f"[EconomyCalendar] API Processing Error: {e}")
-
+        print(f"[EconomyCalendar] FF API Error: {e}")
+        
     return events
 
 

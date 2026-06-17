@@ -1927,8 +1927,8 @@ def get_macro_calendar():
     네이버 금융 글로벌 경제 캘린더에서 오늘의 실시간 경제 일정 및 지표를 수집합니다.
     """
     try:
-        from korea_data import get_naver_economy_calendar
-        return get_naver_economy_calendar()
+        from korea_data import get_global_economy_calendar
+        return get_global_economy_calendar()
     except Exception as e:
         print(f"[Macro Calendar] Error: {e}")
         return []
