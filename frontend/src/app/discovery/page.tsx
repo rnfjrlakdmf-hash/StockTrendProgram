@@ -1128,7 +1128,9 @@ function DiscoveryContent() {
                                                             extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
                                                             'bg-gray-500'
                                                         }`}></div>
-                                                        <span className="text-xs md:text-sm font-black uppercase tracking-tight">{extendedHours?.regular?.is_active ? '장중' : '장마감'}</span>
+                                                        <span className="text-xs md:text-sm font-black uppercase tracking-tight">
+                                                            {extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
