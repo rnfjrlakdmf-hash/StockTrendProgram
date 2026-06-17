@@ -1,5 +1,14 @@
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit, getCountFromServer } from "firebase/firestore";
+import Link from "next/link";
+import { Clock, TrendingUp, ChevronRight, Eye } from "lucide-react";
+import { Metadata } from "next";
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+
+export const metadata: Metadata = {
+    title: "전문가 마켓 리포트 | StockTrendProgram",
+    description: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트",
+};
 
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
