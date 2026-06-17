@@ -1162,7 +1162,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 return (
                                                     <div 
                                                         className="mt-3 ml-[60px] text-[10px] font-bold bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-blue-600/40 transition-colors border border-blue-500/30"
-                                                        onClick={(e) => { e.stopPropagation(); router.push(`/theme?q=${aiTheme}`); }}
+                                                        onClick={(e) => { e.stopPropagation(); window.open(`/theme?q=${aiTheme}`, '_blank'); }}
                                                     >
                                                         <div className="flex items-center gap-1.5">
                                                             <Bot className="w-3.5 h-3.5 text-purple-400" />
