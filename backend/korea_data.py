@@ -4236,6 +4236,56 @@ def get_global_economy_calendar():
             if len(events) >= 30:
                 break
                 
+        # -----------------------------------------------------
+        # [Hybrid] 네이버 API에서 한국(KOR) 일정만 추가 수집
+        # -----------------------------------------------------
+        try:
+            naver_headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://stock.naver.com/"
+            }
+            # 오늘부터 7일치 한국 일정만
+            for i in range(7):
+                target_date = datetime.datetime.now() + datetime.timedelta(days=i)
+                target_str = target_date.strftime("%Y%m%d")
+                naver_url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&page=1&pageSize=30&releaseDate={target_str}"
+                n_res = requests.get(naver_url, headers=naver_headers, timeout=5)
+                if n_res.status_code == 200:
+                    n_data = n_res.json()
+                    for item in n_data.get("indicators", []):
+                        # 네이버 일정 중 중요도 2 이상만 필터링 (너무 자잘한 것 제외)
+                        n_imp = item.get("importance", 1)
+                        if n_imp < 2:
+                            continue
+                            
+                        n_name = item.get("name", "Unknown")
+                        raw_time = item.get("releaseTime", "000000") or "000000"
+                        time_fmt = f"{raw_time[:2]}:{raw_time[2:4]}" if len(raw_time) >= 4 else "00:00"
+                        n_time_str = f"{target_date.strftime('%m/%d')} {time_fmt}"
+                        
+                        events.append({
+                            "time": n_time_str,
+                            "country": "KR",
+                            "event": n_name,
+                            "event_kr": n_name,
+                            "importance": n_imp,
+                            "actual": str(item.get("actualValue", "-")),
+                            "forecast": "-",
+                            "previous": str(item.get("previousValue", "-"))
+                        })
+        except Exception as ne:
+            print(f"[EconomyCalendar] Naver KOR API Error: {ne}")
+            
+        # 시간을 기준으로 오름차순 정렬
+        def sort_key(e):
+            try:
+                # "MM/DD HH:MM"
+                return datetime.datetime.strptime(e["time"], "%m/%d %H:%M")
+            except:
+                return datetime.datetime.now()
+                
+        events.sort(key=sort_key)
+        
     except Exception as e:
         print(f"[EconomyCalendar] FF API Error: {e}")
         
