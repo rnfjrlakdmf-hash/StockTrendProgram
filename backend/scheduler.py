@@ -81,6 +81,25 @@ async def check_and_notify_disclosures():
             if not raw_code:
                 continue
 
+            # [세력 포착 라이브 사이렌 브로드캐스트]
+            whale_keywords = ["주요주주", "대량보유", "단일판매", "무상증자", "유상증자", "자기주식"]
+            is_whale = any(kw in report_title for kw in whale_keywords)
+            if is_whale:
+                try:
+                    from firebase_admin import firestore
+                    db = firestore.client()
+                    event_data = {
+                        "type": "WHALE_ALERT",
+                        "corp": corp,
+                        "title": report_title,
+                        "code": raw_code,
+                        "timestamp": firestore.SERVER_TIMESTAMP
+                    }
+                    db.collection("live_events").add(event_data)
+                    logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
+                except Exception as e:
+                    logger.error(f"[WhaleSiren] Firestore error: {e}")
+
             # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
             symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
             tokens = []

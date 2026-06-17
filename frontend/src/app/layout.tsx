@@ -11,6 +11,7 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import KakaoScript from "@/components/KakaoScript";
 import AppInstallBanner from "@/components/AppInstallBanner";
 import FomoWidget from "@/components/FomoWidget";
+import WhaleSiren from "@/components/WhaleSiren";
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
   title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
@@ -111,6 +112,7 @@ export default function RootLayout({
 
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
+            <WhaleSiren />
             <FomoWidget />
           </div>
         </AuthProvider>
