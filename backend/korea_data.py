@@ -4181,6 +4181,10 @@ def get_naver_economy_calendar():
                 actual_str = str(actual) if actual != 0 else "-"
                 prev_str = str(previous) if previous != 0 else "-"
 
+                # 핵심 일정만 표시하기 위해 중요도 1짜리 자잘한 지표(모기지 지수 등) 필터링
+                if importance < 2:
+                    continue
+
                 events.append({
                     "time": final_time_str,
                     "country": "US" if nation == "USA" else "KR" if nation == "KOR" else nation,
@@ -4192,7 +4196,7 @@ def get_naver_economy_calendar():
                     "previous": prev_str
                 })
 
-            if len(events) >= 15:
+            if len(events) >= 30:
                 break
 
     except Exception as e:

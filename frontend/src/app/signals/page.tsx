@@ -1103,7 +1103,7 @@ function CalendarTab({ router }: { router: any }) {
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-blue-400" /> 오늘 글로벌 일정
+                                <Calendar className="w-4 h-4 text-blue-400" /> 주간 글로벌 핵심 일정
                             </h4>
                             <div className="text-[10px] text-gray-500">Naver Finance</div>
                         </div>
