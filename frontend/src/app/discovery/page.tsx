@@ -1150,14 +1150,34 @@ function DiscoveryContent() {
                                                                     ? 'NXT AFTER MARKET 야간거래' 
                                                                     : 'AFTER MARKET 시간외거래'}
                                                         </span>
-                                                        {(extendedHours?.extended?.is_active || stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('에프터') || stock.market_status?.includes('AFTER') || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') || stock.market_status?.includes('NXT')) ? (
-                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 ml-auto">
-                                                                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]'}`}></div>
-                                                                <span className={`text-[9px] md:text-[10px] font-bold ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'text-amber-400' : 'text-indigo-400'}`}>거래중</span>
-                                                            </div>
-                                                        ) : (
-                                                            <span className={`w-1.5 h-1.5 rounded-full opacity-50 ml-auto ${extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
-                                                        )}
+                                                        {(() => {
+                                                            const isPreMarket = extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE');
+                                                            const isAfterActive = 
+                                                                extendedHours?.extended?.is_active ||
+                                                                stock.market_status?.includes('시간외') ||
+                                                                stock.market_status?.includes('야간') ||
+                                                                stock.market_status?.includes('에프터') ||
+                                                                stock.market_status?.includes('AFTER') ||
+                                                                stock.market_status?.includes('프리') ||
+                                                                stock.market_status?.includes('PRE') ||
+                                                                stock.market_status?.includes('NXT') ||
+                                                                // 한국 주식: after_market_data가 있으면 시간외 거래 진행 중으로 간주
+                                                                (!!stock.after_market_data?.price && stock.after_market_data.status !== 'CLOSED') ||
+                                                                (!!stock.nxt_data?.price);
+                                                            
+                                                            if (isAfterActive) {
+                                                                return (
+                                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ml-auto ${isPreMarket ? 'bg-amber-500/10 border-amber-500/20' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
+                                                                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isPreMarket ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]'}`}></div>
+                                                                        <span className={`text-[9px] md:text-[10px] font-bold ${isPreMarket ? 'text-amber-400' : 'text-indigo-400'}`}>거래중</span>
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                return (
+                                                                    <span className={`w-1.5 h-1.5 rounded-full opacity-40 ml-auto ${isPreMarket ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
+                                                                );
+                                                            }
+                                                        })()}
                                                     </div>
                                                     <div className="flex items-center gap-4 mt-1.5">
                                                         <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
