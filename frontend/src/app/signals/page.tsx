@@ -1105,7 +1105,7 @@ function CalendarTab({ router }: { router: any }) {
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-400" /> 주간 글로벌 핵심 일정
                             </h4>
-                            <div className="text-[10px] text-gray-500">Naver Finance</div>
+                            <div className="text-[10px] text-gray-500">ForexFactory / Global</div>
                         </div>
 
                         {/* [주말 특별 배너] 캘린더 내부 유도 배너 */}
