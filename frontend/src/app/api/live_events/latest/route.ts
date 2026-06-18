@@ -1,21 +1,22 @@
 import { NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
     try {
-        if (!admin.apps.length) {
+        if (!getApps().length) {
             const serviceAccount = JSON.parse(
                 process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}'
             );
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
+            initializeApp({
+                credential: cert(serviceAccount),
             });
         }
 
-        const db = admin.firestore();
+        const db = getFirestore();
         const snapshot = await db
             .collection('live_events')
             .orderBy('timestamp', 'desc')
