@@ -1160,10 +1160,7 @@ function DiscoveryContent() {
                                                                 stock.market_status?.includes('AFTER') ||
                                                                 stock.market_status?.includes('프리') ||
                                                                 stock.market_status?.includes('PRE') ||
-                                                                stock.market_status?.includes('NXT') ||
-                                                                // 한국 주식: after_market_data가 있으면 시간외 거래 진행 중으로 간주
-                                                                (!!stock.after_market_data?.price && stock.after_market_data.status !== 'CLOSED') ||
-                                                                (!!stock.nxt_data?.price);
+                                                                stock.market_status?.includes('NXT');
                                                             
                                                             if (isAfterActive) {
                                                                 return (
