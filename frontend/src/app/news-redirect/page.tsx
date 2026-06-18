@@ -18,6 +18,9 @@ function NewsRedirectContent() {
     const symbol = searchParams.get('symbol') || '';
     const title = searchParams.get('title') || '';
     const publisher = searchParams.get('publisher') || '';
+    const type = searchParams.get('type') || 'news';
+    const isDisclosure = type === 'disclosure';
+    const docLabel = isDisclosure ? '공시 원문' : '뉴스 원문';
 
     // Next.js searchParams.get() 이미 디코딩된 문자열을 반환하므로 추가 디코딩 시 에러(URIError)가 발생할 수 있습니다.
     // 만약 한 번 더 인코딩되어 넘어온 특이 케이스를 대비해 안전하게 디코딩을 시도합니다.
@@ -39,9 +42,9 @@ function NewsRedirectContent() {
         try {
             return new URL(decodedUrl).hostname.replace('www.', '');
         } catch {
-            return decodedPublisher || '뉴스 원문';
+            return decodedPublisher || docLabel;
         }
-    })() : (decodedPublisher || '뉴스 원문');
+    })() : (decodedPublisher || docLabel);
 
     useEffect(() => {
         if (!decodedUrl) {
@@ -166,7 +169,7 @@ function NewsRedirectContent() {
                                         border: '1px solid rgba(59,130,246,0.3)',
                                     }}
                                 >
-                                    <Newspaper className="w-9 h-9 text-blue-400" />
+                                    {isDisclosure ? <TrendingUp className="w-9 h-9 text-blue-400" /> : <Newspaper className="w-9 h-9 text-blue-400" />}
                                 </div>
                                 {/* 속보 배지 */}
                                 <div
@@ -216,7 +219,7 @@ function NewsRedirectContent() {
                         {!cancelled ? (
                             <div className="mb-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-gray-500 text-xs">뉴스 원문으로 자동 이동</span>
+                                    <span className="text-gray-500 text-xs">{docLabel}으로 자동 이동</span>
                                     <span
                                         className="text-sm font-bold tabular-nums"
                                         style={{ color: countdown <= 1 ? '#ef4444' : '#60a5fa' }}
@@ -253,7 +256,7 @@ function NewsRedirectContent() {
                                 }}
                             >
                                 <ExternalLink className="w-4 h-4" />
-                                뉴스 원문 바로 보기
+                                {docLabel} 바로 보기
                                 <ArrowRight className="w-4 h-4" />
                             </button>
 
@@ -275,7 +278,7 @@ function NewsRedirectContent() {
 
                         {/* 하단 안내 */}
                         <p className="text-center text-gray-600 text-xs mt-4">
-                            이 페이지를 경유하면 더 빠른 뉴스 알림을 받으실 수 있습니다
+                            이 페이지를 경유하면 더 빠른 {isDisclosure ? '공시' : '뉴스'} 알림을 받으실 수 있습니다
                         </p>
                     </div>
                 </div>
@@ -287,7 +290,7 @@ function NewsRedirectContent() {
 
                 {/* 하단 저작권 */}
                 <p className="text-center text-gray-700 text-xs mt-4">
-                    © 2025 AI Stock Analyst · 뉴스 원문은 각 언론사에 귀속됩니다
+                    © 2025 AI Stock Analyst · {docLabel}은 해당 기관/언론사에 귀속됩니다
                 </p>
             </div>
 
