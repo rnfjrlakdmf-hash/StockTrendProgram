@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
+import * as admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Vercel 서버사이드에서 Firestore Admin SDK로 직접 live_events를 읽어 반환
 export async function GET() {
     try {
-        // Firebase Admin 동적 임포트 (서버사이드 전용)
-        const admin = await import('firebase-admin');
-        
         if (!admin.apps.length) {
-            // 환경변수에서 서비스 계정 정보 파싱
             const serviceAccount = JSON.parse(
                 process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}'
             );
