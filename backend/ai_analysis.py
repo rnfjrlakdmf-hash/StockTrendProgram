@@ -75,6 +75,37 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 15, 
             
     raise last_error
 
+def generate_realtime_summary(corp: str, title: str, content: str = "") -> str:
+    """
+    실시간 세력 포착(Whale Alert) 알림을 위한 팩트 기반 3줄 요약을 생성합니다.
+    (유사투자자문업 법적 리스크 방지를 위해 주관적 의견 배제)
+    """
+    if not API_KEY:
+        return f"[💡 알림] {corp}의 '{title}' 공시가 등록되었습니다."
+        
+    prompt = f"""
+    다음은 '{corp}'의 최근 공시입니다.
+    [제목: {title}]
+    [내용: {content[:1500]}]
+
+    이 공시가 의미하는 바를 투자자가 이해하기 쉽도록 '객관적인 팩트 위주'로 딱 3줄로 요약해주세요.
+    
+    주의사항 (반드시 지킬 것):
+    1. 주가 예측이나 투자 권유, 매수/매도 관련 뉘앙스는 절대 금지 (법적 리스크 방지)
+    2. '호재', '악재' 같은 가치 평가 단어 사용 금지
+    3. 각 줄은 '- ' 기호로 시작할 것
+    4. 너무 길지 않게 간결한 문장 사용
+    """
+    
+    try:
+        # 텍스트 모드로 호출 (속도/비용 최적화)
+        response = generate_with_retry(prompt, json_mode=False, timeout=15, temperature=0.0)
+        return response.text.strip()
+    except Exception as e:
+        print(f"[AI Summary Error] {e}".encode('utf-8', 'ignore').decode('cp949', 'ignore'))
+        return f"[핵심 공시] {title}"
+
+
 def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Gemini API를 사용하여 주식 데이터를 분석하고 점수를 매깁니다.

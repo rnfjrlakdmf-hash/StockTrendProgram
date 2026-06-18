@@ -102,17 +102,27 @@ async def check_and_notify_disclosures():
                     # [추가] FCM 웹 푸시 알림 발송 (전체 사용자 대상)
                     from db_manager import get_all_fcm_tokens
                     from firebase_config import send_multicast_notification
+                    from dart_scraper import scrape_dart_text
+                    from ai_analysis import generate_realtime_summary
+                    
                     all_tokens = get_all_fcm_tokens()
                     if all_tokens:
                         push_title = f"🚨 [세력 포착 라이브] {corp}"
+                        
+                        # 1. 원본 텍스트 스크래핑 (약 1~2초 소요)
+                        dart_text = scrape_dart_text(dart_link)
+                        
+                        # 2. AI 3줄 요약 생성
+                        summary_body = generate_realtime_summary(corp, report_title, dart_text)
+                        
                         push_data = {
                             "type": "disclosure_alert",
                             "url": dart_link,
                             "dart_url": dart_link,
                             "symbol": raw_code
                         }
-                        send_multicast_notification(all_tokens, push_title, report_title, data=push_data)
-                        logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users")
+                        send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
+                        logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users with AI summary")
 
                 except Exception as e:
                     logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")

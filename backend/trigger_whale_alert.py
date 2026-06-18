@@ -33,11 +33,22 @@ print(f"테스트 세력 포착 알림 전송 완료! ID: {doc_ref[1].id}")
 try:
     from db_manager import get_all_fcm_tokens
     from firebase_config import send_multicast_notification
+    from dart_scraper import scrape_dart_text
+    from ai_analysis import generate_realtime_summary
     
     tokens = get_all_fcm_tokens()
     if tokens:
         title = "🚨 [세력 포착 라이브] " + event_data["corp"]
-        body = event_data["title"]
+        
+        # 1. 스크래핑
+        print("DART 원문 스크래핑 중...")
+        dart_text = scrape_dart_text(event_data["url"])
+        
+        # 2. AI 3줄 요약
+        print("Gemini AI 요약 생성 중...")
+        body = generate_realtime_summary(event_data["corp"], event_data["title"], dart_text)
+        print(f"생성된 요약본:\n{body}\n".encode('utf-8', 'ignore').decode('cp949', 'ignore'))
+        
         data = {
             "type": "disclosure_alert", # click_url 처리를 위해 disclosure_alert 사용
             "url": event_data["url"],
