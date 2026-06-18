@@ -197,6 +197,8 @@ def init_db():
             pref_news BOOLEAN DEFAULT 1,
             pref_watch_compact BOOLEAN DEFAULT 0,
             pref_ipo BOOLEAN DEFAULT 1,
+            pref_whale_alert BOOLEAN DEFAULT 1,
+            pref_watchlist_live BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -212,6 +214,10 @@ def init_db():
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watch_compact BOOLEAN DEFAULT 0")
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_ipo BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_whale_alert BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watchlist_live BOOLEAN DEFAULT 1")
     except: pass
     
     print("[DB] FCM tokens table created")
@@ -248,6 +254,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # [NEW] Alert History Table (Prevent Duplicate Real-time Alerts)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS alert_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            alert_type TEXT NOT NULL, -- PRICE_SPIKE, BREAKING_NEWS
+            content_hash TEXT NOT NULL, -- Unique identifier for the news/event
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    print("[DB] Alert history table created")
 
     # [Analytics] Daily Site Visitor & Pageview Counter
     cursor.execute('''
@@ -1262,7 +1280,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
 def get_fcm_preferences(token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_dividend, user_id FROM fcm_tokens WHERE token = ?", (token,))
+    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_dividend, pref_whale_alert, pref_watchlist_live, user_id FROM fcm_tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -1273,7 +1291,9 @@ def get_fcm_preferences(token: str):
             "pref_news": bool(row[3]) if len(row) > 3 else True, 
             "pref_watch_compact": bool(row[4]) if len(row) > 4 else False,
             "pref_dividend": bool(row[5]) if len(row) > 5 else True,
-            "user_id": row[6] if len(row) > 6 else "guest"
+            "pref_whale_alert": bool(row[6]) if len(row) > 6 else True,
+            "pref_watchlist_live": bool(row[7]) if len(row) > 7 else True,
+            "user_id": row[8] if len(row) > 8 else "guest"
         }
     return None
 
@@ -1283,7 +1303,7 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?, pref_whale_alert = ?, pref_watchlist_live = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1292,6 +1312,8 @@ def update_fcm_preferences(token: str, prefs: dict):
             1 if prefs.get('pref_news', True) else 0,
             1 if prefs.get('pref_watch_compact', False) else 0,
             1 if prefs.get('pref_dividend', True) else 0,
+            1 if prefs.get('pref_whale_alert', True) else 0,
+            1 if prefs.get('pref_watchlist_live', True) else 0,
             token
         ))
         conn.commit()
@@ -1347,14 +1369,17 @@ def delete_user_data(user_id: str) -> bool:
     finally:
         conn.close()
 
-def get_all_fcm_tokens() -> list:
+def get_all_fcm_tokens(require_whale_alert=False) -> list:
     """모든 사용자의 유효한 FCM 토큰 조회 (브로드캐스트용)"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
         # 중복 제거 (혹시 몰라서 DISTINCT)
-        cursor.execute("SELECT DISTINCT token FROM fcm_tokens")
+        if require_whale_alert:
+            cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE pref_whale_alert = 1")
+        else:
+            cursor.execute("SELECT DISTINCT token FROM fcm_tokens")
         rows = cursor.fetchall()
         return [row[0] for row in rows]
     except Exception as e:
@@ -1400,6 +1425,67 @@ def create_signals_table():
     conn.commit()
     conn.close()
     print("[DB] Signals table created")
+
+
+# --- Real-time Watchlist Alerts Functions ---
+
+def get_unique_watched_symbols() -> list:
+    """Returns a list of all unique symbols that users are watching and have pref_watchlist_live = 1"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT w.symbol 
+        FROM watchlist w
+        JOIN fcm_tokens f ON w.user_id = f.user_id
+        WHERE f.pref_watchlist_live = 1
+    """)
+    res = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return res
+
+def get_watchers_by_symbol(symbol: str) -> list:
+    """Returns a list of FCM tokens for users who are watching a specific symbol and have pref_watchlist_live = 1"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT f.token 
+        FROM watchlist w
+        JOIN fcm_tokens f ON w.user_id = f.user_id
+        WHERE w.symbol = ? AND f.pref_watchlist_live = 1
+    """, (symbol,))
+    res = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return res
+
+def check_and_record_alert(symbol: str, alert_type: str, content_hash: str) -> bool:
+    """
+    Checks if an alert for this symbol and content_hash was already sent today.
+    If not, records it and returns True (meaning 'send alert').
+    If yes, returns False (meaning 'skip alert').
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Check if already exists for today
+    cursor.execute("""
+        SELECT id FROM alert_history 
+        WHERE symbol = ? AND alert_type = ? AND content_hash = ? 
+        AND date(created_at, 'localtime') = date('now', 'localtime')
+    """, (symbol, alert_type, content_hash))
+    
+    exists = cursor.fetchone()
+    if exists:
+        conn.close()
+        return False
+        
+    # Record it
+    cursor.execute("""
+        INSERT INTO alert_history (symbol, alert_type, content_hash)
+        VALUES (?, ?, ?)
+    """, (symbol, alert_type, content_hash))
+    conn.commit()
+    conn.close()
+    return True
 
 
 def save_signal(symbol: str, signal_type: str, title: str, summary: str, data: dict = None):
@@ -1683,3 +1769,6 @@ def get_user_ipo_watchlist(user_id: str):
     finally:
         conn.close()
 
+if __name__ == "__main__":
+    init_db()
+    print("Database initialized successfully.")

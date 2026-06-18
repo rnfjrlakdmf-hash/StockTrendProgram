@@ -82,8 +82,14 @@ async def check_and_notify_disclosures():
                 continue
 
             # [세력 포착 라이브 사이렌 브로드캐스트]
-            whale_keywords = ["주요주주", "대량보유", "단일판매", "무상증자", "유상증자", "자기주식"]
-            is_whale = any(kw in report_title for kw in whale_keywords)
+            # 알림 폭탄(스팸) 방지를 위해 발생 빈도가 너무 높은 '주요주주', '대량보유' 제외, 초강력 호재/악재 위주로 압축
+            whale_keywords = [
+                # 🟢 대표적 호재
+                "단일판매", "무상증자", "자기주식취득", "자기주식소각", "공개매수", "경영권변경",
+                # 🔴 대표적 악재
+                "유상증자", "감자결정", "상장폐지", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청"
+            ]
+            is_whale = any(kw in report_title.replace(" ", "") for kw in whale_keywords)
             if is_whale:
                 try:
                     from firebase_admin import firestore
@@ -105,7 +111,7 @@ async def check_and_notify_disclosures():
                     from dart_scraper import scrape_dart_text
                     from ai_analysis import generate_realtime_summary
                     
-                    all_tokens = get_all_fcm_tokens()
+                    all_tokens = get_all_fcm_tokens(require_whale_alert=True)
                     if all_tokens:
                         push_title = f"🚨 [세력 포착 라이브] {corp}"
                         

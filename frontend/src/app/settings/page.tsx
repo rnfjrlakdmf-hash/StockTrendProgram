@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle, Zap, Eye, EyeOff, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle, Zap, Eye, EyeOff, Trash2, ChevronDown, ChevronUp, BellRing } from "lucide-react";
 
 export default function SettingsPage() {
     const { user, logout } = useAuth();
@@ -59,6 +59,21 @@ export default function SettingsPage() {
     const [isKisCollapsed, setIsKisCollapsed] = useState(true);
     const [isAccountCollapsed, setIsAccountCollapsed] = useState(true);
     const [isBrokersCollapsed, setIsBrokersCollapsed] = useState(true);
+    const [isNotifCollapsed, setIsNotifCollapsed] = useState(false);
+
+    // [New] 알림 상태
+    const [fcmToken, setFcmToken] = useState<string | null>(null);
+    const [prefs, setPrefs] = useState({
+        pref_morning: true,
+        pref_closing: true,
+        pref_price: true,
+        pref_breaking: true,
+        pref_dividend: true,
+        pref_ipo: true,
+        pref_whale_alert: true,
+        pref_watchlist_live: true,
+        pref_watch_compact: false,
+    });
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -76,6 +91,20 @@ export default function SettingsPage() {
                 } catch {}
             } else {
                 setIsKisCollapsed(true); // 연동되어 있지 않아도 기본적으로 접은 상태로 유지합니다.
+            }
+
+            // 알림 설정 불러오기
+            const token = localStorage.getItem('fcm_token');
+            if (token) {
+                setFcmToken(token);
+                fetch(`${API_BASE_URL}/api/system/fcm-preferences?token=${token}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            setPrefs(data.preferences);
+                        }
+                    })
+                    .catch(err => console.error("Failed to fetch preferences:", err));
             }
         }
     }, []);
@@ -104,6 +133,33 @@ export default function SettingsPage() {
         setKisConnected(false);
         setMsg({ type: 'success', text: '🗑️ KIS API 키가 삭제되었습니다.' });
         setTimeout(() => setMsg(null), 3000);
+    };
+
+    const handleTogglePref = async (prefKey: keyof typeof prefs) => {
+        if (!fcmToken) {
+            setMsg({ type: 'error', text: '알림 토큰이 없습니다. 먼저 메인 화면에서 알림 권한을 허용해주세요.' });
+            return;
+        }
+        
+        // Optimistic update
+        const newVal = !prefs[prefKey];
+        setPrefs(prev => ({ ...prev, [prefKey]: newVal }));
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/fcm-preferences/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: fcmToken, preference_key: prefKey, is_enabled: newVal })
+            });
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error();
+            setMsg({ type: 'success', text: '알림 설정이 변경되었습니다.' });
+            setTimeout(() => setMsg(null), 2000);
+        } catch (error) {
+            // Revert on fail
+            setPrefs(prev => ({ ...prev, [prefKey]: !newVal }));
+            setMsg({ type: 'error', text: '네트워크 오류로 설정 변경에 실패했습니다.' });
+        }
     };
 
     const handleHeaderClick = () => {
@@ -318,8 +374,90 @@ export default function SettingsPage() {
 
 
 
-                
-                {/* Admin Panel (Hidden by default) */}
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    [New] 알림 설정 (PC에서도 쉽게 관리)
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className="bg-white/5 rounded-3xl border border-white/10 shadow-xl overflow-hidden transition-all duration-300">
+                    <div 
+                        onClick={() => setIsNotifCollapsed(!isNotifCollapsed)}
+                        className={`p-6 cursor-pointer select-none hover:bg-white/[0.02] active:bg-white/[0.04] transition-all flex items-center justify-between ${!isNotifCollapsed ? 'pb-3' : ''}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                                <BellRing className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-white">푸시 알림 설정</h3>
+                                <p className="text-xs text-gray-400">마켓 브리핑, 세력 포착, 실시간 알림 관리</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {isNotifCollapsed ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronUp className="w-5 h-5 text-gray-400" />}
+                        </div>
+                    </div>
+
+                    {!isNotifCollapsed && (
+                        <div className="p-6 pt-2 animate-in fade-in slide-in-from-top-3 duration-250">
+                            {!fcmToken ? (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                                    <div>
+                                        <p className="text-sm font-bold text-red-400">알림 권한이 없습니다.</p>
+                                        <p className="text-xs text-red-300/80 mt-1">알림을 받으려면 브라우저 권한을 허용하거나 메인 화면에서 활성화해주세요.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {[
+                                        { key: 'pref_morning', icon: '✨', title: 'AI 마켓 브리핑 (08:00)', desc: '장 시작 전 호재/악재 요약', activeColor: 'bg-green-500' },
+                                        { key: 'pref_closing', icon: '☀️', title: '장시작/마감 리포트', desc: '시가/종가 및 수익 요약', activeColor: 'bg-green-500' },
+                                        { key: 'pref_price', icon: '🚨', title: '가격 변동 알림', desc: '손절/익절 목표가 도달 즉시', activeColor: 'bg-green-500' },
+                                        { key: 'pref_news', icon: '⚡', title: '관심종목 속보', desc: '중요 뉴스 및 공시 알림', activeColor: 'bg-green-500' },
+                                        { key: 'pref_dividend', icon: '💰', title: '배당락일 알림', desc: '배당락일 전날 잊지 않게 미리', activeColor: 'bg-green-500' },
+                                        { key: 'pref_ipo', icon: '🚀', title: '모든 공모주 전체 일정', desc: '공모주 청약/상장일 (개별종목은 해제)', activeColor: 'bg-green-500' },
+                                        { key: 'pref_whale_alert', icon: '🐋', title: '세력 포착 라이브', desc: '단일판매, 증자 등 핵심 공시 즉시 포착', activeColor: 'bg-rose-500', isHighlight: true },
+                                        { key: 'pref_watchlist_live', icon: '🎯', title: '내 관심종목 실시간 감시', desc: '찜한 종목의 장중 급등락(5%) 및 중요 속보', activeColor: 'bg-amber-500', isHighlight: true },
+                                        { key: 'pref_watch_compact', icon: '⌚', title: '스마트워치 요약 모드', desc: '워치 화면에 최적화된 초단문 형태', activeColor: 'bg-indigo-500' },
+                                    ].map((item) => {
+                                        const prefKey = item.key as keyof typeof prefs;
+                                        const isEnabled = prefs[prefKey];
+                                        return (
+                                            <div key={item.key} className="flex items-center justify-between p-3.5 bg-black/20 hover:bg-white/[0.02] border border-white/5 rounded-2xl transition-colors">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="text-lg mt-0.5">{item.icon}</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-sm flex items-center gap-1.5">
+                                                            {item.title}
+                                                            {item.isHighlight && <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">HOT</span>}
+                                                        </p>
+                                                        <p className="text-gray-400 text-xs mt-0.5">{item.desc}</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref(prefKey)}
+                                                    className={`relative w-14 h-8 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        isEnabled 
+                                                            ? (item.activeColor.includes('rose') ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-[0_0_10px_rgba(225,29,72,0.3)]' 
+                                                                : item.activeColor.includes('amber') ? 'bg-gradient-to-r from-yellow-500 to-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.3)]'
+                                                                : item.activeColor.includes('indigo') ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.3)]'
+                                                                : 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-[0_0_10px_rgba(16,185,129,0.3)]')
+                                                            : 'bg-white/10 border border-white/10 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[3px] left-[3px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        isEnabled ? 'translate-x-6' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${isEnabled ? item.activeColor : 'bg-gray-400'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 {adminMode && (
                     <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-black p-8 border border-purple-500/50 shadow-2xl shadow-purple-900/50 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center justify-between mb-6">

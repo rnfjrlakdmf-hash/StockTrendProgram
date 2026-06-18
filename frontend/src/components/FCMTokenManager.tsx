@@ -20,7 +20,7 @@ export default function FCMTokenManager() {
 
     const [isVisible, setIsVisible] = useState(true);
     const [currentToken, setCurrentToken] = useState<string | null>(null);
-    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true });
+    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true, pref_whale_alert: true, pref_watchlist_live: true });
 
     useEffect(() => {
         // [Critical] Explicit Service Worker Registration
@@ -500,6 +500,56 @@ export default function FCMTokenManager() {
                                                         prefs.pref_ipo ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
                                                         <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_ipo ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {/* 세력 포착 라이브 알림 */}
+                                            <div className="flex items-center justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-red-500/20 p-1.5 rounded-lg text-red-400 text-xs mt-0.5">🚨</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">세력 포착 라이브 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">거대 자본 매집 등 시장 핵심 공시 알림</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_whale_alert')}
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_whale_alert 
+                                                            ? 'bg-gradient-to-r from-red-400 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_whale_alert ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_whale_alert ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {/* 관심종목 실시간 감시 */}
+                                            <div className="flex items-center justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-yellow-500/20 p-1.5 rounded-lg text-yellow-400 text-xs mt-0.5">🎯</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">내 관심종목 실시간 감시</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">찜한 종목의 5% 급등락 및 속보 알림</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_watchlist_live')}
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_watchlist_live 
+                                                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_watchlist_live ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_watchlist_live ? 'bg-amber-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>

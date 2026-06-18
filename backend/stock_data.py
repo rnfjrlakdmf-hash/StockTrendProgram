@@ -2483,3 +2483,86 @@ def get_market_status():
             "reason": "잠시 후 다시 시도해 주세요.",
             "details": {"kospi": "-", "kosdaq": "-", "usd": "-"}
         }
+
+# --- Watchlist Real-time Alerts Support ---
+
+def fetch_global_breaking_news() -> list:
+    """
+    네이버 금융 실시간 속보 피드를 한 번에 스크래핑하여 최신 뉴스 목록 반환.
+    Returns: [{'title': '...', 'link': '...', 'source': '...'}, ...]
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
+    news_list = []
+    try:
+        # EUC-KR 인코딩 주의
+        headers = {"User-Agent": "Mozilla/5.0"}
+        resp = requests.get(url, headers=headers, timeout=5)
+        soup = BeautifulSoup(resp.content.decode('euc-kr', 'replace'), 'html.parser')
+        
+        # 기사 목록 파싱
+        ul = soup.select_one(".newsList")
+        if ul:
+            items = ul.select("li dl")
+            for item in items:
+                a_tag = item.select_one("dd.articleSubject a")
+                if not a_tag:
+                    # 썸네일만 있는 구조일 경우
+                    a_tags = item.select("dt a")
+                    if a_tags: a_tag = a_tags[-1]
+                    
+                if a_tag:
+                    title = a_tag.get('title') or a_tag.text.strip()
+                    link = "https://finance.naver.com" + a_tag['href']
+                    source_tag = item.select_one("dd.articleSummary span.press")
+                    source = source_tag.text.strip() if source_tag else ""
+                    news_list.append({"title": title, "link": link, "source": source})
+                    
+        return news_list
+    except Exception as e:
+        print(f"[GlobalNewsFetch] Error: {e}")
+        return []
+
+def fetch_batch_realtime_prices(symbols: list) -> dict:
+    """
+    네이버 Polling API를 사용하여 여러 종목의 현재가를 한 번에 조회.
+    Returns: { '005930': {'price': 80000, 'prev_close': 78000, 'change_percent': 2.56, 'name': '삼성전자'}, ... }
+    """
+    import requests
+    if not symbols:
+        return {}
+        
+    result = {}
+    try:
+        # 100개씩 묶어서 조회 (Naver API 권장)
+        chunk_size = 100
+        for i in range(0, len(symbols), chunk_size):
+            chunk = symbols[i:i+chunk_size]
+            syms_str = ",".join(chunk)
+            url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{syms_str}"
+            
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(url, headers=headers, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                items = data.get("datas", [])
+                for item in items:
+                    code = item.get("itemCode")
+                    price = float(item.get("closePrice", "0").replace(",", ""))
+                    prev = float(item.get("prevClosePrice", "0").replace(",", ""))
+                    if prev > 0:
+                        change_pct = round(((price - prev) / prev) * 100, 2)
+                    else:
+                        change_pct = 0.0
+                    
+                    result[code] = {
+                        "price": price,
+                        "prev_close": prev,
+                        "change_percent": change_pct,
+                        "name": item.get("stockName", code)
+                    }
+    except Exception as e:
+        print(f"[BatchPriceFetch] Error: {e}")
+        
+    return result
