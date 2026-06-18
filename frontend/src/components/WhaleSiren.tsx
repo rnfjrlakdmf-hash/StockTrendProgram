@@ -22,6 +22,8 @@ export default function WhaleSiren() {
     const [hasInteracted, setHasInteracted] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [mountedTime, setMountedTime] = useState<number>(0);
+    // 이미 띄운 이벤트를 기억하기 위한 Ref
+    const lastShownEventId = useRef<string | null>(null);
 
     useEffect(() => {
         setMountedTime(Date.now());
@@ -55,8 +57,10 @@ export default function WhaleSiren() {
                             }
                         }
 
-                        // 이미 띄운 이벤트면 스킵
-                        if (isRecent && (!currentEvent || currentEvent.id !== data.id)) {
+                        // 이미 띄운 이벤트면 스킵 (Ref로 체크)
+                        if (isRecent && lastShownEventId.current !== data.id) {
+                            lastShownEventId.current = data.id; // 즉시 기록
+                            
                             setCurrentEvent({
                                 id: data.id,
                                 corp: data.corp,
@@ -87,7 +91,7 @@ export default function WhaleSiren() {
         const interval = setInterval(checkLatestEvent, 5000);
 
         return () => clearInterval(interval);
-    }, [isMuted, hasInteracted, currentEvent]);
+    }, [isMuted, hasInteracted]);
 
     return (
         <AnimatePresence>
