@@ -52,7 +52,9 @@ async def check_and_notify_disclosures():
 
     try:
         state = load_state()
-        processed_ids = set(state.get("processed_ids", []))
+        # dict.fromkeys를 사용하여 삽입 순서를 유지 (Python 3.7+)
+        # 기존에 set()을 사용하면 순서가 랜덤해져 [-2000:] 슬라이싱 시 최근 공시가 무작위로 삭제되는 치명적 버그 발생
+        processed_ids = dict.fromkeys(state.get("processed_ids", []))
 
         # 오늘 올라온 공시 목록 조회 (최대 100건)
         results = dart_api_client.get_realtime_disclosures(days_ago=0)
@@ -69,7 +71,7 @@ async def check_and_notify_disclosures():
                 continue
 
             new_count += 1
-            processed_ids.add(doc_id)
+            processed_ids[doc_id] = None
 
             raw_code = item.get('stock_code')
             corp = item.get('corp_name', '알 수 없음')
@@ -188,8 +190,8 @@ async def check_and_notify_disclosures():
 
         logger.info(f"[공시Monitor] 완료: 신규 {new_count}건, 알림 {sent_count}건 발송")
 
-        # 상태 저장 (최대 2000건 유지)
-        state["processed_ids"] = list(processed_ids)[-2000:]
+        # 상태 저장 (최대 2000건 유지, 순서 보장됨)
+        state["processed_ids"] = list(processed_ids.keys())[-2000:]
         save_state(state)
 
     except Exception as e:
