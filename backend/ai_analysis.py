@@ -75,13 +75,14 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 15, 
             
     raise last_error
 
-def generate_realtime_summary(corp: str, title: str, content: str = "") -> str:
+def generate_realtime_summary(corp: str, title: str, content: str = "") -> tuple:
     """
-    실시간 세력 포착(Whale Alert) 알림을 위한 팩트 기반 3줄 요약을 생성합니다.
+    실시간 세력 포착(Whale Alert) 알림을 위한 팩트 기반 3줄 요약 및 파급력 평가를 생성합니다.
     (유사투자자문업 법적 리스크 방지를 위해 주관적 의견 배제)
+    반환값: (summary_text, impact_score)
     """
     if not API_KEY:
-        return f"[💡 알림] {corp}의 '{title}' 공시가 등록되었습니다."
+        return (f"[💡 알림] {corp}의 '{title}' 공시가 등록되었습니다.", 5)
         
     prompt = f"""
     다음은 '{corp}'의 최근 공시입니다.
@@ -89,22 +90,33 @@ def generate_realtime_summary(corp: str, title: str, content: str = "") -> str:
     [내용: {content[:1500]}]
 
     스마트폰 푸시 알림으로 보낼 용도입니다. 
-    이 공시의 핵심 내용(금액, 비율, 대상, 목적 등)을 투자자가 1초 만에 직관적으로 파악할 수 있도록 아주 간결하고 명확하게 딱 3줄로 요약해주세요.
+    이 공시의 핵심 내용(금액, 비율, 대상, 목적 등)을 투자자가 1초 만에 직관적으로 파악할 수 있도록 아주 간결하고 명확하게 딱 3줄로 요약하고, 이 공시가 주가에 미칠 파급력(impact_score)을 1부터 10까지의 점수로 평가해주세요.
+    (예: 1000억 규모 유상증자 -> 9점, 소규모 임원 퇴임 -> 3점)
     
     주의사항 (반드시 지킬 것):
     1. 주가 예측, 투자 권유, '호재/악재' 등의 주관적 평가 단어 절대 금지 (오직 객관적 팩트만 전달).
     2. 불필요한 서술어는 빼고 명사형이나 아주 짧은 문장으로 단호하게 끝맺을 것 (예: ~원 규모 체결, ~결정).
     3. 각 줄 앞에는 내용에 딱 맞는 직관적인 이모지(💰, 🤝, 🏢, ⚠️, 🚨 등)를 하나씩 꼭 넣을 것.
     4. 금액이나 규모 등 중요한 숫자가 있다면 반드시 포함시킬 것.
+
+    응답은 반드시 아래 JSON 형식으로 작성하세요:
+    {{
+        "impact_score": 9,
+        "summary": "💰 1000억 규모 제3자배정 유상증자 결정\\n🤝 타법인 증권 취득 목적\\n📅 납입일: 2026년 6월 18일"
+    }}
     """
     
     try:
-        # 텍스트 모드로 호출 (속도/비용 최적화)
-        response = generate_with_retry(prompt, json_mode=False, timeout=15, temperature=0.0)
-        return response.text.strip()
+        # JSON 모드로 호출하여 점수와 텍스트 추출
+        response = generate_with_retry(prompt, json_mode=True, timeout=15, temperature=0.0)
+        import json
+        data = json.loads(response.text.strip())
+        score = int(data.get("impact_score", 5))
+        summary = data.get("summary", f"[핵심 공시] {title}")
+        return (summary, score)
     except Exception as e:
         print(f"[AI Summary Error] {e}".encode('utf-8', 'ignore').decode('cp949', 'ignore'))
-        return f"[핵심 공시] {title}"
+        return (f"[핵심 공시] {title}", 5)
 
 
 def analyze_stock(stock_data: Dict[str, Any]) -> Dict[str, Any]:

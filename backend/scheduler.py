@@ -118,17 +118,21 @@ async def check_and_notify_disclosures():
                         # 1. 원본 텍스트 스크래핑 (약 1~2초 소요)
                         dart_text = scrape_dart_text(dart_link)
                         
-                        # 2. AI 3줄 요약 생성
-                        summary_body = generate_realtime_summary(corp, report_title, dart_text)
+                        # 2. AI 3줄 요약 및 파급력 평가
+                        summary_body, impact_score = generate_realtime_summary(corp, report_title, dart_text)
                         
-                        push_data = {
-                            "type": "disclosure_alert",
-                            "url": f"/stock/{raw_code}",
-                            "dart_url": dart_link,
-                            "symbol": raw_code
-                        }
-                        send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
-                        logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users with AI summary")
+                        # 파급력이 8점 이상일 때만 전체 알림 발송 (스팸 방지)
+                        if impact_score >= 8:
+                            push_data = {
+                                "type": "disclosure_alert",
+                                "url": f"/stock/{raw_code}",
+                                "dart_url": dart_link,
+                                "symbol": raw_code
+                            }
+                            send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
+                            logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users (Score: {impact_score})")
+                        else:
+                            logger.info(f"[WhaleSiren] Skipped FCM Push for {corp} due to low impact score: {impact_score}")
 
                 except Exception as e:
                     logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
