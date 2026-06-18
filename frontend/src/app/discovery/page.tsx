@@ -1136,8 +1136,7 @@ function DiscoveryContent() {
                                             </div>
 
                                             {/* 시간외 거래 가격 영역 (미국/한국 공통 적용) */}
-                                            {((extendedHours?.extended || (stock.is_extended_hours && stock.extended_price) || stock.nxt_data || stock.after_market_data) &&
-                                              !(stock.currency === 'KRW' && stock.market_status === '장중')) && (
+                                            {(extendedHours?.extended || (stock.is_extended_hours && stock.extended_price) || stock.nxt_data || stock.after_market_data) && (
                                                 <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-3.5">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border shadow-sm w-max ${
