@@ -14,6 +14,7 @@ interface WhaleEvent {
     title: string;
     code: string;
     timestamp: any;
+    url?: string;
 }
 
 export default function WhaleSiren() {
@@ -66,7 +67,8 @@ export default function WhaleSiren() {
                                 corp: data.corp,
                                 title: data.title,
                                 code: data.code,
-                                timestamp: data.timestamp
+                                timestamp: data.timestamp,
+                                url: data.url
                             });
 
                             if (!isMuted && hasInteracted && audioRef.current) {
@@ -132,6 +134,13 @@ export default function WhaleSiren() {
                                     <p className="text-red-100 text-sm leading-snug line-clamp-2">
                                         {currentEvent.title}
                                     </p>
+                                    {currentEvent.url && (
+                                        <a href={currentEvent.url} target="_blank" rel="noopener noreferrer" 
+                                           onClick={(e) => e.stopPropagation()}
+                                           className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-white transition-colors w-max shadow-sm border border-white/20">
+                                            📄 원본 공시 확인하기
+                                        </a>
+                                    )}
                                 </div>
                             </Link>
 
