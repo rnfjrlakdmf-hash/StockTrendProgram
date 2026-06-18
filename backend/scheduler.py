@@ -93,12 +93,29 @@ async def check_and_notify_disclosures():
                         "corp": corp,
                         "title": report_title,
                         "code": raw_code,
+                        "url": dart_link,
                         "timestamp": firestore.SERVER_TIMESTAMP
                     }
                     db.collection("live_events").add(event_data)
                     logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
+                    
+                    # [추가] FCM 웹 푸시 알림 발송 (전체 사용자 대상)
+                    from db_manager import get_all_fcm_tokens
+                    from firebase_config import send_multicast_notification
+                    all_tokens = get_all_fcm_tokens()
+                    if all_tokens:
+                        push_title = f"🚨 [세력 포착 라이브] {corp}"
+                        push_data = {
+                            "type": "disclosure_alert",
+                            "url": dart_link,
+                            "dart_url": dart_link,
+                            "symbol": raw_code
+                        }
+                        send_multicast_notification(all_tokens, push_title, report_title, data=push_data)
+                        logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users")
+
                 except Exception as e:
-                    logger.error(f"[WhaleSiren] Firestore error: {e}")
+                    logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
 
             # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
             symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
