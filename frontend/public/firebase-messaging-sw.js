@@ -113,13 +113,19 @@ self.addEventListener('notificationclick', (event) => {
         targetUrl = data.url || '/';
     }
 
-    const fullUrl = new URL(targetUrl, self.location.origin).href;
+    const isSameOrigin = targetUrl.startsWith('/') || targetUrl.startsWith(self.location.origin);
+    const fullUrl = isSameOrigin ? new URL(targetUrl, self.location.origin).href : targetUrl;
     const baseOrigin = self.location.origin;
 
     // 앱 열기 또는 포커스
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
+                // 외부 링크(DART 등)인 경우 보안상 무조건 새 창(새 탭)으로 열기
+                if (!isSameOrigin) {
+                    return clients.openWindow(fullUrl);
+                }
+
                 // 이미 열려있는 앱 창 찾기 (같은 도메인이면 OK)
                 const existingClient = clientList.find(client =>
                     client.url.startsWith(baseOrigin)
@@ -128,7 +134,7 @@ self.addEventListener('notificationclick', (event) => {
                 if (existingClient && 'focus' in existingClient) {
                     // 이미 열린 창이 있으면 포커스 + 해당 종목 페이지로 이동
                     return existingClient.focus().then(() => {
-                        existingClient.navigate(fullUrl);
+                        return existingClient.navigate(fullUrl);
                     });
                 }
 

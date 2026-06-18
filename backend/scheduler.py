@@ -123,7 +123,7 @@ async def check_and_notify_disclosures():
                         
                         push_data = {
                             "type": "disclosure_alert",
-                            "url": dart_link,
+                            "url": f"/stock/{raw_code}",
                             "dart_url": dart_link,
                             "symbol": raw_code
                         }
