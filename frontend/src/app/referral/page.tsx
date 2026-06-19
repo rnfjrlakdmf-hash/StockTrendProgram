@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Share2, Copy, Check, Gift, Infinity as InfinityIcon, ShieldAlert } from 'lucide-react';
-import { getApiBaseUrl } from '@/config/api';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function ReferralPage() {
     const router = useRouter();
@@ -27,7 +27,7 @@ export default function ReferralPage() {
                 return;
             }
             
-            const res = await fetch(`${getApiBaseUrl()}/api/referral/me`, {
+            const res = await fetch(`${API_BASE_URL}/api/referral/me`, {
                 headers: { 'x-user-id': uid }
             });
             const data = await res.json();
@@ -92,7 +92,7 @@ export default function ReferralPage() {
         
         try {
             const uid = localStorage.getItem('uuid');
-            const res = await fetch(`${getApiBaseUrl()}/api/referral/submit`, {
+            const res = await fetch(`${API_BASE_URL}/api/referral/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

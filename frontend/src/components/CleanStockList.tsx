@@ -1,7 +1,7 @@
 import React from 'react';
 import { Minus, ChevronRight, Trash2, Shield } from 'lucide-react';
 import BlinkingPrice from './BlinkingPrice';
-import { getApiBaseUrl } from '@/config/api';
+import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from '@/components/KakaoShareButton';
 
 
@@ -275,7 +275,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                                                     <KakaoShareButton 
                                                                                         title={`[수익인증] ${item.name} +${pct.toFixed(2)}%`}
                                                                                         description="제가 보유한 종목의 수익률을 확인해보세요! 스톡 트렌드 프로그램의 무료 프리미엄 알림 덕분입니다."
-                                                                                        url={`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/stock/${item.symbol.split('.')[0]}`}
+                                                                                        url={`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/stock/${item.symbol.split('.')[0]}`}
                                                                                         imageUrl={shareUrl.toString()}
                                                                                         customIcon={<span className="text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded shadow">자랑하기 🔥</span>}
                                                                                     />

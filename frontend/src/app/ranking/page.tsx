@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Star, Target, TrendingUp, Share2 } from 'lucide-react';
-import { getApiBaseUrl } from '@/config/api';
+import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from '@/components/KakaoShareButton';
 
 interface RankUser {
@@ -25,7 +25,7 @@ export default function RankingPage() {
     const fetchRanking = async () => {
         try {
             const uid = localStorage.getItem('uuid');
-            const res = await fetch(`${getApiBaseUrl()}/api/ranking`, {
+            const res = await fetch(`${API_BASE_URL}/api/ranking`, {
                 headers: uid ? { 'x-user-id': uid } : {}
             });
             const data = await res.json();
@@ -98,7 +98,7 @@ export default function RankingPage() {
                         <KakaoShareButton 
                             title={`🏆 전국 주식 고수 랭킹 상위 ${myPercentile}% 인증!`}
                             description={`제 관심종목 평균 수익률은 ${myRank.score > 0 ? '+' : ''}${myRank.score.toFixed(2)}% 입니다. 스톡 트렌드 프로그램에서 당신의 실력도 확인해보세요!`}
-                            url={`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/ranking`}
+                            url={`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/ranking`}
                             buttonText="내 랭킹 확인하기"
                             className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors border border-white/20"
                             customIcon={<Share2 className="w-5 h-5" />}
