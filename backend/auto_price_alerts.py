@@ -276,26 +276,51 @@ class AutoPriceMonitor:
             stock_name = get_korean_stock_name(symbol) or symbol
             push_title = f"{title_prefix} ({stock_name})"
             
+            from db_manager import check_and_consume_alert_quota
+            
             all_tokens = []
+            limit_reached_tokens = []
+            
             for user_id in users:
+                status = check_and_consume_alert_quota(user_id)
+                
                 tokens_data = get_user_fcm_tokens(user_id)
                 for t in tokens_data:
-                    all_tokens.append(t['token'])
-                    
-            if not all_tokens:
-                return
+                    if status == "OK":
+                        all_tokens.append(t['token'])
+                    elif status == "LIMIT_REACHED":
+                        limit_reached_tokens.append(t['token'])
+                        
+            # 정상 발송
+            if all_tokens:
+                send_multicast_notification(
+                    tokens=all_tokens,
+                    title=push_title,
+                    body=body,
+                    data={
+                        "type": "auto_price_alert",
+                        "symbol": symbol,
+                        "url": f"/discovery?q={symbol}"
+                    }
+                )
+                print(f"[AutoPriceAlert] Sent '{title_prefix}' for {stock_name} to {len(all_tokens)} devices")
                 
-            send_multicast_notification(
-                tokens=all_tokens,
-                title=push_title,
-                body=body,
-                data={
-                    "type": "auto_price_alert",
-                    "symbol": symbol,
-                    "url": f"/discovery?q={symbol}"
-                }
-            )
-            print(f"[AutoPriceAlert] Sent '{title_prefix}' for {stock_name} to {len(all_tokens)} devices")
+            # 한도 도달 안내 발송
+            if limit_reached_tokens:
+                send_multicast_notification(
+                    tokens=limit_reached_tokens,
+                    title="⚠️ 오늘 무료 프리미엄 알림(3회) 소진",
+                    body="친구 1명만 초대하고 평생 무제한으로 1급 정보를 받아보세요!",
+                    data={
+                        "type": "referral_invite",
+                        "url": "/referral"
+                    }
+                )
+                print(f"[AutoPriceAlert] Sent limit reached notification to {len(limit_reached_tokens)} devices")
+                
+            return
+                
+
             
         except Exception as e:
             print(f"[AutoPriceAlert] Push error: {e}")

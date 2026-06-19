@@ -20,6 +20,8 @@ from auth import router as auth_router
 from routes.market import router as market_router
 from routes.analysis import router as analysis_router
 from routes.community import router as community_router
+from routes.referral import router as referral_router
+from routes.ranking import router as ranking_router
 from routes.user import router as user_router
 from routes.system import router as system_router
 from routes.sockets import router as sockets_router
@@ -83,6 +85,8 @@ app.include_router(alerts_router, prefix="/api", tags=["Alerts"])
 app.include_router(marketing_router, prefix="/api/marketing", tags=["Marketing"])
 app.include_router(master_router, prefix="/api/master", tags=["Master"])
 app.include_router(seo_router, prefix="/api", tags=["SEO"])
+app.include_router(referral_router, prefix="/api/referral", tags=["Referral"])
+app.include_router(ranking_router, prefix="/api/ranking", tags=["Ranking"])
 
 
 import traceback
@@ -304,6 +308,8 @@ async def startup_event():
         # 5. 공시 및 시간별 브리핑 스케줄러 시작
         try:
             from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop, google_indexer_scheduler_loop, dividend_alerts_scheduler_loop, weekly_blog_bot_scheduler_loop
+            from ranking_calculator import ranking_calculator_loop
+            
             asyncio.create_task(disclosure_scheduler_loop())
             asyncio.create_task(hourly_briefing_scheduler_loop())
             asyncio.create_task(auto_blog_scheduler_loop())
@@ -312,6 +318,7 @@ async def startup_event():
             asyncio.create_task(google_indexer_scheduler_loop())
             asyncio.create_task(dividend_alerts_scheduler_loop())
             asyncio.create_task(weekly_blog_bot_scheduler_loop())
+            asyncio.create_task(ranking_calculator_loop())
         except Exception as e:
             print(f"Error starting schedulers: {e}")
 

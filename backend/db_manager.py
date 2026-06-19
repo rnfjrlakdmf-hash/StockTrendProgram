@@ -122,6 +122,32 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning: {e}")
 
+
+    # [Migration] Add Referral System Columns
+    try:
+        cursor.execute("SELECT referral_code FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding referral columns)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN referral_code TEXT UNIQUE")
+            cursor.execute("ALTER TABLE users ADD COLUMN referred_by TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN is_unlimited_alerts BOOLEAN DEFAULT 0")
+            cursor.execute("ALTER TABLE users ADD COLUMN daily_alert_count INTEGER DEFAULT 0")
+            cursor.execute("ALTER TABLE users ADD COLUMN last_alert_date TEXT")
+        except Exception as e:
+            print(f"Migration Warning (Referral): {e}")
+
+    # [Migration] Add User Rankings Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_rankings (
+            user_id TEXT PRIMARY KEY,
+            nickname TEXT,
+            score REAL DEFAULT 0,
+            rank INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Watchlist Table (User Specific)
     # Check if watchlist table has user_id column
     try:
@@ -1388,6 +1414,23 @@ def get_all_fcm_tokens(require_whale_alert=False) -> list:
     finally:
         conn.close()
 
+
+def get_all_fcm_tokens_with_user(require_whale_alert=False) -> list:
+    """모든 사용자의 유효한 FCM 토큰을 user_id와 함께 반환 (limit check용)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if require_whale_alert:
+            cursor.execute("SELECT DISTINCT user_id, token FROM fcm_tokens WHERE pref_whale_alert = 1")
+        else:
+            cursor.execute("SELECT DISTINCT user_id, token FROM fcm_tokens")
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"[DB] Get all FCM tokens with user error: {e}")
+        return []
+    finally:
+        conn.close()
+
 def get_fcm_tokens_for_ipo() -> list:
     """공모주 알림 수신에 동의한(혹은 기본값 1인) 모든 토큰 반환"""
     conn = get_db_connection()
@@ -1772,3 +1815,57 @@ def get_user_ipo_watchlist(user_id: str):
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully.")
+
+
+def check_and_consume_alert_quota(user_id: str) -> str:
+    """
+    프리미엄 알림 발송 전 한도를 체크하고 차감합니다.
+    Returns:
+        'OK': 발송 가능
+        'LIMIT_REACHED': 방금 한도 도달함 (초대 유도 알림 발송 필요)
+        'EXHAUSTED': 이미 한도 초과됨 (알림 발송 안 함)
+    """
+    if user_id == "guest":
+        return "OK"  # 게스트는 일단 패스 (또는 제한 가능)
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    from datetime import datetime
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    cursor.execute("SELECT is_unlimited_alerts, daily_alert_count, last_alert_date FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return "OK"
+        
+    is_unlimited, count, last_date = row
+    if is_unlimited:
+        conn.close()
+        return "OK"
+        
+    if last_date != today:
+        count = 0
+        
+    MAX_ALERTS = 3
+    
+    if count >= MAX_ALERTS:
+        # If it was exactly MAX_ALERTS yesterday, it would be reset. So this means they hit it today.
+        # Wait, if they already hit it, we just return EXHAUSTED so we don't spam them with 'limit reached' every time.
+        # But how do we know if we already sent the 'limit reached' message?
+        # Let's say count == MAX_ALERTS means we send the "LIMIT_REACHED" message, then increment to MAX_ALERTS + 1
+        if count == MAX_ALERTS:
+            cursor.execute("UPDATE users SET daily_alert_count = ?, last_alert_date = ? WHERE id = ?", (count + 1, today, user_id))
+            conn.commit()
+            conn.close()
+            return "LIMIT_REACHED"
+        else:
+            conn.close()
+            return "EXHAUSTED"
+            
+    cursor.execute("UPDATE users SET daily_alert_count = ?, last_alert_date = ? WHERE id = ?", (count + 1, today, user_id))
+    conn.commit()
+    conn.close()
+    return "OK"

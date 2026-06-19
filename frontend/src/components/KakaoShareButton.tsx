@@ -9,6 +9,7 @@ interface KakaoShareButtonProps {
   imageUrl?: string;
   buttonText?: string;
   className?: string;
+  customIcon?: React.ReactNode;
 }
 
 export default function KakaoShareButton({ 
@@ -17,7 +18,8 @@ export default function KakaoShareButton({
   url, 
   imageUrl = "https://stock-trend-program.co.kr/og-image.png",
   buttonText = "결과 확인하기",
-  className = "p-2 bg-[#FEE500] hover:bg-[#FEE500]/80 text-[#191919] rounded-full transition-colors flex items-center justify-center gap-2 font-bold text-sm"
+  className = "p-2 bg-[#FEE500] hover:bg-[#FEE500]/80 text-[#191919] rounded-full transition-colors flex items-center justify-center gap-2 font-bold text-sm",
+  customIcon
 }: KakaoShareButtonProps) {
   
   const handleShare = () => {
@@ -60,9 +62,15 @@ export default function KakaoShareButton({
   };
 
   return (
-    <button onClick={handleShare} className={className} title="카카오톡으로 공유하기">
-      <Share2 className="w-4 h-4" />
-      <span className="hidden sm:inline">카톡 공유</span>
+    <button onClick={handleShare} className={customIcon ? "" : className} title="카카오톡으로 공유하기">
+      {customIcon ? (
+        customIcon
+      ) : (
+        <>
+          <Share2 className="w-4 h-4" />
+          <span className="hidden sm:inline">카톡 공유</span>
+        </>
+      )}
     </button>
   );
 }
