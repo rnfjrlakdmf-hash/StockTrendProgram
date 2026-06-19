@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '기술적 분석 (Technical Analysis) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가 차트와 거래량 패턴으로 미래 주가를 예측하는 분석 방법론. 주식 초보자도 쉽게 이해할 수 있는 기술적 분석 (Technical Analysis) 완벽 가이드.',
-  keywords: ['기술적 분석 (Technical Analysis)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideTechnicalAnalysisPage() {

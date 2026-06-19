@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'MACD (이동평균수렴확산) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '단기와 장기 이동평균의 차이로 추세 전환 시점을 포착하는 기술적 지표. 주식 초보자도 쉽게 이해할 수 있는 MACD (이동평균수렴확산) 완벽 가이드.',
-  keywords: ['MACD (이동평균수렴확산)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideMacdPage() {

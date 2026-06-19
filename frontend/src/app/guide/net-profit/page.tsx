@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '당기순이익 (Net Profit) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '모든 비용과 세금을 제외한 최종 이익으로 주주에게 귀속되는 실질 이익. 주식 초보자도 쉽게 이해할 수 있는 당기순이익 (Net Profit) 완벽 가이드.',
-  keywords: ['당기순이익 (Net Profit)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideNetProfitPage() {

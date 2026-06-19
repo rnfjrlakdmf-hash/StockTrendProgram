@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '지정가 주문 (Limit Order) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '투자자가 직접 희망 가격을 지정하여 해당 가격에서만 체결되도록 하는 주문. 주식 초보자도 쉽게 이해할 수 있는 지정가 주문 (Limit Order) 완벽 가이드.',
-  keywords: ['지정가 주문 (Limit Order)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideLimitOrderPage() {

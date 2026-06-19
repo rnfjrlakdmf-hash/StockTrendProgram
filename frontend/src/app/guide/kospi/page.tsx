@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '코스피 (KOSPI) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '한국거래소 상장 대형 우량기업 전체의 시가총액으로 산출하는 한국 대표 주가지수. 주식 초보자도 쉽게 이해할 수 있는 코스피 (KOSPI) 완벽 가이드.',
-  keywords: ['코스피 (KOSPI)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideKospiPage() {

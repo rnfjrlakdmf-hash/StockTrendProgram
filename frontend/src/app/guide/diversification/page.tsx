@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '분산투자 (Diversification) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '여러 자산과 종목에 나눠 투자하여 위험을 낮추는 포트폴리오 전략. 주식 초보자도 쉽게 이해할 수 있는 분산투자 (Diversification) 완벽 가이드.',
-  keywords: ['분산투자 (Diversification)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideDiversificationPage() {

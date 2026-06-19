@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '시가총액 (Market Capitalization) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '현재 주가 × 발행 주식 수로 계산하는 기업의 시장 가치. 주식 초보자도 쉽게 이해할 수 있는 시가총액 (Market Capitalization) 완벽 가이드.',
-  keywords: ['시가총액 (Market Capitalization)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideMarketCapPage() {

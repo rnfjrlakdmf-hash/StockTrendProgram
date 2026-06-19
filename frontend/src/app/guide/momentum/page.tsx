@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '모멘텀 투자 (Momentum) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '최근 상승 추세 강한 종목이 계속 오르는 경향을 이용하는 투자 전략. 주식 초보자도 쉽게 이해할 수 있는 모멘텀 투자 (Momentum) 완벽 가이드.',
-  keywords: ['모멘텀 투자 (Momentum)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideMomentumPage() {

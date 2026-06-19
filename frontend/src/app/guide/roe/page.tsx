@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'ROE (자기자본이익률) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '당기순이익을 자기자본으로 나눈 기업의 수익성 지표. 주식 초보자도 쉽게 이해할 수 있는 ROE (자기자본이익률) 완벽 가이드.',
-  keywords: ['ROE (자기자본이익률)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideRoePage() {

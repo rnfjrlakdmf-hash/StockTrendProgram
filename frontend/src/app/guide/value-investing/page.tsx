@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '가치투자 (Value Investing) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '내재가치 대비 저평가된 주식을 발굴해 장기 보유하는 투자 철학. 주식 초보자도 쉽게 이해할 수 있는 가치투자 (Value Investing) 완벽 가이드.',
-  keywords: ['가치투자 (Value Investing)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideValueInvestingPage() {

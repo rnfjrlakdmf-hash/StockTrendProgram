@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'EBITDA 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '이자·세금·감가상각 차감 전 이익으로 기업의 현금 창출 능력을 나타내는 지표. 주식 초보자도 쉽게 이해할 수 있는 EBITDA 완벽 가이드.',
-  keywords: ['EBITDA', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideEbitdaPage() {

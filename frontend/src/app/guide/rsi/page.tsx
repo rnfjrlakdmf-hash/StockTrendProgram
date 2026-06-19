@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'RSI (상대강도지수) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가의 과매수·과매도 상태를 0~100 범위의 수치로 나타내는 모멘텀 지표. 주식 초보자도 쉽게 이해할 수 있는 RSI (상대강도지수) 완벽 가이드.',
-  keywords: ['RSI (상대강도지수)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideRsiPage() {

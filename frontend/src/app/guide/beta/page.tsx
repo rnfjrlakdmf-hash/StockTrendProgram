@@ -4,7 +4,6 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '베타 (Beta) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '시장 대비 개별 종목의 변동성을 나타내는 위험 측정 지표. 주식 초보자도 쉽게 이해할 수 있는 베타 (Beta) 완벽 가이드.',
-  keywords: ['베타 (Beta)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
 };
 
 export default function GuideBetaPage() {
