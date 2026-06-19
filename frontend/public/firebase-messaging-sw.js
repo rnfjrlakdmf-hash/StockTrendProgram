@@ -83,9 +83,8 @@ self.addEventListener('notificationclick', (event) => {
     let targetUrl;
 
     if (alertType === 'disclosure_alert') {
-        // 공시 알림: 직접 DART/SEC 원문 또는 종목 페이지
-        if (event.action === 'view' && dartUrl) {
-            // 공시 보기 버튼 -> 공시 중간 경유 페이지
+        // 공시 알림: 버튼 클릭이든 본문 클릭이든 무조건 공시 중간 경유 페이지로 이동 (조회수 증가 및 원문 제공)
+        if (dartUrl) {
             const params = new URLSearchParams();
             params.set('url', dartUrl);
             params.set('type', 'disclosure');
@@ -93,7 +92,6 @@ self.addEventListener('notificationclick', (event) => {
             if (notifTitle) params.set('title', notifTitle);
             targetUrl = `/news-redirect?${params.toString()}`;
         } else {
-            // 본문 클릭 -> 종목 분석 페이지
             targetUrl = data.url || '/discovery';
         }
     } else if (alertType === 'news_alert') {
