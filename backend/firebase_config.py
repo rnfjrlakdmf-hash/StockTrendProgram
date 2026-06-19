@@ -76,11 +76,11 @@ def apply_disclosure_sentiment(title: str, body: str) -> str:
     is_bad = any(k in search_text for k in bad_keywords)
     
     if is_good and not is_bad:
-        return f"🔴 [대형 호재] {title}"
+        return f"🔴 [매출·주주환원] {title}"
     elif is_bad and not is_good:
-        return f"🔵 [대형 악재] {title}"
+        return f"🔵 [재무·리스크] {title}"
     else:
-        return f"⚪ [주요 공시] {title}"
+        return f"⚪ [일반공시] {title}"
 
 
 def sanitize_notification_text(title: str, body: str):
