@@ -110,31 +110,22 @@ async def check_and_notify_disclosures():
                     # [추가] FCM 웹 푸시 알림 발송 (전체 사용자 대상)
                     from db_manager import get_all_fcm_tokens
                     from firebase_config import send_multicast_notification
-                    from dart_scraper import scrape_dart_text
-                    from ai_analysis import generate_realtime_summary
                     
                     all_tokens = get_all_fcm_tokens(require_whale_alert=True)
                     if all_tokens:
                         push_title = f"🚨 [세력 포착 라이브] {corp}"
                         
-                        # 1. 원본 텍스트 스크래핑 (약 1~2초 소요)
-                        dart_text = scrape_dart_text(dart_link)
+                        # [비용 0원 시스템] AI 호출 없이 즉시 발송
+                        summary_body = f"[{report_title}] 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
                         
-                        # 2. AI 3줄 요약 및 파급력 평가
-                        summary_body, impact_score = generate_realtime_summary(corp, report_title, dart_text)
-                        
-                        # 파급력이 8점 이상일 때만 전체 알림 발송 (스팸 방지)
-                        if impact_score >= 8:
-                            push_data = {
-                                "type": "disclosure_alert",
-                                "url": f"/stock/{raw_code}",
-                                "dart_url": dart_link,
-                                "symbol": raw_code
-                            }
-                            send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
-                            logger.info(f"[WhaleSiren] FCM Push sent to {len(all_tokens)} users (Score: {impact_score})")
-                        else:
-                            logger.info(f"[WhaleSiren] Skipped FCM Push for {corp} due to low impact score: {impact_score}")
+                        push_data = {
+                            "type": "disclosure_alert",
+                            "url": f"/stock/{raw_code}",
+                            "dart_url": dart_link,
+                            "symbol": raw_code
+                        }
+                        send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
+                        logger.info(f"[WhaleSiren] FCM Zero-Cost Push sent to {len(all_tokens)} users for {corp}")
 
                 except Exception as e:
                     logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
