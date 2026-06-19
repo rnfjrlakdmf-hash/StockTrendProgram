@@ -1027,7 +1027,7 @@ def stock_disclosures(symbol: str, period: str = Query("1m")):
         return {"status": "error", "message": str(e)}
 
 @router.get("/supply-chain/{symbol}")
-@turbo_cache(ttl_seconds=300)
+@turbo_cache(ttl_seconds=86400)
 def supply_chain_route(symbol: str):
     from ai_analysis import analyze_supply_chain
     try:
@@ -1037,7 +1037,7 @@ def supply_chain_route(symbol: str):
         return {"status": "error", "message": str(e)}
 
 @router.get("/supply-chain/detail/{symbol}")
-@turbo_cache(ttl_seconds=300)
+@turbo_cache(ttl_seconds=86400)
 def supply_chain_detail_route(symbol: str, name: str = Query(None)):
     from ai_analysis import analyze_node_detail
     try:
@@ -1047,7 +1047,7 @@ def supply_chain_detail_route(symbol: str, name: str = Query(None)):
         return {"status": "error", "message": str(e)}
 
 @router.get("/supply-chain/scenario")
-@turbo_cache(ttl_seconds=300)
+@turbo_cache(ttl_seconds=86400)
 def supply_chain_scenario_route(keyword: str, target_symbol: str = Query(None)):
     from ai_analysis import analyze_supply_chain_scenario
     try:
@@ -1066,9 +1066,25 @@ def analyze_portfolio_route(req: PortfolioReq):
     if not target:
         return {"status": "error", "message": "No symbols provided"}
     
+    # [Optimize] Add caching for AI Portfolio Diagnosis to prevent budget exhaustion
+    from turbo_engine import turbo_engine
+    import hashlib
+    
+    # 정렬된 종목 심볼 리스트를 기반으로 고유 캐시 키 생성 (조합이 같으면 무조건 캐시 히트)
+    sorted_target = sorted(list(set(target)))
+    target_str = ",".join(sorted_target)
+    cache_key = f"v15:analyze_portfolio:{hashlib.md5(target_str.encode()).hexdigest()}"
+    
+    cached_data = turbo_engine.get_cache(cache_key)
+    if cached_data is not None:
+        print(f"[AI-Cache] Portfolio cache HIT for {target_str}")
+        return {"status": "success", "data": cached_data}
+    
     from ai_analysis import analyze_portfolio_data
     try:
         data = analyze_portfolio_data(target)
+        if data:
+            turbo_engine.set_cache(cache_key, data, ttl=3600)  # 1시간 캐싱
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
