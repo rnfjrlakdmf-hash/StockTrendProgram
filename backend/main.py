@@ -159,10 +159,16 @@ async def startup_event():
             traceback.print_exc()
 
         try:
-            print("[Background] Starting auto price alerts...")
-            from auto_price_alerts import auto_price_monitor
+            # Auto Price Alert Monitor
+            from auto_price_alerts import AutoPriceMonitor
+            auto_price_monitor = AutoPriceMonitor()
             asyncio.create_task(auto_price_monitor.start())
             print("[Background] auto_price_monitor task created.")
+            
+            # After Hours Alert Monitor
+            from after_hours_alerts import after_hours_alert_loop
+            asyncio.create_task(after_hours_alert_loop())
+            print("[Background] after_hours_alert_loop task created.")
         except Exception as e:
             print(f"[Background] Error starting auto price alerts: {e}")
             traceback.print_exc()

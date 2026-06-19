@@ -147,7 +147,19 @@ class AutoPriceMonitor:
                             print(f"[AutoPriceAlert] Failed to get foreign detailed info for {symbol}: {ex}")
                     
                     if current > 0 and prev_close > 0:
-                        return current, prev_close, high_52
+                        vol_ratio = 0.0
+                        try:
+                            import yfinance as yf
+                            yf_sym = f"{clean_sym}.KS" if clean_sym.isdigit() else clean_sym
+                            t = yf.Ticker(yf_sym)
+                            # fast_info 호출 시 네트워크 요청 발생 가능성 있음 (yfinance 캐싱 활용)
+                            curr_vol = getattr(t.fast_info, 'last_volume', 0)
+                            avg_vol = getattr(t.fast_info, 'ten_day_average_volume', 0)
+                            if avg_vol and avg_vol > 0 and curr_vol:
+                                vol_ratio = curr_vol / avg_vol
+                        except:
+                            pass
+                        return current, prev_close, high_52, vol_ratio
             except Exception as e:
                 print(f"[AutoPriceAlert] Naver API fetch failed for {symbol}: {e}")
 
@@ -175,19 +187,26 @@ class AutoPriceMonitor:
                     prev_close = ticker.fast_info.previous_close
                     high_52 = ticker.fast_info.year_high
                 
-                return current, prev_close, high_52
+                vol_ratio = 0.0
+                try:
+                    curr_vol = getattr(ticker.fast_info, 'last_volume', 0)
+                    avg_vol = getattr(ticker.fast_info, 'ten_day_average_volume', 0)
+                    if avg_vol and avg_vol > 0 and curr_vol:
+                        vol_ratio = curr_vol / avg_vol
+                except: pass
+                return current, prev_close, high_52, vol_ratio
             except Exception as e:
                 print(f"[AutoPriceAlert] Fallback yfinance failed for {symbol}: {e}")
-                return None, None, None
+                return None, None, None, 0.0
 
-        current, prev_close, high_52 = await asyncio.to_thread(_fetch_price_data)
+        current, prev_close, high_52, vol_ratio = await asyncio.to_thread(_fetch_price_data)
         
         if not current or not prev_close:
             return
 
         # 상태 딕셔너리 초기화
         if symbol not in self.notified_events[today_str]:
-            self.notified_events[today_str][symbol] = {"up_5": False, "down_5": False, "high_52": False}
+            self.notified_events[today_str][symbol] = {"up_5": False, "down_5": False, "high_52": False, "vol_spike": False}
         
         state = self.notified_events[today_str][symbol]
         
@@ -207,6 +226,15 @@ class AutoPriceMonitor:
             return
             
         alerts_to_send = []
+
+        # 🧨 거래량 폭발 (10일 평균 대비 500% 이상) 및 상승 포착
+        if vol_ratio >= 5.0 and change_pct > 0 and not state.get("vol_spike", False):
+            state["vol_spike"] = True
+            alerts_to_send.append({
+                "title": "🚀 거래량 폭발",
+                "body": f"거래량이 평소보다 {int(vol_ratio*100)}% 급증하며 상승 중입니다! ({curr_str})",
+                "type": "volume_spike"
+            })
 
         # 🚀 5% 이상 상승 포착 (오늘 알림을 안 보낸 경우)
         if change_pct >= 5.0 and not state["up_5"]:
