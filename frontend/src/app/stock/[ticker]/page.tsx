@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 import StockVotingBoard from "@/components/StockVotingBoard";
 import KakaoShareButton from "@/components/KakaoShareButton";
+import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -184,6 +185,9 @@ export default async function StockSeoPage({ params }: Props) {
                         </ul>
                     </div>
                 </div>
+
+                {/* On-Demand AI Analysis Section */}
+                <OnDemandAiAnalysis ticker={resolvedParams.ticker} stockName={name} />
 
                 {/* 배당 정보 섹션 (해외주식/배당주) */}
                 {(data.exDividendDate || data.paymentDate || data.dividendYield > 0) && (
