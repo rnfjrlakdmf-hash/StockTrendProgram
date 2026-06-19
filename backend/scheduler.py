@@ -95,23 +95,39 @@ async def check_and_notify_disclosures():
             if is_whale:
                 # [스마트 필터링] 단일판매ㆍ공급계약체결의 경우 매출액 대비 20% 이상인 초대형 계약만 발송
                 skip_whale_alert = False
-                prefix_title = "🚨 [세력 포착 라이브]"
-                if "단일판매" in report_title.replace(" ", ""):
-                    from dart_scraper import scrape_dart_text
-                    import re
+                prefix_title = "🔔 [공시 팩트 알림]"
+                from dart_scraper import scrape_dart_text
+                from ai_analysis import generate_with_retry
+                import json
+                import asyncio
+                
+                try:
                     dart_text = scrape_dart_text(dart_link)
-                    match = re.search(r'매출액\s*대비\s*[\(]?\s*([0-9\.]+)\s*[\)]?\s*%', dart_text)
-                    if match:
-                        try:
-                            ratio = float(match.group(1))
-                            if ratio < 20.0:
-                                skip_whale_alert = True
-                                logger.info(f"[WhaleSiren] Skipped {corp} (Ratio {ratio}% < 20%)")
-                            else:
-                                prefix_title = f"🔥 [초대박 공시: 매출액 {ratio}%]"
-                                logger.info(f"[WhaleSiren] Massive contract! {corp} (Ratio {ratio}%)")
-                        except:
-                            pass
+                    if dart_text and len(dart_text) > 50:
+                        prompt = f"""다음은 '{corp}'의 전자공시 원문 일부입니다.
+공시의 핵심 수치(예: 매출액 대비 계약 규모 비율, 무상증자 비율, 유상증자 자금조달 목적 등)를 객관적이고 중립적인 팩트로만 20자 이내로 요약하세요.
+'호재', '악재', '대박', '초대박', '매수' 등의 주관적 단어는 절대 사용하지 마세요. 오직 수치와 팩트만 전달하세요.
+
+공시 제목: {report_title}
+공시 내용: {dart_text[:1500]}
+
+출력형식 (오직 요약된 텍스트만 출력):
+"""
+                        # To run async function generate_with_retry, since we are inside an async function:
+                        import nest_asyncio
+                        nest_asyncio.apply()
+                        # Wait, we are already in async. check_and_notify_disclosures is async.
+                        # Actually we can't use generate_with_retry if it's not async. generate_with_retry is sync!
+                        # So we can just call it synchronously or use to_thread.
+                        
+                        res = generate_with_retry(prompt, False)
+                        if res and res.text:
+                            fact = res.text.strip().replace('"', '').replace("'", "")
+                            prefix_title = f"🚨 [{fact}]"
+                            logger.info(f"[WhaleSiren] AI Fact: {fact}")
+                except Exception as e:
+                    logger.error(f"[WhaleSiren] AI Extraction failed: {e}")
+
                 
                 if not skip_whale_alert:
                     try:

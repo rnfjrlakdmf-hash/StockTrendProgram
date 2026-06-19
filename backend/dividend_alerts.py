@@ -78,9 +78,9 @@ def check_and_send_dividend_alerts():
                 tokens = get_users_watching_stock(symbol)
                 
                 if tokens:
-                    title = f"💰 내일은 {name} 배당락일입니다!"
-                    yield_str = f" (예상 수익률 {yield_pct:.2f}%)" if yield_pct > 0 else ""
-                    body = f"오늘까지 {symbol if not symbol.isdigit() else name} 주식을 매수하셔야 이번 배당금{yield_str}을 받을 수 있습니다. 잊지 말고 체크하세요!"
+                    title = f"💰 내일은 {name} 배당락일입니다"
+                    yield_str = f" (작년 배당금 기준 예상 수익률: 약 {yield_pct:.2f}%)" if yield_pct > 0 else ""
+                    body = f"내일은 {name}의 배당락일이 예정되어 있습니다.{yield_str}\n(본 정보는 투자 참고용이며 최종 책임은 본인에게 있습니다.)"
                     url = f"https://stock-trend-program.co.kr/stock/{symbol}"
                     
                     print(f"[{symbol}] Ex-dividend is tomorrow! Sending to {len(tokens)} devices.")

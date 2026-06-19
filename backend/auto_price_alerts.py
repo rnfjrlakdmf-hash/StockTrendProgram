@@ -159,7 +159,21 @@ class AutoPriceMonitor:
                                 vol_ratio = curr_vol / avg_vol
                         except:
                             pass
-                        return current, prev_close, high_52, vol_ratio
+                        rsi_value = None
+                        try:
+                            hist = t.history(period="1mo")
+                            if len(hist) >= 15:
+                                delta = hist['Close'].diff()
+                                gain = delta.where(delta > 0, 0.0)
+                                loss = -delta.where(delta < 0, 0.0)
+                                avg_gain = gain.rolling(window=14, min_periods=14).mean()
+                                avg_loss = loss.rolling(window=14, min_periods=14).mean()
+                                rs = avg_gain / avg_loss
+                                rsi = 100 - (100 / (1 + rs))
+                                if not rsi.isna().iloc[-1]:
+                                    rsi_value = float(rsi.iloc[-1])
+                        except: pass
+                        return current, prev_close, high_52, vol_ratio, rsi_value
             except Exception as e:
                 print(f"[AutoPriceAlert] Naver API fetch failed for {symbol}: {e}")
 
@@ -194,19 +208,44 @@ class AutoPriceMonitor:
                     if avg_vol and avg_vol > 0 and curr_vol:
                         vol_ratio = curr_vol / avg_vol
                 except: pass
-                return current, prev_close, high_52, vol_ratio
+                
+                rsi_value = None
+                try:
+                    hist = ticker.history(period="1mo")
+                    if len(hist) >= 15:
+                        delta = hist['Close'].diff()
+                        gain = delta.where(delta > 0, 0.0)
+                        loss = -delta.where(delta < 0, 0.0)
+                        avg_gain = gain.rolling(window=14, min_periods=14).mean()
+                        avg_loss = loss.rolling(window=14, min_periods=14).mean()
+                        rs = avg_gain / avg_loss
+                        rsi = 100 - (100 / (1 + rs))
+                        if not rsi.isna().iloc[-1]:
+                            rsi_value = float(rsi.iloc[-1])
+                except Exception as e:
+                    print(f"RSI Calc Error: {e}")
+                    pass
+                
+                return current, prev_close, high_52, vol_ratio, rsi_value
             except Exception as e:
                 print(f"[AutoPriceAlert] Fallback yfinance failed for {symbol}: {e}")
                 return None, None, None, 0.0
 
-        current, prev_close, high_52, vol_ratio = await asyncio.to_thread(_fetch_price_data)
+        result = await asyncio.to_thread(_fetch_price_data)
+        if result and len(result) == 5:
+            current, prev_close, high_52, vol_ratio, rsi_value = result
+        elif result and len(result) == 4:
+            current, prev_close, high_52, vol_ratio = result
+            rsi_value = None
+        else:
+            current = prev_close = high_52 = vol_ratio = rsi_value = None
         
         if not current or not prev_close:
             return
 
         # 상태 딕셔너리 초기화
         if symbol not in self.notified_events[today_str]:
-            self.notified_events[today_str][symbol] = {"up_5": False, "down_5": False, "high_52": False, "vol_spike": False}
+            self.notified_events[today_str][symbol] = {"up_5": False, "down_5": False, "high_52": False, "vol_spike": False, "rsi_30": False}
         
         state = self.notified_events[today_str][symbol]
         
@@ -226,6 +265,15 @@ class AutoPriceMonitor:
             return
             
         alerts_to_send = []
+
+        # 🎯 RSI 30 미만 (과매도 구간 진입) - 팩트 알림 (주관적 추천 없음)
+        if rsi_value is not None and rsi_value < 30.0 and not state.get("rsi_30", False):
+            state["rsi_30"] = True
+            alerts_to_send.append({
+                "title": "📊 보조지표 변동 알림",
+                "body": f"관심종목의 RSI 지표가 {rsi_value:.1f}로 30 미만(과매도 구간)에 진입했습니다.",
+                "type": "technical_indicator"
+            })
 
         # 🧨 거래량 폭발 (10일 평균 대비 500% 이상) 및 상승 포착
         if vol_ratio >= 5.0 and change_pct > 0 and not state.get("vol_spike", False):
