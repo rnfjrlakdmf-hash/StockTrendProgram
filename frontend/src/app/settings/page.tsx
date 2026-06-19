@@ -398,40 +398,53 @@ export default function SettingsPage() {
 
                     {!isNotifCollapsed && (
                         <div className="p-6 pt-2 animate-in fade-in slide-in-from-top-3 duration-250">
-                            {!fcmToken ? (
-                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                                        <div>
-                                            <p className="text-sm font-bold text-red-400">알림 권한이 없습니다.</p>
-                                            <p className="text-xs text-red-300/80 mt-1">알림을 받으려면 브라우저 권한을 허용해주세요.</p>
+                                <div className="space-y-4">
+                                    {!fcmToken && (
+                                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                                                <div>
+                                                    <p className="text-sm font-bold text-red-400">알림 권한이 허용되지 않았습니다.</p>
+                                                    <p className="text-xs text-red-300/80 mt-1">아래 알림을 켜려면 브라우저 권한을 허용해주세요.</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        const { requestFCMToken } = await import('@/lib/firebase');
+                                                        const token = await requestFCMToken();
+                                                        if (token) {
+                                                            localStorage.setItem('fcm_token_value', token);
+                                                            setFcmToken(token);
+                                                            const uid = localStorage.getItem('uuid');
+                                                            if (uid) {
+                                                                await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ token: token, user_id: uid, source: 'settings_auto_prompt' })
+                                                                });
+                                                            }
+                                                            window.location.reload();
+                                                        } else {
+                                                            alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
+                                                        }
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        alert('알림 권한 요청 중 오류가 발생했습니다.');
+                                                    }
+                                                }}
+                                                className="w-full sm:w-auto px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors text-center"
+                                            >
+                                                권한 허용하기
+                                            </button>
                                         </div>
-                                    </div>
-                                    <button 
-                                        onClick={async () => {
-                                            try {
-                                                const { requestFCMToken } = await import('@/lib/firebase');
-                                                const token = await requestFCMToken();
-                                                if (token) {
-                                                    localStorage.setItem('fcm_token_value', token);
-                                                    setFcmToken(token);
-                                                    window.location.reload();
-                                                } else {
-                                                    alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
-                                                }
-                                            } catch (e) {
-                                                console.error(e);
-                                                alert('알림 권한 요청 중 오류가 발생했습니다.');
-                                            }
-                                        }}
-                                        className="shrink-0 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors"
-                                    >
-                                        권한 허용하기
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {[
+                                    )}
+                                    <div className="relative">
+                                        {!fcmToken && (
+                                            <div className="absolute inset-0 z-10 cursor-pointer" onClick={() => alert('먼저 위의 [권한 허용하기] 버튼을 눌러주세요.')} />
+                                        )}
+                                        <div className={`space-y-2 ${!fcmToken ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {[
                                         { key: 'pref_morning', icon: '✨', title: 'AI 마켓 브리핑 (08:00)', desc: '장 시작 전 호재/악재 요약', activeColor: 'bg-green-500' },
                                         { key: 'pref_closing', icon: '☀️', title: '장시작/마감 리포트', desc: '시가/종가 및 수익 요약', activeColor: 'bg-green-500' },
                                         { key: 'pref_price', icon: '🚨', title: '가격 변동 알림', desc: '손절/익절 목표가 도달 즉시', activeColor: 'bg-green-500' },
@@ -476,8 +489,9 @@ export default function SettingsPage() {
                                             </div>
                                         );
                                     })}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
                         </div>
                     )}
                 </div>
