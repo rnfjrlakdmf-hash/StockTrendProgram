@@ -19,6 +19,12 @@ const navigation = [
         desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
     },
     { 
+        name: "🔒 주말 마켓 인사이트", 
+        href: "/weekend-report", 
+        icon: Newspaper,
+        desc: "토/일 주말에만 열람 가능한 프리미엄 마켓 요약 리포트입니다."
+    },
+    { 
         name: "🧮 물타기 생존 계산기", 
         href: "/calculator", 
         icon: Activity,

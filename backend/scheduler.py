@@ -692,3 +692,48 @@ async def weekly_blog_bot_scheduler_loop():
         except Exception as e:
             logger.error(f"[WeeklyBlog] Loop error: {e}")
             await asyncio.sleep(60)
+
+async def weekend_report_scheduler_loop():
+    """매주 토요일 오전 9시 30분 주말 리포트 생성, 10시에 푸시 알림"""
+    logger.info("[WeekendReport] Weekend Report Scheduler Active.")
+    last_run_week_gen = -1
+    last_run_week_push = -1
+    
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    
+    while True:
+        try:
+            now = datetime.now(kst)
+            current_week = now.isocalendar()[1]
+            
+            # 1. 리포트 생성 (토요일 오전 9시 30분 ~ 9시 59분 사이 1회)
+            if now.weekday() == 5 and now.hour == 9 and now.minute >= 30 and last_run_week_gen != current_week:
+                logger.info(f"[WeekendReport] Generating report for week {current_week}...")
+                from utils.weekend_report import generate_weekend_report
+                await generate_weekend_report()
+                last_run_week_gen = current_week
+                
+            # 2. 푸시 발송 (토요일 오전 10시 00분 ~ 10시 29분 사이 1회)
+            if now.weekday() == 5 and now.hour == 10 and now.minute < 30 and last_run_week_push != current_week:
+                logger.info(f"[WeekendReport] Sending push notifications for week {current_week}...")
+                from firebase_config import send_multicast_notification
+                from db_manager import get_all_fcm_tokens_with_user
+                
+                all_tokens = [t[1] for t in get_all_fcm_tokens_with_user()]
+                if all_tokens:
+                    push_title = "🚨 [주말 한정] 마켓 인사이트 발행 완료"
+                    push_body = "지난주 시장 자금 흐름과 다음 주 핵심 일정을 지금 바로 확인하세요! (일요일 자정 삭제)"
+                    push_data = {
+                        "type": "weekend_report",
+                        "url": "/weekend-report"
+                    }
+                    send_multicast_notification(all_tokens, push_title, push_body, data=push_data)
+                    logger.info(f"[WeekendReport] Push sent to {len(all_tokens)} devices.")
+                
+                last_run_week_push = current_week
+                
+            await asyncio.sleep(60 * 15) # 15분 주기로 체크
+        except Exception as e:
+            logger.error(f"[WeekendReport] Loop error: {e}")
+            await asyncio.sleep(60)
