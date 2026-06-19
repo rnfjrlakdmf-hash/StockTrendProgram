@@ -116,7 +116,7 @@ async def check_and_notify_disclosures():
                         push_title = f"🚨 [세력 포착 라이브] {corp}"
                         
                         # [비용 0원 시스템] AI 호출 없이 즉시 발송
-                        summary_body = f"[{report_title}] 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
+                        summary_body = f"[{corp}] {report_title} 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
                         
                         push_data = {
                             "type": "disclosure_alert",
