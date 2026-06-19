@@ -63,6 +63,26 @@ def is_night_time_kst() -> bool:
     return now.hour >= 21 or now.hour < 8
 
 
+def apply_disclosure_sentiment(title: str, body: str) -> str:
+    """공시 제목을 바탕으로 비용 0원 룰 기반 호재/악재 색상 이모지를 붙입니다."""
+    if any(emoji in title for emoji in ["🔴", "🔵", "⚪", "📈", "📉"]):
+        return title
+
+    good_keywords = ["단일판매", "공급계약", "무상증자", "소각", "자기주식취득", "현금ㆍ현물배당", "주식배당", "영업잠정실적"]
+    bad_keywords = ["유상증자", "감자", "관리종목", "상장폐지", "부도", "소송", "불성실", "거래정지", "횡령", "배임", "파산", "회생"]
+    
+    search_text = (title + " " + body).replace(" ", "")
+    is_good = any(k in search_text for k in good_keywords)
+    is_bad = any(k in search_text for k in bad_keywords)
+    
+    if is_good and not is_bad:
+        return f"🔴 [대형 호재] {title}"
+    elif is_bad and not is_good:
+        return f"🔵 [대형 악재] {title}"
+    else:
+        return f"⚪ [주요 공시] {title}"
+
+
 def sanitize_notification_text(title: str, body: str):
     """
     모바일 및 스마트워치(애플워치/갤럭시워치) 화면에서 글씨가 잘리지 않고 
@@ -142,6 +162,10 @@ def send_push_notification(
         print(f"[Firebase-NightBlock] Skipped sending notification during night time: {title}")
         return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
+    alert_type = (data or {}).get('type', '')
+    if alert_type == 'disclosure_alert':
+        title = apply_disclosure_sentiment(title, body)
+        
     # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
     
@@ -154,7 +178,6 @@ def send_push_notification(
         )
         
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
-        alert_type = (data or {}).get('type', '')
         symbol = (data or {}).get('symbol', '')
         
         # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
@@ -282,6 +305,10 @@ def send_multicast_notification(
     if not tokens:
         return {"success": False, "error": "No tokens provided"}
         
+    alert_type = (data or {}).get('type', '')
+    if alert_type == 'disclosure_alert':
+        title = apply_disclosure_sentiment(title, body)
+        
     # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
     
@@ -294,7 +321,6 @@ def send_multicast_notification(
         )
         
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
-        alert_type = (data or {}).get('type', '')
         symbol = (data or {}).get('symbol', '')
         
         # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
