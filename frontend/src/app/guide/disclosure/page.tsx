@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '공시 (Corporate Disclosure) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '상장 기업이 주요 경영 사항을 투자자에게 의무적으로 알리는 제도. 주식 초보자도 쉽게 이해할 수 있는 공시 (Corporate Disclosure) 완벽 가이드.',
   keywords: ['공시 (Corporate Disclosure)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideDisclosurePage() {
   return (

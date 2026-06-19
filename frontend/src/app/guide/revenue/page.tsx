@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '매출액 (Revenue) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '기업이 상품·서비스 판매로 벌어들인 총 수입. 주식 초보자도 쉽게 이해할 수 있는 매출액 (Revenue) 완벽 가이드.',
   keywords: ['매출액 (Revenue)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideRevenuePage() {
   return (

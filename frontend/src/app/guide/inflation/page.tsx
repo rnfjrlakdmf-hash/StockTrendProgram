@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '인플레이션 (Inflation) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '물가가 지속적으로 상승하여 화폐 가치가 하락하는 경제 현상. 주식 초보자도 쉽게 이해할 수 있는 인플레이션 (Inflation) 완벽 가이드.',
   keywords: ['인플레이션 (Inflation)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideInflationPage() {
   return (

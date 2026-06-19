@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '이동평균선 (Moving Average) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '일정 기간 주가 평균을 연결한 선으로 추세와 지지·저항을 파악하는 핵심 지표. 주식 초보자도 쉽게 이해할 수 있는 이동평균선 (Moving Average) 완벽 가이드.',
   keywords: ['이동평균선 (Moving Average)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideMovingAveragePage() {
   return (

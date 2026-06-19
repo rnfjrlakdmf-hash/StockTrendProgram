@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '리밸런싱 (Rebalancing) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '변동된 포트폴리오 비중을 목표 비중으로 다시 조정하는 작업. 주식 초보자도 쉽게 이해할 수 있는 리밸런싱 (Rebalancing) 완벽 가이드.',
   keywords: ['리밸런싱 (Rebalancing)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideRebalancingPage() {
   return (

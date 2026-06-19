@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'FOMC (연방공개시장위원회) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '미국 연방준비제도의 기준금리 결정기구로 전 세계 금융시장에 가장 큰 영향력을 가진 회의체. 주식 초보자도 쉽게 이해할 수 있는 FOMC (연방공개시장위원회) 완벽 가이드.',
   keywords: ['FOMC (연방공개시장위원회)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideFomcPage() {
   return (

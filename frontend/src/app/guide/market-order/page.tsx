@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '시장가 주문 (Market Order) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '현재 시장의 최우선 호가에 즉시 체결되도록 내는 주문 방식. 주식 초보자도 쉽게 이해할 수 있는 시장가 주문 (Market Order) 완벽 가이드.',
   keywords: ['시장가 주문 (Market Order)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideMarketOrderPage() {
   return (

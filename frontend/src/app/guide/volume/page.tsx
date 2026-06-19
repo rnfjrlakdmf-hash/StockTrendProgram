@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '거래량 (Trading Volume) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '일정 기간 동안 시장에서 매매된 주식의 총 수량. 주식 초보자도 쉽게 이해할 수 있는 거래량 (Trading Volume) 완벽 가이드.',
   keywords: ['거래량 (Trading Volume)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideVolumePage() {
   return (

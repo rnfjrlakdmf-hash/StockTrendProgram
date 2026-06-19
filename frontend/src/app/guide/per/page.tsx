@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'PER (주가수익비율) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가를 주당순이익(EPS)으로 나눈 값으로 기업의 수익 대비 주가 수준을 평가하는 지표. 주식 초보자도 쉽게 이해할 수 있는 PER (주가수익비율) 완벽 가이드.',
   keywords: ['PER (주가수익비율)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuidePerPage() {
   return (

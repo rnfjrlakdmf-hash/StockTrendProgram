@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '데드크로스 (Dead Cross) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '단기 이동평균선이 장기 이동평균선을 하향 돌파하는 약세 신호. 주식 초보자도 쉽게 이해할 수 있는 데드크로스 (Dead Cross) 완벽 가이드.',
   keywords: ['데드크로스 (Dead Cross)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideDeadCrossPage() {
   return (

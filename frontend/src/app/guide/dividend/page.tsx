@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '배당금 (Dividend) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '기업이 이익의 일부를 주주에게 분배하는 현금 또는 주식. 주식 초보자도 쉽게 이해할 수 있는 배당금 (Dividend) 완벽 가이드.',
   keywords: ['배당금 (Dividend)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideDividendPage() {
   return (

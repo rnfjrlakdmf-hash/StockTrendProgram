@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '공매도 (Short Selling) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '빌린 주식을 매도하여 주가 하락 시 차익을 얻는 투자 전략. 주식 초보자도 쉽게 이해할 수 있는 공매도 (Short Selling) 완벽 가이드.',
   keywords: ['공매도 (Short Selling)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideShortSellingPage() {
   return (

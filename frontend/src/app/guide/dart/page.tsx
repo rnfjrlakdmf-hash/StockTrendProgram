@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'DART (전자공시시스템) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '금융감독원이 운영하는 상장기업 공시 통합 플랫폼. 주식 초보자도 쉽게 이해할 수 있는 DART (전자공시시스템) 완벽 가이드.',
   keywords: ['DART (전자공시시스템)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideDartPage() {
   return (

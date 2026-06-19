@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '포트폴리오 (Portfolio) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '분산투자를 위해 구성된 여러 자산과 종목의 집합체. 주식 초보자도 쉽게 이해할 수 있는 포트폴리오 (Portfolio) 완벽 가이드.',
   keywords: ['포트폴리오 (Portfolio)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuidePortfolioPage() {
   return (

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'EPS (주당순이익) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '당기순이익을 발행 주식 수로 나눈 1주당 순이익 지표. 주식 초보자도 쉽게 이해할 수 있는 EPS (주당순이익) 완벽 가이드.',
   keywords: ['EPS (주당순이익)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideEpsPage() {
   return (

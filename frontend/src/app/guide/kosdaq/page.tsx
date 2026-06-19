@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: '코스닥 (KOSDAQ) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '기술·벤처 중소형 기업 중심의 한국 별도 주식 시장. 주식 초보자도 쉽게 이해할 수 있는 코스닥 (KOSDAQ) 완벽 가이드.',
   keywords: ['코스닥 (KOSDAQ)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideKosdaqPage() {
   return (

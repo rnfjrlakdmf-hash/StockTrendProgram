@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'ETF (상장지수펀드) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '특정 지수·섹터를 추종하며 주식처럼 실시간 거래 가능한 분산투자 상품. 주식 초보자도 쉽게 이해할 수 있는 ETF (상장지수펀드) 완벽 가이드.',
   keywords: ['ETF (상장지수펀드)', '주식 용어', '주식 투자', '주식 기초', 'StockTrend'],
-}};
+};
 
 export default function GuideEtfPage() {
   return (
