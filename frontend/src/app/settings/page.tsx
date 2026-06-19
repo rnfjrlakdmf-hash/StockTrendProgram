@@ -399,12 +399,35 @@ export default function SettingsPage() {
                     {!isNotifCollapsed && (
                         <div className="p-6 pt-2 animate-in fade-in slide-in-from-top-3 duration-250">
                             {!fcmToken ? (
-                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                                    <div>
-                                        <p className="text-sm font-bold text-red-400">알림 권한이 없습니다.</p>
-                                        <p className="text-xs text-red-300/80 mt-1">알림을 받으려면 브라우저 권한을 허용하거나 메인 화면에서 활성화해주세요.</p>
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-bold text-red-400">알림 권한이 없습니다.</p>
+                                            <p className="text-xs text-red-300/80 mt-1">알림을 받으려면 브라우저 권한을 허용해주세요.</p>
+                                        </div>
                                     </div>
+                                    <button 
+                                        onClick={async () => {
+                                            try {
+                                                const { requestFCMToken } = await import('@/lib/firebase');
+                                                const token = await requestFCMToken();
+                                                if (token) {
+                                                    localStorage.setItem('fcm_token_value', token);
+                                                    setFcmToken(token);
+                                                    window.location.reload();
+                                                } else {
+                                                    alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                                alert('알림 권한 요청 중 오류가 발생했습니다.');
+                                            }
+                                        }}
+                                        className="shrink-0 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors"
+                                    >
+                                        권한 허용하기
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
