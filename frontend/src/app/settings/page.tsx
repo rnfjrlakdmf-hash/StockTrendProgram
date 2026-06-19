@@ -94,7 +94,7 @@ export default function SettingsPage() {
             }
 
             // 알림 설정 불러오기
-            const token = localStorage.getItem('fcm_token');
+            const token = localStorage.getItem('fcm_token_value');
             if (token) {
                 setFcmToken(token);
                 fetch(`${API_BASE_URL}/api/system/fcm-preferences?token=${token}`)
