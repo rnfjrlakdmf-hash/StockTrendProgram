@@ -27,7 +27,7 @@ export default function GuideBetaPage() {
         <div className="space-y-10 text-gray-300 leading-relaxed">
           <section className="bg-white/5 border border-white/10 rounded-3xl p-8">
             <h2 className="text-2xl font-bold text-white mb-4">베타 (Beta)이란 무엇인가?</h2>
-            <p className="text-lg leading-relaxed">베타(β)는 특정 종목의 주가가 시장 전체(예: 코스피 200) 움직임에 얼마나 민감하게 반응하는지를 나타내는 지표입니다. β=1이면 시장과 같은 방향으로 같은 폭으로 움직이고, β>1이면 더 크게 움직이며, β<1이면 더 작게 움직입니다. β<0이면 시장과 반대 방향으로 움직이는 경향이 있습니다.</p>
+            <p className="text-lg leading-relaxed">베타(β)는 특정 종목의 주가가 시장 전체(예: 코스피 200) 움직임에 얼마나 민감하게 반응하는지를 나타내는 지표입니다. β=1이면 시장과 같은 방향으로 같은 폭으로 움직이고, β&gt;1이면 더 크게 움직이며, β&lt;1이면 더 작게 움직입니다. β&lt;0이면 시장과 반대 방향으로 움직이는 경향이 있습니다.</p>
           </section>
           <section className="bg-indigo-900/20 border border-indigo-500/20 rounded-3xl p-8">
             <h2 className="text-2xl font-bold text-white mb-4">실전 예시</h2>
