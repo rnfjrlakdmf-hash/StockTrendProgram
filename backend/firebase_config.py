@@ -83,6 +83,26 @@ def apply_disclosure_sentiment(title: str, body: str) -> str:
         return f"⚪ [일반공시] {title}"
 
 
+def apply_news_sentiment(title: str, body: str) -> str:
+    """뉴스 제목(body)을 바탕으로 비용 0원 룰 기반 호재/악재 색상 이모지를 타이틀에 추가합니다."""
+    if any(emoji in title for emoji in ["🔴", "🔵"]):
+        return title
+
+    good_keywords = ["수주", "계약", "흑자전환", "최대실적", "어닝서프라이즈", "목표가상향", "목표가 상향", "승인", "성공", "돌파", "호실적", "수출"]
+    bad_keywords = ["적자전환", "어닝쇼크", "목표가하향", "목표가 하향", "급락", "폭락", "우려", "리스크", "소송", "횡령", "배임", "하회", "쇼크"]
+    
+    search_text = body.replace(" ", "")
+    is_good = any(k.replace(" ", "") in search_text for k in good_keywords)
+    is_bad = any(k.replace(" ", "") in search_text for k in bad_keywords)
+    
+    if is_good and not is_bad:
+        return f"🔴 {title}"
+    elif is_bad and not is_good:
+        return f"🔵 {title}"
+    else:
+        return title
+
+
 def sanitize_notification_text(title: str, body: str):
     """
     모바일 및 스마트워치(애플워치/갤럭시워치) 화면에서 글씨가 잘리지 않고 
@@ -165,6 +185,8 @@ def send_push_notification(
     alert_type = (data or {}).get('type', '')
     if alert_type == 'disclosure_alert':
         title = apply_disclosure_sentiment(title, body)
+    elif alert_type in ['news_alert', 'news_naver', 'news_google']:
+        title = apply_news_sentiment(title, body)
         
     # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
@@ -308,6 +330,8 @@ def send_multicast_notification(
     alert_type = (data or {}).get('type', '')
     if alert_type == 'disclosure_alert':
         title = apply_disclosure_sentiment(title, body)
+    elif alert_type in ['news_alert', 'news_naver', 'news_google']:
+        title = apply_news_sentiment(title, body)
         
     # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
     title, body = sanitize_notification_text(title, body)
