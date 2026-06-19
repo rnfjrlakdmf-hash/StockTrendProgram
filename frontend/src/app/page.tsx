@@ -9,6 +9,7 @@ import NaverTopWidget from "@/components/NaverTopWidget";
 import MorningBriefWidget from "@/components/MorningBriefWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
 import LiveRankingBox from "@/components/LiveRankingBox";
+import PopularSearchWidget from "@/components/PopularSearchWidget";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -248,6 +249,9 @@ export default function Home() {
                 </Link>
               );
             })()}
+
+            {/* [Phase 5] Real-time Trending Search (FOMO Widget) */}
+            <PopularSearchWidget />
 
             {/* [Phase 3] Live Ranking Dashboard (KRX) */}
             <LiveRankingBox />

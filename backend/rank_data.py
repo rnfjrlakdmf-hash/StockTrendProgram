@@ -707,8 +707,9 @@ def get_naver_ranking(market="krx", rank_type="quant"):
     market: krx 또는 nxt
     rank_type: quant(거래상위), rise(상승), fall(하락), market_sum(시가총액상위)
     """
-    # [Commercial Protection] 네이버 시세 랭킹 스크래핑 전면 비활성화 및 빈 배열 리턴
-    return []
+    if rank_type != "popular":
+        # [Commercial Protection] 네이버 시세 랭킹 스크래핑 전면 비활성화 및 빈 배열 리턴
+        return []
 
     import requests
     from bs4 import BeautifulSoup
