@@ -6,10 +6,10 @@ import { TrendingUp, Flame, ChevronUp, ChevronDown, Minus } from "lucide-react";
 import Link from "next/link";
 
 interface PopularItem {
-  no: string;
+  rank: number;
   name: string;
   price: string;
-  changeRate: number;
+  change_percent: number;
   symbol?: string;
 }
 
@@ -20,7 +20,7 @@ export default function PopularSearchWidget() {
   useEffect(() => {
     const fetchPopular = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/rank/naver/krx/popular`);
+        const res = await fetch(`${API_BASE_URL}/api/market/rank/naver/krx/popular`);
         const data = await res.json();
         if (data.status === "success" && data.data && data.data.length > 0) {
           setItems(data.data.slice(0, 10)); // Top 10
@@ -80,10 +80,10 @@ export default function PopularSearchWidget() {
             <div className="flex items-center gap-3">
               <span className="text-gray-400 text-sm">{Number(item.price).toLocaleString()}원</span>
               <div className={`flex items-center gap-0.5 text-sm font-bold w-16 justify-end ${
-                item.changeRate > 0 ? "text-red-400" : item.changeRate < 0 ? "text-blue-400" : "text-gray-400"
+                item.change_percent > 0 ? "text-red-400" : item.change_percent < 0 ? "text-blue-400" : "text-gray-400"
               }`}>
-                {item.changeRate > 0 ? <ChevronUp className="w-4 h-4" /> : item.changeRate < 0 ? <ChevronDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-                {Math.abs(item.changeRate)}%
+                {item.change_percent > 0 ? <ChevronUp className="w-4 h-4" /> : item.change_percent < 0 ? <ChevronDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                {Math.abs(item.change_percent)}%
               </div>
             </div>
           </Link>
