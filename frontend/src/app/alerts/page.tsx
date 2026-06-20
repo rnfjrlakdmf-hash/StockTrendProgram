@@ -42,17 +42,10 @@ export default function AlertCenterPage() {
     }, []);
 
     return (
-        <div className="flex h-screen bg-gray-900 text-gray-100 font-sans selection:bg-blue-500/30">
-            {/* 왼쪽 사이드바 (데스크톱) */}
-            <div className="hidden lg:block w-64 border-r border-gray-800 bg-gray-900/50 backdrop-blur-xl">
-                <Sidebar />
-            </div>
+        <div className="min-h-screen pb-10">
+            <Header />
 
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                <Header />
-
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 scroll-smooth">
-                    <div className="max-w-3xl mx-auto space-y-6">
+            <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
                         <div className="flex items-center space-x-3 mb-8">
                             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
                                 <span className="text-2xl">🔔</span>
@@ -128,8 +121,7 @@ export default function AlertCenterPage() {
                             </div>
                         )}
                     </div>
-                </main>
-            </div>
+                    </div>
         </div>
     );
 }
