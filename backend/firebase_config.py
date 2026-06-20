@@ -4,7 +4,7 @@ FCM 푸시 알림 설정 및 발송
 """
 
 import firebase_admin
-from firebase_admin import credentials, messaging
+from firebase_admin import credentials, messaging, firestore
 import os
 from typing import Dict, List, Optional
 
@@ -295,6 +295,8 @@ def send_push_notification(
         return {"success": False, "error": str(e)}
 
 
+from firebase_admin import messaging, firestore
+
 def send_multicast_notification(
     tokens: List[str],
     title: str,
@@ -302,11 +304,29 @@ def send_multicast_notification(
     data: Optional[Dict] = None,
     image_url: Optional[str] = None
 ) -> Dict:
-    """
-    여러 기기에 동시 발송
-    """
+    """여러 디바이스로 푸시 알림 전송 및 알림 센터 DB 저장"""
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
+
+    if not tokens:
+        print("[Firebase] No tokens provided for multicast")
+        return {"success": False, "error": "No tokens provided"}
+
+    # 1. Firestore 알림 센터 저장
+    try:
+        db = firestore.client()
+        alert_type = data.get("type", "news_naver") if data else "news_naver"
+        
+        # Firestore에 알림 데이터 저장
+        db.collection("alerts").add({
+            "title": title,
+            "body": body,
+            "type": alert_type,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        })
+        print(f"[Firestore] Alert saved to center: {title}")
+    except Exception as e:
+        print(f"[Firestore] Failed to save alert to center: {e}")
 
     # 중복 토큰 제거 (동일 기기 중복 발송 방지)
     if tokens:
