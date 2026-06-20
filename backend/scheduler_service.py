@@ -700,6 +700,7 @@ def run_market_scheduler():
     last_run_close_us = None
     last_run_weekend_report = None
     last_run_weekend_crypto = None
+    last_run_crypto_surge = None
     
     while True:
         try:
@@ -707,6 +708,17 @@ def run_market_scheduler():
             now = datetime.now(kst)
             day_of_week = now.weekday()
             current_date = now.strftime('%Y-%m-%d')
+            
+            # [주말 실행] 크립토 실시간 불장 감지 (15분 간격)
+            if now.minute % 15 == 0 and is_holiday("kor"):
+                current_time = now.strftime('%H:%M')
+                if last_run_crypto_surge != current_time:
+                    try:
+                        from crypto_alerts import check_crypto_surge
+                        check_crypto_surge()
+                    except Exception as e:
+                        print(f"[Scheduler] Crypto surge error: {e}")
+                    last_run_crypto_surge = current_time
             
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
