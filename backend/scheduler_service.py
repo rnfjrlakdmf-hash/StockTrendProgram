@@ -720,6 +720,17 @@ def run_market_scheduler():
                     except Exception as e:
                         print(f"[Scheduler] Crypto surge error: {e}")
                     last_run_crypto_surge = current_time
+                    
+            # [평일 장중 실행] 고래/세력 매집 실시간 알림 (30분 간격)
+            if not is_holiday("kor") and 9 <= now.hour <= 15 and now.minute % 30 == 0:
+                current_time = now.strftime('%H:%M')
+                if getattr(run_market_scheduler, "last_run_whale_alert", None) != current_time:
+                    try:
+                        from whale_alerts import check_whale_alerts
+                        check_whale_alerts()
+                    except Exception as e:
+                        print(f"[Scheduler] Whale alert error: {e}")
+                    run_market_scheduler.last_run_whale_alert = current_time
             
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
