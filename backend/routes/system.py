@@ -22,6 +22,27 @@ def health_check():
         "service": "AI Stock Analyst Backend - Zero-Wait Architecture"
     }
 
+class FCMTokenPayload(BaseModel):
+    token: str
+    user_id: str
+    source: Optional[str] = None
+
+@router.post("/fcm-token")
+def register_fcm_token(payload: FCMTokenPayload):
+    try:
+        from firebase_admin import firestore
+        db = firestore.client()
+        db.collection("users").document(payload.user_id).set({
+            "fcmToken": payload.token,
+            "lastTokenUpdate": firestore.SERVER_TIMESTAMP,
+            "push_enabled": True
+        }, merge=True)
+        return {"status": "ok", "message": "Token registered"}
+    except Exception as e:
+        print(f"Error saving FCM token: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 @router.get("/status")
 def get_system_status():
     """컴포넌트 호환성을 위한 시스템 및 인덱싱 상태 반환"""
