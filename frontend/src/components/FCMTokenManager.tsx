@@ -118,18 +118,18 @@ export default function FCMTokenManager() {
                 if (parsed?.id) return parsed.id;
             }
         } catch {}
-        return localStorage.getItem('user_id') || 'guest';
+        
+        let guestId = localStorage.getItem('guest_id');
+        if (!guestId) {
+            guestId = 'guest_' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('guest_id', guestId);
+        }
+        return localStorage.getItem('user_id') || guestId;
     };
 
     const syncTokenToServer = async (force: boolean = false) => {
         try {
             const currentUserId = getReliableUserId();
-
-            // 비로그인 상태에서는 등록 안 함
-            if (currentUserId === 'guest') {
-                console.log('[FCM] Not logged in. Skipping auto token registration.');
-                return;
-            }
 
             const token = await requestFCMToken();
             if (!token) return;

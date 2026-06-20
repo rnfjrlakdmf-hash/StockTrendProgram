@@ -411,20 +411,27 @@ export default function SettingsPage() {
                                             <button 
                                                 onClick={async () => {
                                                     try {
-                                                        const { requestFCMToken } = await import('@/lib/firebase');
-                                                        const token = await requestFCMToken();
-                                                        if (token) {
-                                                            localStorage.setItem('fcm_token_value', token);
-                                                            setFcmToken(token);
-                                                            const uid = localStorage.getItem('uuid');
-                                                            if (uid) {
+                                                            const { requestFCMToken } = await import('@/lib/firebase');
+                                                            const token = await requestFCMToken();
+                                                            if (token) {
+                                                                localStorage.setItem('fcm_token_value', token);
+                                                                setFcmToken(token);
+                                                                
+                                                                let uid = localStorage.getItem('uuid') || localStorage.getItem('user_id');
+                                                                if (!uid) {
+                                                                    uid = localStorage.getItem('guest_id');
+                                                                    if (!uid) {
+                                                                        uid = 'guest_' + Math.random().toString(36).substring(2, 15);
+                                                                        localStorage.setItem('guest_id', uid);
+                                                                    }
+                                                                }
+                                                                
                                                                 await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
                                                                     method: 'POST',
                                                                     headers: { 'Content-Type': 'application/json' },
                                                                     body: JSON.stringify({ token: token, user_id: uid, source: 'settings_auto_prompt' })
                                                                 });
-                                                            }
-                                                            window.location.reload();
+                                                                window.location.reload();
                                                         } else {
                                                             alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
                                                         }
