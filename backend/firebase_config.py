@@ -386,9 +386,8 @@ def send_multicast_notification(
                 tag=fcm_tag,
                 renotify=True,
                 require_interaction=True,
-                custom_data={
-                    "vibrate": [200, 100, 200, 100, 200, 100, 200]
-                }
+                silent=False,
+                vibrate=[200, 100, 200, 100, 200, 100, 200]
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
