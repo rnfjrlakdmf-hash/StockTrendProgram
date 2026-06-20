@@ -27,9 +27,9 @@ def deploy_frontend():
         
         # 2. 프론트엔드 폴더로 이동하여 빌드 수행
         print("\n=== Building Next.js Frontend ===")
-        # build command: npm run build (또는 npm install && npm run build)
+        # build command: npm install && npm run build
         # 쉘 환경 변수 로드를 위해 bash -l -c 를 사용합니다. (node, npm path 관련)
-        build_cmd = "bash -l -c 'cd ~/StockTrendProgram && git pull && cd frontend && rm -rf .next && npm run build'"
+        build_cmd = "bash -l -c 'cd ~/StockTrendProgram && git pull && cd frontend && rm -rf .next && npm install && npm run build'"
         stdin, stdout, stderr = ssh.exec_command(build_cmd)
         
         # 실시간 빌드 로그 출력

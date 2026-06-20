@@ -124,6 +124,11 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                 <div className="flex items-center gap-2">
 
+                    <Link href="/alerts" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
+                        <Bell className="h-5 w-5" />
+                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">알림 센터</span>
+                    </Link>
+
                     <Link href="/guide" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
                         <HelpCircle className="h-5 w-5" />
                         <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">이용 가이드</span>
