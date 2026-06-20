@@ -1306,21 +1306,24 @@ def get_user_fcm_tokens(user_id: str) -> list:
 def get_fcm_preferences(token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_dividend, pref_whale_alert, pref_watchlist_live, user_id FROM fcm_tokens WHERE token = ?", (token,))
+    cursor.execute("SELECT * FROM fcm_tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
-    conn.close()
     if row:
+        col_names = [desc[0] for desc in cursor.description]
+        row_dict = dict(zip(col_names, row))
+        conn.close()
         return {
-            "pref_morning": bool(row[0]), 
-            "pref_closing": bool(row[1]), 
-            "pref_price": bool(row[2]), 
-            "pref_news": bool(row[3]) if len(row) > 3 else True, 
-            "pref_watch_compact": bool(row[4]) if len(row) > 4 else False,
-            "pref_dividend": bool(row[5]) if len(row) > 5 else True,
-            "pref_whale_alert": bool(row[6]) if len(row) > 6 else True,
-            "pref_watchlist_live": bool(row[7]) if len(row) > 7 else True,
-            "user_id": row[8] if len(row) > 8 else "guest"
+            "pref_morning": bool(row_dict.get("pref_morning", True)), 
+            "pref_closing": bool(row_dict.get("pref_closing", True)), 
+            "pref_price": bool(row_dict.get("pref_price", True)), 
+            "pref_news": bool(row_dict.get("pref_news", True)), 
+            "pref_watch_compact": bool(row_dict.get("pref_watch_compact", False)),
+            "pref_dividend": bool(row_dict.get("pref_dividend", True)),
+            "pref_whale_alert": bool(row_dict.get("pref_whale_alert", True)),
+            "pref_watchlist_live": bool(row_dict.get("pref_watchlist_live", True)),
+            "user_id": row_dict.get("user_id", "guest")
         }
+    conn.close()
     return None
 
 def update_fcm_preferences(token: str, prefs: dict):
