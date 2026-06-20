@@ -44,10 +44,12 @@ messaging.onBackgroundMessage((payload) => {
         body: payload.notification?.body || '',
         icon: '/icon.png',
         badge: '/badge.png',
-        vibrate: [200, 100, 200],
+        vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: payload.data,
         tag: tag,
         renotify: true,
+        requireInteraction: true,
+        silent: false,
         actions: [
             {
                 action: 'view',

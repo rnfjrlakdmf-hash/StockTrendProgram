@@ -375,13 +375,21 @@ def send_multicast_notification(
             click_url = f'https://stock-trend-program.co.kr{click_url}'
             
         webpush_config = messaging.WebpushConfig(
+            headers={
+                "Urgency": "high"
+            },
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
                 icon='/icon.png',
                 badge='/badge.png',
                 tag=fcm_tag,
-                renotify=True
+                renotify=True,
+                require_interaction=True,
+                custom_data={
+                    "silent": False,
+                    "vibrate": [200, 100, 200, 100, 200, 100, 200]
+                }
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
