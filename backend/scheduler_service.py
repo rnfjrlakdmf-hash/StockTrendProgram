@@ -701,6 +701,7 @@ def run_market_scheduler():
     last_run_weekend_report = None
     last_run_weekend_crypto = None
     last_run_crypto_surge = None
+    last_run_weekend_report_gen = None
     
     while True:
         try:
@@ -727,6 +728,30 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler] DART 캐싱 오류: {e}")
                 last_run_dart_cache = current_date
+                
+            # [토요일 실행] 오전 9:55 주말 한정 프리미엄 리포트 생성 (10시 오픈 대비)
+            if now.weekday() == 5 and now.hour == 9 and 55 <= now.minute <= 59 and current_date != last_run_weekend_report_gen:
+                try:
+                    from utils.weekend_report import _generate_sync_impl
+                    _generate_sync_impl()
+                    
+                    # 푸시 알림 발송
+                    try:
+                        title = "🔓 주말 프리미엄 인사이트 오픈!"
+                        body = "지난주 시장 핵심 요약과 다음 주 필수 체크포인트를 지금 바로 확인하세요."
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+                        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+                        conn.close()
+                        if tokens:
+                            send_multicast_notification(tokens, title, body, {"url": "/weekend-report"})
+                    except Exception as e:
+                        print(f"[Scheduler-Error] Failed to send weekend report push: {e}")
+                        
+                except Exception as e:
+                    print(f"[Scheduler] Weekend report generation error: {e}")
+                last_run_weekend_report_gen = current_date
 
             # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
             if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
