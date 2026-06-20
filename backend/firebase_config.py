@@ -387,7 +387,6 @@ def send_multicast_notification(
                 renotify=True,
                 require_interaction=True,
                 custom_data={
-                    "silent": False,
                     "vibrate": [200, 100, 200, 100, 200, 100, 200]
                 }
             ),
