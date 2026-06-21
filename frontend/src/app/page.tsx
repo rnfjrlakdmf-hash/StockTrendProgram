@@ -11,6 +11,7 @@ import DashboardMarketClock from "@/components/DashboardMarketClock";
 import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
 import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
+import KakaoAdFit from "@/components/KakaoAdFit";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -229,6 +230,11 @@ export default function Home() {
                   {/* 코인 핫트렌드 대시보드 (주말 한정 최상단) */}
                   <WeekendCryptoDashboard />
 
+                  {/* 카카오 애드핏 배너 (대표님: DAN-PLACEHOLDER를 실제 발급받으신 아이디로 변경해주세요) */}
+                  <div className="mb-4">
+                    <KakaoAdFit adUnit="DAN-PLACEHOLDER" adWidth="320" adHeight="50" />
+                  </div>
+
                   <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1 mb-8">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-700">
@@ -266,10 +272,15 @@ export default function Home() {
             {/* Real-time World Clock Grid at the top */}
             <DashboardMarketClock />
 
-            {/* Morning Brief Section */}
-            {/* <MorningBriefWidget /> */}
+            {/* 모닝 브리핑 */}
+            <MorningBriefWidget />
 
-            {/* Global Real-time Ranking (Removed for commercial legal safety) */}
+            {/* 카카오 애드핏 배너 (대표님: DAN-PLACEHOLDER를 실제 발급받으신 아이디로 변경해주세요) */}
+            <div className="mb-4">
+              <KakaoAdFit adUnit="DAN-PLACEHOLDER" adWidth="320" adHeight="50" />
+            </div>
+
+            {/* 실시간 종목 랭킹 (Removed for commercial legal safety) */}
 
             {/* SEO & Content Section for AdSense Crawlers (콘텐츠 부족 문제 해결용 정적 텍스트) */}
             <div className="mt-12 bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-md">
