@@ -6,9 +6,10 @@ from datetime import datetime
 import pytz
 
 try:
-    from firebase_config import initialize_firebase, send_topic_push, db
+    from firebase_config import initialize_firebase, send_topic_push
+    import firebase_admin
+    from firebase_admin import firestore
 except ImportError:
-    # For local testing
     pass
 
 STATE_FILE = os.path.join(os.path.dirname(__file__), 'crypto_state.json')
@@ -86,15 +87,18 @@ def check_crypto_surge():
                         send_topic_push("live_alerts", title, body, "/dashboard")
                         
                         # Firestore에 저장하여 OBS 위젯 등에 노출
-                        if db:
-                            doc_ref = db.collection('alerts').document()
-                            doc_ref.set({
+                        try:
+                            db_client = firestore.client()
+                            db_client.collection('alerts').add({
+                                'type': 'crypto',
                                 'title': title,
                                 'body': body,
                                 'link': "/dashboard",
-                                'timestamp': firebase_admin.firestore.SERVER_TIMESTAMP if 'firebase_admin' in globals() else now,
+                                'timestamp': firestore.SERVER_TIMESTAMP,
                                 'read': False
                             })
+                        except Exception as e:
+                            print(f"[Crypto] Failed to save alert to Firestore: {e}")
                     except Exception as e:
                         print(f"[Crypto] Firebase push error: {e}")
                     
