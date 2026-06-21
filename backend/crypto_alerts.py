@@ -69,17 +69,21 @@ def check_crypto_surge():
                 config = CRYPTO_MAP[market]
                 threshold = config["threshold"]
                 
-                # 급등 감지 및 당일 알림 발송 이력 확인
-                if change_rate >= threshold and market not in state["alerted_coins"]:
+                # 급등/급락 감지 및 당일 알림 발송 이력 확인
+                if abs(change_rate) >= threshold and market not in state["alerted_coins"]:
                     # 발송 처리
                     coin_name = config["name"]
                     percent_str = f"{change_rate * 100:.1f}%"
                     stocks = config["stocks"]
                     
-                    title = f"🚀 주말 코인 불장! {coin_name} {percent_str} 급등"
-                    body = f"월요일 장 시작 점상 예상? 관련주: {stocks} (미리 확인하세요)"
+                    if change_rate > 0:
+                        title = f"🚀 주말 코인 불장! {coin_name} {percent_str} 급등"
+                        body = f"월요일 장 시작 점상 예상? 관련주: {stocks} (미리 확인하세요)"
+                    else:
+                        title = f"🚨 주말 코인 폭락! {coin_name} {percent_str} 급락"
+                        body = f"월요일 장 하락 출발 주의! 관련주: {stocks} (미리 대비하세요)"
                     
-                    print(f"[Crypto] 급등 포착: {title}")
+                    print(f"[Crypto] 변동 포착: {title}")
                     
                     # Firebase 알림 전송
                     try:
