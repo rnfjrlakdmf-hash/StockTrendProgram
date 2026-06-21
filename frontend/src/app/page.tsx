@@ -232,7 +232,7 @@ export default function Home() {
 
                   {/* 카카오 애드핏 배너 */}
                   <div className="mb-4">
-                    <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="320" adHeight="50" />
+                    <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="300" adHeight="250" />
                   </div>
 
                   <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1 mb-8">
@@ -277,7 +277,7 @@ export default function Home() {
 
             {/* 카카오 애드핏 배너 */}
             <div className="mb-4">
-              <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="320" adHeight="50" />
+              <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="300" adHeight="250" />
             </div>
 
             {/* 실시간 종목 랭킹 (Removed for commercial legal safety) */}

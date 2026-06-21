@@ -26,7 +26,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
       ins.setAttribute("data-ad-height", adHeight);
 
       const script = document.createElement("script");
-      script.src = "//t1.daumcdn.net/kas/static/ba.min.js";
+      script.src = "//t1.kakaocdn.net/kas/static/ba.min.js";
       script.async = true;
       script.type = "text/javascript";
 
