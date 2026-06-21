@@ -740,6 +740,31 @@ def run_market_scheduler():
                     print(f"[Scheduler] DART 캐싱 오류: {e}")
                 last_run_dart_cache = current_date
                 
+            # [금요일 실행] 오후 6:00 주말 한정판 세력/외인 매집 리포트 생성
+            if now.weekday() == 4 and now.hour == 18 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_whale_report_gen", None):
+                try:
+                    from utils.whale_weekend_report import _generate_whale_report_sync
+                    _generate_whale_report_sync()
+                except Exception as e:
+                    print(f"[Scheduler] Whale report gen error: {e}")
+                run_market_scheduler.last_run_whale_report_gen = current_date
+                
+            # [일요일 실행] 오후 8:00 주말 한정판 리포트 오픈 푸시 알림
+            if now.weekday() == 6 and now.hour == 20 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_whale_push", None):
+                try:
+                    title = "🐳 월요일 장 준비 끝!"
+                    body = "주말 한정판 세력/외인 매집 TOP 3 리포트가 도착했습니다. 지금 확인하세요!"
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+                    tokens = [row[0] for row in cursor.fetchall() if row[0]]
+                    conn.close()
+                    if tokens:
+                        send_multicast_notification(tokens, title, body, {"url": "/"})
+                except Exception as e:
+                    print(f"[Scheduler-Error] Failed to send whale report push: {e}")
+                run_market_scheduler.last_run_whale_push = current_date
+                
             # [토요일 실행] 오전 9:55 주말 한정 프리미엄 리포트 생성 (10시 오픈 대비)
             if now.weekday() == 5 and now.hour == 9 and 55 <= now.minute <= 59 and current_date != last_run_weekend_report_gen:
                 try:

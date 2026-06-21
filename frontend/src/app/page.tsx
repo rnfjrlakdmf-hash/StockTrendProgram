@@ -10,6 +10,7 @@ import MorningBriefWidget from "@/components/MorningBriefWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
 import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
+import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -217,36 +218,41 @@ export default function Home() {
             {(() => {
               const day = new Date().getDay();
               const hour = new Date().getHours();
-              // const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
-              const isWeekend = true; // 대표님 확인용 임시 상시 노출
+              // 금요일 18시 이후 ~ 월요일 08시 이전
+              const isWeekend = (day === 5 && hour >= 18) || day === 6 || day === 0 || (day === 1 && hour < 8);
               
               if (!isWeekend) return null;
               
               return (
-                <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-700">
-                    <CalendarClock className="w-24 h-24 text-blue-400" />
-                  </div>
-                  <div className="relative bg-black/40 backdrop-blur-md rounded-[22px] p-6 md:p-8 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                         <span className="animate-pulse flex h-3 w-3 relative">
-                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                           <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                         </span>
-                         <span className="text-red-400 font-bold text-sm tracking-wider">WEEKEND SPECIAL</span>
+                <>
+                  {/* 코인 핫트렌드 대시보드 (주말 한정 최상단) */}
+                  <WeekendCryptoDashboard />
+
+                  <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1 mb-8">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-700">
+                      <Layers className="w-24 h-24 text-blue-400" />
+                    </div>
+                    <div className="relative bg-black/40 backdrop-blur-md rounded-[22px] p-6 md:p-8 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                           <span className="animate-pulse flex h-3 w-3 relative">
+                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                           </span>
+                           <span className="text-red-400 font-bold text-sm tracking-wider">WEEKEND SPECIAL</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white mb-2 leading-tight">
+                          주말 한정판: 세력/외인 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">매집 TOP 3</span> 리포트
+                        </h2>
+                        <p className="text-gray-400 font-medium text-sm md:text-base">한 주간의 수급 데이터를 분석한 AI 리포트로 월요일 장을 미리 준비하세요.</p>
                       </div>
-                      <h2 className="text-2xl md:text-3xl font-black text-white mb-2 leading-tight">
-                        다음 주 증시 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">핵심 일정</span>과<br className="md:hidden" /> <span className="text-yellow-400">AI 수혜 테마</span> 미리 확인하기
-                      </h2>
-                      <p className="text-gray-400 font-medium text-sm md:text-base">어떤 테마가 움직일지 남들보다 먼저 파악하세요.</p>
+                      <div className="hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-white/10 group-hover:bg-blue-500/20 transition-colors duration-300">
+                        <ChevronRight className="w-8 h-8 text-white group-hover:text-blue-400 transition-colors duration-300" />
+                      </div>
                     </div>
-                    <div className="hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-white/10 group-hover:bg-blue-500/20 transition-colors duration-300">
-                      <ChevronRight className="w-8 h-8 text-white group-hover:text-blue-400 transition-colors duration-300" />
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </>
               );
             })()}
 

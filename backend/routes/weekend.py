@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from datetime import datetime, timedelta
 import pytz
 from utils.weekend_report import get_latest_weekend_report
+from utils.whale_weekend_report import get_latest_whale_report
 
 router = APIRouter()
 
@@ -44,7 +45,39 @@ async def get_weekend_report():
         next_open = get_next_open_time(now)
         diff = (next_open - now).total_seconds()
         return {
-            "is_open": False,
-            "opens_at": "토요일 오전 10시",
-            "countdown_seconds": int(diff)
-        }
+        "is_open": False,
+        "opens_at": next_open.strftime('%Y-%m-%d %H:%M KST'),
+        "countdown_seconds": int((next_open - now).total_seconds())
+    }
+
+@router.get("/api/weekend-whale-report")
+async def get_weekend_whale_report():
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    
+    # 임시 개방 (테스트용) 주석 처리
+    # return {"is_open": True, "report": get_latest_whale_report()}
+    
+    # 주말(금 18:00 ~ 월 08:00) 동안 활성화. 기존 is_weekend_open 보다 조금 더 길게 엽니다.
+    day = now.weekday()
+    hour = now.hour
+    is_weekend = (day == 4 and hour >= 18) or day == 5 or day == 6 or (day == 0 and hour < 8)
+    
+    if is_weekend:
+        report = get_latest_whale_report()
+        if not report:
+            return {
+                "is_open": False,
+                "opens_at": "리포트 생성 중입니다...",
+                "countdown_seconds": 0
+            }
+        return {"is_open": True, "report": report}
+        
+    next_friday = now + timedelta(days=(4 - day) if day < 4 else (11 - day))
+    next_open = next_friday.replace(hour=18, minute=0, second=0, microsecond=0)
+    
+    return {
+        "is_open": False,
+        "opens_at": next_open.strftime('%Y-%m-%d %H:%M KST'),
+        "countdown_seconds": int((next_open - now).total_seconds())
+    }

@@ -16,6 +16,7 @@ interface AlertItem {
 export default function AlertCenterPage() {
     const [alerts, setAlerts] = useState<AlertItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchAlerts() {
@@ -31,8 +32,10 @@ export default function AlertCenterPage() {
                     fetched.push({ id: doc.id, ...doc.data() } as AlertItem);
                 });
                 setAlerts(fetched);
-            } catch (err) {
+                setErrorMsg(null);
+            } catch (err: any) {
                 console.error("Failed to fetch alerts:", err);
+                setErrorMsg(err.message || "알림을 불러오는 중 오류가 발생했습니다.");
             } finally {
                 setLoading(false);
             }
@@ -62,6 +65,16 @@ export default function AlertCenterPage() {
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                ) : errorMsg ? (
+                    <div className="flex flex-col items-center justify-center py-32 text-center bg-red-500/10 border border-red-500/20 rounded-3xl">
+                        <span className="text-4xl mb-4">⚠️</span>
+                        <h3 className="text-lg font-semibold text-red-400">
+                            알림을 불러오지 못했습니다
+                        </h3>
+                        <p className="text-sm text-red-300 mt-2 max-w-md mx-auto">
+                            {errorMsg}
+                        </p>
                     </div>
                 ) : alerts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 text-center bg-white/5 border border-white/10 rounded-3xl">

@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /alerts/{document=**} {
+      // Allow read access to anyone (since notifications are public)
+      allow read: if true;
+      // Allow write access only from backend (Admin SDK bypasses rules)
+      allow write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
