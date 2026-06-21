@@ -219,7 +219,8 @@ export default function Home() {
               const day = new Date().getDay();
               const hour = new Date().getHours();
               // 금요일 18시 이후 ~ 월요일 08시 이전
-              const isWeekend = (day === 5 && hour >= 18) || day === 6 || day === 0 || (day === 1 && hour < 8);
+              // const isWeekend = (day === 5 && hour >= 18) || day === 6 || day === 0 || (day === 1 && hour < 8);
+              const isWeekend = true; // 대표님 확인용 임시 상시 노출
               
               if (!isWeekend) return null;
               
