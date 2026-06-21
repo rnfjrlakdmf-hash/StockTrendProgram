@@ -230,9 +230,9 @@ export default function Home() {
                   {/* 코인 핫트렌드 대시보드 (주말 한정 최상단) */}
                   <WeekendCryptoDashboard />
 
-                  {/* 카카오 애드핏 배너 (대표님: DAN-PLACEHOLDER를 실제 발급받으신 아이디로 변경해주세요) */}
+                  {/* 카카오 애드핏 배너 */}
                   <div className="mb-4">
-                    <KakaoAdFit adUnit="DAN-PLACEHOLDER" adWidth="320" adHeight="50" />
+                    <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="320" adHeight="50" />
                   </div>
 
                   <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1 mb-8">
@@ -275,9 +275,9 @@ export default function Home() {
             {/* 모닝 브리핑 */}
             <MorningBriefWidget />
 
-            {/* 카카오 애드핏 배너 (대표님: DAN-PLACEHOLDER를 실제 발급받으신 아이디로 변경해주세요) */}
+            {/* 카카오 애드핏 배너 */}
             <div className="mb-4">
-              <KakaoAdFit adUnit="DAN-PLACEHOLDER" adWidth="320" adHeight="50" />
+              <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="320" adHeight="50" />
             </div>
 
             {/* 실시간 종목 랭킹 (Removed for commercial legal safety) */}
