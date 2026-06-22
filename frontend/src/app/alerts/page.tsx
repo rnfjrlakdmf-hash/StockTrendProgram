@@ -26,48 +26,33 @@ export default function AlertCenterPage() {
             try {
                 const fetched: AlertItem[] = [];
                 const alertsRef = collection(db, "alerts");
-
-                if (user) {
-                    // 로그인 유저: 공용 알림(is_global == true) + 개인 알림(target_users 배열에 내 UID 포함)
-                    const globalQuery = query(
-                        alertsRef,
-                        where("is_global", "==", true),
-                        orderBy("timestamp", "desc"),
-                        limit(30)
-                    );
-                    const userQuery = query(
-                        alertsRef,
-                        where("target_users", "array-contains", user.uid),
-                        orderBy("timestamp", "desc"),
-                        limit(30)
-                    );
-
-                    const [globalSnap, userSnap] = await Promise.all([getDocs(globalQuery), getDocs(userQuery)]);
+                
+                // Firestore 복합 인덱스(Composite Index) 에러를 방지하기 위해 
+                // 최신 알림 100개를 가져온 뒤 프론트엔드에서 필터링합니다.
+                const q = query(
+                    alertsRef,
+                    orderBy("timestamp", "desc"),
+                    limit(100)
+                );
+                
+                const snapshot = await getDocs(q);
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isGlobal = data.is_global === true || data.is_global === undefined; // 과거 데이터 호환성
+                    const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(user.uid);
                     
-                    const map = new Map<string, AlertItem>();
-                    globalSnap.forEach(doc => map.set(doc.id, { id: doc.id, ...doc.data() } as AlertItem));
-                    userSnap.forEach(doc => map.set(doc.id, { id: doc.id, ...doc.data() } as AlertItem));
-                    
-                    // 합친 후 정렬
-                    const combined = Array.from(map.values()).sort((a, b) => {
-                        const timeA = a.timestamp?.toMillis?.() || 0;
-                        const timeB = b.timestamp?.toMillis?.() || 0;
-                        return timeB - timeA;
-                    });
-                    
-                    setAlerts(combined.slice(0, 50));
-                } else {
-                    // 비로그인 유저: 공용 알림만
-                    const globalQuery = query(
-                        alertsRef,
-                        where("is_global", "==", true),
-                        orderBy("timestamp", "desc"),
-                        limit(50)
-                    );
-                    const globalSnap = await getDocs(globalQuery);
-                    globalSnap.forEach(doc => fetched.push({ id: doc.id, ...doc.data() } as AlertItem));
-                    setAlerts(fetched);
-                }
+                    if (user) {
+                        if (isGlobal || isTargetedToMe) {
+                            fetched.push({ id: doc.id, ...data } as AlertItem);
+                        }
+                    } else {
+                        if (isGlobal) {
+                            fetched.push({ id: doc.id, ...data } as AlertItem);
+                        }
+                    }
+                });
+                
+                setAlerts(fetched.slice(0, 50));
 
                 setErrorMsg(null);
             } catch (err: any) {
