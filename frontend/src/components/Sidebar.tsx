@@ -78,12 +78,7 @@ const navigation = [
         icon: Network,
         desc: "이 회사는 어디서 부품을 사오고 완성품은 어디에 납품하는지, 얽힌 기업 인맥도를 지도로 보여줍니다."
     },
-    { 
-        name: "투자 인텔리전스 포럼", 
-        href: "/community", 
-        icon: Users,
-        desc: "어떤 종목에 호재나 악재가 터졌을 때 다른 주주들과 소통하고 관련 공시를 공유합니다."
-    },
+
     { 
         name: "포트폴리오 자산 진단", 
         href: "/portfolio", 
