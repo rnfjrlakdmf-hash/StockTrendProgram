@@ -47,12 +47,15 @@ def calculate_watchlist_performance(user_id: str, market: str):
     
     items_perf = []
     total_daily_change = 0
-    total_profit_amt = 0 # 누적 수익금 합계
+    total_profit_amt = 0 # 누적 수익금 합계 (수량 반영)
+    total_buy_value = 0 # 총 매수 금액
+    total_current_value = 0 # 총 현재 가치
     count = 0
     
     for row in watchlist:
         sym = row[0]
         added_price = float(row[1] or 0)
+        quantity = float(row[2] or 1) # 기본값 1주
         
         # Throttling: 봇 차단 회피를 위한 0.2초 지연
         time.sleep(0.2)
@@ -98,16 +101,22 @@ def calculate_watchlist_performance(user_id: str, market: str):
                 "name": get_korean_stock_name(sym) or quote.get('name', sym),
                 "current_price": curr_p,
                 "daily_change": change_p,
-                "added_price": added_price
+                "added_price": added_price,
+                "quantity": quantity
             }
             
-            # 등록 시점 대비 수익 계산 (1주 기준)
+            # 수량을 반영한 누적 수익 및 가치 계산
             if added_price and added_price > 0:
-                diff = curr_p - added_price
-                perf_pct = (diff / added_price) * 100
-                item["price_diff"] = diff
+                diff_per_share = curr_p - added_price
+                total_item_profit = diff_per_share * quantity
+                perf_pct = (diff_per_share / added_price) * 100
+                
+                item["price_diff"] = total_item_profit # 수량 반영된 수익금
                 item["added_perf"] = perf_pct
-                total_profit_amt += diff # 누적 수익금 합산
+                
+                total_profit_amt += total_item_profit
+                total_buy_value += (added_price * quantity)
+                total_current_value += (curr_p * quantity)
                 
             items_perf.append(item)
             total_daily_change += change_p
@@ -365,10 +374,11 @@ def send_closing_notification(market: str):
             market_summary = base_str + "\n" + " | ".join(extra_list[:2]) + "\n\n"
             
             avg_change = perf["avg_daily_change"]
+            portfolio_return = perf.get("portfolio_return", avg_change)
             total_profit = perf.get("total_profit_amt", 0)
             unit = "원" if market == "KR" else "$"
             market_name = "국내" if market == "KR" else "해외"
-            emoji = "📈" if avg_change > 0 else "📉" if avg_change < 0 else "➖"
+            emoji = "📈" if portfolio_return > 0 else "📉" if portfolio_return < 0 else "➖"
             title = f"🌕 {market_name} 장마감 리포트 {emoji}"
             
             # 수익금 문자열 생성 (미국장은 원화 환산 추가)
@@ -415,7 +425,8 @@ def send_closing_notification(market: str):
                     approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
                     chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
                 
-                line = f"• {item['name']}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
+                qty_str = f"({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
+                line = f"• {item['name']}{qty_str}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
                 if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                     diff = item['price_diff']
                     if market == "US":
@@ -425,13 +436,13 @@ def send_closing_notification(market: str):
                         diff_str = f"{diff:+,.2f} (약 {krw_diff_str})"
                     else:
                         diff_str = f"{diff:+,.0f}"
-                    line += f"\n  ↳ 💰수익: {diff_str}{unit}"
+                    line += f"\n  ↳ 💰총 수익: {diff_str}{unit}"
                 price_list.append(line)
                 
             body_market = market_summary.strip()
             title_market = f"🌕 {market_name} 장마감 시황"
             
-            body_portfolio = f"평균 수익률: {avg_change:+.2f}%\n" + profit_str + "\n".join(price_list)
+            body_portfolio = f"평균 수익률: {portfolio_return:+.2f}%\n" + profit_str + "\n".join(price_list)
             title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)
