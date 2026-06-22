@@ -480,18 +480,42 @@ def send_multicast_notification(
             except Exception as token_err:
                 failure_count += 1
                 print(f"[Firebase] Failed to send to token {idx}: {token_err}")
-                err_str = str(token_err).lower()
-                if "unregistered" in err_str or "notregistered" in err_str or "invalid" in err_str:
-                    try:
-                        from db_manager import delete_fcm_token
-                        delete_fcm_token(token)
-                    except Exception as e:
-                        print(f"[Firebase] Failed to delete token on catch-all: {e}")
-        
-        print(f"[Firebase] Sent: {success_count}/{len(tokens)} successful")
-        
+                error_msg = str(token_err)
+                print(f"[Firebase] Error sending to token {idx}: {error_msg}")
+                try:
+                    from db_manager import add_system_log
+                    add_system_log(
+                        level="ERROR", 
+                        component="PushNotification", 
+                        message=f"Failed to send alert '{title}' to a token.", 
+                        details=error_msg
+                    )
+                except Exception as log_err:
+                    pass
+
+        # 전체 발송 요약 로그 기록
+        try:
+            from db_manager import add_system_log
+            if failure_count > 0:
+                add_system_log(
+                    level="WARNING" if success_count > 0 else "ERROR",
+                    component="PushNotification",
+                    message=f"Alert '{title}' sent with failures",
+                    details=f"Success: {success_count}, Failure: {failure_count}"
+                )
+            elif success_count > 0:
+                add_system_log(
+                    level="INFO",
+                    component="PushNotification",
+                    message=f"Alert '{title}' sent successfully",
+                    details=f"Success: {success_count}, Failure: 0"
+                )
+        except Exception:
+            pass
+            
+        print(f"[Firebase] Multicast completed. Success: {success_count}, Failure: {failure_count}")
         return {
-            "success": True,
+            "success": True if success_count > 0 else False,
             "success_count": success_count,
             "failure_count": failure_count
         }

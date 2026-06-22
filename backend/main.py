@@ -385,7 +385,7 @@ async def startup_event():
                     print(f"[Turbo] Cache Warmer Critical Error: {e}")
                 
                 # 다음 주기까지 대기 (주기 2분 유지)
-                await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
+                    await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
 
         # [v6.5.0] Safe Mode로 개선되어 활성화
         asyncio.create_task(ranking_cache_warmer())
@@ -504,6 +504,15 @@ def news_api_stats():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/admin/logs")
+def get_admin_system_logs(limit: int = 100):
+    """최근 시스템 로그를 반환하는 관리자 전용 API"""
+    try:
+        from db_manager import get_system_logs
+        logs = get_system_logs(limit=limit)
+        return {"status": "success", "data": logs}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

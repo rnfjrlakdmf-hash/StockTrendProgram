@@ -47,6 +47,18 @@ def init_db():
         )
     ''')
 
+    # 시스템 에러 및 알림 발송 로그 테이블
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS system_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            level TEXT NOT NULL,
+            component TEXT NOT NULL,
+            message TEXT NOT NULL,
+            details TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # [AI Cache] AI 분석 결과 영구 캐싱 테이블 (6시간 TTL)
     # 동일 종목 재검색 시 Gemini API 재호출 없이 즉시 반환
     cursor.execute('''
@@ -1894,3 +1906,45 @@ def check_and_consume_alert_quota(user_id: str) -> str:
     conn.commit()
     conn.close()
     return "OK"
+
+def add_system_log(level: str, component: str, message: str, details: str = ""):
+    """시스템 로그(푸시 알림 결과, 스케줄러 에러 등)를 DB에 저장합니다."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO system_logs (level, component, message, details) VALUES (?, ?, ?, ?)",
+            (level, component, message, details)
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"[DB Error] Failed to insert system log: {e}")
+    finally:
+        conn.close()
+
+def get_system_logs(limit: int = 100):
+    """최근 시스템 로그를 반환합니다."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, level, component, message, details, created_at FROM system_logs ORDER BY id DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "level": r[1],
+                "component": r[2],
+                "message": r[3],
+                "details": r[4],
+                "created_at": r[5]
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"[DB Error] Failed to fetch system logs: {e}")
+        return []
+    finally:
+        conn.close()
