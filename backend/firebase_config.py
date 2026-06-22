@@ -320,14 +320,24 @@ def send_multicast_notification(
         is_global = False if target_users else True
         
         # Firestore에 알림 데이터 저장
-        db.collection("alerts").add({
+        alert_doc = {
             "title": title,
             "body": body,
             "type": alert_type,
             "timestamp": firestore.SERVER_TIMESTAMP,
             "is_global": is_global,
             "target_users": target_users or []
-        })
+        }
+        
+        if data:
+            if "url" in data:
+                alert_doc["url"] = data["url"]
+            if "news_url" in data:
+                alert_doc["url"] = data["news_url"]
+            if "symbol" in data:
+                alert_doc["symbol"] = data["symbol"]
+                
+        db.collection("alerts").add(alert_doc)
         print(f"[Firestore] Alert saved to center: {title}")
     except Exception as e:
         print(f"[Firestore] Failed to save alert to center: {e}")
