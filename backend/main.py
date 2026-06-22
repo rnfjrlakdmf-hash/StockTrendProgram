@@ -426,7 +426,9 @@ def get_blog_posts(page: int = 1, limit: int = 10):
     import firebase_admin
     from firebase_admin import firestore
     from google.cloud.firestore_v1 import Query
+    from firebase_config import initialize_firebase
 
+    initialize_firebase()
     if not firebase_admin._apps:
         return {"status": "error", "message": "Firebase not initialized", "posts": [], "total": 0, "totalPages": 0}
 
