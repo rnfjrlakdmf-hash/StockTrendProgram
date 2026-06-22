@@ -123,45 +123,7 @@ export default function AlertCenterPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {alerts.map((alert) => (
-                            <div
-                                key={alert.id}
-                                className="bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors"
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                                            alert.type === 'crypto_bull' 
-                                                ? 'bg-orange-500/20 text-orange-400' 
-                                                : alert.type === 'whale_accumulation' 
-                                                ? 'bg-purple-500/20 text-purple-400'
-                                                : 'bg-blue-500/20 text-blue-400'
-                                        }`}>
-                                            {alert.type === 'crypto_bull' ? '🔥 코인 불장' : 
-                                             alert.type === 'whale_accumulation' ? '🐳 세력 포착' : '알림'}
-                                        </span>
-                                        <span className="text-xs text-gray-500 font-medium">
-                                            {alert.timestamp && alert.timestamp.seconds
-                                                ? new Date(
-                                                      alert.timestamp.seconds * 1000
-                                                  ).toLocaleString("ko-KR", {
-                                                      month: "short",
-                                                      day: "numeric",
-                                                      hour: "2-digit",
-                                                      minute: "2-digit",
-                                                  })
-                                                : "최근"}
-                                        </span>
-                                    </div>
-                                </div>
-                                <h3 className="text-md font-semibold text-gray-100">
-                                    {alert.title}
-                                </h3>
-                                <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1">
-                                    {alert.body}
-                                </p>
-                            </div>
-                        ))}
+                        {alerts.map((alert) => renderAlertCard(alert))}
                     </div>
                 )}
             </div>
