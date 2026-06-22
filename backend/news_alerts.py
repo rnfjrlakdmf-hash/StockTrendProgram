@@ -494,7 +494,8 @@ class NewsAlertMonitor:
                     "url": str(discovery_url),        # 클릭 시 종목발굴 페이지로 이동
                     "news_url": str(news_url),         # 실제 뉴스 URL (참조용)
                     "is_global": str(not is_korean).lower()
-                }
+                },
+                target_users=users
             )
 
 

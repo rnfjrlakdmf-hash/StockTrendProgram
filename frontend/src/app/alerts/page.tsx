@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, limit, where } from "firebase/firestore";
+import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
 
 interface AlertItem {
@@ -18,20 +19,56 @@ export default function AlertCenterPage() {
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    const { user } = useAuth();
+
     useEffect(() => {
         async function fetchAlerts() {
             try {
-                const q = query(
-                    collection(db, "alerts"),
-                    orderBy("timestamp", "desc"),
-                    limit(50)
-                );
-                const snapshot = await getDocs(q);
                 const fetched: AlertItem[] = [];
-                snapshot.forEach((doc) => {
-                    fetched.push({ id: doc.id, ...doc.data() } as AlertItem);
-                });
-                setAlerts(fetched);
+                const alertsRef = collection(db, "alerts");
+
+                if (user) {
+                    // 로그인 유저: 공용 알림(is_global == true) + 개인 알림(target_users 배열에 내 UID 포함)
+                    const globalQuery = query(
+                        alertsRef,
+                        where("is_global", "==", true),
+                        orderBy("timestamp", "desc"),
+                        limit(30)
+                    );
+                    const userQuery = query(
+                        alertsRef,
+                        where("target_users", "array-contains", user.uid),
+                        orderBy("timestamp", "desc"),
+                        limit(30)
+                    );
+
+                    const [globalSnap, userSnap] = await Promise.all([getDocs(globalQuery), getDocs(userQuery)]);
+                    
+                    const map = new Map<string, AlertItem>();
+                    globalSnap.forEach(doc => map.set(doc.id, { id: doc.id, ...doc.data() } as AlertItem));
+                    userSnap.forEach(doc => map.set(doc.id, { id: doc.id, ...doc.data() } as AlertItem));
+                    
+                    // 합친 후 정렬
+                    const combined = Array.from(map.values()).sort((a, b) => {
+                        const timeA = a.timestamp?.toMillis?.() || 0;
+                        const timeB = b.timestamp?.toMillis?.() || 0;
+                        return timeB - timeA;
+                    });
+                    
+                    setAlerts(combined.slice(0, 50));
+                } else {
+                    // 비로그인 유저: 공용 알림만
+                    const globalQuery = query(
+                        alertsRef,
+                        where("is_global", "==", true),
+                        orderBy("timestamp", "desc"),
+                        limit(50)
+                    );
+                    const globalSnap = await getDocs(globalQuery);
+                    globalSnap.forEach(doc => fetched.push({ id: doc.id, ...doc.data() } as AlertItem));
+                    setAlerts(fetched);
+                }
+
                 setErrorMsg(null);
             } catch (err: any) {
                 console.error("Failed to fetch alerts:", err);
@@ -40,8 +77,12 @@ export default function AlertCenterPage() {
                 setLoading(false);
             }
         }
-        fetchAlerts();
-    }, []);
+        
+        // Wait for auth to initialize before fetching
+        if (user !== undefined) {
+            fetchAlerts();
+        }
+    }, [user]);
 
     return (
         <div className="min-h-screen pb-10">
@@ -61,6 +102,15 @@ export default function AlertCenterPage() {
                         </p>
                     </div>
                 </div>
+
+                {!user && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-blue-400 font-semibold text-sm">개인 맞춤 알림을 받아보세요</h3>
+                            <p className="text-gray-400 text-xs mt-1">로그인하시면 나의 관심종목 뉴스와 목표가 도달 알림을 받을 수 있습니다.</p>
+                        </div>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="flex justify-center py-20">

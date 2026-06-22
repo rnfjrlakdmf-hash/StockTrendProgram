@@ -302,7 +302,8 @@ def send_multicast_notification(
     title: str,
     body: str,
     data: Optional[Dict] = None,
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None,
+    target_users: Optional[List[str]] = None
 ) -> Dict:
     """여러 디바이스로 푸시 알림 전송 및 알림 센터 DB 저장"""
     if not _firebase_initialized:
@@ -316,13 +317,16 @@ def send_multicast_notification(
     try:
         db = firestore.client()
         alert_type = data.get("type", "news_naver") if data else "news_naver"
+        is_global = False if target_users else True
         
         # Firestore에 알림 데이터 저장
         db.collection("alerts").add({
             "title": title,
             "body": body,
             "type": alert_type,
-            "timestamp": firestore.SERVER_TIMESTAMP
+            "timestamp": firestore.SERVER_TIMESTAMP,
+            "is_global": is_global,
+            "target_users": target_users or []
         })
         print(f"[Firestore] Alert saved to center: {title}")
     except Exception as e:
@@ -487,7 +491,8 @@ def send_price_alert_notification(
     alert_type: str,
     current_price: float,
     change_pct: float,
-    message: str
+    message: str,
+    user_id: Optional[str] = None
 ) -> Dict:
     """
     가격 알림 전용 푸시 발송 (스마트워치 완벽 대응 버전)
@@ -523,8 +528,23 @@ def send_price_alert_notification(
         "change_pct": str(change_pct),
         "url": f"/discovery?q={symbol}"
     }
-    
 
+    # Firestore에 목표가 알림 명시적으로 저장
+    if user_id:
+        try:
+            db = firestore.client()
+            db.collection("alerts").add({
+                "title": title,
+                "body": body_message,
+                "type": "price_alert",
+                "timestamp": firestore.SERVER_TIMESTAMP,
+                "is_global": False,
+                "target_users": [user_id]
+            })
+            print(f"[Firestore] Price Alert saved for {user_id}")
+        except Exception as e:
+            print(f"[Firestore] Failed to save price alert: {e}")
+            
 
 
 

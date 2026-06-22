@@ -185,7 +185,8 @@ class PriceAlertMonitor:
                 alert_type=alert['type'],
                 current_price=current_price,
                 change_pct=change_pct,
-                message=message
+                message=message,
+                user_id=user_id
             )
             
             if result.get('success'):

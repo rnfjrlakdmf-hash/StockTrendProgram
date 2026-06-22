@@ -672,7 +672,8 @@ class BatchNewsSystem:
                     "url": f"/discovery?q={clean_symbol}",
                     "news_url": news_item.get("link", ""),
                     "is_global": str(not is_korean).lower(),
-                }
+                },
+                target_users=user_ids
             )
 
             if result.get("success"):
