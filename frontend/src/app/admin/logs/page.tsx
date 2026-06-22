@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { app } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { Loader2, AlertCircle, CheckCircle, Info, ServerCrash, RefreshCw } from "lucide-react";
-
 // 환경변수나 하드코딩된 관리자 이메일 목록
 const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
 
@@ -19,9 +17,9 @@ interface SystemLog {
 }
 
 export default function AdminLogsPage() {
+  const { user: currentUser, isLoading: authLoading } = useAuth();
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authChecking, setAuthChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
@@ -45,21 +43,18 @@ export default function AdminLogsPage() {
   };
 
   useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email && ADMIN_EMAILS.includes(user.email)) {
+    if (!authLoading) {
+      if (currentUser && currentUser.email && ADMIN_EMAILS.includes(currentUser.email.toLowerCase())) {
         setIsAdmin(true);
         fetchLogs();
       } else {
-        router.push('/'); // 권한 없으면 메인으로 튕기기
+        alert("접근 권한이 없습니다.");
+        router.push('/');
       }
-      setAuthChecking(false);
-    });
+    }
+  }, [currentUser, authLoading, router]);
 
-    return () => unsubscribe();
-  }, [router]);
-
-  if (authChecking) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#111111] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
