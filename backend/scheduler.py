@@ -179,7 +179,7 @@ async def check_and_notify_disclosures():
                             "url": f"/stock/{raw_code}",
                             "dart_url": dart_link,
                             "symbol": raw_code,
-                            "is_global": True
+                            "is_global": "true"
                         }
                         
                         if all_tokens:
