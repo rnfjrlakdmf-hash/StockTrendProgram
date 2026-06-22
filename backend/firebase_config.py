@@ -178,9 +178,10 @@ def send_push_notification(
                             "장시작", "장마감", "시가", "결산", "시황",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
-    if is_night_time_kst() and not is_price_or_admin:
-        print(f"[Firebase-NightBlock] Skipped sending notification during night time: {title}")
-        return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
+    # [Update] 대표님 요청으로 야간 알림 제한 해제 (24시간 무조건 발송)
+    # if is_night_time_kst() and not is_price_or_admin:
+    #     print(f"[Firebase-NightBlock] Skipped sending notification during night time: {title}")
+    #     return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
     alert_type = (data or {}).get('type', '')
     if alert_type == 'disclosure_alert':
@@ -354,9 +355,10 @@ def send_multicast_notification(
                             "장시작", "장마감", "시가", "결산", "시황",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
-    if is_night_time_kst() and not is_price_or_admin:
-        print(f"[Firebase-NightBlock] Skipped multicast notification during night time: {title}")
-        return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
+    # [Update] 대표님 요청으로 야간 알림 제한 해제 (24시간 무조건 발송)
+    # if is_night_time_kst() and not is_price_or_admin:
+    #     print(f"[Firebase-NightBlock] Skipped multicast notification during night time: {title}")
+    #     return {"success": False, "error": "Night time restriction (21:00 - 08:00) active"}
     
     if not tokens:
         return {"success": False, "error": "No tokens provided"}
