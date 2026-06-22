@@ -558,8 +558,26 @@ async def auto_blog_scheduler_loop():
     import subprocess
     import sys
     kst = pytz.timezone('Asia/Seoul')
-    last_run_date_kor = ""
-    last_run_date_us = ""
+    import json
+    state_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_blog_state.json")
+    
+    def load_state():
+        if os.path.exists(state_file):
+            try:
+                with open(state_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except:
+                pass
+        return {"last_run_date_kor": "", "last_run_date_us": ""}
+        
+    def save_state(state):
+        try:
+            with open(state_file, "w", encoding="utf-8") as f:
+                json.dump(state, f)
+        except:
+            pass
+
+    state = load_state()
     
     script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_blog_bot.py")
 
@@ -570,18 +588,20 @@ async def auto_blog_scheduler_loop():
             current_date = now.strftime("%Y-%m-%d")
             
             # 오후 16시 정각 (한국장 마감 포스팅)
-            if now.hour == 16 and last_run_date_kor != current_date:
+            if now.hour == 16 and state.get("last_run_date_kor") != current_date:
                 if not is_holiday("kor"):
                     logger.info("[AutoBlog] Triggering KOR market blog post...")
                     await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "kor"])
-                last_run_date_kor = current_date
+                state["last_run_date_kor"] = current_date
+                save_state(state)
             
             # 오전 07시 정각 (미국장 마감 포스팅)
-            if now.hour == 7 and last_run_date_us != current_date:
+            if now.hour == 7 and state.get("last_run_date_us") != current_date:
                 if not is_holiday("us"):
                     logger.info("[AutoBlog] Triggering US market blog post...")
                     await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "us"])
-                last_run_date_us = current_date
+                state["last_run_date_us"] = current_date
+                save_state(state)
 
             await asyncio.sleep(60) # 1분 대기
         except Exception as e:
