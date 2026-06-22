@@ -318,7 +318,11 @@ def send_multicast_notification(
     try:
         db = firestore.client()
         alert_type = data.get("type", "news_naver") if data else "news_naver"
-        is_global = False if target_users else True
+        if data and "is_global" in data:
+            val = data["is_global"]
+            is_global = str(val).lower() == "true" if isinstance(val, str) else bool(val)
+        else:
+            is_global = False if target_users else True
         
         # Firestore에 알림 데이터 저장
         alert_doc = {
