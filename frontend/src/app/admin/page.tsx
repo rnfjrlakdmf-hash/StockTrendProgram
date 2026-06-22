@@ -570,6 +570,27 @@ export default function AdminPage() {
                              </div>
                           </div>
                      </div>
+
+                     {/* System Logs Dashboard Shortcut Card */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-fuchsia-600/10 to-transparent border border-fuchsia-500/20 flex flex-col justify-between">
+                          <div>
+                             <Activity className="w-10 h-10 text-fuchsia-500 mb-6" />
+                             <h3 className="text-xl font-bold text-white mb-2">시스템 로그 (알림 기록)</h3>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                                 푸시 알림 발송 성공/실패 여부, 토큰 만료 등 사이트 백그라운드에서 발생하는 시스템 로그를 엑셀 표 형태로 한눈에 확인합니다.
+                             </p>
+                             
+                             <div className="space-y-4 pt-4 border-t border-fuchsia-500/10 mt-auto">
+                                 <button
+                                     onClick={() => router.push('/admin/logs')}
+                                     className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold tracking-wide py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-fuchsia-500/20 active:scale-95 text-sm"
+                                 >
+                                     <Eye className="w-5 h-5" />
+                                     로그 대시보드 입장
+                                 </button>
+                             </div>
+                          </div>
+                     </div>
                 </div>
             </div>
         </div>
