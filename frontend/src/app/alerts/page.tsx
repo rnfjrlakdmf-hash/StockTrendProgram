@@ -6,6 +6,8 @@ import { collection, query, orderBy, getDocs, limit, where } from "firebase/fire
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+
 interface AlertItem {
     id: string;
     type: string;
@@ -20,6 +22,13 @@ export default function AlertCenterPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const { user } = useAuth();
+
+    // 방문 시간 기록
+    useEffect(() => {
+        localStorage.setItem('last_alert_visit', new Date().toISOString());
+        // Custom event to trigger header update
+        window.dispatchEvent(new Event('alerts_visited'));
+    }, []);
 
     useEffect(() => {
         async function fetchAlerts() {
@@ -71,7 +80,7 @@ export default function AlertCenterPage() {
 
     const renderAlertCard = (alert: AlertItem) => {
         const cardContent = (
-            <div className="bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors w-full text-left">
+            <div className="bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left group">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
@@ -97,11 +106,12 @@ export default function AlertCenterPage() {
                                 : "최근"}
                         </span>
                     </div>
+                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
                 </div>
-                <h3 className="text-md font-semibold text-gray-100">
+                <h3 className="text-md font-semibold text-gray-100 pr-6">
                     {alert.title}
                 </h3>
-                <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1">
+                <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6">
                     {alert.body}
                 </p>
             </div>

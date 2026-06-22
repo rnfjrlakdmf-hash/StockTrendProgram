@@ -630,6 +630,18 @@ async def watchdog_scheduler_loop():
             logger.error(f"[Watchdog] Loop error: {e}")
             await asyncio.sleep(60)
 
+async def cleanup_alerts_scheduler_loop():
+    """3일 지난 알림 데이터를 주기적으로 삭제 (6시간 주기)"""
+    logger.info("[CleanupAlerts] Cleanup Alerts Loop Active. Checking every 6 hours.")
+    from scheduler_service import delete_old_alerts
+    while True:
+        try:
+            await asyncio.to_thread(delete_old_alerts)
+            await asyncio.sleep(21600) # 6시간 대기
+        except Exception as e:
+            logger.error(f"[CleanupAlerts] Loop error: {e}")
+            await asyncio.sleep(60)
+
 async def google_indexer_scheduler_loop():
     """매일 새벽 2시에 구글 인덱서 실행"""
     logger.info("[GoogleIndexer] Google Indexer Scheduler Active.")

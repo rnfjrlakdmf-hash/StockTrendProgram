@@ -307,7 +307,7 @@ async def startup_event():
 
         # 5. 공시 및 시간별 브리핑 스케줄러 시작
         try:
-            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop, google_indexer_scheduler_loop, dividend_alerts_scheduler_loop, weekly_blog_bot_scheduler_loop, weekend_report_scheduler_loop
+            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop, google_indexer_scheduler_loop, dividend_alerts_scheduler_loop, weekly_blog_bot_scheduler_loop, weekend_report_scheduler_loop, cleanup_alerts_scheduler_loop
             from ranking_calculator import ranking_calculator_loop
             
             asyncio.create_task(disclosure_scheduler_loop())
@@ -315,6 +315,7 @@ async def startup_event():
             asyncio.create_task(auto_blog_scheduler_loop())
             asyncio.create_task(seo_blog_scheduler_loop())
             asyncio.create_task(watchdog_scheduler_loop())
+            asyncio.create_task(cleanup_alerts_scheduler_loop())
             asyncio.create_task(google_indexer_scheduler_loop())
             asyncio.create_task(dividend_alerts_scheduler_loop())
             asyncio.create_task(weekly_blog_bot_scheduler_loop())

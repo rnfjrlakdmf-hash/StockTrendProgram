@@ -3,7 +3,9 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle } from "lucide-react";
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { db } from "@/lib/firebase";
+import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 
@@ -20,6 +22,58 @@ interface HeaderProps {
 export default function Header({ title = "대시보드", subtitle = "환영합니다, 투자자님", onSearch }: HeaderProps) {
     const pathname = usePathname();
     const { user } = useAuth();
+    const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            try {
+                let lastVisitTime = 0;
+                const storedVisit = localStorage.getItem('last_alert_visit');
+                if (storedVisit) {
+                    lastVisitTime = new Date(storedVisit).getTime();
+                }
+
+                const alertsRef = collection(db, "alerts");
+                const q = query(alertsRef, orderBy("timestamp", "desc"), limit(50));
+                const snapshot = await getDocs(q);
+                
+                let unreadCount = 0;
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const alertTime = data.timestamp?.seconds ? data.timestamp.seconds * 1000 : 0;
+                    
+                    if (alertTime > lastVisitTime) {
+                        const isGlobal = data.is_global === true || data.is_global === undefined;
+                        const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(user.uid);
+                        
+                        if (user) {
+                            if (isGlobal || isTargetedToMe) unreadCount++;
+                        } else {
+                            if (isGlobal) unreadCount++;
+                        }
+                    }
+                });
+                
+                setUnreadAlertsCount(unreadCount);
+            } catch (err) {
+                console.error("Failed to fetch unread alerts count", err);
+            }
+        };
+
+        fetchUnreadCount();
+
+        // Listen for updates when user visits alerts page
+        const handleAlertsVisited = () => setUnreadAlertsCount(0);
+        window.addEventListener('alerts_visited', handleAlertsVisited);
+        
+        // Refresh count periodically (every 1 minute)
+        const intervalId = setInterval(fetchUnreadCount, 60000);
+
+        return () => {
+            window.removeEventListener('alerts_visited', handleAlertsVisited);
+            clearInterval(intervalId);
+        };
+    }, [user]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && onSearch) {
@@ -126,6 +180,11 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                     <Link href="/alerts" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
                         <Bell className="h-5 w-5" />
+                        {unreadAlertsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115]">
+                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                            </span>
+                        )}
                         <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">알림 센터</span>
                     </Link>
 
