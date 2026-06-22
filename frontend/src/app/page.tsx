@@ -6,7 +6,6 @@ import GaugeChart from "@/components/GaugeChart";
 import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData, fetchStockFast } from "@/lib/api";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import NaverTopWidget from "@/components/NaverTopWidget";
-import MorningBriefWidget from "@/components/MorningBriefWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
 import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
@@ -271,9 +270,6 @@ export default function Home() {
 
             {/* Real-time World Clock Grid at the top */}
             <DashboardMarketClock />
-
-            {/* 모닝 브리핑 */}
-            <MorningBriefWidget />
 
             {/* 카카오 애드핏 배너 */}
             <div className="mb-4">
