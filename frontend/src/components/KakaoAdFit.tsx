@@ -20,7 +20,6 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
 
       const ins = document.createElement("ins");
       ins.className = "kakao_ad_area";
-      ins.style.display = "none";
       ins.setAttribute("data-ad-unit", adUnit);
       ins.setAttribute("data-ad-width", adWidth);
       ins.setAttribute("data-ad-height", adHeight);
@@ -29,6 +28,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
       script.src = "//t1.kakaocdn.net/kas/static/ba.min.js";
       script.async = true;
       script.type = "text/javascript";
+      script.charset = "utf-8";
 
       adRef.current.appendChild(ins);
       adRef.current.appendChild(script);
