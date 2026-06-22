@@ -164,9 +164,10 @@ class MorningBriefingService:
             body=body,
             data={
                 "type": "morning_briefing",
-                "symbol": symbol,
-                "url": f"/discovery?q={symbol}"
-            }
+                "symbol": clean_sym,
+                "url": f"/discovery?q={clean_sym}"
+            },
+            target_users=[user_id]
         )
         
         print(f"[MorningBriefing] Sent split briefing (pro/con) for {stock_name} to {user_id}")
