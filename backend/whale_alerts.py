@@ -93,7 +93,9 @@ def check_whale_alerts():
                         'body': body,
                         'link': f"/stock/{top_stock_name}",
                         'timestamp': datetime.now(kst),
-                        'read': False
+                        'read': False,
+                        'type': 'whale_accumulation',
+                        'is_global': True
                     })
             except Exception as e:
                 print(f"[Whale] Firebase push error: {e}")

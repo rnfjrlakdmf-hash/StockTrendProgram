@@ -600,7 +600,14 @@ def send_daily_analytics_report():
             WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
                OR f.user_id IN ('110418985320259217419', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
         """)
-        tokens = [row[0] for row in cursor.fetchall()]
+        # 관리자 이메일을 기반으로 users 테이블에서 UID 가져오기
+        cursor.execute("""
+            SELECT u.id
+            FROM users u
+            WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
+        """)
+        admin_uids = [row[0] for row in cursor.fetchall()]
+        
     except Exception as e:
         print(f"[Scheduler-Error] Failed to fetch admin tokens: {e}")
     finally:
@@ -608,7 +615,8 @@ def send_daily_analytics_report():
         
     if tokens:
         print(f"[Scheduler] Sending daily report to {len(tokens)} admin device(s)...")
-        send_multicast_notification(tokens, title, body, {"url": "/"})
+        # 데이터 페이로드에 타겟 유저(Admin UID)와 is_global=False를 명시하여 일반 사용자에게 노출 방지
+        send_multicast_notification(tokens, title, body, {"url": "/", "is_global": False}, target_users=admin_uids)
         return len(tokens)
     else:
         print("[Scheduler] No admin FCM tokens found in the database. Cannot send daily report.")
