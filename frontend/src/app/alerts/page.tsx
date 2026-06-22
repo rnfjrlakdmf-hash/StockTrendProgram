@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, limit, where } from "firebase/firestore";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 
 interface AlertItem {
