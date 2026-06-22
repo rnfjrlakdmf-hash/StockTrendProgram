@@ -417,6 +417,59 @@ async def get_latest_live_event():
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/blog/posts")
+def get_blog_posts(page: int = 1, limit: int = 10):
+    """
+    Firestore blog_posts 콜렉션에서 블로그 포스트 목록을 페이지별로 반환
+    Next.js 서버사이드에서 직접 Firestore 연결 실패 문제 해결
+    """
+    import firebase_admin
+    from firebase_admin import firestore
+    from google.cloud.firestore_v1 import Query
+
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized", "posts": [], "total": 0, "totalPages": 0}
+
+    try:
+        db = firestore.client()
+        collRef = db.collection("blog_posts")
+
+        # 전체 카운트
+        all_docs = list(collRef.stream())
+        total = len(all_docs)
+        totalPages = max(1, -(-total // limit))
+
+        # 최신순 정렬 후 해당 페이지 슬라이싱
+        q = collRef.order_by("createdAt", direction=Query.DESCENDING).limit(page * limit)
+        docs = list(q.stream())
+
+        start = (page - 1) * limit
+        paged_docs = docs[start:start + limit]
+
+        posts = []
+        for doc in paged_docs:
+            data = doc.to_dict()
+            created_at = data.get("createdAt")
+            if hasattr(created_at, "isoformat"):
+                created_at_str = created_at.isoformat()
+            else:
+                created_at_str = str(created_at)
+            posts.append({
+                "id": doc.id,
+                "title": data.get("title", "제목 없음"),
+                "content": (data.get("content", ""))[:500],
+                "createdAt": created_at_str,
+                "tags": data.get("tags", []),
+                "slug": data.get("slug", doc.id),
+                "viewCount": data.get("viewCount", 0),
+                "author": data.get("author", "관리자"),
+            })
+
+        return {"status": "ok", "posts": posts, "total": total, "totalPages": totalPages}
+    except Exception as e:
+        print(f"[Blog API] Error: {e}")
+        return {"status": "error", "message": str(e), "posts": [], "total": 0, "totalPages": 0}
+
 @app.post("/api/blog/{blog_id}/view")
 def increment_blog_view(blog_id: str):
     """

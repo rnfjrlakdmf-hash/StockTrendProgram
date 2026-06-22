@@ -14,48 +14,34 @@ export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
 async function getBlogPosts(page: number, limitPerPage: number) {
     try {
-        const collRef = collection(db, "blog_posts");
+        const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts?page=${page}&limit=${limitPerPage}`;
+        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
         
-        // 전체 포스트 수 계산
-        const countSnap = await getCountFromServer(collRef);
-        const totalPosts = countSnap.data().count;
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
         
-        if (totalPosts === 0) {
-            const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
-            return { posts: staticSliced, totalPages: Math.ceil(STATIC_POSTS.length / limitPerPage) };
+        const data = await res.json();
+        
+        if (data.status !== "ok" || !data.posts?.length) {
+            throw new Error("No posts from API");
         }
 
-        const totalPages = Math.ceil(totalPosts / limitPerPage);
+        const posts = data.posts.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            content: p.content,
+            createdAt: new Date(p.createdAt),
+            tags: p.tags || [],
+            slug: p.slug || p.id,
+            viewCount: p.viewCount || 0,
+        }));
 
-        // 지정된 페이지까지 모두 가져와서 자르기 (Firebase 페이징 단순화)
-        const q = query(collRef, orderBy("createdAt", "desc"), limit(page * limitPerPage));
-        const snapshot = await getDocs(q);
-        
-        const dbPosts = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                title: data.title || "제목 없음",
-                content: data.content || "",
-                createdAt: data.createdAt?.toDate?.() || new Date(),
-                tags: data.tags || [],
-                slug: data.slug || doc.id,
-                viewCount: data.viewCount || 0
-            };
-        });
-
-        // 현재 페이지에 해당하는 데이터만 잘라서 반환
-        const startIndex = (page - 1) * limitPerPage;
-        const posts = dbPosts.slice(startIndex, startIndex + limitPerPage);
-
-        return { posts, totalPages };
+        return { posts, totalPages: data.totalPages || 1 };
     } catch (error) {
         console.error("블로그 포스트 로딩 에러:", error);
         const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
         return { posts: staticSliced, totalPages: Math.ceil(STATIC_POSTS.length / limitPerPage) };
     }
 }
-
 type Props = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
 
 export default async function BlogListPage(props: Props) {
