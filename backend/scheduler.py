@@ -391,7 +391,7 @@ async def check_and_notify_sec_disclosures():
                     }
 
                     logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
-                    send_multicast_notification(all_tokens, noti_title, noti_body, data_payload)
+                    send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(set(user_ids)))
                     sent_count += 1
                     await asyncio.sleep(0.5)
 
