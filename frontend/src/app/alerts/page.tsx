@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, limit, where } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
-
+import Link from "next/link";
 interface AlertItem {
     id: string;
     type: string;
