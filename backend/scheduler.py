@@ -156,12 +156,16 @@ async def check_and_notify_disclosures():
                             
                         all_tokens = []
                         limit_reached_tokens = []
+                        ok_users = []
+                        limit_users = []
                         
                         for uid, toks in user_tokens_map.items():
                             status = check_and_consume_alert_quota(uid)
                             if status == "OK":
+                                ok_users.append(uid)
                                 all_tokens.extend(toks)
                             elif status == "LIMIT_REACHED":
+                                limit_users.append(uid)
                                 limit_reached_tokens.extend(toks)
                                 
                         push_title = f"{prefix_title} {corp}"
@@ -175,7 +179,7 @@ async def check_and_notify_disclosures():
                         }
                         
                         if all_tokens:
-                            send_multicast_notification(all_tokens, push_title, summary_body, data=push_data)
+                            send_multicast_notification(all_tokens, push_title, summary_body, data=push_data, target_users=ok_users)
                             logger.info(f"[WhaleSiren] FCM Zero-Cost Push sent to {len(all_tokens)} devices for {corp}")
                             
                         if limit_reached_tokens:
@@ -183,7 +187,8 @@ async def check_and_notify_disclosures():
                                 limit_reached_tokens,
                                 title="⚠️ 오늘 무료 프리미엄 알림(3회) 소진",
                                 body="친구 1명만 초대하고 평생 무제한으로 1급 정보를 받아보세요!",
-                                data={"type": "referral_invite", "url": "/referral"}
+                                data={"type": "referral_invite", "url": "/referral"},
+                                target_users=limit_users
                             )
                             logger.info(f"[WhaleSiren] FCM Limit-Reached Push sent to {len(limit_reached_tokens)} devices")
 

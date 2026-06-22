@@ -328,16 +328,22 @@ class AutoPriceMonitor:
             
             all_tokens = []
             limit_reached_tokens = []
+            ok_users = []
+            limit_users = []
             
             for user_id in users:
                 status = check_and_consume_alert_quota(user_id)
                 
                 tokens_data = get_user_fcm_tokens(user_id)
-                for t in tokens_data:
+                if tokens_data:
                     if status == "OK":
-                        all_tokens.append(t['token'])
+                        ok_users.append(user_id)
+                        for t in tokens_data:
+                            all_tokens.append(t['token'])
                     elif status == "LIMIT_REACHED":
-                        limit_reached_tokens.append(t['token'])
+                        limit_users.append(user_id)
+                        for t in tokens_data:
+                            limit_reached_tokens.append(t['token'])
                         
             # 정상 발송
             if all_tokens:
@@ -349,7 +355,8 @@ class AutoPriceMonitor:
                         "type": "auto_price_alert",
                         "symbol": symbol,
                         "url": f"/discovery?q={symbol}"
-                    }
+                    },
+                    target_users=ok_users
                 )
                 print(f"[AutoPriceAlert] Sent '{title_prefix}' for {stock_name} to {len(all_tokens)} devices")
                 
@@ -362,7 +369,8 @@ class AutoPriceMonitor:
                     data={
                         "type": "referral_invite",
                         "url": "/referral"
-                    }
+                    },
+                    target_users=limit_users
                 )
                 print(f"[AutoPriceAlert] Sent limit reached notification to {len(limit_reached_tokens)} devices")
                 
