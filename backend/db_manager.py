@@ -1635,6 +1635,28 @@ def get_user_tokens_by_watchlist_symbol(symbol: str) -> list:
     finally:
         conn.close()
 
+def get_user_ids_and_tokens_by_watchlist_symbol(symbol: str) -> list:
+    """특정 종목을 관심종목으로 등록한 모든 사용자의 (user_id, FCM token) 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        base_symbol = symbol.split('.')[0] if '.' in symbol else symbol
+        
+        cursor.execute("""
+            SELECT DISTINCT ft.user_id, ft.token
+            FROM fcm_tokens ft
+            JOIN watchlist w ON ft.user_id = w.user_id
+            WHERE w.symbol = ? OR w.symbol LIKE ?
+        """, (symbol, f"{base_symbol}%"))
+        
+        rows = cursor.fetchall()
+        return [{"user_id": row[0], "token": row[1]} for row in rows if row[1]]
+    except Exception as e:
+        print(f"[DB] Get user ids and tokens by symbol error: {e}")
+        return []
+    finally:
+        conn.close()
+
 # ============================================================
 # [Analytics] Site Visitor & Pageview Tracking Methods
 # ============================================================

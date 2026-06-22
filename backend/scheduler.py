@@ -82,6 +82,9 @@ async def check_and_notify_disclosures():
             # 비상장 법인(stock_code 없음)은 스킵
             if not raw_code:
                 continue
+                
+            skip_whale_alert = True
+            prefix_title = ""
 
             # [세력 포착 라이브 사이렌 브로드캐스트]
             # 알림 폭탄(스팸) 방지를 위해 발생 빈도가 너무 높은 '주요주주', '대량보유' 제외, 초강력 호재/악재 위주로 압축
@@ -198,12 +201,15 @@ async def check_and_notify_disclosures():
             # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
             symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
             tokens = []
+            target_uids = []
             matched_symbol = None
 
+            from db_manager import get_user_ids_and_tokens_by_watchlist_symbol
             for sym in symbol_candidates:
-                t_list = get_user_tokens_by_watchlist_symbol(sym)
-                if t_list:
-                    tokens = t_list
+                user_tokens = get_user_ids_and_tokens_by_watchlist_symbol(sym)
+                if user_tokens:
+                    tokens = [ut["token"] for ut in user_tokens]
+                    target_uids = [ut["user_id"] for ut in user_tokens]
                     matched_symbol = sym
                     break
 
@@ -240,7 +246,7 @@ async def check_and_notify_disclosures():
             }
 
             logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
-            send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+            send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
             sent_count += 1
             await asyncio.sleep(0.5)
 
