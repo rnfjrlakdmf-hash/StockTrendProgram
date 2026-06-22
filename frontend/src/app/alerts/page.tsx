@@ -107,21 +107,38 @@ export default function AlertCenterPage() {
             </div>
         );
 
-        if ((alert as any).url) {
-            return (
-                <a key={alert.id} href={(alert as any).url} target="_blank" rel="noopener noreferrer" className="block">
-                    {cardContent}
-                </a>
-            );
+        let targetUrl = (alert as any).url;
+        if ((alert as any).news_url) {
+            const params = new URLSearchParams();
+            params.set("url", (alert as any).news_url);
+            if ((alert as any).symbol) params.set("symbol", (alert as any).symbol);
+            if (alert.title) params.set("title", alert.title);
+            targetUrl = `/news-redirect?${params.toString()}`;
+        }
+
+        if (targetUrl) {
+            if (targetUrl.startsWith("http")) {
+                return (
+                    <a key={alert.id} href={targetUrl} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
+                        {cardContent}
+                    </a>
+                );
+            } else {
+                return (
+                    <Link key={alert.id} href={targetUrl} className="block cursor-pointer">
+                        {cardContent}
+                    </Link>
+                );
+            }
         } else if ((alert as any).symbol) {
             return (
-                <Link key={alert.id} href={`/stock/${(alert as any).symbol}`} className="block">
+                <Link key={alert.id} href={`/stock/${(alert as any).symbol}`} className="block cursor-pointer">
                     {cardContent}
                 </Link>
             );
         }
 
-        return <div key={alert.id}>{cardContent}</div>;
+        return <div key={alert.id} className="cursor-pointer">{cardContent}</div>;
     };
 
     return (

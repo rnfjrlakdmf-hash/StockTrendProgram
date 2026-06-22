@@ -334,7 +334,7 @@ def send_multicast_notification(
             if "url" in data:
                 alert_doc["url"] = data["url"]
             if "news_url" in data:
-                alert_doc["url"] = data["news_url"]
+                alert_doc["news_url"] = data["news_url"]
             if "symbol" in data:
                 alert_doc["symbol"] = data["symbol"]
                 
