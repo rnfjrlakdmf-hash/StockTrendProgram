@@ -236,6 +236,17 @@ def send_opening_notification(market: str):
             tokens = [t['token'] for t in tokens_data if t.get('pref_price', True)]
             if tokens:
                 send_multicast_notification(tokens, title, body, {"type": "price_alert", "url": "/watchlist"}, target_users=[user_id])
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                        VALUES (?, ?, 'market', ?, 0, 0, 0)
+                    """, (user_id, market_name, f"{title}\n{body}"))
+                    conn.commit()
+                    conn.close()
+                except Exception as e:
+                    print(f"[Scheduler-Error] Failed to save open alert to DB: {e}")
 
 def send_closing_notification(market: str):
     """시장 마감 리포트 발송 로직 (기본 지수 + 맞춤형 지수 하이브리드)"""
@@ -452,12 +463,36 @@ def send_closing_notification(market: str):
                     # 1. 시장 지수 요약 알림
                     send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery", "type": "market_summary"}, target_users=[user_id])
                     
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                            VALUES (?, ?, 'market', ?, 0, 0, 0)
+                        """, (user_id, market_name, f"{title_market}\n{body_market}"))
+                        conn.commit()
+                        conn.close()
+                    except Exception as e:
+                        print(f"[Scheduler-Error] Failed to save closing market alert to DB: {e}")
+                    
                     # 2초 대기 (모바일 환경에서 두 개의 푸시가 씹히지 않고 연속으로 뜨도록 순서 보장)
                     import time
                     time.sleep(2.0)
                     
                     # 2. 내 관심종목 수익 현황 알림
                     send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist", "type": "portfolio_summary"}, target_users=[user_id])
+                    
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                            VALUES (?, ?, 'portfolio', ?, 0, 0, 0)
+                        """, (user_id, market_name, f"{title_portfolio}\n{body_portfolio}"))
+                        conn.commit()
+                        conn.close()
+                    except Exception as e:
+                        print(f"[Scheduler-Error] Failed to save closing portfolio alert to DB: {e}")
         except Exception as user_err:
             print(f"[Scheduler-Error] Failed to send closing notification for user {user_id}: {user_err}")
             continue
