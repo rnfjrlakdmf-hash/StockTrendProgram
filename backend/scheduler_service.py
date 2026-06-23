@@ -635,6 +635,8 @@ def send_daily_analytics_report():
             WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
                OR f.user_id IN ('110418985320259217419', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
         """)
+        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+        
         # 관리자 이메일을 기반으로 users 테이블에서 UID 가져오기
         cursor.execute("""
             SELECT u.id
