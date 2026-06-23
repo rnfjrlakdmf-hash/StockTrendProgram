@@ -662,6 +662,20 @@ async def cleanup_alerts_scheduler_loop():
             logger.error(f"[CleanupAlerts] Loop error: {e}")
             await asyncio.sleep(60)
 
+async def cleanup_system_logs_scheduler_loop():
+    """3일 지난 시스템 로그(알림 모니터링)를 주기적으로 삭제 (6시간 주기)"""
+    logger.info("[CleanupSystemLogs] System Logs Cleanup Loop Active. Checking every 6 hours.")
+    while True:
+        try:
+            from db_manager import cleanup_old_system_logs
+            deleted = await asyncio.to_thread(cleanup_old_system_logs, 3)
+            if deleted > 0:
+                logger.info(f"[CleanupSystemLogs] Deleted {deleted} old system log records.")
+            await asyncio.sleep(21600) # 6시간 대기
+        except Exception as e:
+            logger.error(f"[CleanupSystemLogs] Loop error: {e}")
+            await asyncio.sleep(60)
+
 async def google_indexer_scheduler_loop():
     """매일 새벽 2시에 구글 인덱서 실행"""
     logger.info("[GoogleIndexer] Google Indexer Scheduler Active.")
