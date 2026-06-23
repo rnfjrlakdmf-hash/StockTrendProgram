@@ -1942,6 +1942,11 @@ function DiscoveryContent() {
                         </div>
                     </div>
                 )}
+
+                {/* 하단 세로 배너 광고 (320x480) */}
+                <div className="mt-8 flex justify-center">
+                    <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+                </div>
             </div>
         </div>
     );

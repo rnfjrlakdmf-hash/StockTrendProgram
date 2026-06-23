@@ -348,6 +348,11 @@ export default function Home() {
               </div>
             </div>
 
+            {/* 하단 세로 배너 광고 (320x480) */}
+            <div className="mt-8 flex justify-center">
+              <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+            </div>
+
             {/* FAQ Section for SEO */}
             <div className="mt-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md mb-10">
               <h2 className="text-xl font-bold text-white mb-6">💡 자주 묻는 질문 (FAQ)</h2>

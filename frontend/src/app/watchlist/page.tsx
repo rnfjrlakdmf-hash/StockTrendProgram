@@ -719,6 +719,11 @@ export default function WatchlistPage() {
                 )}
             </div>
 
+            {/* 하단 세로 배너 광고 (320x480) */}
+            <div className="mt-8 flex justify-center">
+                <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+            </div>
+
             {alertStock && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
                     <div className="relative w-full max-w-lg">
