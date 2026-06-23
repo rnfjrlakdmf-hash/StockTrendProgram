@@ -632,8 +632,8 @@ def send_daily_analytics_report():
             SELECT f.token 
             FROM fcm_tokens f
             LEFT JOIN users u ON f.user_id = u.id
-            WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
-               OR f.user_id IN ('110418985320259217419', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
+            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com')
+               OR f.user_id IN ('110418985320259217419', 'rnfjrlakdmf@gmail.com')
         """)
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         
@@ -641,7 +641,7 @@ def send_daily_analytics_report():
         cursor.execute("""
             SELECT u.id
             FROM users u
-            WHERE LOWER(u.email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')
+            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com')
         """)
         admin_uids = [row[0] for row in cursor.fetchall()]
         
