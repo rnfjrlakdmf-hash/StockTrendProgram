@@ -231,7 +231,7 @@ export default function Home() {
 
                   {/* 카카오 애드핏 배너 */}
                   <div className="mb-4">
-                    <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="300" adHeight="250" />
+                    <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
                   </div>
 
                   <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-indigo-500/30 bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-pink-900/40 p-1 mb-4">
@@ -298,7 +298,7 @@ export default function Home() {
 
             {/* 카카오 애드핏 배너 */}
             <div className="mb-4">
-              <KakaoAdFit adUnit="DAN-XHkHhnjZT4zSnILn" adWidth="300" adHeight="250" />
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
 
             {/* 실시간 종목 랭킹 (Removed for commercial legal safety) */}
