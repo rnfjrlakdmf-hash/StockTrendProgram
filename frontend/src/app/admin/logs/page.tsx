@@ -202,7 +202,9 @@ export default function AdminLogsPage() {
                   <span className="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">{issues.length}건</span>
                 )}
               </h2>
-              {issues.length === 0 ? (
+              {logs.length === 0 ? (
+                <p className="text-gray-600 text-sm text-center py-4">기록된 데이터가 없습니다.</p>
+              ) : issues.length === 0 ? (
                 <div className="flex items-center gap-2 text-green-400 text-sm py-3 justify-center">
                   <CheckCircle className="w-4 h-4" />모든 알림이 정상 발송되었습니다.
                 </div>
