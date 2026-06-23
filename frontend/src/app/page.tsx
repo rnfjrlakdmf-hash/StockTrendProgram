@@ -80,9 +80,12 @@ export default function Home() {
       <Header onSearch={handleSearch} />
 
       <div className="p-6 space-y-8">
-
-
-
+        
+        {/* 상단 띠배너 광고 (320x50) */}
+        <div className="flex justify-center -mt-2 mb-4">
+          <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+        </div>
+        
         {/* Search Loading/Error State */}
         {loading && (
           <div className="flex flex-col items-center justify-center p-12 text-blue-400">

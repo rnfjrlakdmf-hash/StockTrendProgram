@@ -846,6 +846,11 @@ function DiscoveryContent() {
             <Header title="종목 발굴 & 데이터 분석" subtitle="AI가 분석하는 종목의 핵심 데이터 현황" />
 
             <div className="p-6 space-y-8">
+                {/* 상단 띠배너 광고 (320x50) */}
+                <div className="flex justify-center -mt-2 mb-4">
+                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                </div>
+                
                 {/* Initial View: Search, Widgets, Dashboard */}
                 {!stock && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">

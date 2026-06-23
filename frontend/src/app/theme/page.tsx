@@ -186,7 +186,10 @@ export default function ThemePage() {
             <Header title="이슈 테마 분석 (v2.6)" subtitle="Find the Next Big Thing with AI." />
 
             <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
+                {/* 상단 띠배너 광고 (320x50) */}
+                <div className="flex justify-center mb-4">
+                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                </div>
                 {/* Search Hero */}
                 <div className="text-center space-y-8 py-12 relative">
                     {/* Background Glow */}
