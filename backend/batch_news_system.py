@@ -684,6 +684,22 @@ class BatchNewsSystem:
             if result.get("success"):
                 success_count = result.get("success_count", 0)
                 print(f"[BatchNews] 📱 [{kr_name}] → {success_count}대 발송 완료: {title_text[:40]}")
+                
+                # 알림센터 UI에 표시되도록 alert_history 에 저장
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    for uid in set(user_ids):
+                        if uid and uid != 'guest':
+                            cursor.execute("""
+                                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                                VALUES (?, ?, 'news', ?, 0, 0, 0)
+                            """, (uid, clean_symbol, f"{push_title} - {push_body}"))
+                    conn.commit()
+                    conn.close()
+                except Exception as db_err:
+                    print(f"[BatchNews] 알림 내역 저장 실패: {db_err}")
+                
                 return True
 
         except Exception as e:

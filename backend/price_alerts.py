@@ -410,7 +410,7 @@ def get_alert_history(user_id: str, limit: int = 50) -> List[Dict]:
         SELECT id, symbol, type, message, current_price, 
                buy_price, threshold, triggered_at
         FROM alert_history
-        WHERE user_id = ?
+        WHERE user_id = ? OR user_id = 'global' OR user_id = 'all' OR user_id IS NULL
         ORDER BY triggered_at DESC
         LIMIT ?
     """, (user_id, limit))
