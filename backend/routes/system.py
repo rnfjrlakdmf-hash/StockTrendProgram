@@ -41,7 +41,14 @@ def register_fcm_token(payload: FCMTokenPayload):
     except Exception as e:
         print(f"Error saving FCM token: {e}")
         return {"status": "error", "message": str(e)}
-
+@router.get("/logs")
+def get_logs(limit: int = 100):
+    try:
+        from db_manager import get_system_logs
+        logs = get_system_logs(limit)
+        return {"status": "success", "data": logs}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @router.get("/status")
 def get_system_status():
