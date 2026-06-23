@@ -12,6 +12,7 @@ import KakaoScript from "@/components/KakaoScript";
 import AppInstallBanner from "@/components/AppInstallBanner";
 import FomoWidget from "@/components/FomoWidget";
 import WhaleSiren from "@/components/WhaleSiren";
+import KakaoAdFit from "@/components/KakaoAdFit";
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
   title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
@@ -109,6 +110,11 @@ export default function RootLayout({
               {/* Global Progress Watcher */}
               <GlobalProgressWatcher />
             </main>
+
+            {/* 우측 사이드바 세로형 광고 (160x600) - 데스크톱 전용 */}
+            <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 bg-[#050505]/50">
+              <KakaoAdFit adUnit="DAN-jbSl6i4k3YO3nNSl" adWidth="160" adHeight="600" />
+            </aside>
 
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
