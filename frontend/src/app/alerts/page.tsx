@@ -36,32 +36,50 @@ export default function AlertCenterPage() {
                 const fetched: AlertItem[] = [];
                 const alertsRef = collection(db, "alerts");
                 
-                // Firestore 복합 인덱스(Composite Index) 에러를 방지하기 위해 
-                // 최신 알림을 넉넉히 가져온 뒤 프론트엔드에서 필터링합니다. (뉴스 속보가 많아 500개로 상향)
-                const q = query(
-                    alertsRef,
-                    orderBy("timestamp", "desc"),
-                    limit(500)
-                );
-                
-                const snapshot = await getDocs(q);
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const isGlobal = data.is_global === true || data.is_global === undefined; // 과거 데이터 호환성
-                    const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(user.uid);
-                    
-                    if (user) {
-                        if (isGlobal || isTargetedToMe) {
-                            fetched.push({ id: doc.id, ...data } as AlertItem);
+                // 사용자 맞춤형 알림과 전체 알림을 각각 가져와 프론트엔드에서 병합 (읽기 비용 최소화 및 누락 방지)
+                let targetedDocs = [];
+                let globalDocs = [];
+
+                if (user) {
+                    const qTargeted = query(alertsRef, where("target_users", "array-contains", user.uid));
+                    const snapTargeted = await getDocs(qTargeted);
+                    snapTargeted.forEach(doc => targetedDocs.push({ id: doc.id, ...doc.data() }));
+                }
+
+                const qGlobal = query(alertsRef, where("is_global", "==", true));
+                const snapGlobal = await getDocs(qGlobal);
+                snapGlobal.forEach(doc => globalDocs.push({ id: doc.id, ...doc.data() }));
+
+                // 병합 및 중복 제거
+                const allAlertsMap = new Map();
+                targetedDocs.forEach(alert => allAlertsMap.set(alert.id, alert));
+                globalDocs.forEach(alert => allAlertsMap.set(alert.id, alert));
+
+                // 시간순 정렬 (최신순)
+                let sortedAlerts = Array.from(allAlertsMap.values());
+                sortedAlerts.sort((a, b) => {
+                    const timeA = a.timestamp?.seconds || 0;
+                    const timeB = b.timestamp?.seconds || 0;
+                    return timeB - timeA;
+                });
+
+                // ----------------- IMPORTANT -----------------
+                // 뉴스 속보 도배 방지: 뉴스는 최대 15개까지만 노출하여 중요한 장마감/포트폴리오 알림이 밀리지 않도록 함
+                let newsCount = 0;
+                const filtered = [];
+                for (const alert of sortedAlerts) {
+                    if (alert.type === 'news_alert') {
+                        if (newsCount < 15) {
+                            filtered.push(alert);
+                            newsCount++;
                         }
                     } else {
-                        if (isGlobal) {
-                            fetched.push({ id: doc.id, ...data } as AlertItem);
-                        }
+                        filtered.push(alert);
                     }
-                });
+                }
                 
-                setAlerts(fetched.slice(0, 50));
+                // 최종 노출
+                setAlerts(filtered.slice(0, 50));
 
                 setErrorMsg(null);
             } catch (err: any) {
