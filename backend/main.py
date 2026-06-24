@@ -474,6 +474,65 @@ def get_blog_posts(page: int = 1, limit: int = 10):
         print(f"[Blog API] Error: {e}")
         return {"status": "error", "message": str(e), "posts": [], "total": 0, "totalPages": 0}
 
+@app.get("/api/blog/posts/{slug}")
+def get_blog_post(slug: str):
+    """
+    특정 슬러그(또는 ID)의 블로그 포스트 상세 정보 반환
+    Next.js 서버사이드 Firestore 연결 문제 해결용
+    """
+    import firebase_admin
+    from firebase_admin import firestore
+    from firebase_config import initialize_firebase
+
+    initialize_firebase()
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized"}
+
+    try:
+        db = firestore.client()
+        collRef = db.collection("blog_posts")
+        
+        # 1. slug 필드로 먼저 검색
+        docs = list(collRef.where("slug", "==", slug).limit(1).stream())
+        doc = None
+        
+        if docs:
+            doc = docs[0]
+        else:
+            # 2. 없으면 문서 ID로 조회 (기존 방식)
+            doc_ref = collRef.document(slug)
+            doc_snap = doc_ref.get()
+            if doc_snap.exists:
+                doc = doc_snap
+                
+        if not doc:
+            return {"status": "error", "message": "Post not found"}
+            
+        data = doc.to_dict()
+        created_at = data.get("createdAt")
+        if hasattr(created_at, "isoformat"):
+            created_at_str = created_at.isoformat()
+        else:
+            created_at_str = str(created_at)
+            
+        post = {
+            "id": doc.id,
+            "title": data.get("title", "제목 없음"),
+            "content": data.get("content", ""),
+            "createdAt": created_at_str,
+            "tags": data.get("tags", []),
+            "slug": data.get("slug", doc.id),
+            "viewCount": data.get("viewCount", 0),
+            "author": data.get("author", "관리자"),
+        }
+        
+        return {"status": "ok", "post": post}
+        
+    except Exception as e:
+        print(f"[Blog API] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 @app.post("/api/blog/{blog_id}/view")
 def increment_blog_view(blog_id: str):
     """
