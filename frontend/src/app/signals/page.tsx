@@ -40,6 +40,8 @@ function SignalsPageContent() {
     useEffect(() => {
         if (tabParam === "calendar" || tabParam === "heatmap" || tabParam === "supply" || tabParam === "signals") {
             setActiveTab(tabParam);
+        } else if (tabParam === "ipo") {
+            setActiveTab("calendar");
         }
     }, [tabParam]);
 
@@ -753,8 +755,17 @@ function MarketInsightsTab({ router }: { router: any }) {
 // ============ TAB 4: CALENDAR ============
 function CalendarTab({ router }: { router: any }) {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
+    
     // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
     const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
+
+    useEffect(() => {
+        if (tabParam === "ipo") {
+            setMainTab("ipo");
+        }
+    }, [tabParam]);
 
     // [New] AI 테마 자동 매칭 함수
     const getAiThemeForEvent = (eventName: string) => {

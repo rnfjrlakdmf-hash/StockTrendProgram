@@ -157,7 +157,7 @@ def send_ipo_alerts():
 
     # 발송
     for (token, title, body) in token_messages.keys():
-        send_multicast_notification([token], title, body, {"url": "/discovery"})
+        send_multicast_notification([token], title, body, {"url": "/signals?tab=ipo"})
 
     print(f"[IPO-Alerts] Notification dispatched to {len(token_messages)} devices.")
 
