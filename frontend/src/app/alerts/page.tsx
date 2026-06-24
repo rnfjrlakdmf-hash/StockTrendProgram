@@ -37,11 +37,11 @@ export default function AlertCenterPage() {
                 const alertsRef = collection(db, "alerts");
                 
                 // Firestore 복합 인덱스(Composite Index) 에러를 방지하기 위해 
-                // 최신 알림 100개를 가져온 뒤 프론트엔드에서 필터링합니다.
+                // 최신 알림을 넉넉히 가져온 뒤 프론트엔드에서 필터링합니다. (뉴스 속보가 많아 500개로 상향)
                 const q = query(
                     alertsRef,
                     orderBy("timestamp", "desc"),
-                    limit(100)
+                    limit(500)
                 );
                 
                 const snapshot = await getDocs(q);
