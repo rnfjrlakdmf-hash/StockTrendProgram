@@ -41,7 +41,8 @@ export default function AlertCenterPage() {
                 let globalDocs = [];
 
                 if (user) {
-                    const qTargeted = query(alertsRef, where("target_users", "array-contains", user.uid));
+                    const userId = user.id || (user as any).uid;
+                    const qTargeted = query(alertsRef, where("target_users", "array-contains", userId));
                     const snapTargeted = await getDocs(qTargeted);
                     snapTargeted.forEach(doc => targetedDocs.push({ id: doc.id, ...doc.data() }));
                 }
