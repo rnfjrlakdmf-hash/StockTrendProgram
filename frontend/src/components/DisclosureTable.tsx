@@ -83,7 +83,7 @@ function DisclosureTable({ symbol }: { symbol: string }) {
                     {disclosures.map((disclosure: any, idx: number) => (
                         <a
                             key={idx}
-                            href={disclosure.link}
+                            href={`/news-redirect?url=${encodeURIComponent(disclosure.link)}&title=${encodeURIComponent(disclosure.title || '공시원문보기')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/30 rounded-xl p-4 transition-all"
