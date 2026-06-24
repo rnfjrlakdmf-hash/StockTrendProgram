@@ -353,10 +353,13 @@ export default function WatchlistPage() {
 
     return (
         <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-8">
-            {/* 상단 띠배너 광고 (320x50) */}
-            <div className="flex justify-center -mt-2 mb-4">
-                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-            </div>
+                {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
+                <div className="flex md:hidden justify-center mb-4">
+                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                </div>
+                <div className="hidden md:flex justify-center mb-4">
+                    <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                </div>
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

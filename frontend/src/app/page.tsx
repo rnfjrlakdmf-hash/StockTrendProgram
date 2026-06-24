@@ -297,6 +297,11 @@ export default function Home() {
             <LiveRankingBox />
 
             {/* Real-time World Clock Grid at the top */}
+            {/* PC 전용 728x90 가로 배너 */}
+            <div className="hidden md:flex justify-center mb-6">
+              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            </div>
+
             <DashboardMarketClock />
 
             {/* 카카오 애드핏 배너 */}
