@@ -11,13 +11,30 @@ import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
+
 async function getBlogPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
-        const docRef = doc(db, "blog_posts", decodedSlug);
-        const snapshot = await getDoc(docRef);
         
-        if (!snapshot.exists()) {
+        let snapshot: any = null;
+        
+        // 1. 먼저 slug 필드로 검색
+        const q = query(collection(db, "blog_posts"), where("slug", "==", decodedSlug), limit(1));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            snapshot = querySnapshot.docs[0];
+        } else {
+            // 2. slug 필드가 없으면 문서 ID로 검색 (기존 방식 폴백)
+            const docRef = doc(db, "blog_posts", decodedSlug);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                snapshot = docSnap;
+            }
+        }
+        
+        if (!snapshot) {
             const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
             if (staticPost) return staticPost;
             return null;
