@@ -1012,13 +1012,19 @@ def stock_disclosures(symbol: str, period: str = Query("1m")):
     is_global = any(c.isalpha() for c in symbol) and not symbol.endswith(('.KS', '.KQ'))
     
     if is_global:
-        return {
-            "status": "success", 
-            "data": {
-                "is_global": True,
-                "message": "공시 정보는 현재 국내 상장사(DART) 기준으로 제공됩니다. 해외 종목의 경우 실시간 뉴스 탭을 참고해 주세요."
-            }
-        }
+        try:
+            from sec_api_client import get_cik_by_ticker, fetch_recent_filings
+            cik = get_cik_by_ticker(symbol)
+            if not cik:
+                return {
+                    "status": "success", 
+                    "data": []
+                }
+            data = fetch_recent_filings(cik, limit=15)
+            return {"status": "success", "data": data}
+        except Exception as e:
+            print(f"[SEC] Disclosure error for {symbol}: {e}")
+            return {"status": "error", "message": str(e)}
 
     try:
         data = get_dart_disclosures(symbol, period)

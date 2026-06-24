@@ -122,7 +122,9 @@ function DisclosureTable({ symbol }: { symbol: string }) {
                     <div className="text-4xl mb-3">📭</div>
                     <p className="text-gray-400">최근 공시 내역이 없습니다.</p>
                     <p className="text-sm text-gray-500 mt-2">
-                        한국 주식의 경우 DART 공시 정보가 표시됩니다.
+                        {/[A-Za-z]/.test(symbol) && !symbol.endsWith('.KS') && !symbol.endsWith('.KQ') 
+                            ? "미국 주식의 경우 SEC(EDGAR) 공시 정보가 표시됩니다."
+                            : "한국 주식의 경우 DART 공시 정보가 표시됩니다."}
                     </p>
                 </div>
             )}

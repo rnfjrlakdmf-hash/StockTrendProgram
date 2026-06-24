@@ -1477,14 +1477,14 @@ function DiscoveryContent() {
                                                                     >
                                                                         <span>⚠️ 오버행/타법인</span> <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
                                                                     </button>
-                                                                    <button
-                                                                        className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
-                                                                        onClick={() => setActiveTab('disclosure')}
-                                                                    >
-                                                                        <span>공시(DART)</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
-                                                                    </button>
                                                                 </>
                                                             )}
+                                                            <button
+                                                                className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                                onClick={() => setActiveTab('disclosure')}
+                                                            >
+                                                                <span>공시({isGlobal ? 'SEC' : 'DART'})</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
+                                                            </button>
                                                         </>
                                                     );
                                                 })()}

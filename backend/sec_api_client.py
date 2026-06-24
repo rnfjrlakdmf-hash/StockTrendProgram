@@ -3,7 +3,8 @@ import time
 import json
 import requests
 import re
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
+from datetime import datetime
 
 # CIK 캐시 파일 경로
 CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sec_tickers_cache.json")
@@ -89,8 +90,6 @@ def fetch_company_facts(cik_10_digits: str) -> Optional[Dict[str, Any]]:
     """
     url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_10_digits}.json"
     try:
-        # SEC Rate Limit(초당 10회) 규정을 지키기 위해 필요시 대기할 수 있으나,
-        # 웹 요청 단절 방지를 위해 cache 및 timeout(10초) 구성
         res = requests.get(url, headers=HEADERS, timeout=10)
         if res.status_code == 200:
             return res.json()
@@ -99,3 +98,52 @@ def fetch_company_facts(cik_10_digits: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"[SEC-Client] Network error requesting SEC Facts CIK {cik_10_digits}: {e}")
     return None
+
+
+def fetch_recent_filings(cik_10_digits: str, limit: int = 15) -> List[Dict[str, Any]]:
+    """
+    SEC EDGAR Submissions API를 호출하여 최근 공시(Filing) 목록을 DART 형식과 유사하게 반환합니다.
+    """
+    url = f"https://data.sec.gov/submissions/CIK{cik_10_digits}.json"
+    disclosures = []
+    
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            company_name = data.get("name", "Unknown SEC Company")
+            recent = data.get("filings", {}).get("recent", {})
+            
+            acc_nums = recent.get("accessionNumber", [])
+            dates = recent.get("filingDate", [])
+            forms = recent.get("form", [])
+            
+            count = min(limit, len(acc_nums))
+            for i in range(count):
+                acc_num = acc_nums[i]
+                acc_no_dashes = acc_num.replace("-", "")
+                cik_int = str(int(cik_10_digits)) # 선행 0 제거
+                
+                # SEC 원문 링크 (인덱스 페이지가 가장 안정적임)
+                link = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{acc_num}-index.htm"
+                
+                form_type = forms[i]
+                
+                # 날짜 포맷 (YYYY-MM-DD -> YYYY.MM.DD)
+                raw_date = dates[i]
+                formatted_date = raw_date.replace("-", ".") if raw_date else ""
+                
+                disclosures.append({
+                    "id": acc_num,
+                    "title": f"[{form_type}] SEC Filing",
+                    "link": link,
+                    "submitter": company_name,
+                    "date": formatted_date,
+                    "type": "SEC"
+                })
+        else:
+            print(f"[SEC-Client] SEC Submissions API response error. Status: {res.status_code} for CIK: {cik_10_digits}")
+    except Exception as e:
+        print(f"[SEC-Client] Network error requesting SEC Submissions CIK {cik_10_digits}: {e}")
+        
+    return disclosures
