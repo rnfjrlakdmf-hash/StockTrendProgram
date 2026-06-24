@@ -497,7 +497,7 @@ async def check_and_notify_ipos():
                     noti_body = f"💰 희망가 {band}원 📅 청약일 {schedule} 🏢 주관사 {underwriter}"
                     data_payload = {
                         "type": "IPO_ALERT",
-                        "url": "/market"
+                        "url": "/discovery"
                     }
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
                     await asyncio.sleep(1)
