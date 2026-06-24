@@ -1,5 +1,4 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import { Clock, ArrowLeft, Share2, UserCheck, Eye } from "lucide-react";
 import { Metadata } from "next";
@@ -9,48 +8,36 @@ import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
-export const revalidate = 60; // 60초마다 갱신 (ISR)
-
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+export const revalidate = 60; // 60초마다 갱신 (ISR) - 백엔드 배포 후 캐시 무효화를 위한 재배포 트리거
 
 async function getBlogPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
         
-        let snapshot: any = null;
+        // 백엔드 API를 통해 블로그 포스트 상세 데이터를 가져옴 (서버사이드 Firestore 연결 문제 방지)
+        const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts/${encodeURIComponent(decodedSlug)}`;
+        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
         
-        // 1. 먼저 slug 필드로 검색
-        const q = query(collection(db, "blog_posts"), where("slug", "==", decodedSlug), limit(1));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-            snapshot = querySnapshot.docs[0];
-        } else {
-            // 2. slug 필드가 없으면 문서 ID로 검색 (기존 방식 폴백)
-            const docRef = doc(db, "blog_posts", decodedSlug);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                snapshot = docSnap;
-            }
-        }
-        
-        if (!snapshot) {
-            const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
-            if (staticPost) return staticPost;
+        if (!res.ok) {
+            console.error(`API error: ${res.status}`);
             return null;
         }
+        
+        const data = await res.json();
+        
+        if (data.status === "ok" && data.post) {
+            // 날짜 문자열을 Date 객체로 변환
+            const post = data.post;
+            post.createdAt = new Date(post.createdAt);
+            return post;
+        }
+        
+        // API에서 못 찾으면 정적 포스트에서 다시 검색
+        const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
+        if (staticPost) return staticPost;
+        
+        return null;
 
-        const data = snapshot.data();
-        return {
-            id: snapshot.id,
-            title: data.title || "제목 없음",
-            content: data.content || "",
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-            tags: data.tags || [],
-            author: data.author || "관리자",
-            slug: data.slug || snapshot.id,
-            viewCount: data.viewCount || 0
-        };
     } catch (error) {
         console.error("블로그 포스트 상세 로딩 에러:", error);
         return null;
