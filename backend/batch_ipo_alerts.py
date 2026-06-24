@@ -119,41 +119,44 @@ def send_ipo_alerts():
     # 발송 큐 (token -> (title, body))
     # 여러 종목이 겹칠 수 있으므로 토큰별로 메시지 조합
     token_messages = {}
+    user_messages = {} # uid -> (title, body)
 
     for uid, tokens in user_tokens.items():
         user_wl = user_watchlists.get(uid, set())
         
         # 유저가 받아야 할 알림들 필터링
         user_alerts = []
+        # 디바이스 중 하나라도 전체 알림이 켜져있으면 전체 발송
+        has_full_pref = any(t.get("pref_ipo") == 1 for t in tokens)
+        
         for ipo, status in alerts:
             name = ipo.get("name")
-            # 전체 공모주 알림 켜져있거나, 개별 관심종목에 등록된 경우
-            should_notify = False
-            
-            # pref_ipo가 1인 디바이스가 하나라도 있으면 전체 알림 허용으로 간주 (단순화)
-            # 엄밀히는 디바이스별로 설정이지만, 보통 기기 연동이므로 디바이스별로 처리하는게 맞음
-            # 여기서는 토큰별로 처리
-            pass
-            
-        for t_info in tokens:
-            token = t_info["token"]
-            pref_ipo = t_info["pref_ipo"]
-            
-            device_alerts = []
-            for ipo, status in alerts:
-                name = ipo.get("name")
-                if pref_ipo == 1 or name in user_wl:
-                    device_alerts.append(f"[{status}] {name}")
-                    
-            if device_alerts:
-                title = "📣 공모주 청약 알림"
-                if len(device_alerts) == 1:
-                    body = device_alerts[0]
-                else:
-                    body = f"{device_alerts[0]} 외 {len(device_alerts)-1}건"
+            if has_full_pref or name in user_wl:
+                user_alerts.append(f"[{status}] {name}")
                 
+        if user_alerts:
+            title = "📣 공모주 청약 알림"
+            body = user_alerts[0] if len(user_alerts) == 1 else f"{user_alerts[0]} 외 {len(user_alerts)-1}건"
+            user_messages[uid] = (title, body)
+            
+            for t_info in tokens:
+                token = t_info["token"]
                 if title not in token_messages:
                     token_messages[(token, title, body)] = 1
+
+    # DB 저장 (알림센터 누적)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        for uid, (title, body) in user_messages.items():
+            cursor.execute("""
+                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                VALUES (?, 'IPO', 'market', ?, 0, 0, 0)
+            """, (uid, f"{title}\n{body}"))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[IPO-Alerts] Failed to save to DB: {e}")
 
     # 발송
     for (token, title, body) in token_messages.keys():

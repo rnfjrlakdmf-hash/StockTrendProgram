@@ -170,7 +170,19 @@ class MorningBriefingService:
             target_users=[user_id]
         )
         
-        print(f"[MorningBriefing] Sent split briefing (pro/con) for {stock_name} to {user_id}")
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                VALUES (?, ?, 'market', ?, 0, 0, 0)
+            """, (user_id, stock_name, f"{title}\n{body}"))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[MorningBriefing] Failed to save alert to DB: {e}")
+            
+        print(f"[MorningBriefing] Sent briefing for {stock_name} to {user_id}")
 
     async def fetch_latest_news(self, symbol: str, stock_name: str) -> List[str]:
         """최신 뉴스 헤드라인 수집"""
