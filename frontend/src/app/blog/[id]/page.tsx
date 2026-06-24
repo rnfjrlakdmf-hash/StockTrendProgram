@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
+import KakaoAdFit from "@/components/KakaoAdFit";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR) - 백엔드 배포 후 캐시 무효화를 위한 재배포 트리거
@@ -154,9 +155,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 dangerouslySetInnerHTML={{ __html: post.content }}
             />
             
+            {/* 본문 중간 광고 (상단) */}
+            <div className="w-full flex justify-center my-8">
+                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
+            </div>
+
             {/* 푸시 알림 구독 버튼 (본문 끝난 후) */}
             <div className="mt-16 mb-8">
                 <PushSubscribeButton />
+            </div>
+
+            {/* 본문 하단 광고 */}
+            <div className="w-full flex justify-center mb-12">
+                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
             </div>
             
             {/* Global Styles specific to Blog Content */}

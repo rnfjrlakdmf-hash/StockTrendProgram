@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Clock, TrendingUp, ChevronRight, Eye } from "lucide-react";
 import { Metadata } from "next";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+import KakaoAdFit from "@/components/KakaoAdFit";
 
 export const metadata: Metadata = {
     title: "전문가 마켓 리포트 | StockTrendProgram",
@@ -70,42 +71,51 @@ export default async function BlogListPage(props: Props) {
                         <p className="text-gray-400">아직 작성된 리포트가 없습니다.</p>
                     </div>
                 ) : (
-                    posts.map((post) => (
-                        <Link href={`/blog/${post.slug}`} key={post.id} className="block group">
-                            <article className="bg-black/40 border border-white/10 hover:border-blue-500/50 rounded-3xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 relative overflow-hidden flex flex-col md:flex-row gap-6 md:items-center">
-                                {/* Glow Effect on Hover */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/0 group-hover:bg-blue-500/10 blur-3xl transition-colors duration-500 rounded-full" />
-                                
-                                <div className="flex-1 min-w-0 z-10">
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {post.tags.map((tag: string, idx: number) => (
-                                            <span key={idx} className="text-[10px] md:text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">
-                                                #{tag}
-                                            </span>
-                                        ))}
+                    posts.map((post, index) => (
+                        <div key={post.id}>
+                            <Link href={`/blog/${post.slug}`} className="block group">
+                                <article className="bg-black/40 border border-white/10 hover:border-blue-500/50 rounded-3xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 relative overflow-hidden flex flex-col md:flex-row gap-6 md:items-center">
+                                    {/* Glow Effect on Hover */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/0 group-hover:bg-blue-500/10 blur-3xl transition-colors duration-500 rounded-full" />
+                                    
+                                    <div className="flex-1 min-w-0 z-10">
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {post.tags.map((tag: string, idx: number) => (
+                                                <span key={idx} className="text-[10px] md:text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">
+                                                    #{tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <h2 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-300 transition-colors mb-3 line-clamp-2">
+                                            {post.title}
+                                        </h2>
+                                        <p className="text-gray-400 text-sm line-clamp-2 mb-4">
+                                            {post.content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim().slice(0, 150)}...
+                                        </p>
+                                        <div className="flex items-center text-xs text-gray-500 font-medium">
+                                            <Clock className="w-3.5 h-3.5 mr-1" />
+                                            {new Date(post.createdAt).toLocaleDateString('ko-KR', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            })}
+                                            <Eye className="w-3.5 h-3.5 ml-4 mr-1 text-gray-500" />
+                                            <span>{post.viewCount} 읽음</span>
+                                        </div>
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-300 transition-colors mb-3 line-clamp-2">
-                                        {post.title}
-                                    </h2>
-                                    <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                                        {post.content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim().slice(0, 150)}...
-                                    </p>
-                                    <div className="flex items-center text-xs text-gray-500 font-medium">
-                                        <Clock className="w-3.5 h-3.5 mr-1" />
-                                        {new Date(post.createdAt).toLocaleDateString('ko-KR', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        })}
-                                        <Eye className="w-3.5 h-3.5 ml-4 mr-1 text-gray-500" />
-                                        <span>{post.viewCount}</span>
+                                    <div className="flex items-center gap-2 text-blue-400 font-bold whitespace-nowrap z-10 bg-blue-500/10 px-4 py-2 rounded-xl group-hover:bg-blue-500/20 transition-colors self-start md:self-auto">
+                                        리포트 읽기
+                                        <ChevronRight className="w-4 h-4" />
                                     </div>
+                                </article>
+                            </Link>
+                            {/* 첫 번째 게시글 아래에 광고 삽입 */}
+                            {index === 0 && (
+                                <div className="w-full flex justify-center mt-6">
+                                    <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
                                 </div>
-                                <div className="hidden md:flex shrink-0 items-center justify-center w-12 h-12 rounded-full bg-white/5 group-hover:bg-blue-600 transition-colors z-10">
-                                    <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white transition-colors" />
-                                </div>
-                            </article>
-                        </Link>
+                            )}
+                        </div>
                     ))
                 )}
             </div>
