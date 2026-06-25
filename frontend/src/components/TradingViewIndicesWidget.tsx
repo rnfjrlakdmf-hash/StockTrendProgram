@@ -29,7 +29,7 @@ export default function TradingViewIndicesWidget() {
                     "showSymbolLogo": true,
                     "showFloatingTooltip": false,
                     "width": "100%",
-                    "height": "550",
+                    "height": "400",
                     "tabs": [
                         {
                             "title": "글로벌 지수",
@@ -37,11 +37,7 @@ export default function TradingViewIndicesWidget() {
                                 { "s": "FOREXCOM:SPXUSD", "d": "S&P 500" },
                                 { "s": "FOREXCOM:NSXUSD", "d": "나스닥 100" },
                                 { "s": "FOREXCOM:DJI", "d": "다우 존스 30" },
-                                { "s": "INDEX:RUT", "d": "러셀 2000" },
-                                { "s": "TVC:VIX", "d": "변동성 지수 (VIX)" },
                                 { "s": "INDEX:NKY", "d": "닛케이 225 (일본)" },
-                                { "s": "AMEX:EWY", "d": "한국 KOSPI (EWY)" },
-                                { "s": "AMEX:MCHI", "d": "중국 시장 (MCHI)" },
                                 { "s": "INDEX:DEU40", "d": "독일 DAX" }
                             ]
                         }
@@ -67,7 +63,7 @@ export default function TradingViewIndicesWidget() {
                     LIVE CHART
                 </span>
             </div>
-            <div className="p-0 bg-black/10 w-full" style={{ height: '550px' }}>
+            <div className="p-0 bg-black/10 w-full" style={{ height: '400px' }}>
                 <iframe
                     srcDoc={iframeHtml}
                     style={{ width: '100%', height: '100%', border: 'none' }}

@@ -221,7 +221,6 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 {renderCard("에너지/금속", <Droplet className="w-4 h-4 text-orange-400" />, commodity, displayLimit, () => openModal("원자재 (에너지/금속)", commodity, <Droplet className="text-orange-400" />))}
                 {renderCard("국가 채권", <BarChart3 className="w-4 h-4 text-purple-400" />, bonds, displayLimit, () => openModal("주요국 국채 10년물", bonds, <BarChart3 className="text-purple-400" />))}
                 {renderCard("기준 금리", <DollarSign className="w-4 h-4 text-red-400" />, interest, displayLimit, () => openModal("전세계 기준 금리", interest, <DollarSign className="text-red-400" />))}
-                {renderCard("암호화폐", <svg className="w-4 h-4 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11.75 2v20M5 18h14M5 6h14M8 21.5V18M16 21.5V18M8 6V2.5M16 6V2.5" /></svg>, crypto, displayLimit, () => openModal("암호화폐 랭킹", crypto, "₿"))}
             </div>
 
             {/* Modal for All Data */}
