@@ -235,6 +235,9 @@ export default function Home() {
               <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
 
+            {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
+            <WeekendCryptoDashboard />
+
             {/* 3. 주말 한정 특별 콘텐츠 */}
             {(() => {
               const day = new Date().getDay();
@@ -246,9 +249,6 @@ export default function Home() {
               
               return (
                 <div className="space-y-6">
-                  {/* 코인 핫트렌드 대시보드 */}
-                  <WeekendCryptoDashboard />
-
                   {/* 주말 특별 배너 2단 그리드 */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/40 to-pink-900/20 p-6">
