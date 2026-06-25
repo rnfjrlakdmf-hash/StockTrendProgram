@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BarChart3, DollarSign, RefreshCw, Droplet, Maximize2, X, Loader2, TrendingUp, Activity } from 'lucide-react';
+import { BarChart3, DollarSign, RefreshCw, Droplet, Maximize2, X, Loader2, TrendingUp, Activity, Globe } from 'lucide-react';
 import { API_BASE_URL } from "@/lib/config";
 import CleanStockList, { CleanStockItem as OriginalCleanStockItem } from './CleanStockList';
-import TradingViewIndicesWidget from './TradingViewIndicesWidget';
 
 // [Fix] Extend interface to include 'unit' which is missing in the original definition
 interface CleanStockItem extends OriginalCleanStockItem {
@@ -216,7 +215,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <TradingViewIndicesWidget />
+                {renderCard("글로벌 지수", <Globe className="w-4 h-4 text-blue-400" />, indices, displayLimit, () => openModal("글로벌 주요 지수", indices, <Globe className="text-blue-400" />))}
                 {renderCard("주요 환율", <RefreshCw className="w-4 h-4 text-green-400" />, forex, displayLimit, () => openModal("주요 환율", forex, <RefreshCw className="text-green-400" />))}
                 {renderCard("에너지/금속", <Droplet className="w-4 h-4 text-orange-400" />, commodity, displayLimit, () => openModal("원자재 (에너지/금속)", commodity, <Droplet className="text-orange-400" />))}
                 {renderCard("국가 채권", <BarChart3 className="w-4 h-4 text-purple-400" />, bonds, displayLimit, () => openModal("주요국 국채 10년물", bonds, <BarChart3 className="text-purple-400" />))}
