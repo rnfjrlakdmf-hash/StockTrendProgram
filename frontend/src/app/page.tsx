@@ -243,8 +243,11 @@ export default function Home() {
               
               {/* 좌측 메인 콘텐츠 영역 */}
               <div className="lg:col-span-2 flex flex-col gap-8">
-                <LiveRankingBox />
-                <PopularSearchWidget />
+                {/* 두 위젯을 나란히 배치 (PC에서는 2단, 모바일에서는 1단) */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <LiveRankingBox />
+                  <PopularSearchWidget />
+                </div>
                 
                 {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 (흐름 방해 X) */}
                 <div className="flex lg:hidden justify-center my-2">
