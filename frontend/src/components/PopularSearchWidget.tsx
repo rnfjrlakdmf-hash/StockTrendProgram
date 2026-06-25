@@ -66,23 +66,23 @@ export default function PopularSearchWidget() {
           <Link 
             href={item.symbol ? `/stock/${item.symbol}` : "#"} 
             key={idx}
-            className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+            className="flex items-center justify-between p-2 md:p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
           >
-            <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
-              <span className={`text-lg font-black w-6 shrink-0 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className={`text-base md:text-lg font-black w-5 md:w-6 shrink-0 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
                 {idx + 1}
               </span>
-              <span className="text-white font-bold text-base hover:text-red-300 transition-colors truncate">
+              <span className="text-white font-bold text-[13px] md:text-sm hover:text-red-300 transition-colors whitespace-nowrap tracking-tighter overflow-visible">
                 {item.name}
               </span>
             </div>
             
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-gray-400 text-xs md:text-sm tabular-nums tracking-tight">{Number(item.price).toLocaleString()}원</span>
-              <div className={`flex items-center gap-0.5 text-sm font-bold w-16 justify-end ${
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-gray-400 text-[11px] md:text-xs tabular-nums tracking-tighter">{Number(item.price).toLocaleString()}원</span>
+              <div className={`flex items-center gap-0.5 text-xs md:text-sm font-bold w-12 md:w-14 justify-end tabular-nums tracking-tighter ${
                 item.change_percent > 0 ? "text-red-400" : item.change_percent < 0 ? "text-blue-400" : "text-gray-400"
               }`}>
-                {item.change_percent > 0 ? <ChevronUp className="w-4 h-4" /> : item.change_percent < 0 ? <ChevronDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                {item.change_percent > 0 ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4" /> : item.change_percent < 0 ? <ChevronDown className="w-3 h-3 md:w-4 md:h-4" /> : <Minus className="w-3 h-3 md:w-4 md:h-4" />}
                 {Math.abs(item.change_percent)}%
               </div>
             </div>
