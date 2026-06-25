@@ -216,7 +216,9 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <TradingViewIndicesWidget />
+                <div className="md:col-span-2 lg:col-span-2 flex flex-col">
+                    <TradingViewIndicesWidget />
+                </div>
                 {renderCard("주요 환율", <RefreshCw className="w-4 h-4 text-green-400" />, forex, displayLimit, () => openModal("주요 환율", forex, <RefreshCw className="text-green-400" />))}
                 {renderCard("에너지/금속", <Droplet className="w-4 h-4 text-orange-400" />, commodity, displayLimit, () => openModal("원자재 (에너지/금속)", commodity, <Droplet className="text-orange-400" />))}
                 {renderCard("국가 채권", <BarChart3 className="w-4 h-4 text-purple-400" />, bonds, displayLimit, () => openModal("주요국 국채 10년물", bonds, <BarChart3 className="text-purple-400" />))}

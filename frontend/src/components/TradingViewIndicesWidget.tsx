@@ -29,7 +29,7 @@ export default function TradingViewIndicesWidget() {
                     "showSymbolLogo": true,
                     "showFloatingTooltip": false,
                     "width": "100%",
-                    "height": "400",
+                    "height": "100%",
                     "tabs": [
                         {
                             "title": "글로벌 지수",
@@ -50,7 +50,7 @@ export default function TradingViewIndicesWidget() {
     `;
 
     return (
-        <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col overflow-hidden transition-all hover:border-white/10 shadow-lg">
+        <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col overflow-hidden transition-all hover:border-white/10 shadow-lg h-full">
             <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
                 <h4 className="text-sm font-bold text-gray-200 flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -63,7 +63,7 @@ export default function TradingViewIndicesWidget() {
                     LIVE CHART
                 </span>
             </div>
-            <div className="p-0 bg-black/10 w-full" style={{ height: '400px' }}>
+            <div className="p-0 bg-black/10 w-full flex-1 min-h-[400px]">
                 <iframe
                     srcDoc={iframeHtml}
                     style={{ width: '100%', height: '100%', border: 'none' }}
