@@ -244,20 +244,22 @@ export default function Home() {
               {/* 좌측 메인 콘텐츠 영역 */}
               <div className="lg:col-span-2 flex flex-col gap-8">
                 <LiveRankingBox />
+                <PopularSearchWidget />
                 
-                {/* 콘텐츠 중간 자연스러운 스퀘어 배너 삽입 */}
-                <div className="flex justify-center my-2">
+                {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 (흐름 방해 X) */}
+                <div className="flex lg:hidden justify-center my-2">
                   <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
                 </div>
-                
-                <PopularSearchWidget />
               </div>
               
               {/* 우측 사이드바 광고 영역 (PC에서만 표시, 스크롤 고정) */}
               <div className="hidden lg:block relative">
-                <div className="sticky top-24 flex justify-center">
+                <div className="sticky top-24 flex flex-col items-center gap-6">
                   {/* 신규 세로형 배너 (320x480) */}
                   <KakaoAdFit adUnit="DAN-XujBk1aMVUSmKh7y" adWidth="320" adHeight="480" />
+                  
+                  {/* 정사각형 배너 (300x250) - 세로 배너 아래에 나란히 배치 */}
+                  <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
                 </div>
               </div>
               
