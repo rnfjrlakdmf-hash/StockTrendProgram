@@ -758,6 +758,7 @@ def run_market_scheduler():
     last_run_weekend_crypto = None
     last_run_crypto_surge = None
     last_run_weekend_report_gen = None
+    last_run_health_check = None
     
     while True:
         try:
@@ -765,6 +766,15 @@ def run_market_scheduler():
             now = datetime.now(kst)
             day_of_week = now.weekday()
             current_date = now.strftime('%Y-%m-%d')
+            
+            # [매일 실행] 자정 ~ 새벽 1시 사이 시스템 헬스체크 (1회 발송)
+            if now.hour == 0 and current_date != last_run_health_check:
+                try:
+                    from system_health_check import run_system_health_check
+                    run_system_health_check()
+                except Exception as e:
+                    print(f"[Scheduler] System health check error: {e}")
+                last_run_health_check = current_date
             
             # [주말 실행] 크립토 실시간 불장 감지 (15분 간격)
             if now.minute % 15 == 0 and is_holiday("kor"):
