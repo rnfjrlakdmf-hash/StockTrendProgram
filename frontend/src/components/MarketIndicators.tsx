@@ -165,14 +165,14 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                                             <span className="text-[12px] font-bold text-gray-300 truncate group-hover:text-white transition-colors">{item.name}</span>
                                             {item.isRealtime && <span className="text-[7px] bg-emerald-500/20 text-emerald-400 px-1 rounded-sm font-black border border-emerald-500/30 animate-pulse">SYNC</span>}
                                         </div>
-                                        <span className="text-[9px] text-gray-500 font-mono truncate opacity-60">{item.symbol}</span>
+                                        <span className="text-[9px] text-gray-500 truncate opacity-60 tracking-wider">{item.symbol}</span>
                                     </div>
                                     <div className="text-right flex flex-col items-end">
-                                        <div className="text-[12px] font-black text-gray-100 font-mono flex flex-col items-end leading-tight">
+                                        <div className="text-[13px] font-black text-gray-100 tabular-nums tracking-tight flex flex-col items-end leading-tight">
                                             <span>{mainPrice}</span>
-                                            {subPrice && <span className="text-[9px] text-orange-400/80 font-bold tracking-tighter mt-0.5">{subPrice}</span>}
+                                            {subPrice && <span className="text-[10px] text-orange-400/80 font-bold tracking-tighter mt-0.5">{subPrice}</span>}
                                         </div>
-                                        <div className={`text-[10px] font-bold font-mono mt-0.5 ${isZero ? 'text-gray-500' : isUp ? 'text-[#f23c3c]' : isDown ? 'text-[#3c78f2]' : 'text-gray-500'}`}>
+                                        <div className={`text-[11px] font-bold tabular-nums tracking-tight mt-0.5 ${isZero ? 'text-gray-500' : isUp ? 'text-[#f23c3c]' : isDown ? 'text-[#3c78f2]' : 'text-gray-500'}`}>
                                             {item.change}
                                         </div>
                                     </div>
