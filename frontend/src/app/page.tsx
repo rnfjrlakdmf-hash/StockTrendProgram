@@ -223,6 +223,9 @@ export default function Home() {
               <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
             </div>
 
+            {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
+            <WeekendCryptoDashboard />
+
             {/* 2. 중단: 위젯 2단 분리 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <LiveRankingBox />
@@ -233,9 +236,6 @@ export default function Home() {
             <div className="flex justify-center my-6">
               <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
-
-            {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
-            <WeekendCryptoDashboard />
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
             {(() => {
