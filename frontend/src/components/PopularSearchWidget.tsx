@@ -68,17 +68,17 @@ export default function PopularSearchWidget() {
             key={idx}
             className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
           >
-            <div className="flex items-center gap-4">
-              <span className={`text-lg font-black w-6 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
+            <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+              <span className={`text-lg font-black w-6 shrink-0 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
                 {idx + 1}
               </span>
-              <span className="text-white font-bold text-base hover:text-red-300 transition-colors">
+              <span className="text-white font-bold text-base hover:text-red-300 transition-colors truncate">
                 {item.name}
               </span>
             </div>
             
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400 text-sm">{Number(item.price).toLocaleString()}원</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-gray-400 text-xs md:text-sm tabular-nums tracking-tight">{Number(item.price).toLocaleString()}원</span>
               <div className={`flex items-center gap-0.5 text-sm font-bold w-16 justify-end ${
                 item.change_percent > 0 ? "text-red-400" : item.change_percent < 0 ? "text-blue-400" : "text-gray-400"
               }`}>
