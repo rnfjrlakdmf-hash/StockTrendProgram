@@ -11,6 +11,7 @@ import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
 import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import MarketNewsWidget from "@/components/MarketNewsWidget";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -251,40 +252,49 @@ export default function Home() {
                   {/* 주말 특별 배너 2단 그리드 */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/40 to-pink-900/20 p-6">
-                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-700">
-                        <CalendarClock className="w-16 h-16 text-indigo-400" />
-                      </div>
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-2">
-                           <span className="text-pink-400 font-bold text-xs tracking-wider">WEEKLY SCHEDULE</span>
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500" />
+                      <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                          <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-200 text-xs font-bold mb-3">WEEKEND LIVE</span>
+                          <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                            <CalendarClock className="w-5 h-5" /> 다음 주 글로벌 경제 일정
+                          </h3>
+                          <p className="text-sm text-indigo-200 line-clamp-2">미국 FOMC, CPI 발표 등 증시 방향성을 결정지을 핵심 일정과 시간표를 미리 체크하세요.</p>
                         </div>
-                        <h2 className="text-xl md:text-2xl font-black text-white mb-1">
-                          다음 주 증시 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">핵심 일정</span>
-                        </h2>
-                        <p className="text-gray-400 text-sm">AI 수혜 테마 미리 파악하기</p>
+                        <div className="mt-4 flex items-center text-indigo-300 text-sm font-semibold group-hover:text-white transition-colors">
+                          일정표 확인하기 <ChevronRight className="w-4 h-4 ml-1" />
+                        </div>
                       </div>
                     </Link>
 
-                    <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-br from-blue-900/40 to-purple-900/20 p-6">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-700">
-                        <Layers className="w-16 h-16 text-blue-400" />
-                      </div>
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-2">
-                           <span className="text-red-400 font-bold text-xs tracking-wider">WEEKEND SPECIAL</span>
+                    <Link href="/weekend-report" className="block relative overflow-hidden group rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/40 to-teal-900/20 p-6">
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500" />
+                      <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                          <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-bold mb-3 flex items-center gap-1 w-max">
+                            <Lock className="w-3 h-3" /> PRO ONLY
+                          </span>
+                          <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                            <Newspaper className="w-5 h-5" /> 이번 주 증시 요약 리포트
+                          </h3>
+                          <p className="text-sm text-emerald-200 line-clamp-2">한 주간의 코스피/코스닥 흐름과 외국인, 기관의 수급 동향을 AI가 완벽하게 요약했습니다.</p>
                         </div>
-                        <h2 className="text-xl md:text-2xl font-black text-white mb-1">
-                          세력/외인 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">매집 TOP 3</span>
-                        </h2>
-                        <p className="text-gray-400 text-sm">주말 한정판 수급 리포트</p>
+                        <div className="mt-4 flex items-center text-emerald-300 text-sm font-semibold group-hover:text-white transition-colors">
+                          리포트 읽기 <ChevronRight className="w-4 h-4 ml-1" />
+                        </div>
                       </div>
                     </Link>
                   </div>
                 </div>
               );
             })()}
+
+            {/* 네이버 TOP 종목 위젯 */}
+            <NaverTopWidget />
+
+            {/* 시장 최신 뉴스 위젯 */}
+            <MarketNewsWidget />
+
 
             {/* Guide Links for SEO Crawlers & Users */}
             <div className="mt-8">
