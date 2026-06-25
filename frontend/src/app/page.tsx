@@ -227,16 +227,19 @@ export default function Home() {
             {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
             <WeekendCryptoDashboard />
 
-            {/* 2. 중단: 위젯 2단 분리 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LiveRankingBox />
-              <PopularSearchWidget />
-            </div>
-
-            {/* 카카오 애드핏 2단 스퀘어 배너 (PC: 나란히 2개, Mobile: 세로로 2개) */}
-            <div className="flex flex-col md:flex-row justify-center items-center gap-6 my-8">
-              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+            {/* 2. 중단: 위젯 및 사이드바 광고 (우측 세로형 배치) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* 좌측 위젯 영역 (2칸 차지) */}
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <LiveRankingBox />
+                <PopularSearchWidget />
+              </div>
+              
+              {/* 우측 세로형 광고 영역 (1칸 차지, 정사각형 2개 세로 배치) */}
+              <div className="flex flex-col items-center justify-start gap-6">
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+              </div>
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
