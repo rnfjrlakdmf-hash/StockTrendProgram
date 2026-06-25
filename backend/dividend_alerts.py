@@ -2,7 +2,7 @@ import os
 import yfinance as yf
 from datetime import datetime, timedelta, date
 from db_manager import get_db_connection
-from firebase_config import send_push_notification
+from firebase_config import send_multicast_notification
 
 def get_all_stocks_from_watchlist():
     """Retrieve all unique stock tickers from user watchlists."""
@@ -21,17 +21,16 @@ def get_users_watching_stock(symbol: str):
     cursor = conn.cursor()
     # Join watchlist with fcm_tokens to get device tokens
     query = """
-        SELECT f.token 
+        SELECT w.user_id, f.token 
         FROM watchlist w
         JOIN fcm_tokens f ON w.user_id = f.user_id
         WHERE w.symbol = ? AND f.pref_dividend = 1
     """
     cursor.execute(query, (symbol,))
-    tokens = [row[0] for row in cursor.fetchall() if row[0]]
+    rows = cursor.fetchall()
     conn.close()
     
-    # Return unique tokens
-    return list(set(tokens))
+    return rows
 
 def check_and_send_dividend_alerts():
     stocks = get_all_stocks_from_watchlist()
@@ -75,18 +74,31 @@ def check_and_send_dividend_alerts():
                     
                 yield_pct = info.get('dividendYield', 0) * 100
                 
-                tokens = get_users_watching_stock(symbol)
+                user_tokens = get_users_watching_stock(symbol)
                 
-                if tokens:
+                if user_tokens:
                     title = f"💰 내일은 {name} 배당락일입니다"
                     yield_str = f" (작년 배당금 기준 예상 수익률: 약 {yield_pct:.2f}%)" if yield_pct > 0 else ""
                     body = f"내일은 {name}의 배당락일이 예정되어 있습니다.{yield_str}\n(본 정보는 투자 참고용이며 최종 책임은 본인에게 있습니다.)"
-                    url = f"https://stock-trend-program.co.kr/stock/{symbol}"
+                    url = f"/stock/{symbol}"
                     
-                    print(f"[{symbol}] Ex-dividend is tomorrow! Sending to {len(tokens)} devices.")
+                    # 그룹화 (유저 -> 토큰)
+                    from collections import defaultdict
+                    uid_tokens = defaultdict(list)
+                    for uid, token in user_tokens:
+                        if token:
+                            uid_tokens[uid].append(token)
+                            
+                    print(f"[{symbol}] Ex-dividend is tomorrow! Sending to {sum(len(t) for t in uid_tokens.values())} devices.")
                     
-                    for token in tokens:
-                        send_push_notification(token, title, body, url)
+                    for uid, tokens in uid_tokens.items():
+                        send_multicast_notification(
+                            tokens, 
+                            title, 
+                            body, 
+                            {"url": url, "type": "dividend_alert", "is_global": "false"}, 
+                            target_users=[uid]
+                        )
                         
         except Exception as e:
             print(f"Error checking dividend for {symbol}: {e}")

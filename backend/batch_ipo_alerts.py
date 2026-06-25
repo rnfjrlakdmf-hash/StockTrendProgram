@@ -144,7 +144,7 @@ def send_ipo_alerts():
                 if title not in token_messages:
                     token_messages[(token, title, body)] = 1
 
-    # DB 저장 (알림센터 누적)
+    # DB 저장 (알림센터 누적) 및 발송
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -153,16 +153,23 @@ def send_ipo_alerts():
                 INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
                 VALUES (?, 'IPO', 'market', ?, 0, 0, 0)
             """, (uid, f"{title}\n{body}"))
+            
+            # 해당 유저의 토큰 추출
+            u_tokens = [t["token"] for t in user_tokens.get(uid, [])]
+            if u_tokens:
+                send_multicast_notification(
+                    u_tokens, 
+                    title, 
+                    body, 
+                    {"url": "/signals?tab=ipo", "type": "ipo_alert", "is_global": "false"}, 
+                    target_users=[uid]
+                )
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[IPO-Alerts] Failed to save to DB: {e}")
+        print(f"[IPO-Alerts] Failed to save to DB or dispatch: {e}")
 
-    # 발송
-    for (token, title, body) in token_messages.keys():
-        send_multicast_notification([token], title, body, {"url": "/signals?tab=ipo"})
-
-    print(f"[IPO-Alerts] Notification dispatched to {len(token_messages)} devices.")
+    print(f"[IPO-Alerts] Notification dispatched to {len(user_messages)} users.")
 
 if __name__ == "__main__":
     send_ipo_alerts()
