@@ -82,15 +82,20 @@ export default function Home() {
 
       <div className="p-6 space-y-8">
         
-        {/* 상단 통합 배너 영역 (모바일: 띠배너, PC: 가로배너) - 화면 최상단 고정 */}
-        <div className="flex justify-center -mt-2 mb-4">
-          {/* 모바일 전용 320x50 */}
-          <div className="block md:hidden">
-            <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+        {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) */}
+        <div className="flex flex-col xl:flex-row items-center justify-center gap-6 -mt-2 mb-4">
+          {/* 좌측/중앙 배너 (모바일: 320x50, PC: 728x90) */}
+          <div className="flex justify-center">
+            <div className="block md:hidden">
+              <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+            </div>
+            <div className="hidden md:block">
+              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            </div>
           </div>
-          {/* PC 전용 728x90 */}
-          <div className="hidden md:block">
-            <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+          {/* 우측 사각 배너 (PC에서만 상단에 나란히 배치) */}
+          <div className="hidden xl:block">
+            <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
           </div>
         </div>
         
@@ -238,34 +243,15 @@ export default function Home() {
             {/* 코인 핫트렌드 대시보드 (상시 노출) */}
             <WeekendCryptoDashboard />
 
-            {/* 메인 대시보드 레이아웃: 좌측 콘텐츠(2단), 우측 사이드바(1단) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+            {/* 메인 대시보드 레이아웃: 좌측/우측 2단 구성 (사이드바 없음) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+              <LiveRankingBox />
+              <PopularSearchWidget />
               
-              {/* 좌측 메인 콘텐츠 영역 */}
-              <div className="lg:col-span-2 flex flex-col gap-8">
-                {/* 두 위젯을 나란히 배치 (PC에서는 2단, 모바일에서는 1단) */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <LiveRankingBox />
-                  <PopularSearchWidget />
-                </div>
-                
-                {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 (흐름 방해 X) */}
-                <div className="flex lg:hidden justify-center my-2">
-                  <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-                </div>
+              {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
+              <div className="flex lg:hidden justify-center my-2 lg:col-span-2">
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
               </div>
-              
-              {/* 우측 사이드바 광고 영역 (PC에서만 표시, 스크롤 고정) */}
-              <div className="hidden lg:block relative">
-                <div className="sticky top-24 flex flex-col items-center gap-6">
-                  {/* 신규 세로형 배너 (320x480) */}
-                  <KakaoAdFit adUnit="DAN-XujBk1aMVUSmKh7y" adWidth="320" adHeight="480" />
-                  
-                  {/* 정사각형 배너 (300x250) - 세로 배너 아래에 나란히 배치 */}
-                  <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-                </div>
-              </div>
-              
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
