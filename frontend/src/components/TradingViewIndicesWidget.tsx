@@ -68,7 +68,7 @@ export default function TradingViewIndicesWidget() {
                     srcDoc={iframeHtml}
                     style={{ width: '100%', height: '100%', border: 'none' }}
                     title="TradingView Global Indices"
-                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
                 />
             </div>
         </div>
