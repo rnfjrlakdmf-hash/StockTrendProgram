@@ -570,6 +570,27 @@ export default function AdminPage() {
                              </div>
                           </div>
                      </div>
+                     
+                     {/* Kakao AdFit Shortcut Card */}
+                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-400/20 flex flex-col justify-between">
+                          <div>
+                             <DollarSign className="w-10 h-10 text-yellow-500 mb-6" />
+                             <h3 className="text-xl font-bold text-white mb-2">카카오 애드핏 (수익 확인)</h3>
+                             <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                                 매일 들어오는 카카오 애드핏 광고 수익과 클릭률(CTR), 노출수 등의 트래픽 지표를 실시간으로 확인합니다.
+                             </p>
+                             
+                             <div className="space-y-4 pt-4 border-t border-yellow-500/10 mt-auto">
+                                 <button
+                                     onClick={() => window.open('https://adfit.kakao.com/', '_blank')}
+                                     className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-white font-bold tracking-wide py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-yellow-500/20 active:scale-95 text-sm"
+                                 >
+                                     <ExternalLink className="w-5 h-5" />
+                                     수익 확인하러 가기
+                                 </button>
+                             </div>
+                          </div>
+                     </div>
 
                      {/* System Logs Dashboard Shortcut Card */}
                      <div className="p-8 rounded-[2rem] bg-gradient-to-br from-fuchsia-600/10 to-transparent border border-fuchsia-500/20 flex flex-col justify-between">
