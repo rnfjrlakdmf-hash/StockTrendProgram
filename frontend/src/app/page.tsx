@@ -11,7 +11,7 @@ import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
 import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
 import KakaoAdFit from "@/components/KakaoAdFit";
-import MarketNewsWidget from "@/components/MarketNewsWidget";
+import MorningBriefWidget from "@/components/MorningBriefWidget";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -289,11 +289,8 @@ export default function Home() {
               );
             })()}
 
-            {/* 네이버 TOP 종목 위젯 */}
-            <NaverTopWidget />
-
-            {/* 시장 최신 뉴스 위젯 */}
-            <MarketNewsWidget />
+            {/* AI 증시 요약 브리핑 (안전한 자체 생성 콘텐츠) */}
+            <MorningBriefWidget />
 
 
             {/* Guide Links for SEO Crawlers & Users */}
