@@ -10,6 +10,7 @@ export default function TradingViewIndicesWidget() {
         <html>
         <head>
             <meta charset="utf-8" />
+            <base target="_blank" />
             <style>
                 body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
                 .tradingview-widget-container { width: 100%; height: 100%; }
