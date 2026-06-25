@@ -336,9 +336,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 하단 세로 배너 광고 (320x480) */}
+            {/* 하단 통합 배너 광고 (모바일: 320x480 세로형, PC: 728x90 가로형) */}
             <div className="my-8 flex justify-center">
-              <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+              {/* 모바일 전용 대형 배너 */}
+              <div className="block md:hidden">
+                <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+              </div>
+              {/* PC 전용 하단 가로 배너 */}
+              <div className="hidden md:block">
+                <KakaoAdFit adUnit="DAN-kfR4SXJubdA0vEcm" adWidth="728" adHeight="90" />
+              </div>
             </div>
 
             {/* SEO & Content Section for AdSense Crawlers (축소된 Footer 스타일) */}
