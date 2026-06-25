@@ -11,7 +11,8 @@ import LiveRankingBox from "@/components/LiveRankingBox";
 import PopularSearchWidget from "@/components/PopularSearchWidget";
 import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
 import KakaoAdFit from "@/components/KakaoAdFit";
-import MorningBriefWidget from "@/components/MorningBriefWidget";
+import MarketIndicators from "@/components/MarketIndicators";
+import TradingViewIndicesWidget from "@/components/TradingViewIndicesWidget";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight } from "lucide-react";
 
@@ -289,8 +290,11 @@ export default function Home() {
               );
             })()}
 
-            {/* AI 증시 요약 브리핑 (안전한 자체 생성 콘텐츠) */}
-            <MorningBriefWidget />
+            {/* 글로벌 시장 인덱스 및 주요 지표 (안전한 공식/TradingView 데이터) */}
+            <div className="space-y-6">
+              <TradingViewIndicesWidget />
+              <MarketIndicators limit={10} />
+            </div>
 
 
             {/* Guide Links for SEO Crawlers & Users */}
