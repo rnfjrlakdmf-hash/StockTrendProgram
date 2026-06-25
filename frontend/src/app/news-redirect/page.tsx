@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { ExternalLink, ArrowRight, Newspaper, TrendingUp, X, Loader2, Home } from 'lucide-react';
 import Link from 'next/link';
 import AdBanner from '@/components/AdBanner';
+import KakaoAdFit from '@/components/KakaoAdFit';
 
 function NewsRedirectContent() {
     const searchParams = useSearchParams();
@@ -284,7 +285,10 @@ function NewsRedirectContent() {
                 </div>
 
                 {/* 광고 영역 (하단) */}
-                <div className="mt-4">
+                <div className="mt-4 flex flex-col items-center gap-4">
+                    {/* 카카오 애드핏 (320x50) */}
+                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                    {/* 구글 애드센스 */}
                     <AdBanner adSlot="3412955102" adFormat="auto" />
                 </div>
 
