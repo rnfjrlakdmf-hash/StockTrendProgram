@@ -55,8 +55,10 @@ def run_system_health_check():
     else:
         title = "🚨 [STOCK AI] 시스템 헬스체크 오류 발생!"
         body = f"[{today_str}] 시스템 점검 중 다음 오류가 발견되었습니다:\n\n" + "\n".join(errors)
-        
-    print(f"[HealthCheck] {title}")
+    try:
+        print(f"[HealthCheck] {title}".encode('utf-8').decode('cp949', 'ignore'))
+    except:
+        print("[HealthCheck] Finished checking.")
     
     # --- Send Alert to Admins ---
     try:
