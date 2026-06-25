@@ -107,7 +107,7 @@ export default function LiveRankingBox() {
             </div>
 
             {/* List */}
-            <div className="p-2 md:p-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="p-2 md:p-4 grid grid-cols-1 gap-2">
                 {rankings.map((item, idx) => {
                     const isUp = item.change_val > 0 || String(item.change_percent).includes('+');
                     const isDown = item.change_val < 0 || String(item.change_percent).includes('-');

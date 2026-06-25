@@ -61,7 +61,7 @@ export default function PopularSearchWidget() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 relative z-10">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-3 relative z-10">
         {items.map((item, idx) => (
           <Link 
             href={item.symbol ? `/stock/${item.symbol}` : "#"} 
