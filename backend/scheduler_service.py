@@ -944,3 +944,48 @@ def start_scheduler():
     thread = threading.Thread(target=run_market_scheduler, daemon=True)
     thread.start()
     print("[Scheduler] All Intelligence Services Started")
+
+def delete_old_alerts():
+    """3일 지난 알림(Firestore 및 DB) 삭제 (관리자 보고서 포함)"""
+    try:
+        from firebase_config import initialize_firebase, db
+        from db_manager import get_db_connection
+        from datetime import datetime, timedelta
+        import pytz
+        
+        initialize_firebase()
+        
+        kst = pytz.timezone('Asia/Seoul')
+        three_days_ago = datetime.now(kst) - timedelta(days=3)
+        
+        # 1. Delete from Firestore
+        if db:
+            alerts_ref = db.collection('alerts')
+            query = alerts_ref.where('timestamp', '<', three_days_ago).limit(100)
+            
+            deleted_count = 0
+            while True:
+                docs = query.get()
+                if not docs:
+                    break
+                for doc in docs:
+                    doc.reference.delete()
+                    deleted_count += 1
+            if deleted_count > 0:
+                print(f"[Cleanup] Deleted {deleted_count} old alerts from Firestore.")
+            
+        # 2. Delete from SQLite DB
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM alert_history WHERE created_at < ?", (three_days_ago.strftime('%Y-%m-%d %H:%M:%S'),))
+        db_deleted = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        if db_deleted > 0:
+            print(f"[Cleanup] Deleted {db_deleted} old alerts from SQLite DB.")
+            
+    except Exception as e:
+        print(f"[Cleanup] Failed to delete old alerts: {e}")
