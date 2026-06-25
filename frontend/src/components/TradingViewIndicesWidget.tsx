@@ -63,7 +63,7 @@ export default function TradingViewIndicesWidget() {
                     LIVE CHART
                 </span>
             </div>
-            <div className="p-0 bg-black/10 w-full flex-1 min-h-[400px]">
+            <div className="p-0 bg-black/10 w-full flex-1 min-h-[500px]">
                 <iframe
                     srcDoc={iframeHtml}
                     style={{ width: '100%', height: '100%', border: 'none' }}
