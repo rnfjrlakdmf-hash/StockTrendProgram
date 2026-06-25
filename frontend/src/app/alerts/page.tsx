@@ -112,6 +112,8 @@ export default function AlertCenterPage() {
                                 ? 'bg-indigo-500/20 text-indigo-400'
                                 : alert.type === 'ipo_alert'
                                 ? 'bg-pink-500/20 text-pink-400'
+                                : alert.type === 'admin_report'
+                                ? 'bg-red-500/20 text-red-400'
                                 : ['news_alert', 'news_naver', 'news_google'].includes(alert.type)
                                 ? 'bg-blue-500/20 text-blue-400'
                                 : 'bg-emerald-500/20 text-emerald-400'
@@ -120,6 +122,7 @@ export default function AlertCenterPage() {
                              alert.type === 'whale_accumulation' ? '🐳 세력 포착' : 
                              alert.type === 'disclosure_alert' ? '📢 공시' :
                              alert.type === 'ipo_alert' ? '🎯 공모주' :
+                             alert.type === 'admin_report' ? '👑 관리자' :
                              ['news_alert', 'news_naver', 'news_google'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
                         </span>
                         <span className="text-xs text-gray-500 font-medium">
@@ -180,9 +183,27 @@ export default function AlertCenterPage() {
         return <div key={alert.id} className="cursor-pointer">{cardContent}</div>;
     };
 
+    // 관리자 여부 확인
+    const isAdmin = user && ['rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com'].includes((user as any).email?.toLowerCase());
+
+    // 탭 구성
+    const tabs = [
+        { id: "all", label: "전체" },
+        { id: "news", label: "뉴스/공시" },
+        { id: "portfolio", label: "내 관심종목" },
+        { id: "market", label: "시황/테마" }
+    ];
+    if (isAdmin) {
+        tabs.push({ id: "admin", label: "관리자 메뉴" });
+    }
+
     // 카테고리 필터링 적용
     const filteredAlerts = alerts.filter(alert => {
+        // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
+        if (alert.type === 'admin_report' && activeTab !== 'admin' && activeTab !== 'all') return false;
+
         if (activeTab === "all") return true;
+        if (activeTab === "admin") return alert.type === 'admin_report';
         if (activeTab === "news") return ['news_alert', 'news_naver', 'news_google', 'disclosure_alert'].includes(alert.type);
         if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert'].includes(alert.type);
         if (activeTab === "market") return ['market_summary', 'morning_briefing', 'ipo_alert', 'crypto_bull', 'whale_accumulation', 'market'].includes(alert.type);
@@ -210,12 +231,7 @@ export default function AlertCenterPage() {
 
                 {/* 탭 버튼 영역 */}
                 <div className="flex items-center space-x-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
-                    {[
-                        { id: "all", label: "전체" },
-                        { id: "news", label: "뉴스/공시" },
-                        { id: "portfolio", label: "내 관심종목" },
-                        { id: "market", label: "시황/테마" }
-                    ].map(tab => (
+                    {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}

@@ -653,7 +653,7 @@ def send_daily_analytics_report():
     if tokens:
         print(f"[Scheduler] Sending daily report to {len(tokens)} admin device(s)...")
         # 데이터 페이로드에 타겟 유저(Admin UID)와 is_global='false'를 명시하여 일반 사용자에게 노출 방지 (FCM data는 모두 문자열이어야 함)
-        send_multicast_notification(tokens, title, body, {"url": "/", "is_global": "false"}, target_users=admin_uids)
+        send_multicast_notification(tokens, title, body, {"url": "/", "is_global": "false", "type": "admin_report"}, target_users=admin_uids)
         return len(tokens)
     else:
         print("[Scheduler] No admin FCM tokens found in the database. Cannot send daily report.")
