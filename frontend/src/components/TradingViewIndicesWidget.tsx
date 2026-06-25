@@ -1,69 +1,53 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 export default function TradingViewIndicesWidget() {
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!containerRef.current) return;
-
-        // Clean up previous elements to avoid duplicate rendering on hot reload
-        containerRef.current.innerHTML = '';
-
-        // Recreate the required target div for TradingView
-        const widgetDiv = document.createElement("div");
-        widgetDiv.className = "tradingview-widget-container__widget w-full h-full";
-        containerRef.current.appendChild(widgetDiv);
-
-        const script = document.createElement("script");
-        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js";
-        script.type = "text/javascript";
-        script.async = true;
-        
-        const widgetConfig = {
-            "colorTheme": "dark",
-            "dateRange": "12M",
-            "showChart": true,
-            "locale": "ko",
-            "largeChartUrl": "",
-            "isTransparent": true,
-            "showSymbolLogo": true,
-            "showFloatingTooltip": false,
-            "width": "100%",
-            "height": 400,
-            "tabs": [
+    // We use an iframe with srcDoc to completely isolate the TradingView script from React's lifecycle.
+    // This is the most bulletproof way to prevent the blank screen/script injection issues in Next.js.
+    const iframeHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <style>
+                body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+                .tradingview-widget-container { width: 100%; height: 100%; }
+            </style>
+        </head>
+        <body>
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
                 {
-                    "title": "글로벌 지수",
-                    "symbols": [
+                    "colorTheme": "dark",
+                    "dateRange": "12M",
+                    "showChart": true,
+                    "locale": "ko",
+                    "largeChartUrl": "",
+                    "isTransparent": true,
+                    "showSymbolLogo": true,
+                    "showFloatingTooltip": false,
+                    "width": "100%",
+                    "height": "400",
+                    "tabs": [
                         {
-                            "proName": "FOREXCOM:SPXUSD",
-                            "title": "S&P 500"
-                        },
-                        {
-                            "proName": "FOREXCOM:NSXUSD",
-                            "title": "Nasdaq 100"
-                        },
-                        {
-                            "proName": "FOREXCOM:DJI",
-                            "title": "Dow 30"
-                        },
-                        {
-                            "proName": "INDEX:NKY",
-                            "title": "Nikkei 225"
-                        },
-                        {
-                            "proName": "INDEX:DEU40",
-                            "title": "DAX Index"
+                            "title": "글로벌 지수",
+                            "symbols": [
+                                { "s": "FOREXCOM:SPXUSD", "d": "S&P 500" },
+                                { "s": "FOREXCOM:NSXUSD", "d": "Nasdaq 100" },
+                                { "s": "FOREXCOM:DJI", "d": "Dow 30" },
+                                { "s": "INDEX:NKY", "d": "Nikkei 225" },
+                                { "s": "INDEX:DEU40", "d": "DAX Index" }
+                            ]
                         }
                     ]
                 }
-            ]
-        };
-
-        script.innerHTML = JSON.stringify(widgetConfig);
-        containerRef.current.appendChild(script);
-    }, []);
+                </script>
+            </div>
+        </body>
+        </html>
+    `;
 
     return (
         <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col overflow-hidden transition-all hover:border-white/10 shadow-lg">
@@ -80,9 +64,12 @@ export default function TradingViewIndicesWidget() {
                 </span>
             </div>
             <div className="p-0 bg-black/10 w-full" style={{ height: '400px' }}>
-                <div className="tradingview-widget-container w-full h-full" ref={containerRef}>
-                    {/* Script will be injected here */}
-                </div>
+                <iframe
+                    srcDoc={iframeHtml}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    title="TradingView Global Indices"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                />
             </div>
         </div>
     );
