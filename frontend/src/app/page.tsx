@@ -233,14 +233,10 @@ export default function Home() {
               <PopularSearchWidget />
             </div>
 
-            {/* 카카오 애드핏 반응형 배너 (PC: 가로형, Mobile: 정사각형) */}
-            <div className="flex flex-col items-center justify-center my-6">
-              <div className="hidden md:block">
-                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-              </div>
-              <div className="block md:hidden">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-              </div>
+            {/* 카카오 애드핏 2단 스퀘어 배너 (PC: 나란히 2개, Mobile: 세로로 2개) */}
+            <div className="flex flex-col md:flex-row justify-center items-center gap-6 my-8">
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
