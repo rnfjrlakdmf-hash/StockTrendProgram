@@ -219,27 +219,23 @@ export default function Home() {
           <div className="space-y-8 animate-in fade-in duration-1000">
 
 
-            {/* PC 전용 728x90 가로 배너 */}
-            <div className="hidden md:flex justify-center mb-2">
-              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            {/* 상단 배너 영역: 좌측 728x90 가로형, 우측 300x250 정사각형 */}
+            <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-2">
+              <div className="hidden md:block">
+                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+              </div>
+              <div className="hidden lg:block">
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+              </div>
             </div>
 
             {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
             <WeekendCryptoDashboard />
 
-            {/* 2. 중단: 위젯 및 사이드바 광고 (우측 세로형 배치) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 좌측 위젯 영역 (2칸 차지) */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <LiveRankingBox />
-                <PopularSearchWidget />
-              </div>
-              
-              {/* 우측 세로형 광고 영역 (1칸 차지, 정사각형 2개 세로 배치) */}
-              <div className="flex flex-col items-center justify-start gap-6">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-              </div>
+            {/* 2. 중단: 위젯 2단 분리 (좌우 꽉 차게 복구) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <LiveRankingBox />
+              <PopularSearchWidget />
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
