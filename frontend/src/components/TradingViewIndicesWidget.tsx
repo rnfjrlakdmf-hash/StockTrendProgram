@@ -29,7 +29,7 @@ export default function TradingViewIndicesWidget() {
                     "showSymbolLogo": true,
                     "showFloatingTooltip": false,
                     "width": "100%",
-                    "height": "100%",
+                    "height": "500",
                     "tabs": [
                         {
                             "title": "글로벌 지수",
