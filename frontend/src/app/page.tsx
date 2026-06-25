@@ -216,163 +216,128 @@ export default function Home() {
         ) : !loading && !error && (
           // Default Dashboard Content
           <div className="space-y-8 animate-in fade-in duration-1000">
-            
-            {/* [주말 특별 배너] 다음 주 증시 캘린더 유도 (테스트를 위해 상시 노출) */}
+            {/* 1. 상단: 글로벌 시장 현황판 */}
+            <DashboardMarketClock />
+
+            {/* PC 전용 728x90 가로 배너 */}
+            <div className="hidden md:flex justify-center mb-2">
+              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            </div>
+
+            {/* 2. 중단: 위젯 2단 분리 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <LiveRankingBox />
+              <PopularSearchWidget />
+            </div>
+
+            {/* 카카오 애드핏 모바일 배너 */}
+            <div className="flex justify-center my-6">
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+            </div>
+
+            {/* 3. 주말 한정 특별 콘텐츠 */}
             {(() => {
               const day = new Date().getDay();
               const hour = new Date().getHours();
-              // 금요일 18시 이후 ~ 월요일 08시 이전
-              // const isWeekend = (day === 5 && hour >= 18) || day === 6 || day === 0 || (day === 1 && hour < 8);
-              const isWeekend = true; // 대표님 확인용 임시 상시 노출
+              // 금요일 18시 이후 ~ 월요일 08시 이전 (실제 주말 조건 복구)
+              const isWeekend = (day === 5 && hour >= 18) || day === 6 || day === 0 || (day === 1 && hour < 8);
               
               if (!isWeekend) return null;
               
               return (
-                <>
-                  {/* 코인 핫트렌드 대시보드 (주말 한정 최상단) */}
+                <div className="space-y-6">
+                  {/* 코인 핫트렌드 대시보드 */}
                   <WeekendCryptoDashboard />
 
-                  {/* 카카오 애드핏 배너 */}
-                  <div className="mb-4">
-                    <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                  {/* 주말 특별 배너 2단 그리드 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/40 to-pink-900/20 p-6">
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-700">
+                        <CalendarClock className="w-16 h-16 text-indigo-400" />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                           <span className="text-pink-400 font-bold text-xs tracking-wider">WEEKLY SCHEDULE</span>
+                        </div>
+                        <h2 className="text-xl md:text-2xl font-black text-white mb-1">
+                          다음 주 증시 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">핵심 일정</span>
+                        </h2>
+                        <p className="text-gray-400 text-sm">AI 수혜 테마 미리 파악하기</p>
+                      </div>
+                    </Link>
+
+                    <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-br from-blue-900/40 to-purple-900/20 p-6">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-700">
+                        <Layers className="w-16 h-16 text-blue-400" />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                           <span className="text-red-400 font-bold text-xs tracking-wider">WEEKEND SPECIAL</span>
+                        </div>
+                        <h2 className="text-xl md:text-2xl font-black text-white mb-1">
+                          세력/외인 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">매집 TOP 3</span>
+                        </h2>
+                        <p className="text-gray-400 text-sm">주말 한정판 수급 리포트</p>
+                      </div>
+                    </Link>
                   </div>
-
-                  <Link href="/signals?tab=calendar" className="block relative overflow-hidden group rounded-3xl border border-indigo-500/30 bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-pink-900/40 p-1 mb-4">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-700">
-                      <CalendarClock className="w-24 h-24 text-indigo-400" />
-                    </div>
-                    <div className="relative bg-black/40 backdrop-blur-md rounded-[22px] p-6 md:p-8 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                           <span className="animate-pulse flex h-3 w-3 relative">
-                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                             <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
-                           </span>
-                           <span className="text-pink-400 font-bold text-sm tracking-wider">WEEKLY SCHEDULE</span>
-                        </div>
-                        <h2 className="text-2xl md:text-3xl font-black text-white mb-2 leading-tight">
-                          다음 주 증시 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">핵심 일정</span>과<br className="md:hidden" /> <span className="text-yellow-400">AI 수혜 테마</span> 미리 확인하기
-                        </h2>
-                        <p className="text-gray-400 font-medium text-sm md:text-base">어떤 테마가 움직일지 남들보다 먼저 파악하세요.</p>
-                      </div>
-                      <div className="hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-white/10 group-hover:bg-indigo-500/20 transition-colors duration-300">
-                        <ChevronRight className="w-8 h-8 text-white group-hover:text-indigo-400 transition-colors duration-300" />
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link href="/weekend-whale" className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-purple-900/40 p-1 mb-8">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute top-0 right-0 p-6 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-700">
-                      <Layers className="w-24 h-24 text-blue-400" />
-                    </div>
-                    <div className="relative bg-black/40 backdrop-blur-md rounded-[22px] p-6 md:p-8 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                           <span className="animate-pulse flex h-3 w-3 relative">
-                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                           </span>
-                           <span className="text-red-400 font-bold text-sm tracking-wider">WEEKEND SPECIAL</span>
-                        </div>
-                        <h2 className="text-2xl md:text-3xl font-black text-white mb-2 leading-tight">
-                          주말 한정판: 세력/외인 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">매집 TOP 3</span> 리포트
-                        </h2>
-                        <p className="text-gray-400 font-medium text-sm md:text-base">한 주간의 수급 데이터를 분석한 AI 리포트로 월요일 장을 미리 준비하세요.</p>
-                      </div>
-                      <div className="hidden md:flex items-center justify-center w-14 h-14 rounded-full bg-white/10 group-hover:bg-blue-500/20 transition-colors duration-300">
-                        <ChevronRight className="w-8 h-8 text-white group-hover:text-blue-400 transition-colors duration-300" />
-                      </div>
-                    </div>
-                  </Link>
-                </>
+                </div>
               );
             })()}
 
-            {/* [Phase 5] Real-time Trending Search (FOMO Widget) */}
-            <PopularSearchWidget />
-
-            {/* [Phase 3] Live Ranking Dashboard (KRX) */}
-            <LiveRankingBox />
-
-            {/* Real-time World Clock Grid at the top */}
-            {/* PC 전용 728x90 가로 배너 */}
-            <div className="hidden md:flex justify-center mb-6">
-              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-            </div>
-
-            <DashboardMarketClock />
-
-            {/* 카카오 애드핏 배너 */}
-            <div className="mb-4">
-              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-            </div>
-
-            {/* 실시간 종목 랭킹 (Removed for commercial legal safety) */}
-
-            {/* SEO & Content Section for AdSense Crawlers (콘텐츠 부족 문제 해결용 정적 텍스트) */}
-            <div className="mt-12 bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-md">
-              <h1 className="text-2xl md:text-3xl font-black text-white mb-6">StockTrend 전문가: 장 마감 데이터 분석 및 핵심 테마 검색 플랫폼</h1>
-              
-              <div className="space-y-5 text-sm md:text-base text-gray-300 leading-relaxed font-medium">
-                <p>
-                  <strong>StockTrend 전문가 플랫폼</strong>은 급변하는 주식 시장에서 개인 투자자들이 신속하고 정확한 의사결정을 내릴 수 있도록 돕는 <strong>최고 수준의 주식 분석 서비스</strong>입니다. 코스피(KOSPI), 코스닥(KOSDAQ) 등 국내 주식 시장뿐만 아니라 나스닥(NASDAQ), S&P 500을 포함한 글로벌 증시의 주요 지표와 장 마감 가격 변동을 철저히 분석하여, 방대하고 복잡한 금융 데이터를 누구나 쉽게 이해할 수 있는 직관적인 리포트로 변환하여 제공합니다.
-                </p>
-                <p>
-                  본 플랫폼은 실시간 시장 데이터와 뉴스 플로우를 기반으로 현재 주식 시장의 주요 <strong>산업 트렌드와 자금 유입 동향</strong>을 객관적으로 분석합니다. 당사의 시스템은 주관적인 예측을 철저히 배제하고, 각 기업의 최신 공시, 실적 발표, 그리고 공급망 연관성을 바탕으로 시장의 흐름을 요약 브리핑 형태로 제공합니다. 이를 통해 투자자들은 검증되지 않은 루머에 흔들리지 않고, <strong>실제 펀더멘털(Fundamental)과 객관적 데이터</strong>에 기반한 합리적인 투자 판단을 내릴 수 있습니다.
-                </p>
-                <p>
-                  또한, 메인 대시보드에 제공되는 <strong>인기 글로벌 랭킹 위젯</strong>과 <strong>세계 증시 현황판</strong>을 통해 전 세계 금융 시장의 자금 흐름을 한눈에 파악할 수 있습니다. 외국인 및 기관의 순매수 동향, 미국 연방준비제도(Fed)의 금리 정책 변화, 빅테크 기업들의 실적 발표(Earnings Call), 그리고 각종 거시경제 지표 발표 등 글로벌 메가 이벤트가 국내 증시와 내 포트폴리오에 미치는 영향을 수석 전략가의 시각으로 입체적으로 분석하여 브리핑해 드립니다.
-                </p>
-                <p>
-                  뿐만 아니라, 특정 주식 종목을 검색하면 <strong>수급(Supply & Demand), 재무 건전성(Financials), 시장 심리(News Sentiment)</strong>의 3가지 핵심 지표를 종합하여 0점부터 100점까지의 <strong>'투자 매력도 종합 점수'</strong>를 산출해 직관적인 게이지 차트로 보여줍니다. 이를 바탕으로 현재 해당 주식이 과대평가되었는지, 과소평가되었는지를 판단하고 보다 체계적인 투자 전략을 수립할 수 있습니다.
-                </p>
-                <p className="text-gray-500 text-xs mt-8 pt-6 border-t border-white/10">
-                  ※ 안내사항: 본 서비스에서 제공하는 주식 시세, 테마 분석 리포트 및 기반의 모든 투자 정보는 당사의 시스템을 활용해 주기적으로 가공된 정보입니다. 하지만 시스템 및 통신 환경에 따라 실제 시장 데이터와 시간차가 발생할 수 있으며, 제공되는 정보는 오직 투자 참고용으로만 사용되어야 합니다. 주식 거래 및 투자 판단에 대한 최종 책임은 전적으로 투자자 본인에게 있습니다. 건강하고 성공적인 투자를 위해 본 플랫폼을 유용한 보조 지표로 적극 활용해 보세요.
-                </p>
-              </div>
-            </div>
-
             {/* Guide Links for SEO Crawlers & Users */}
-            <div className="mt-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md">
-              <h2 className="text-xl font-bold text-white mb-4">📚 투자 전략 가이드 (추천 칼럼)</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link href="/guide/ai-investing" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
-                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">초보자를 위한 실전 주식 투자 가이드</h3>
-                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">감정을 배제하고 철저한 데이터 기반으로 시장 상황을 판단하는 분석의 원리를 알아봅니다.</p>
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-gray-400 mb-3 ml-2">📚 투자 전략 가이드</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Link href="/guide/ai-investing" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">초보자를 위한 실전 주식 가이드</h3>
                 </Link>
-                <Link href="/guide/supply-chain-analysis" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
-                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">공급망 지도 분석 방법론</h3>
-                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">공급사, 고객사, 경쟁사의 역학 관계가 기업의 주가와 실적에 미치는 나비효과를 파악합니다.</p>
+                <Link href="/guide/supply-chain-analysis" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">공급망 지도 분석 방법론</h3>
                 </Link>
-                <Link href="/guide/risk-management" className="p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-colors group block">
-                  <h3 className="text-cyan-400 font-bold group-hover:text-cyan-300">포트폴리오 변동성 관리와 헷징</h3>
-                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">현대 포트폴리오 이론(MPT)을 바탕으로 리스크를 통제하는 분산 투자법을 안내합니다.</p>
+                <Link href="/guide/risk-management" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">포트폴리오 변동성 관리</h3>
                 </Link>
               </div>
             </div>
 
             {/* 하단 세로 배너 광고 (320x480) */}
-            <div className="mt-8 flex justify-center">
+            <div className="my-8 flex justify-center">
               <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
             </div>
 
-            {/* FAQ Section for SEO */}
-            <div className="mt-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md mb-10">
-              <h2 className="text-xl font-bold text-white mb-6">💡 자주 묻는 질문 (FAQ)</h2>
-              <div className="space-y-6 text-gray-300 text-sm">
+            {/* SEO & Content Section for AdSense Crawlers (축소된 Footer 스타일) */}
+            <div className="mt-12 border-t border-white/10 pt-10 pb-8 text-center px-4">
+              <h1 className="text-lg md:text-xl font-bold text-gray-500 mb-4">StockTrend 전문가: 장 마감 데이터 분석 및 핵심 테마 검색 플랫폼</h1>
+              <div className="max-w-4xl mx-auto space-y-4 text-xs md:text-sm text-gray-600 leading-relaxed">
+                <p>
+                  <strong>StockTrend 전문가 플랫폼</strong>은 코스피, 코스닥 및 글로벌 증시의 주요 지표와 장 마감 가격 변동을 분석하여 직관적인 리포트를 제공합니다.
+                  당사의 시스템은 실시간 시장 데이터와 뉴스 플로우를 기반으로 현재 산업 트렌드와 자금 유입 동향을 객관적으로 분석하며, 주관적인 예측을 철저히 배제합니다.
+                </p>
+                <p>
+                  또한, 수급(Supply & Demand), 재무 건전성(Financials), 시장 심리(News Sentiment)의 3가지 핵심 지표를 종합하여 투자 매력도 점수를 산출합니다.
+                  본 서비스의 모든 정보는 참고용이며, 투자 판단에 대한 최종 책임은 전적으로 투자자 본인에게 있습니다.
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ Section for SEO (간소화) */}
+            <div className="max-w-4xl mx-auto px-4 mb-10 border-t border-white/10 pt-8">
+              <h2 className="text-sm font-bold text-gray-500 mb-4 text-center">💡 자주 묻는 질문 (FAQ)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-gray-600">
                 <div>
-                  <h3 className="font-bold text-blue-400 mb-2">Q. StockTrend의 AI 주식 분석은 어떻게 이루어지나요?</h3>
-                  <p className="leading-relaxed">A. 당사의 AI 시스템은 수십만 건의 재무제표, 증권사 리포트 원문, 뉴스 기사를 자연어처리(NLP) 기술로 분석합니다. 이를 통해 인간이 파악하기 힘든 투자 심리(Sentiment)와 숨겨진 리스크를 감지하여 0~100점의 투자 매력도 점수로 제공합니다.</p>
+                  <h3 className="font-semibold text-gray-500 mb-1">Q. AI 주식 분석 원리?</h3>
+                  <p>재무제표, 증권사 리포트, 뉴스 기사를 자연어처리(NLP)로 분석하여 숨겨진 리스크와 심리를 수치화합니다.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-blue-400 mb-2">Q. 미국 나스닥과 S&P 500 주식도 분석 가능한가요?</h3>
-                  <p className="leading-relaxed">A. 네, 가능합니다. 코스피와 코스닥 등 국내 증시뿐만 아니라, 테슬라, 엔비디아, 마이크로소프트 등 미국 주요 빅테크 종목 및 글로벌 주식들의 실시간 데이터와 실적 분석 리포트를 모두 무료로 확인하실 수 있습니다.</p>
+                  <h3 className="font-semibold text-gray-500 mb-1">Q. 미국 증시 분석?</h3>
+                  <p>나스닥, S&P 500 등 글로벌 주요 빅테크 종목의 실시간 데이터와 실적 분석 리포트를 무료로 제공합니다.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-blue-400 mb-2">Q. 푸시 알림 서비스는 어떻게 신청하나요?</h3>
-                  <p className="leading-relaxed">A. 관심 있는 주식을 검색한 후 별모양 아이콘을 눌러 '관심 종목'으로 등록하면, 해당 기업의 주가가 급변하거나 주요 공시, 분기 실적 발표가 있을 때 스마트폰 브라우저 푸시 알림으로 가장 빠르게 속보를 받아보실 수 있습니다.</p>
+                  <h3 className="font-semibold text-gray-500 mb-1">Q. 푸시 알림 신청?</h3>
+                  <p>관심 종목으로 등록하면 주가 급변이나 분기 실적 발표 시 스마트폰 푸시 알림으로 가장 빠르게 속보를 드립니다.</p>
                 </div>
               </div>
             </div>
