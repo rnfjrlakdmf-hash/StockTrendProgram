@@ -328,7 +328,7 @@ export default function FCMTokenManager() {
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
                             ) : (
-                                <Check className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                                <Bell className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
                             )}
                         </div>
 
