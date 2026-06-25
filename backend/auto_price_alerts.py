@@ -259,8 +259,8 @@ class AutoPriceMonitor:
         # 1. 등락률 계산
         change_pct = ((current - prev_close) / prev_close) * 100
         
-        # [방어 로직] 30% 이상 폭등/폭락은 상하한가를 초과하는 비정상 데이터(액면분할, API 야간 오류 등)로 간주하여 스킵
-        if abs(change_pct) >= 30.0:
+        # [방어 로직] 한국 증시 상/하한가가 30.0%이므로, 30.5% 초과일 때만 비정상 데이터(액면분할 등)로 간주하여 스킵
+        if abs(change_pct) > 30.5:
             print(f"[AutoPriceAlert] Outlier detected for {symbol}: {change_pct:.1f}% -> Skipped")
             return
             
@@ -339,11 +339,13 @@ class AutoPriceMonitor:
                     if status == "OK":
                         ok_users.append(user_id)
                         for t in tokens_data:
-                            all_tokens.append(t['token'])
+                            if t.get('pref_price', True):
+                                all_tokens.append(t['token'])
                     elif status == "LIMIT_REACHED":
                         limit_users.append(user_id)
                         for t in tokens_data:
-                            limit_reached_tokens.append(t['token'])
+                            if t.get('pref_price', True):
+                                limit_reached_tokens.append(t['token'])
                         
             # 정상 발송
             if all_tokens:
