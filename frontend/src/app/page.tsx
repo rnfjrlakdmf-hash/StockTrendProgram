@@ -82,10 +82,12 @@ export default function Home() {
 
       <div className="p-6 space-y-8">
         
-        {/* 상단 띠배너 광고 (320x50) */}
-        <div className="flex justify-center -mt-2 mb-4">
-          <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-        </div>
+        {/* 상단 띠배너 광고 (검색 결과가 있을 때만 노출, 기본 대시보드에서는 아래에 그룹화됨) */}
+        {(stockData || themeResult || aiAnswer || error) && (
+          <div className="flex justify-center -mt-2 mb-4">
+            <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+          </div>
+        )}
         
         {/* Search Loading/Error State */}
         {loading && (
@@ -219,12 +221,18 @@ export default function Home() {
           <div className="space-y-8 animate-in fade-in duration-1000">
 
 
-            {/* 상단 배너 영역: 좌측 728x90 가로형, 우측 300x250 정사각형 */}
-            <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-2">
-              <div className="hidden md:block">
-                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            {/* 상단 배너 영역: 좌측 (320x50, 728x90), 우측 (300x250) 그룹화 */}
+            <div className="flex flex-wrap justify-center items-center gap-8 mb-4">
+              <div className="flex flex-col items-center gap-4">
+                {/* 모바일/PC 공통 띠배너 */}
+                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                {/* PC 전용 가로 배너 */}
+                <div className="hidden md:block">
+                  <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                </div>
               </div>
-              <div className="hidden lg:block">
+              {/* 정사각형 배너 (공간이 부족하면 자동으로 아래로 내려감) */}
+              <div className="block">
                 <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
               </div>
             </div>
