@@ -6,9 +6,10 @@ from datetime import datetime
 import pytz
 
 try:
-    from firebase_config import initialize_firebase, send_topic_push
+    from firebase_config import initialize_firebase, send_multicast_notification
     import firebase_admin
     from firebase_admin import firestore
+    from db_manager import get_all_fcm_tokens
 except ImportError:
     pass
 
@@ -88,7 +89,19 @@ def check_crypto_surge():
                     # Firebase 알림 전송
                     try:
                         initialize_firebase()
-                        send_topic_push("live_alerts", title, body, "/dashboard")
+                        
+                        # DB에서 'pref_whale_alert' 켜둔 사용자들의 토큰 모으기
+                        tokens = get_all_fcm_tokens(require_whale_alert=True)
+                        if tokens:
+                            push_data = {
+                                "type": "crypto_alert",
+                                "symbol": coin_name,
+                                "url": "/dashboard"
+                            }
+                            send_multicast_notification(tokens, title, body, push_data)
+                            print(f"[Crypto] Sent multicast alert to {len(tokens)} tokens.")
+                        else:
+                            print("[Crypto] No tokens subscribed to whale alerts.")
                         
                         # Firestore에 저장하여 OBS 위젯 등에 노출
                         try:

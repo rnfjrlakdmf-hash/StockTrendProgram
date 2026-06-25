@@ -7,7 +7,8 @@ from datetime import datetime
 import pytz
 
 try:
-    from firebase_config import initialize_firebase, send_topic_push, db
+    from firebase_config import initialize_firebase, send_multicast_notification, db
+    from db_manager import get_all_fcm_tokens
 except ImportError:
     pass
 
@@ -84,7 +85,19 @@ def check_whale_alerts():
             
             try:
                 initialize_firebase()
-                send_topic_push("live_alerts", title, body, f"/stock/{top_stock_name}")
+                
+                # DB에서 'pref_whale_alert' 켜둔 사용자들의 토큰 모으기
+                tokens = get_all_fcm_tokens(require_whale_alert=True)
+                if tokens:
+                    push_data = {
+                        "type": "whale_accumulation",
+                        "symbol": top_stock_name,
+                        "url": f"/stock/{top_stock_name}"
+                    }
+                    send_multicast_notification(tokens, title, body, push_data)
+                    print(f"[Whale] Sent multicast alert to {len(tokens)} tokens.")
+                else:
+                    print("[Whale] No tokens subscribed to whale alerts.")
                 
                 if db:
                     doc_ref = db.collection('alerts').document()
