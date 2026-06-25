@@ -41,8 +41,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
     <div className="w-full flex justify-center my-4 overflow-hidden">
       <div 
         ref={adRef} 
-        className="relative bg-gray-500/5 rounded-xl flex items-center justify-center border border-gray-500/10"
-        style={{ minWidth: `${adWidth}px`, minHeight: `${adHeight}px` }}
+        className="relative flex items-center justify-center rounded-xl"
       >
         {(!adUnit || adUnit === "DAN-PLACEHOLDER") && (
           <div className="flex flex-col items-center p-4">
