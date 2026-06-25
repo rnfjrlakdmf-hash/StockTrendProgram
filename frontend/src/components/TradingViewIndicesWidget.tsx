@@ -35,11 +35,11 @@ export default function TradingViewIndicesWidget() {
                         {
                             "title": "글로벌 지수",
                             "symbols": [
-                                { "s": "FOREXCOM:SPXUSD", "d": "S&P 500" },
-                                { "s": "FOREXCOM:NSXUSD", "d": "나스닥 100" },
-                                { "s": "FOREXCOM:DJI", "d": "다우 존스 30" },
-                                { "s": "INDEX:NKY", "d": "닛케이 225 (일본)" },
-                                { "s": "INDEX:DEU40", "d": "독일 DAX" }
+                                { "s": "FOREXCOM:SPXUSD", "d": "S&P 500 (미국 대형주 500)" },
+                                { "s": "FOREXCOM:NSXUSD", "d": "나스닥 100 (미국 기술주)" },
+                                { "s": "FOREXCOM:DJI", "d": "다우 존스 30 (미국 우량 30)" },
+                                { "s": "INDEX:NKY", "d": "닛케이 225 (일본 증시)" },
+                                { "s": "INDEX:DEU40", "d": "독일 DAX (유럽 증시)" }
                             ]
                         }
                     ]
