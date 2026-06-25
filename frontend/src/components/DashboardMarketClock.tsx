@@ -270,14 +270,14 @@ export default function DashboardMarketClock() {
 
                             {/* Real-time Ticking Clock */}
                             <div className="my-3 z-10 flex flex-col items-center justify-center py-2 bg-black/30 border border-white/5 rounded-xl">
-                                <div className="font-mono font-black text-2xl md:text-3xl text-white tracking-tighter leading-none flex items-baseline">
+                                <div className="tabular-nums tracking-tight font-black text-2xl md:text-3xl text-white leading-none flex items-baseline">
                                     <span>{m.hh}</span>
                                     <span className="animate-pulse mx-0.5 text-blue-500">:</span>
                                     <span>{m.mm}</span>
                                     <span className="animate-pulse mx-0.5 text-blue-500">:</span>
                                     <span className="text-lg md:text-xl text-blue-400 font-extrabold ml-0.5 min-w-[20px] inline-block">{m.ss}</span>
                                 </div>
-                                <div className="text-[9px] text-gray-500 font-bold mt-1.5 tracking-tight font-mono">
+                                <div className="text-[9px] text-gray-500 font-bold mt-1.5 tracking-wider">
                                     {m.formattedDate}
                                 </div>
                             </div>

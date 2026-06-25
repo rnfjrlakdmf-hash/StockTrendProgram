@@ -248,17 +248,17 @@ export default function GlobalRankingWidget() {
                                                         <div className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors truncate">
                                                             {item.name}
                                                         </div>
-                                                        <div className="text-[10px] text-gray-500 font-medium font-mono">
+                                                        <div className="text-[10px] text-gray-500 font-medium tracking-wider">
                                                             {item.symbol}
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <div className="text-sm font-bold text-gray-100 font-mono tracking-tight">
+                                                    <div className="text-sm font-bold text-gray-100 tabular-nums tracking-tight">
                                                         {formatPrice(item)}
                                                     </div>
                                                     <div className="flex flex-col items-end min-h-[36px] justify-center">
-                                                        <div className={`text-[11px] font-bold font-mono ${rf.color} leading-tight`}>
+                                                        <div className={`text-[11px] font-bold tabular-nums tracking-tight ${rf.color} leading-tight`}>
                                                             {rf.icon} {rf.abs_str} ({rf.pct_str}%)
                                                         </div>
                                                         {market !== 'KOSPI' ? (

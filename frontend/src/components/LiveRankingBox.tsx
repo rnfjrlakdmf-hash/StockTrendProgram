@@ -99,7 +99,7 @@ export default function LiveRankingBox() {
                     </div>
                 </div>
                 {lastUpdated && (
-                    <div className="text-[10px] text-gray-500 font-mono flex items-center gap-1 bg-black/50 px-2 py-1 rounded-md">
+                    <div className="text-[10px] text-gray-500 tracking-wider flex items-center gap-1 bg-black/50 px-2 py-1 rounded-md">
                         <RefreshCw className="w-3 h-3 text-gray-400 animate-spin-slow" />
                         {lastUpdated.toLocaleTimeString('ko-KR', { hour12: false })}
                     </div>
@@ -129,14 +129,14 @@ export default function LiveRankingBox() {
                                         <span className="font-bold text-sm md:text-base text-white truncate group-hover:text-indigo-300 transition-colors">
                                             {item.name}
                                         </span>
-                                        <span className="text-[10px] text-gray-500 font-mono">
+                                        <span className="text-[10px] text-gray-500 tracking-wider">
                                             {item.symbol}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                                    <div className={`font-mono font-black text-sm md:text-base flex items-center gap-1 ${colorClass}`}>
+                                    <div className={`tabular-nums tracking-tight font-black text-sm md:text-base flex items-center gap-1 ${colorClass}`}>
                                         {market === "US" && <span>$</span>}
                                         <AnimatedNumber value={item.price_num || item.price} isPrice={true} />
                                         {market === "KR" && <span>원</span>}

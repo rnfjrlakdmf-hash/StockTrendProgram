@@ -140,7 +140,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                 onClick={() => window.location.href = `/etf-analysis?symbol=${item.symbol}`}
                             >
                                 <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
-                                    <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-mono font-black text-sm ${idx < 3 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-500'}`}>
+                                    <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center tabular-nums tracking-tight font-black text-sm ${idx < 3 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-500'}`}>
                                         {item.rank || idx + 1}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                             {item.name}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[9px] md:text-[10px] font-mono text-gray-500 uppercase">{item.symbol}</span>
+                                            <span className="text-[9px] md:text-[10px] tracking-wider text-gray-500 uppercase">{item.symbol}</span>
                                             {item.volume && (
                                                 <span className="text-[9px] md:text-[10px] text-gray-600 font-bold hidden sm:inline">Vol: {parseInt(item.volume).toLocaleString()}</span>
                                             )}
@@ -157,7 +157,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                 </div>
                                 
                                 <div className="text-right shrink-0 ml-2">
-                                    <div className={`text-xs md:text-sm lg:text-base font-black font-mono tracking-tighter ${colorClass}`}>
+                                    <div className={`text-xs md:text-sm lg:text-base font-black tabular-nums tracking-tight ${colorClass}`}>
                                         {positive && '▲'}{negative && '▼'}{String(item.change || '0%').replace(/[▲▼+%-]/g, '')}%
                                     </div>
                                     <div className="text-[10px] md:text-[11px] font-bold text-gray-400">

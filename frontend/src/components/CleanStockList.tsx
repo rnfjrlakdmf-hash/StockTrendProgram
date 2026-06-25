@@ -161,7 +161,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             >
                                 <BlinkingPrice
                                     price={item.price}
-                                    className={`text-[18px] md:text-[25px] font-black font-mono tracking-tighter leading-none ${textColorClass}`}
+                                    className={`text-[18px] md:text-[25px] font-black tabular-nums tracking-tight leading-none ${textColorClass}`}
                                     prefix={item.currency && item.currency !== 'KRW' ? '$' : ''}
                                 />
 
@@ -169,11 +169,11 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 {item.currency && item.currency !== 'KRW' && (
                                     <div className="flex items-center gap-1 mt-0">
                                         {item.price_krw ? (
-                                            <span className="text-[10px] md:text-[11px] text-gray-400 font-mono font-bold">
+                                            <span className="text-[10px] md:text-[11px] text-gray-400 tabular-nums tracking-tight font-bold">
                                                 ≈ ₩{item.price_krw}
                                             </span>
                                         ) : (
-                                            <span className="text-[9px] text-gray-600 font-mono">KRW -</span>
+                                            <span className="text-[9px] text-gray-600 tracking-wider">KRW -</span>
                                         )}
                                     </div>
                                 )}
@@ -183,7 +183,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         <span className="text-[9px] text-indigo-400 font-black bg-indigo-500/10 border border-indigo-500/20 px-1.5 rounded">
                                             {item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER'}
                                         </span>
-                                        <span className={`text-[11px] font-black font-mono ${
+                                        <span className={`text-[11px] font-black tabular-nums tracking-tight ${
                                             (() => {
                                                 const chg = parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,''));
                                                 return chg > 0 ? 'text-red-400' : chg < 0 ? 'text-blue-400' : 'text-gray-400';
