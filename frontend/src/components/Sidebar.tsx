@@ -438,20 +438,36 @@ export default function Sidebar() {
                 </button>
                 <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-4">
                     <div className="flex flex-col gap-2.5 px-2 py-4 mb-8 border-b border-white/5 pb-5">
-                        <div className="flex items-center gap-2">
-                            {/* Dynamic spinning global globe/clock icon */}
-                            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
-                                <Globe 
-                                    className="w-4 h-4 text-blue-200" 
-                                    style={{ animation: 'spin 15s linear infinite' }}
-                                />
-                                {/* Pulsing dot indicating real-time activity */}
-                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black animate-ping" />
-                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {/* Dynamic spinning global globe/clock icon */}
+                                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
+                                    <Globe 
+                                        className="w-4 h-4 text-blue-200" 
+                                        style={{ animation: 'spin 15s linear infinite' }}
+                                    />
+                                    {/* Pulsing dot indicating real-time activity */}
+                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black animate-ping" />
+                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
+                                </div>
+                                <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                                    STOCK AI
+                                </span>
                             </div>
-                            <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
-                                STOCK AI
-                            </span>
+                            
+                            {/* [Upgraded] Time Sync Badge */}
+                            {(() => {
+                                const activeCount = (clocks.isKorOpen ? 1 : 0) + (clocks.isUsaOpen ? 1 : 0) + (clocks.isJpnOpen ? 1 : 0) + (clocks.isUkOpen ? 1 : 0);
+                                return (
+                                    <div className="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md border border-white/10" suppressHydrationWarning>
+                                        <span className="text-[8px] text-blue-400 font-bold uppercase tracking-wider">Sync</span>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${activeCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-gray-600'}`} />
+                                        <span className={`text-[9px] font-bold ${activeCount > 0 ? 'text-emerald-400' : 'text-gray-500'}`}>
+                                            {activeCount} OPEN
+                                        </span>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Ultra-sleek Micro Global Clocks Grid */}

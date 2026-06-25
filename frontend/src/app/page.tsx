@@ -216,8 +216,7 @@ export default function Home() {
         ) : !loading && !error && (
           // Default Dashboard Content
           <div className="space-y-8 animate-in fade-in duration-1000">
-            {/* 1. 상단: 글로벌 시장 현황판 */}
-            <DashboardMarketClock />
+
 
             {/* PC 전용 728x90 가로 배너 */}
             <div className="hidden md:flex justify-center mb-2">
