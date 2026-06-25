@@ -8,8 +8,13 @@ export default function TradingViewIndicesWidget() {
     useEffect(() => {
         if (!containerRef.current) return;
 
-        // Clean up previous script elements to avoid duplicate rendering on hot reload
+        // Clean up previous elements to avoid duplicate rendering on hot reload
         containerRef.current.innerHTML = '';
+
+        // Recreate the required target div for TradingView
+        const widgetDiv = document.createElement("div");
+        widgetDiv.className = "tradingview-widget-container__widget w-full h-full";
+        containerRef.current.appendChild(widgetDiv);
 
         const script = document.createElement("script");
         script.src = "https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js";
@@ -26,7 +31,7 @@ export default function TradingViewIndicesWidget() {
             "showSymbolLogo": true,
             "showFloatingTooltip": false,
             "width": "100%",
-            "height": 280,
+            "height": "100%",
             "tabs": [
                 {
                     "title": "글로벌 지수",
@@ -61,7 +66,7 @@ export default function TradingViewIndicesWidget() {
     }, []);
 
     return (
-        <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col h-full overflow-hidden transition-all hover:border-white/10 shadow-lg min-h-[330px]">
+        <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col h-full overflow-hidden transition-all hover:border-white/10 shadow-lg min-h-[360px]">
             <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
                 <h4 className="text-sm font-bold text-gray-200 flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,9 +79,9 @@ export default function TradingViewIndicesWidget() {
                     LIVE CHART
                 </span>
             </div>
-            <div className="flex-1 p-2 bg-black/10">
-                <div className="tradingview-widget-container w-full h-full" ref={containerRef}>
-                    <div className="tradingview-widget-container__widget w-full h-full"></div>
+            <div className="flex-1 p-2 bg-black/10 relative">
+                <div className="tradingview-widget-container absolute inset-0 w-full h-full" ref={containerRef}>
+                    {/* Script will be injected here */}
                 </div>
             </div>
         </div>
