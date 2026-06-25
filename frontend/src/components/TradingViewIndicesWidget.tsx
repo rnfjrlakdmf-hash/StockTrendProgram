@@ -34,15 +34,15 @@ export default function TradingViewIndicesWidget() {
                         {
                             "title": "글로벌 지수",
                             "symbols": [
-                                { "s": "KRX:KOSPI", "d": "코스피" },
-                                { "s": "KRX:KOSDAQ", "d": "코스닥" },
                                 { "s": "FOREXCOM:SPXUSD", "d": "S&P 500" },
                                 { "s": "FOREXCOM:NSXUSD", "d": "나스닥 100" },
                                 { "s": "FOREXCOM:DJI", "d": "다우 존스 30" },
-                                { "s": "CBOE:VIX", "d": "변동성 지수 (VIX)" },
-                                { "s": "INDEX:NKY", "d": "닛케이 225" },
-                                { "s": "INDEX:DEU40", "d": "독일 DAX" },
-                                { "s": "FOREXCOM:UKXGBP", "d": "영국 FTSE 100" }
+                                { "s": "INDEX:RUT", "d": "러셀 2000" },
+                                { "s": "TVC:VIX", "d": "변동성 지수 (VIX)" },
+                                { "s": "INDEX:NKY", "d": "닛케이 225 (일본)" },
+                                { "s": "AMEX:EWY", "d": "한국 KOSPI (EWY)" },
+                                { "s": "AMEX:MCHI", "d": "중국 시장 (MCHI)" },
+                                { "s": "INDEX:DEU40", "d": "독일 DAX" }
                             ]
                         }
                     ]
