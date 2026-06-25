@@ -82,12 +82,17 @@ export default function Home() {
 
       <div className="p-6 space-y-8">
         
-        {/* 상단 띠배너 광고 (검색 결과가 있을 때만 노출, 기본 대시보드에서는 아래에 그룹화됨) */}
-        {(stockData || themeResult || aiAnswer || error) && (
-          <div className="flex justify-center -mt-2 mb-4">
+        {/* 상단 통합 배너 영역 (모바일: 띠배너, PC: 가로배너) - 화면 최상단 고정 */}
+        <div className="flex justify-center -mt-2 mb-4">
+          {/* 모바일 전용 320x50 */}
+          <div className="block md:hidden">
             <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
           </div>
-        )}
+          {/* PC 전용 728x90 */}
+          <div className="hidden md:block">
+            <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+          </div>
+        </div>
         
         {/* Search Loading/Error State */}
         {loading && (
@@ -221,29 +226,32 @@ export default function Home() {
           <div className="space-y-8 animate-in fade-in duration-1000">
 
 
-            {/* 상단 배너 영역: 좌측 (320x50, 728x90), 우측 (300x250) 그룹화 */}
-            <div className="flex flex-wrap justify-center items-center gap-8 mb-4">
-              <div className="flex flex-col items-center gap-4">
-                {/* 모바일/PC 공통 띠배너 */}
-                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-                {/* PC 전용 가로 배너 */}
-                <div className="hidden md:block">
-                  <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-                </div>
-              </div>
-              {/* 정사각형 배너 (공간이 부족하면 자동으로 아래로 내려감) */}
-              <div className="block">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-              </div>
-            </div>
-
-            {/* 코인 핫트렌드 대시보드 (상시 노출로 변경) */}
+            {/* 코인 핫트렌드 대시보드 (상시 노출) */}
             <WeekendCryptoDashboard />
 
-            {/* 2. 중단: 위젯 2단 분리 (좌우 꽉 차게 복구) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LiveRankingBox />
-              <PopularSearchWidget />
+            {/* 메인 대시보드 레이아웃: 좌측 콘텐츠(2단), 우측 사이드바(1단) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+              
+              {/* 좌측 메인 콘텐츠 영역 */}
+              <div className="lg:col-span-2 flex flex-col gap-8">
+                <LiveRankingBox />
+                
+                {/* 콘텐츠 중간 자연스러운 스퀘어 배너 삽입 */}
+                <div className="flex justify-center my-2">
+                  <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                </div>
+                
+                <PopularSearchWidget />
+              </div>
+              
+              {/* 우측 사이드바 광고 영역 (PC에서만 표시, 스크롤 고정) */}
+              <div className="hidden lg:block relative">
+                <div className="sticky top-24 flex justify-center">
+                  {/* 신규 세로형 배너 (320x480) */}
+                  <KakaoAdFit adUnit="DAN-XujBk1aMVUSmKh7y" adWidth="320" adHeight="480" />
+                </div>
+              </div>
+              
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
