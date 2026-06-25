@@ -35,8 +35,8 @@ export default function AdminLogsPage() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${baseUrl}/api/system/logs?limit=100`);
+      const { API_BASE_URL } = await import('@/lib/config');
+      const res = await fetch(`${API_BASE_URL}/api/system/logs?limit=100`);
       if (res.ok) {
         const json = await res.json();
         if (json.status === "success") {
