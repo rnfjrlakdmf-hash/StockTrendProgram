@@ -109,13 +109,6 @@ export default async function BlogListPage(props: Props) {
                                     </div>
                                 </article>
                             </Link>
-                            {/* 첫 번째 게시글 아래에 광고 삽입 */}
-                            {index === 0 && (
-                                <div className="w-full flex justify-center mt-6">
-                                    <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
-                                </div>
-                            )}
-                        </div>
                     ))
                 )}
             </div>
@@ -159,6 +152,11 @@ export default async function BlogListPage(props: Props) {
                     )}
                 </div>
             )}
+            
+            {/* 하단 띠배너 광고 */}
+            <div className="w-full flex justify-center mt-12 mb-8">
+                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
+            </div>
         </div>
     );
 }
