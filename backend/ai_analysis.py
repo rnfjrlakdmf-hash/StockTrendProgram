@@ -108,7 +108,7 @@ def generate_realtime_summary(corp: str, title: str, content: str = "") -> tuple
     
     try:
         # JSON 모드로 호출하여 점수와 텍스트 추출
-        response = generate_with_retry(prompt, json_mode=True, timeout=15, temperature=0.0)
+        response = generate_with_retry(prompt, json_mode=True, timeout=40, temperature=0.0)
         import json
         data = json.loads(response.text.strip())
         score = int(data.get("impact_score", 5))
@@ -962,7 +962,7 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
         models = ["gemini-1.5-flash"] if target_symbol else None
         
         # Increase timeout for complex reasoning
-        response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=15)
+        response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=40)
         result = json.loads(response.text)
         # [Cost-Save] 결과 캐시에 저장 (다음 24시간은 캐시에서 즉시 반환)
         save_scenario_cache(keyword, target_symbol or "", result)
@@ -1485,7 +1485,7 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
     """
     
     try:
-        response = generate_with_retry(prompt, json_mode=True, timeout=15)
+        response = generate_with_retry(prompt, json_mode=True, timeout=40)
         result = json.loads(response.text)
         result["symbol"] = symbol
         result["price"] = price_data
