@@ -117,16 +117,16 @@ export default function LiveRankingBox() {
                     return (
                         <Link href={`/analysis?symbol=${item.symbol}`} key={item.symbol || idx}>
                             <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group border border-transparent hover:border-white/10 cursor-pointer">
-                                <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                                <div className="flex items-center gap-2.5 md:gap-3 flex-1 min-w-0">
                                     {/* Rank Badge */}
-                                    <div className={`w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-md font-black text-xs ${
+                                    <div className={`w-5 h-5 md:w-6 md:h-6 flex-shrink-0 flex items-center justify-center rounded-md font-black text-[11px] md:text-xs ${
                                         idx < 3 ? "bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]" : "bg-white/10 text-gray-400"
                                     }`}>
                                         {item.rank}
                                     </div>
                                     
-                                    <div className="flex flex-col truncate">
-                                        <span className="font-bold text-sm md:text-base text-white truncate group-hover:text-indigo-300 transition-colors">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="font-bold text-[13px] md:text-[14px] text-white whitespace-nowrap tracking-tighter group-hover:text-indigo-300 transition-colors overflow-visible">
                                             {item.name}
                                         </span>
                                         <span className="text-[10px] text-gray-500 tracking-wider">
@@ -135,8 +135,8 @@ export default function LiveRankingBox() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                                    <div className={`tabular-nums tracking-tight font-black text-sm md:text-base flex items-center gap-1 ${colorClass}`}>
+                                <div className="flex flex-col items-end flex-shrink-0 ml-1.5">
+                                    <div className={`tabular-nums tracking-tighter font-black text-[13px] md:text-[15px] flex items-center gap-0.5 ${colorClass}`}>
                                         {market === "US" && <span>$</span>}
                                         <AnimatedNumber value={item.price_num || item.price} isPrice={true} />
                                         {market === "KR" && <span>원</span>}
