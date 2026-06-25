@@ -109,6 +109,7 @@ export default async function BlogListPage(props: Props) {
                                     </div>
                                 </article>
                             </Link>
+                        </div>
                     ))
                 )}
             </div>
