@@ -438,9 +438,10 @@ def get_blog_posts(page: int = 1, limit: int = 10):
         db = firestore.client()
         collRef = db.collection("blog_posts")
 
-        # 전체 카운트
-        all_docs = list(collRef.stream())
-        total = len(all_docs)
+        # 전체 카운트 (스트림 방식 대신 AggregationQuery 사용)
+        count_query = collRef.count()
+        count_result = count_query.get()
+        total = count_result[0][0].value if count_result else 0
         totalPages = max(1, -(-total // limit))
 
         # 최신순 정렬 후 해당 페이지 슬라이싱
