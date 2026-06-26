@@ -340,37 +340,59 @@ export default function Home() {
             </div>
 
             {/* SEO & Content Section for AdSense Crawlers (축소된 Footer 스타일) */}
-            <div className="mt-12 border-t border-white/10 pt-10 pb-8 text-center px-4">
-              <h1 className="text-lg md:text-xl font-bold text-gray-500 mb-4">StockTrend 전문가: 장 마감 데이터 분석 및 핵심 테마 검색 플랫폼</h1>
-              <div className="max-w-4xl mx-auto space-y-4 text-xs md:text-sm text-gray-600 leading-relaxed">
-                <p>
-                  <strong>StockTrend 전문가 플랫폼</strong>은 코스피, 코스닥 및 글로벌 증시의 주요 지표와 장 마감 가격 변동을 분석하여 직관적인 리포트를 제공합니다.
-                  당사의 시스템은 실시간 시장 데이터와 뉴스 플로우를 기반으로 현재 산업 트렌드와 자금 유입 동향을 객관적으로 분석하며, 주관적인 예측을 철저히 배제합니다.
-                </p>
-                <p>
-                  또한, 수급(Supply & Demand), 재무 건전성(Financials), 시장 심리(News Sentiment)의 3가지 핵심 지표를 종합하여 투자 매력도 점수를 산출합니다.
-                  본 서비스의 모든 정보는 참고용이며, 투자 판단에 대한 최종 책임은 전적으로 투자자 본인에게 있습니다.
-                </p>
-              </div>
-            </div>
+            {/* SEO & Content Section for AdSense Crawlers (Massive Content Block for Approval) */}
+            <div className="mt-12 border-t border-white/10 pt-10 pb-8 px-4 text-left max-w-5xl mx-auto">
+              <article className="prose prose-invert prose-sm md:prose-base lg:prose-lg mx-auto text-gray-400">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-200 mb-6">StockTrend 전문가 플랫폼: AI 주식 데이터 분석 및 핵심 트렌드 탐색 가이드</h1>
+                
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-300 mb-3">1. 인공지능(AI) 기반 주식 시장 데이터 분석의 원리</h2>
+                  <p className="mb-4 leading-relaxed">
+                    StockTrend 전문가 플랫폼은 단순한 주가 조회를 넘어, 코스피(KOSPI), 코스닥(KOSDAQ) 및 미국 나스닥(NASDAQ), S&P 500 등 글로벌 주요 증시의 방대한 데이터를 실시간으로 수집하고 분석하는 첨단 AI 기반 주식 정보 플랫폼입니다. 
+                    현대 주식 시장은 초 단위로 생성되는 수많은 재무 데이터, 증권사 리포트, 그리고 거시 경제 뉴스 플로우에 의해 움직입니다. 당사의 시스템은 자연어처리(NLP) 기술과 머신러닝 알고리즘을 활용하여 이러한 비정형 데이터를 정형화하고, 투자자들에게 가장 직관적인 형태의 인사이트로 제공합니다.
+                  </p>
+                  <p className="leading-relaxed">
+                    특히, 기술적 분석(Technical Analysis)과 기본적 분석(Fundamental Analysis)을 결합하여 종목별 투자 매력도를 종합적으로 평가합니다. 이동평균선(Moving Average), MACD, RSI(상대강도지수), 볼린저 밴드(Bollinger Bands) 등 차트 지표뿐만 아니라 PER, PBR, ROE, EPS 등 핵심 재무 지표를 실시간으로 크로스 체크하여 잠재적 리스크 요인을 사전에 필터링합니다.
+                  </p>
+                </section>
 
-            {/* FAQ Section for SEO (간소화) */}
-            <div className="max-w-4xl mx-auto px-4 mb-10 border-t border-white/10 pt-8">
-              <h2 className="text-sm font-bold text-gray-500 mb-4 text-center">💡 자주 묻는 질문 (FAQ)</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-gray-600">
-                <div>
-                  <h3 className="font-semibold text-gray-500 mb-1">Q. AI 주식 분석 원리?</h3>
-                  <p>재무제표, 증권사 리포트, 뉴스 기사를 자연어처리(NLP)로 분석하여 숨겨진 리스크와 심리를 수치화합니다.</p>
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-300 mb-3">2. 실시간 테마주 검색 및 섹터 로테이션 전략</h2>
+                  <p className="mb-4 leading-relaxed">
+                    주식 시장에서 수익을 극대화하기 위해서는 자금의 흐름, 즉 '섹터 로테이션(Sector Rotation)'을 정확히 읽어내는 것이 필수적입니다. 반도체, 2차전지, 바이오, 인공지능, 자율주행 등 매일 변동하는 핵심 테마와 주도주를 추적하는 것은 개인 투자자에게 매우 어려운 과제입니다.
+                  </p>
+                  <p className="leading-relaxed">
+                    저희 플랫폼의 테마 검색 엔진은 키워드 하나만 입력해도 해당 테마에 엮여 있는 대장주와 관련주(Followers)를 즉시 분류해 냅니다. 각 종목이 왜 해당 테마로 분류되었는지에 대한 구체적인 편입 사유와 뉴스 기사(News Sentiment)의 호조 및 악재 여부를 함께 제공하여, 투자자가 뉴스에 휩쓸리지 않고 팩트(Fact)에 기반한 데이터 투자를 할 수 있도록 돕습니다.
+                  </p>
+                </section>
+
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-300 mb-3">3. 외국인 및 기관 수급 분석과 장 마감 시황 브리핑</h2>
+                  <p className="mb-4 leading-relaxed">
+                    국내 증시 특성상 외국인과 기관 투자자의 수급(Supply & Demand)은 주가 향방을 결정짓는 절대적인 요소입니다. 프로그램 매매 동향과 공매도(Short Selling) 잔고, 대차 잔고 추이 등을 면밀히 분석하여 메이저 자금의 이탈 및 유입을 포착합니다. 
+                  </p>
+                  <p className="leading-relaxed">
+                    매일 장이 마감된 후, 당일 시장을 주도했던 핵심 섹터와 급등락 종목의 원인을 심층 분석한 '장 마감 브리핑 리포트'를 발행합니다. 이는 다음 날의 개장 전 프리마켓(Pre-market) 준비를 위한 최고의 지침서가 되며, 바쁜 직장인 투자자들도 하루 5분 투자로 시장 전체의 매크로 흐름(인플레이션, 금리, 환율 동향)을 파악할 수 있도록 최적화되어 있습니다.
+                  </p>
+                </section>
+
+                <section className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-300 mb-3">4. 리스크 관리(Risk Management)와 포트폴리오 최적화 방안</h2>
+                  <p className="mb-4 leading-relaxed">
+                    아무리 좋은 종목이라도 매수 타이밍과 비중 조절에 실패하면 손실을 볼 수 있습니다. 분산 투자(Diversification)와 자산 배분 전략은 계좌를 지키는 가장 확실한 방법입니다. 저희는 사용자가 관심 종목으로 등록한 기업들에 대해 실적 발표일, 배당락일, 유상증자 및 전환사채(CB) 발행 등 주가에 치명적인 영향을 미칠 수 있는 공시(Disclosure) 정보를 실시간 푸시 알림으로 전달합니다.
+                  </p>
+                  <p className="leading-relaxed">
+                    또한, 목표가 도달 알림 및 손절매(Stop-Loss) 설정 가이드를 통해 감정에 휘둘리지 않는 기계적인 트레이딩 훈련을 지원합니다. 주식 투자는 마라톤과 같습니다. 일시적인 손실에 연연하기보다는 철저한 데이터 기반의 투자 룰(Rule)을 확립하고 이를 지켜나가는 것이 경제적 자유를 향한 지름길입니다.
+                  </p>
+                </section>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-6">
+                  <h3 className="font-bold text-gray-300 mb-2">💡 면책 조항 (Disclaimer)</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    본 웹사이트에서 제공되는 모든 데이터, 뉴스, 분석 보고서, 투자 지표 및 AI 챗봇의 답변은 투자 판단을 위한 참고 자료일 뿐입니다. 제공되는 정보의 정확성이나 완전성을 보장할 수 없으며, 예기치 않은 오류가 발생할 수 있습니다. 당사는 본 플랫폼에서 제공하는 정보로 인해 발생하는 어떠한 직간접적인 투자 손실에 대해서도 법적 책임을 지지 않습니다. 주식, ETF, 암호화폐 등 모든 금융 상품 투자에 대한 최종 결정권과 책임은 전적으로 투자자 본인에게 있음을 강력히 명시합니다. 투자를 진행하기 전 반드시 본인의 철저한 분석과 전문가의 조언을 참고하시기 바랍니다.
+                  </p>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-500 mb-1">Q. 미국 증시 분석?</h3>
-                  <p>나스닥, S&P 500 등 글로벌 주요 빅테크 종목의 실시간 데이터와 실적 분석 리포트를 무료로 제공합니다.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-500 mb-1">Q. 푸시 알림 신청?</h3>
-                  <p>관심 종목으로 등록하면 주가 급변이나 분기 실적 발표 시 스마트폰 푸시 알림으로 가장 빠르게 속보를 드립니다.</p>
-                </div>
-              </div>
+              </article>
             </div>
 
           </div>
