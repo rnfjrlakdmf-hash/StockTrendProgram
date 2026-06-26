@@ -1024,6 +1024,7 @@ function CalendarTab({ router }: { router: any }) {
         (async () => {
             try {
                 setIpoLoading(true);
+                setIpos([]);
                 const endpoint = ipoTab === 'kr' ? '/api/market/korea/ipo' : '/api/market/us/ipo';
                 const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
                 const j = await r.json();
