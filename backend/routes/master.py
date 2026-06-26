@@ -28,7 +28,8 @@ def restart_server(req: MasterKeyRequest):
     # 파이썬 내부에서 백그라운드 태스크로 재부팅 스크립트 실행 (응답 전송 후 실행을 위해)
     async def _do_restart():
         await asyncio.sleep(2)
-        os.system("sudo systemctl restart stocktrend-backend.service")
+        import subprocess
+        subprocess.Popen(["sudo", "systemctl", "restart", "stocktrend-backend.service"], start_new_session=True)
         
     asyncio.create_task(_do_restart())
     return {"status": "success", "message": "Server reboot command issued. The backend will restart in 2 seconds."}
