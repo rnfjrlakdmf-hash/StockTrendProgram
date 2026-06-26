@@ -87,6 +87,8 @@ export default function RootLayout({
               <ClosingBanner />
               <AppInstallBanner />
               <LeadGenerationPopup />
+              <FomoWidget />
+              <WhaleSiren />
 
               {/* Site Footer - AdSense 정책 준수 필수 링크 */}
               <footer className="border-t border-white/5 mt-8 px-6 py-6 text-center">

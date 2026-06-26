@@ -20,11 +20,17 @@ def get_all_kospi_kosdaq():
         df_nasdaq = fdr.StockListing('NASDAQ')
         df_sp500 = fdr.StockListing('S&P500')
         
+        # Fetch ETFs (Korean)
+        df_etf_kr = fdr.StockListing('ETF/KR')
+        
         stocks = []
         for _, row in df_kospi.iterrows():
             stocks.append({"ticker": str(row['Code']), "name": str(row['Name']), "market": "KOSPI"})
         for _, row in df_kosdaq.iterrows():
             stocks.append({"ticker": str(row['Code']), "name": str(row['Name']), "market": "KOSDAQ"})
+            
+        for _, row in df_etf_kr.iterrows():
+            stocks.append({"ticker": str(row['Symbol']), "name": str(row['Name']), "market": "ETF"})
             
         # Add US Stocks (avoiding duplicates if in both indices)
         us_tickers = set()
