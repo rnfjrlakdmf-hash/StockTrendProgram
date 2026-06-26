@@ -802,6 +802,7 @@ function CalendarTab({ router }: { router: any }) {
     // 공모주(IPO) 데이터
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
+    const [ipoTab, setIpoTab] = useState<'kr' | 'us'>('kr');
     const [watchedIpos, setWatchedIpos] = useState<Set<string>>(new Set());
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
 
@@ -1022,20 +1023,23 @@ function CalendarTab({ router }: { router: any }) {
         if (mainTab !== "ipo") return;
         (async () => {
             try {
-                const r = await fetch(`${API_BASE_URL}/api/market/korea/ipo`, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
+                setIpoLoading(true);
+                const endpoint = ipoTab === 'kr' ? '/api/market/korea/ipo' : '/api/market/us/ipo';
+                const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
                 const j = await r.json();
                 if (j.status === "success") {
                     setIpos(j.data.map((item: any) => ({
                         ...item,
+                        name: item.name || item.corp || item.symbol,
                         subscription_date: item.date,
                         fixed_price: item.price,
-                        price_band: ""
+                        price_band: item.band || ""
                     })));
                 }
             } catch { }
             finally { setIpoLoading(false); }
         })();
-    }, [mainTab]);
+    }, [mainTab, ipoTab]);
 
     // 실적·배당 달력 계산
     const filtered = (Array.isArray(events) ? events : []).filter(e => e.type === calTab);
@@ -1327,8 +1331,27 @@ function CalendarTab({ router }: { router: any }) {
                 </div>
             {/* 공모주 서브탭 */}
             <div className={mainTab === "ipo" ? "space-y-3 block animate-in fade-in duration-200" : "hidden"}>
-                    <h2 className="text-xl font-bold text-white">공모주 일정</h2>
-                    <p className="text-xs text-gray-500">한국 공모주 청약 일정 (DART 제공)</p>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">공모주 일정</h2>
+                        <span className="text-xs text-gray-500">한국/미국 공모주 청약 일정 (DART / Alpha Vantage 제공)</span>
+                    </div>
+                    
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        <button
+                            onClick={() => setIpoTab('kr')}
+                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${ipoTab === 'kr' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            🇰🇷 국내 공모주
+                        </button>
+                        <button
+                            onClick={() => setIpoTab('us')}
+                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${ipoTab === 'us' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            🇺🇸 미국 공모주
+                        </button>
+                    </div>
+                </div>
                     {ipoLoading ? (
                         <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
                     ) : ipos.length === 0 ? (
@@ -1376,9 +1399,9 @@ function CalendarTab({ router }: { router: any }) {
                                                     </td>
                                                     <td className="p-3 text-center align-middle">
                                                         <button
-                                                            onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
+                                                            onClick={() => window.open(ipoTab === 'kr' ? `https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}` : `https://finance.yahoo.com/quote/${ipo.symbol}`, '_blank')}
                                                             className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5 whitespace-nowrap"
-                                                        >정보</button>
+                                                        >{ipoTab === 'kr' ? '정보' : 'Yahoo'}</button>
                                                     </td>
                                                     <td className="p-3 text-center align-middle">
                                                         <button
