@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 export default function IPOCalendar() {
     const [ipos, setIpos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'kr' | 'us'>('kr');
     const [watchedIpos, setWatchedIpos] = useState<Set<string>>(new Set());
     const { user } = useAuth();
 
@@ -28,11 +29,14 @@ export default function IPOCalendar() {
 
     const fetchIPO = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/korea/ipo`);
+            setLoading(true);
+            const endpoint = activeTab === 'kr' ? '/api/market/korea/ipo' : '/api/market/us/ipo';
+            const res = await fetch(`${API_BASE_URL}${endpoint}`);
             const json = await res.json();
             if (json.status === "success") {
                 const mapped = json.data.map((item: any) => ({
                     ...item,
+                    name: item.name || item.corp || item.symbol, // Handle both KR and US formats
                     subscription_date: item.date,
                     fixed_price: item.price,
                     price_band: item.band || ""
@@ -50,7 +54,7 @@ export default function IPOCalendar() {
         fetchIPO();
         const interval = setInterval(fetchIPO, 60000); // 1분마다 갱신
         return () => clearInterval(interval);
-    }, []);
+    }, [activeTab]);
 
     useEffect(() => {
         fetchWatched();
@@ -96,11 +100,25 @@ export default function IPOCalendar() {
 
     return (
         <div className="rounded-3xl border border-white/5 bg-gradient-to-br from-purple-900/20 to-black p-6 backdrop-blur-md">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Megaphone className="h-5 w-5 text-purple-400" /> 공모주(IPO) 일정
                 </h2>
-                <span className="text-xs text-gray-400">DART 제공</span>
+                
+                <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        onClick={() => setActiveTab('kr')}
+                        className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab === 'kr' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        🇰🇷 국내 공모주
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('us')}
+                        className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab === 'us' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        🇺🇸 미국 공모주
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -147,10 +165,10 @@ export default function IPOCalendar() {
                                             </td>
                                             <td className="p-3 text-center align-middle">
                                                 <button
-                                                    onClick={() => window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`, '_blank')}
-                                                    className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors whitespace-nowrap border border-white/5"
+                                                    onClick={() => window.open(activeTab === 'kr' ? `https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}` : `https://finance.yahoo.com/quote/${ipo.symbol}`, '_blank')}
+                                                    className="px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-bold hover:bg-blue-500 hover:text-white transition-colors"
                                                 >
-                                                    정보
+                                                    {activeTab === 'kr' ? '네이버검색' : 'Yahoo Finance'}
                                                 </button>
                                             </td>
                                             <td className="p-3 text-center align-middle">

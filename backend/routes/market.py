@@ -735,6 +735,16 @@ def get_korean_ipo():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/us/ipo")
+def get_us_ipo():
+    """미국 신규 상장 및 공모주 일정 반환"""
+    from us_ipo import get_us_ipo_data
+    try:
+        data = get_us_ipo_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/test-push")
 def test_push_notification(type: str = "generic"):
     """푸시 알림 테스트용 엔드포인트"""
