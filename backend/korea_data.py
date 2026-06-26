@@ -4248,7 +4248,7 @@ def get_global_economy_calendar():
             for i in range(7):
                 target_date = datetime.datetime.now() + datetime.timedelta(days=i)
                 target_str = target_date.strftime("%Y%m%d")
-                naver_url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&page=1&pageSize=30&releaseDate={target_str}"
+                naver_url = f"https://stock.naver.com/api/securityService/economic/indicator/nations/releaseDate?nationTypeList=KOR&nationTypeList=KOR&page=1&pageSize=30&releaseDate={target_str}"
                 n_res = requests.get(naver_url, headers=naver_headers, timeout=5)
                 if n_res.status_code == 200:
                     n_data = n_res.json()
