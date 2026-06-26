@@ -16,12 +16,30 @@ def get_all_kospi_kosdaq():
         df_kospi = fdr.StockListing('KOSPI')
         df_kosdaq = fdr.StockListing('KOSDAQ')
         
+        # Fetch US Stocks (NASDAQ, S&P500)
+        df_nasdaq = fdr.StockListing('NASDAQ')
+        df_sp500 = fdr.StockListing('S&P500')
+        
         stocks = []
         for _, row in df_kospi.iterrows():
             stocks.append({"ticker": str(row['Code']), "name": str(row['Name']), "market": "KOSPI"})
         for _, row in df_kosdaq.iterrows():
             stocks.append({"ticker": str(row['Code']), "name": str(row['Name']), "market": "KOSDAQ"})
             
+        # Add US Stocks (avoiding duplicates if in both indices)
+        us_tickers = set()
+        for _, row in df_sp500.iterrows():
+            ticker = str(row['Symbol'])
+            if ticker not in us_tickers:
+                stocks.append({"ticker": ticker, "name": str(row['Name']), "market": "US"})
+                us_tickers.add(ticker)
+                
+        for _, row in df_nasdaq.iterrows():
+            ticker = str(row['Symbol'])
+            if ticker not in us_tickers:
+                stocks.append({"ticker": ticker, "name": str(row['Name']), "market": "US"})
+                us_tickers.add(ticker)
+                
         return {"status": "success", "count": len(stocks), "data": stocks}
     except Exception as e:
         logger.error(f"Error fetching stock list: {e}")
