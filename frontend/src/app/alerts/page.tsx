@@ -38,8 +38,8 @@ export default function AlertCenterPage() {
                 const alertsRef = collection(db, "alerts");
                 
                 // 사용자 맞춤형 알림과 전체 알림을 각각 가져와 프론트엔드에서 병합 (읽기 비용 최소화 및 누락 방지)
-                let targetedDocs = [];
-                let globalDocs = [];
+                let targetedDocs: any[] = [];
+                let globalDocs: any[] = [];
 
                 if (user) {
                     const userId = user.id || (user as any).uid;

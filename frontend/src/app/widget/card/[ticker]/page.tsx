@@ -1,25 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { fetchStockFast, StockData } from "@/lib/api";
 import { Loader2, TrendingUp, Zap, ExternalLink } from "lucide-react";
 import GaugeChart from "@/components/GaugeChart";
 import Link from "next/link";
 
-export default function BloggerCardWidget({ params }: { params: { ticker: string } }) {
+export default function BloggerCardWidget({ params }: { params: Promise<{ ticker: string }> }) {
+  const resolvedParams = use(params);
   const [stockData, setStockData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchStockFast(params.ticker);
+      const data = await fetchStockFast(resolvedParams.ticker);
       if (data) {
         setStockData(data);
       }
       setLoading(false);
     };
     loadData();
-  }, [params.ticker]);
+  }, [resolvedParams.ticker]);
 
   if (loading) {
     return (

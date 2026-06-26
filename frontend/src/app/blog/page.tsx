@@ -71,7 +71,7 @@ export default async function BlogListPage(props: Props) {
                         <p className="text-gray-400">아직 작성된 리포트가 없습니다.</p>
                     </div>
                 ) : (
-                    posts.map((post, index) => (
+                    posts.map((post: any, index: number) => (
                         <div key={post.id}>
                             <Link href={`/blog/${post.slug}`} className="block group">
                                 <article className="bg-black/40 border border-white/10 hover:border-blue-500/50 rounded-3xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 relative overflow-hidden flex flex-col md:flex-row gap-6 md:items-center">

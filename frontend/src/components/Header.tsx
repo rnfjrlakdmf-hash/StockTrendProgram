@@ -44,7 +44,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     
                     if (alertTime > lastVisitTime) {
                         const isGlobal = data.is_global === true || data.is_global === undefined;
-                        const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(user.uid);
+                        const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes((user as any).uid || (user as any).id);
                         
                         if (user) {
                             if (isGlobal || isTargetedToMe) unreadCount++;
