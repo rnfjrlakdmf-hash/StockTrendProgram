@@ -265,7 +265,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                                     {pct > 0 && (
                                                                         <div onClick={(e) => e.stopPropagation()} className="ml-2 inline-block">
                                                                             {(() => {
-                                                                                const shareUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
+                                                                                const shareUrl = new URL(`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
                                                                                 shareUrl.searchParams.set('title', item.name || item.symbol);
                                                                                 shareUrl.searchParams.set('subtitle', '세력 포착 라이브 알림 덕분!');
                                                                                 shareUrl.searchParams.set('theme', '내 수익률 인증');
