@@ -28,6 +28,7 @@ def deploy_remote():
             "git fetch origin && "
             "git checkout -- . && "
             "git clean -fd backend/sec_tickers_cache.json 2>/dev/null || true && "
+            "rm backend/us_ipo_cache.json 2>/dev/null || true && "
             "git pull origin main"
         )
         stdin, stdout, stderr = ssh.exec_command(git_cmd)

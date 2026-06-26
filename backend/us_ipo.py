@@ -38,9 +38,20 @@ def get_us_ipo_data():
         # Parse CSV
         reader = csv.DictReader(res.text.strip().splitlines())
         results = []
+        
+        from deep_translator import GoogleTranslator
+        translator = GoogleTranslator(source='en', target='ko')
+        
         for row in reader:
             if not row.get('symbol'):
                 continue
+            
+            eng_name = row.get('name', '')
+            try:
+                kor_name = translator.translate(eng_name)
+                final_name = f"{kor_name} ({eng_name})" if kor_name else eng_name
+            except:
+                final_name = eng_name
             
             # Formatting to match the Korean IPO structure for easy frontend integration
             # DART structure: corp, type, price, band, date, is_completed
@@ -54,7 +65,7 @@ def get_us_ipo_data():
                 
             results.append({
                 "symbol": row.get('symbol'),
-                "corp": row.get('name'),
+                "corp": final_name,
                 "type": f"US {row.get('exchange', 'Exchange')}",
                 "price": "", # Exact fixed price usually unknown until day of listing
                 "band": band,
