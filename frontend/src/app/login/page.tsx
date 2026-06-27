@@ -43,16 +43,14 @@ export default function MobileLoginPage() {
         }
     };
 
-    const googleLogin = useGoogleLogin({
-        ux_mode: "redirect",
-        redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
-        onSuccess: handleGoogleSuccess,
-        onError: (err) => {
-            console.error(err);
-            setStatus("error");
-            setErrorMsg("구글 로그인에 실패했습니다. 브라우저 설정을 확인해주세요.");
-        }
-    });
+    // 수동 OAuth 2.0 리다이렉트 (WebView 400 Malformed Error 방지)
+    const googleLogin = () => {
+        const clientId = "385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com";
+        const redirectUri = window.location.origin; // https://stock-trend-program.vercel.app
+        const scope = "email profile openid";
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+        window.location.href = authUrl;
+    };
 
     useEffect(() => {
         // Automatically trigger on mount if not already logged in

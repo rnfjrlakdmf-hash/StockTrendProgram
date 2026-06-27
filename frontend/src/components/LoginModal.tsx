@@ -48,17 +48,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         }
     };
 
-    const googleLogin = useGoogleLogin({
-        flow: "implicit",
-        ux_mode: isMobile ? "redirect" : "popup",
-        redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
-        onSuccess: handleGoogleSuccess,
-        onError: (err: any) => {
-            console.error("Google login error:", err);
-            setStatus("error");
-            setErrorMsg("구글 로그인 창이 차단되었습니다. 팝업 차단을 해제해 주세요.");
-        },
-    } as any);
+    // 수동 OAuth 2.0 리다이렉트 (WebView 400 Malformed Error 방지)
+    const googleLogin = () => {
+        const clientId = "385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com";
+        const redirectUri = window.location.origin; // https://stock-trend-program.vercel.app
+        const scope = "email profile openid";
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+        window.location.href = authUrl;
+    };
 
     if (!isOpen) return null;
 
