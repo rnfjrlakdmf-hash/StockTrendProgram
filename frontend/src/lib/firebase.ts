@@ -6,6 +6,8 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 import { getFirestore } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 // Firebase 설정
 const firebaseConfig = {
@@ -42,6 +44,45 @@ function getFirebaseMessaging(): Messaging | null {
  * FCM 토큰 요청
  */
 export async function requestFCMToken(): Promise<string> {
+    if (typeof window === 'undefined') return '';
+
+    // [Capacitor 네이티브 앱 환경]
+    if (Capacitor.isNativePlatform()) {
+        try {
+            console.log('[Firebase Native] Requesting push permissions...');
+            const permStatus = await PushNotifications.requestPermissions();
+            if (permStatus.receive !== 'granted') {
+                throw new Error('PERMISSION_DENIED');
+            }
+
+            console.log('[Firebase Native] Registering for push notifications...');
+            await PushNotifications.register();
+            
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('TIMEOUT')), 15000);
+                
+                PushNotifications.addListener('registration', (token) => {
+                    clearTimeout(timer);
+                    console.log('[Firebase Native] FCM Token generated:', token.value);
+                    // 네이티브 리스너 중복 방지를 위해 리스너 제거
+                    PushNotifications.removeAllListeners();
+                    resolve(token.value);
+                });
+
+                PushNotifications.addListener('registrationError', (error) => {
+                    clearTimeout(timer);
+                    console.error('[Firebase Native] Registration error:', error.error);
+                    PushNotifications.removeAllListeners();
+                    reject(new Error('REGISTRATION_ERROR'));
+                });
+            });
+        } catch (error) {
+            console.error('[Firebase Native] Push setup failed:', error);
+            throw error;
+        }
+    }
+
+    // [Web 브라우저 / PWA 환경]
     const msg = getFirebaseMessaging();
     if (!msg) {
         console.error('[Firebase] Messaging not available');
