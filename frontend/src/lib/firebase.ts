@@ -73,7 +73,7 @@ export async function requestFCMToken(): Promise<string> {
                     clearTimeout(timer);
                     console.error('[Firebase Native] Registration error:', error.error);
                     PushNotifications.removeAllListeners();
-                    reject(new Error('REGISTRATION_ERROR'));
+                    reject(new Error('REGISTRATION_ERROR: ' + error.error));
                 });
             });
         } catch (error) {
