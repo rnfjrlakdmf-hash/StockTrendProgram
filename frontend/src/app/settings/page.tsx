@@ -93,19 +93,19 @@ export default function SettingsPage() {
                 setIsKisCollapsed(true); // 연동되어 있지 않아도 기본적으로 접은 상태로 유지합니다.
             }
 
-            // 알림 설정 불러오기
-            const token = localStorage.getItem('fcm_token_value');
-            if (token) {
-                setFcmToken(token);
-                fetch(`${API_BASE_URL}/api/system/fcm-preferences?token=${token}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            setPrefs(data.preferences);
-                        }
-                    })
-                    .catch(err => console.error("Failed to fetch preferences:", err));
-            }
+        // 알림 설정 불러오기
+        const token = localStorage.getItem('fcm_token_value');
+        if (token) {
+            setFcmToken(token);
+            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        setPrefs(data.data);
+                    }
+                })
+                .catch(err => console.error("Failed to fetch preferences:", err));
+        }
         }
     }, []);
 
@@ -146,10 +146,11 @@ export default function SettingsPage() {
         setPrefs(prev => ({ ...prev, [prefKey]: newVal }));
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/system/fcm-preferences/toggle`, {
+            const updatedPrefs = { ...prefs, [prefKey]: newVal };
+            const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: fcmToken, preference_key: prefKey, is_enabled: newVal })
+                body: JSON.stringify({ token: fcmToken, ...updatedPrefs })
             });
             const data = await res.json();
             if (data.status !== 'success') throw new Error();
