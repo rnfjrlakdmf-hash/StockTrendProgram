@@ -787,6 +787,28 @@ def run_market_scheduler():
                         print(f"[Scheduler] Crypto surge error: {e}")
                     last_run_crypto_surge = current_time
                     
+            # [실시간] 관심종목 뉴스 속보 감시 (5분 간격)
+            if now.minute % 5 == 0:
+                current_time = now.strftime('%H:%M')
+                if getattr(run_market_scheduler, "last_run_watchlist_news", None) != current_time:
+                    try:
+                        from watchlist_monitor import run_watchlist_news_monitor
+                        run_watchlist_news_monitor()
+                    except Exception as e:
+                        print(f"[Scheduler] Watchlist news error: {e}")
+                    run_market_scheduler.last_run_watchlist_news = current_time
+
+            # [장중] 관심종목 가격 급등락 감시 (5분 간격)
+            if not is_holiday("kor") and 9 <= now.hour <= 15 and now.minute % 5 == 0:
+                current_time = now.strftime('%H:%M')
+                if getattr(run_market_scheduler, "last_run_watchlist_price", None) != current_time:
+                    try:
+                        from watchlist_monitor import run_watchlist_price_monitor
+                        run_watchlist_price_monitor()
+                    except Exception as e:
+                        print(f"[Scheduler] Watchlist price error: {e}")
+                    run_market_scheduler.last_run_watchlist_price = current_time
+
             # [평일 장중 실행] 고래/세력 매집 실시간 알림 (30분 간격)
             if not is_holiday("kor") and 9 <= now.hour <= 15 and now.minute % 30 == 0:
                 current_time = now.strftime('%H:%M')
