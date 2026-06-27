@@ -126,10 +126,10 @@ export default function LiveRankingBox() {
                                     </div>
                                     
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-[13px] md:text-[14px] text-white whitespace-nowrap tracking-tighter group-hover:text-indigo-300 transition-colors overflow-visible">
+                                        <span className="font-bold text-[13px] md:text-[14px] text-white truncate tracking-tighter group-hover:text-indigo-300 transition-colors">
                                             {item.name}
                                         </span>
-                                        <span className="text-[10px] text-gray-500 tracking-wider">
+                                        <span className="text-[10px] text-gray-500 tracking-wider truncate">
                                             {item.symbol}
                                         </span>
                                     </div>
