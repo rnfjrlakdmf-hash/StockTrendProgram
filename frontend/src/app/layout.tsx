@@ -14,6 +14,14 @@ import FomoWidget from "@/components/FomoWidget";
 import WhaleSiren from "@/components/WhaleSiren";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
+import type { Viewport } from 'next';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
   title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
