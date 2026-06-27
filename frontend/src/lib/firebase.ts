@@ -55,6 +55,19 @@ export async function requestFCMToken(): Promise<string> {
                 throw new Error('PERMISSION_DENIED');
             }
 
+            try {
+                await PushNotifications.createChannel({
+                    id: 'price_alerts',
+                    name: '주식 가격 알림',
+                    description: '관심 종목의 목표가 도달 및 주요 뉴스 알림',
+                    importance: 5,
+                    visibility: 1
+                });
+                console.log('[Firebase Native] Notification channel created');
+            } catch (e) {
+                console.warn('[Firebase Native] Channel creation failed or already exists:', e);
+            }
+
             console.log('[Firebase Native] Registering for push notifications...');
             await PushNotifications.register();
             
@@ -151,6 +164,20 @@ export async function requestFCMToken(): Promise<string> {
  * 포그라운드 메시지 수신 리스너
  */
 export function onForegroundMessage(callback: (payload: any) => void) {
+    if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            console.log('[Firebase Native] Foreground message received:', notification);
+            callback({
+                notification: {
+                    title: notification.title,
+                    body: notification.body
+                },
+                data: notification.data
+            });
+        });
+        return;
+    }
+
     const msg = getFirebaseMessaging();
     if (!msg) return;
 
