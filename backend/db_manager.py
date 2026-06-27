@@ -257,6 +257,8 @@ def init_db():
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watchlist_live BOOLEAN DEFAULT 1")
     except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_dividend BOOLEAN DEFAULT 1")
+    except: pass
     
     print("[DB] FCM tokens table created")
 
