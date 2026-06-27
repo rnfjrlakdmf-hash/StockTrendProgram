@@ -24,7 +24,7 @@ export default function TradingViewIndicesWidget() {
                     "colorTheme": "dark",
                     "dateRange": "12M",
                     "showChart": true,
-                    "locale": "ko",
+                    "locale": "en",
                     "largeChartUrl": "",
                     "isTransparent": true,
                     "showSymbolLogo": true,
