@@ -456,6 +456,7 @@ def send_multicast_notification(
         # 개별 발송 (SDK 버전 호환성 최대화)
         success_count = 0
         failure_count = 0
+        unregistered_count = 0
         
         for idx, token in enumerate(tokens):
             try:
@@ -470,7 +471,7 @@ def send_multicast_notification(
                 messaging.send(msg)
                 success_count += 1
             except messaging.UnregisteredError:
-                failure_count += 1
+                unregistered_count += 1
                 print(f"[Firebase] Token {idx} is unregistered. Deleting from DB.")
                 try:
                     from db_manager import delete_fcm_token
@@ -501,19 +502,19 @@ def send_multicast_notification(
                     level="WARNING" if success_count > 0 else "ERROR",
                     component="PushNotification",
                     message=f"Alert '{title}' sent with failures",
-                    details=f"Success: {success_count}, Failure: {failure_count}"
+                    details=f"Success: {success_count}, Failure: {failure_count}, Cleaned Tokens: {unregistered_count}"
                 )
-            elif success_count > 0:
+            elif success_count > 0 or unregistered_count > 0:
                 add_system_log(
                     level="INFO",
                     component="PushNotification",
                     message=f"Alert '{title}' sent successfully",
-                    details=f"Success: {success_count}, Failure: 0"
+                    details=f"Success: {success_count}, Failure: 0, Cleaned Tokens: {unregistered_count}"
                 )
         except Exception:
             pass
             
-        print(f"[Firebase] Multicast completed. Success: {success_count}, Failure: {failure_count}")
+        print(f"[Firebase] Multicast completed. Success: {success_count}, Failure: {failure_count}, Unregistered: {unregistered_count}")
         return {
             "success": True if success_count > 0 else False,
             "success_count": success_count,
