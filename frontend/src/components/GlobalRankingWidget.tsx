@@ -245,7 +245,7 @@ export default function GlobalRankingWidget() {
                                                         {idx + 1}
                                                     </span>
                                                     <div className="overflow-hidden">
-                                                        <div className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors truncate">
+                                                        <div className="text-xs md:text-sm font-bold text-gray-200 group-hover:text-white transition-colors line-clamp-2 leading-tight break-keep">
                                                             {item.name}
                                                         </div>
                                                         <div className="text-[10px] text-gray-500 font-medium tracking-wider">

@@ -715,10 +715,10 @@ function MarketInsightsTab({ router }: { router: any }) {
         <div className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
             <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
             {(Array.isArray(items) ? items : []).slice(0, sliceNum).map((item: any, i: number) => (
-                <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer"
+                <div key={i} className="flex items-start justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer gap-2"
                     onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}>
-                    <span className="font-medium truncate max-w-[120px]">{i + 1}. {item.name}</span>
-                    <span className={`text-${color}-400 font-mono text-[10px]`}>{item.amount || item.value || ""}</span>
+                    <span className="font-medium flex-1 min-w-0 line-clamp-2 leading-tight break-keep">{i + 1}. {item.name}</span>
+                    <span className={`text-${color}-400 font-mono text-[10px] mt-0.5 whitespace-nowrap flex-shrink-0`}>{item.amount || item.value || ""}</span>
                 </div>
             ))}
             {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">데이터 없음</p>}

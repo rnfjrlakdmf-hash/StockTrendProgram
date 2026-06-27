@@ -144,7 +144,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                         {item.rank || idx + 1}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="font-bold text-gray-100 group-hover/item:text-white transition-colors truncate text-xs md:text-sm">
+                                        <div className="font-bold text-gray-100 group-hover/item:text-white transition-colors line-clamp-2 leading-tight text-xs md:text-sm">
                                             {item.name}
                                         </div>
                                         <div className="flex items-center gap-2">

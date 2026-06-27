@@ -95,7 +95,7 @@ export default function RankingWidget() {
                             <div className="flex items-center gap-3">
                                 <span className={`font-mono font-bold w-6 text-center ${idx === 0 ? 'text-yellow-400 text-lg' : 'text-gray-500'}`}>{idx + 1}</span>
                                 <div>
-                                    <div className="font-bold text-gray-200 group-hover:text-white text-xs md:text-sm truncate max-w-[120px] md:max-w-none">{item.name}</div>
+                                    <div className="font-bold text-gray-200 group-hover:text-white text-[11px] md:text-sm line-clamp-2 leading-tight max-w-[130px] md:max-w-none">{item.name}</div>
                                     <div className="text-[10px] md:text-xs text-gray-500 font-mono">{item.symbol}</div>
                                 </div>
                             </div>
@@ -132,7 +132,7 @@ export default function RankingWidget() {
                             <div className="flex items-center gap-3">
                                 <span className={`font-mono font-bold w-6 text-center ${idx === 0 ? 'text-blue-300 text-lg' : 'text-gray-500'}`}>{idx + 1}</span>
                                 <div>
-                                    <div className="font-bold text-gray-200 group-hover:text-white text-xs md:text-sm truncate max-w-[120px] md:max-w-none">{item.name}</div>
+                                    <div className="font-bold text-gray-200 group-hover:text-white text-[11px] md:text-sm line-clamp-2 leading-tight max-w-[130px] md:max-w-none">{item.name}</div>
                                     <div className="text-[10px] md:text-xs text-gray-500 font-mono">{item.symbol}</div>
                                 </div>
                             </div>
