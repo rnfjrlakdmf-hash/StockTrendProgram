@@ -1,6 +1,6 @@
 {
-  "name": "AI Stock Analyst",
-  "short_name": "StockTrend",
+  "name": "스마트 투자 비서",
+  "short_name": "스마트 투자 비서",
   "description": "AI 기반 장 마감 데이터 분석 및 투자 비서 서비스",
   "start_url": "/",
   "display": "standalone",

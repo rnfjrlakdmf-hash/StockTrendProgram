@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 };
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
-  title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
+  title: "스마트 투자 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
   description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요. 테슬라, 엔비디아, 삼성전자 등 국내외 주식 분석 제공.",
   keywords: ["AI 주식 분석", "무료 주가 알림", "주식 속보 알림", "장 마감 미국주식 시세", "테슬라 주가 분석", "엔비디아 주가 분석", "AI 모닝 브리핑", "주식 포트폴리오 진단"],
   metadataBase: new URL('https://stock-trend-program.co.kr'),
