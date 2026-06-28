@@ -308,13 +308,15 @@ export default function FCMTokenManager() {
     const [showMenu, setShowMenu] = useState(false);
 
     // Connected State (Minimal & Sleek)
-    if (permission === 'granted' && registered) {
+    // [BugFix] permission이 'granted'라면 등록(registered) 진행 중이더라도 프리미엄 카드가 아닌 요약 아이콘만 보여줌
+    if (permission === 'granted') {
+        const isSyncing = loading || !registered;
         return (
             <div suppressHydrationWarning>
                 <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-bottom-5 fade-in duration-700">
                     <div className="relative flex items-center justify-center group">
                         {/* Pulse Effect */}
-                        <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl group-hover:bg-blue-500/30 transition-all duration-500 scale-150 animate-pulse"></div>
+                        <div className={`absolute inset-0 ${isSyncing ? 'bg-yellow-500/20' : 'bg-blue-500/20'} rounded-full blur-xl group-hover:${isSyncing ? 'bg-yellow-500/30' : 'bg-blue-500/30'} transition-all duration-500 scale-150 animate-pulse`}></div>
 
                         {/* Status Badge */}
                         <div
@@ -325,8 +327,8 @@ export default function FCMTokenManager() {
                             {/* Shiny Gradient Border */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                            {isSyncing ? (
+                                <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <Bell className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
                             )}
