@@ -70,10 +70,17 @@ export default function FCMTokenManager() {
         console.log("FCMTokenManager Mounted! Permission:", safePermission);
         
         // ... rest of the existing logic ...
-        const currentPermission = getNotificationPermission();
-        setPermission(currentPermission);
         const isRegistered = localStorage.getItem('fcm_registered') === 'true';
         setRegistered(isRegistered);
+
+        // [Fix] 네이티브 앱에서는 Notification.permission이 항상 'default'를 반환하므로
+        // localStorage의 fcm_registered 값으로 permission 상태를 대신 판단
+        if (Capacitor.isNativePlatform() && isRegistered) {
+            setPermission('granted');
+        } else {
+            const currentPermission = getNotificationPermission();
+            setPermission(currentPermission);
+        }
 
         onForegroundMessage((payload) => {
             console.log('[FCM] Received foreground message:', payload);
