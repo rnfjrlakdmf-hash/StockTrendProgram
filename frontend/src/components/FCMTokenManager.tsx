@@ -242,7 +242,19 @@ export default function FCMTokenManager() {
         setLoading(true);
 
         try {
-            const token = await requestFCMToken();
+            // [Android Native] 이미 자동 등록된 토큰이 있으면 재사용 (재등록 시 타임아웃 방지)
+            let token: string;
+            if (Capacitor.isNativePlatform()) {
+                const cachedToken = localStorage.getItem('fcm_token_value');
+                if (cachedToken) {
+                    console.log('[FCM Native] Using cached android token');
+                    token = cachedToken;
+                } else {
+                    token = await requestFCMToken();
+                }
+            } else {
+                token = await requestFCMToken();
+            }
 
             const data = await registerTokenToBackend(token, currentUserId);
 
