@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Clock, TrendingUp, Anchor, Briefcase, ChevronRight, CheckCircle, Share2, AlertTriangle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
+import { useAuth } from '@/context/AuthContext';
+import LoginModal from '@/components/LoginModal';
 
 interface WhaleReport {
     title: string;
@@ -22,9 +24,11 @@ interface ReportResponse {
 }
 
 export default function WeekendWhalePage() {
+    const { user } = useAuth();
     const [data, setData] = useState<ReportResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState<number>(0);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/api/weekend-whale-report`)
@@ -131,43 +135,71 @@ export default function WeekendWhalePage() {
 
             <main className="max-w-4xl mx-auto px-6 py-10 space-y-12">
                 
-                {/* Foreign Top 3 */}
+                {/* Foreign Top 10 */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
-                        <Anchor className="w-8 h-8" /> 외국인 순매수 TOP 3
+                        <Anchor className="w-8 h-8" /> 외국인 순매수 TOP 10
                     </h2>
-                    <div className="grid gap-4">
-                        {report?.foreign_analysis?.map((item, idx) => (
-                            <div key={idx} className="bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 hover:bg-gray-800/50 transition-colors">
-                                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center font-black text-2xl text-blue-400">
-                                    {idx + 1}
+                    <div className="grid gap-4 relative">
+                        {report?.foreign_analysis?.map((item, idx) => {
+                            const isBlurred = !user && idx >= 3;
+                            return (
+                                <div key={idx} className={`bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 transition-colors ${isBlurred ? 'blur-md opacity-70 pointer-events-none select-none' : 'hover:bg-gray-800/50'}`}>
+                                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center font-black text-2xl text-blue-400">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
+                                        <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
-                                    <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
-                                </div>
+                            );
+                        })}
+                        {!user && report?.foreign_analysis && report.foreign_analysis.length > 3 && (
+                            <div className="absolute inset-x-0 bottom-0 top-[350px] flex items-center justify-center z-10 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent rounded-3xl">
+                                <button 
+                                    onClick={() => setShowLoginModal(true)}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105"
+                                >
+                                    <Lock className="w-6 h-6" />
+                                    로그인하고 4~10위 분석 확인하기
+                                </button>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
 
-                {/* Institution Top 3 */}
+                {/* Institution Top 10 */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-purple-400">
-                        <Briefcase className="w-8 h-8" /> 기관 순매수 TOP 3
+                        <Briefcase className="w-8 h-8" /> 기관 순매수 TOP 10
                     </h2>
-                    <div className="grid gap-4">
-                        {report?.inst_analysis?.map((item, idx) => (
-                            <div key={idx} className="bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 hover:bg-gray-800/50 transition-colors">
-                                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center font-black text-2xl text-purple-400">
-                                    {idx + 1}
+                    <div className="grid gap-4 relative">
+                        {report?.inst_analysis?.map((item, idx) => {
+                            const isBlurred = !user && idx >= 3;
+                            return (
+                                <div key={idx} className={`bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 transition-colors ${isBlurred ? 'blur-md opacity-70 pointer-events-none select-none' : 'hover:bg-gray-800/50'}`}>
+                                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center font-black text-2xl text-purple-400">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
+                                        <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
-                                    <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
-                                </div>
+                            );
+                        })}
+                        {!user && report?.inst_analysis && report.inst_analysis.length > 3 && (
+                            <div className="absolute inset-x-0 bottom-0 top-[350px] flex items-center justify-center z-10 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent rounded-3xl">
+                                <button 
+                                    onClick={() => setShowLoginModal(true)}
+                                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105"
+                                >
+                                    <Lock className="w-6 h-6" />
+                                    로그인하고 4~10위 분석 확인하기
+                                </button>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
 
@@ -190,6 +222,8 @@ export default function WeekendWhalePage() {
                     </p>
                 </div>
             </main>
+
+            <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
         </div>
     );
 }
