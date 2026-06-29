@@ -55,6 +55,12 @@ export async function requestFCMToken(): Promise<string> {
                 throw new Error('PERMISSION_DENIED');
             }
 
+            // [Fix] 캐시된 토큰이 있으면 재등록 없이 즉시 반환 (타임아웃 방지)
+            const cachedToken = localStorage.getItem('fcm_token_value');
+            if (cachedToken) {
+                console.log('[Firebase Native] Using cached FCM token, skipping re-registration');
+                return cachedToken;
+            }
             try {
                 await PushNotifications.createChannel({
                     id: 'price_alerts',
@@ -77,7 +83,8 @@ export async function requestFCMToken(): Promise<string> {
                 PushNotifications.addListener('registration', (token) => {
                     clearTimeout(timer);
                     console.log('[Firebase Native] FCM Token generated:', token.value);
-                    // 네이티브 리스너 중복 방지를 위해 리스너 제거
+                    // 다음 호출을 위해 토큰 캐시 저장
+                    localStorage.setItem('fcm_token_value', token.value);
                     PushNotifications.removeAllListeners();
                     resolve(token.value);
                 });
