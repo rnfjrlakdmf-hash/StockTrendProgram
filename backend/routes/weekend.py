@@ -55,8 +55,8 @@ async def get_weekend_whale_report():
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
-    # 임시 개방 (테스트용) 주석 처리
-    # return {"is_open": True, "report": get_latest_whale_report()}
+    # 임시 개방 (테스트용) 주석 해제됨
+    return {"is_open": True, "report": get_latest_whale_report()}
     
     # 주말(금 18:00 ~ 월 08:00) 동안 활성화. 기존 is_weekend_open 보다 조금 더 길게 엽니다.
     day = now.weekday()
