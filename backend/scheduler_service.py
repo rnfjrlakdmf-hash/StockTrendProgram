@@ -746,8 +746,8 @@ def send_fomo_alert():
         
         unique_tokens = list(set([t[1] for t in tokens_with_user if t[1]]))
         
-        title = "🤫 오늘 외국인이 남몰래 쓸어담은 종목 TOP 3는?"
-        body = "내일 장이 열리기 전에 확인하세요!"
+        title = "🤫 외국인이 오늘 쓸어담은 종목은?"
+        body = "지금 바로 수급 현황을 확인해보세요!"
         # 평일에는 /discovery 로 보내고 주말에는 /weekend-whale 로 보내는 로직 추가
         from datetime import datetime
         import pytz
@@ -783,8 +783,8 @@ def send_dormant_user_alert():
         else:
             theme_name = "반도체" # fallback
             
-        title = f"💰 어제 시장을 주도했던 가장 뜨거운 테마는 '{theme_name}'이었습니다."
-        body = "AI가 발굴한 내일의 유망 테마를 지금 확인하세요!"
+        title = f"💰 어제 가장 뜨거운 테마는 '{theme_name}'!"
+        body = "AI가 발굴한 내일의 유망 테마를 확인해보세요!"
         url = "/theme"
         
         send_multicast_notification(unique_tokens, title, body, {"url": url})
