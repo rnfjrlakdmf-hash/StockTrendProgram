@@ -25,6 +25,12 @@ const navigation = [
         desc: "토/일 주말에만 열람 가능한 프리미엄 마켓 요약 리포트입니다."
     },
     { 
+        name: "🔒 주말 고래 수급 리포트", 
+        href: "/weekend-whale", 
+        icon: Crown,
+        desc: "세력과 외국인이 몰래 매집한 TOP 10 종목을 파헤치는 주말 한정 프리미엄 리포트입니다."
+    },
+    { 
         name: "🧮 물타기 생존 계산기", 
         href: "/calculator", 
         icon: Activity,
