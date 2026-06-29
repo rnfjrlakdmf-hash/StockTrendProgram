@@ -10,6 +10,8 @@ import { requestFCMToken, onForegroundMessage, getNotificationPermission, showNo
 import { API_BASE_URL } from "@/lib/config";
 import { Bell, BellOff, Check, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 
 
 export default function FCMTokenManager() {
@@ -22,9 +24,39 @@ export default function FCMTokenManager() {
     const [currentToken, setCurrentToken] = useState<string | null>(null);
     const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true, pref_whale_alert: true, pref_watchlist_live: true });
 
+    // [Native App] 앱(Android) 실행 시 자동으로 FCM 토큰 등록
     useEffect(() => {
-        // [Critical] Explicit Service Worker Registration
-        if ('serviceWorker' in navigator) {
+        if (Capacitor.isNativePlatform()) {
+            const autoRegisterNative = async () => {
+                try {
+                    const permStatus = await PushNotifications.requestPermissions();
+                    if (permStatus.receive !== 'granted') return;
+                    await PushNotifications.register();
+                    PushNotifications.addListener('registration', async (tokenData) => {
+                        const token = tokenData.value;
+                        const userId = localStorage.getItem('stock_user') ? JSON.parse(localStorage.getItem('stock_user')!).id : 'guest';
+                        if (userId === 'guest') return;
+                        console.log('[FCM Native] Auto-registering android token:', token.substring(0, 20) + '...');
+                        await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+                            body: JSON.stringify({ token, device_type: 'android', device_name: 'Android App' })
+                        });
+                        localStorage.setItem('fcm_registered', 'true');
+                        localStorage.setItem('fcm_token_value', token);
+                        setRegistered(true);
+                    });
+                } catch (e) {
+                    console.error('[FCM Native] Auto-register failed:', e);
+                }
+            };
+            autoRegisterNative();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        // [Critical] Explicit Service Worker Registration (Web only)
+        if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
             navigator.serviceWorker.register('/firebase-messaging-sw.js')
                 .then((registration) => {
                     console.log('[FCM] Service Worker registered:', registration.scope);
@@ -192,8 +224,8 @@ export default function FCMTokenManager() {
             },
             body: JSON.stringify({
                 token,
-                device_type: 'web',
-                device_name: navigator.userAgent
+                device_type: Capacitor.isNativePlatform() ? 'android' : 'web',
+                device_name: Capacitor.isNativePlatform() ? 'Android App' : navigator.userAgent
             })
         });
         return res.json();
