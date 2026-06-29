@@ -195,6 +195,24 @@ export function onForegroundMessage(callback: (payload: any) => void) {
 }
 
 /**
+ * 네이티브 푸시 알림 클릭 시 리스너
+ */
+export function onNotificationClick(callback: (payload: any) => void) {
+    if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+            console.log('[Firebase Native] Notification clicked:', action);
+            callback({
+                notification: {
+                    title: action.notification.title,
+                    body: action.notification.body
+                },
+                data: action.notification.data
+            });
+        });
+    }
+}
+
+/**
  * 알림 권한 상태 확인
  */
 export function getNotificationPermission(): NotificationPermission {

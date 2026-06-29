@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { requestFCMToken, onForegroundMessage, getNotificationPermission, showNotification } from "@/lib/firebase";
+import { requestFCMToken, onForegroundMessage, onNotificationClick, getNotificationPermission, showNotification } from "@/lib/firebase";
 import { API_BASE_URL } from "@/lib/config";
 import { Bell, BellOff, Check, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -87,6 +87,15 @@ export default function FCMTokenManager() {
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
             showNotification(title, { body, data: payload.data });
+        });
+
+        // [Fix] 네이티브 푸시 알림 클릭(터치) 시 URL 이동 처리
+        onNotificationClick((payload) => {
+            console.log('[FCM Native] Notification Clicked, payload:', payload);
+            if (payload.data && payload.data.url) {
+                // 특정 URL로 즉시 이동
+                window.location.href = payload.data.url;
+            }
         });
     }, []);
 
