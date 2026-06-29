@@ -1448,6 +1448,20 @@ def get_all_fcm_tokens_with_user(require_whale_alert=False) -> list:
     finally:
         conn.close()
 
+def get_dormant_fcm_tokens_with_user(days: int = 3) -> list:
+    """3일 이상 접속하지 않은 휴면 유저의 FCM 토큰과 user_id 반환"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT DISTINCT user_id, token FROM fcm_tokens WHERE last_used < datetime('now', ?)", (f"-{days} days",))
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"[DB] Get dormant FCM tokens error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
 def get_fcm_tokens_for_ipo() -> list:
     """공모주 알림 수신에 동의한(혹은 기본값 1인) 모든 토큰 반환"""
     conn = get_db_connection()

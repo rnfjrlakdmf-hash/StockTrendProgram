@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "656335224088",
+    "project_id": "stocktrendprogram",
+    "storage_bucket": "stocktrendprogram.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:656335224088:android:42324a0507bb8fc811f26d",
+        "android_client_info": {
+          "package_name": "com.Stock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXLdUVmgeFr4YNrzAwxsq4cyWxJJvtIeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:656335224088:android:3b263fac2df3630011f26d",
+        "android_client_info": {
+          "package_name": "com.stocktrend.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXLdUVmgeFr4YNrzAwxsq4cyWxJJvtIeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

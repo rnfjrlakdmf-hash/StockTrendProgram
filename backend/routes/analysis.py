@@ -245,16 +245,22 @@ async def read_stock(symbol: str, skip_ai: bool = False):
                         "rationale": ai_result.get("rationale", {}),
                         "related_stocks": ai_result.get("related_stocks", [])
                     })
-                    # [3단계] DB에 AI 결과 저장 (6시간 캐시, 비동기 백그라운드)
-                    await asyncio.to_thread(save_analysis_result, data)
-                    await asyncio.to_thread(save_ai_analysis_cache, data['symbol'], ai_result)
+                    # [3단계] DB에 AI 결과 저장 (6시간 캐시, 비동기 백그라운드) - 에러가 아닐 때만
+                    is_ai_error = ai_result.get("is_error", False)
+                    if not is_ai_error:
+                        await asyncio.to_thread(save_analysis_result, data)
+                        await asyncio.to_thread(save_ai_analysis_cache, data['symbol'], ai_result)
             except Exception as e:
                 print(f"[ERROR] AI Analysis in thread failed: {e}")
+                is_ai_error = True
         
-        # [메모리 캐시] TTL 60분 (skip_ai=False), 10분 (skip_ai=True)
+        # [메모리 캐시] TTL 60분 (skip_ai=False), 10분 (skip_ai=True), 에러시 캐시 안함 (0초)
         # skip_ai=True: Fast Fetch 결과 10분 캐시 → 재검색 시 즉시 반환
         # skip_ai=False: AI 결과 포함 1시간 캐시 → Gemini 재호출 없음
         mem_ttl = 3600 if not skip_ai else 600
+        if not skip_ai and locals().get('is_ai_error', False):
+            mem_ttl = 10  # 에러 발생 시 10초만 캐시해서 빠른 재시도 유도
+            
         turbo_engine.set_cache(cache_key, data, ttl=mem_ttl)
         return {"status": "success", "data": data, "turbo": False}
     return {"status": "error", "message": "Stock not found"}

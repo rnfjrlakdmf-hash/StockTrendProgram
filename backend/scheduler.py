@@ -795,3 +795,56 @@ async def weekend_report_scheduler_loop():
         except Exception as e:
             logger.error(f"[WeekendReport] Loop error: {e}")
             await asyncio.sleep(60)
+
+async def fomo_alert_scheduler_loop():
+    """매일 저녁 8시(20시) FOMO 알림 발송"""
+    logger.info("[FOMO] FOMO Alert Scheduler Active.")
+    last_run_date = ""
+    
+    import pytz
+    from datetime import datetime
+    import asyncio
+    kst = pytz.timezone('Asia/Seoul')
+    
+    while True:
+        try:
+            now = datetime.now(kst)
+            date_str = now.strftime("%Y-%m-%d")
+            
+            if now.hour == 20 and now.minute >= 0 and last_run_date != date_str:
+                logger.info(f"[FOMO] Sending FOMO alert for {date_str}...")
+                from scheduler_service import send_fomo_alert
+                send_fomo_alert()
+                last_run_date = date_str
+                
+            await asyncio.sleep(60 * 15) # 15분 마다 체크
+        except Exception as e:
+            logger.error(f"[FOMO] Loop error: {e}")
+            await asyncio.sleep(60)
+
+async def dormant_user_scheduler_loop():
+    """매일 저녁 6시(18시) 휴면 유저 깨우기 알림 발송"""
+    logger.info("[Dormant] Dormant User Alert Scheduler Active.")
+    last_run_date = ""
+    
+    import pytz
+    from datetime import datetime
+    import asyncio
+    kst = pytz.timezone('Asia/Seoul')
+    
+    while True:
+        try:
+            now = datetime.now(kst)
+            date_str = now.strftime("%Y-%m-%d")
+            
+            if now.hour == 18 and now.minute >= 0 and last_run_date != date_str:
+                logger.info(f"[Dormant] Sending Dormant User alert for {date_str}...")
+                from scheduler_service import send_dormant_user_alert
+                send_dormant_user_alert()
+                last_run_date = date_str
+                
+            await asyncio.sleep(60 * 15) # 15분 마다 체크
+        except Exception as e:
+            logger.error(f"[Dormant] Loop error: {e}")
+            await asyncio.sleep(60)
+

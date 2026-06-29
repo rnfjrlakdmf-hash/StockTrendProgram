@@ -1,0 +1,52 @@
+[
+  {
+    "symbol": "ITG",
+    "corp": "Investment Technology Group Inc",
+    "type": "US NASDAQ",
+    "price": "",
+    "band": "$19 ~ $22",
+    "date": "2026-07-01",
+    "currency": "USD",
+    "is_completed": false
+  },
+  {
+    "symbol": "LIME",
+    "corp": "Lime Energy Co",
+    "type": "US NASDAQ",
+    "price": "",
+    "band": "$24 ~ $26",
+    "date": "2026-07-01",
+    "currency": "USD",
+    "is_completed": false
+  },
+  {
+    "symbol": "BSP",
+    "corp": "American Strategic Income Portfolio Inc Ii",
+    "type": "US NASDAQ",
+    "price": "",
+    "band": "$26 ~ $28",
+    "date": "2026-07-01",
+    "currency": "USD",
+    "is_completed": false
+  },
+  {
+    "symbol": "CUX",
+    "corp": "CopperTech Metals Inc.",
+    "type": "US NYSE",
+    "price": "",
+    "band": "$16 ~ $18",
+    "date": "2026-07-01",
+    "currency": "USD",
+    "is_completed": false
+  },
+  {
+    "symbol": "SIND",
+    "corp": "Synthetic Industries Inc",
+    "type": "US NYSE",
+    "price": "",
+    "band": "$11.25 ~ $13.25",
+    "date": "2026-07-01",
+    "currency": "USD",
+    "is_completed": false
+  }
+]

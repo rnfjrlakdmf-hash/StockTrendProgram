@@ -1,0 +1,500 @@
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:009150 - Refreshing data (kept for fallback)...
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:009150 - Refreshing data (kept for fallback)...
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:402340 - Refreshing data (kept for fallback)...
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:402340 - Refreshing data (kept for fallback)...
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:000660 - Optimized for speed
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 000660
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:000660 - Optimized for speed
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005935 - Refreshing data (kept for fallback)...
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005935 - Refreshing data (kept for fallback)...
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:402340 - Optimized for speed
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 402340
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:402340 - Optimized for speed
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005380 - Refreshing data (kept for fallback)...
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005380 - Refreshing data (kept for fallback)...
+Jun 27 12:01:54 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:009150 - Optimized for speed
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 009150
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:009150 - Optimized for speed
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:034730 - Turbo mode activated (0ms)
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:240810 - Refreshing data (kept for fallback)...
+Jun 27 12:01:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:240810 - Refreshing data (kept for fallback)...
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005380 - Optimized for speed
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 005380
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005380 - Optimized for speed
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:036930 - Refreshing data (kept for fallback)...
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:036930 - Refreshing data (kept for fallback)...
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:35872 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:01:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:036930 - Optimized for speed
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 036930
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:036930 - Optimized for speed
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:011070 - Refreshing data (kept for fallback)...
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:011070 - Refreshing data (kept for fallback)...
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:240810 - Optimized for speed
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 240810
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:240810 - Optimized for speed
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005935 - Optimized for speed
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 005935
+Jun 27 12:01:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005935 - Optimized for speed
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:50914 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:011070 - Optimized for speed
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 011070
+Jun 27 12:01:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:011070 - Optimized for speed
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005930 - Turbo mode activated (0ms)
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:000660 - Turbo mode activated (0ms)
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005380 - Turbo mode activated (0ms)
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:066570 - Refreshing data (kept for fallback)...
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:035420 - Refreshing data (kept for fallback)...
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:066570 - Refreshing data (kept for fallback)...
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:009150 - Turbo mode activated (0ms)
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:034020 - Refreshing data (kept for fallback)...
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:034020 - Refreshing data (kept for fallback)...
+Jun 27 12:01:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:035420 - Refreshing data (kept for fallback)...
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:35872 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:034020 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 034020
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:034020 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:042660 - Refreshing data (kept for fallback)...
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:042660 - Refreshing data (kept for fallback)...
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:035420 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 035420
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:035420 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:086520 - Refreshing data (kept for fallback)...
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:086520 - Refreshing data (kept for fallback)...
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:066570 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 066570
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:066570 - Optimized for speed
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:402340 - Turbo mode activated (0ms)
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/market/indices
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [IndexAPI] Returning cached market index data (cache age: 254.5 seconds)
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_normalized_major_indicators - Turbo mode activated (0ms)
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:50914 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:086520 - Optimized for speed
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 086520
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:086520 - Optimized for speed
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:50914 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:042660 - Optimized for speed
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 042660
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:042660 - Optimized for speed
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:02 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:50914 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_exchange_rate:USD - Refreshing data (kept for fallback)...
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/market/indices -> 200
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/market/indices HTTP/1.1" 200 OK
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: [ExchangeRate] Twelve Data retrieved: USD/KRW = 1536.4477
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_exchange_rate:USD - Optimized for speed
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:INLF.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:RCT.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:03 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:AAPL.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:RCT.O - Optimized for speed
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:AMZN.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:INLF.O - Optimized for speed
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:MSFT.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AAPL.O - Optimized for speed
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:NVDA.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:04 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AMZN.O - Optimized for speed
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:OPEN.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:MSFT.O - Optimized for speed
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:CDE - Refreshing data (kept for fallback)...
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:NVDA.O - Optimized for speed
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:AAL.O - Refreshing data (kept for fallback)...
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:OPEN.O - Optimized for speed
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:NOK - Refreshing data (kept for fallback)...
+Jun 27 12:02:05 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:CDE - Optimized for speed
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AAL.O - Optimized for speed
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:NOK - Optimized for speed
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:06 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:41786 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:08 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:09 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 21.1s.
+Jun 27 12:02:10 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:10 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:10 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:10 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:11 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:11 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:39472 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:12 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:39472 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:13 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:14 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:14 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:14 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:39472 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:15 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:15 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:15 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/market/indices
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [IndexAPI] Returning cached market index data (cache age: 269.1 seconds)
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_normalized_major_indicators - Turbo mode activated (0ms)
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:16 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     32.194.159.223:48342 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/market/indices -> 200
+Jun 27 12:02:17 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/market/indices HTTP/1.1" 200 OK
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:39472 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:18 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:48078 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:19 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:19 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:19 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:20 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:20 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:20 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:21 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:21 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:21 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:21 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:48082 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:22 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:48082 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:48082 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:24 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:25 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:26 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:48082 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:28 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:29 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:29 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:29 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:30 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:31 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/market/indices
+Jun 27 12:02:31 ip-172-31-34-224 stocktrend-backend[2819063]: [IndexAPI] Returning cached market index data (cache age: 284.1 seconds)
+Jun 27 12:02:31 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_normalized_major_indicators - Turbo mode activated (0ms)
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:52036 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/market/indices -> 200
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/market/indices HTTP/1.1" 200 OK
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:35634 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:32 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:35634 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:33 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:34 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:34 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:34 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:35 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:35 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:35 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:35634 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:36 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] POST /api/system/fcm/preferences
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: [DB] Update FCM prefs error: no such column: pref_dividend
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] POST /api/system/fcm/preferences -> 200
+Jun 27 12:02:37 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     1.243.18.233:65074 - "POST /api/system/fcm/preferences HTTP/1.1" 200 OK
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:35634 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:38 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:40 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:40 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:40 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:41 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:41 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:41 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:46426 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:41 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: [BatchNews] 오늘은 한국 휴장일이므로 뉴스 수집/발송을 생략합니다.
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:42 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:52404 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:52406 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:43 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:52404 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:45 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:45 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:45 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:45 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 4.0s.
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/market/indices
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: [IndexAPI] Returning cached market index data (cache age: 299.4 seconds)
+Jun 27 12:02:46 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_normalized_major_indicators - Refreshing data (kept for fallback)...
+Jun 27 12:02:47 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:47 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:47 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34822 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:47 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_normalized_major_indicators - Optimized for speed
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:52404 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:57916 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/market/indices -> 200
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34820 - "GET /api/market/indices HTTP/1.1" 200 OK
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:034730 - Refreshing data (kept for fallback)...
+Jun 27 12:02:48 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:034730 - Refreshing data (kept for fallback)...
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:034730 - Optimized for speed
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 034730
+Jun 27 12:02:49 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:034730 - Optimized for speed
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: [Turbo] Cache Warm-up Completed in 5.5s.
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:419050 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:000890 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:000890 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:079650 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:419050 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:079650 - Refreshing data (kept for fallback)...
+Jun 27 12:02:50 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:51 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:51 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:079650 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 079650
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:079650 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:058730 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:058730 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:419050 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 419050
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:419050 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005930 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005930 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:000890 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 000890
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:000890 - Optimized for speed
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:475430 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:475430 - Refreshing data (kept for fallback)...
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:57924 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:52 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:57924 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005930 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 005930
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005930 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:073240 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:073240 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:058730 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 058730
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:058730 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:043200 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:043200 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:475430 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 475430
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:475430 - Optimized for speed
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:129890 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:129890 - Refreshing data (kept for fallback)...
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:53 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:55776 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:073240 - Optimized for speed
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 073240
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:073240 - Optimized for speed
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:067290 - Refreshing data (kept for fallback)...
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:067290 - Refreshing data (kept for fallback)...
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:54 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:043200 - Optimized for speed
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 043200
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:043200 - Optimized for speed
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:129890 - Optimized for speed
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 129890
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:129890 - Optimized for speed
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:067290 - Optimized for speed
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 067290
+Jun 27 12:02:55 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:067290 - Optimized for speed
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:57924 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:000660 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005930 - Turbo mode activated (0ms)
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:000660 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:009150 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:009150 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:402340 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:402340 - Refreshing data (kept for fallback)...
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/alerts
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/alerts -> 200
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/alerts HTTP/1.1" 200 OK
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:56 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:000660 - Optimized for speed
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 000660
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:000660 - Optimized for speed
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005935 - Refreshing data (kept for fallback)...
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005935 - Refreshing data (kept for fallback)...
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:402340 - Optimized for speed
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 402340
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:402340 - Optimized for speed
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005380 - Refreshing data (kept for fallback)...
+Jun 27 12:02:57 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005380 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:57924 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:009150 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 009150
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:009150 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:034730 - Turbo mode activated (0ms)
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:240810 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:240810 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/analytics/stats
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/analytics/stats -> 200
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     54.172.17.16:47510 - "GET /api/system/analytics/stats HTTP/1.1" 200 OK
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005380 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 005380
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005380 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:036930 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:036930 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005935 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 005935
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005935 - Optimized for speed
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:011070 - Refreshing data (kept for fallback)...
+Jun 27 12:02:58 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:011070 - Refreshing data (kept for fallback)...
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:240810 - Optimized for speed
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 240810
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:240810 - Optimized for speed
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:036930 - Optimized for speed
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 036930
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:036930 - Optimized for speed
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:011070 - Optimized for speed
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: [get_simple_quote] Success via Legal yfinance Engine for 011070
+Jun 27 12:02:59 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:011070 - Optimized for speed
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     98.88.248.115:46026 - "GET /api/system/status HTTP/1.1" 200 OK
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005930 - Turbo mode activated (0ms)
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:000660 - Turbo mode activated (0ms)
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005380 - Turbo mode activated (0ms)
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:066570 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:035420 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:009150 - Turbo mode activated (0ms)
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:066570 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:035420 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:034020 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:034020 - Refreshing data (kept for fallback)...
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Request] GET /api/system/status
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: [Response] GET /api/system/status -> 200
+Jun 27 12:03:00 ip-172-31-34-224 stocktrend-backend[2819063]: INFO:     3.90.28.181:34806 - "GET /api/system/status HTTP/1.1" 200 OK

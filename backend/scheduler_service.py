@@ -737,6 +737,63 @@ def send_weekend_crypto_report():
         print(f"[Scheduler-Error] Failed to send weekend crypto report: {e}")
     return 0
 
+def send_fomo_alert():
+    try:
+        from db_manager import get_all_fcm_tokens_with_user
+        tokens_with_user = get_all_fcm_tokens_with_user()
+        if not tokens_with_user:
+            return 0
+        
+        unique_tokens = list(set([t[1] for t in tokens_with_user if t[1]]))
+        
+        title = "🤫 오늘 외국인이 남몰래 쓸어담은 종목 TOP 3는?"
+        body = "내일 장이 열리기 전에 확인하세요!"
+        # 평일에는 /discovery 로 보내고 주말에는 /weekend-whale 로 보내는 로직 추가
+        from datetime import datetime
+        import pytz
+        kst = pytz.timezone('Asia/Seoul')
+        now = datetime.now(kst)
+        day = now.weekday()
+        hour = now.hour
+        is_weekend = (day == 4 and hour >= 18) or day == 5 or day == 6 or (day == 0 and hour < 8)
+        
+        url = "/weekend-whale" if is_weekend else "/discovery"
+        
+        send_multicast_notification(unique_tokens, title, body, {"url": url})
+        print(f"[Scheduler] FOMO Alert sent to {len(unique_tokens)} devices.")
+        return len(unique_tokens)
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to send FOMO alert: {e}")
+        return 0
+
+def send_dormant_user_alert():
+    try:
+        from db_manager import get_dormant_fcm_tokens_with_user
+        from korea_data import get_top_trending_themes
+        
+        tokens_with_user = get_dormant_fcm_tokens_with_user(days=3)
+        if not tokens_with_user:
+            return 0
+            
+        unique_tokens = list(set([t[1] for t in tokens_with_user if t[1]]))
+        
+        top_themes = get_top_trending_themes(1)
+        if top_themes and len(top_themes) > 0:
+            theme_name = top_themes[0]['name']
+        else:
+            theme_name = "반도체" # fallback
+            
+        title = f"💰 어제 시장을 주도했던 가장 뜨거운 테마는 '{theme_name}'이었습니다."
+        body = "AI가 발굴한 내일의 유망 테마를 지금 확인하세요!"
+        url = "/theme"
+        
+        send_multicast_notification(unique_tokens, title, body, {"url": url})
+        print(f"[Scheduler] Dormant User Alert sent to {len(unique_tokens)} devices.")
+        return len(unique_tokens)
+    except Exception as e:
+        print(f"[Scheduler-Error] Failed to send Dormant User alert: {e}")
+        return 0
+
 def run_market_scheduler():
     """시장별 이벤트 감시 메인 루프"""
     import asyncio
