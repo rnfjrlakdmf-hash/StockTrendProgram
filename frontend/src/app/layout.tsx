@@ -26,19 +26,28 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "스마트 투자 비서 - 장 마감 데이터 분석 및 무료 알림 서비스 | AI Stock Analyst",
   description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요. 테슬라, 엔비디아, 삼성전자 등 국내외 주식 분석 제공.",
-  keywords: ["AI 주식 분석", "무료 주가 알림", "주식 속보 알림", "장 마감 미국주식 시세", "테슬라 주가 분석", "엔비디아 주가 분석", "AI 모닝 브리핑", "주식 포트폴리오 진단"],
+  keywords: ["스마트 투자 비서", "AI 주식 분석", "무료 주가 알림", "주식 속보 알림", "장 마감 미국주식 시세", "테슬라 주가 분석", "엔비디아 주가 분석", "AI 모닝 브리핑", "주식 포트폴리오 진단", "미국주식 알림", "국내주식 알림"],
   metadataBase: new URL('https://stock-trend-program.co.kr'),
+  alternates: {
+    canonical: 'https://stock-trend-program.co.kr',
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: {
+      'naver-site-verification': process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION ? [process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION] : [],
+    },
+  },
   openGraph: {
-    title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스",
+    title: "스마트 투자 비서 - 실시간 주가 알림 및 AI 분석",
     description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요.",
     url: 'https://stock-trend-program.co.kr',
-    siteName: 'AI Stock Analyst',
+    siteName: '스마트 투자 비서 (AI Stock Analyst)',
     images: [
       {
-        url: 'https://stock-trend-program.co.kr/api/og?title=AI%20%EC%A3%BC%EC%8B%9D%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C',
+        url: 'https://stock-trend-program.co.kr/api/og?title=%EC%8A%A4%EB%A7%88%ED%8A%B8%20%ED%88%AC%EC%9E%90%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C',
         width: 1200,
         height: 630,
-        alt: 'AI Stock Analyst Dashboard Preview',
+        alt: '스마트 투자 비서 대시보드',
       },
     ],
     locale: 'ko_KR',
@@ -46,9 +55,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "AI 주식 비서 - 장 마감 데이터 분석 및 무료 알림 서비스",
+    title: "스마트 투자 비서 - 실시간 주가 알림 및 AI 분석",
     description: "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스를 무료로 이용해 보세요.",
-    images: ['https://stock-trend-program.co.kr/api/og?title=AI%20%EC%A3%BC%EC%8B%9D%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C'],
+    images: ['https://stock-trend-program.co.kr/api/og?title=%EC%8A%A4%EB%A7%88%ED%8A%B8%20%ED%88%AC%EC%9E%90%20%EB%B9%84%EC%84%9C&subtitle=%EC%8B%A4%EC%8B%9C%EA%B0%84%20%EB%A7%A4%EC%88%98%20%EC%8B%9C%EA%B7%B8%EB%84%90%20%ED%8F%AC%EC%B0%A9&theme=%EC%8A%A4%ED%86%A1%20%ED%8A%B8%EB%A0%8C%EB%93%9C'],
     creator: '@StockTrendAI',
   },
   icons: {
@@ -78,6 +87,25 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <KakaoScript />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "스마트 투자 비서",
+              "applicationCategory": "FinanceApplication",
+              "operatingSystem": "Web, Android",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "KRW"
+              },
+              "description": "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스",
+              "url": "https://stock-trend-program.co.kr"
+            })
+          }}
+        />
         {/* [v4] isPro 강제 삭제 - 결제 기능 완전 폐지로 인한 캐시 초기화 */}
         <script dangerouslySetInnerHTML={{ __html: `try { localStorage.removeItem('isPro'); localStorage.removeItem('proExpiry'); } catch(e) {}` }} />
         <AuthProvider>
