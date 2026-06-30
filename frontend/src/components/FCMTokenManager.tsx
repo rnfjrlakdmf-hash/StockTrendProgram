@@ -425,9 +425,10 @@ export default function FCMTokenManager() {
                         </div>
 
                         {/* Hover/Click Tooltip (Smooth Appearance) */}
-                        <div className={`absolute bottom-full right-0 mb-3 w-max max-w-[280px] transition-all duration-300 ${showMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto'}`}>
+                        <div id="fcm-settings-modal" data-open={showMenu} className={`absolute bottom-full right-0 mb-3 w-max max-w-[280px] transition-all duration-300 ${showMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto'}`}>
                             <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-4 shadow-2xl text-xs relative">
                                 <button 
+                                    id="fcm-modal-close-btn"
                                     onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
                                     className="absolute top-2 right-2 text-gray-600 hover:text-white p-1"
                                 >

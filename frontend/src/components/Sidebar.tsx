@@ -282,6 +282,17 @@ export default function Sidebar() {
         let listener: any;
         const setupBack = async () => {
             listener = await App.addListener('backButton', () => {
+                // 1. Check if FCM Settings Modal is open
+                const fcmModal = document.getElementById('fcm-settings-modal');
+                if (fcmModal && fcmModal.getAttribute('data-open') === 'true') {
+                    const closeBtn = document.getElementById('fcm-modal-close-btn');
+                    if (closeBtn) {
+                        closeBtn.click();
+                        return;
+                    }
+                }
+
+                // 2. Default navigation logic
                 const path = window.location.pathname;
                 if (path === '/' || path === '/discovery' || path === '/auth/login') {
                     App.exitApp();
@@ -549,7 +560,15 @@ export default function Sidebar() {
                     </div>
 
                     <nav className="space-y-1.5">
-                        {navigation.map((item) => (
+                        {navigation.filter(item => {
+                            if (!mounted) return true; // SSR 시에는 hydration mismatch 방지를 위해 다 보여주거나 기본값 사용
+                            const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+                            const isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
+                            if (!isWeekend && (item.href === '/weekend-report' || item.href === '/weekend-whale')) {
+                                return false;
+                            }
+                            return true;
+                        }).map((item) => (
                             <div 
                                 key={item.name} 
                                 className="relative group/menu flex flex-col rounded-xl transition-all hover:bg-white/5"
