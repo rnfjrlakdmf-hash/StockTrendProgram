@@ -432,7 +432,7 @@ export default function FCMTokenManager() {
                                 {!loading && (
                                     <div className="space-y-4">
                                         {/* 가이드 및 설정 섹션 */}
-                                        <div className="bg-white/5 rounded-xl p-3 space-y-3 border border-white/5">
+                                        <div className="bg-white/5 rounded-xl p-3 space-y-3 border border-white/5 max-h-[50vh] overflow-y-auto custom-scrollbar">
                                             {/* AI 마켓 브리핑 */}
                                             <div className="flex items-center justify-between gap-2.5">
                                                 <div className="flex items-start gap-2.5">
