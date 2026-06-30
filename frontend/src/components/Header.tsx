@@ -153,9 +153,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
         <header className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-50 transition-all duration-200">
             <div className="flex items-center gap-8 w-full md:w-auto mb-4 md:mb-0 flex-shrink-0 min-w-[150px]">
                 <div className="flex flex-col">
-                    <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
+                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                         {title}
-                    </h1>
+                    </h2>
                     {subtitle && (
                         <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block whitespace-nowrap">
                             {subtitle}
