@@ -50,6 +50,24 @@ def sync_analytics_to_sheet():
         sheet.clear()
         sheet.update(values=sheet_data, range_name='A1')
         
+        # 5. 시트 디자인 예쁘게 꾸미기 (포맷팅)
+        # 첫 번째 행(헤더) 고정
+        sheet.freeze(rows=1)
+        
+        # 헤더 스타일 적용 (파란색 배경, 흰색 굵은 글씨, 가운데 정렬)
+        sheet.format('A1:C1', {
+            "backgroundColor": {"red": 0.1, "green": 0.3, "blue": 0.6},
+            "horizontalAlignment": "CENTER",
+            "textFormat": {"foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}, "fontSize": 11, "bold": True}
+        })
+        
+        # 데이터 영역 스타일 적용 (가운데 정렬)
+        if len(rows) > 0:
+            sheet.format(f'A2:C{len(rows)+1}', {
+                "horizontalAlignment": "CENTER",
+                "textFormat": {"fontSize": 10}
+            })
+        
         print(f"[GoogleSheets] 총 {len(rows)}일치의 데이터를 성공적으로 동기화했습니다.")
         return True
         
