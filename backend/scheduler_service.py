@@ -125,9 +125,14 @@ def calculate_watchlist_performance(user_id: str, market: str):
         
     if count == 0: return None
     
+    portfolio_return = None
+    if total_buy_value > 0:
+        portfolio_return = ((total_current_value - total_buy_value) / total_buy_value) * 100
+        
     return {
         "avg_daily_change": total_daily_change / count,
         "total_profit_amt": total_profit_amt,
+        "portfolio_return": portfolio_return,
         "items": items_perf,
         "count": count
     }
@@ -385,11 +390,19 @@ def send_closing_notification(market: str):
             market_summary = base_str + "\n" + " | ".join(extra_list[:2]) + "\n\n"
             
             avg_change = perf["avg_daily_change"]
-            portfolio_return = perf.get("portfolio_return", avg_change)
+            portfolio_return = perf.get("portfolio_return")
             total_profit = perf.get("total_profit_amt", 0)
+            
+            if portfolio_return is not None:
+                display_return = portfolio_return
+                return_label = "총 누적 수익률"
+            else:
+                display_return = avg_change
+                return_label = "평균 일간 등락률"
+                
             unit = "원" if market == "KR" else "$"
             market_name = "국내" if market == "KR" else "해외"
-            emoji = "📈" if portfolio_return > 0 else "📉" if portfolio_return < 0 else "➖"
+            emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
             title = f"🌕 {market_name} 장마감 리포트 {emoji}"
             
             # 수익금 문자열 생성 (미국장은 원화 환산 추가)
@@ -440,6 +453,7 @@ def send_closing_notification(market: str):
                 line = f"• {item['name']}{qty_str}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
                 if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                     diff = item['price_diff']
+                    added_perf = item.get('added_perf', 0)
                     if market == "US":
                         krw_diff = diff * fx_rate
                         sign = "+" if krw_diff > 0 else "-" if krw_diff < 0 else ""
@@ -447,13 +461,13 @@ def send_closing_notification(market: str):
                         diff_str = f"{diff:+,.2f} (약 {krw_diff_str})"
                     else:
                         diff_str = f"{diff:+,.0f}"
-                    line += f"\n  ↳ 💰총 수익: {diff_str}{unit}"
+                    line += f"\n  ↳ 💰총 수익: {diff_str}{unit} ({added_perf:+.1f}%)"
                 price_list.append(line)
                 
             body_market = market_summary.strip()
             title_market = f"🌕 {market_name} 장마감 시황"
             
-            body_portfolio = f"평균 수익률: {portfolio_return:+.2f}%\n" + profit_str + "\n".join(price_list)
+            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + "\n".join(price_list)
             title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)
@@ -934,9 +948,17 @@ def run_market_scheduler():
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date
 
-            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
+            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins) 및 구글 시트 동기화
             if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
                 send_daily_analytics_report()
+                
+                # 구글 시트 방문자 통계 동기화
+                try:
+                    from google_sheets_sync import sync_analytics_to_sheet
+                    sync_analytics_to_sheet()
+                except Exception as e:
+                    print(f"[Scheduler] Google Sheets sync error: {e}")
+                    
                 last_run_daily_report = current_date
             
             # [매일 발송] AI 모닝 브리핑 (KR)
