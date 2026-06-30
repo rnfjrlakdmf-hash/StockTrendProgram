@@ -1353,7 +1353,7 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?, pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_ipo = ?, pref_dividend = ?, pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1361,6 +1361,7 @@ def update_fcm_preferences(token: str, prefs: dict):
             1 if prefs.get('pref_price', True) else 0,
             1 if prefs.get('pref_news', True) else 0,
             1 if prefs.get('pref_watch_compact', False) else 0,
+            1 if prefs.get('pref_ipo', True) else 0,
             1 if prefs.get('pref_dividend', True) else 0,
             1 if prefs.get('pref_whale_alert', True) else 0,
             1 if prefs.get('pref_insider_alert', True) else 0,

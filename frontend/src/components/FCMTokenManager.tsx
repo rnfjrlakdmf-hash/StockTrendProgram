@@ -34,6 +34,7 @@ export default function FCMTokenManager() {
                     await PushNotifications.register();
                     PushNotifications.addListener('registration', async (tokenData) => {
                         const token = tokenData.value;
+                        setCurrentToken(token); // Fix: Set token state so toggles work
                         const userId = localStorage.getItem('stock_user') ? JSON.parse(localStorage.getItem('stock_user')!).id : 'guest';
                         if (userId === 'guest') return;
                         console.log('[FCM Native] Auto-registering android token:', token.substring(0, 20) + '...');
@@ -115,6 +116,16 @@ export default function FCMTokenManager() {
                 window.location.href = payload.data.url;
             }
         });
+    }, []);
+
+    // [Init] Load initial token from localStorage
+    useEffect(() => {
+        const stored = localStorage.getItem('fcm_token_value');
+        if (stored) {
+            setCurrentToken(stored);
+            setRegistered(true);
+            setPermission('granted');
+        }
     }, []);
 
     // [Auto Sync] 사용자가 변경되거나 권한이 허용되면 토큰 강제 갱신
