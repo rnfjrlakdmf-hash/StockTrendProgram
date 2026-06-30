@@ -125,6 +125,7 @@ export default function FCMTokenManager() {
             setCurrentToken(stored);
             setRegistered(true);
             setPermission('granted');
+            fetchPreferences(stored);
         }
     }, []);
 
