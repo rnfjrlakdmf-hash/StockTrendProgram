@@ -39,36 +39,46 @@ def sync_analytics_to_sheet():
             print("[GoogleSheets] 연동할 통계 데이터가 없습니다.")
             return True
             
-        # 3. 시트에 쓸 데이터 구성 (헤더 + 데이터)
+        spreadsheet = client.open_by_key(SPREADSHEET_ID)
         header = ["날짜(YYYY-MM-DD)", "일간 조회수(PV)", "일간 순방문자(UV)"]
-        sheet_data = [header]
         
+        # 3. 데이터를 'YYYY-MM' 월별로 그룹화
+        from collections import defaultdict
+        grouped_data = defaultdict(list)
         for r in rows:
-            sheet_data.append([r[0], r[1], r[2]])
+            date_str = r[0] # "2026-06-30"
+            month_key = date_str[:7] # "2026-06"
+            grouped_data[month_key].append(r)
             
-        # 4. 시트 내용 전체 지우고 새로 덮어쓰기 (중복 방지 및 완벽한 동기화)
-        sheet.clear()
-        sheet.update(values=sheet_data, range_name='A1')
-        
-        # 5. 시트 디자인 예쁘게 꾸미기 (포맷팅)
-        # 첫 번째 행(헤더) 고정
-        sheet.freeze(rows=1)
-        
-        # 헤더 스타일 적용 (파란색 배경, 흰색 굵은 글씨, 가운데 정렬)
-        sheet.format('A1:C1', {
-            "backgroundColor": {"red": 0.1, "green": 0.3, "blue": 0.6},
-            "horizontalAlignment": "CENTER",
-            "textFormat": {"foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}, "fontSize": 11, "bold": True}
-        })
-        
-        # 데이터 영역 스타일 적용 (가운데 정렬)
-        if len(rows) > 0:
-            sheet.format(f'A2:C{len(rows)+1}', {
+        # 4. 각 월별로 탭(Worksheet)을 만들거나 찾아서 데이터 기록
+        for month_key, month_rows in grouped_data.items():
+            try:
+                sheet = spreadsheet.worksheet(month_key)
+            except gspread.exceptions.WorksheetNotFound:
+                # 탭이 없으면 새로 생성
+                sheet = spreadsheet.add_worksheet(title=month_key, rows=100, cols=10)
+            
+            sheet_data = [header]
+            for r in month_rows:
+                sheet_data.append([r[0], r[1], r[2]])
+                
+            sheet.clear()
+            sheet.update(values=sheet_data, range_name='A1')
+            
+            # 5. 시트 디자인 예쁘게 꾸미기
+            sheet.freeze(rows=1)
+            sheet.format('A1:C1', {
+                "backgroundColor": {"red": 0.1, "green": 0.3, "blue": 0.6},
                 "horizontalAlignment": "CENTER",
-                "textFormat": {"fontSize": 10}
+                "textFormat": {"foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}, "fontSize": 11, "bold": True}
             })
-        
-        print(f"[GoogleSheets] 총 {len(rows)}일치의 데이터를 성공적으로 동기화했습니다.")
+            if len(month_rows) > 0:
+                sheet.format(f'A2:C{len(month_rows)+1}', {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {"fontSize": 10}
+                })
+                
+        print(f"[GoogleSheets] 총 {len(rows)}일치의 데이터를 {len(grouped_data)}개의 월별 시트에 분산 동기화했습니다.")
         return True
         
     except Exception as e:
