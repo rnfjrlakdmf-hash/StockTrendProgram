@@ -236,6 +236,7 @@ def init_db():
             pref_watch_compact BOOLEAN DEFAULT 0,
             pref_ipo BOOLEAN DEFAULT 1,
             pref_whale_alert BOOLEAN DEFAULT 1,
+            pref_insider_alert BOOLEAN DEFAULT 1,
             pref_watchlist_live BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -258,6 +259,8 @@ def init_db():
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_watchlist_live BOOLEAN DEFAULT 1")
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_dividend BOOLEAN DEFAULT 1")
+    except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_insider_alert BOOLEAN DEFAULT 1")
     except: pass
     
     print("[DB] FCM tokens table created")
@@ -1241,6 +1244,9 @@ def create_fcm_tokens_table():
             pref_news BOOLEAN DEFAULT 1,
             pref_watch_compact BOOLEAN DEFAULT 0,
             pref_ipo BOOLEAN DEFAULT 1,
+            pref_whale_alert BOOLEAN DEFAULT 1,
+            pref_insider_alert BOOLEAN DEFAULT 1,
+            pref_watchlist_live BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -1334,6 +1340,7 @@ def get_fcm_preferences(token: str):
             "pref_watch_compact": bool(row_dict.get("pref_watch_compact", False)),
             "pref_dividend": bool(row_dict.get("pref_dividend", True)),
             "pref_whale_alert": bool(row_dict.get("pref_whale_alert", True)),
+            "pref_insider_alert": bool(row_dict.get("pref_insider_alert", True)),
             "pref_watchlist_live": bool(row_dict.get("pref_watchlist_live", True)),
             "user_id": row_dict.get("user_id", "guest")
         }
@@ -1346,7 +1353,7 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?, pref_whale_alert = ?, pref_watchlist_live = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_dividend = ?, pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1356,6 +1363,7 @@ def update_fcm_preferences(token: str, prefs: dict):
             1 if prefs.get('pref_watch_compact', False) else 0,
             1 if prefs.get('pref_dividend', True) else 0,
             1 if prefs.get('pref_whale_alert', True) else 0,
+            1 if prefs.get('pref_insider_alert', True) else 0,
             1 if prefs.get('pref_watchlist_live', True) else 0,
             token
         ))

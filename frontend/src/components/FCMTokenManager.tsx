@@ -22,7 +22,7 @@ export default function FCMTokenManager() {
 
     const [isVisible, setIsVisible] = useState(true);
     const [currentToken, setCurrentToken] = useState<string | null>(null);
-    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true, pref_whale_alert: true, pref_watchlist_live: true });
+    const [prefs, setPrefs] = useState({ pref_morning: true, pref_closing: true, pref_price: true, pref_news: true, pref_watch_compact: true, pref_ipo: true, pref_dividend: true, pref_whale_alert: true, pref_insider_alert: true, pref_watchlist_live: true });
 
     // [Native App] 앱(Android) 실행 시 자동으로 FCM 토큰 등록
     useEffect(() => {
@@ -83,17 +83,35 @@ export default function FCMTokenManager() {
         }
 
         onForegroundMessage((payload) => {
-            console.log('[FCM] Received foreground message:', payload);
+            console.log('[FCM] Received foreground message (Web):', payload);
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
             showNotification(title, { body, data: payload.data });
         });
 
-        // [Fix] 네이티브 푸시 알림 클릭(터치) 시 URL 이동 처리
+        // [Fix] 네이티브 푸시 알림 리스너 (앱이 켜져 있을 때 수신 처리)
+        if (Capacitor.isNativePlatform()) {
+            PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                console.log('[FCM Native] Foreground push received:', notification);
+                showNotification(notification.title || '새 알림', { 
+                    body: notification.body || '', 
+                    data: notification.data 
+                });
+            });
+
+            PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+                console.log('[FCM Native] Notification Clicked:', notification);
+                const data = notification.notification.data;
+                if (data && data.url) {
+                    window.location.href = data.url;
+                }
+            });
+        }
+
+        // 웹(WebPush) 푸시 알림 클릭 시 URL 이동 처리
         onNotificationClick((payload) => {
-            console.log('[FCM Native] Notification Clicked, payload:', payload);
+            console.log('[FCM Web] Notification Clicked, payload:', payload);
             if (payload.data && payload.data.url) {
-                // 특정 URL로 즉시 이동
                 window.location.href = payload.data.url;
             }
         });
@@ -587,6 +605,31 @@ export default function FCMTokenManager() {
                                                         prefs.pref_whale_alert ? 'translate-x-5' : 'translate-x-0'
                                                     }`}>
                                                         <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_whale_alert ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {/* 내부자 거래 포착 알림 */}
+                                            <div className="flex items-center justify-between gap-2.5">
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className="bg-rose-500/20 p-1.5 rounded-lg text-rose-400 text-xs mt-0.5">🕵️</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-[11px]">내부자 거래 포착 알림</p>
+                                                        <p className="text-gray-400 text-[10px] leading-relaxed">임원/주요주주 주식 매수/매도 실시간 포착</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleTogglePref('pref_insider_alert')}
+                                                    className={`relative w-12 h-7 shrink-0 rounded-full transition-all duration-300 ease-out focus:outline-none ${
+                                                        prefs.pref_insider_alert 
+                                                            ? 'bg-gradient-to-r from-red-400 to-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' 
+                                                            : 'bg-white/10 border border-white/5 hover:bg-white/20'
+                                                    }`}
+                                                >
+                                                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ease-out flex items-center justify-center ${
+                                                        prefs.pref_insider_alert ? 'translate-x-5' : 'translate-x-0'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${prefs.pref_insider_alert ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
                                                     </div>
                                                 </button>
                                             </div>

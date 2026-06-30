@@ -243,6 +243,7 @@ class FCMPreferencesRequest(BaseModel):
     pref_ipo: bool = True
     pref_dividend: bool = True
     pref_whale_alert: bool = True
+    pref_insider_alert: bool = True
     pref_watchlist_live: bool = True
 
 @router.post("/fcm/preferences")
@@ -257,6 +258,7 @@ def update_preferences(req: FCMPreferencesRequest):
         "pref_ipo": req.pref_ipo,
         "pref_dividend": req.pref_dividend,
         "pref_whale_alert": req.pref_whale_alert,
+        "pref_insider_alert": req.pref_insider_alert,
         "pref_watchlist_live": req.pref_watchlist_live
     })
     if success:
@@ -437,6 +439,7 @@ def test_fcm_notification(x_user_id: str = Header(None)):
         return {"status": "success", "count": len(tokens), "user_id": user_id, "result": result}
     except Exception as e:
         return {"status": "error", "message": str(e), "user_id": user_id}
+
 @router.get("/fcm/morning-test")
 async def manual_morning_briefing_test(x_user_id: str = Header(None)):
     """[Test] 현재 유저의 관심종목에 대해 호재/악재 브리핑을 강제로 발송합니다."""
@@ -448,17 +451,24 @@ async def manual_morning_briefing_test(x_user_id: str = Header(None)):
     tokens = [t['token'] for t in tokens_data]
     
     if not tokens:
-        return {"status": "error", "message": "등록된 FCM 토큰이 없습니다."}
+        return {"status": "error", "message": f"등록된 기기가 없습니다. (ID: {user_id})"}
         
-    watchlist = get_watchlist(user_id)
-    if not watchlist:
-        return {"status": "error", "message": "관심종목이 없습니다."}
-        
-    # 첫 번째 종목만 테스트로 발송
-    symbol = watchlist[0][0]
     try:
-        await morning_briefing_service.analyze_and_send(user_id, tokens, symbol)
-        return {"status": "success", "message": f"{symbol} 종목 브리핑 발송 완료", "user_id": user_id}
+        from morning_briefing import format_morning_briefing_message
+        from firebase_config import send_multicast_notification
+        
+        # Test sending directly from the app environment
+        result = send_multicast_notification(
+            tokens=tokens,
+            title=f"🐳 [강제 테스트] 내부 API에서 발송!",
+            body="이 알림이 뜬다면 서버 스크립트 실행 환경의 문제입니다.",
+            data={
+                "type": "disclosure_alert",
+                "url": "/stock/AAPL",
+                "symbol": "AAPL"
+            }
+        )
+        return {"status": "success", "count": len(tokens), "user_id": user_id, "result": result}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 @router.get("/fcm/delayed-test")

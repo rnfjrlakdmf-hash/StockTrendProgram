@@ -71,6 +71,7 @@ export default function SettingsPage() {
         pref_dividend: true,
         pref_ipo: true,
         pref_whale_alert: true,
+        pref_insider_alert: true,
         pref_watchlist_live: true,
         pref_watch_compact: false,
     });
@@ -459,7 +460,8 @@ export default function SettingsPage() {
                                         { key: 'pref_news', icon: '⚡', title: '관심종목 속보', desc: '중요 뉴스 및 공시 알림', activeColor: 'bg-green-500' },
                                         { key: 'pref_dividend', icon: '💰', title: '배당락일 알림', desc: '배당락일 전날 잊지 않게 미리', activeColor: 'bg-green-500' },
                                         { key: 'pref_ipo', icon: '🚀', title: '모든 공모주 전체 일정', desc: '공모주 청약/상장일 (개별종목은 해제)', activeColor: 'bg-green-500' },
-                                        { key: 'pref_whale_alert', icon: '🐋', title: '세력 포착 라이브', desc: '단일판매, 증자 등 핵심 공시 즉시 포착', activeColor: 'bg-rose-500', isHighlight: true },
+                                        { key: 'pref_whale_alert', icon: '🐋', title: '세력/대주주 매집', desc: '단일판매, 증자, 5% 이상 대량 매집 포착', activeColor: 'bg-rose-500', isHighlight: true },
+                                        { key: 'pref_insider_alert', icon: '🕵️', title: '내부자 거래 포착', desc: '임원/CEO 등 내부자 주식 매수/매도 실시간 포착', activeColor: 'bg-rose-500', isHighlight: true },
                                         { key: 'pref_watchlist_live', icon: '🎯', title: '내 관심종목 실시간 감시', desc: '찜한 종목의 장중 급등락(5%) 및 중요 속보', activeColor: 'bg-amber-500', isHighlight: true },
                                         { key: 'pref_watch_compact', icon: '⌚', title: '스마트워치 요약 모드', desc: '워치 화면에 최적화된 초단문 형태', activeColor: 'bg-indigo-500' },
                                     ].map((item) => {
