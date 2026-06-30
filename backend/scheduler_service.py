@@ -599,6 +599,13 @@ def send_daily_analytics_report():
     
     # 1. 일일 및 30일 누적 통계 조회
     stats_list = get_site_analytics(30)
+    
+    # 🌟 구글 시트 동기화 (보고서 발송과 함께 항상 실행)
+    try:
+        from google_sheets_sync import sync_analytics_to_sheet
+        sync_analytics_to_sheet()
+    except Exception as e:
+        print(f"[Scheduler] Google Sheets sync error: {e}")
     unique_visitors = 0
     pageviews = 0
     if stats_list:
@@ -951,14 +958,6 @@ def run_market_scheduler():
             # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins) 및 구글 시트 동기화
             if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
                 send_daily_analytics_report()
-                
-                # 구글 시트 방문자 통계 동기화
-                try:
-                    from google_sheets_sync import sync_analytics_to_sheet
-                    sync_analytics_to_sheet()
-                except Exception as e:
-                    print(f"[Scheduler] Google Sheets sync error: {e}")
-                    
                 last_run_daily_report = current_date
             
             # [매일 발송] AI 모닝 브리핑 (KR)
