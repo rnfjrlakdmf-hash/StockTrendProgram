@@ -247,7 +247,7 @@ export default function AdminPage() {
             <div className="max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 {/* Analytics Grid Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                     {/* Real-time Active Users */}
                     <div className="bg-gradient-to-br from-green-500/10 via-transparent to-transparent border border-green-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-green-500/20 transition-all"></div>
@@ -266,6 +266,20 @@ export default function AdminPage() {
                             <span className="text-gray-400 font-bold">명 접속 중</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-4">최근 5분 동안 활발히 서비스를 이용하고 있는 사용자 수입니다.</p>
+                    </div>
+
+                    {/* Total Registered Members */}
+                    <div className="bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent border border-yellow-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-yellow-500/20 transition-all"></div>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-white">누적 가입 회원</h3>
+                            <Users className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-5xl font-black tracking-tight text-white">{users.length.toLocaleString()}</span>
+                            <span className="text-gray-400 font-bold">명</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-4">현재까지 서비스에 가입한 총 누적 회원수입니다.</p>
                     </div>
 
                     {/* Today's Stats (1-Day) */}
