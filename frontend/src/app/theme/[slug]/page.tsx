@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
-                const title = `${data.name} 대장주 및 관련주 총정리 - StockTrend AI`;
+                const title = `[특징테마] ${data.name} 대장주 및 관련주 수혜주 총정리 | 스마트 투자 비서`;
                 const description = data.description;
                 
                 const ogUrl = new URL(`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 return {
                     title,
                     description,
+                    keywords: [data.name, `${data.name} 대장주`, `${data.name} 관련주`, `${data.name} 수혜주`, `${data.name} 테마주`, "주식 테마 분석"],
                     openGraph: {
                         title,
                         description,
@@ -107,7 +108,7 @@ export default async function ThemeDetailPage({ params }: Props) {
                     </div>
                     
                     <h1 className="text-3xl md:text-5xl font-black text-indigo-100 mb-6 flex items-center gap-3 relative z-10">
-                        <span className="text-indigo-500">#</span> {themeData.name}
+                        <span className="text-indigo-500">#</span> {themeData.name} 대장주 및 관련주 분석
                     </h1>
                     
                     <p className="text-lg md:text-xl text-gray-300 leading-relaxed font-medium relative z-10 mb-8">

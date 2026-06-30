@@ -37,8 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     
     const name = data.name || resolvedParams.ticker;
-    const title = `${name}(${resolvedParams.ticker}) 주가 동향 및 기업 요약 - StockTrendProgram`;
-    const description = `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 등 객관적 지표 현황입니다.`;
+    const title = `[급등주] ${name} 주가 전망 및 AI 목표가 분석 (${resolvedParams.ticker}) | 스마트 투자 비서`;
+    const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 실시간 매수/매도 시그널과 향후 전망을 무료로 확인하세요.`;
     
     // OG Image URL 생성
     const ogUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
@@ -129,9 +129,13 @@ export default async function StockSeoPage({ params }: Props) {
             <main className="max-w-4xl mx-auto px-4 py-12">
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
-                            {name} ({resolvedParams.ticker})
-                        </h1>
+                        <div className="mb-2 w-full">
+                            <span className="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md mb-3 inline-block border border-blue-500/20">AI 주가 전망 리포트</span>
+                            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 leading-tight">
+                                {name} 주가 전망 및 핵심 분석
+                            </h1>
+                            <p className="text-lg text-slate-400 mt-2 font-medium">종목코드: {resolvedParams.ticker}</p>
+                        </div>
                         <KakaoShareButton 
                             title={`[종목 분석] ${name} (${resolvedParams.ticker})`}
                             description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
