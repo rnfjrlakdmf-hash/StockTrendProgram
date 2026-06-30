@@ -112,5 +112,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate theme sitemap:", e);
     }
 
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${apiUrl}/api/blog/posts?page=1&limit=1000`, { next: { revalidate: 3600 }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
+                data.posts.forEach((post: any) => {
+                    const slug = post.slug || post.id;
+                    routes.push({
+                        url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt),
+                        changeFrequency: 'daily',
+                        priority: 0.9, // High priority for news/blog
+                    });
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to generate blog sitemap:", e);
+    }
+
     return routes;
 }

@@ -89,8 +89,34 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         notFound();
     }
 
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.content.replace(/<[^>]*>?/gm, '').substring(0, 150),
+        "datePublished": post.createdAt.toISOString(),
+        "dateModified": post.createdAt.toISOString(),
+        "author": {
+            "@type": "Organization",
+            "name": post.author || "StockTrend AI"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "StockTrendProgram",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://stock-trend-program.co.kr/logo.png"
+            }
+        },
+        "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`
+    };
+
     return (
         <article className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-4xl mx-auto animate-in fade-in duration-500">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <BlogViewTracker id={post.slug} />
             {/* Header / Back */}
             <div className="mb-8 flex justify-between items-center">

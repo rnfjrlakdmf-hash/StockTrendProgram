@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -96,6 +96,12 @@ const navigation = [
         href: "/watchlist", 
         icon: Star,
         desc: "내가 찜한 종목들의 최신 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다."
+    },
+    { 
+        name: "종목 디렉토리 (전체 종목)", 
+        href: "/directory", 
+        icon: List,
+        desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다."
     },
     { 
         name: "연동 설정 및 시스템 관리", 
