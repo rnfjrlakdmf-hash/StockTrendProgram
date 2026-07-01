@@ -24,7 +24,7 @@ def load_state():
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load state: {e}")
-    return {"processed_ids": [], "sec_processed_ids": []}
+    return {"processed_ids": [], "sec_processed_ids": [], "last_briefing_hour": -1, "last_briefing_date": ""}
 
 def save_state(state):
     try:
@@ -32,6 +32,17 @@ def save_state(state):
             json.dump(state, f, ensure_ascii=False, indent=4)
     except Exception as e:
         logger.error(f"Failed to save state: {e}")
+
+def mark_processed_and_save(state: dict, processed_ids: dict, doc_id: str):
+    """
+    [핵심 중복방지] 공시 ID를 처리 완료로 즉시 표시하고 파일에 저장.
+    Gemini API 호출 전에 반드시 이 함수를 먼저 호출해야 함.
+    서버가 API 호출 도중 죽어도 재시작 시 같은 공시를 다시 처리하지 않음.
+    """
+    processed_ids[doc_id] = None
+    state["processed_ids"] = list(processed_ids.keys())[-2000:]
+    save_state(state)
+    logger.debug(f"[Anti-Duplicate] Marked {doc_id} as processed before API call")
 
 
 async def check_and_notify_disclosures():
@@ -70,190 +81,209 @@ async def check_and_notify_disclosures():
             if not doc_id or doc_id in processed_ids:
                 continue
 
-            new_count += 1
-            processed_ids[doc_id] = None
+            try:
+                new_count += 1
+                # ✅ [핵심 수정] Gemini API 호출 전에 먼저 ID를 파일에 저장
+                # 서버가 API 호출 도중 죽어도 재시작 시 중복 호출 완전 차단
+                mark_processed_and_save(state, processed_ids, doc_id)
 
-            raw_code = item.get('stock_code')
-            corp = item.get('corp_name', '알 수 없음')
-            report_title = item.get('report_nm', '공시')
-            dart_link = item.get('link', '')
-            rcept_dt = item.get('rcept_dt', '')
+                raw_code = item.get('stock_code')
+                corp = item.get('corp_name', '알 수 없음')
+                report_title = item.get('report_nm', '공시')
+                dart_link = item.get('link', '')
+                rcept_dt = item.get('rcept_dt', '')
 
-            # 비상장 법인(stock_code 없음)은 스킵
-            if not raw_code:
-                continue
+                # 비상장 법인(stock_code 없음)은 스킵
+                if not raw_code:
+                    continue
+                    
+                skip_whale_alert = True
+                prefix_title = ""
+
+                # [세력 포착 라이브 사이렌 브로드캐스트]
+                # 원래는 알림 스팸 방지를 위해 '대량보유' 등을 제외했으나, 마케팅(슈퍼개미 추적) 목적으로 다시 추가함.
+                whale_keywords = [
+                    # 🟢 대표적 호재
+                    "단일판매", "무상증자", "자기주식취득", "자기주식소각", "공개매수", "경영권변경",
+                    # 🔴 대표적 악재
+                    "유상증자", "감자결정", "상장폐지", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청"
+                ]
                 
-            skip_whale_alert = True
-            prefix_title = ""
-
-            # [세력 포착 라이브 사이렌 브로드캐스트]
-            # 알림 폭탄(스팸) 방지를 위해 발생 빈도가 너무 높은 '주요주주', '대량보유' 제외, 초강력 호재/악재 위주로 압축
-            whale_keywords = [
-                # 🟢 대표적 호재
-                "단일판매", "무상증자", "자기주식취득", "자기주식소각", "공개매수", "경영권변경",
-                # 🔴 대표적 악재
-                "유상증자", "감자결정", "상장폐지", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청"
-            ]
-            is_whale = any(kw in report_title.replace(" ", "") for kw in whale_keywords)
-            if is_whale:
-                # [스마트 필터링] 단일판매ㆍ공급계약체결의 경우 매출액 대비 20% 이상인 초대형 계약만 발송
-                skip_whale_alert = False
-                prefix_title = "🔔 [공시 팩트 알림]"
-                from dart_scraper import scrape_dart_text
-                from ai_analysis import generate_with_retry
-                import json
-                import asyncio
+                clean_title = report_title.replace(" ", "")
+                is_super_ant = "대량보유" in clean_title
+                is_insider = "임원" in clean_title or "주요주주" in clean_title
+                is_whale = any(kw in clean_title for kw in whale_keywords) or is_super_ant or is_insider
                 
-                try:
-                    dart_text = scrape_dart_text(dart_link)
-                    if dart_text and len(dart_text) > 50:
-                        prompt = f"""다음은 '{corp}'의 전자공시 원문 일부입니다.
+                fact_str = ""
+                if is_whale:
+                    # [스마트 필터링] 단일판매ㆍ공급계약체결의 경우 매출액 대비 20% 이상인 초대형 계약만 발송
+                    skip_whale_alert = False
+                    
+                    if is_super_ant:
+                        prefix_title = "🚨 [슈퍼개미 포착]"
+                    elif is_insider:
+                        prefix_title = "🚨 [내부자 거래 포착]"
+                    else:
+                        prefix_title = "🔔 [공시 팩트 알림]"
+                        
+                    from dart_scraper import scrape_dart_text
+                    from ai_analysis import generate_with_retry
+                    import json
+                    import asyncio
+                    
+                    try:
+                        dart_text = scrape_dart_text(dart_link)
+                        if dart_text and len(dart_text) > 50:
+                            prompt = f"""다음은 '{corp}'의 전자공시 원문 일부입니다.
 공시의 핵심 수치(예: 매출액 대비 계약 규모 비율, 무상증자 비율, 유상증자 자금조달 목적 등)를 객관적이고 중립적인 팩트로만 20자 이내로 요약하세요.
 '호재', '악재', '대박', '초대박', '매수' 등의 주관적 단어는 절대 사용하지 마세요. 오직 수치와 팩트만 전달하세요.
+슈퍼개미나 임원의 지분 변동 공시라면, 누가 얼마나 매수/매도했는지만 간결하게 포함하세요.
 
 공시 제목: {report_title}
 공시 내용: {dart_text[:1500]}
 
 출력형식 (오직 요약된 텍스트만 출력):
 """
-                        # To run async function generate_with_retry, since we are inside an async function:
-                        import nest_asyncio
-                        nest_asyncio.apply()
-                        # Wait, we are already in async. check_and_notify_disclosures is async.
-                        # Actually we can't use generate_with_retry if it's not async. generate_with_retry is sync!
-                        # So we can just call it synchronously or use to_thread.
-                        
-                        res = generate_with_retry(prompt, False)
-                        if res and res.text:
-                            fact = res.text.strip().replace('"', '').replace("'", "")
-                            prefix_title = f"🚨 [{fact}]"
-                            logger.info(f"[WhaleSiren] AI Fact: {fact}")
-                except Exception as e:
-                    logger.error(f"[WhaleSiren] AI Extraction failed: {e}")
-
-                
-                if not skip_whale_alert:
-                    try:
-                        from firebase_admin import firestore
-                        db = firestore.client()
-                        event_data = {
-                            "type": "WHALE_ALERT",
-                            "corp": corp,
-                            "title": report_title,
-                            "code": raw_code,
-                            "url": dart_link,
-                            "timestamp": firestore.SERVER_TIMESTAMP
-                        }
-                        db.collection("live_events").add(event_data)
-                        logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
-                        
-                        # [추가] FCM 웹 푸시 알림 발송 (전체 사용자 대상)
-                        from db_manager import get_all_fcm_tokens_with_user, check_and_consume_alert_quota
-                        from firebase_config import send_multicast_notification
-                        
-                        user_tokens_map = {}
-                        for uid, tok in get_all_fcm_tokens_with_user(require_whale_alert=True):
-                            if uid not in user_tokens_map:
-                                user_tokens_map[uid] = []
-                            user_tokens_map[uid].append(tok)
+                            import nest_asyncio
+                            nest_asyncio.apply()
                             
-                        all_tokens = []
-                        limit_reached_tokens = []
-                        ok_users = []
-                        limit_users = []
-                        
-                        for uid, toks in user_tokens_map.items():
-                            status = check_and_consume_alert_quota(uid)
-                            if status == "OK":
-                                ok_users.append(uid)
-                                all_tokens.extend(toks)
-                            elif status == "LIMIT_REACHED":
-                                limit_users.append(uid)
-                                limit_reached_tokens.extend(toks)
-                                
-                        push_title = f"{prefix_title} {corp}"
-                        summary_body = f"[{corp}] {report_title} 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
-                        
-                        push_data = {
-                            "type": "disclosure_alert",
-                            "url": f"/stock/{raw_code}",
-                            "dart_url": dart_link,
-                            "symbol": raw_code,
-                            "is_global": "true"
-                        }
-                        
-                        if all_tokens:
-                            send_multicast_notification(all_tokens, push_title, summary_body, data=push_data, target_users=ok_users)
-                            logger.info(f"[WhaleSiren] FCM Zero-Cost Push sent to {len(all_tokens)} devices for {corp}")
-                            
-                        if limit_reached_tokens:
-                            send_multicast_notification(
-                                limit_reached_tokens,
-                                title="⚠️ 오늘 무료 프리미엄 알림(3회) 소진",
-                                body="친구 1명만 초대하고 평생 무제한으로 1급 정보를 받아보세요!",
-                                data={"type": "referral_invite", "url": "/referral"},
-                                target_users=limit_users
-                            )
-                            logger.info(f"[WhaleSiren] FCM Limit-Reached Push sent to {len(limit_reached_tokens)} devices")
-
+                            res = generate_with_retry(prompt, False)
+                            if res and res.text:
+                                fact_str = res.text.strip().replace('"', '').replace("'", "")
+                                if not (is_super_ant or is_insider):
+                                    prefix_title = f"🚨 [{fact_str}]"
+                                logger.info(f"[WhaleSiren] AI Fact: {fact_str}")
                     except Exception as e:
-                        logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
+                        logger.error(f"[WhaleSiren] AI Extraction failed: {e}")
 
-            # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
-            symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
-            tokens = []
-            target_uids = []
-            matched_symbol = None
+                    
+                    if not skip_whale_alert:
+                        try:
+                            from firebase_admin import firestore
+                            db = firestore.client()
+                            event_data = {
+                                "type": "WHALE_ALERT",
+                                "corp": corp,
+                                "title": report_title,
+                                "code": raw_code,
+                                "url": dart_link,
+                                "timestamp": firestore.SERVER_TIMESTAMP
+                            }
+                            db.collection("live_events").add(event_data)
+                            logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
+                            
+                            # [추가] FCM 웹 푸시 알림 발송 (전체 사용자 대상)
+                            from db_manager import get_all_fcm_tokens_with_user, check_and_consume_alert_quota
+                            from firebase_config import send_multicast_notification
+                            
+                            user_tokens_map = {}
+                            for uid, tok in get_all_fcm_tokens_with_user(require_whale_alert=True):
+                                if uid not in user_tokens_map:
+                                    user_tokens_map[uid] = []
+                                user_tokens_map[uid].append(tok)
+                                
+                            all_tokens = []
+                            limit_reached_tokens = []
+                            ok_users = []
+                            limit_users = []
+                            
+                            for uid, toks in user_tokens_map.items():
+                                status = check_and_consume_alert_quota(uid)
+                                if status == "OK":
+                                    ok_users.append(uid)
+                                    all_tokens.extend(toks)
+                                elif status == "LIMIT_REACHED":
+                                    limit_users.append(uid)
+                                    limit_reached_tokens.extend(toks)
+                                    
+                            push_title = f"{prefix_title} {corp}"
+                            summary_body = fact_str if fact_str else f"[{corp}] {report_title} 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
+                            
+                            push_data = {
+                                "type": "disclosure_alert",
+                                "url": f"/stock/{raw_code}",
+                                "dart_url": dart_link,
+                                "symbol": raw_code,
+                                "is_global": "true"
+                            }
+                            
+                            if all_tokens:
+                                send_multicast_notification(all_tokens, push_title, summary_body, data=push_data, target_users=ok_users)
+                                logger.info(f"[WhaleSiren] FCM Zero-Cost Push sent to {len(all_tokens)} devices for {corp}")
+                                
+                            if limit_reached_tokens:
+                                send_multicast_notification(
+                                    limit_reached_tokens,
+                                    title="⚠️ 오늘 무료 프리미엄 알림(3회) 소진",
+                                    body="친구 1명만 초대하고 평생 무제한으로 1급 정보를 받아보세요!",
+                                    data={"type": "referral_invite", "url": "/referral"},
+                                    target_users=limit_users
+                                )
+                                logger.info(f"[WhaleSiren] FCM Limit-Reached Push sent to {len(limit_reached_tokens)} devices")
 
-            from db_manager import get_user_ids_and_tokens_by_watchlist_symbol
-            for sym in symbol_candidates:
-                user_tokens = get_user_ids_and_tokens_by_watchlist_symbol(sym)
-                if user_tokens:
-                    tokens = [ut["token"] for ut in user_tokens]
-                    target_uids = [ut["user_id"] for ut in user_tokens]
-                    matched_symbol = sym
-                    break
+                        except Exception as e:
+                            logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
 
-            if not tokens:
-                continue  # 관심종목 등록 사용자 없음 -> 스킵
+                # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
+                symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
+                tokens = []
+                target_uids = []
+                matched_symbol = None
 
-            # 공시 유형별 이모지 결정
-            emoji = "📢"
-            if any(kw in report_title for kw in ["유상증자", "무상증자"]):
-                emoji = "💰"
-            elif any(kw in report_title for kw in ["전환사채", "신주인수권"]):
-                emoji = "🔄"
-            elif any(kw in report_title for kw in ["보호예수", "대량보유"]):
-                emoji = "🔒"
-            elif any(kw in report_title for kw in ["실적", "영업이익", "분기보고서", "사업보고서"]):
-                emoji = "📊"
-            elif any(kw in report_title for kw in ["배당", "주주총회"]):
-                emoji = "💸"
-            noti_title = f"{emoji} {corp} 공시 속보"
-            safe_report_title = report_title.replace("[", "").replace("]", "").replace("|", "")
-            noti_body = f"📋 {safe_report_title}"
-            if rcept_dt:
-                try:
-                    dt_fmt = f"{rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
-                    noti_body += f" 📅 {dt_fmt}"
-                except Exception:
-                    pass
+                from db_manager import get_user_ids_and_tokens_by_watchlist_symbol
+                for sym in symbol_candidates:
+                    user_tokens = get_user_ids_and_tokens_by_watchlist_symbol(sym)
+                    if user_tokens:
+                        tokens = [ut["token"] for ut in user_tokens]
+                        target_uids = [ut["user_id"] for ut in user_tokens]
+                        matched_symbol = sym
+                        break
 
-            data_payload = {
-                "type": "disclosure_alert",
-                "symbol": matched_symbol or raw_code,
-                "url": f"/discovery?q={raw_code}",
-                "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
-            }
+                if not tokens:
+                    continue  # 관심종목 등록 사용자 없음 -> 스킵
 
-            logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
-            send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
-            sent_count += 1
-            await asyncio.sleep(0.5)
+                # 공시 유형별 이모지 결정
+                emoji = "📢"
+                if any(kw in report_title for kw in ["유상증자", "무상증자"]):
+                    emoji = "💰"
+                elif any(kw in report_title for kw in ["전환사채", "신주인수권"]):
+                    emoji = "🔄"
+                elif any(kw in report_title for kw in ["보호예수", "대량보유"]):
+                    emoji = "🔒"
+                elif any(kw in report_title for kw in ["실적", "영업이익", "분기보고서", "사업보고서"]):
+                    emoji = "📊"
+                elif any(kw in report_title for kw in ["배당", "주주총회"]):
+                    emoji = "💸"
+                noti_title = f"{emoji} {corp} 공시 속보"
+                safe_report_title = report_title.replace("[", "").replace("]", "").replace("|", "")
+                noti_body = f"📋 {safe_report_title}"
+                if rcept_dt:
+                    try:
+                        dt_fmt = f"{rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
+                        noti_body += f" 📅 {dt_fmt}"
+                    except Exception:
+                        pass
+
+                data_payload = {
+                    "type": "disclosure_alert",
+                    "symbol": matched_symbol or raw_code,
+                    "url": f"/discovery?q={raw_code}",
+                    "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
+                }
+
+                logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
+                send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
+                sent_count += 1
+                await asyncio.sleep(0.5)
+
+            except Exception as item_e:
+                logger.error(f"[공시Monitor] Error processing item {doc_id}: {item_e}")
+                # Continue with the next item so one failure doesn't break everything
+                continue
 
         logger.info(f"[공시Monitor] 완료: 신규 {new_count}건, 알림 {sent_count}건 발송")
-
-        # 상태 저장 (최대 2000건 유지, 순서 보장됨)
+        # 참고: 각 공시 처리 전에 mark_processed_and_save()로 이미 저장됨
+        # 여기서는 혹시 누락된 경우를 위해 최종 한 번 더 저장
         state["processed_ids"] = list(processed_ids.keys())[-2000:]
         save_state(state)
 
@@ -353,48 +383,83 @@ async def check_and_notify_sec_disclosures():
                 entries = root.findall("atom:entry", ns)
 
                 for entry in entries:
-                    entry_id = entry.findtext("atom:id", default="", namespaces=ns)
-                    if not entry_id or entry_id in sec_processed:
+                    try:
+                        entry_id = entry.findtext("atom:id", default="", namespaces=ns)
+                        if not entry_id or entry_id in sec_processed:
+                            continue
+
+                        sec_processed.add(entry_id)
+                        # ✅ [핵심 수정] SEC 공시도 즉시 상태 파일에 저장
+                        state["sec_processed_ids"] = list(sec_processed)[-2000:]
+                        save_state(state)
+                        
+                        title_el = entry.findtext("atom:title", default="New Filing", namespaces=ns)
+                        link_el = entry.find("atom:link", ns)
+                        filing_url = link_el.get("href", "") if link_el is not None else ""
+                        updated = entry.findtext("atom:updated", default="", namespaces=ns)
+
+                        is_sec_whale = False
+                        is_13f = "13F" in title_el
+                        is_form4 = "4 - Statement of changes in beneficial ownership of securities" in title_el or "Form 4" in title_el
+                        if is_13f or is_form4:
+                            is_sec_whale = True
+
+                        # 사용자 FCM 토큰 수집
+                        from db_manager import get_user_fcm_tokens, get_all_fcm_tokens_with_user
+                        all_tokens = []
+                        target_uids = set(user_ids)
+                        
+                        if is_sec_whale:
+                            # 🚨 [글로벌 브로드캐스트] 미국 주식 고래/내부자 발견 시 전체 사용자 발송
+                            target_uids = set()
+                            for uid, tok in get_all_fcm_tokens_with_user(require_whale_alert=True):
+                                target_uids.add(uid)
+                                all_tokens.append(tok)
+                        else:
+                            for uid in target_uids:
+                                for t in get_user_fcm_tokens(uid):
+                                    if t.get("pref_news", True) and t.get("token"):
+                                        all_tokens.append(t["token"])
+
+                        if not all_tokens:
+                            continue
+
+                        safe_title_el = title_el.replace("[", "").replace("]", "").replace("|", "")
+                        kor_title = translate_sec_title(safe_title_el)
+                        
+                        if is_sec_whale:
+                            if is_13f:
+                                noti_title = f"🐳 [미국고래 포착] {ticker} 기관 지분보고"
+                                noti_body = f"거대 기관의 13F 보유현황이 방금 공개되었습니다!"
+                            else:
+                                noti_title = f"🐳 [내부자 거래 포착] {ticker}"
+                                noti_body = f"회사 핵심 임원의 주식 매수/매도(Form 4) 내역입니다!"
+                            logger.info(f"[SEC WhaleSiren] Broadcasted event for {ticker}")
+                        else:
+                            noti_title = f"📢 {ticker} SEC 공시"
+                            noti_body = f"📋 {kor_title}"
+                            
+                        if updated:
+                            try:
+                                dt = datetime.fromisoformat(updated[:10])
+                                noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
+                            except Exception:
+                                pass
+
+                        data_payload = {
+                            "type": "disclosure_alert",
+                            "symbol": ticker,
+                            "url": f"/discovery?q={ticker}",
+                            "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
+                        }
+
+                        logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
+                        send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(set(user_ids)))
+                        sent_count += 1
+                        await asyncio.sleep(0.5)
+                    except Exception as entry_e:
+                        logger.error(f"[SEC Monitor] Error processing entry {entry_id} for {ticker}: {entry_e}")
                         continue
-
-                    sec_processed.add(entry_id)
-                    title_el = entry.findtext("atom:title", default="New Filing", namespaces=ns)
-                    link_el = entry.find("atom:link", ns)
-                    filing_url = link_el.get("href", "") if link_el is not None else ""
-                    updated = entry.findtext("atom:updated", default="", namespaces=ns)
-
-                    # 사용자 FCM 토큰 수집 (뉴스 알림 허용한 토큰만)
-                    all_tokens = []
-                    for uid in set(user_ids):
-                        for t in get_user_fcm_tokens(uid):
-                            if t.get("pref_news", True) and t.get("token"):
-                                all_tokens.append(t["token"])
-
-                    if not all_tokens:
-                        continue
-
-                    noti_title = f"📢 {ticker} SEC 공시"
-                    safe_title_el = title_el.replace("[", "").replace("]", "").replace("|", "")
-                    kor_title = translate_sec_title(safe_title_el)
-                    noti_body = f"📋 {kor_title}"
-                    if updated:
-                        try:
-                            dt = datetime.fromisoformat(updated[:10])
-                            noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
-                        except Exception:
-                            pass
-
-                    data_payload = {
-                        "type": "disclosure_alert",
-                        "symbol": ticker,
-                        "url": f"/discovery?q={ticker}",
-                        "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
-                    }
-
-                    logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
-                    send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(set(user_ids)))
-                    sent_count += 1
-                    await asyncio.sleep(0.5)
 
                 await asyncio.sleep(1)  # SEC rate limit 준수 (초당 10회)
 
@@ -420,8 +485,13 @@ async def hourly_briefing_scheduler_loop():
     logger.info("[Resource-Clean] Hourly Scheduler Active.")
     import pytz
     kst = pytz.timezone('Asia/Seoul')
-    last_run_hour = -1
     last_cleanup_date = ""
+
+    # ✅ [재시작 중복방지] 마지막 실행 시각을 파일(state)에서 복원하여
+    # 서버 재시작 후에도 같은 시간에 브리핑이 중복 생성되지 않도록 함
+    _state = load_state()
+    last_run_hour = _state.get("last_briefing_hour", -1)
+    last_run_date = _state.get("last_briefing_date", "")
 
     while True:
         try:
@@ -432,7 +502,10 @@ async def hourly_briefing_scheduler_loop():
 
             is_weekend = is_holiday("kor")
 
-            if not is_weekend and current_hour != last_run_hour:
+            # 같은 날 같은 시간에는 재실행하지 않음 (날짜 포함 비교)
+            already_ran = (last_run_hour == current_hour and last_run_date == current_date)
+
+            if not is_weekend and not already_ran:
                 logger.info(f"[Scheduler] Starting hourly briefing for: {current_hour}:00")
                 from utils.global_briefing import generate_market_wide_briefing
 
@@ -442,6 +515,12 @@ async def hourly_briefing_scheduler_loop():
                         timeout=180.0
                     )
                 last_run_hour = current_hour
+                last_run_date = current_date
+                # ✅ 실행 직후 상태 파일에 저장 (재시작 시 중복 방지)
+                _state = load_state()
+                _state["last_briefing_hour"] = last_run_hour
+                _state["last_briefing_date"] = last_run_date
+                save_state(_state)
                 logger.info(f"[Scheduler] Task completed for {current_hour}:00")
 
             if current_hour == 2 and current_date != last_cleanup_date:
@@ -519,6 +598,11 @@ async def disclosure_scheduler_loop():
     - IPO 공모주: 30분마다 체크
     """
     logger.info("[공시Monitor] 공시 실시간 감시 루프 시작 (5분 주기)")
+
+    # ✅ [크래시 루프 방지] 서버 시작 직후 5분간 공시 체크를 하지 않음
+    # systemd가 5~10초 단위로 재시작할 때 Gemini API를 호출하지 않도록 방어
+    logger.info("[공시Monitor] 서버 안정화를 위해 5분 대기 후 첫 공시 체크 시작...")
+    await asyncio.sleep(300)
 
     ipo_check_counter = 0  # 5분 * 6 = 30분마다 IPO 체크
 
@@ -848,3 +932,115 @@ async def dormant_user_scheduler_loop():
             logger.error(f"[Dormant] Loop error: {e}")
             await asyncio.sleep(60)
 
+
+async def whale_alert_scheduler_loop():
+    """
+    🇰🇷 국내 고래 알림 #1 - 외국인 순매수 1위
+    장중(09:00~15:30 KST 평일) 30분마다 실행
+    """
+    logger.info("[Whale KR] Foreign Net Buying Scheduler Active.")
+
+    import pytz
+    from datetime import datetime
+    kst = pytz.timezone('Asia/Seoul')
+
+    while True:
+        try:
+            now = datetime.now(kst)
+            weekday = now.weekday()
+            hour = now.hour
+            minute = now.minute
+
+            is_market_hours = (weekday < 5) and (
+                (hour == 9 and minute >= 0) or
+                (10 <= hour <= 14) or
+                (hour == 15 and minute <= 30)
+            )
+
+            if is_market_hours:
+                logger.info("[Whale KR] Checking foreign net buying rank...")
+                try:
+                    from whale_alerts import check_whale_alerts
+                    check_whale_alerts()
+                except Exception as e:
+                    logger.error(f"[Whale KR] check_whale_alerts error: {e}")
+            else:
+                logger.debug(f"[Whale KR] Outside market hours ({hour}:{minute:02d} KST), skipping.")
+
+            await asyncio.sleep(60 * 30)  # 30분마다 체크
+        except Exception as e:
+            logger.error(f"[Whale KR] Loop error: {e}")
+            await asyncio.sleep(60)
+
+
+async def dart_whale_scheduler_loop():
+    """
+    🇰🇷 국내 고래 알림 #2 - DART 대량보유/임원내부자 거래
+    평일 08:00~18:00 KST (공시 접수 시간) 5분마다 실행
+    """
+    logger.info("[Whale DART] DART Large Holding & Insider Scheduler Active.")
+
+    import pytz
+    from datetime import datetime
+    kst = pytz.timezone('Asia/Seoul')
+
+    while True:
+        try:
+            now = datetime.now(kst)
+            weekday = now.weekday()
+            hour = now.hour
+
+            # 평일 08:00~18:00 (DART 공시 접수 시간)
+            is_disclosure_hours = (weekday < 5) and (8 <= hour < 18)
+
+            if is_disclosure_hours:
+                logger.info("[Whale DART] Checking DART large holding & insider trading...")
+                try:
+                    from whale_alerts import check_large_holding_alerts, check_insider_trading_alerts
+                    check_large_holding_alerts()
+                    check_insider_trading_alerts()
+                except Exception as e:
+                    logger.error(f"[Whale DART] error: {e}")
+            else:
+                logger.debug(f"[Whale DART] Outside disclosure hours ({hour}:xx KST), skipping.")
+
+            await asyncio.sleep(60 * 5)  # 5분마다 체크
+        except Exception as e:
+            logger.error(f"[Whale DART] Loop error: {e}")
+            await asyncio.sleep(60)
+
+
+async def sec_whale_scheduler_loop():
+    """
+    🇺🇸 미국 고래 알림 - SEC Form 4 (임원 내부자) + 13F (기관)
+    KST 22:30~06:00 (미국 장시간) 5분마다 실행
+    """
+    logger.info("[Whale SEC] SEC Form4 & 13F Scheduler Active.")
+
+    import pytz
+    from datetime import datetime
+    kst = pytz.timezone('Asia/Seoul')
+
+    while True:
+        try:
+            now = datetime.now(kst)
+            hour = now.hour
+
+            # KST 22:30~익일 06:00 = 미국 장중 (EST 08:30~16:00)
+            is_us_hours = (hour >= 22) or (hour < 6)
+
+            if is_us_hours:
+                logger.info("[Whale SEC] Checking SEC Form4 & 13F filings...")
+                try:
+                    from sec_whale_alerts import check_sec_form4_alerts, check_sec_13f_alerts
+                    check_sec_form4_alerts()
+                    check_sec_13f_alerts()
+                except Exception as e:
+                    logger.error(f"[Whale SEC] error: {e}")
+            else:
+                logger.debug(f"[Whale SEC] Outside US market hours ({hour}:xx KST), skipping.")
+
+            await asyncio.sleep(60 * 5)  # 5분마다 체크
+        except Exception as e:
+            logger.error(f"[Whale SEC] Loop error: {e}")
+            await asyncio.sleep(60)
