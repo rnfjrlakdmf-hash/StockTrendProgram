@@ -78,17 +78,28 @@ def sync_analytics_to_sheet():
                     "textFormat": {"fontSize": 10}
                 })
                 
-            # 6. 글씨가 잘리지 않도록 A~C열(0~3) 너비 자동 조정
+            # 6. 글씨가 잘리지 않도록 A~C열(0~3) 너비 고정값으로 넓게 조정
             body = {
                 "requests": [
                     {
-                        "autoResizeDimensions": {
-                            "dimensions": {
-                                "sheetId": sheet.id,
-                                "dimension": "COLUMNS",
-                                "startIndex": 0,
-                                "endIndex": 3
-                            }
+                        "updateDimensionProperties": {
+                            "range": {"sheetId": sheet.id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 1},
+                            "properties": {"pixelSize": 150},
+                            "fields": "pixelSize"
+                        }
+                    },
+                    {
+                        "updateDimensionProperties": {
+                            "range": {"sheetId": sheet.id, "dimension": "COLUMNS", "startIndex": 1, "endIndex": 2},
+                            "properties": {"pixelSize": 130},
+                            "fields": "pixelSize"
+                        }
+                    },
+                    {
+                        "updateDimensionProperties": {
+                            "range": {"sheetId": sheet.id, "dimension": "COLUMNS", "startIndex": 2, "endIndex": 3},
+                            "properties": {"pixelSize": 150},
+                            "fields": "pixelSize"
                         }
                     }
                 ]
