@@ -78,6 +78,23 @@ def sync_analytics_to_sheet():
                     "textFormat": {"fontSize": 10}
                 })
                 
+            # 6. 글씨가 잘리지 않도록 A~C열(0~3) 너비 자동 조정
+            body = {
+                "requests": [
+                    {
+                        "autoResizeDimensions": {
+                            "dimensions": {
+                                "sheetId": sheet.id,
+                                "dimension": "COLUMNS",
+                                "startIndex": 0,
+                                "endIndex": 3
+                            }
+                        }
+                    }
+                ]
+            }
+            spreadsheet.batch_update(body)
+                
         print(f"[GoogleSheets] 총 {len(rows)}일치의 데이터를 {len(grouped_data)}개의 월별 시트에 분산 동기화했습니다.")
         return True
         
