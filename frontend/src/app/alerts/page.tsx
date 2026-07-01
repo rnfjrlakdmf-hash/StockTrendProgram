@@ -200,10 +200,10 @@ export default function AlertCenterPage() {
     // 카테고리 필터링 적용
     const filteredAlerts = alerts.filter(alert => {
         // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
-        if (alert.type === 'admin_report' && activeTab !== 'admin' && activeTab !== 'all') return false;
+        if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
         if (activeTab === "all") return true;
-        if (activeTab === "admin") return alert.type === 'admin_report';
+        if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
         if (activeTab === "news") return ['news_alert', 'news_naver', 'news_google', 'disclosure_alert'].includes(alert.type);
         if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert'].includes(alert.type);
         if (activeTab === "market") return ['market_summary', 'morning_briefing', 'ipo_alert', 'crypto_bull', 'whale_accumulation', 'market'].includes(alert.type);

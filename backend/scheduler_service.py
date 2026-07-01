@@ -658,13 +658,17 @@ def send_daily_analytics_report():
         """)
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         
-        # 관리자 이메일을 기반으로 users 테이블에서 UID 가져오기
+        # 관리자 이메일 및 고정 UID를 기반으로 users 테이블에서 UID 가져오기
         cursor.execute("""
             SELECT u.id
             FROM users u
-            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com')
+            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com')
+               OR u.id IN ('110418985320259217419')
         """)
-        admin_uids = [row[0] for row in cursor.fetchall()]
+        db_admin_uids = [row[0] for row in cursor.fetchall()]
+        
+        # db에 없는 고정 ID들도 명시적으로 target_users에 포함 (안전장치)
+        admin_uids = list(set(db_admin_uids + ['110418985320259217419']))
         
     except Exception as e:
         print(f"[Scheduler-Error] Failed to fetch admin tokens: {e}")
