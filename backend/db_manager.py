@@ -137,7 +137,7 @@ def init_db():
 
     # [Migration] Add Referral System Columns
     try:
-        cursor.execute("SELECT referral_code FROM users LIMIT 1")
+        cursor.execute("SELECT is_unlimited_alerts FROM users LIMIT 1")
     except sqlite3.OperationalError:
         print("Migrating users table (adding referral columns)...")
         columns_to_add = [
@@ -151,7 +151,7 @@ def init_db():
             try:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col}")
             except Exception as e:
-                print(f"Migration Warning (Referral - {col}): {e}")
+                pass # Already exists or other error
 
     # [Migration] Add User Rankings Table
     cursor.execute('''
