@@ -559,8 +559,6 @@ function ThemeResultView({ result }: { result: any }) {
           </div>
         </div>
       </div>
-      </div>
-
       {/* [New] SEO 및 콘텐츠 확충을 위한 서비스 소개 영역 (Google AdSense 봇을 위한 풍부한 텍스트 콘텐츠) */}
       <div className="p-6 md:p-10 max-w-7xl mx-auto mt-10 border-t border-white/10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
