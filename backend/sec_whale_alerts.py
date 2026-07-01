@@ -115,17 +115,28 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
         results = []
         for hit in hits[:50]:  # 최대 50건만
             src = hit.get("_source", {})
-            accession = hit.get("_id", "").replace("-", "")
+            raw_id = hit.get("_id", "")
+            
+            # _id format example: "0001768476-26-000007:wkform4_1782852344.xml"
+            acc_num = raw_id.split(":")[0] if raw_id else ""
+            acc_no_dashes = acc_num.replace("-", "")
+            
+            try:
+                cik_int = str(int(acc_num.split("-")[0]))
+                sec_link = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{acc_num}-index.htm"
+            except:
+                sec_link = f"https://www.sec.gov/Archives/edgar/data/0/{acc_no_dashes}/"
+
             entity = src.get("entity_name", "Unknown")
             ticker = src.get("tickers", "")
             results.append({
-                "accession_no": hit.get("_id", ""),
+                "accession_no": acc_num,
                 "entity_name": entity,
                 "ticker": ticker if isinstance(ticker, str) else (ticker[0] if ticker else ""),
                 "form_type": src.get("form_type", form_type),
                 "file_date": src.get("file_date", ""),
                 "period": src.get("period_of_report", ""),
-                "link": f"https://www.sec.gov/Archives/edgar/data/0/{accession}/",
+                "link": sec_link,
             })
         return results
     except Exception as e:
