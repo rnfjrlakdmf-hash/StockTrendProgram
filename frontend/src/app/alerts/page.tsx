@@ -46,12 +46,12 @@ export default function AlertCenterPage() {
 
                 if (user) {
                     const userId = user.id || (user as any).uid;
-                    const qTargeted = query(alertsRef, where("target_users", "array-contains", userId));
+                    const qTargeted = query(alertsRef, where("target_users", "array-contains", userId), orderBy("timestamp", "desc"), limit(100));
                     const snapTargeted = await getDocs(qTargeted);
                     snapTargeted.forEach(doc => targetedDocs.push({ id: doc.id, ...doc.data() }));
                 }
 
-                const qGlobal = query(alertsRef, where("is_global", "==", true));
+                const qGlobal = query(alertsRef, where("is_global", "==", true), orderBy("timestamp", "desc"), limit(300));
                 const snapGlobal = await getDocs(qGlobal);
                 snapGlobal.forEach(doc => globalDocs.push({ id: doc.id, ...doc.data() }));
 
@@ -84,7 +84,7 @@ export default function AlertCenterPage() {
                 }
                 
                 // 최종 노출
-                setAlerts(filtered.slice(0, 100)); // 탭 분류를 위해 전체 개수 증가
+                setAlerts(filtered.slice(0, 300)); // 탭 분류를 위해 전체 개수 증가
 
                 setErrorMsg(null);
             } catch (err: any) {

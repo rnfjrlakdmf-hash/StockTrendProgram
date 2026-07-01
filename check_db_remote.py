@@ -1,25 +1,46 @@
 import paramiko
+import sys
+import io
 
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect('13.209.99.170', username='ubuntu', key_filename='StockAI-Server.pem')
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-python_code = """
+def trigger():
+    key_path = "StockAI-Server.pem"
+    hostname = "13.209.99.170"
+    username = "ubuntu"
+    
+    print("=== Connecting to remote EC2 server ===")
+    key = paramiko.RSAKey.from_private_key_file(key_path)
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        ssh.connect(hostname, username=username, pkey=key, timeout=15)
+        print("Connected successfully!")
+        
+        cmd = '''
+        cd /home/ubuntu/StockTrendProgram/backend && \
+        source venv/bin/activate && \
+        cat << 'EOF' > query_db.py
 import sqlite3
 import json
+conn = sqlite3.connect('stock_app.db')
+cursor = conn.cursor()
+cursor.execute("SELECT user_id, device_type, last_used FROM fcm_tokens ORDER BY last_used DESC LIMIT 10;")
+rows = cursor.fetchall()
+print(json.dumps(rows, indent=2))
+EOF
+        python query_db.py
+        '''
+        stdin, stdout, stderr = ssh.exec_command(cmd)
+        print("FCM Tokens:")
+        print(stdout.read().decode('utf-8', 'ignore'))
+        
+        ssh.close()
+    except Exception as e:
+        print("Failed:", e)
 
-db_path = '/home/ubuntu/StockTrendProgram/backend/stock_app.db'
-try:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute('SELECT * FROM site_analytics ORDER BY date DESC LIMIT 5;')
-    rows = [dict(row) for row in c.fetchall()]
-    print(json.dumps(rows, indent=2))
-except Exception as e:
-    print(e)
-"""
-
-stdin, stdout, stderr = ssh.exec_command(f"python3 -c \"{python_code}\"")
-print("Output:", stdout.read().decode())
-print("Error:", stderr.read().decode())
+if __name__ == "__main__":
+    trigger()

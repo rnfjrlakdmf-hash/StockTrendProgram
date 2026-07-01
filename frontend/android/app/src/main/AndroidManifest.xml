@@ -40,4 +40,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 안드로이드 13 이상에서 푸시 알림 권한을 얻기 위한 필수 권한 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

@@ -25,8 +25,9 @@ def trigger():
         cd /home/ubuntu/StockTrendProgram/backend && \
         source venv/bin/activate && \
         cat << 'EOF' > trigger.py
-from scheduler_service import send_closing_notification
-send_closing_notification("KR")
+from scheduler_service import send_fomo_alert, send_dormant_user_alert
+print('FOMO Sent:', send_fomo_alert())
+print('Dormant Sent:', send_dormant_user_alert())
 EOF
         python trigger.py
         '''

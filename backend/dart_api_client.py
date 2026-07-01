@@ -16,6 +16,8 @@ class DartApiClient:
 
     def __init__(self):
         self.api_key = os.getenv("DART_API_KEY", "").strip()
+        self._realtime_cache = {}
+        self._realtime_cache_time = {}
 
     def is_available(self) -> bool:
         """API 키가 설정되어 작동 가능한 상태인지 확인"""
@@ -55,6 +57,11 @@ class DartApiClient:
             print("[DART-API] ⚠️ DART_API_KEY가 설정되어 있지 않습니다.")
             return []
 
+        now_ts = datetime.now()
+        if days_ago in self._realtime_cache_time:
+            if (now_ts - self._realtime_cache_time[days_ago]).total_seconds() < 60:
+                return self._realtime_cache[days_ago]
+
         url = f"{self.BASE_URL}/list.json"
         
         target_date = datetime.now() - timedelta(days=days_ago)
@@ -91,8 +98,13 @@ class DartApiClient:
                             "rm": r.get("rm"),
                             "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={r.get('rcept_no')}"
                         })
+                    
+                    self._realtime_cache[days_ago] = cleaned_reports
+                    self._realtime_cache_time[days_ago] = now_ts
                     return cleaned_reports
                 elif status == "013":  # 조회된 데이터가 없음
+                    self._realtime_cache[days_ago] = []
+                    self._realtime_cache_time[days_ago] = now_ts
                     return []
                 else:
                     print(f"[DART-API] ❌ API 오류 (상태코드: {status}): {data.get('message')}")
@@ -465,6 +477,36 @@ class DartApiClient:
             },
             "source": "dart_official_api"  # 합법적 데이터 출처 표시
         }
+
+    def get_large_holding_disclosures(self, days_ago: int = 0) -> List[Dict]:
+        """
+        🐳 지분 5%+ 대량보유상황보고서 조회
+        - DART 공시 목록에서 '주식등의대량보유상황보고서' 키워드로 필터링
+        - 반환: [{ corp_name, report_nm, rcept_no, link, rcept_dt }, ...]
+        """
+        all_disclosures = self.get_realtime_disclosures(days_ago=days_ago)
+        KEYWORDS = ["대량보유", "주식등의대량보유상황보고서", "대량보유상황"]
+        result = []
+        for d in all_disclosures:
+            report_nm = d.get("report_nm", "")
+            if any(kw in report_nm for kw in KEYWORDS):
+                result.append(d)
+        return result
+
+    def get_insider_trading_disclosures(self, days_ago: int = 0) -> List[Dict]:
+        """
+        🚨 임원/주요주주 내부자 거래 공시 조회
+        - DART 공시 목록에서 '임원ㆍ주요주주특정증권등소유상황보고서' 키워드로 필터링
+        - 반환: [{ corp_name, report_nm, rcept_no, link, rcept_dt }, ...]
+        """
+        all_disclosures = self.get_realtime_disclosures(days_ago=days_ago)
+        KEYWORDS = ["임원", "주요주주", "소유상황보고서", "임원소유"]
+        result = []
+        for d in all_disclosures:
+            report_nm = d.get("report_nm", "")
+            if any(kw in report_nm for kw in KEYWORDS):
+                result.append(d)
+        return result
 
 
 # ─── 전역 단일 인스턴스 ──────────────────────────────────────────────────────

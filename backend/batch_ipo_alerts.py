@@ -149,21 +149,25 @@ def send_ipo_alerts():
         conn = get_db_connection()
         cursor = conn.cursor()
         for uid, (title, body) in user_messages.items():
-            cursor.execute("""
-                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
-                VALUES (?, 'IPO', 'market', ?, 0, 0, 0)
-            """, (uid, f"{title}\n{body}"))
-            
-            # 해당 유저의 토큰 추출
-            u_tokens = [t["token"] for t in user_tokens.get(uid, [])]
-            if u_tokens:
-                send_multicast_notification(
-                    u_tokens, 
-                    title, 
-                    body, 
-                    {"url": "/signals?tab=ipo", "type": "ipo_alert", "is_global": "false"}, 
-                    target_users=[uid]
-                )
+            try:
+                cursor.execute("""
+                    INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                    VALUES (?, 'IPO', 'market', ?, 0, 0, 0)
+                """, (uid, f"{title}\n{body}"))
+                
+                # 해당 유저의 토큰 추출
+                u_tokens = [t["token"] for t in user_tokens.get(uid, [])]
+                if u_tokens:
+                    send_multicast_notification(
+                        u_tokens, 
+                        title, 
+                        body, 
+                        {"url": "/signals?tab=ipo", "type": "ipo_alert", "is_global": "false"}, 
+                        target_users=[uid]
+                    )
+            except Exception as item_e:
+                print(f"[IPO-Alerts] Error for user {uid}: {item_e}")
+                
         conn.commit()
         conn.close()
     except Exception as e:

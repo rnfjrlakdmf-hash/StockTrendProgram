@@ -28,6 +28,7 @@ def deploy_remote():
             "git fetch origin && "
             "git checkout -- . && "
             "git clean -fd backend/sec_tickers_cache.json 2>/dev/null || true && "
+            "git clean -fd backend/data/whale_weekend_report.json 2>/dev/null || true && "
             "rm backend/us_ipo_cache.json 2>/dev/null || true && "
             "git pull origin main"
         )

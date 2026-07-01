@@ -2119,8 +2119,8 @@ def get_dart_risk_alerts():
         contract_keywords = ["단일판매ㆍ공급계약체결"]
 
         alerts = []
-        # 최신 500건까지 스캔 (100건씩 5페이지)
-        for page_no in range(1, 6):
+        # 최신 200건까지 스캔 (100건씩 2페이지) - API 쿼터 절약을 위해 5에서 2로 축소
+        for page_no in range(1, 3):
             url = f"https://opendart.fss.or.kr/api/list.json?crtfc_key={api_key}&bgn_de={bgn_de}&end_de={end_de}&page_count=100&page_no={page_no}"
             res = requests.get(url, timeout=10)
             data = res.json()
