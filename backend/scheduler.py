@@ -449,6 +449,9 @@ async def check_and_notify_sec_disclosures():
                         if updated:
                             try:
                                 dt = datetime.fromisoformat(updated[:10])
+                                # 7일 이상 지난 과거 공시라면 알림 생략 (처음 관심종목 추가 시 과거 데이터가 한꺼번에 울리는 것 방지)
+                                if (datetime.now() - dt).days > 7:
+                                    continue
                                 noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
                             except Exception:
                                 pass
