@@ -99,6 +99,7 @@ async def check_and_notify_disclosures():
                     
                 skip_whale_alert = True
                 prefix_title = ""
+                ok_users = []  # whale 알림을 실제로 받은 사용자 UID (중복 방지용)
 
                 # [세력 포착 라이브 사이렌 브로드캐스트]
                 # 원래는 알림 스팸 방지를 위해 '대량보유' 등을 제외했으나, 마케팅(슈퍼개미 추적) 목적으로 다시 추가함.
@@ -224,6 +225,9 @@ async def check_and_notify_disclosures():
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
 
+                # ✅ [중복 알림 방지용] 이미 고래 알림(WhaleSiren)을 받은 사용자 UID 목록
+                # 아래 관심종목 알림 발송 시 이 사람들은 제외해서 2번 받지 않게 함
+                whale_alerted_uids = set(ok_users)
                 # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
                 symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
                 tokens = []
@@ -234,10 +238,13 @@ async def check_and_notify_disclosures():
                 for sym in symbol_candidates:
                     user_tokens = get_user_ids_and_tokens_by_watchlist_symbol(sym)
                     if user_tokens:
-                        tokens = [ut["token"] for ut in user_tokens]
-                        target_uids = [ut["user_id"] for ut in user_tokens]
-                        matched_symbol = sym
-                        break
+                        # ✅ [중복 방지] 이미 whale 알림을 받은 사용자는 관심종목 알림에서 제외
+                        filtered = [ut for ut in user_tokens if ut["user_id"] not in whale_alerted_uids]
+                        if filtered:
+                            tokens = [ut["token"] for ut in filtered]
+                            target_uids = [ut["user_id"] for ut in filtered]
+                            matched_symbol = sym
+                            break
 
                 if not tokens:
                     continue  # 관심종목 등록 사용자 없음 -> 스킵
