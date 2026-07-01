@@ -130,9 +130,9 @@ export default function AlertCenterPage() {
     }, [user]);
 
     const renderAlertCard = (alert: AlertItem) => {
-        let targetUrl = (alert as any).url;
+        let targetUrl = (alert as any).url || (alert as any).link;
         const symbol = (alert as any).symbol;
-        const isDisclosure = alert.type === 'disclosure_alert';
+        const isDisclosure = alert.type === 'disclosure_alert' || alert.type === 'large_holding';
 
         if ((alert as any).news_url) {
             const params = new URLSearchParams();
@@ -146,12 +146,12 @@ export default function AlertCenterPage() {
             <div className={`bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left ${!isDisclosure ? 'group' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                             alert.type === 'crypto_bull' 
                                 ? 'bg-orange-500/20 text-orange-400' 
                                 : alert.type === 'whale_accumulation' 
                                 ? 'bg-purple-500/20 text-purple-400'
-                                : alert.type === 'disclosure_alert'
+                                : (alert.type === 'disclosure_alert' || alert.type === 'large_holding')
                                 ? 'bg-indigo-500/20 text-indigo-400'
                                 : alert.type === 'ipo_alert'
                                 ? 'bg-pink-500/20 text-pink-400'
@@ -163,7 +163,7 @@ export default function AlertCenterPage() {
                         }`}>
                             {alert.type === 'crypto_bull' ? '🔥 코인 불장' : 
                              alert.type === 'whale_accumulation' ? '🐳 세력 포착' : 
-                             alert.type === 'disclosure_alert' ? '📢 공시' :
+                             (alert.type === 'disclosure_alert' || alert.type === 'large_holding') ? '📢 공시' :
                              alert.type === 'ipo_alert' ? '🎯 공모주' :
                              alert.type === 'admin_report' ? '👑 관리자' :
                              ['news_alert', 'news_naver', 'news_google'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
