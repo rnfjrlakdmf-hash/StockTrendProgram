@@ -130,8 +130,20 @@ export default function AlertCenterPage() {
     }, [user]);
 
     const renderAlertCard = (alert: AlertItem) => {
+        let targetUrl = (alert as any).url;
+        const symbol = (alert as any).symbol;
+        const isDisclosure = alert.type === 'disclosure_alert';
+
+        if ((alert as any).news_url) {
+            const params = new URLSearchParams();
+            params.set("url", (alert as any).news_url);
+            if (symbol) params.set("symbol", symbol);
+            if (alert.title) params.set("title", alert.title);
+            targetUrl = `/news-redirect?${params.toString()}`;
+        }
+
         const cardContent = (
-            <div className="bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left group">
+            <div className={`bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left ${!isDisclosure ? 'group' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
@@ -169,24 +181,36 @@ export default function AlertCenterPage() {
                                 : "최근"}
                         </span>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
+                    {!isDisclosure && <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />}
                 </div>
                 <h3 className="text-md font-semibold text-gray-100 pr-6">
                     {alert.title}
                 </h3>
-                <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6">
+                <p className={`text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6 ${isDisclosure ? 'mb-4' : ''}`}>
                     {alert.body}
                 </p>
+
+                {isDisclosure && (
+                    <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
+                        {symbol && (
+                            <Link href={`/stock/${symbol}`} className="flex-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+                                AI 리포트 분석
+                                <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        )}
+                        {targetUrl && targetUrl.startsWith("http") && (
+                            <a href={targetUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+                                공시 원문 보기
+                                <ChevronRight className="w-4 h-4" />
+                            </a>
+                        )}
+                    </div>
+                )}
             </div>
         );
 
-        let targetUrl = (alert as any).url;
-        if ((alert as any).news_url) {
-            const params = new URLSearchParams();
-            params.set("url", (alert as any).news_url);
-            if ((alert as any).symbol) params.set("symbol", (alert as any).symbol);
-            if (alert.title) params.set("title", alert.title);
-            targetUrl = `/news-redirect?${params.toString()}`;
+        if (isDisclosure) {
+            return <div key={alert.id}>{cardContent}</div>;
         }
 
         if (targetUrl) {
@@ -203,9 +227,9 @@ export default function AlertCenterPage() {
                     </Link>
                 );
             }
-        } else if ((alert as any).symbol) {
+        } else if (symbol) {
             return (
-                <Link key={alert.id} href={`/stock/${(alert as any).symbol}`} className="block cursor-pointer">
+                <Link key={alert.id} href={`/stock/${symbol}`} className="block cursor-pointer">
                     {cardContent}
                 </Link>
             );
