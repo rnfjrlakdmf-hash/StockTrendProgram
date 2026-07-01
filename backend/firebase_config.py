@@ -341,6 +341,8 @@ def send_multicast_notification(
                 alert_doc["news_url"] = data["news_url"]
             if "symbol" in data:
                 alert_doc["symbol"] = data["symbol"]
+            if "dart_url" in data:
+                alert_doc["dart_url"] = data["dart_url"]
                 
         db.collection("alerts").add(alert_doc)
         print(f"[Firestore] Alert saved to center: {title}")
@@ -436,6 +438,8 @@ def send_multicast_notification(
                 sound='default',
                 color='#3B82F6',
                 channel_id='price_alerts',
+                priority='high',
+                default_vibrate_timings=True,
                 tag=fcm_tag
             )
         )
