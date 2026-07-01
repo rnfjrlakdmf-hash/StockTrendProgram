@@ -41,24 +41,22 @@ export default function AlertCenterPage() {
                 const alertsRef = collection(db, "alerts");
                 
                 // 사용자 맞춤형 알림과 전체 알림을 각각 가져와 프론트엔드에서 병합 (읽기 비용 최소화 및 누락 방지)
-                let targetedDocs: any[] = [];
-                let globalDocs: any[] = [];
-
-                if (user) {
-                    const userId = user.id || (user as any).uid;
-                    const qTargeted = query(alertsRef, where("target_users", "array-contains", userId), orderBy("timestamp", "desc"), limit(100));
-                    const snapTargeted = await getDocs(qTargeted);
-                    snapTargeted.forEach(doc => targetedDocs.push({ id: doc.id, ...doc.data() }));
-                }
-
-                const qGlobal = query(alertsRef, where("is_global", "==", true), orderBy("timestamp", "desc"), limit(300));
-                const snapGlobal = await getDocs(qGlobal);
-                snapGlobal.forEach(doc => globalDocs.push({ id: doc.id, ...doc.data() }));
-
-                // 병합 및 중복 제거
+                const userId = user?.id || (user as any)?.uid;
+                
+                // Fetch the latest 300 alerts regardless of type to avoid composite index errors
+                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(400));
+                const snapLatest = await getDocs(qLatest);
+                
                 const allAlertsMap = new Map();
-                targetedDocs.forEach(alert => allAlertsMap.set(alert.id, alert));
-                globalDocs.forEach(alert => allAlertsMap.set(alert.id, alert));
+                snapLatest.forEach(doc => {
+                    const data = doc.data();
+                    const isGlobal = data.is_global === true;
+                    const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
+                    
+                    if (isGlobal || isTargeted) {
+                        allAlertsMap.set(doc.id, { id: doc.id, ...data });
+                    }
+                });
 
                 // 시간순 정렬 (최신순)
                 let sortedAlerts = Array.from(allAlertsMap.values());
