@@ -1425,17 +1425,19 @@ def delete_user_data(user_id: str) -> bool:
     finally:
         conn.close()
 
-def get_all_fcm_tokens(require_whale_alert=False) -> list:
+def get_all_fcm_tokens(require_whale_alert=False, require_insider_alert=False) -> list:
     """모든 사용자의 유효한 FCM 토큰 조회 (브로드캐스트용)"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
         # 중복 제거 (혹시 몰라서 DISTINCT)
+        query = "SELECT DISTINCT token FROM fcm_tokens WHERE 1=1"
         if require_whale_alert:
-            cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE pref_whale_alert = 1")
-        else:
-            cursor.execute("SELECT DISTINCT token FROM fcm_tokens")
+            query += " AND pref_whale_alert = 1"
+        if require_insider_alert:
+            query += " AND pref_whale_alert = 1"  # Or we can just use pref_whale_alert for now if there is no pref_insider_alert
+        cursor.execute(query)
         rows = cursor.fetchall()
         return [row[0] for row in rows]
     except Exception as e:
