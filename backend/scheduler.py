@@ -122,40 +122,40 @@ async def check_and_notify_disclosures():
                     
                     if is_super_ant:
                         prefix_title = "🚨 [슈퍼개미 포착]"
+                        fact_str = "슈퍼개미(대량보유자)의 지분 보유상황 변동이 발생했습니다."
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
+                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
                     else:
                         prefix_title = "🔔 [공시 팩트 알림]"
                         
-                    from dart_scraper import scrape_dart_text
-                    from ai_analysis import generate_with_retry
-                    import json
-                    import asyncio
-                    
-                    try:
-                        dart_text = scrape_dart_text(dart_link)
-                        if dart_text and len(dart_text) > 50:
-                            prompt = f"""다음은 '{corp}'의 전자공시 원문 일부입니다.
+                        from dart_scraper import scrape_dart_text
+                        from ai_analysis import generate_with_retry
+                        import json
+                        import asyncio
+                        
+                        try:
+                            dart_text = scrape_dart_text(dart_link)
+                            if dart_text and len(dart_text) > 50:
+                                prompt = f"""다음은 '{corp}'의 전자공시 원문 일부입니다.
 공시의 핵심 수치(예: 매출액 대비 계약 규모 비율, 무상증자 비율, 유상증자 자금조달 목적 등)를 객관적이고 중립적인 팩트로만 20자 이내로 요약하세요.
 '호재', '악재', '대박', '초대박', '매수' 등의 주관적 단어는 절대 사용하지 마세요. 오직 수치와 팩트만 전달하세요.
-슈퍼개미나 임원의 지분 변동 공시라면, 누가 얼마나 매수/매도했는지만 간결하게 포함하세요.
 
 공시 제목: {report_title}
 공시 내용: {dart_text[:1500]}
 
 출력형식 (오직 요약된 텍스트만 출력):
 """
-                            import nest_asyncio
-                            nest_asyncio.apply()
-                            
-                            res = generate_with_retry(prompt, False)
-                            if res and res.text:
-                                fact_str = res.text.strip().replace('"', '').replace("'", "")
-                                if not (is_super_ant or is_insider):
+                                import nest_asyncio
+                                nest_asyncio.apply()
+                                
+                                res = generate_with_retry(prompt, False)
+                                if res and res.text:
+                                    fact_str = res.text.strip().replace('"', '').replace("'", "")
                                     prefix_title = f"🚨 [{fact_str}]"
-                                logger.info(f"[WhaleSiren] AI Fact: {fact_str}")
-                    except Exception as e:
-                        logger.error(f"[WhaleSiren] AI Extraction failed: {e}")
+                                    logger.info(f"[WhaleSiren] AI Fact: {fact_str}")
+                        except Exception as e:
+                            logger.error(f"[WhaleSiren] AI Extraction failed: {e}")
 
                     
                     if not skip_whale_alert:
