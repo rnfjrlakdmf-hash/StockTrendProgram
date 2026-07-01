@@ -559,6 +559,48 @@ function ThemeResultView({ result }: { result: any }) {
           </div>
         </div>
       </div>
+      </div>
+
+      {/* [New] SEO 및 콘텐츠 확충을 위한 서비스 소개 영역 (Google AdSense 봇을 위한 풍부한 텍스트 콘텐츠) */}
+      <div className="p-6 md:p-10 max-w-7xl mx-auto mt-10 border-t border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          
+          {/* 좌측: 서비스 상세 소개 (텍스트 위주) */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="text-blue-400 w-6 h-6" />
+              STOCK AI - 인공지능 주식 트렌드 분석 프로그램
+            </h2>
+            <div className="text-gray-400 text-sm leading-relaxed space-y-4">
+              <p>
+                STOCK AI는 실시간 데이터 수집 및 최첨단 자연어 처리(NLP) 기술을 바탕으로 국내외 주식 시장의 흐름을 날카롭게 분석하는 <strong>지능형 투자 보조 플랫폼</strong>입니다. 넘쳐나는 정보의 홍수 속에서 개인 투자자들이 놓치기 쉬운 핵심 테마와 주도주를 인공지능이 24시간 추적하고 선별하여 제공합니다.
+              </p>
+              <p>
+                단순한 호가 창이나 차트 분석을 넘어, 뉴스 기사, 증권사 리포트, 소셜 미디어 트렌드, 그리고 기업의 실적 발표(Earnings)와 미국 증권거래위원회(SEC) 공시 등 방대한 비정형 데이터를 실시간으로 파악합니다. 이를 통해 시장의 자금이 어디로 이동하고 있는지, 어떤 산업군이 미래의 주도 테마로 부상하고 있는지를 가장 빠르게 캐치할 수 있습니다.
+              </p>
+              <p>
+                또한, <strong>슈퍼개미 및 내부자 지분 변동 알림(5% 룰)</strong>, <strong>외국인/기관 수급 연속 유입 종목 포착</strong> 등 스마트 머니의 움직임을 추적하는 강력한 알림 시스템을 제공합니다. 이제 감에 의존하는 투자가 아닌, 데이터와 인공지능에 기반한 체계적이고 과학적인 투자를 STOCK AI와 함께 시작해 보세요.
+              </p>
+            </div>
+          </div>
+
+          {/* 우측: 블로그 및 마켓 리포트 링크 (봇 크롤링 유도) */}
+          <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-white/5 rounded-3xl p-8 flex flex-col justify-center">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Newspaper className="text-purple-400 w-6 h-6" />
+              전문가 마켓 리포트 (Market View)
+            </h3>
+            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+              STOCK AI 전속 애널리스트와 인공지능이 매일 아침 함께 작성하는 심층 시황 분석 리포트입니다. 밤사이 발생한 글로벌 매크로 이슈, 전일 장 마감 후 주요 공시, 그리고 오늘 주목해야 할 핵심 섹터와 테마주를 한눈에 정리해 드립니다.
+            </p>
+            <Link href="/blog" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl transition-all w-fit">
+              최신 마켓 리포트 읽기
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          
+        </div>
+      </div>
     </div>
   );
 }
