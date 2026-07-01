@@ -21,6 +21,7 @@ export default function AlertCenterPage() {
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("all");
+    const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
 
     const { user } = useAuth();
 
@@ -92,9 +93,29 @@ export default function AlertCenterPage() {
             }
         }
         
+        async function fetchWatchlist() {
+            try {
+                const userId = user?.id || (user as any)?.uid;
+                if (!userId) return;
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/watchlist`, {
+                    headers: { "X-User-ID": userId }
+                });
+                const json = await res.json();
+                if (json.status === "success" && json.data.length > 0) {
+                    const symbols = json.data.map((item: any) => {
+                        return typeof item === 'string' ? item : item.symbol;
+                    });
+                    setWatchlistSymbols(symbols);
+                }
+            } catch (err) {
+                console.error("Failed to fetch watchlist:", err);
+            }
+        }
+        
         // Wait for auth to initialize before fetching
         if (user !== undefined) {
             fetchAlerts();
+            fetchWatchlist();
         }
     }, [user]);
 
@@ -189,7 +210,9 @@ export default function AlertCenterPage() {
     // 탭 구성
     const tabs = [
         { id: "all", label: "전체" },
-        { id: "news", label: "뉴스/공시" },
+        { id: "all_news", label: "전체 뉴스" },
+        { id: "watchlist_news", label: "관심종목 뉴스" },
+        { id: "disclosure", label: "공시" },
         { id: "portfolio", label: "내 관심종목" },
         { id: "market", label: "시황/테마" }
     ];
@@ -202,9 +225,23 @@ export default function AlertCenterPage() {
         // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
         if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
+        const isNews = ['news_alert', 'news_naver', 'news_google'].includes(alert.type);
+        const isDisclosure = alert.type === 'disclosure_alert';
+
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
-        if (activeTab === "news") return ['news_alert', 'news_naver', 'news_google', 'disclosure_alert'].includes(alert.type);
+        
+        if (activeTab === "all_news") return isNews;
+        if (activeTab === "watchlist_news") {
+            if (!isNews) return false;
+            // 뉴스 알림 데이터에 symbol이나 title/body에 관심종목 코드가 포함되어 있는지 확인
+            // 백엔드에서 주는 symbol 속성 확인
+            const symbolMatch = (alert as any).symbol && watchlistSymbols.includes((alert as any).symbol);
+            // 만약 symbol이 직접 없더라도 title에 종목명이 포함된 경우를 대략적으로 체크 (선택사항)
+            return symbolMatch;
+        }
+        if (activeTab === "disclosure") return isDisclosure;
+        
         if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert'].includes(alert.type);
         if (activeTab === "market") return ['market_summary', 'morning_briefing', 'ipo_alert', 'crypto_bull', 'whale_accumulation', 'market'].includes(alert.type);
         return true;
