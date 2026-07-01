@@ -140,14 +140,18 @@ def init_db():
         cursor.execute("SELECT referral_code FROM users LIMIT 1")
     except sqlite3.OperationalError:
         print("Migrating users table (adding referral columns)...")
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN referral_code TEXT UNIQUE")
-            cursor.execute("ALTER TABLE users ADD COLUMN referred_by TEXT")
-            cursor.execute("ALTER TABLE users ADD COLUMN is_unlimited_alerts BOOLEAN DEFAULT 0")
-            cursor.execute("ALTER TABLE users ADD COLUMN daily_alert_count INTEGER DEFAULT 0")
-            cursor.execute("ALTER TABLE users ADD COLUMN last_alert_date TEXT")
-        except Exception as e:
-            print(f"Migration Warning (Referral): {e}")
+        columns_to_add = [
+            "referral_code TEXT",
+            "referred_by TEXT",
+            "is_unlimited_alerts BOOLEAN DEFAULT 0",
+            "daily_alert_count INTEGER DEFAULT 0",
+            "last_alert_date TEXT"
+        ]
+        for col in columns_to_add:
+            try:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col}")
+            except Exception as e:
+                print(f"Migration Warning (Referral - {col}): {e}")
 
     # [Migration] Add User Rankings Table
     cursor.execute('''
