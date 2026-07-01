@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { API_BASE_URL } from "@/lib/config";
 
 interface AlertItem {
     id: string;
@@ -22,6 +23,7 @@ export default function AlertCenterPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("all");
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
+    const [watchlistNames, setWatchlistNames] = useState<string[]>([]);
 
     const { user } = useAuth();
 
@@ -97,15 +99,23 @@ export default function AlertCenterPage() {
             try {
                 const userId = user?.id || (user as any)?.uid;
                 if (!userId) return;
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/watchlist`, {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
                     headers: { "X-User-ID": userId }
                 });
                 const json = await res.json();
                 if (json.status === "success" && json.data.length > 0) {
-                    const symbols = json.data.map((item: any) => {
-                        return typeof item === 'string' ? item : item.symbol;
+                    const symbols: string[] = [];
+                    const names: string[] = [];
+                    json.data.forEach((item: any) => {
+                        if (typeof item === 'string') {
+                            symbols.push(item);
+                        } else {
+                            if (item.symbol) symbols.push(item.symbol);
+                            if (item.name) names.push(item.name);
+                        }
                     });
                     setWatchlistSymbols(symbols);
+                    setWatchlistNames(names);
                 }
             } catch (err) {
                 console.error("Failed to fetch watchlist:", err);
@@ -210,11 +220,10 @@ export default function AlertCenterPage() {
     // 탭 구성
     const tabs = [
         { id: "all", label: "전체" },
-        { id: "all_news", label: "전체 뉴스" },
         { id: "watchlist_news", label: "관심종목 뉴스" },
+        { id: "watchlist_disclosure", label: "관심종목 공시" },
         { id: "disclosure", label: "공시" },
-        { id: "portfolio", label: "내 관심종목" },
-        { id: "market", label: "시황/테마" }
+        { id: "portfolio", label: "내 관심종목" }
     ];
     if (isAdmin) {
         tabs.push({ id: "admin", label: "관리자 메뉴" });
@@ -231,19 +240,34 @@ export default function AlertCenterPage() {
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
         
-        if (activeTab === "all_news") return isNews;
+        let symbolMatch = false;
+        if ((alert as any).symbol && watchlistSymbols.includes((alert as any).symbol)) {
+            symbolMatch = true;
+        } else if (watchlistNames.length > 0) {
+            // If symbol is missing or doesn't match, try matching by name in title or body
+            const textToSearch = (alert.title + " " + alert.body).toLowerCase();
+            for (const name of watchlistNames) {
+                if (textToSearch.includes(name.toLowerCase())) {
+                    symbolMatch = true;
+                    break;
+                }
+            }
+        }
+
         if (activeTab === "watchlist_news") {
             if (!isNews) return false;
-            // 뉴스 알림 데이터에 symbol이나 title/body에 관심종목 코드가 포함되어 있는지 확인
-            // 백엔드에서 주는 symbol 속성 확인
-            const symbolMatch = (alert as any).symbol && watchlistSymbols.includes((alert as any).symbol);
-            // 만약 symbol이 직접 없더라도 title에 종목명이 포함된 경우를 대략적으로 체크 (선택사항)
             return symbolMatch;
         }
+        
+        if (activeTab === "watchlist_disclosure") {
+            if (!isDisclosure) return false;
+            return symbolMatch;
+        }
+
         if (activeTab === "disclosure") return isDisclosure;
         
-        if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert'].includes(alert.type);
-        if (activeTab === "market") return ['market_summary', 'morning_briefing', 'ipo_alert', 'crypto_bull', 'whale_accumulation', 'market'].includes(alert.type);
+        if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert', 'morning_briefing'].includes(alert.type);
+        
         return true;
     });
 
