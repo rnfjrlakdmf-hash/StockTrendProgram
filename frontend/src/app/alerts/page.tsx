@@ -198,8 +198,8 @@ export default function AlertCenterPage() {
                                 <ChevronRight className="w-4 h-4" />
                             </Link>
                         )}
-                        {targetUrl && targetUrl.startsWith("http") && (
-                            <a href={targetUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+                        {((alert as any).dart_url || targetUrl) && ((alert as any).dart_url || targetUrl).startsWith("http") && (
+                            <a href={(alert as any).dart_url || targetUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
                                 공시 원문 보기
                                 <ChevronRight className="w-4 h-4" />
                             </a>
