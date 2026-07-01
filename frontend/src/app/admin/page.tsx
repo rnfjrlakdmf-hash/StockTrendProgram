@@ -148,7 +148,11 @@ export default function AdminPage() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/users`);
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/users`, {
+                headers: {
+                    "X-Admin-Key": "StockTrendSecretAdmin2026!"
+                }
+            });
             const json = await res.json();
             if (json.status === "success") {
                 setUsers(json.data);
@@ -180,9 +184,12 @@ export default function AdminPage() {
 
     const toggleProStatus = async (userId: string, currentPro: boolean) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/users/pro`, {
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/users/pro`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-Admin-Key": "StockTrendSecretAdmin2026!"
+                },
                 body: JSON.stringify({ user_id: userId, is_pro: !currentPro })
             });
             const json = await res.json();
