@@ -171,8 +171,14 @@ def check_large_holding_alerts():
                 continue
 
             corp_name = filing.get("corp_name", "Unknown")
+            flr_nm = filing.get("flr_nm", "")
             title = f"🚨 [슈퍼개미 포착] {corp_name}"
-            body = "누군가 지분 5% 이상을 대량 매집했습니다! (대량보유상황보고서)"
+            
+            body_text = "지분 5% 이상 대량 매집이 포착되었습니다! (대량보유상황보고서)"
+            if flr_nm:
+                body_text = f"[{flr_nm}] {body_text}"
+            
+            body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
 
             print(f"[Whale Large] New: {title}")
