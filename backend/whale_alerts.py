@@ -157,8 +157,9 @@ def check_large_holding_alerts():
 
     state = load_state()
     if state.get("date") != today_str:
-        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": []}
+        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": [], "sent_whale_filers": [], "sent_insider_filers": []}
     sent_nos = set(state.get("sent_rcept_nos", []))
+    sent_filers = set(state.get("sent_whale_filers", []))
 
     try:
         filings = dart_api_client.get_large_holding_disclosures(days_ago=0)
@@ -172,6 +173,12 @@ def check_large_holding_alerts():
 
             corp_name = filing.get("corp_name", "Unknown")
             flr_nm = filing.get("flr_nm", "")
+            
+            filer_key = f"{corp_name}_{flr_nm}"
+            if flr_nm and filer_key in sent_filers:
+                sent_nos.add(rcept_no)
+                continue
+                
             title = f"🚨 [슈퍼개미 포착] {corp_name}"
             
             body_text = "지분 5% 이상 대량 매집이 포착되었습니다! (대량보유상황보고서)"
@@ -212,11 +219,15 @@ def check_large_holding_alerts():
                 print(f"[Whale Large] Send error: {e}")
 
             sent_nos.add(rcept_no)
+            if flr_nm:
+                sent_filers.add(filer_key)
 
         # 최대 1000개 보관
         if len(sent_nos) > 1000:
             sent_nos = set(list(sent_nos)[-800:])
         state["sent_rcept_nos"] = list(sent_nos)
+        state["sent_whale_filers"] = list(sent_filers)
+        
         save_state(state)
         print(f"[Whale Large] Done. New alerts: {new_count}")
 
@@ -251,8 +262,9 @@ def check_insider_trading_alerts():
 
     state = load_state()
     if state.get("date") != today_str:
-        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": []}
+        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": [], "sent_whale_filers": [], "sent_insider_filers": []}
     sent_nos = set(state.get("sent_insider_nos", []))
+    sent_filers = set(state.get("sent_insider_filers", []))
 
     try:
         filings = dart_api_client.get_insider_trading_disclosures(days_ago=0)
@@ -266,6 +278,11 @@ def check_insider_trading_alerts():
 
             corp_name = filing.get("corp_name", "Unknown")
             flr_nm = filing.get("flr_nm", "")
+            
+            filer_key = f"{corp_name}_{flr_nm}"
+            if flr_nm and filer_key in sent_filers:
+                sent_nos.add(rcept_no)
+                continue
             
             title = f"🚨 [내부자 거래 포착] {corp_name}"
             body_text = f"회사 임원 또는 주요주주의 지분 변동이 발생했습니다."
@@ -305,10 +322,13 @@ def check_insider_trading_alerts():
                 print(f"[Whale Insider] Send error: {e}")
 
             sent_nos.add(rcept_no)
+            if flr_nm:
+                sent_filers.add(filer_key)
 
         if len(sent_nos) > 1000:
             sent_nos = set(list(sent_nos)[-800:])
         state["sent_insider_nos"] = list(sent_nos)
+        state["sent_insider_filers"] = list(sent_filers)
         save_state(state)
         print(f"[Whale Insider] Done. New alerts: {new_count}")
 
