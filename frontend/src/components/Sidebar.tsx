@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -17,6 +17,12 @@ const navigation = [
         href: "/", 
         icon: LayoutDashboard,
         desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
+    },
+    { 
+        name: "🎁 출석 룰렛 (100% 당첨)", 
+        href: "/roulette", 
+        icon: Gift,
+        desc: "매일 2번 출석 체크하고 1시간 PRO 자유이용권과 포인트를 받아가세요!"
     },
     { 
         name: "🔒 주말 마켓 인사이트", 

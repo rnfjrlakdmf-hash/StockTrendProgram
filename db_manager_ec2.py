@@ -122,6 +122,17 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning: {e}")
 
+    # [Migration] Add roulette dates
+    try:
+        cursor.execute("SELECT last_roulette_kr_date FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding roulette dates)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_roulette_kr_date TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN last_roulette_us_date TEXT")
+        except Exception as e:
+            print(f"Migration Warning (Roulette): {e}")
+
     # Watchlist Table (User Specific)
     # Check if watchlist table has user_id column
     try:
@@ -393,12 +404,15 @@ def get_user_info(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
+        
         if row:
             is_pro = bool(row[4])
             pro_expires_at = row[6]
             points = row[7] if row[7] is not None else 0
+            last_roulette_kr_date = row[8]
+            last_roulette_us_date = row[9]
             
             # 1. 관리자 강제 Pro 부여 (이메일 기반 2차 안전장치)
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -421,7 +435,9 @@ def get_user_info(user_id):
                 "is_pro": is_pro,
                 "free_trial_count": row[5],
                 "pro_expires_at": pro_expires_at,
-                "points": points
+                "points": points,
+                "last_roulette_kr_date": last_roulette_kr_date,
+                "last_roulette_us_date": last_roulette_us_date
             }
         return None
     except Exception as e:
@@ -434,13 +450,15 @@ def get_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
             pro_expires_at = row[6]
             email = row[1]
             points = row[7] if row[7] is not None else 0
+            last_roulette_kr_date = row[8]
+            last_roulette_us_date = row[9]
             
             # 관리자 계정은 항상 PRO 상태 유지
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -465,7 +483,9 @@ def get_user(user_id):
                 "is_pro": is_pro,
                 "free_trial_count": row[5] if row[5] is not None else 2,
                 "pro_expires_at": pro_expires_at,
-                "points": points
+                "points": points,
+                "last_roulette_kr_date": last_roulette_kr_date,
+                "last_roulette_us_date": last_roulette_us_date
             }
         return None
     except Exception as e:
