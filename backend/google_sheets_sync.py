@@ -110,7 +110,9 @@ def sync_analytics_to_sheet():
         return True
         
     except Exception as e:
+        import traceback
         print(f"[GoogleSheets-Error] 동기화 중 오류 발생: {e}")
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":
