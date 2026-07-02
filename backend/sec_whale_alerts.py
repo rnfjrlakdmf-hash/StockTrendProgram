@@ -127,7 +127,15 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
             except:
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/0/{acc_no_dashes}/"
 
-            entity = src.get("entity_name", "Unknown")
+            display_names = src.get("display_names", [])
+            if "entity_name" in src:
+                entity = src.get("entity_name")
+            elif display_names:
+                # EDGAR returns reporter and issuer in display_names. The issuer is usually the last one.
+                entity = display_names[-1].split("(CIK")[0].strip()
+            else:
+                entity = "Unknown"
+                
             ticker = src.get("tickers", "")
             results.append({
                 "accession_no": acc_num,
