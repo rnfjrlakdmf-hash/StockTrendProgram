@@ -633,6 +633,19 @@ def send_daily_analytics_report():
     finally:
         conn.close()
         
+    # 3-2. 오늘 Peak Hour 계산
+    peak_hour_str = "데이터 없음"
+    try:
+        from db_manager import get_hourly_analytics
+        hourly_stats = get_hourly_analytics(24) # 최근 24시간
+        today_hourly = [h for h in hourly_stats if h["date_hour"].startswith(today_str)]
+        if today_hourly:
+            peak_stat = max(today_hourly, key=lambda x: x["unique_visitors"])
+            peak_time = peak_stat["date_hour"].split("_")[1] # "2026-07-02_17" -> "17"
+            peak_hour_str = f"{peak_time}시 ({peak_stat['unique_visitors']:,}명)"
+    except Exception as e:
+        print(f"[Scheduler] Failed to calculate peak hour: {e}")
+        
     # 4. 푸시 알림 제목 및 본문 구성
     title = "📊 [STOCK AI] 일일 방문자 및 시스템 운영 보고서"
     body = f"📅 날짜: {today_str}\n\n" \
@@ -641,7 +654,8 @@ def send_daily_analytics_report():
            f"📈 30일 누적 페이지뷰: {total_pv_30d:,}회\n" \
            f"👥 30일 누적 순방문자: {total_uv_30d:,}명\n" \
            f"🔥 현재 접속자 (5분): {active_users:,}명\n" \
-           f"👑 누적 가입 회원수: {total_users:,}명\n\n" \
+           f"👑 누적 가입 회원수: {total_users:,}명\n" \
+           f"⏰ 오늘 트래픽 피크타임: {peak_hour_str}\n\n" \
            f"오늘 하루도 시스템이 성공적으로 정상 운영되었습니다. 내일도 안정적인 서비스를 제공하겠습니다! 🏆"
            
     # 5. 관리자 계정들의 FCM 토큰 조회
@@ -846,6 +860,7 @@ def run_market_scheduler():
     last_run_analytics = ""
     last_run_fomo = ""
     last_run_dormant = ""
+    last_spike_alert_time = None
 
     last_cleanup_date = ""
     last_run_health_check = None
@@ -865,6 +880,23 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler] System health check error: {e}")
                 last_run_health_check = current_date
+                
+            # [실시간] 트래픽 급등 감지 (1분 주기)
+            try:
+                from db_manager import get_realtime_active_count
+                active_count = get_realtime_active_count(minutes=5)
+                if active_count >= 30:
+                    if not last_spike_alert_time or (now - last_spike_alert_time).total_seconds() >= 1800:
+                        # 30분(1800초) 쿨타임
+                        from system_watchdog import send_admin_alert
+                        send_admin_alert(
+                            module_name="📈 트래픽 급등 경고!",
+                            error_msg=f"현재 실시간 동시 접속자가 {active_count}명을 돌파했습니다! 사람들이 떼거지로 몰려오고 있습니다."
+                        )
+                        last_spike_alert_time = now
+                        print(f"[Analytics] Spike alert sent: {active_count} users")
+            except Exception as e:
+                print(f"[Scheduler] Spike alert error: {e}")
             
             # [주말 실행] 크립토 실시간 불장 감지 (15분 간격)
             if now.minute % 15 == 0 and is_holiday("kor"):

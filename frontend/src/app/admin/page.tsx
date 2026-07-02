@@ -23,6 +23,12 @@ interface DailyStat {
     unique_visitors: number;
 }
 
+interface HourlyStat {
+    date_hour: string;
+    pageviews: number;
+    unique_visitors: number;
+}
+
 interface AnalyticsStats {
     active_users_5m: number;
     daily_stats: DailyStat[];
@@ -33,6 +39,7 @@ export default function AdminPage() {
     const router = useRouter();
     const [users, setUsers] = useState<UserData[]>([]);
     const [analytics, setAnalytics] = useState<AnalyticsStats | null>(null);
+    const [hourlyStats, setHourlyStats] = useState<HourlyStat[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -176,6 +183,16 @@ export default function AdminPage() {
             const json = await res.json();
             if (json.status === "success") {
                 setAnalytics(json.data);
+            }
+            
+            const hourlyRes = await fetch(`${API_BASE_URL}/api/system/admin/hourly-analytics`, {
+                headers: {
+                    "X-Admin-Key": "StockTrendSecretAdmin2026!"
+                }
+            });
+            const hourlyJson = await hourlyRes.json();
+            if (hourlyJson.status === "success") {
+                setHourlyStats(hourlyJson.data);
             }
         } catch (e) {
             console.error("Failed to fetch analytics:", e);
@@ -391,6 +408,34 @@ export default function AdminPage() {
                             ))
                         ) : (
                             <p className="text-gray-500 text-sm text-center py-8">아직 기록된 방문 통계가 없습니다.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Hourly Statistics Table Card */}
+                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                    <h3 className="text-xl font-bold text-white mb-6">시간대별 트래픽 피크 모니터링</h3>
+                    <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
+                        {hourlyStats && hourlyStats.length > 0 ? (
+                            hourlyStats.map((stat) => (
+                                <div key={stat.date_hour} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                                    <div>
+                                        <p className="text-white font-bold text-sm">{stat.date_hour.replace('_', ' ')}시</p>
+                                    </div>
+                                    <div className="flex gap-6 text-sm">
+                                        <div className="text-right">
+                                            <p className="text-gray-500 text-[10px] font-black uppercase">PAGEVIEWS (PV)</p>
+                                            <p className="text-blue-400 font-black text-base">{stat.pageviews.toLocaleString()}회</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-gray-500 text-[10px] font-black uppercase">VISITORS (UV)</p>
+                                            <p className="text-red-400 font-black text-base">{stat.unique_visitors.toLocaleString()}명</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-sm text-center py-8">아직 시간대별 방문 통계가 없습니다.</p>
                         )}
                     </div>
                 </div>

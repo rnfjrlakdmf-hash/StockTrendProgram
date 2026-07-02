@@ -538,6 +538,18 @@ def get_analytics_stats(limit: int = 30, x_admin_key: Optional[str] = Header(Non
         }
     }
 
+@router.get("/admin/hourly-analytics")
+def get_admin_hourly_analytics(limit: int = 48, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 시간대별 트래픽 통계"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import get_hourly_analytics
+    
+    stats = get_hourly_analytics(limit)
+    return {
+        "status": "success",
+        "data": stats
+    }
+
 @router.post("/admin/send-daily-report")
 @router.get("/admin/send-daily-report")
 def trigger_daily_report(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):

@@ -349,6 +349,22 @@ def init_db():
         )
     ''')
 
+    # [Analytics] Hourly Site Visitor & Pageview Counter
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS hourly_analytics (
+            date_hour TEXT PRIMARY KEY,
+            pageviews INTEGER DEFAULT 0,
+            unique_visitors INTEGER DEFAULT 0
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS hourly_visitor_sessions (
+            date_hour TEXT,
+            visitor_id TEXT,
+            PRIMARY KEY (date_hour, visitor_id)
+        )
+    ''')
+
     # [NEW] IPO Watchlist Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ipo_watchlist (
@@ -1756,6 +1772,8 @@ def record_pageview(visitor_id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        hour_str = now.strftime("%Y-%m-%d_%H")
+        
         # 1. 일일 순방문자 여부 검증 (동일 날짜에 동일 visitor_id가 없었으면 신규 순방문자)
         cursor.execute(
             "INSERT OR IGNORE INTO visitor_sessions (date, visitor_id) VALUES (?, ?)",
@@ -1763,13 +1781,26 @@ def record_pageview(visitor_id: str):
         )
         is_unique = cursor.rowcount > 0
 
+        # 1-2. 시간대별 순방문자 여부 검증
+        cursor.execute(
+            "INSERT OR IGNORE INTO hourly_visitor_sessions (date_hour, visitor_id) VALUES (?, ?)",
+            (hour_str, visitor_id)
+        )
+        is_unique_hourly = cursor.rowcount > 0
+
         # 2. 오늘 날짜 데이터 Row 생성 (없을 때만)
         cursor.execute(
             "INSERT OR IGNORE INTO site_analytics (date, pageviews, unique_visitors) VALUES (?, 0, 0)",
             (today_str,)
         )
+        
+        # 2-2. 시간대별 Row 생성
+        cursor.execute(
+            "INSERT OR IGNORE INTO hourly_analytics (date_hour, pageviews, unique_visitors) VALUES (?, 0, 0)",
+            (hour_str,)
+        )
 
-        # 3. 누적치 카운트 업
+        # 3. 누적치 카운트 업 (Daily)
         if is_unique:
             cursor.execute(
                 "UPDATE site_analytics SET pageviews = pageviews + 1, unique_visitors = unique_visitors + 1 WHERE date = ?",
@@ -1780,6 +1811,19 @@ def record_pageview(visitor_id: str):
                 "UPDATE site_analytics SET pageviews = pageviews + 1 WHERE date = ?",
                 (today_str,)
             )
+
+        # 3-2. 누적치 카운트 업 (Hourly)
+        if is_unique_hourly:
+            cursor.execute(
+                "UPDATE hourly_analytics SET pageviews = pageviews + 1, unique_visitors = unique_visitors + 1 WHERE date_hour = ?",
+                (hour_str,)
+            )
+        else:
+            cursor.execute(
+                "UPDATE hourly_analytics SET pageviews = pageviews + 1 WHERE date_hour = ?",
+                (hour_str,)
+            )
+
         conn.commit()
         return True
     except Exception as e:
