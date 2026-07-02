@@ -139,8 +139,8 @@ export default function RoulettePage() {
     const isHittingPeg = (currentAngle % 60 < 2 || currentAngle % 60 > 58) && isSpinning;
 
     return (
-        <div className="flex h-[calc(100vh-80px)] w-full bg-[#020617] text-slate-200 font-sans selection:bg-amber-500/30">
-            <div className="flex-1 overflow-y-auto relative scrollbar-hide flex flex-col items-center justify-center">
+        <div className="flex h-[calc(100vh-80px)] w-full bg-[#020617] text-slate-200 font-sans selection:bg-amber-500/30 overflow-hidden">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden relative scrollbar-hide flex flex-col items-center justify-center w-full">
                 
                 {/* VIP Ambient Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/30 via-[#020617] to-[#020617] pointer-events-none z-0"></div>
@@ -150,7 +150,7 @@ export default function RoulettePage() {
                 <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-blue-900/20 rounded-full blur-[100px] animate-pulse pointer-events-none z-0"></div>
                 <div className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] bg-amber-900/10 rounded-full blur-[100px] animate-pulse pointer-events-none z-0 delay-1000"></div>
 
-                <div className="w-full max-w-5xl mx-auto p-4 md:p-10 flex flex-col items-center justify-center min-h-full relative z-10 pb-20">
+                <div className="w-full max-w-5xl mx-auto p-4 md:p-10 flex flex-col items-center justify-center min-h-full relative z-10 pb-20 overflow-x-hidden">
                     
                     {/* Header: Refined & Elegant */}
                     <div className="text-center mb-10 mt-4 relative">
