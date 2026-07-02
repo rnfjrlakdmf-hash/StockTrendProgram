@@ -29,7 +29,7 @@ from routes.signals import router as signals_router
 from routes.alerts import router as alerts_router
 from routes.seo import router as seo_router
 from routes.weekend import router as weekend_router
-from routes.event import router as event_router
+
 
 # Initialize FastAPI
 app = FastAPI(
@@ -90,7 +90,7 @@ app.include_router(seo_router, prefix="/api", tags=["SEO"])
 app.include_router(referral_router, prefix="/api/referral", tags=["Referral"])
 app.include_router(ranking_router, prefix="/api/ranking", tags=["Ranking"])
 app.include_router(weekend_router, tags=["Weekend"])
-app.include_router(event_router, prefix="/api/event", tags=["Event"])
+
 import traceback
 from fastapi.responses import JSONResponse
 from fastapi import Request

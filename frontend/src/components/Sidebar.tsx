@@ -18,12 +18,7 @@ const navigation = [
         icon: LayoutDashboard,
         desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
     },
-    { 
-        name: "🎁 출석 룰렛 (100% 당첨)", 
-        href: "/roulette", 
-        icon: Gift,
-        desc: "매일 2번 출석 체크하고 1시간 PRO 자유이용권과 포인트를 받아가세요!"
-    },
+
     { 
         name: "🔒 주말 마켓 인사이트", 
         href: "/weekend-report", 
