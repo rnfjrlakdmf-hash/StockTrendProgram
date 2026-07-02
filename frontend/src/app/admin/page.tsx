@@ -182,6 +182,29 @@ export default function AdminPage() {
         }
     };
 
+    const deleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`정말 ${userName} 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며, 사용자의 모든 데이터가 파기됩니다.`)) return;
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert("성공적으로 회원을 삭제했습니다.");
+                setUsers(prev => prev.filter(u => u.id !== userId));
+            } else {
+                alert(`삭제 실패: ${json.message}`);
+            }
+        } catch (e) {
+            alert("서버 오류로 인해 회원을 삭제하지 못했습니다.");
+        }
+    };
+
     const toggleProStatus = async (userId: string, currentPro: boolean) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/admin/users/pro`, {
@@ -448,10 +471,16 @@ export default function AdminPage() {
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                                                <button 
+                                                    onClick={() => alert('특별 회원 표시 기능은 준비 중입니다.')}
+                                                    className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all"
+                                                >
                                                     <Star className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 rounded-lg bg-red-500/5 text-red-500/50 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                                <button 
+                                                    onClick={() => deleteUser(user.id, user.name)}
+                                                    className="p-2 rounded-lg bg-red-500/5 text-red-500/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                                >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
