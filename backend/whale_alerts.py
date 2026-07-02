@@ -245,8 +245,9 @@ def check_insider_trading_alerts():
 
     state = load_state()
     if state.get("date") != today_str:
-        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": []}
+        state = {"date": today_str, "alerted_stocks": [], "sent_rcept_nos": [], "sent_insider_nos": [], "sent_insider_corps": []}
     sent_nos = set(state.get("sent_insider_nos", []))
+    sent_corps = set(state.get("sent_insider_corps", []))
 
     try:
         filings = dart_api_client.get_insider_trading_disclosures(days_ago=0)
@@ -259,6 +260,11 @@ def check_insider_trading_alerts():
                 continue
 
             corp_name = filing.get("corp_name", "Unknown")
+            
+            # 같은 날 이미 같은 종목의 알림이 나갔다면 중복 알림 방지 (하루 1종목 1회 알림)
+            if corp_name in sent_corps:
+                sent_nos.add(rcept_no)
+                continue
             title = f"🚨 [내부자 거래 포착] {corp_name}"
             body = "회사 임원 또는 주요주주의 지분 변동이 발생했습니다. (임원소유상황보고서)"
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
@@ -294,10 +300,12 @@ def check_insider_trading_alerts():
                 print(f"[Whale Insider] Send error: {e}")
 
             sent_nos.add(rcept_no)
+            sent_corps.add(corp_name)
 
         if len(sent_nos) > 1000:
             sent_nos = set(list(sent_nos)[-800:])
         state["sent_insider_nos"] = list(sent_nos)
+        state["sent_insider_corps"] = list(sent_corps)
         save_state(state)
         print(f"[Whale Insider] Done. New alerts: {new_count}")
 
