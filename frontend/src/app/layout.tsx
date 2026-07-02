@@ -159,6 +159,11 @@ export default function RootLayout({
             <FCMWrapper />
             <WhaleSiren />
             <FomoWidget />
+            
+            {/* Mobile Sticky Ad Banner */}
+            <div className="fixed bottom-0 left-0 w-full z-[999] bg-[#0a0a0a] border-t border-white/10 flex justify-center pb-safe sm:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.8)]">
+              <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+            </div>
           </div>
         </AuthProvider>
         <Analytics />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, limit, where } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
+import KakaoAdFit from "@/components/KakaoAdFit";
 
 interface AlertItem {
     id: string;
@@ -364,7 +365,21 @@ export default function AlertCenterPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {filteredAlerts.map((alert) => renderAlertCard(alert))}
+                        {filteredAlerts.map((alert, idx) => {
+                            const isHighValue = alert.type === 'insider_trading' || alert.type === 'large_holding';
+                            const isFirstHighValue = isHighValue && idx === filteredAlerts.findIndex(a => a.type === 'insider_trading' || a.type === 'large_holding');
+                            return (
+                                <React.Fragment key={alert.id}>
+                                    {renderAlertCard(alert)}
+                                    {isFirstHighValue && (
+                                        <div className="bg-black/30 border border-blue-500/10 rounded-2xl p-4 flex flex-col items-center justify-center my-6 shadow-xl">
+                                            <p className="text-xs text-gray-500 mb-2 font-semibold">스폰서 광고</p>
+                                            <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import KakaoAdFit from "./KakaoAdFit";
 
 interface AiResult {
     score: number;
@@ -66,7 +67,12 @@ export default function OnDemandAiAnalysis({ ticker, stockName }: { ticker: stri
             {loading && (
                 <div className="flex flex-col items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mb-4"></div>
-                    <p className="text-indigo-300 animate-pulse">AI가 최신 뉴스, 공시, 수급 데이터를 분석 중입니다...</p>
+                    <p className="text-indigo-300 animate-pulse font-bold mb-6 text-center text-lg">AI가 실시간 데이터를 수집 및 분석 중입니다...<br/><span className="text-sm font-normal text-indigo-400">(약 10~15초 소요)</span></p>
+                    
+                    {/* 광고 집중도 극대화 구역 */}
+                    <div className="bg-black/40 p-2 rounded-xl border border-indigo-500/20 w-full max-w-[320px] mx-auto min-h-[250px] flex items-center justify-center">
+                        <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                    </div>
                 </div>
             )}
 
