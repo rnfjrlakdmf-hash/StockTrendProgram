@@ -95,7 +95,7 @@ def generate_weekly_post():
        "⚠️ **면책 조항 (Disclaimer)**<br>본 리포트는 객관적인 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
 
     [출력 포맷 및 작성 가이드]
-    1. 첫 줄에 반드시 SEO 최적화된 클릭 유발 제목을 `<title-seo>여기에 작성</title-seo>` 형태로 출력하세요. (예: "{today_str} 주간 증시 결산: 이번 주 시장을 뜨겁게 달군 핵심 테마는?")
+    1. 첫 줄에 반드시 사람들이 네이버나 구글에 검색할 만한 롱테일 키워드를 포함한 SEO 최적화된 매력적인 제목을 `<title-seo>여기에 작성</title-seo>` 형태로 출력하세요. (예: "삼성전자 주가 전망 및 {today_str} 주간 증시 결산 AI 요약: 이번 주 시장을 뜨겁게 달군 핵심 테마는?") 제목과 본문에는 검색 노출이 잘 되는 인기 종목 이름(예: 삼성전자, 에코프로, SK하이닉스 등)을 자연스럽게 1~2개 포함하세요.
     2. 전체 래퍼는 `<div class="prose prose-lg prose-invert max-w-none space-y-8 leading-loose">` 로 감싸주세요.
     3. 본문 제목: `<h2 class="text-3xl font-black text-white pb-2 border-b border-gray-700 mb-8">📊 [여기에 제목 삽입]</h2>`
     4. 일반 단락: `<p class="text-gray-300 text-lg">`
