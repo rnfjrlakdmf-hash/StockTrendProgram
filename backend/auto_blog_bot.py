@@ -281,6 +281,19 @@ def post_to_firestore(market_type):
     timestamp = datetime.now().strftime("%H%M%S")
     slug = f"{date_id}-{timestamp}-{market_type}-market-view"
     
+    # --- 바이럴 CTA 배너 추가 (트래픽 유도용) ---
+    cta_html = f"""
+    <div class="mt-12 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 p-6 rounded-2xl text-center shadow-lg">
+        <h3 class="text-xl font-bold text-white mb-2">🔥 내일 상승할 종목, AI는 알고 있다?</h3>
+        <p class="text-gray-300 mb-4">현재 화제가 되고 있는 종목들의 내일 주가 향방을 AI 스마트 투자 비서가 무료로 예측해 드립니다.</p>
+        <a href="/game" class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-blue-500/50 shadow-lg">
+            AI 주가 예측 게임 해보기 🚀
+        </a>
+    </div>
+    """
+    content += cta_html
+    # ----------------------------------------------
+    
     post_data = {
         "title": title,
         "content": content,

@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import StockDiscussionBoard from "@/components/StockDiscussionBoard";
 import StockVotingBoard from "@/components/StockVotingBoard";
 import KakaoShareButton from "@/components/KakaoShareButton";
+import ReportDownloadButton from "@/components/ReportDownloadButton";
 import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
 
 const getApiBaseUrl = () => {
@@ -171,7 +172,7 @@ export default async function StockSeoPage({ params }: Props) {
             />
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-12">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
+                <div id="ai-report-capture" className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="mb-2 w-full">
                             <span className="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md mb-3 inline-block border border-blue-500/20">AI 주가 전망 리포트</span>
@@ -180,14 +181,17 @@ export default async function StockSeoPage({ params }: Props) {
                             </h1>
                             <p className="text-lg text-slate-400 mt-2 font-medium">종목코드: {decodedTicker}</p>
                         </div>
-                        <KakaoShareButton 
-                            title={`[종목 분석] ${name} (${decodedTicker})`}
-                            description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
-                            url={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`}
-                            imageUrl={shareOgUrl.toString()}
-                            className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full md:w-auto shadow-lg shadow-[#FEE500]/10"
-                            buttonText="분석 결과 보기"
-                        />
+                        <div className="flex flex-col gap-2 w-full md:w-auto">
+                            <KakaoShareButton 
+                                title={`[종목 분석] ${name} (${decodedTicker})`}
+                                description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
+                                url={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`}
+                                imageUrl={shareOgUrl.toString()}
+                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full shadow-lg shadow-[#FEE500]/10"
+                                buttonText="카카오톡으로 공유"
+                            />
+                            <ReportDownloadButton targetId="ai-report-capture" fileName={name} />
+                        </div>
                     </div>
                     <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 기업 현황 리포트</p>
                     
