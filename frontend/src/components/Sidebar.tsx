@@ -38,6 +38,12 @@ const navigation = [
         desc: "내 불쌍한 계좌 살려낼 물타기 금액은? 친구들과 공유하며 재미있게 평단가를 계산해보세요!"
     },
     { 
+        name: "🎮 AI 주가 예측 미니게임", 
+        href: "/game", 
+        icon: Crown,
+        desc: "삼성전자, 엔비디아 내일은 오를까 내릴까? AI의 예측을 확인하고 집단 지성에 투표하세요!"
+    },
+    { 
         name: "전문가 마켓 리포트", 
         href: "/blog", 
         icon: Newspaper,
