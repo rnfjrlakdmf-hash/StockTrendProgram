@@ -1832,6 +1832,28 @@ def record_pageview(visitor_id: str):
     finally:
         conn.close()
 
+def get_hourly_analytics(limit: int = 48):
+    """
+    최근 N시간 동안의 시간대별 조회수 및 순방문자수 통계를 반환합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT date_hour, pageviews, unique_visitors FROM hourly_analytics ORDER BY date_hour DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        return [
+            {"date_hour": r[0], "pageviews": r[1], "unique_visitors": r[2]}
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"[Analytics-Error] Failed to fetch hourly stats: {e}")
+        return []
+    finally:
+        conn.close()
+
 def get_site_analytics(limit: int = 30):
     """
     최근 N일 동안의 일일 조회수 및 순방문자수 통계를 반환합니다.
