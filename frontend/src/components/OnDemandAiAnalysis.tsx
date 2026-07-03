@@ -24,7 +24,7 @@ export default function OnDemandAiAnalysis({ ticker, stockName }: { ticker: stri
         setError(null);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
-            const res = await fetch(`${apiUrl}/api/stock/${ticker}`);
+            const res = await fetch(`${apiUrl}/api/analysis/stock/${ticker}`);
             const data = await res.json();
             
             if (data.status === 'success' && data.data) {
