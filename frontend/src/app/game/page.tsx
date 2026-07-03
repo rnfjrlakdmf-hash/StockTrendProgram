@@ -10,12 +10,24 @@ import { useAuth } from "@/context/AuthContext";
 import LoginModal from "@/components/LoginModal";
 import Image from "next/image";
 
-// 게임 종목 정의
-const GAME_STOCKS = [
+// 게임 종목 풀 (이 중에서 매일 4개를 랜덤하게 픽)
+const STOCK_POOL = [
   { id: "KOSPI", name: "코스피", symbol: "KOSPI", type: "index" },
+  { id: "KOSDAQ", name: "코스닥", symbol: "KOSDAQ", type: "index" },
+  { id: "SPX", name: "S&P 500", symbol: "SPX", type: "index" },
+  { id: "NDX", name: "나스닥 100", symbol: "NDX", type: "index" },
   { id: "005930", name: "삼성전자", symbol: "005930.KS", type: "stock" },
+  { id: "000660", name: "SK하이닉스", symbol: "000660.KS", type: "stock" },
+  { id: "035420", name: "NAVER", symbol: "035420.KS", type: "stock" },
+  { id: "035720", name: "카카오", symbol: "035720.KS", type: "stock" },
   { id: "NVDA", name: "엔비디아", symbol: "NVDA", type: "stock" },
+  { id: "TSLA", name: "테슬라", symbol: "TSLA", type: "stock" },
+  { id: "AAPL", name: "애플", symbol: "AAPL", type: "stock" },
+  { id: "MSFT", name: "마이크로소프트", symbol: "MSFT", type: "stock" },
+  { id: "MSTR", name: "마이크로스트래티지", symbol: "MSTR", type: "stock" },
   { id: "BTC", name: "비트코인", symbol: "BTC-USD", type: "crypto" },
+  { id: "ETH", name: "이더리움", symbol: "ETH-USD", type: "crypto" },
+  { id: "SOL", name: "솔라나", symbol: "SOL-USD", type: "crypto" },
 ];
 
 // 간단한 의사난수 생성기 (종목과 날짜에 종속적인 고정 난수 생성)
@@ -28,6 +40,14 @@ const pseudoRandom = (seed: string) => {
   }
   const x = Math.sin(hash++) * 10000;
   return x - Math.floor(x);
+};
+
+// 특정 날짜에 고정된 4개의 종목을 뽑는 함수
+const getDailyStocks = (dateStr: string) => {
+  const shuffled = [...STOCK_POOL].sort((a, b) => pseudoRandom(`${dateStr}_${a.id}`) - 0.5);
+  // 항상 1개의 국내주식/지수, 1개의 미국주식, 1개의 코인 등이 골고루 섞이게 할 수도 있지만, 
+  // 여기서는 단순히 가장 앞의 4개를 반환합니다.
+  return shuffled.slice(0, 4);
 };
 
 export default function UpDownGamePage() {
@@ -65,7 +85,8 @@ export default function UpDownGamePage() {
     }
 
     // 2. 종목별 라이브 투표율 구독
-    const unsubscribes = GAME_STOCKS.map(stock => {
+    const dailyStocks = getDailyStocks(today);
+    const unsubscribes = dailyStocks.map(stock => {
       const docRef = doc(db, "daily_market_votes", `${today}_${stock.id}`);
       return onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -166,6 +187,8 @@ export default function UpDownGamePage() {
     return prob;
   };
 
+  const dailyStocks = getDailyStocks(today);
+
   return (
     <div className="min-h-screen bg-[#050505] text-white">
       <Header />
@@ -187,7 +210,7 @@ export default function UpDownGamePage() {
 
         {/* Game Cards Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-          {GAME_STOCKS.map((stock, index) => {
+          {dailyStocks.map((stock, index) => {
             const vData = votesData[stock.id] || { up: 0, down: 0 };
             const totalVotes = vData.up + vData.down;
             const upPercent = totalVotes === 0 ? 50 : Math.round((vData.up / totalVotes) * 100);
