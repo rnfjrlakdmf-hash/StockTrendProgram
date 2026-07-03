@@ -58,6 +58,21 @@ from bs4 import BeautifulSoup
 @cached(cache=TTLCache(maxsize=2000, ttl=21600))
 def get_cached_stock_info(ticker: str):
     try:
+        import re
+        import urllib.parse
+        ticker = urllib.parse.unquote(ticker).strip()
+        
+        # --- Name to Ticker Resolution ---
+        if re.search('[가-힣]', ticker):
+            stocks_info = get_all_kospi_kosdaq()
+            if stocks_info.get('status') == 'success':
+                target_name = ticker.replace(" ", "").lower()
+                for s in stocks_info['data']:
+                    if s['name'].replace(" ", "").lower() == target_name:
+                        ticker = s['ticker']
+                        break
+        # ---------------------------------
+        
         is_us_stock = not ticker.isdigit()
         
         if is_us_stock:
@@ -151,6 +166,10 @@ def get_cached_stock_info(ticker: str):
                 random_picks = random.sample(stocks_list, 4)
                 related_stocks = [{"ticker": s["ticker"], "name": s["name"]} for s in random_picks]
 
+        if price == 0 and not ticker.isdigit():
+            # Treat 0 price for non-digit tickers as not found
+            return {"status": "error", "message": "Stock not found"}
+
         return {
             "status": "success",
             "ticker": ticker,
@@ -171,19 +190,8 @@ def get_cached_stock_info(ticker: str):
         traceback.print_exc()
         logger.error(f"Error fetching info for {ticker}: {e}")
         return {
-            "status": "success",
-            "ticker": ticker,
-            "name": f"종목 {ticker}",
-            "price": 0,
-            "previousClose": 0,
-            "per": 0,
-            "pbr": 0,
-            "dividendYield": 0,
-            "marketCap": 0,
-            "summary": "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다.",
-            "exDividendDate": None,
-            "paymentDate": None,
-            "relatedStocks": []
+            "status": "error",
+            "message": str(e)
         }
 
 @router.get("/seo/stocks")
