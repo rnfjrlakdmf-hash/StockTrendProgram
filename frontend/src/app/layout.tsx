@@ -14,6 +14,7 @@ import FomoWidget from "@/components/FomoWidget";
 import WhaleSiren from "@/components/WhaleSiren";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
+import CookieConsent from "@/components/CookieConsent";
 import type { Viewport } from 'next';
 
 export const viewport: Viewport = {
@@ -35,6 +36,7 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
     other: {
       'naver-site-verification': process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION ? [process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION] : [],
+      'google-adsense-account': ['ca-pub-9471404163603833'],
     },
   },
   openGraph: {
@@ -164,6 +166,8 @@ export default function RootLayout({
             <div className="fixed bottom-0 left-0 w-full z-[999] bg-[#0a0a0a] border-t border-white/10 flex justify-center pb-safe sm:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.8)]">
               <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
             </div>
+
+            <CookieConsent />
           </div>
         </AuthProvider>
         <Analytics />
