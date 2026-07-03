@@ -25,6 +25,8 @@ export default function AlertCenterPage() {
     const [activeTab, setActiveTab] = useState("all");
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
     const [watchlistNames, setWatchlistNames] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
 
     const { user } = useAuth();
 
@@ -294,6 +296,13 @@ export default function AlertCenterPage() {
         return true;
     });
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab]);
+
+    const totalPages = Math.ceil(filteredAlerts.length / ITEMS_PER_PAGE);
+    const paginatedAlerts = filteredAlerts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     return (
         <div className="min-h-screen pb-10">
             <Header />
@@ -365,7 +374,7 @@ export default function AlertCenterPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {filteredAlerts.map((alert, idx) => {
+                        {paginatedAlerts.map((alert, idx) => {
                             const isHighValue = alert.type === 'insider_trading' || alert.type === 'large_holding';
                             const isFirstHighValue = isHighValue && idx === filteredAlerts.findIndex(a => a.type === 'insider_trading' || a.type === 'large_holding');
                             return (
@@ -380,6 +389,47 @@ export default function AlertCenterPage() {
                                 </React.Fragment>
                             );
                         })}
+                        
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center space-x-2 mt-8 pt-4">
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 transition-colors text-sm"
+                                >
+                                    이전
+                                </button>
+                                
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(p => p === 1 || p === totalPages || Math.abs(currentPage - p) <= 2)
+                                    .map((p, idx, arr) => (
+                                        <React.Fragment key={p}>
+                                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                                                <span className="text-gray-600 px-1">...</span>
+                                            )}
+                                            <button
+                                                onClick={() => setCurrentPage(p)}
+                                                className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
+                                                    currentPage === p 
+                                                    ? "bg-blue-500 text-white border border-blue-400/50" 
+                                                    : "bg-white/5 border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        </React.Fragment>
+                                    ))
+                                }
+
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 transition-colors text-sm"
+                                >
+                                    다음
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
