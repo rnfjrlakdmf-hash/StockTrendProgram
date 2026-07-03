@@ -102,7 +102,8 @@ const navigation = [
         name: "종목 디렉토리 (전체 종목)", 
         href: "/directory", 
         icon: List,
-        desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다."
+        desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다.",
+        hidden: true // 봇 크롤러용이므로 일반 유저 사이드바에서는 숨김 처리
     },
     { 
         name: "연동 설정 및 시스템 관리", 
@@ -568,6 +569,7 @@ export default function Sidebar() {
 
                     <nav className="space-y-1.5">
                         {navigation.filter(item => {
+                            if ((item as any).hidden) return false; // 숨김 처리된 탭 제외
                             if (!mounted) return true; // SSR 시에는 hydration mismatch 방지를 위해 다 보여주거나 기본값 사용
                             const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
                             const isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
