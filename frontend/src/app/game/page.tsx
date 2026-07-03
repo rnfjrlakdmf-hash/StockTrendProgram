@@ -45,9 +45,16 @@ const pseudoRandom = (seed: string) => {
 // 특정 날짜에 고정된 4개의 종목을 뽑는 함수
 const getDailyStocks = (dateStr: string) => {
   const shuffled = [...STOCK_POOL].sort((a, b) => pseudoRandom(`${dateStr}_${a.id}`) - 0.5);
-  // 항상 1개의 국내주식/지수, 1개의 미국주식, 1개의 코인 등이 골고루 섞이게 할 수도 있지만, 
-  // 여기서는 단순히 가장 앞의 4개를 반환합니다.
   return shuffled.slice(0, 4);
+};
+
+// 어제 날짜 구하기 (KST 기준)
+const getYesterday = () => {
+  const d = new Date();
+  // UTC에서 한국시간(UTC+9)으로 맞춘 뒤 하루를 뺌
+  d.setHours(d.getHours() + 9);
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
 };
 
 export default function UpDownGamePage() {
@@ -56,6 +63,12 @@ export default function UpDownGamePage() {
   const [votesData, setVotesData] = useState<Record<string, { up: number, down: number }>>({});
   const [myVotes, setMyVotes] = useState<Record<string, "up" | "down">>(({}));
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  
+  // User Gamification Stats
+  const [myStreak, setMyStreak] = useState<number>(0);
+  const [myScore, setMyScore] = useState<number>(0);
+  const [myWins, setMyWins] = useState<number>(0);
+  const [myTotal, setMyTotal] = useState<number>(0);
 
   // Get today's date in YYYY-MM-DD KST format
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -66,9 +79,6 @@ export default function UpDownGamePage() {
   }).replace(/\. /g, '-').replace('.', '');
 
   useEffect(() => {
-    // 1. 유저의 오늘 투표 내역 로드 (Firebase 또는 로컬)
-    // 실제 운영 환경에서는 Firestore의 user_predictions 컬렉션에서 가져와야 함.
-    // 여기서는 로컬과 동기화.
     if (user) {
       const loadUserVotes = async () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -77,14 +87,21 @@ export default function UpDownGamePage() {
           if (data.daily_votes && data.daily_votes[today]) {
             setMyVotes(data.daily_votes[today]);
           }
+          setMyStreak(data.streak || 0);
+          setMyScore(data.score || 0);
+          setMyWins(data.game_wins || 0);
+          setMyTotal(data.game_total || 0);
         }
       };
       loadUserVotes();
     } else {
-      setMyVotes({}); // 비로그인 시 초기화
+      setMyVotes({});
+      setMyStreak(0);
+      setMyScore(0);
+      setMyWins(0);
+      setMyTotal(0);
     }
 
-    // 2. 종목별 라이브 투표율 구독
     const dailyStocks = getDailyStocks(today);
     const unsubscribes = dailyStocks.map(stock => {
       const docRef = doc(db, "daily_market_votes", `${today}_${stock.id}`);
@@ -104,10 +121,9 @@ export default function UpDownGamePage() {
       });
     });
 
-    // 3. 리더보드 로드 (적중 횟수 기준 상위 5명)
     const loadLeaderboard = async () => {
       try {
-        const q = query(collection(db, "users"), orderBy("game_wins", "desc"), limit(5));
+        const q = query(collection(db, "users"), orderBy("score", "desc"), limit(10));
         const querySnapshot = await getDocs(q);
         const leaders: any[] = [];
         querySnapshot.forEach((doc) => {
@@ -136,7 +152,6 @@ export default function UpDownGamePage() {
       return;
     }
 
-    // Optimistic UI update
     setMyVotes(prev => ({ ...prev, [stockId]: type }));
     setVotesData(prev => ({
       ...prev,
@@ -163,15 +178,44 @@ export default function UpDownGamePage() {
         });
       }
 
-      // 2. 개인 투표 기록 업데이트
+      // 2. 개인 투표 기록 및 연속 출석(Streak) 업데이트
       const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      
+      let newStreak = userData.streak || 0;
+      let newScore = userData.score || 0;
+      const lastVoteDate = userData.last_vote_date;
+      const yesterday = getYesterday().replace(/-/g, ''); // today format matched
+      
+      // 하루 첫 투표 시에만 출석 로직 계산
+      const isFirstVoteToday = lastVoteDate !== today;
+      if (isFirstVoteToday) {
+        if (lastVoteDate === yesterday) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+        // 첫 출석 시 기본 10점 + 연속 출석 뱃지당 추가 보너스
+        newScore += 10 + (newStreak * 2);
+        setMyStreak(newStreak);
+      } else {
+        // 이미 오늘 투표를 한 번 이상 한 경우 추가 투표 보너스 (5점)
+        newScore += 5;
+      }
+      setMyScore(newScore);
+
       await setDoc(userRef, {
         daily_votes: {
           [today]: {
             [stockId]: type
           }
         },
-        game_total: increment(1) // 참여 횟수 증가
+        game_total: increment(1),
+        streak: newStreak,
+        score: newScore,
+        last_vote_date: today,
+        displayName: user.name || "익명 개미"
       }, { merge: true });
 
     } catch (error) {
@@ -180,11 +224,9 @@ export default function UpDownGamePage() {
   };
 
   const getAIPrediction = (stockId: string) => {
-    // 날짜 + 종목ID를 시드로 사용하여 매일 고정된 %를 출력
     const seed = `${today}_${stockId}_AI_PREDICT`;
     const rand = pseudoRandom(seed);
-    const prob = Math.floor(45 + (rand * 40)); // 45% ~ 85% 사이
-    return prob;
+    return Math.floor(45 + (rand * 40));
   };
 
   const dailyStocks = getDailyStocks(today);
@@ -195,7 +237,7 @@ export default function UpDownGamePage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         
         {/* Header Section */}
-        <div className="text-center mb-10 animate-fade-in-up">
+        <div className="text-center mb-8 animate-fade-in-up">
           <div className="inline-flex items-center justify-center gap-2 bg-indigo-500/10 text-indigo-400 font-bold px-5 py-2 rounded-full text-sm mb-6 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
             <BrainCircuit className="w-4 h-4" />
             AI vs 인간 - 내일의 주가 예측 리그
@@ -204,9 +246,42 @@ export default function UpDownGamePage() {
             내일 주가, <span className="text-red-500">오를까</span> <span className="text-blue-500">내릴까?</span>
           </h1>
           <p className="text-gray-400 text-lg">
-            AI의 예측을 이겨보세요! 개미들의 집단 지성 테스트
+            AI의 예측을 이겨보세요! 누적 포인트로 명예의 전당에 오르세요.
           </p>
         </div>
+
+        {/* Gamification Stats Bar (If logged in) */}
+        {user && (
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-4 flex flex-wrap items-center justify-between mb-8 shadow-xl animate-fade-in-up">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-white/10 shadow-lg">
+                <span className="font-black text-xl">{user.name?.charAt(0) || "나"}</span>
+              </div>
+              <div>
+                <div className="text-sm text-gray-400">내 예측 점수</div>
+                <div className="text-2xl font-black text-white">{myScore.toLocaleString()} <span className="text-sm font-medium text-indigo-400">PTS</span></div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6 mt-4 sm:mt-0">
+              {myStreak > 0 && (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-1 rounded-full text-xs font-bold mb-1 shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                    <Flame className="w-3.5 h-3.5 fill-red-500" />
+                    {myStreak}일 연속 출석 중!
+                  </div>
+                  <span className="text-[10px] text-gray-500">보너스 점수 적용됨</span>
+                </div>
+              )}
+              <div className="text-right">
+                <div className="text-sm text-gray-400">내 적중률</div>
+                <div className="text-lg font-bold text-white">
+                  {myTotal > 0 ? Math.round((myWins / myTotal) * 100) : 0}% <span className="text-xs font-normal text-gray-500">({myWins}/{myTotal})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Game Cards Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
@@ -325,14 +400,17 @@ export default function UpDownGamePage() {
                   </div>
                   <div>
                     <div className="font-bold text-gray-200">{leader.displayName || "익명 개미"}</div>
-                    <div className="text-xs text-gray-500">총 {leader.game_total || 0}회 참여</div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>적중 {leader.game_wins || 0}회</span>
+                      {leader.streak > 0 && <span className="text-red-400">🔥 {leader.streak}일 연속</span>}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-                    {leader.game_wins || 0}승
+                    {leader.score ? leader.score.toLocaleString() : 0} PTS
                   </div>
-                  <div className="text-xs text-gray-500">적중 횟수</div>
+                  <div className="text-xs text-gray-500">종합 점수</div>
                 </div>
               </div>
             )) : (
@@ -343,15 +421,15 @@ export default function UpDownGamePage() {
           </div>
         </div>
 
-        {/* Share Section */}
-        <div className="text-center">
+        {/* Share Section (Viral Loop) */}
+        <div className="text-center mb-8">
           <KakaoShareButton 
-            title={`AI vs 인간 - 주가 예측 리그`}
-            description={`삼성전자, 엔비디아 내일은 오를까 내릴까? AI의 예측을 확인하고 집단 지성에 투표하세요!`}
+            title={myScore > 0 ? `[내 점수 자랑하기] 현재 내 예측 점수: ${myScore}점!` : `AI vs 인간 - 주가 예측 리그`}
+            description={myStreak > 0 ? `🔥 ${myStreak}일 연속 출석 중! 과연 당신은 나의 주식 예측 실력을 이길 수 있을까? 지금 도전하세요.` : `삼성전자, 엔비디아 내일은 오를까 내릴까? AI의 예측을 확인하고 집단 지성에 투표하세요!`}
             url={`https://stock-trend-program.co.kr/game`}
             imageUrl="https://stock-trend-program.co.kr/api/og?title=AI%20vs%20인간&subtitle=주가%20예측%20리그%20시즌1&theme=이벤트"
-            className="inline-flex bg-[#FEE500] hover:bg-[#FEE500]/90 text-black py-4 px-8 rounded-2xl text-lg font-bold items-center justify-center gap-3 transition-colors shadow-lg shadow-[#FEE500]/10"
-            buttonText="카카오톡으로 친구 초대하기"
+            className="inline-flex bg-[#FEE500] hover:bg-[#FEE500]/90 text-black py-4 px-8 rounded-2xl text-lg font-bold items-center justify-center gap-3 transition-colors shadow-lg shadow-[#FEE500]/10 hover:scale-105 active:scale-95 duration-200"
+            buttonText={myScore > 0 ? "🔥 카카오톡으로 내 점수 자랑하기" : "카카오톡으로 친구 초대하기"}
           />
         </div>
 
