@@ -28,6 +28,7 @@ type Props = { params: Promise<{ ticker: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const resolvedParams = await params;
+    const decodedTicker = decodeURIComponent(resolvedParams.ticker);
     const data = await getStockInfo(resolvedParams.ticker);
     
     if (!data || data.status === 'error') {
@@ -36,8 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
     
-    const name = data.name || resolvedParams.ticker;
-    const title = `[급등주] ${name} 주가 전망 및 AI 목표가 분석 (${resolvedParams.ticker}) | 스마트 투자 비서`;
+    const name = data.name || decodedTicker;
+    const title = `[급등주] ${name} 주가 전망 및 AI 목표가 분석 (${decodedTicker}) | 스마트 투자 비서`;
     const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 실시간 매수/매도 시그널과 향후 전망을 무료로 확인하세요.`;
     
     // OG Image URL 생성
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
-        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", resolvedParams.ticker],
+        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", decodedTicker],
         openGraph: {
             title,
             description,
@@ -79,13 +80,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StockSeoPage({ params }: Props) {
     const resolvedParams = await params;
+    const decodedTicker = decodeURIComponent(resolvedParams.ticker);
     const data = await getStockInfo(resolvedParams.ticker);
     
     if (!data || data.status === 'error') {
         notFound();
     }
 
-    const name = data.name || resolvedParams.ticker;
+    const name = data.name || decodedTicker;
     const price = data.price?.toLocaleString() || 'N/A';
     const prevClose = data.previousClose?.toLocaleString() || 'N/A';
     const pbr = data.pbr?.toFixed(2) || 'N/A';
@@ -134,10 +136,10 @@ export default async function StockSeoPage({ params }: Props) {
                             <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 leading-tight">
                                 {name} 주가 전망 및 핵심 분석
                             </h1>
-                            <p className="text-lg text-slate-400 mt-2 font-medium">종목코드: {resolvedParams.ticker}</p>
+                            <p className="text-lg text-slate-400 mt-2 font-medium">종목코드: {decodedTicker}</p>
                         </div>
                         <KakaoShareButton 
-                            title={`[종목 분석] ${name} (${resolvedParams.ticker})`}
+                            title={`[종목 분석] ${name} (${decodedTicker})`}
                             description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
                             url={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`}
                             imageUrl={shareOgUrl.toString()}
@@ -191,7 +193,7 @@ export default async function StockSeoPage({ params }: Props) {
                 </div>
 
                 {/* On-Demand AI Analysis Section */}
-                <OnDemandAiAnalysis ticker={resolvedParams.ticker} stockName={name} />
+                <OnDemandAiAnalysis ticker={decodedTicker} stockName={name} />
 
                 {/* 배당 정보 섹션 (해외주식/배당주) */}
                 {(data.exDividendDate || data.paymentDate || data.dividendYield > 0) && (
@@ -242,12 +244,13 @@ export default async function StockSeoPage({ params }: Props) {
 
                 {/* Stock Voting Board */}
                 <div className="mb-8">
-                    <StockVotingBoard ticker={resolvedParams.ticker} stockName={name} />
+                    <StockVotingBoard ticker={decodedTicker} stockName={name} />
                 </div>
-
-                {/* Stock Discussion Board */}
-                <StockDiscussionBoard ticker={resolvedParams.ticker} name={name} />
             </main>
+            
+            <section className="bg-slate-900 border-t border-slate-800">
+                <StockDiscussionBoard ticker={decodedTicker} name={name} />
+            </section>
 
         </div>
     );
