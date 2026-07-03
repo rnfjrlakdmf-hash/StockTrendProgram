@@ -183,7 +183,7 @@ def check_large_holding_alerts():
             
             body_text = "지분 5% 이상 대량 매집이 포착되었습니다! (대량보유상황보고서)"
             if flr_nm:
-                body_text = f"[{flr_nm}] {body_text}"
+                body_text += f" (보고자: {flr_nm})"
             
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")

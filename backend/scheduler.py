@@ -92,6 +92,7 @@ async def check_and_notify_disclosures():
                 report_title = item.get('report_nm', '공시')
                 dart_link = item.get('link', '')
                 rcept_dt = item.get('rcept_dt', '')
+                flr_nm = item.get('flr_nm', '')
 
                 # 비상장 법인(stock_code 없음)은 스킵
                 if not raw_code:
@@ -123,9 +124,13 @@ async def check_and_notify_disclosures():
                     if is_super_ant:
                         prefix_title = "🚨 [슈퍼개미 포착]"
                         fact_str = "슈퍼개미(대량보유자)의 지분 보유상황 변동이 발생했습니다."
+                        if flr_nm:
+                            fact_str += f" (보고자: {flr_nm})"
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
                         fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
+                        if flr_nm:
+                            fact_str += f" (보고자: {flr_nm})"
                     else:
                         prefix_title = "🔔 [공시 팩트 알림]"
                         
