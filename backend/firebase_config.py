@@ -514,6 +514,32 @@ def send_multicast_notification(
             pass
             
         print(f"[Firebase] Multicast completed. Success: {success_count}, Failure: {failure_count}, Unregistered: {unregistered_count}")
+        
+        # [추가] 프론트엔드 알림 센터 표시를 위해 특정 타입은 Firestore에도 자동 저장
+        try:
+            alert_type = (data or {}).get('type', 'stock_alert')
+            if alert_type in ['market_summary', 'portfolio_summary', 'admin_report', 'ping_test']:
+                db_client = firestore.client()
+                doc_data = {
+                    "title": title,
+                    "body": body,
+                    "type": alert_type,
+                    "timestamp": firestore.SERVER_TIMESTAMP,
+                    "is_global": True if not target_users else False,
+                }
+                
+                click_url = (data or {}).get('url', '')
+                if click_url:
+                    doc_data['link'] = click_url
+                
+                if target_users:
+                    doc_data['target_users'] = target_users
+                    
+                db_client.collection("alerts").add(doc_data)
+                print(f"[Firestore] Alert '{title}' ({alert_type}) saved to Firestore.")
+        except Exception as fs_err:
+            print(f"[Firestore] Failed to save alert to Firestore: {fs_err}")
+
         return {
             "success": True if success_count > 0 else False,
             "success_count": success_count,
