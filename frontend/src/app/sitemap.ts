@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
         const res = await fetch(`${apiUrl}/api/seo/stocks`, { next: { revalidate: 86400 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
@@ -92,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
         const res = await fetch(`${apiUrl}/api/seo/themes`, { next: { revalidate: 86400 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
@@ -114,7 +114,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
         const res = await fetch(`${apiUrl}/api/blog/posts?page=1&limit=1000`, { next: { revalidate: 3600 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {

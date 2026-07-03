@@ -93,22 +93,64 @@ export default async function StockSeoPage({ params }: Props) {
     const pbr = data.pbr?.toFixed(2) || 'N/A';
     const per = data.per?.toFixed(2) || 'N/A';
     const divYield = data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : 'N/A';
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "FinancialProduct",
-        "name": name,
-        "description": `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약 및 객관적 지표 현황입니다.`,
-        "provider": {
-            "@type": "Organization",
-            "name": "StockTrendProgram",
-            "url": "https://stock-trend-program.co.kr"
+    const jsonLd = [
+        {
+            "@context": "https://schema.org",
+            "@type": "FinancialProduct",
+            "name": name,
+            "description": `AI가 분석한 ${name} 주식의 핵심 비즈니스 요약 및 객관적 지표 현황입니다.`,
+            "provider": {
+                "@type": "Organization",
+                "name": "StockTrendProgram",
+                "url": "https://stock-trend-program.co.kr"
+            },
+            "offers": {
+                "@type": "Offer",
+                "price": data.price || 0,
+                "priceCurrency": "KRW"
+            }
         },
-        "offers": {
-            "@type": "Offer",
-            "price": data.price || 0,
-            "priceCurrency": "KRW"
+        {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": `${name} 주가 전망은 어떤가요?`,
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": `현재 ${name}의 주가는 ${price}원이며, PER은 ${per}, PBR은 ${pbr}입니다. 스마트 투자 비서 AI가 분석한 세부 전망을 페이지에서 확인하세요.`
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": `${name} 배당수익률은 얼마인가요?`,
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": `${name}의 현재 배당수익률은 ${divYield}입니다. 배당 투자 전략에 참고하세요.`
+                    }
+                }
+            ]
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "종목 디렉토리",
+                    "item": "https://stock-trend-program.co.kr/directory"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": name,
+                    "item": `https://stock-trend-program.co.kr/stock/${decodedTicker}`
+                }
+            ]
         }
-    };
+    ];
 
     // Calculate dynamic change for Share button imageUrl if needed
     const shareOgUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
