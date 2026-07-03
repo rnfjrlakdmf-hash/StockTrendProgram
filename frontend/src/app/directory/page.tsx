@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 
 export const metadata: Metadata = {
     title: "글로벌 주식 종목 전체 디렉토리 | 스마트 투자 비서",
-    description: "코스피, 코스닥, 미국 주식, ETF 등 전 종목의 AI 분석 리포트를 확인하세요. 주가 전망, 목표가, 배당금 정보를 한눈에 볼 수 있는 종목 총람입니다.",
+    description: "코스피, 코스닥, 미국 주식, ETF 등 전 종목의 AI 분석 리포트를 확인하세요. 주가 전망, 외국인 수급 현황, 배당금 정보를 한눈에 볼 수 있는 종목 총람입니다.",
 };
 
 export const revalidate = 86400; // 24 hours

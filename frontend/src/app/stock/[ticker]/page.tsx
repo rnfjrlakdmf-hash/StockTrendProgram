@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     
     const name = data.name || decodedTicker;
-    const title = `[급등주] ${name} 주가 전망 및 AI 목표가 분석 (${decodedTicker}) | 스마트 투자 비서`;
+    const title = `[급등주] ${name} 주가 전망 및 AI 모멘텀 분석 (${decodedTicker}) | 스마트 투자 비서`;
     const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 실시간 매수/매도 시그널과 향후 전망을 무료로 확인하세요.`;
     
     // OG Image URL 생성
@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
-        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 목표가`, `${name} 실적`, "AI 주식 분석", decodedTicker],
+        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 분석`, `${name} 실적`, "AI 주식 분석", decodedTicker],
         openGraph: {
             title,
             description,
