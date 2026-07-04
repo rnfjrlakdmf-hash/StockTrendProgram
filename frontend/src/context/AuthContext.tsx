@@ -119,52 +119,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const login = useCallback(async (googleUser: any): Promise<boolean> => {
+    const login = useCallback(async (userData: any, provider: "google" | "kakao" = "google"): Promise<boolean> => {
         setIsMigrating(true);
-        // 1단계: 구글 정보로 즉시 로컈 상태 설정 (UI 즉각 반응)
+        // 1단계: 즉시 로컬 상태 설정 (UI 즉각 반응)
         const immediateUser: User = {
-            id: googleUser.id,
-            email: googleUser.email,
-            name: googleUser.name,
-            picture: googleUser.picture || "",
-            is_pro: isAdminEmail(googleUser.email),
-            free_trial_count: 2,
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            picture: userData.picture || "",
+            is_pro: isAdminEmail(userData.email) || userData.is_pro || false,
+            free_trial_count: userData.free_trial_count ?? 2,
         };
         setUser(immediateUser);
         localStorage.setItem("stock_user", JSON.stringify(immediateUser));
         // [v4] isPro localStorage 신호 사용 안 함
         localStorage.removeItem("isPro");
 
-        // 2단계: 백엔드 동기화 및 마이그레이션 순차 대기
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+        // 2단계: 카카오 로그인은 이미 백엔드 콜백에서 DB 처리가 끝났으므로 토큰 저장만 수행
+        if (provider === "kakao") {
+            localStorage.setItem("user_id", immediateUser.id);
+            if (userData.token) localStorage.setItem("stock_token", userData.token);
+        } else {
+            // 구글 로그인의 경우 프론트에서 받은 토큰 정보로 백엔드 동기화 수행
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
 
-            const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(googleUser),
-                signal: controller.signal,
-            });
-            clearTimeout(timeout);
+                const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(userData),
+                    signal: controller.signal,
+                });
+                clearTimeout(timeout);
 
-            if (res.ok) {
-                const data = await res.json();
-                if (data.status === "success" && data.user) {
-                    const serverUser = { ...data.user };
-                    if (isAdminEmail(serverUser.email)) {
-                        serverUser.is_pro = true;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === "success" && data.user) {
+                        const serverUser = { ...data.user };
+                        if (isAdminEmail(serverUser.email)) {
+                            serverUser.is_pro = true;
+                        }
+                        // [v4] isPro localStorage 신호 사용 안 함
+                        localStorage.removeItem("isPro");
+                        setUser(serverUser);
+                        localStorage.setItem("stock_user", JSON.stringify(serverUser));
+                        localStorage.setItem("user_id", serverUser.id);
+                        if (data.token) localStorage.setItem("stock_token", data.token);
                     }
-                    // [v4] isPro localStorage 신호 사용 안 함
-                    localStorage.removeItem("isPro");
-                    setUser(serverUser);
-                    localStorage.setItem("stock_user", JSON.stringify(serverUser));
-                    localStorage.setItem("user_id", serverUser.id);
-                    if (data.token) localStorage.setItem("stock_token", data.token);
                 }
+            } catch (e: any) {
+                console.warn("Backend sync failed (login still succeeded):", e.message);
             }
-        } catch (e: any) {
-            console.warn("Backend sync failed (login still succeeded):", e.message);
         }
 
         try {
@@ -172,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await fetch(`${API_BASE_URL}/api/watchlist/migrate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ guest_id: "guest", target_id: googleUser.id }),
+                body: JSON.stringify({ guest_id: "guest", target_id: userData.id }),
             });
         } catch (e) {
             console.error("Migration request failed:", e);

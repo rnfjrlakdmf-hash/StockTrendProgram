@@ -24,6 +24,10 @@ class UserSettingsRequest(BaseModel):
 class DeleteAccountRequest(BaseModel):
     user_id: str
 
+class KakaoLoginRequest(BaseModel):
+    code: str
+    redirect_uri: str
+
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     """
@@ -75,6 +79,91 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
         "status": "success",
         "user": real_user,
         "token": f"token_{req.id}_{int(time.time())}"
+    }
+
+@router.post("/kakao")
+def kakao_login(req: KakaoLoginRequest, bg_tasks: BackgroundTasks):
+    """
+    Handle Kakao OAuth Login callback.
+    Exchange code for access_token, fetch user profile, and save/login user.
+    """
+    import requests
+    from db_manager import create_user_if_not_exists, get_user, migrate_watchlist
+    from utils.briefing_store import invalidate_today_briefing
+
+    client_id = "d8796066436c590e1c9aded21b13c929" # User REST API Key
+
+    # 1. Get Access Token
+    token_resp = requests.post(
+        "https://kauth.kakao.com/oauth/token",
+        data={
+            "grant_type": "authorization_code",
+            "client_id": client_id,
+            "redirect_uri": req.redirect_uri,
+            "code": req.code
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"}
+    )
+    if not token_resp.ok:
+        return {"status": "error", "message": f"Kakao token error: {token_resp.text}"}
+
+    access_token = token_resp.json().get("access_token")
+
+    # 2. Get User Profile
+    profile_resp = requests.get(
+        "https://kapi.kakao.com/v2/user/me",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    if not profile_resp.ok:
+        return {"status": "error", "message": f"Kakao profile error: {profile_resp.text}"}
+
+    k_user = profile_resp.json()
+    kakao_id = f"kakao_{k_user.get('id')}"
+    kakao_account = k_user.get("kakao_account", {})
+    properties = k_user.get("properties", {})
+    
+    email = kakao_account.get("email", f"{kakao_id}@kakao.com")
+    name = properties.get("nickname", "카카오 유저")
+    picture = properties.get("profile_image", "")
+
+    user_data = {
+        "id": kakao_id,
+        "email": email,
+        "name": name,
+        "picture": picture
+    }
+
+    # 3. Save/Update DB
+    db_success = False
+    try:
+        db_success = create_user_if_not_exists(user_data)
+    except Exception as e:
+        print(f"[Critical Auth Error] DB Save Failed for Kakao: {e}")
+
+    real_user = None
+    if db_success:
+        try:
+            real_user = get_user(kakao_id)
+        except: pass
+
+    if not real_user:
+        real_user = {
+            "id": kakao_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "is_pro": False,
+            "free_trial_count": 2
+        }
+
+    # 4. Background tasks
+    bg_tasks.add_task(migrate_watchlist, "guest", kakao_id)
+    bg_tasks.add_task(invalidate_today_briefing, kakao_id)
+
+    return {
+        "status": "success",
+        "user": real_user,
+        "token": f"token_{kakao_id}_{int(time.time())}"
     }
 
 @router.post("/use-trial")
