@@ -1042,15 +1042,14 @@ def run_market_scheduler():
             is_dst = ny_time.dst().total_seconds() != 0
             ny_date = ny_time.strftime('%Y-%m-%d')  # 미국 날짜 (장마감 다음날다룼 계산용)
 
-            # 서머타임 시: KST 22:35 개장 알림 / KST 04:10 마감 알림
-            # 표준시간 시: KST 23:35 개장 알림 / KST 05:10 마감 알림
+            # 서머타임 시: KST 22:35 개장 알림 / KST 05:10 마감 알림
+            # 표준시간 시: KST 23:35 개장 알림 / KST 06:10 마감 알림
             us_open_hour = 22 if is_dst else 23
-            us_close_hour = 4 if is_dst else 5
+            us_close_hour = 5 if is_dst else 6
 
             # 3. 미국 장시작 시가 알림
-            # - 서머타임: KST 22:35 = 미국 09:35 → KST 월~토(0~5) 모두 필요
-            # - 표준시: KST 23:35 = 미국 09:35 → KST 월~금(0~4)
-            us_open_days = list(range(0, 6)) if is_dst else list(range(0, 5))
+            # - 서머타임/표준시 무관하게 KST 22:35 / 23:35는 미국 09:35이므로 KST 월~금(0~4)에만 발송
+            us_open_days = list(range(0, 5))
             if day_of_week in us_open_days:
                 if now.hour == us_open_hour and 35 <= now.minute <= 40 and current_date != last_run_open_us and not is_market_holiday("US"):
                     send_opening_notification("US")
