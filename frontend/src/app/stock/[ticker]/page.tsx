@@ -7,6 +7,7 @@ import StockVotingBoard from "@/components/StockVotingBoard";
 import KakaoShareButton from "@/components/KakaoShareButton";
 import ReportDownloadButton from "@/components/ReportDownloadButton";
 import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
+import PremiumContent from "@/components/PremiumContent";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -193,53 +194,57 @@ export default async function StockSeoPage({ params }: Props) {
                             <ReportDownloadButton targetId="ai-report-capture" fileName={name} />
                         </div>
                     </div>
-                    <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 기업 현황 리포트</p>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                            <div className="text-sm text-slate-400 mb-1">현재가</div>
-                            <div className="text-2xl font-bold text-white">{price}원</div>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                            <div className="text-sm text-slate-400 mb-1">PER</div>
-                            <div className="text-2xl font-bold text-blue-400">{per}</div>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                            <div className="text-sm text-slate-400 mb-1">PBR</div>
-                            <div className="text-2xl font-bold text-purple-400">{pbr}</div>
-                        </div>
-                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                            <div className="text-sm text-slate-400 mb-1">배당수익률</div>
-                            <div className="text-2xl font-bold text-emerald-400">{divYield}</div>
-                        </div>
-                    </div>
-
-                    <div className="prose prose-invert max-w-none">
-                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-4">📈 비즈니스 요약</h2>
-                        <p className="text-slate-300 leading-relaxed text-lg">
-                            {data.summary}
-                        </p>
+                    <PremiumContent>
+                        <p className="text-xl text-slate-400 font-medium mb-8">AI 심층 기업 현황 리포트</p>
                         
-                        <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mt-10 mb-4">💡 주요 지표 브리핑 (Programmatic SEO)</h2>
-                        <ul className="space-y-3 text-slate-300">
-                            <li className="flex items-start">
-                                <span className="text-blue-400 mr-2">✓</span>
-                                <span>{name}의 현재가는 {price}원으로 직전 종가({prevClose}원) 대비 변동폭을 기록하고 있습니다.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-blue-400 mr-2">✓</span>
-                                <span>PER {per} 수준으로 해당 업종의 객관적인 밸류에이션 지표를 나타내고 있습니다.</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="text-blue-400 mr-2">✓</span>
-                                <span>본 페이지는 단순 정보 제공 목적이며, 투자를 권유하거나 특정 종목을 추천하지 않습니다.</span>
-                            </li>
-                        </ul>
-                    </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-1">현재가</div>
+                                <div className="text-2xl font-bold text-white">{price}원</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-1">PER</div>
+                                <div className="text-2xl font-bold text-blue-400">{per}</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-1">PBR</div>
+                                <div className="text-2xl font-bold text-purple-400">{pbr}</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-sm text-slate-400 mb-1">배당수익률</div>
+                                <div className="text-2xl font-bold text-emerald-400">{divYield}</div>
+                            </div>
+                        </div>
+
+                        <div className="prose prose-invert max-w-none">
+                            <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-4">📈 비즈니스 요약</h2>
+                            <p className="text-slate-300 leading-relaxed text-lg">
+                                {data.summary}
+                            </p>
+                            
+                            <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mt-10 mb-4">💡 주요 지표 브리핑 (Programmatic SEO)</h2>
+                            <ul className="space-y-3 text-slate-300">
+                                <li className="flex items-start">
+                                    <span className="text-blue-400 mr-2">✓</span>
+                                    <span>{name}의 현재가는 {price}원으로 직전 종가({prevClose}원) 대비 변동폭을 기록하고 있습니다.</span>
+                                </li>
+                                <li className="flex items-start">
+                                    <span className="text-blue-400 mr-2">✓</span>
+                                    <span>PER {per} 수준으로 해당 업종의 객관적인 밸류에이션 지표를 나타내고 있습니다.</span>
+                                </li>
+                                <li className="flex items-start">
+                                    <span className="text-blue-400 mr-2">✓</span>
+                                    <span>본 페이지는 단순 정보 제공 목적이며, 투자를 권유하거나 특정 종목을 추천하지 않습니다.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </PremiumContent>
                 </div>
 
                 {/* On-Demand AI Analysis Section */}
-                <OnDemandAiAnalysis ticker={decodedTicker} stockName={name} />
+                <PremiumContent>
+                    <OnDemandAiAnalysis ticker={decodedTicker} stockName={name} />
+                </PremiumContent>
 
                 {/* 배당 정보 섹션 (해외주식/배당주) */}
                 {(data.exDividendDate || data.paymentDate || data.dividendYield > 0) && (

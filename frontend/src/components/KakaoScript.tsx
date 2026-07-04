@@ -3,7 +3,7 @@
 import Script from "next/script";
 
 export default function KakaoScript() {
-  const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY; // "a1b2c3d4..." 등 카카오 JS 앱 키
+  const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "20de6071dadcac80f16548ec62b8a66c"; // JavaScript Key
 
   const handleLoad = () => {
     // window.Kakao 객체가 존재하고, 아직 초기화되지 않았다면 초기화
