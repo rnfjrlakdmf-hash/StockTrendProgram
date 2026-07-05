@@ -1004,6 +1004,18 @@ def run_market_scheduler():
                 send_daily_analytics_report()
                 last_run_daily_report = current_date
             
+            # [매일 실행] 새벽 3시 구글 색인(Indexing) 봇 자동 실행 (최신 종목/테마 페이지 강제 푸시)
+            if now.hour == 3 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
+                try:
+                    from google_indexer import get_urls_from_sitemap, publish_urls_to_google, SITEMAP_URL
+                    print("[Scheduler] Running Google Auto-Indexer Bot...")
+                    urls = get_urls_from_sitemap(SITEMAP_URL)
+                    if urls:
+                        publish_urls_to_google(urls)
+                except Exception as e:
+                    print(f"[Scheduler-Error] Failed to run Google Indexer: {e}")
+                run_market_scheduler.last_run_google_indexer = current_date
+            
             # [매일 발송] AI 모닝 브리핑 (KR)
             if now.hour == 8 and 0 <= now.minute <= 5 and current_date != last_run_morning_kr:
                 asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
