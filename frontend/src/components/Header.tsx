@@ -23,6 +23,8 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     const pathname = usePathname();
     const { user } = useAuth();
     const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
+    const [coins, setCoins] = useState<number>(0);
+    const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
 
     useEffect(() => {
         const fetchUnreadCount = async () => {
@@ -74,6 +76,55 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             clearInterval(intervalId);
         };
     }, [user]);
+
+    // [New] Fetch User Profile (Coins)
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!user) return;
+            try {
+                const userId = (user as any).uid || (user as any).id;
+                const res = await fetch(`${API_BASE_URL}/api/user/${userId}/profile`);
+                const json = await res.json();
+                if (json.status === "success" && json.user) {
+                    setCoins(json.user.coins || 0);
+                }
+            } catch (err) {
+                console.error("Failed to fetch user profile", err);
+            }
+        };
+        fetchProfile();
+    }, [user]);
+
+    const handleAttendance = async () => {
+        if (!user) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+        setIsAttendanceLoading(true);
+        try {
+            const userId = (user as any).uid || (user as any).id;
+            const res = await fetch(`${API_BASE_URL}/api/user/attendance`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId })
+            });
+            const json = await res.json();
+            
+            if (json.status === "success") {
+                setCoins(json.coins);
+                alert("🎉 출석체크 완료! 10 코인이 지급되었습니다.");
+            } else if (json.status === "already") {
+                alert("✅ " + json.message);
+            } else {
+                alert("❌ 오류: " + json.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("출석체크 중 오류가 발생했습니다.");
+        } finally {
+            setIsAttendanceLoading(false);
+        }
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && onSearch) {
@@ -207,6 +258,23 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                             <Users className="h-5 w-5" />
                             <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">관리자 센터</span>
                         </Link>
+                    )}
+
+                    {/* [New] 코인 & 출석체크 UI */}
+                    {user && (
+                        <div className="flex items-center gap-2 mr-2">
+                            <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+                                <span className="text-base">🪙</span>
+                                <span>{coins} C</span>
+                            </div>
+                            <button 
+                                onClick={handleAttendance}
+                                disabled={isAttendanceLoading}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                            >
+                                ✅ 출석
+                            </button>
+                        </div>
                     )}
 
                     <button className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors">

@@ -88,7 +88,9 @@ def init_db():
             free_trial_count INTEGER DEFAULT 2,
             kis_app_key TEXT,
             kis_secret TEXT,
-            kis_account TEXT
+            kis_account TEXT,
+            coins INTEGER DEFAULT 0,
+            last_attendance_date TEXT
         )
     ''')
     
@@ -131,6 +133,26 @@ def init_db():
         print("Migrating users table (adding points)...")
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
+    # [Migration] Add coins if not exists
+    try:
+        cursor.execute("SELECT coins FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding coins)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
+    # [Migration] Add last_attendance_date if not exists
+    try:
+        cursor.execute("SELECT last_attendance_date FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding last_attendance_date)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_attendance_date TEXT")
         except Exception as e:
             print(f"Migration Warning: {e}")
 
@@ -485,7 +507,7 @@ def get_user_info(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -493,6 +515,8 @@ def get_user_info(user_id):
             points = row[7] if row[7] is not None else 0
             last_roulette_kr_date = row[8]
             last_roulette_us_date = row[9]
+            coins = row[10] if row[10] is not None else 0
+            last_attendance_date = row[11]
             
             # 1. 관리자 강제 Pro 부여 (이메일 기반 2차 안전장치)
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -517,7 +541,9 @@ def get_user_info(user_id):
                 "pro_expires_at": pro_expires_at,
                 "points": points,
                 "last_roulette_kr_date": last_roulette_kr_date,
-                "last_roulette_us_date": last_roulette_us_date
+                "last_roulette_us_date": last_roulette_us_date,
+                "coins": coins,
+                "last_attendance_date": last_attendance_date
             }
         return None
     except Exception as e:
@@ -530,7 +556,7 @@ def get_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -539,6 +565,8 @@ def get_user(user_id):
             points = row[7] if row[7] is not None else 0
             last_roulette_kr_date = row[8]
             last_roulette_us_date = row[9]
+            coins = row[10] if row[10] is not None else 0
+            last_attendance_date = row[11]
             
             # 관리자 계정은 항상 PRO 상태 유지
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -565,12 +593,48 @@ def get_user(user_id):
                 "pro_expires_at": pro_expires_at,
                 "points": points,
                 "last_roulette_kr_date": last_roulette_kr_date,
-                "last_roulette_us_date": last_roulette_us_date
+                "last_roulette_us_date": last_roulette_us_date,
+                "coins": coins,
+                "last_attendance_date": last_attendance_date
             }
         return None
     except Exception as e:
         print(f"Get User Error: {e}")
         return None
+    finally:
+        conn.close()
+
+def do_attendance(user_id: str) -> dict:
+    """출석체크 비즈니스 로직. 오늘 출석 안했으면 10코인 추가 및 날짜 갱신"""
+    from datetime import datetime
+    import pytz
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"status": "error", "message": "User not found"}
+            
+        coins = row[0] if row[0] is not None else 0
+        last_att = row[1]
+        
+        # 한국 시간 기준 오늘 날짜 구하기
+        kst = pytz.timezone('Asia/Seoul')
+        today_str = datetime.now(kst).strftime('%Y-%m-%d')
+        
+        if last_att == today_str:
+            return {"status": "already", "message": "오늘은 이미 출석했습니다.", "coins": coins}
+            
+        # 출석 처리
+        new_coins = coins + 10
+        cursor.execute("UPDATE users SET coins = ?, last_attendance_date = ? WHERE id = ?", (new_coins, today_str, user_id))
+        conn.commit()
+        return {"status": "success", "message": "10 코인 획득!", "coins": new_coins}
+    except Exception as e:
+        print(f"Attendance Error: {e}")
+        return {"status": "error", "message": str(e)}
     finally:
         conn.close()
 

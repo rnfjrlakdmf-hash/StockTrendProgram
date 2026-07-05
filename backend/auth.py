@@ -28,6 +28,9 @@ class KakaoLoginRequest(BaseModel):
     code: str
     redirect_uri: str
 
+class AttendanceRequest(BaseModel):
+    user_id: str
+
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     """
@@ -226,3 +229,25 @@ def delete_account(req: DeleteAccountRequest):
             return {"status": "error", "message": "Failed to delete account data from DB"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database deletion error: {str(e)}")
+
+@router.get("/user/{user_id}/profile")
+def get_user_profile(user_id: str):
+    """유저의 최신 코인, 출석, 프로 정보를 반환합니다."""
+    try:
+        from db_manager import get_user_v2
+        user = get_user_v2(user_id)
+        if user:
+            return {"status": "success", "user": user}
+        return {"status": "error", "message": "User not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/user/attendance")
+def attendance_check(req: AttendanceRequest):
+    """오늘 날짜 기준 출석체크 및 코인 지급 API"""
+    try:
+        from db_manager import do_attendance
+        result = do_attendance(req.user_id)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
