@@ -1019,6 +1019,25 @@ def run_market_scheduler():
                         print(f"[Scheduler] IPO 알림 오류: {e}")
                     last_run_ipo = current_date
             
+            # [매일 발송] 오전 8:30 모닝 테마주 브리핑 전체 웹 푸시 (유사투자자문업 방어 목적: 객관적 사실 전달)
+            if day_of_week <= 4:
+                if now.hour == 8 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_morning_theme_push", None) and not is_market_holiday("KR"):
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens WHERE fcm_token IS NOT NULL")
+                        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+                        conn.close()
+                        
+                        if tokens:
+                            title = "🔔 장 시작 30분 전! (객관적 요약)"
+                            body = "AI가 간추린 오늘의 핵심 테마 브리핑입니다. 특정 종목 추천이 아닌 단순 정보 제공 목적입니다."
+                            send_multicast_notification(tokens, title, body, {"url": "/briefing"})
+                            print(f"[Scheduler] Morning Theme Briefing push sent to {len(tokens)} devices.")
+                    except Exception as e:
+                        print(f"[Scheduler-Error] Failed to send Morning Theme Briefing push: {e}")
+                    run_market_scheduler.last_run_morning_theme_push = current_date
+            
             # [매일 발송] AI 모닝 브리핑 (US)
             if now.hour == 21 and 30 <= now.minute <= 35 and current_date != last_run_morning_us:
                 asyncio.run(morning_briefing_service.run_daily_briefing("US"))
