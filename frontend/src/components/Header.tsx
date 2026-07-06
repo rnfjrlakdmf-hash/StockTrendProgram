@@ -93,6 +93,18 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             }
         };
         fetchProfile();
+
+        const handleCoinsUpdated = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail !== undefined) {
+                setCoins(customEvent.detail);
+            } else {
+                fetchProfile(); // fallback
+            }
+        };
+
+        window.addEventListener("coins_updated", handleCoinsUpdated);
+        return () => window.removeEventListener("coins_updated", handleCoinsUpdated);
     }, [user]);
 
     const handleAttendance = async () => {
