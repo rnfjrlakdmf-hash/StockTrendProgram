@@ -671,7 +671,8 @@ export default function Sidebar() {
                                     </div>
                                 )}
                             </div>
-                        ))}
+                            );
+                        })}
                         {(user?.email?.toLowerCase() === "rnfjr@gmail.com" || user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com") && (
                             <Link
                                 href="/admin"
