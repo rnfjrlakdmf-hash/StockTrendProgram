@@ -29,9 +29,6 @@ export const metadata: Metadata = {
   description: "인공지능이 분석하는 주식 브리핑과 실시간 주가 급등락, 속보 알림 서비스를 무료로 만나보세요.",
   keywords: ["스마트 투자 비서", "AI 주식 분석", "무료 주가 알림", "주식 속보 알림", "장 마감 미국주식 시세", "테슬라 주가 분석", "엔비디아 주가 분석", "AI 모닝 브리핑", "주식 포트폴리오 진단", "미국주식 알림", "국내주식 알림"],
   metadataBase: new URL('https://stock-trend-program.co.kr'),
-  alternates: {
-    canonical: 'https://stock-trend-program.co.kr',
-  },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
     other: {

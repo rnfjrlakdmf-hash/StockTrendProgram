@@ -57,6 +57,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
         title: `${post.title} | StockTrendProgram`,
         description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
+        alternates: {
+            canonical: `/blog/${resolvedParams.id}`,
+        },
         openGraph: {
             title: post.title,
             description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",

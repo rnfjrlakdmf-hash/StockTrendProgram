@@ -58,10 +58,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: {
+            canonical: `/stock/${decodedTicker}`,
+        },
         keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 분석`, `${name} 실적`, "AI 주식 분석", decodedTicker],
         openGraph: {
             title,
             description,
+            url: `/stock/${decodedTicker}`,
             images: [
                 {
                     url: ogUrl.toString(),

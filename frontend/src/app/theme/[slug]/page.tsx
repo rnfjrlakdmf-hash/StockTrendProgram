@@ -25,10 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 return {
                     title,
                     description,
+                    alternates: {
+                        canonical: `/theme/${resolvedParams.slug}`,
+                    },
                     keywords: [data.name, `${data.name} 대장주`, `${data.name} 관련주`, `${data.name} 수혜주`, `${data.name} 테마주`, "주식 테마 분석"],
                     openGraph: {
                         title,
                         description,
+                        url: `/theme/${resolvedParams.slug}`,
                         images: [
                             {
                                 url: ogUrl.toString(),
