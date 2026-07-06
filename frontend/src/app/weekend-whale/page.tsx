@@ -10,8 +10,8 @@ import LoginModal from '@/components/LoginModal';
 interface WhaleReport {
     title: string;
     subtitle: string;
-    foreign_analysis: { stock: string; reason: string }[];
-    inst_analysis: { stock: string; reason: string }[];
+    foreign_analysis: { stock: string; amount?: string; reason: string }[];
+    inst_analysis: { stock: string; amount?: string; reason: string }[];
     monday_strategy: string;
     generated_at: string;
 }
@@ -149,7 +149,10 @@ export default function WeekendWhalePage() {
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-2 flex items-baseline gap-3">
+                                            {item.stock}
+                                            {item.amount && <span className="text-sm font-normal text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">{item.amount}주 순매수</span>}
+                                        </h3>
                                         <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
                                     </div>
                                 </div>
@@ -183,7 +186,10 @@ export default function WeekendWhalePage() {
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-2xl font-bold text-white mb-2">{item.stock}</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-2 flex items-baseline gap-3">
+                                            {item.stock}
+                                            {item.amount && <span className="text-sm font-normal text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">{item.amount}주 순매수</span>}
+                                        </h3>
                                         <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
                                     </div>
                                 </div>

@@ -31,8 +31,9 @@ def fetch_whale_top10():
         foreign_top10 = []
         for row in foreign_rows:
             name_cell = row.find('a', class_='company')
-            if name_cell:
-                foreign_top10.append(name_cell.text.strip())
+            number_cell = row.find('td', class_='number')
+            if name_cell and number_cell:
+                foreign_top10.append({"stock": name_cell.text.strip(), "amount": number_cell.text.strip()})
                 if len(foreign_top10) == 10:
                     break
                     
@@ -41,8 +42,9 @@ def fetch_whale_top10():
         inst_top10 = []
         for row in inst_rows:
             name_cell = row.find('a', class_='company')
-            if name_cell:
-                inst_top10.append(name_cell.text.strip())
+            number_cell = row.find('td', class_='number')
+            if name_cell and number_cell:
+                inst_top10.append({"stock": name_cell.text.strip(), "amount": number_cell.text.strip()})
                 if len(inst_top10) == 10:
                     break
                     
@@ -59,11 +61,14 @@ def _generate_whale_report_sync():
     
     foreign_top10, inst_top10 = fetch_whale_top10()
     if not foreign_top10:
-        foreign_top10 = ["데이터 수집 실패"]
+        foreign_top10 = [{"stock": "데이터 수집 실패", "amount": "0"}]
     if not inst_top10:
-        inst_top10 = ["데이터 수집 실패"]
+        inst_top10 = [{"stock": "데이터 수집 실패", "amount": "0"}]
         
-    print(f"[WhaleReport] Foreign: {foreign_top10}, Inst: {inst_top10}")
+    foreign_str = ", ".join([f"{item['stock']} ({item['amount']}주)" for item in foreign_top10])
+    inst_str = ", ".join([f"{item['stock']} ({item['amount']}주)" for item in inst_top10])
+    
+    print(f"[WhaleReport] Foreign: {foreign_str}, Inst: {inst_str}")
     
     if not API_KEY:
         print("[WhaleReport] No Gemini API Key")
@@ -74,9 +79,9 @@ def _generate_whale_report_sync():
 
 [현재 시간] {now.strftime('%Y-%m-%d %H:%M KST')}
 
-[이번 주 금요일 마감 기준 수급 데이터]
-- 외국인 순매수 TOP 10: {', '.join(foreign_top10)}
-- 기관 순매수 TOP 10: {', '.join(inst_top10)}
+[이번 주 금요일 마감 기준 수급 데이터 (순매수 수량)]
+- 외국인 순매수 TOP 10: {foreign_str}
+- 기관 순매수 TOP 10: {inst_str}
 
 위 데이터를 바탕으로 각 종목들이 왜 매집되었는지(최근 뉴스, 실적, 테마 등)를 사실 기반으로 분석하여 월요일 장을 준비할 수 있도록 흥미로운 리포트를 작성해주세요.
 
@@ -85,12 +90,12 @@ def _generate_whale_report_sync():
   "title": "주말 한정판: 세력/외인 매집 TOP 10",
   "subtitle": "이번 주 금요일, 스마트머니(외국인/기관)는 이 종목들을 쓸어담았습니다.",
   "foreign_analysis": [
-    {{"stock": "종목명1", "reason": "매집 추정 이유 1~2줄"}},
-    {{"stock": "종목명2", "reason": "매집 추정 이유 1~2줄"}}
+    {{"stock": "종목명1", "amount": "수량(예: 76,600)", "reason": "매집 추정 이유 1~2줄"}},
+    {{"stock": "종목명2", "amount": "수량", "reason": "매집 추정 이유 1~2줄"}}
     // 10개 종목 모두 작성
   ],
   "inst_analysis": [
-    {{"stock": "종목명1", "reason": "매집 추정 이유 1~2줄"}}
+    {{"stock": "종목명1", "amount": "수량", "reason": "매집 추정 이유 1~2줄"}}
     // 10개 종목 모두 작성
   ],
   "monday_strategy": "이 수급 데이터를 바탕으로 한 다음 주 월요일 시장 대응 전략 (3~4줄)",
