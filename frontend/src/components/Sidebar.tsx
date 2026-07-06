@@ -255,14 +255,13 @@ export default function Sidebar() {
     const [showAdRewardModal, setShowAdRewardModal] = useState(false); // [New] Modal State
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default fallback
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-    // [New] Timer State
-    const [timeLeftStr, setTimeLeftStr] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
     const [isPro, setIsPro] = useState(false);
+    const [timeLeftStr, setTimeLeftStr] = useState<string | null>(null);
+    const [weekendCountdown, setWeekendCountdown] = useState<string | null>(null);
 
     // [New] Watchlist Preview State
     const [watchlistPreview, setWatchlistPreview] = useState<any[]>([]);
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -330,6 +329,27 @@ export default function Sidebar() {
             // [v4.1] 애드센스 승인 전까지 전면 무료 개방 안내 표시
             setIsPro(true);
             setTimeLeftStr("🎉 출시 기념 전면 무료 개방 중!");
+
+            // [New] Weekend Countdown Timer
+            const kstDateStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" });
+            const kstDate = new Date(kstDateStr);
+            const day = kstDate.getDay();
+            if (day === 0 || day === 6) {
+                setWeekendCountdown(null); // It's weekend
+            } else {
+                // Find next Saturday 00:00 KST
+                const daysUntilSaturday = 6 - day;
+                const nextSaturday = new Date(kstDate);
+                nextSaturday.setDate(kstDate.getDate() + daysUntilSaturday);
+                nextSaturday.setHours(0, 0, 0, 0);
+                
+                const diff = nextSaturday.getTime() - kstDate.getTime();
+                const h = Math.floor(diff / (1000 * 60 * 60));
+                const m = Math.floor((diff / (1000 * 60)) % 60);
+                const s = Math.floor((diff / 1000) % 60);
+                
+                setWeekendCountdown(`열리기까지 ${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+            }
         };
 
         updateTimer();
@@ -581,26 +601,43 @@ export default function Sidebar() {
                     <nav className="space-y-1.5">
                         {navigation.filter(item => {
                             if ((item as any).hidden) return false; // 숨김 처리된 탭 제외
-                            if (!mounted) return true; // SSR 시에는 hydration mismatch 방지를 위해 다 보여주거나 기본값 사용
-                            const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-                            const isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
-                            if (!isWeekend && (item.href === '/weekend-report' || item.href === '/weekend-whale')) {
-                                return false;
-                            }
                             return true;
-                        }).map((item) => (
-                            <div 
-                                key={item.name} 
-                                className="relative group/menu flex flex-col rounded-xl transition-all hover:bg-white/5"
-                            >
-                                <div className="flex items-center justify-between pr-2 w-full">
-                                    <Link
-                                        href={item.href}
-                                        onClick={() => setIsMobileOpen(false)}
-                                        className="flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-200 transition-all hover:text-white active:scale-98"
+                        }).map((item) => {
+                            let isWeekend = true;
+                            if (mounted) {
+                                const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+                                isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
+                            }
+                            const isWeekendItem = item.href === '/weekend-report' || item.href === '/weekend-whale';
+                            const isDisabled = isWeekendItem && !isWeekend;
+
+                            return (
+                                <div 
+                                    key={item.name} 
+                                    className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 bg-white/5' : 'hover:bg-white/5'}`}
+                                >
+                                    <div className="flex items-center justify-between pr-2 w-full">
+                                        <Link
+                                            href={isDisabled ? "#" : item.href}
+                                            onClick={(e) => {
+                                                if (isDisabled) {
+                                                    e.preventDefault();
+                                                    alert("주말(토/일)에만 열람 가능한 프리미엄 메뉴입니다. 카운트다운이 끝나면 열립니다!");
+                                                } else {
+                                                    setIsMobileOpen(false);
+                                                }
+                                            }}
+                                            className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-200 hover:text-white active:scale-98'}`}
                                     >
-                                        <item.icon className="h-5 w-5 transition-colors group-hover/menu:text-blue-400" />
-                                        <span>{item.name}</span>
+                                        <item.icon className={`h-5 w-5 ${isDisabled ? 'text-gray-500' : 'text-blue-400 group-hover/menu:text-blue-300'} transition-colors`} />
+                                        <div className="flex flex-col">
+                                            <span>{item.name}</span>
+                                            {isDisabled && weekendCountdown && (
+                                                <span className="text-[10px] text-amber-400 font-mono mt-0.5 tracking-wider animate-pulse">
+                                                    ⏳ {weekendCountdown}
+                                                </span>
+                                            )}
+                                        </div>
                                     </Link>
                                     
                                     {/* ℹ️ Info Trigger Button */}
