@@ -197,6 +197,16 @@ def init_db():
         )
     ''')
 
+    # [NEW] Unlocked Premium Reports
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS unlocked_reports (
+            user_id TEXT,
+            report_date TEXT,
+            unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, report_date)
+        )
+    ''')
+
     # Watchlist Table (User Specific)
     # Check if watchlist table has user_id column
     try:
@@ -634,6 +644,52 @@ def do_attendance(user_id: str) -> dict:
         return {"status": "success", "message": "10 코인 획득!", "coins": new_coins}
     except Exception as e:
         print(f"Attendance Error: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+
+def check_report_unlocked(user_id: str, report_date: str) -> bool:
+    """해당 유저가 특정 날짜의 프리미엄 리포트를 잠금 해제했는지 확인"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT 1 FROM unlocked_reports WHERE user_id = ? AND report_date = ?", (user_id, report_date))
+        return cursor.fetchone() is not None
+    except Exception as e:
+        print(f"Check report Error: {e}")
+        return False
+    finally:
+        conn.close()
+
+def unlock_premium_report(user_id: str, report_date: str, cost: int = 50) -> dict:
+    """코인을 차감하고 프리미엄 리포트 잠금 해제"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 이미 해제했는지 확인
+        cursor.execute("SELECT 1 FROM unlocked_reports WHERE user_id = ? AND report_date = ?", (user_id, report_date))
+        if cursor.fetchone():
+            return {"status": "success", "message": "Already unlocked"}
+            
+        # 코인 잔액 확인
+        cursor.execute("SELECT coins FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"status": "error", "message": "User not found"}
+            
+        coins = row[0] if row[0] is not None else 0
+        if coins < cost:
+            return {"status": "error", "message": "코인이 부족합니다."}
+            
+        # 코인 차감 및 기록 추가
+        new_coins = coins - cost
+        cursor.execute("UPDATE users SET coins = ? WHERE id = ?", (new_coins, user_id))
+        cursor.execute("INSERT INTO unlocked_reports (user_id, report_date) VALUES (?, ?)", (user_id, report_date))
+        conn.commit()
+        
+        return {"status": "success", "message": "잠금이 해제되었습니다!", "coins": new_coins}
+    except Exception as e:
+        print(f"Unlock report Error: {e}")
         return {"status": "error", "message": str(e)}
     finally:
         conn.close()

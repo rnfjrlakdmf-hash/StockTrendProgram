@@ -31,6 +31,10 @@ class KakaoLoginRequest(BaseModel):
 class AttendanceRequest(BaseModel):
     user_id: str
 
+class ReportUnlockRequest(BaseModel):
+    user_id: str
+    report_date: str
+
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     """
@@ -248,6 +252,60 @@ def attendance_check(req: AttendanceRequest):
     try:
         from db_manager import do_attendance
         result = do_attendance(req.user_id)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/reports/premium")
+def get_premium_report(user_id: str):
+    """
+    프리미엄 리포트 데이터를 반환. 
+    잠금 해제 여부에 따라 본문 전체 혹은 블러용 일부만 반환.
+    """
+    from datetime import datetime
+    import pytz
+    
+    kst = pytz.timezone('Asia/Seoul')
+    today_str = datetime.now(kst).strftime('%Y-%m-%d')
+    
+    # 가상의 샘플 프리미엄 리포트 데이터
+    premium_data = {
+        "report_date": today_str,
+        "title": f"[{today_str}] 기관/외인 쌍끌이 매집 포착 & 내일의 주도 테마",
+        "preview": "오늘 코스피/코스닥 양시장에서 외국인과 기관이 동시에 쓸어담은 섹터가 포착되었습니다. 특히 반도체 후공정(OSAT) 및 전력 설비 관련주에 스마트 머니가 집중적으로 유입된 정황이 확인됩니다. 내일 시초가 공략이 유효해 보이는 종목 TOP 3를 분석했습니다.\n\n주요 수급 특징 요약...",
+        "content": "오늘 코스피/코스닥 양시장에서 외국인과 기관이 동시에 쓸어담은 섹터가 포착되었습니다. 특히 반도체 후공정(OSAT) 및 전력 설비 관련주에 스마트 머니가 집중적으로 유입된 정황이 확인됩니다. 내일 시초가 공략이 유효해 보이는 종목 TOP 3를 분석했습니다.\n\n### 💡 핵심 트렌드 요약\n- **반도체 소부장:** 엔비디아 실적 발표를 앞두고 HBM 밸류체인 하단 종목으로 매수세 확산\n- **전력 설비:** AI 데이터센터 전력 수요 급증 리포트 발간 직후 외국인 대량 매수 유입\n\n### 🔥 외국인/기관 쌍끌이 매수 TOP 3\n1. **한미반도체 (042700)**\n   - 매수 주체: 외국인 150억, 연기금 80억 순매수\n   - 차트 관점: 20일선 눌림목 반등 성공, 거래량 동반 장대양봉\n   - 분석: HBM 공정 필수 장비 독점력 부각. 내일 갭상승 출발 시 추격매수 자제, 시초가 눌림 시 분할 매수 추천.\n\n2. **LS일렉트릭 (010120)**\n   - 매수 주체: 사모펀드 집중 매수 포착\n   - 차트 관점: 전고점 돌파 시도 중\n   - 분석: 북미 변압기 사이클 초입. 수주 잔고 사상 최대치 갱신.\n\n3. **이오테크닉스 (039200)**\n   - 매수 주체: 투신, 연기금 동반 매수\n   - 분석: 레이저 어닐링 장비 수요 증가 수혜.\n\n### 🎯 내일의 투자 전략\n지수 상단은 제한적이나 종목 장세가 심화될 것입니다. 오늘 수급이 들어온 위 3개 종목 위주로 포트폴리오를 압축하고, 단기 슈팅 시 분할 매도로 대응하시기 바랍니다."
+    }
+    
+    try:
+        from db_manager import check_report_unlocked
+        is_unlocked = check_report_unlocked(user_id, today_str)
+        
+        if is_unlocked:
+            return {
+                "status": "success",
+                "locked": False,
+                "data": premium_data
+            }
+        else:
+            # 잠금 상태이면 preview만 보냄
+            locked_data = premium_data.copy()
+            # 블러를 위한 긴 빈 줄 및 안내 문구 추가
+            locked_data["content"] = premium_data["content"][:100] + "\n\n... (50 코인으로 잠금 해제하여 전체 본문을 확인하세요) ..." + "\n" * 15
+            return {
+                "status": "success",
+                "locked": True,
+                "data": locked_data
+            }
+            
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/reports/unlock")
+def unlock_premium_report_api(req: ReportUnlockRequest):
+    """50 코인을 차감하고 특정 날짜의 프리미엄 리포트 잠금 해제"""
+    try:
+        from db_manager import unlock_premium_report
+        result = unlock_premium_report(req.user_id, req.report_date, cost=50)
         return result
     except Exception as e:
         return {"status": "error", "message": str(e)}
