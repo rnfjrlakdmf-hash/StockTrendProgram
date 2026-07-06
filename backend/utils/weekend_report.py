@@ -12,7 +12,7 @@ REPORT_FILE = os.path.join(DATA_DIR, "weekend_report.json")
 
 def _generate_sync_impl():
     from ai_analysis import generate_with_retry, API_KEY
-    from stock_data import get_market_data, get_market_news
+    from stock_data import get_market_data, get_market_news, get_macro_calendar
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
@@ -33,10 +33,21 @@ def _generate_sync_impl():
         index_summary = "\n".join(index_lines[:10]) or "시장 데이터 수집 중"
         
         news_titles = [n.get('title', '') for n in m_news if n.get('title')]
+        
+        calendar_data = get_macro_calendar()
+        calendar_lines = []
+        for cal in calendar_data[:15]:
+            time_str = cal.get('time', '')
+            country = cal.get('country', '')
+            event = cal.get('event_kr', '') or cal.get('event', '')
+            calendar_lines.append(f"{time_str} [{country}] {event}")
+        calendar_summary = "\n".join(calendar_lines) or "예정된 주요 일정 없음"
+            
     except Exception as e:
         print(f"[WeekendReport] Data fetch error: {e}")
         index_summary = "데이터 수집 불가"
         news_titles = []
+        calendar_summary = "데이터 수집 불가"
         
     if not API_KEY:
         print("[WeekendReport] No API Key")
@@ -56,6 +67,9 @@ def _generate_sync_impl():
 [금주 주요 경제 뉴스]
 {chr(10).join(news_titles[:10])}
 
+[다음 주 주요 경제 일정 데이터]
+{calendar_summary}
+
 [출력 형식 JSON]
 {{
   "title": "주말 한정 마켓 인사이트 (ex. 반도체 수출 증가와 FOMC 대기 장세)",
@@ -63,7 +77,7 @@ def _generate_sync_impl():
   "week_summary_bullets": ["· 지난주 시장의 핵심 팩트 1", "· 지난주 시장의 핵심 팩트 2"],
   "sections": [
     {{"emoji": "🔥", "title": "지난주 자금 쏠림 테마 복기", "content": "뉴스 기반으로 지난주 자금이 몰렸던 테마와 이유를 팩트 중심으로 2~3줄 요약"}},
-    {{"emoji": "📅", "title": "다음 주 놓치면 안 될 경제 일정", "content": "향후 1~2주 내에 예정된 주요 글로벌 발표 일정, 실적 발표 등 팩트 나열"}}
+    {{"emoji": "📅", "title": "다음 주 놓치면 안 될 경제 일정", "content": "제공된 [다음 주 주요 경제 일정 데이터]를 바탕으로, 구체적인 날짜와 중요 발표 항목들을 구체적으로 나열하여 초보자가 이해하기 쉽게 3~4줄로 설명해주세요."}}
   ],
   "disclaimer": "본 리포트는 과거 데이터와 예정된 일정 등 객관적 사실만을 요약한 참고 자료입니다. 특정 종목에 대한 투자 권유나 추천이 아니며, 투자의 최종 책임은 본인에게 있습니다.",
   "generated_at": "{now.isoformat()}"
