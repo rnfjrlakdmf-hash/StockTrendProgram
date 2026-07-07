@@ -311,19 +311,48 @@ export default function Home() {
             </div>
 
 
-            {/* Guide Links for SEO Crawlers & Users */}
-            <div className="mt-8">
-              <h2 className="text-lg font-bold text-gray-400 mb-3 ml-2">📚 투자 전략 가이드</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Link href="/guide/ai-investing" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">초보자를 위한 실전 주식 가이드</h3>
-                </Link>
-                <Link href="/guide/supply-chain-analysis" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">공급망 지도 분석 방법론</h3>
-                </Link>
-                <Link href="/guide/risk-management" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                  <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">포트폴리오 변동성 관리</h3>
-                </Link>
+            {/* SEO Text Rich Links (AdSense Approval Priority) */}
+            <div className="mt-8 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-200 mb-4 ml-2 flex items-center gap-2">
+                  <Newspaper className="w-5 h-5 text-purple-400" /> 최신 마켓 리포트 및 투자 스터디
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Link href="/theory" className="p-6 rounded-3xl bg-gradient-to-br from-indigo-900/20 to-black border border-indigo-500/20 hover:border-indigo-500/50 transition-colors group block">
+                    <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full mb-3">AI 차트 분석</span>
+                    <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 mb-2">매일 차트 스터디 (주식 이론방)</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      이동평균선, RSI, MACD, 캔들 패턴 등 주식 투자의 기초부터 심화까지! 매일 업데이트되는 예쁜 차트와 함께 실전 주식 이론을 무료로 학습해 보세요. 초보자도 쉽게 따라할 수 있는 완벽한 가이드가 제공됩니다.
+                    </p>
+                  </Link>
+                  <Link href="/blog" className="p-6 rounded-3xl bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 hover:border-blue-500/50 transition-colors group block">
+                    <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-full mb-3">마켓 뷰</span>
+                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 mb-2">오늘의 증시 마감 리포트</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      매일 장 마감 후 국내 코스피, 코스닥부터 미국 나스닥까지 글로벌 시황을 완벽하게 요약해 드립니다. 기관과 외국인의 수급 흐름, 시장을 주도한 핵심 테마와 특징주를 AI 애널리스트가 심층 분석하여 제공합니다.
+                    </p>
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-400 mb-3 ml-2 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-cyan-400" /> 투자 전략 가이드
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Link href="/guide/ai-investing" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">초보자를 위한 실전 주식 가이드</h3>
+                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">데이터 기반의 올바른 투자 습관과 마인드셋을 기르는 첫 걸음</p>
+                  </Link>
+                  <Link href="/guide/supply-chain-analysis" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">공급망 지도 분석 방법론</h3>
+                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">산업의 밸류체인을 이해하고 숨은 수혜주를 발굴하는 비법</p>
+                  </Link>
+                  <Link href="/guide/risk-management" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
+                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">포트폴리오 변동성 관리</h3>
+                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">하락장에서도 계좌를 지키는 리스크 관리 및 자산 배분 전략</p>
+                  </Link>
+                </div>
               </div>
             </div>
 
