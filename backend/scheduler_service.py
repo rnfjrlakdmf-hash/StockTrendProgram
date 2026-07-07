@@ -920,8 +920,8 @@ def run_market_scheduler():
                         print(f"[Scheduler] Watchlist news error: {e}")
                     run_market_scheduler.last_run_watchlist_news = current_time
 
-            # [장중] 관심종목 가격 급등락 감시 (5분 간격)
-            if not is_holiday("kor") and 9 <= now.hour <= 15 and now.minute % 5 == 0:
+            # [장중+애프터마켓] 관심종목 가격 급등락 감시 (5분 간격, 20:00까지 연장)
+            if not is_holiday("kor") and 9 <= now.hour <= 19 and now.minute % 5 == 0:
                 current_time = now.strftime('%H:%M')
                 if getattr(run_market_scheduler, "last_run_watchlist_price", None) != current_time:
                     try:
