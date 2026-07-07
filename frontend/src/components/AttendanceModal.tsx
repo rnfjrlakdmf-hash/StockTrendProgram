@@ -6,9 +6,10 @@ interface AttendanceModalProps {
     isOpen: boolean;
     onClose: () => void;
     userId: string;
+    streak?: number;
 }
 
-export default function AttendanceModal({ isOpen, onClose, userId }: AttendanceModalProps) {
+export default function AttendanceModal({ isOpen, onClose, userId, streak = 0 }: AttendanceModalProps) {
     const [logs, setLogs] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -97,6 +98,19 @@ export default function AttendanceModal({ isOpen, onClose, userId }: AttendanceM
                         <div>목</div>
                         <div>금</div>
                         <div className="text-blue-400">토</div>
+                    </div>
+                    
+                    {/* Streak Info */}
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-6 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🔥</span>
+                            <span className="text-blue-100 font-medium">현재 연속 출석: {streak}일</span>
+                        </div>
+                        <div className="text-sm text-blue-400">
+                            {streak % 7 === 0 && streak > 0 
+                                ? "🎉 오늘 보너스 달성!" 
+                                : `다음 보너스까지 ${7 - (streak % 7)}일`}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-7 gap-2 relative">

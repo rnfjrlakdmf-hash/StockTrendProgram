@@ -29,6 +29,14 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
     const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [attendanceStreak, setAttendanceStreak] = useState(user?.attendance_streak || 0);
+
+    // 유저 객체가 변경될 때 연속 출석일 동기화
+    useEffect(() => {
+        if (user && user.attendance_streak !== undefined) {
+            setAttendanceStreak(user.attendance_streak);
+        }
+    }, [user]);
 
     useEffect(() => {
         const fetchUnreadCount = async () => {
@@ -128,8 +136,16 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             
             if (json.status === "success") {
                 setCoins(json.coins);
+                if (json.streak !== undefined) setAttendanceStreak(json.streak);
+                
+                if (json.bonus && json.bonus > 0) {
+                    alert(`🎉 ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 추가 획득했습니다! (총 ${json.coins} 코인)`);
+                } else {
+                    alert(json.message || "10 코인 획득!");
+                }
                 setIsAttendanceModalOpen(true);
             } else if (json.status === "already") {
+                if (json.streak !== undefined) setAttendanceStreak(json.streak);
                 setIsAttendanceModalOpen(true);
             } else {
                 alert("❌ 오류: " + json.message);
@@ -327,10 +343,11 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             onClose={() => setShowLoginModal(false)} 
         />
         {user && (
-            <AttendanceModal
-                isOpen={isAttendanceModalOpen}
-                onClose={() => setIsAttendanceModalOpen(false)}
-                userId={(user as any).uid || (user as any).id}
+            <AttendanceModal 
+                isOpen={isAttendanceModalOpen} 
+                onClose={() => setIsAttendanceModalOpen(false)} 
+                userId={user ? ((user as any).uid || (user as any).id) : ""}
+                streak={attendanceStreak}
             />
         )}
         </>
