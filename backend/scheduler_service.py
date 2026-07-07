@@ -829,7 +829,8 @@ def send_dormant_user_alert():
             
         title = f"💰 어제 가장 뜨거운 테마는 '{theme_name}'!"
         body = "AI가 발굴한 내일의 유망 테마를 확인해보세요!"
-        url = "/theme"
+        import urllib.parse
+        url = f"/theme?q={urllib.parse.quote(theme_name)}"
         
         send_multicast_notification(unique_tokens, title, body, {"url": url})
         print(f"[Scheduler] Dormant User Alert sent to {len(unique_tokens)} devices.")

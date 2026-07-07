@@ -1,8 +1,8 @@
 "use client";
 // Last Updated: 2026-05-03 06:47 AM (KST) - UI Clean up check
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import { API_BASE_URL } from "@/lib/config";
@@ -17,14 +17,23 @@ const THEME_CACHE: Record<string, { data: any, timestamp: number, quotes?: Recor
 const TRENDING_CACHE: { data: any[], timestamp: number } = { data: [], timestamp: 0 };
 const CACHE_DURATION = 60 * 1000 * 5; // 5 minute cache
 
-export default function ThemePage() {
+function ThemePageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [keyword, setKeyword] = useState("");
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState("");
     const [quotes, setQuotes] = useState<Record<string, any>>({});
     const [showHelp, setShowHelp] = useState(false);
+
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (q) {
+            setKeyword(q);
+            handleAnalyze(q);
+        }
+    }, [searchParams]);
 
     const handleAnalyze = async (overrideKeyword?: any) => {
         const searchKeyword = typeof overrideKeyword === 'string' ? overrideKeyword : keyword;
@@ -589,5 +598,13 @@ export default function ThemePage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ThemePage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+            <ThemePageContent />
+        </Suspense>
     );
 }
