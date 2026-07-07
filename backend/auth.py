@@ -238,8 +238,8 @@ def delete_account(req: DeleteAccountRequest):
 def get_user_profile(user_id: str):
     """유저의 최신 코인, 출석, 프로 정보를 반환합니다."""
     try:
-        from db_manager import get_user_v2
-        user = get_user_v2(user_id)
+        from db_manager import get_user
+        user = get_user(user_id)
         if user:
             return {"status": "success", "user": user}
         return {"status": "error", "message": "User not found"}
