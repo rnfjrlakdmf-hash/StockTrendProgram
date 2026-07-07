@@ -14,6 +14,7 @@ interface User {
     is_pro: boolean;
     free_trial_count?: number;
     attendance_streak?: number;
+    is_guest?: boolean;
 }
 
 interface AuthContextType {
@@ -39,9 +40,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         try {
+            let parsedUser;
             const storedUser = localStorage.getItem("stock_user");
+            
             if (storedUser) {
-                const parsedUser = JSON.parse(storedUser);
+                parsedUser = JSON.parse(storedUser);
+            } else {
+                const guestId = "guest_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now();
+                parsedUser = {
+                    id: guestId,
+                    email: null,
+                    name: "게스트",
+                    picture: "",
+                    is_pro: false,
+                    free_trial_count: 2,
+                    is_guest: true
+                };
+                localStorage.setItem("stock_user", JSON.stringify(parsedUser));
+                localStorage.setItem("user_id", guestId);
+                
+                // Register guest to DB
+                fetch(`${API_BASE_URL}/api/auth/guest`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id: guestId })
+                }).catch(e => console.warn("Guest init failed", e));
+            }
+            
+            if (parsedUser) {
                 if (isAdminEmail(parsedUser.email)) {
                     parsedUser.is_pro = true;
                 }
@@ -50,16 +76,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(parsedUser);
                 
                 // [Self-Healing] Silent background sync to ensure the backend DB 'users' table is populated
-                fetch(`${API_BASE_URL}/api/auth/google`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        id: parsedUser.id,
-                        email: parsedUser.email,
-                        name: parsedUser.name,
-                        picture: parsedUser.picture || ""
+                if (!parsedUser.is_guest && parsedUser.email) {
+                    fetch(`${API_BASE_URL}/api/auth/google`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: parsedUser.id,
+                            email: parsedUser.email,
+                            name: parsedUser.name,
+                            picture: parsedUser.picture || ""
+                        })
                     })
-                })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "success" && data.user) {
@@ -122,6 +149,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = useCallback(async (userData: any, provider: "google" | "kakao" = "google"): Promise<boolean> => {
         setIsMigrating(true);
+        
+        // Find existing guest id to merge
+        const existingStored = localStorage.getItem("stock_user");
+        let guestId = null;
+        if (existingStored) {
+            try {
+                const ex = JSON.parse(existingStored);
+                if (ex.is_guest) {
+                    guestId = ex.id;
+                }
+            } catch(e) {}
+        }
+        
         // 1단계: 즉시 로컬 상태 설정 (UI 즉각 반응)
         const immediateUser: User = {
             id: userData.id,
@@ -137,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("isPro");
 
         // 2단계: 카카오 로그인은 이미 백엔드 콜백에서 DB 처리가 끝났으므로 토큰 저장만 수행
+        // (단, 게스트 마이그레이션이 필요하다면 카카오도 추후 서버쪽 작업이 필요함. 현재는 구글만 지원)
         if (provider === "kakao") {
             localStorage.setItem("user_id", immediateUser.id);
             if (userData.token) localStorage.setItem("stock_token", userData.token);
@@ -146,10 +187,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
 
+                const payload = { ...userData };
+                if (guestId) payload.guest_id = guestId;
+
                 const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(userData),
+                    body: JSON.stringify(payload),
                     signal: controller.signal,
                 });
                 clearTimeout(timeout);
