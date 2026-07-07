@@ -26,6 +26,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     const { user } = useAuth();
     const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
     const [coins, setCoins] = useState<number>(0);
+    const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
     const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
 
