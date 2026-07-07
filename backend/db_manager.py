@@ -178,6 +178,16 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning: {e}")
 
+    # [Migration] Add attendance_streak if not exists
+    try:
+        cursor.execute("SELECT attendance_streak FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding attendance_streak)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN attendance_streak INTEGER DEFAULT 0")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
     # [Migration] Add roulette dates
     try:
         cursor.execute("SELECT last_roulette_kr_date FROM users LIMIT 1")
@@ -539,7 +549,7 @@ def get_user_info(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -549,6 +559,7 @@ def get_user_info(user_id):
             last_roulette_us_date = row[9]
             coins = row[10] if row[10] is not None else 0
             last_attendance_date = row[11]
+            attendance_streak = row[12] if row[12] is not None else 0
             
             # 1. 관리자 강제 Pro 부여 (이메일 기반 2차 안전장치)
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -575,7 +586,8 @@ def get_user_info(user_id):
                 "last_roulette_kr_date": last_roulette_kr_date,
                 "last_roulette_us_date": last_roulette_us_date,
                 "coins": coins,
-                "last_attendance_date": last_attendance_date
+                "last_attendance_date": last_attendance_date,
+                "attendance_streak": attendance_streak
             }
         return None
     except Exception as e:
@@ -588,7 +600,7 @@ def get_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -599,6 +611,7 @@ def get_user(user_id):
             last_roulette_us_date = row[9]
             coins = row[10] if row[10] is not None else 0
             last_attendance_date = row[11]
+            attendance_streak = row[12] if row[12] is not None else 0
             
             # 관리자 계정은 항상 PRO 상태 유지
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -627,7 +640,8 @@ def get_user(user_id):
                 "last_roulette_kr_date": last_roulette_kr_date,
                 "last_roulette_us_date": last_roulette_us_date,
                 "coins": coins,
-                "last_attendance_date": last_attendance_date
+                "last_attendance_date": last_attendance_date,
+                "attendance_streak": attendance_streak
             }
         return None
     except Exception as e:
@@ -644,27 +658,51 @@ def do_attendance(user_id: str) -> dict:
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT coins, last_attendance_date FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT coins, last_attendance_date, attendance_streak FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if not row:
             return {"status": "error", "message": "User not found"}
             
         coins = row[0] if row[0] is not None else 0
         last_att = row[1]
+        streak = row[2] if row[2] is not None else 0
         
-        # 한국 시간 기준 오늘 날짜 구하기
+        # 한국 시간 기준 날짜 계산
         kst = pytz.timezone('Asia/Seoul')
-        today_str = datetime.now(kst).strftime('%Y-%m-%d')
+        now = datetime.now(kst)
+        today_str = now.strftime('%Y-%m-%d')
         
         if last_att == today_str:
-            return {"status": "already", "message": "오늘은 이미 출석했습니다.", "coins": coins}
+            return {"status": "already", "message": "오늘은 이미 출석했습니다.", "coins": coins, "streak": streak, "bonus": 0}
             
-        # 출석 처리
-        new_coins = coins + 10
-        cursor.execute("UPDATE users SET coins = ?, last_attendance_date = ? WHERE id = ?", (new_coins, today_str, user_id))
+        # 연속 출석 계산
+        import datetime as dt
+        new_streak = 1
+        if last_att:
+            try:
+                last_dt = datetime.strptime(last_att, '%Y-%m-%d').date()
+                if last_dt == (now.date() - dt.timedelta(days=1)):
+                    new_streak = streak + 1
+            except Exception:
+                new_streak = 1
+                
+        # 7일 연속 단위 보너스 로직
+        bonus = 0
+        if new_streak > 0 and new_streak % 7 == 0:
+            multiplier = new_streak // 7
+            if multiplier == 1:
+                bonus = 50
+            elif multiplier == 2:
+                bonus = 100
+            else:
+                bonus = 150
+                
+        # 출석 처리 (기본 10 + 보너스)
+        new_coins = coins + 10 + bonus
+        cursor.execute("UPDATE users SET coins = ?, last_attendance_date = ?, attendance_streak = ? WHERE id = ?", (new_coins, today_str, new_streak, user_id))
         cursor.execute("INSERT OR IGNORE INTO attendance_logs (user_id, date) VALUES (?, ?)", (user_id, today_str))
         conn.commit()
-        return {"status": "success", "message": "10 코인 획득!", "coins": new_coins}
+        return {"status": "success", "message": f"10 코인 획득!{f' + 보너스 {bonus} 코인!' if bonus > 0 else ''}", "coins": new_coins, "streak": new_streak, "bonus": bonus}
     except Exception as e:
         print(f"Attendance Error: {e}")
         return {"status": "error", "message": str(e)}
@@ -683,6 +721,62 @@ def get_attendance_logs(user_id: str, year: int, month: int) -> list:
     except Exception as e:
         print(f"Get Attendance Logs Error: {e}")
         return []
+    finally:
+        conn.close()
+
+def merge_guest_to_user(guest_id: str, new_user_id: str):
+    """게스트 계정의 데이터를 정식 계정으로 병합하고 게스트 계정을 삭제합니다."""
+    if guest_id == new_user_id or not guest_id or not new_user_id:
+        return
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT coins, points, attendance_streak, last_attendance_date, free_trial_count, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (guest_id,))
+        guest = cursor.fetchone()
+        if not guest:
+            return
+            
+        g_coins, g_points, g_streak, g_last_att, g_trials, g_kr, g_us = guest
+        
+        cursor.execute("SELECT coins, points, attendance_streak, last_attendance_date, free_trial_count, last_roulette_kr_date, last_roulette_us_date FROM users WHERE id = ?", (new_user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return
+            
+        u_coins, u_points, u_streak, u_last_att, u_trials, u_kr, u_us = user
+        
+        # 병합 로직
+        merged_coins = (u_coins or 0) + (g_coins or 0)
+        merged_points = (u_points or 0) + (g_points or 0)
+        merged_streak = max((u_streak or 0), (g_streak or 0))
+        merged_last_att = u_last_att if (u_last_att and (not g_last_att or u_last_att >= g_last_att)) else g_last_att
+        merged_trials = min((u_trials if u_trials is not None else 2), (g_trials if g_trials is not None else 2))
+        merged_kr = u_kr if (u_kr and (not g_kr or u_kr >= g_kr)) else g_kr
+        merged_us = u_us if (u_us and (not g_us or u_us >= g_us)) else g_us
+        
+        # 유저 업데이트
+        cursor.execute("""
+            UPDATE users 
+            SET coins = ?, points = ?, attendance_streak = ?, last_attendance_date = ?, 
+                free_trial_count = ?, last_roulette_kr_date = ?, last_roulette_us_date = ?
+            WHERE id = ?
+        """, (merged_coins, merged_points, merged_streak, merged_last_att, merged_trials, merged_kr, merged_us, new_user_id))
+        
+        # 관련 테이블 마이그레이션
+        cursor.execute("UPDATE OR IGNORE attendance_logs SET user_id = ? WHERE user_id = ?", (new_user_id, guest_id))
+        cursor.execute("UPDATE OR IGNORE unlocked_reports SET user_id = ? WHERE user_id = ?", (new_user_id, guest_id))
+        
+        # 게스트 잔재 삭제
+        cursor.execute("DELETE FROM users WHERE id = ?", (guest_id,))
+        cursor.execute("DELETE FROM attendance_logs WHERE user_id = ?", (guest_id,))
+        cursor.execute("DELETE FROM unlocked_reports WHERE user_id = ?", (guest_id,))
+        
+        conn.commit()
+        print(f"Merged guest {guest_id} into user {new_user_id} successfully.")
+    except Exception as e:
+        print(f"Merge Guest Error: {e}")
     finally:
         conn.close()
 def check_report_unlocked(user_id: str, report_date: str) -> bool:

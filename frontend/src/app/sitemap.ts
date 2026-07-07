@@ -135,5 +135,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate blog sitemap:", e);
     }
 
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const res = await fetch(`${apiUrl}/api/theory/posts?page=1&limit=1000`, { next: { revalidate: 3600 }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
+                data.posts.forEach((post: any) => {
+                    const slug = post.slug || post.id;
+                    routes.push({
+                        url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt),
+                        changeFrequency: 'daily',
+                        priority: 0.9,
+                    });
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to generate theory sitemap:", e);
+    }
+
     return routes;
 }

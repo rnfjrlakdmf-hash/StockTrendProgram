@@ -573,6 +573,131 @@ def increment_blog_view(blog_id: str):
         print(f"[Blog View] Error updating view count for {blog_id}: {e}")
         return {"success": False, "message": str(e)}
 
+@app.get("/api/theory/posts")
+def get_theory_posts(page: int = 1, limit: int = 10):
+    """
+    Firestore theory_posts 콜렉션에서 주식 이론 포스트 목록을 페이지별로 반환
+    """
+    import firebase_admin
+    from firebase_admin import firestore
+    from google.cloud.firestore_v1 import Query
+    from firebase_config import initialize_firebase
+
+    initialize_firebase()
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized", "posts": [], "total": 0, "totalPages": 0}
+
+    try:
+        db = firestore.client()
+        collRef = db.collection("theory_posts")
+
+        count_query = collRef.count()
+        count_result = count_query.get()
+        total = count_result[0][0].value if count_result else 0
+        totalPages = max(1, -(-total // limit))
+
+        q = collRef.order_by("createdAt", direction=Query.DESCENDING).limit(page * limit)
+        docs = list(q.stream())
+
+        start = (page - 1) * limit
+        paged_docs = docs[start:start + limit]
+
+        posts = []
+        for doc in paged_docs:
+            data = doc.to_dict()
+            created_at = data.get("createdAt")
+            if hasattr(created_at, "isoformat"):
+                created_at_str = created_at.isoformat()
+            else:
+                created_at_str = str(created_at)
+            posts.append({
+                "id": doc.id,
+                "title": data.get("title", "제목 없음"),
+                "content": (data.get("content", ""))[:500],
+                "createdAt": created_at_str,
+                "tags": data.get("tags", []),
+                "slug": data.get("slug", doc.id),
+                "viewCount": data.get("viewCount", 0),
+                "author": data.get("author", "StockTrend 차트 마스터"),
+            })
+
+        return {"status": "ok", "posts": posts, "total": total, "totalPages": totalPages}
+    except Exception as e:
+        print(f"[Theory API] Error: {e}")
+        return {"status": "error", "message": str(e), "posts": [], "total": 0, "totalPages": 0}
+
+@app.get("/api/theory/posts/{slug}")
+def get_theory_post(slug: str):
+    """
+    특정 슬러그의 주식 이론 포스트 상세 정보 반환
+    """
+    import firebase_admin
+    from firebase_admin import firestore
+    from firebase_config import initialize_firebase
+
+    initialize_firebase()
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized"}
+
+    try:
+        db = firestore.client()
+        collRef = db.collection("theory_posts")
+        
+        docs = list(collRef.where("slug", "==", slug).limit(1).stream())
+        doc = None
+        
+        if docs:
+            doc = docs[0]
+        else:
+            doc_ref = collRef.document(slug)
+            doc_snap = doc_ref.get()
+            if doc_snap.exists:
+                doc = doc_snap
+                
+        if not doc:
+            return {"status": "error", "message": "Post not found"}
+            
+        data = doc.to_dict()
+        created_at = data.get("createdAt")
+        if hasattr(created_at, "isoformat"):
+            created_at_str = created_at.isoformat()
+        else:
+            created_at_str = str(created_at)
+            
+        post = {
+            "id": doc.id,
+            "title": data.get("title", "제목 없음"),
+            "content": data.get("content", ""),
+            "createdAt": created_at_str,
+            "tags": data.get("tags", []),
+            "slug": data.get("slug", doc.id),
+            "viewCount": data.get("viewCount", 0),
+            "author": data.get("author", "StockTrend 차트 마스터"),
+        }
+        
+        return {"status": "ok", "post": post}
+        
+    except Exception as e:
+        print(f"[Theory API] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/theory/{theory_id}/view")
+def increment_theory_view(theory_id: str):
+    import firebase_admin
+    from firebase_admin import firestore
+    
+    if not firebase_admin._apps:
+        return {"status": "error", "message": "Firebase not initialized"}
+        
+    try:
+        db = firestore.client()
+        doc_ref = db.collection("theory_posts").document(theory_id)
+        doc_ref.update({"viewCount": firestore.Increment(1)})
+        return {"success": True, "message": "View count updated"}
+    except Exception as e:
+        print(f"[Theory View] Error updating view count for {theory_id}: {e}")
+        return {"success": False, "message": str(e)}
+
 @app.get("/api/admin/news-stats")
 def news_api_stats():
     """배치 뉴스 시스템 API 호출 통계 (관리자용)"""

@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -49,7 +49,13 @@ const navigation = [
         desc: "삼성전자, 엔비디아 내일은 오를까 내릴까? AI의 예측을 확인하고 집단 지성에 투표하세요!"
     },
     { 
-        name: "주식이론방 (초보자 가이드)", 
+        name: "매일 차트 스터디 (이론방)", 
+        href: "/theory", 
+        icon: BookOpen,
+        desc: "매일매일 새롭게 올라오는 차트 보는 법과 주식 기초 이론을 쉽고 재미있게 공부하세요."
+    },
+    { 
+        name: "주식 투자 용어 사전", 
         href: "/guide", 
         icon: HelpCircle,
         desc: "주식 초보자를 위한 필수 투자 용어, 지표, 분석법 및 기초 이론을 완벽하게 정리한 백과사전입니다."
