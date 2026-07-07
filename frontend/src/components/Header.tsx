@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import AttendanceModal from './AttendanceModal';
 
 const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
 
@@ -25,6 +26,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
     const [coins, setCoins] = useState<number>(0);
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchUnreadCount = async () => {
@@ -124,9 +126,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             
             if (json.status === "success") {
                 setCoins(json.coins);
-                alert("🎉 출석체크 완료! 10 코인이 지급되었습니다.");
+                setIsAttendanceModalOpen(true);
             } else if (json.status === "already") {
-                alert("✅ " + json.message);
+                setIsAttendanceModalOpen(true);
             } else {
                 alert("❌ 오류: " + json.message);
             }
@@ -214,6 +216,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     return (
         <header className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-50 transition-all duration-200">
+            {user && (
+                <AttendanceModal
+                    isOpen={isAttendanceModalOpen}
+                    onClose={() => setIsAttendanceModalOpen(false)}
+                    userId={(user as any).uid || (user as any).id}
+                />
+            )}
             <div className="flex items-center gap-8 w-full md:w-auto mb-4 md:mb-0 flex-shrink-0 min-w-[150px]">
                 <div className="flex flex-col">
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">

@@ -1113,10 +1113,17 @@ def run_market_scheduler():
             print(f"[Scheduler] Error: {e}")
             time.sleep(60)
 
+main_scheduler_thread = None
+
 def start_scheduler():
     """백그라운드 스레드에서 스케줄러 시작"""
-    thread = threading.Thread(target=run_market_scheduler, daemon=True)
-    thread.start()
+    global main_scheduler_thread
+    if main_scheduler_thread is not None and main_scheduler_thread.is_alive():
+        print("[Scheduler] Main_Alert_Scheduler is already running. Skipping duplicate spawn.")
+        return
+        
+    main_scheduler_thread = threading.Thread(target=run_market_scheduler, daemon=True)
+    main_scheduler_thread.start()
     print("[Scheduler] All Intelligence Services Started")
 
 def delete_old_alerts():

@@ -94,6 +94,17 @@ def init_db():
         )
     ''')
     
+    # [NEW] Attendance Logs Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS attendance_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, date)
+        )
+    ''')
+    
     # [Migration] Add free_trial_count if not exists
     try:
         cursor.execute("SELECT free_trial_count FROM users LIMIT 1")
@@ -640,6 +651,7 @@ def do_attendance(user_id: str) -> dict:
         # 출석 처리
         new_coins = coins + 10
         cursor.execute("UPDATE users SET coins = ?, last_attendance_date = ? WHERE id = ?", (new_coins, today_str, user_id))
+        cursor.execute("INSERT OR IGNORE INTO attendance_logs (user_id, date) VALUES (?, ?)", (user_id, today_str))
         conn.commit()
         return {"status": "success", "message": "10 코인 획득!", "coins": new_coins}
     except Exception as e:
@@ -648,6 +660,20 @@ def do_attendance(user_id: str) -> dict:
     finally:
         conn.close()
 
+def get_attendance_logs(user_id: str, year: int, month: int) -> list:
+    """특정 유저의 해당 연/월 출석 기록을 반환 (YYYY-MM-DD 목록)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        month_str = f"{year:04d}-{month:02d}"
+        cursor.execute("SELECT date FROM attendance_logs WHERE user_id = ? AND date LIKE ? ORDER BY date ASC", (user_id, f"{month_str}-%"))
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"Get Attendance Logs Error: {e}")
+        return []
+    finally:
+        conn.close()
 def check_report_unlocked(user_id: str, report_date: str) -> bool:
     """해당 유저가 특정 날짜의 프리미엄 리포트를 잠금 해제했는지 확인"""
     conn = get_db_connection()

@@ -14,7 +14,7 @@ error_counters = {
 }
 
 # 오토 힐링 기능 활성화 플래그
-AUTO_HEAL_ENABLED = True
+AUTO_HEAL_ENABLED = False
 
 def toggle_auto_heal():
     global AUTO_HEAL_ENABLED

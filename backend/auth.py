@@ -256,6 +256,16 @@ def attendance_check(req: AttendanceRequest):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.get("/user/attendance/logs")
+def get_attendance_logs_endpoint(user_id: str, year: int, month: int):
+    """월별 출석 기록 반환"""
+    try:
+        from db_manager import get_attendance_logs
+        logs = get_attendance_logs(user_id, year, month)
+        return {"status": "success", "logs": logs}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/reports/premium")
 def get_premium_report(user_id: str):
     """
