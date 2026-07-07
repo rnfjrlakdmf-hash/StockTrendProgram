@@ -115,7 +115,7 @@ export default function LiveRankingBox() {
                     const bgClass = isUp ? "bg-red-500/10" : isDown ? "bg-blue-500/10" : "bg-gray-500/10";
                     
                     return (
-                        <Link href={`/analysis?symbol=${item.symbol}`} key={item.symbol || idx}>
+                        <Link href={`/stock/${item.symbol}`} key={item.symbol || idx}>
                             <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group border border-transparent hover:border-white/10 cursor-pointer">
                                 <div className="flex items-center gap-2.5 md:gap-3 flex-1 min-w-0">
                                     {/* Rank Badge */}
