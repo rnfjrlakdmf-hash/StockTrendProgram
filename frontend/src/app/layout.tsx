@@ -141,6 +141,8 @@ export default function RootLayout({
                   <span>|</span>
                   <a href="/disclaimer" className="hover:text-gray-400 transition-colors">면책 조항(Disclaimer)</a>
                   <span>|</span>
+                  <a href="/blog" className="hover:text-gray-400 transition-colors font-bold text-gray-400">마켓 리포트(블로그)</a>
+                  <span>|</span>
                   <span>© 2026 StockTrend</span>
                 </div>
               </footer>
