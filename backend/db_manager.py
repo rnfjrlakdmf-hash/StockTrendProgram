@@ -157,6 +157,17 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning: {e}")
 
+    # [Migration] Auto-healing for attendance logs
+    try:
+        cursor.execute("SELECT id, last_attendance_date FROM users WHERE last_attendance_date IS NOT NULL")
+        users_records = cursor.fetchall()
+        for rec in users_records:
+            uid, last_date = rec[0], rec[1]
+            cursor.execute("INSERT OR IGNORE INTO attendance_logs (user_id, date) VALUES (?, ?)", (uid, last_date))
+        conn.commit()
+    except Exception as e:
+        print(f"Attendance Auto-healing Warning: {e}")
+
     # [Migration] Add last_attendance_date if not exists
     try:
         cursor.execute("SELECT last_attendance_date FROM users LIMIT 1")
