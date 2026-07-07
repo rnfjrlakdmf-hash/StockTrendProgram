@@ -20,7 +20,7 @@ export default function PremiumPage() {
             if (!user) return;
             try {
                 const userId = (user as any).uid || (user as any).id;
-                const res = await fetch(`${API_BASE_URL}/api/reports/premium?user_id=${userId}`);
+                const res = await fetch(`${API_BASE_URL}/api/auth/reports/premium?user_id=${userId}`);
                 const data = await res.json();
                 if (data.status === "success") {
                     setReport(data);
@@ -51,7 +51,7 @@ export default function PremiumPage() {
         setIsUnlocking(true);
         try {
             const userId = (user as any).uid || (user as any).id;
-            const res = await fetch(`${API_BASE_URL}/api/reports/unlock`, {
+            const res = await fetch(`${API_BASE_URL}/api/auth/reports/unlock`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -176,7 +176,7 @@ export default function PremiumPage() {
                                             <Lock className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
                                             <h3 className="text-xl font-bold text-white mb-2">프리미엄 데이터 잠금</h3>
                                             <p className="text-gray-400 text-sm mb-6">
-                                                외국인과 기관의 쌍끌이 매수 종목 및<br />내일의 핵심 공략 테마를 확인하세요.
+                                                외국인과 기관의 쌍끌이 매수 종목 및<br />오늘 시장의 핵심 수급 특징을 확인하세요.
                                             </p>
                                             <button
                                                 onClick={handleUnlock}
