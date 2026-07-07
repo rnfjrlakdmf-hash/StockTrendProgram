@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, CalendarDays } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '@/lib/config';
 
 interface AttendanceModalProps {
     isOpen: boolean;
