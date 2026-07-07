@@ -535,10 +535,18 @@ async def check_and_notify_ipos():
     IPO_STATE_FILE = "/tmp/ipo_state.json" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(os.path.abspath(__file__)), "ipo_state.json")
 
     processed_ipos = []
+    ipo_states = {}
     if os.path.exists(IPO_STATE_FILE):
         try:
             with open(IPO_STATE_FILE, 'r', encoding='utf-8') as f:
-                processed_ipos = json.load(f).get("processed_ipos", [])
+                data = json.load(f)
+                processed_ipos = data.get("processed_ipos", [])
+                ipo_states = data.get("ipo_states", {})
+                
+                # Migration: if ipo_states is empty, populate from processed_ipos
+                if not ipo_states and processed_ipos:
+                    for name in processed_ipos:
+                        ipo_states[name] = {"status": "INITIAL", "band": "미정", "date": "미정"}
         except Exception:
             pass
 
@@ -546,16 +554,42 @@ async def check_and_notify_ipos():
         ipos = await asyncio.to_thread(fetch_dart_ipo_schedule)
 
         new_ipos = []
+        confirmed_ipos = []
+        
         for ipo in ipos:
             ipo_name = ipo.get('name')
-            if ipo_name and ipo_name not in processed_ipos:
+            band = ipo.get('band', '')
+            schedule = ipo.get('date', '')
+            
+            if not ipo_name: continue
+            
+            is_confirmed = "미정" not in band and "미정" not in schedule and band != "" and schedule != ""
+            
+            if ipo_name not in ipo_states:
+                # Completely new IPO
                 new_ipos.append(ipo)
-                processed_ipos.append(ipo_name)
+                ipo_states[ipo_name] = {
+                    "status": "CONFIRMED" if is_confirmed else "INITIAL",
+                    "band": band,
+                    "date": schedule
+                }
+            else:
+                # Already known IPO. Check if it transitioned from INITIAL to CONFIRMED
+                state = ipo_states[ipo_name]
+                if state.get("status") == "INITIAL" and is_confirmed:
+                    # It got confirmed!
+                    confirmed_ipos.append(ipo)
+                    ipo_states[ipo_name] = {
+                        "status": "CONFIRMED",
+                        "band": band,
+                        "date": schedule
+                    }
 
-        if new_ipos:
-            logger.info(f"Found {len(new_ipos)} new IPO(s). Sending notifications.")
+        if new_ipos or confirmed_ipos:
+            logger.info(f"Found {len(new_ipos)} new IPO(s) and {len(confirmed_ipos)} confirmed IPO(s). Sending notifications.")
             tokens = get_fcm_tokens_for_ipo()
             if tokens:
+                # 1. Send New IPO alerts
                 for ipo in new_ipos:
                     name = ipo.get('name')
                     band = ipo.get('band', '')
@@ -569,12 +603,33 @@ async def check_and_notify_ipos():
                         "url": "/signals?tab=ipo"
                     }
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.5)
+                    
+                # 2. Send Confirmed IPO alerts
+                for ipo in confirmed_ipos:
+                    name = ipo.get('name')
+                    band = ipo.get('band', '')
+                    schedule = ipo.get('date', '')
+                    underwriter = ipo.get('detail', '')
 
+                    noti_title = f"✅ {name} 공모 일정 확정!"
+                    noti_body = f"💰 확정/희망가: {band}원 📅 청약일: {schedule} 🏢 주관사 {underwriter}"
+                    data_payload = {
+                        "type": "IPO_ALERT",
+                        "url": "/signals?tab=ipo"
+                    }
+                    send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+                    await asyncio.sleep(0.5)
+
+            # Limit state size to 1000 items (keep most recent)
+            if len(ipo_states) > 1000:
+                keys_to_keep = list(ipo_states.keys())[-1000:]
+                ipo_states = {k: ipo_states[k] for k in keys_to_keep}
+                
             with open(IPO_STATE_FILE, 'w', encoding='utf-8') as f:
-                json.dump({"processed_ipos": processed_ipos[-1000:]}, f, ensure_ascii=False)
+                json.dump({"ipo_states": ipo_states}, f, ensure_ascii=False)
         else:
-            logger.info("No new IPOs found.")
+            logger.info("No new or confirmed IPOs found.")
 
     except Exception as e:
         logger.error(f"Scheduler Error in IPO Check: {e}")
