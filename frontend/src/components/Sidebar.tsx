@@ -49,6 +49,12 @@ const navigation = [
         desc: "삼성전자, 엔비디아 내일은 오를까 내릴까? AI의 예측을 확인하고 집단 지성에 투표하세요!"
     },
     { 
+        name: "주식이론방 (초보자 가이드)", 
+        href: "/guide", 
+        icon: HelpCircle,
+        desc: "주식 초보자를 위한 필수 투자 용어, 지표, 분석법 및 기초 이론을 완벽하게 정리한 백과사전입니다."
+    },
+    { 
         name: "전문가 마켓 리포트", 
         href: "/blog", 
         icon: Newspaper,
