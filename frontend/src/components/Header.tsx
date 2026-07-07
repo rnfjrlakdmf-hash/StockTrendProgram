@@ -9,6 +9,7 @@ import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import AttendanceModal from './AttendanceModal';
+import LoginModal from './LoginModal';
 
 const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
 
