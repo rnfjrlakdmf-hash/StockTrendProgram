@@ -801,7 +801,7 @@ def send_fomo_alert():
         hour = now.hour
         is_weekend = (day == 4 and hour >= 18) or day == 5 or day == 6 or (day == 0 and hour < 8)
         
-        url = "/weekend-whale" if is_weekend else "/discovery"
+        url = "/weekend-whale" if is_weekend else "/premium"
         
         send_multicast_notification(unique_tokens, title, body, {"url": url})
         print(f"[Scheduler] FOMO Alert sent to {len(unique_tokens)} devices.")
