@@ -70,9 +70,9 @@ def get_market_status_info():
         status_code = "OPEN"
         status_text = "장중 (정규장)"
         is_open = True
-    elif 1530 <= current_time < 1800:
+    elif 1530 <= current_time < 2000:
         status_code = "AFTER_MARKET"
-        status_text = "장후 시간외/단일가"
+        status_text = "장후 시간외/대체거래소(NXT)"
         is_open = True
     else:
         status_code = "CLOSED"
