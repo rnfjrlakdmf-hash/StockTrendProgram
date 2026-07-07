@@ -8,9 +8,10 @@ router = APIRouter()
 # Schema
 class GoogleLoginRequest(BaseModel):
     id: str
-    email: str
+    email: Optional[str] = None
     name: str = "User"
     picture: str = ""
+    guest_id: Optional[str] = None
 
 class UseTrialRequest(BaseModel):
     user_id: str
@@ -55,6 +56,9 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     # 1. Try to save/update user in DB
     db_success = False
     try:
+        if req.guest_id:
+            from db_manager import merge_guest_to_user
+            merge_guest_to_user(req.guest_id, req.id)
         db_success = create_user_if_not_exists(user_data)
     except Exception as e:
         print(f"[Critical Auth Error] DB Save Failed, Proceeding in Ghost Mode: {e}")
@@ -246,6 +250,21 @@ def get_user_profile(user_id: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.post("/guest")
+def guest_login(req: AttendanceRequest):
+    """게스트 계정 초기화 API"""
+    from db_manager import create_user_if_not_exists
+    try:
+        create_user_if_not_exists({
+            "id": req.user_id,
+            "email": None,
+            "name": "게스트",
+            "picture": ""
+        })
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.post("/user/attendance")
 def attendance_check(req: AttendanceRequest):
     """오늘 날짜 기준 출석체크 및 코인 지급 API"""
@@ -303,10 +322,18 @@ def get_premium_report(user_id: str):
             print(f"Failed to read premium report: {e}")
     
     try:
-        from db_manager import check_report_unlocked
+        from db_manager import check_report_unlocked, get_user
+        
         is_unlocked = check_report_unlocked(user_id, today_str)
         
-        if is_unlocked:
+        # 관리자 계정은 무조건 열람 가능
+        admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
+        user_info = get_user(user_id)
+        is_admin = False
+        if user_info and user_info.get("email") and user_info.get("email").lower() in admin_emails:
+            is_admin = True
+            
+        if is_unlocked or is_admin:
             return {
                 "status": "success",
                 "locked": False,
