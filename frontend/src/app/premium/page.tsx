@@ -6,7 +6,7 @@ import { Lock, Unlock, Gem, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function PremiumPage() {
     const { user } = useAuth();
