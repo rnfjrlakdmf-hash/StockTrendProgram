@@ -83,7 +83,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             if (!user) return;
             try {
                 const userId = (user as any).uid || (user as any).id;
-                const res = await fetch(`${API_BASE_URL}/api/user/${userId}/profile`);
+                const res = await fetch(`${API_BASE_URL}/api/auth/user/${userId}/profile`);
                 const json = await res.json();
                 if (json.status === "success" && json.user) {
                     setCoins(json.user.coins || 0);
@@ -115,7 +115,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
         setIsAttendanceLoading(true);
         try {
             const userId = (user as any).uid || (user as any).id;
-            const res = await fetch(`${API_BASE_URL}/api/user/attendance`, {
+            const res = await fetch(`${API_BASE_URL}/api/auth/user/attendance`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id: userId })

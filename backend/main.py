@@ -109,6 +109,16 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def legacy_etf_detail(symbol: str):
     from etf_detail import get_etf_detail
     return get_etf_detail(symbol)
+
+from auth import AttendanceRequest, attendance_check, get_user_profile
+
+@app.post("/api/user/attendance", tags=["Compatibility"])
+def legacy_attendance(req: AttendanceRequest):
+    return attendance_check(req)
+
+@app.get("/api/user/{user_id}/profile", tags=["Compatibility"])
+def legacy_profile(user_id: str):
+    return get_user_profile(user_id)
 from routes.debug import router as debug_router
 app.include_router(debug_router, prefix="/api")
 from routes.debug_notify import router as debug_notify_router

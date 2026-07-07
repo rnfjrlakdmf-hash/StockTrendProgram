@@ -517,11 +517,13 @@ async def hourly_briefing_scheduler_loop():
 
             is_weekend = is_holiday("kor")
 
-            # 같은 날 같은 시간에는 재실행하지 않음 (날짜 포함 비교)
+            # 비용 절감을 위해 매시간이 아닌 핵심 시간대(장 시작, 점심, 장 마감)에만 실행
+            target_hours = [9, 12, 16]
+            is_target_hour = current_hour in target_hours
             already_ran = (last_run_hour == current_hour and last_run_date == current_date)
 
-            if not is_weekend and not already_ran:
-                logger.info(f"[Scheduler] Starting hourly briefing for: {current_hour}:00")
+            if not is_weekend and is_target_hour and not already_ran:
+                logger.info(f"[Scheduler] Starting market briefing for: {current_hour}:00")
                 from utils.global_briefing import generate_market_wide_briefing
 
                 async with ANALYSIS_LOCK:
@@ -726,8 +728,9 @@ async def seo_blog_scheduler_loop():
             update_heartbeat("SEO_Blog_Bot")
             now = datetime.now(kst)
             
-            # 검색엔진 노출 극대화를 위해 매일 09시, 11시, 13시, 15시, 18시, 21시 실행 (하루 6번)
-            if now.hour in [9, 11, 13, 15, 18, 21] and last_run_hour != now.hour:
+            # 비용 절감을 위해 하루 3번(아침, 점심, 저녁) 실행하도록 변경
+            target_hours = [9, 13, 18]
+            if now.hour in target_hours and last_run_hour != now.hour:
                 logger.info(f"[SEOBlog] Triggering SEO blog post for hour {now.hour}...")
                 await asyncio.to_thread(subprocess.run, [sys.executable, script_path])
                 last_run_hour = now.hour
