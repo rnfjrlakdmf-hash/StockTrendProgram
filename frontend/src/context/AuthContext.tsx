@@ -107,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 })
                 .catch(err => console.warn("Silent background user sync failed:", err));
+                }
             }
         } catch (e) {
             localStorage.removeItem("stock_user");
