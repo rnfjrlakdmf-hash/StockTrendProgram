@@ -130,7 +130,7 @@ def generate_objective_report():
     
     if GEMINI_API_KEY:
         try:
-            model = genai.GenerativeModel("gemini-1.5-pro")
+            model = genai.GenerativeModel("gemini-2.5-flash-lite")
             response = model.generate_content(prompt)
             result = response.text.strip()
             if "|||SPLIT|||" in result:
