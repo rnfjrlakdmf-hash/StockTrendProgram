@@ -104,6 +104,13 @@ def check_whale_alerts():
                     }
                     send_multicast_notification(tokens, title, body, push_data)
                     print(f"[Whale] Sent multicast alert to {len(tokens)} tokens.")
+                    
+                    try:
+                        from telegram_service import send_telegram_teaser
+                        teaser_msg = f"🚨 <b>[세력 포착] 지금 장중 외국인 폭풍 매수 1위 종목은?</b>\n외국인이 미친듯이 담고 있는 이 종목! 지금 바로 실시간 수급을 확인하세요!\n\n👉 <a href='https://stock-trend-program.co.kr/discovery'>앱에서 정답 확인하기</a>"
+                        send_telegram_teaser(teaser_msg)
+                    except Exception as e:
+                        print(f"[Whale] Telegram error: {e}")
                 else:
                     print("[Whale] No tokens subscribed to whale alerts.")
 

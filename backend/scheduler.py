@@ -190,6 +190,17 @@ async def check_and_notify_disclosures():
                                 send_multicast_notification(all_tokens, push_title, summary_body, data=push_data, target_users=ok_users)
                                 logger.info(f"[WhaleSiren] FCM Zero-Cost Push sent to {len(all_tokens)} devices for {corp}")
                                 
+                                try:
+                                    from telegram_service import send_telegram_teaser
+                                    if is_super_ant:
+                                        teaser_msg = f"🚨 <b>[슈퍼개미 매집 포착]</b>\n누군가 수십억대 지분을 몰래 매집 중인 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/weekend-whale'>앱에서 정답 확인하기</a>"
+                                        send_telegram_teaser(teaser_msg)
+                                    elif is_insider:
+                                        teaser_msg = f"🚨 <b>[내부자 거래 포착]</b>\n회사 임원/주요주주가 몰래 매수/매도한 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/weekend-whale'>앱에서 정답 확인하기</a>"
+                                        send_telegram_teaser(teaser_msg)
+                                except Exception as e:
+                                    logger.error(f"[WhaleSiren] Telegram error: {e}")
+                                
                             if limit_reached_tokens:
                                 send_multicast_notification(
                                     limit_reached_tokens,
@@ -603,6 +614,14 @@ async def check_and_notify_ipos():
                         "url": "/signals?tab=ipo"
                     }
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+                    
+                    try:
+                        from telegram_service import send_telegram_teaser
+                        teaser_msg = f"🚀 <b>OOO 신규 공모주 청약 포착!</b>\n과연 대박이 날까? 희망가 및 주관사 정보 확인하기\n\n👉 <a href='https://stock-trend-program.co.kr/signals?tab=ipo'>앱에서 정답 확인하기</a>"
+                        send_telegram_teaser(teaser_msg)
+                    except Exception as e:
+                        logger.error(f"Telegram IPO alert error: {e}")
+
                     await asyncio.sleep(0.5)
                     
                 # 2. Send Confirmed IPO alerts
@@ -619,6 +638,13 @@ async def check_and_notify_ipos():
                         "url": "/signals?tab=ipo"
                     }
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload)
+                    
+                    try:
+                        from telegram_service import send_telegram_teaser
+                        teaser_msg = f"✅ <b>OOO 공모주 청약 일정 최종 확정!</b>\n상장일과 확정 공모가는 얼마일까?\n\n👉 <a href='https://stock-trend-program.co.kr/signals?tab=ipo'>앱에서 정답 확인하기</a>"
+                        send_telegram_teaser(teaser_msg)
+                    except Exception as e:
+                        logger.error(f"Telegram IPO confirm alert error: {e}")
                     await asyncio.sleep(0.5)
 
             # Limit state size to 1000 items (keep most recent)
