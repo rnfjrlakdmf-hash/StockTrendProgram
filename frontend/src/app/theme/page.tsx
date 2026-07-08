@@ -598,7 +598,7 @@ function ThemePageContent() {
                     <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
                 </div>
 
-                <div className="-mx-4 md:-mx-8 mt-12">
+                <div className="mt-8">
                     <SeoContentBlock />
                 </div>
             </div>

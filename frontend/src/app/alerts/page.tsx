@@ -434,7 +434,7 @@ export default function AlertCenterPage() {
                     </div>
                 )}
 
-                <div className="-mx-4 md:-mx-8 mt-12">
+                <div className="mt-8">
                     <SeoContentBlock />
                 </div>
             </div>
