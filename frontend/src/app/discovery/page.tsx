@@ -6,6 +6,8 @@ import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import PushSubscribeButton from "@/components/PushSubscribeButton";
+import SeoContentBlock from "@/components/SeoContentBlock";
 import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
@@ -1953,6 +1955,10 @@ function DiscoveryContent() {
                 {/* 하단 세로 배너 광고 (320x480) */}
                 <div className="mt-8 flex justify-center">
                     <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+                </div>
+
+                <div className="-mx-4 md:-mx-8 mt-12">
+                    <SeoContentBlock />
                 </div>
             </div>
         </div>

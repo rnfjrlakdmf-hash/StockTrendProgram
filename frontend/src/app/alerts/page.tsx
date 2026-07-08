@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import SeoContentBlock from "@/components/SeoContentBlock";
 
 interface AlertItem {
     id: string;
@@ -432,6 +433,10 @@ export default function AlertCenterPage() {
                         )}
                     </div>
                 )}
+
+                <div className="-mx-4 md:-mx-8 mt-12">
+                    <SeoContentBlock />
+                </div>
             </div>
         </div>
     );
