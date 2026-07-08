@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -603,6 +603,32 @@ export default function Sidebar() {
                                 </div>
                             </div>
                         </div>
+                        </div>
+                    </div>
+
+                    {/* [New] Telegram Promotion Banner */}
+                    <div className="mb-6 px-1">
+                        <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all group cursor-pointer border border-blue-400/30">
+                                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                                <div className="relative z-10 flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                            <span className="text-[10px] font-black uppercase text-blue-200 tracking-wider">OFFICIAL CHANNEL</span>
+                                            <span className="relative flex h-2 w-2">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-bold text-white whitespace-nowrap">🔥 실시간 세력 매집 알림</span>
+                                        <span className="text-xs text-blue-100 font-medium mt-0.5">텔레그램에서 가장 먼저 받기</span>
+                                    </div>
+                                    <div className="shrink-0 bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
+                                        <Send className="w-5 h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
                     </div>
 
                     <nav className="space-y-1.5">

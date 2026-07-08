@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { TrendingUp, Search, Eye, Sparkles, MapPin, UserCircle } from 'lucide-react';
+import { TrendingUp, Search, Eye, Sparkles, MapPin, UserCircle, Send } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 
 interface FomoItem {
     ticker: string;
     name: string;
     messageTemplate: string;
-    type: 'view' | 'search' | 'analyze' | 'trend';
+    type: 'view' | 'search' | 'analyze' | 'trend' | 'telegram';
     location?: string;
 }
 
@@ -27,6 +27,7 @@ const FALLBACK_ITEMS: Partial<FomoItem>[] = [
     { name: 'HLB', ticker: '028300' },
     { name: '초전도체 관련주', ticker: 'theme' },
     { name: 'AI 반도체 테마', ticker: 'theme' },
+    { name: '실시간 속보방', ticker: 'telegram' },
 ];
 
 const TEMPLATES = [
@@ -35,6 +36,7 @@ const TEMPLATES = [
     { template: "방금 누군가 [ITEM] AI 분석 리포트를 열람했습니다.", type: 'analyze' },
     { template: "현재 [ITEM]에 트래픽이 폭주하고 있습니다!", type: 'trend' },
     { template: "방금 [ITEM] 관련 긴급 속보가 공유되었습니다.", type: 'trend' },
+    { template: "👤 방금 [LOC]의 누군가가 [ITEM] 텔레그램에 입장했습니다.", type: 'telegram' },
 ];
 
 export default function FomoWidget() {
@@ -106,6 +108,7 @@ export default function FomoWidget() {
             case 'search': return <Search className="w-5 h-5 text-blue-400" />;
             case 'analyze': return <Sparkles className="w-5 h-5 text-yellow-400" />;
             case 'trend': return <TrendingUp className="w-5 h-5 text-red-400" />;
+            case 'telegram': return <Send className="w-5 h-5 text-blue-500" />;
             default: return <UserCircle className="w-5 h-5 text-indigo-400" />;
         }
     };
@@ -120,7 +123,10 @@ export default function FomoWidget() {
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className="fixed bottom-6 left-6 md:left-[344px] z-[60] max-w-sm w-[calc(100%-3rem)] md:w-auto"
                 >
-                    <Link href={currentItem.ticker === 'theme' ? '/themes' : `/stock/${currentItem.ticker}`}>
+                    <Link 
+                        href={currentItem.ticker === 'telegram' ? 'https://t.me/stocktrend_live' : (currentItem.ticker === 'theme' ? '/themes' : `/stock/${currentItem.ticker}`)}
+                        target={currentItem.ticker === 'telegram' ? '_blank' : undefined}
+                    >
                         <div className="bg-black/85 backdrop-blur-md border border-cyan-500/30 shadow-[0_8px_30px_rgba(6,182,212,0.2)] rounded-2xl p-4 cursor-pointer hover:bg-slate-900/90 hover:border-cyan-400/50 transition-all flex items-start gap-3 group">
                             <div className="flex-shrink-0 mt-0.5 p-2 bg-slate-800/50 rounded-full group-hover:scale-110 transition-transform">
                                 {getIcon(currentItem.type)}

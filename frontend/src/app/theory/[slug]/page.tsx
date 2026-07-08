@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase";
 import Link from "next/link";
-import { Clock, ArrowLeft, UserCheck, Eye, BookOpen } from "lucide-react";
+import { Clock, ArrowLeft, UserCheck, Eye, BookOpen, Send } from "lucide-react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -188,8 +188,22 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
             </div>
 
-            <div className="mt-16 mb-8">
+            <div className="mt-16 mb-4">
                 <PushSubscribeButton />
+            </div>
+
+            {/* [New] Telegram Subscribe Banner */}
+            <div className="mb-12">
+                <div className="w-full bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[0_0_30px_rgba(37,99,235,0.15)]">
+                    <div className="bg-blue-600 p-3 rounded-full mb-4 shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+                        <Send className="w-8 h-8 text-white ml-1" />
+                    </div>
+                    <h3 className="text-2xl font-black text-white mb-2">이 글이 유익하셨나요?</h3>
+                    <p className="text-blue-200 mb-6 font-medium">더 빠르고 정확한 주식 핵심 정보를 텔레그램에서 무료로 받아보세요!</p>
+                    <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all text-lg flex items-center justify-center gap-3">
+                        👉 실시간 속보방 무료 입장하기
+                    </Link>
+                </div>
             </div>
 
             <div className="w-full flex justify-center mb-12">

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle } from "lucide-react";
+import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
@@ -307,6 +307,17 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 {/* Search Bar Removed as per user request */}
 
                 <div className="flex items-center gap-2">
+
+                    {/* [New] Telegram Mobile Icon */}
+                    <div className="md:hidden flex items-center">
+                        <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] relative">
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-black"></span>
+                            </span>
+                            <Send className="h-5 w-5 -ml-0.5" />
+                        </Link>
+                    </div>
 
                     <Link href="/alerts" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
                         <Bell className="h-5 w-5" />
