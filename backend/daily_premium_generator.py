@@ -21,7 +21,7 @@ def get_naver_net_buying(market_code="0", investor_code="9000", limit=10):
     market_code: 0(코스피), 1(코스닥)
     investor_code: 9000(외국인), 8000(기관)
     """
-    url = f"https://finance.naver.com/sise/sise_deal_rank.naver?sosok={market_code}&investor_ill={investor_code}"
+    url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={market_code}&investor_ill={investor_code}"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     }
@@ -77,9 +77,12 @@ def generate_objective_report():
     kospi_inst = get_naver_net_buying(market_code="0", investor_code="8000", limit=10)
     kosdaq_inst = get_naver_net_buying(market_code="1", investor_code="8000", limit=10)
     
-    if not kospi_foreign and not kospi_inst:
-        print("No market data today. Skipping generation.")
-        return
+    if not kospi_foreign and not kosdaq_foreign and not kospi_inst and not kosdaq_inst:
+        print("Warning: No market data today (Naver API issue or holiday). Generating report with empty data.")
+        kospi_foreign = [{"name": "데이터없음", "volume": 0}]
+        kosdaq_foreign = [{"name": "데이터없음", "volume": 0}]
+        kospi_inst = [{"name": "데이터없음", "volume": 0}]
+        kosdaq_inst = [{"name": "데이터없음", "volume": 0}]
         
     kospi_f_names = [d['name'] for d in kospi_foreign[:5]]
     kosdaq_f_names = [d['name'] for d in kosdaq_foreign[:5]]
@@ -127,7 +130,7 @@ def generate_objective_report():
     
     if GEMINI_API_KEY:
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-1.5-pro")
             response = model.generate_content(prompt)
             result = response.text.strip()
             if "|||SPLIT|||" in result:
@@ -153,7 +156,7 @@ def generate_objective_report():
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(final_report, f, ensure_ascii=False, indent=2)
         
-    print(f"✅ Premium report generated and saved to {save_path}")
+    print(f"[Premium Report] generated and saved to {save_path}")
 
 if __name__ == "__main__":
     generate_objective_report()
