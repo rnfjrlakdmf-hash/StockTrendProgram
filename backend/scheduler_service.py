@@ -945,7 +945,7 @@ def run_market_scheduler():
                     run_market_scheduler.last_run_whale_alert = current_time
             
             # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅
-            if now.hour == 8 and now.minute == 30 and current_date != last_run_daily_theory:
+            if now.hour == 8 and 30 <= now.minute <= 35 and current_date != last_run_daily_theory:
                 try:
                     from daily_theory_bot import post_daily_theory
                     post_daily_theory()
