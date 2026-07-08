@@ -96,6 +96,7 @@ def generate_theory_post():
     4. 일반 텍스트: `<p class="text-gray-300 text-lg leading-relaxed mb-6">`
     5. 중요 강조: `<strong class="text-white bg-blue-900/30 px-1 rounded">`
     6. SVG 차트를 감싸는 박스: `<div class="my-10 p-6 bg-white/5 border border-white/10 rounded-2xl flex justify-center w-full overflow-x-auto"> SVG코드 </div>`
+    7. **SEO 내부 링크**: 설명 중 '삼성전자', 'SK하이닉스' 등 한국 주식 종목명이 등장하면 반드시 해당 종목을 <a> 태그로 감싸서 링크를 걸어주세요. 예: `<a href="/stock/005930" class="text-blue-400 font-bold hover:underline">삼성전자</a>`. (종목 코드를 정확히 아는 경우에만)
     
     순수한 HTML 텍스트만 반환하고 markdown 틱(```html)은 제외하세요.
     """
@@ -149,12 +150,20 @@ def post_daily_theory():
         doc_ref = db.collection("theory_posts").document(slug)
         doc_ref.set(post_data)
         
-        post_url = f"https://stock-trend-program.co.kr/theory/{slug}"
-        print(f"[SUCCESS] 매일 주식 이론 포스팅 완료! (ID: {slug})")
-        print(f"URL: {post_url}")
+        print(f"[SUCCESS] 글 작성 완료! (ID: {post_id})")
+        new_url = f"https://stock-trend-program.co.kr/theory/{post_id}"
+        print(f"URL: {new_url}")
         
-        post_to_discord(title, post_url, tags)
+        post_to_discord(title, new_url, tags)
         
+        # Google Indexing API 실시간 핑
+        try:
+            from google_indexer import publish_urls_to_google
+            print("Requesting Google Indexing API...")
+            publish_urls_to_google([new_url])
+        except Exception as e:
+            print(f"Google Indexing API 실패: {e}")
+            
     except Exception as e:
         print(f"Firestore 저장 에러: {e}")
 
