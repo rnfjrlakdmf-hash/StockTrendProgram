@@ -1,12 +1,42 @@
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, HelpCircle } from "lucide-react";
+import { Sparkles, HelpCircle, Send, Bell, TrendingUp, Shield } from "lucide-react";
 
 export default function SeoContentBlock() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto mt-10 border-t border-white/10 bg-black/40 rounded-t-3xl">
       <div className="grid grid-cols-1 gap-12">
         
+        {/* 섹션 0: 텔레그램 채널 홍보 (SEO용 + 구독 유도) */}
+        <div className="bg-gradient-to-br from-[#0088cc]/15 to-transparent border border-[#0088cc]/20 rounded-3xl p-8">
+          <h2 className="text-2xl font-black text-white mb-4 flex items-center gap-3">
+            <Send className="text-[#0088cc] w-7 h-7" />
+            실시간 주식 속보 텔레그램 채널 무료 구독 안내
+          </h2>
+          <div className="text-gray-400 text-sm leading-relaxed space-y-3">
+            <p>
+              <strong className="text-white">스마트 투자 비서 텔레그램 채널(@stocktrend_live)</strong>은 국내외 주식 시장의 핵심 정보를 실시간으로 전달하는 무료 구독 서비스입니다.
+              대한민국 금융감독원 전자공시시스템(DART)에 등록된 대량보유 보고서(5% 이상 지분 취득·변동), 주요 임원 매매 내역 등
+              스마트 머니의 움직임이 포착되는 즉시 텔레그램 메신저로 1초 안에 알림을 받을 수 있습니다.
+            </p>
+            <p>
+              또한 코스피·코스닥 상한가 종목, 외국인 및 기관 순매수 1위 종목, 미국 나스닥·S&P500·다우존스 지수 급변 상황,
+              FOMC 금리 결정, CPI 소비자물가지수 등 미국 거시경제 지표 발표 속보도 실시간으로 전달합니다.
+              정보의 속도가 수익의 크기를 결정하는 주식 시장에서, 텔레그램 채널 구독은 개인 투자자의 필수 무기입니다.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-5">
+            <a
+              href="https://t.me/stocktrend_live"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#0088cc] hover:bg-[#006fa6] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-colors"
+            >
+              <Send className="w-4 h-4" /> 텔레그램 채널 무료 구독 →
+            </a>
+          </div>
+        </div>
+
         {/* 섹션 1: 상세 플랫폼 소개 */}
         <div className="space-y-6">
           <h2 className="text-3xl font-black text-white flex items-center gap-3">
@@ -26,7 +56,7 @@ export default function SeoContentBlock() {
           </div>
         </div>
 
-        {/* 섹션 2: 자주 묻는 질문 FAQ (글자 수 뻥튀기 및 핵심 키워드 삽입) */}
+        {/* 섹션 2: 자주 묻는 질문 FAQ */}
         <div className="bg-gradient-to-br from-blue-900/10 to-indigo-900/10 border border-blue-500/10 rounded-3xl p-8">
           <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
             <HelpCircle className="text-indigo-400 w-6 h-6" />
@@ -43,7 +73,11 @@ export default function SeoContentBlock() {
             </div>
             <div>
               <strong className="text-blue-300 block text-lg mb-2">Q. 텔레그램 실시간 속보방에서는 어떤 정보를 얻을 수 있나요?</strong>
-              <p>A. 주식 시장은 정보의 속도전입니다. 공모주(IPO) 청약 일정 변경, 대형 수주 공시, 장 마감 후 시간외 단일가 급등락 사유, 그리고 긴급 거시 경제 지표(미국 CPI, FOMC 금리 결정 등) 발표 순간에, 웹사이트에 접속하지 않고도 텔레그램 메신저를 통해 1초 만에 알림을 받아볼 수 있는 프리미엄 구독 서비스입니다.</p>
+              <p>A. 주식 시장은 정보의 속도전입니다. 공모주(IPO) 청약 일정 변경, 대형 수주 공시, 장 마감 후 시간외 단일가 급등락 사유, 그리고 긴급 거시 경제 지표(미국 CPI, FOMC 금리 결정 등) 발표 순간에, 웹사이트에 접속하지 않고도 텔레그램 메신저를 통해 1초 만에 알림을 받아볼 수 있는 프리미엄 구독 서비스입니다. <a href="https://t.me/stocktrend_live" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">텔레그램 채널(@stocktrend_live)</a>에서 무료로 구독하실 수 있습니다.</p>
+            </div>
+            <div>
+              <strong className="text-blue-300 block text-lg mb-2">Q. 주식 알림 서비스는 어떻게 작동하나요?</strong>
+              <p>A. 본 플랫폼의 푸시 알림 서비스는 Firebase Cloud Messaging(FCM) 기술을 활용합니다. 사용자가 관심 종목을 등록하거나 특정 가격대를 설정하면, 해당 종목이 목표가에 도달하거나 급등락 시 스마트폰 잠금화면에 즉시 알림이 전송됩니다. 또한 DART 공시, 외국인 순매수 급증, 기관 매집 포착 등 다양한 이벤트에 대해 맞춤형 실시간 알림을 받을 수 있습니다.</p>
             </div>
           </div>
         </div>
@@ -57,6 +91,7 @@ export default function SeoContentBlock() {
             <Link href="/disclaimer" className="text-gray-500 hover:text-blue-400 underline decoration-gray-700 hover:decoration-blue-400 transition-colors">투자 면책조항 (Disclaimer)</Link>
             <Link href="/contact" className="text-gray-500 hover:text-blue-400 underline decoration-gray-700 hover:decoration-blue-400 transition-colors">고객센터 및 제휴 문의 (Contact Us)</Link>
             <Link href="/about" className="text-gray-500 hover:text-blue-400 underline decoration-gray-700 hover:decoration-blue-400 transition-colors">회사 소개 (About Us)</Link>
+            <a href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="text-[#0088cc] hover:text-[#00b2ff] underline transition-colors font-bold">텔레그램 구독 →</a>
           </div>
           <p className="text-xs text-gray-600 mt-4 max-w-3xl leading-relaxed">
             본 웹사이트에서 제공하는 모든 주식 정보, 차트 분석, 테마 분류, 리포트 및 알고리즘 결과물은 투자 판단의 참고용이며, 실제 투자 결과에 대한 법적 책임을 지지 않습니다. 모든 투자의 최종 결정권과 책임은 투자자 본인에게 있습니다. STOCK AI is committed to providing high-quality financial education and data analytics.

@@ -14,7 +14,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
 
-import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
@@ -100,6 +100,48 @@ export default function Home() {
           </div>
         </div>
         
+        {/* 텔레그램 구독 유도 카드 - 메인 CTA */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0088cc]/20 via-[#005f8f]/10 to-transparent border border-[#0088cc]/30 p-6 md:p-8">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-[#0088cc]/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="relative flex flex-col md:flex-row items-center gap-6">
+            {/* 아이콘 */}
+            <div className="w-20 h-20 bg-gradient-to-br from-[#0088cc] to-[#005f8f] rounded-3xl flex items-center justify-center shrink-0 shadow-2xl shadow-blue-500/30">
+              <Send className="w-10 h-10 text-white" />
+            </div>
+            {/* 텍스트 */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-1.5 bg-[#0088cc]/20 border border-[#0088cc]/30 text-[#4fc3f7] text-xs font-bold px-3 py-1 rounded-full mb-3">
+                <Zap className="w-3 h-3" /> 실시간 속보 채널
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">
+                텔레그램 실시간 주식 속보 채널
+              </h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                외국인 순매수 1위, 상한가 급등주, DART 대량보유 공시, 미국 증시 속보를<br className="hidden md:block" />
+                텔레그램에서 <strong className="text-white">1초 만에</strong> 받아보세요. 완전 무료!
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start text-xs">
+                {["🐳 세력 포착 알림", "📈 상한가 속보", "🌐 미국증시 브리핑", "💎 VIP 수급 데이터"].map(t => (
+                  <span key={t} className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-gray-300 font-medium">{t}</span>
+                ))}
+              </div>
+            </div>
+            {/* 버튼 */}
+            <div className="shrink-0">
+              <a
+                href="https://t.me/stocktrend_live"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#0088cc] to-[#00b2ff] hover:from-[#006fa6] hover:to-[#0088cc] text-white font-black px-6 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30 text-base whitespace-nowrap"
+              >
+                <Send className="w-5 h-5" />
+                지금 무료 구독
+                <ChevronRight className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Search Loading/Error State */}
         {loading && (
           <div className="flex flex-col items-center justify-center p-12 text-blue-400">

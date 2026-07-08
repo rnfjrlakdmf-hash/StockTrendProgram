@@ -15,6 +15,7 @@ import WhaleSiren from "@/components/WhaleSiren";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 import CookieConsent from "@/components/CookieConsent";
+import TelegramBanner from "@/components/TelegramBanner";
 import type { Viewport } from 'next';
 
 export const viewport: Viewport = {
@@ -167,6 +168,7 @@ export default function RootLayout({
             </div>
 
             <CookieConsent />
+            <TelegramBanner />
           </div>
         </AuthProvider>
         <Analytics />
