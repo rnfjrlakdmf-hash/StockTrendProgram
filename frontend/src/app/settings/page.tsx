@@ -741,13 +741,13 @@ export default function SettingsPage() {
                                                     targetUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
                                                 }
                                                 
-                                                // 강제 클릭 방식으로 더욱 확실하게 실행
-                                                const link = document.createElement('a');
-                                                link.href = targetUrl;
-                                                link.target = '_top';
-                                                document.body.appendChild(link);
-                                                link.click();
-                                                document.body.removeChild(link);
+                                                // Capacitor 및 모든 모바일 브라우저에서 가장 안정적으로 외부 앱(인텐트/딥링크)을 여는 표준 방법
+                                                try {
+                                                    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                                                } catch (e) {
+                                                    console.error("App open failed", e);
+                                                    window.location.href = targetUrl;
+                                                }
                                                 
                                                 // 앱 미설치 시 스토어로 이동시키는 타이머 폴백 (모바일 공통 적용)
                                                 const start = Date.now();
