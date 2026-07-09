@@ -23,7 +23,7 @@ interface HeaderProps {
 
 export default function Header({ title = "대시보드", subtitle = "환영합니다, 투자자님", onSearch }: HeaderProps) {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
     const [coins, setCoins] = useState<number>(0);
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -380,7 +380,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                         >
                                             ✅ 출석체크 하기
                                         </button>
-                                        {user.is_guest && (
+                                        {user.is_guest ? (
                                             <button 
                                                 onClick={() => {
                                                     setShowLoginModal(true);
@@ -389,6 +389,16 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                                 className="w-full mt-1 bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95 border border-white/10"
                                             >
                                                 정식 로그인 / 연동하기
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => {
+                                                    logout();
+                                                    setIsProfileMenuOpen(false);
+                                                }}
+                                                className="w-full mt-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95 border border-red-500/20"
+                                            >
+                                                로그아웃
                                             </button>
                                         )}
                                     </div>
