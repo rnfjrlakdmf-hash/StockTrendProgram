@@ -107,7 +107,10 @@ export default function SettingsPage() {
                         // Live server token missing fallback: register it silently
                         fetch(`${API_BASE_URL}/api/system/fcm/register`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'x-user-id': user?.id || 'guest'
+                            },
                             body: JSON.stringify({ token: token, device_type: 'web', device_name: 'auto-recovered' })
                         });
                     }
@@ -158,7 +161,10 @@ export default function SettingsPage() {
             // Ensure token is registered on the live server just in case
             await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': user?.id || 'guest'
+                },
                 body: JSON.stringify({ token: fcmToken, device_type: 'web', device_name: 'force-recovered' })
             });
 
