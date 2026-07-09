@@ -411,11 +411,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* SEO & Content Section for AdSense Crawlers (축소된 Footer 스타일) */}
-            {/* SEO & Content Section for AdSense Crawlers (Massive Content Block for Approval) */}
+            {/* SEO & Content Section for AdSense Crawlers */}
             <div className="mt-12 border-t border-white/10 pt-10 pb-8 px-4 text-left max-w-5xl mx-auto">
-              <article className="prose prose-invert prose-sm md:prose-base lg:prose-lg mx-auto text-gray-400">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-200 mb-6">StockTrend 전문가 플랫폼: AI 주식 데이터 분석 및 핵심 트렌드 탐색 가이드</h1>
+              <details className="group cursor-pointer">
+                <summary className="text-gray-600 text-sm font-bold hover:text-gray-400 transition-colors list-none flex justify-center items-center gap-2 bg-white/5 py-3 px-6 rounded-2xl w-fit mx-auto border border-white/5">
+                  <span>서비스 상세 가이드 및 면책 조항 (펼치기)</span>
+                  <span className="group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                
+                <article className="prose prose-invert prose-sm md:prose-base lg:prose-lg mx-auto text-gray-500 mt-8 pt-8 border-t border-white/5">
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-400 mb-6">StockTrend 전문가 플랫폼: AI 주식 데이터 분석 및 핵심 트렌드 탐색 가이드</h1>
                 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold text-gray-300 mb-3">1. 인공지능(AI) 기반 주식 시장 데이터 분석의 원리</h2>
@@ -457,7 +462,6 @@ export default function Home() {
                     또한, 목표가 도달 알림 및 손절매(Stop-Loss) 설정 가이드를 통해 감정에 휘둘리지 않는 기계적인 트레이딩 훈련을 지원합니다. 주식 투자는 마라톤과 같습니다. 일시적인 손실에 연연하기보다는 철저한 데이터 기반의 투자 룰(Rule)을 확립하고 이를 지켜나가는 것이 경제적 자유를 향한 지름길입니다.
                   </p>
                 </section>
-
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-6">
                   <h3 className="font-bold text-gray-300 mb-2">💡 면책 조항 (Disclaimer)</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
@@ -465,6 +469,7 @@ export default function Home() {
                   </p>
                 </div>
               </article>
+              </details>
             </div>
 
           </div>
