@@ -819,7 +819,7 @@ export default function Sidebar() {
                     )}
 
                     {/* 2. User account profile block */}
-                    {user ? (
+                    {user && !user.is_guest ? (
                         <div className="rounded-xl bg-white/10 p-2.5 border border-white/10 flex items-center gap-2.5 shadow-lg">
                             <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-white/20">
                                 {user.name[0]}
@@ -844,7 +844,7 @@ export default function Sidebar() {
                             className="w-full rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
                         >
                             <UserCheck className="w-3.5 h-3.5" />
-                            로그인
+                            {user?.is_guest ? "정식 로그인 / 연동하기" : "로그인"}
                         </button>
                     )}
 
