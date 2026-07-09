@@ -8,8 +8,8 @@ if (typeof window !== 'undefined') {
   const hostname = window.location.hostname;
   
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
-    // 로컬 개발 환경에서도 라이브 서버의 데이터를 보도록 임시 변경
-    apiBase = "http://13.209.99.170:8000";
+    // 로컬 개발 환경에서는 로컬 백엔드를 바라보도록 수정 (라이브 서버 이슈 방지)
+    apiBase = "http://localhost:8000";
   } else if (/Android/i.test(navigator.userAgent) && (hostname === '' || hostname === 'localhost')) {
     // 안드로이드 에뮬레이터 (특수 케이스)
     apiBase = "http://10.0.2.2:8000";
