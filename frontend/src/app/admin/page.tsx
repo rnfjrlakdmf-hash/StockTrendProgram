@@ -384,59 +384,62 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Visitor Statistics Table Card */}
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                    <h3 className="text-xl font-bold text-white mb-6">일별 조회수 및 방문자수 통계</h3>
-                    <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
-                        {analytics?.daily_stats && analytics.daily_stats.length > 0 ? (
-                            analytics.daily_stats.map((stat) => (
-                                <div key={stat.date} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
-                                    <div>
-                                        <p className="text-white font-bold text-sm">{stat.date}</p>
-                                    </div>
-                                    <div className="flex gap-6 text-sm">
-                                        <div className="text-right">
-                                            <p className="text-gray-500 text-[10px] font-black uppercase">PAGEVIEWS (PV)</p>
-                                            <p className="text-blue-400 font-black text-base">{stat.pageviews.toLocaleString()}회</p>
+                {/* Stats Tables Grid: Daily & Hourly */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Visitor Statistics Table Card */}
+                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                        <h3 className="text-xl font-bold text-white mb-6">일별 조회수 및 방문자수 통계</h3>
+                        <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
+                            {analytics?.daily_stats && analytics.daily_stats.length > 0 ? (
+                                analytics.daily_stats.map((stat) => (
+                                    <div key={stat.date} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                                        <div>
+                                            <p className="text-white font-bold text-sm">{stat.date}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-gray-500 text-[10px] font-black uppercase">VISITORS (UV)</p>
-                                            <p className="text-purple-400 font-black text-base">{stat.unique_visitors.toLocaleString()}명</p>
+                                        <div className="flex gap-6 text-sm">
+                                            <div className="text-right">
+                                                <p className="text-gray-500 text-[10px] font-black uppercase">PAGEVIEWS (PV)</p>
+                                                <p className="text-blue-400 font-black text-base">{stat.pageviews.toLocaleString()}회</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-gray-500 text-[10px] font-black uppercase">VISITORS (UV)</p>
+                                                <p className="text-purple-400 font-black text-base">{stat.unique_visitors.toLocaleString()}명</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-gray-500 text-sm text-center py-8">아직 기록된 방문 통계가 없습니다.</p>
-                        )}
+                                ))
+                            ) : (
+                                <p className="text-gray-500 text-sm text-center py-8">아직 기록된 방문 통계가 없습니다.</p>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Hourly Statistics Table Card */}
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                    <h3 className="text-xl font-bold text-white mb-6">시간대별 트래픽 피크 모니터링</h3>
-                    <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
-                        {hourlyStats && hourlyStats.length > 0 ? (
-                            hourlyStats.map((stat) => (
-                                <div key={stat.date_hour} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
-                                    <div>
-                                        <p className="text-white font-bold text-sm">{stat.date_hour.replace('_', ' ')}시</p>
-                                    </div>
-                                    <div className="flex gap-6 text-sm">
-                                        <div className="text-right">
-                                            <p className="text-gray-500 text-[10px] font-black uppercase">PAGEVIEWS (PV)</p>
-                                            <p className="text-blue-400 font-black text-base">{stat.pageviews.toLocaleString()}회</p>
+                    {/* Hourly Statistics Table Card */}
+                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                        <h3 className="text-xl font-bold text-white mb-6">시간대별 트래픽 피크 모니터링</h3>
+                        <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
+                            {hourlyStats && hourlyStats.length > 0 ? (
+                                hourlyStats.map((stat) => (
+                                    <div key={stat.date_hour} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                                        <div>
+                                            <p className="text-white font-bold text-sm">{stat.date_hour.replace('_', ' ')}시</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-gray-500 text-[10px] font-black uppercase">VISITORS (UV)</p>
-                                            <p className="text-red-400 font-black text-base">{stat.unique_visitors.toLocaleString()}명</p>
+                                        <div className="flex gap-6 text-sm">
+                                            <div className="text-right">
+                                                <p className="text-gray-500 text-[10px] font-black uppercase">PAGEVIEWS (PV)</p>
+                                                <p className="text-blue-400 font-black text-base">{stat.pageviews.toLocaleString()}회</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-gray-500 text-[10px] font-black uppercase">VISITORS (UV)</p>
+                                                <p className="text-red-400 font-black text-base">{stat.unique_visitors.toLocaleString()}명</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-gray-500 text-sm text-center py-8">아직 시간대별 방문 통계가 없습니다.</p>
-                        )}
+                                ))
+                            ) : (
+                                <p className="text-gray-500 text-sm text-center py-8">아직 시간대별 방문 통계가 없습니다.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
