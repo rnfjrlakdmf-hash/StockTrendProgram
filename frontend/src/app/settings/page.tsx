@@ -778,9 +778,19 @@ export default function SettingsPage() {
                                                 }
 
                                             } else {
-                                                // PC: 웹 HTS 새 탭으로 오픈
-                                                if (broker.name === "나무증권") {
-                                                    alert("PC(데스크톱) 모드로 인식되어 웹사이트를 엽니다!\nUserAgent: " + ua);
+                                                // PC: 웹 HTS 새 탭으로 오픈 & Best-effort 딥링크 시도 (Windows 11 안드로이드 앱 지원용 등)
+                                                try {
+                                                    const iframe = document.createElement('iframe');
+                                                    iframe.style.display = 'none';
+                                                    iframe.src = broker.deepLink;
+                                                    document.body.appendChild(iframe);
+                                                    setTimeout(() => {
+                                                        if (document.body.contains(iframe)) {
+                                                            document.body.removeChild(iframe);
+                                                        }
+                                                    }, 1000);
+                                                } catch (e) {
+                                                    console.error("Deep link trigger failed on PC", e);
                                                 }
                                                 window.open(broker.htsUrl, '_blank', 'noopener,noreferrer');
                                             }
