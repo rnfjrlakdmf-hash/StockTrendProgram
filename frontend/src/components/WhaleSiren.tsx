@@ -33,7 +33,7 @@ export default function WhaleSiren() {
         window.addEventListener('click', handleInteract, { once: true });
         
         // 사이렌 사운드 프리로드 (오픈소스 또는 기본 알림음)
-        audioRef.current = new Audio('https://www.soundjay.com/buttons/sounds/beep-01a.mp3');
+        audioRef.current = new Audio('/alert.ogg');
         audioRef.current.volume = 0.5;
 
         return () => window.removeEventListener('click', handleInteract);
