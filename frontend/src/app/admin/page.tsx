@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -661,6 +661,24 @@ export default function AdminPage() {
                             >
                                 <Eye className="w-4 h-4" />
                                 로그 대시보드 입장
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Microsoft Clarity */}
+                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-cyan-600/10 to-transparent border border-cyan-500/10 flex flex-col h-full group hover:border-cyan-500/30 transition-all">
+                        <div className="flex-grow">
+                            <MousePointerClick className="w-10 h-10 text-cyan-500 mb-6 group-hover:scale-110 transition-transform" />
+                            <h3 className="text-xl font-bold text-white mb-2">클래리티 (히트맵 & 녹화)</h3>
+                            <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들의 마우스 클릭 위치, 스크롤 깊이 및 실제 화면 녹화(세션 리플레이)를 확인합니다.</p>
+                        </div>
+                        <div className="pt-4 border-t border-cyan-500/10 mt-auto">
+                            <button
+                                onClick={() => window.open('https://clarity.microsoft.com/', '_blank')}
+                                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg text-sm"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                히트맵 분석 바로가기
                             </button>
                         </div>
                     </div>
