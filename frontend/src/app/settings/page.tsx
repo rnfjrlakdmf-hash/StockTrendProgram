@@ -688,9 +688,9 @@ export default function SettingsPage() {
                                         color: "from-[#C4E82F] to-[#A0C714]",
                                         textColor: "text-[#0A1A05]",
                                         shadow: "shadow-[#A0C714]/40",
-                                        deepLink: "namuh://",
-                                        iosStore: "https://apps.apple.com/kr/app/id1228853333",
-                                        androidStore: "https://play.google.com/store/apps/details?id=com.nhqv.namuh",
+                                        deepLink: "txsmart://",
+                                        iosStore: "https://apps.apple.com/kr/app/id483257134",
+                                        androidStore: "https://play.google.com/store/apps/details?id=com.wooriwm.txsmart",
                                         htsUrl: "https://www.mynamuh.com",
                                         webUrl: "https://www.mynamuh.com",
                                         label: "나무"
