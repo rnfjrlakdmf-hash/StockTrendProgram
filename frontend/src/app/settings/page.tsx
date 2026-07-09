@@ -67,7 +67,7 @@ export default function SettingsPage() {
         pref_morning: true,
         pref_closing: true,
         pref_price: true,
-        pref_breaking: true,
+        pref_news: true,
         pref_dividend: true,
         pref_ipo: true,
         pref_whale_alert: true,
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         const token = localStorage.getItem('fcm_token_value');
         if (token) {
             setFcmToken(token);
-            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`)
+            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}&_t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {

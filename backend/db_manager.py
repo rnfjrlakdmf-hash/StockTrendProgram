@@ -1590,7 +1590,7 @@ def get_user_fcm_tokens(user_id: str) -> list:
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_ipo
+        SELECT token, device_type, device_name, pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact, pref_ipo, pref_dividend, pref_whale_alert, pref_insider_alert, pref_watchlist_live
         FROM fcm_tokens
         WHERE user_id = ?
         ORDER BY last_used DESC
@@ -1608,7 +1608,12 @@ def get_user_fcm_tokens(user_id: str) -> list:
             "pref_closing": bool(row[4]),
             "pref_price": bool(row[5]),
             "pref_news": bool(row[6]) if len(row) > 6 else True,
-            "pref_watch_compact": bool(row[7]) if len(row) > 7 else False
+            "pref_watch_compact": bool(row[7]) if len(row) > 7 else False,
+            "pref_ipo": bool(row[8]) if len(row) > 8 else True,
+            "pref_dividend": bool(row[9]) if len(row) > 9 else True,
+            "pref_whale_alert": bool(row[10]) if len(row) > 10 else True,
+            "pref_insider_alert": bool(row[11]) if len(row) > 11 else True,
+            "pref_watchlist_live": bool(row[12]) if len(row) > 12 else True,
         }
         for row in rows
     ]
@@ -1628,6 +1633,7 @@ def get_fcm_preferences(token: str):
             "pref_price": bool(row_dict.get("pref_price", True)), 
             "pref_news": bool(row_dict.get("pref_news", True)), 
             "pref_watch_compact": bool(row_dict.get("pref_watch_compact", False)),
+            "pref_ipo": bool(row_dict.get("pref_ipo", True)),
             "pref_dividend": bool(row_dict.get("pref_dividend", True)),
             "pref_whale_alert": bool(row_dict.get("pref_whale_alert", True)),
             "pref_insider_alert": bool(row_dict.get("pref_insider_alert", True)),
@@ -1722,7 +1728,7 @@ def get_all_fcm_tokens(require_whale_alert=False, require_insider_alert=False) -
         if require_whale_alert:
             query += " AND pref_whale_alert = 1"
         if require_insider_alert:
-            query += " AND pref_whale_alert = 1"  # Or we can just use pref_whale_alert for now if there is no pref_insider_alert
+            query += " AND pref_insider_alert = 1"
         cursor.execute(query)
         rows = cursor.fetchall()
         return [row[0] for row in rows]
