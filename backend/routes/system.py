@@ -230,7 +230,20 @@ def get_preferences(token: str):
     from db_manager import get_fcm_preferences
     prefs = get_fcm_preferences(token)
     if prefs is None:
-        return {"status": "error", "message": "Token not found"}
+        # Return default preferences instead of error, so frontend doesn't break
+        return {"status": "success", "data": {
+            "pref_morning": True,
+            "pref_closing": True,
+            "pref_price": True,
+            "pref_news": True,
+            "pref_watch_compact": False,
+            "pref_ipo": True,
+            "pref_dividend": True,
+            "pref_whale_alert": True,
+            "pref_insider_alert": True,
+            "pref_watchlist_live": True,
+            "user_id": "guest"
+        }}
     return {"status": "success", "data": prefs}
 
 class FCMPreferencesRequest(BaseModel):
@@ -247,8 +260,15 @@ class FCMPreferencesRequest(BaseModel):
     pref_watchlist_live: bool = True
 
 @router.post("/fcm/preferences")
-def update_preferences(req: FCMPreferencesRequest):
-    from db_manager import update_fcm_preferences
+def update_preferences(req: FCMPreferencesRequest, x_user_id: str = Header(None)):
+    from db_manager import update_fcm_preferences, get_fcm_preferences, save_fcm_token
+    
+    # Auto-recover token if it was somehow deleted from DB
+    existing = get_fcm_preferences(req.token)
+    if not existing:
+        user_id = x_user_id if x_user_id else "guest"
+        save_fcm_token(user_id, req.token, "web", "auto-recovered")
+        
     success = update_fcm_preferences(req.token, {
         "pref_morning": req.pref_morning,
         "pref_closing": req.pref_closing,
