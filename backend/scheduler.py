@@ -193,10 +193,10 @@ async def check_and_notify_disclosures():
                                 try:
                                     from telegram_service import send_telegram_teaser
                                     if is_super_ant:
-                                        teaser_msg = f"🚨 <b>[슈퍼개미 매집 포착]</b>\n누군가 수십억대 지분을 몰래 매집 중인 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/weekend-whale'>앱에서 정답 확인하기</a>"
+                                        teaser_msg = f"🚨 <b>[슈퍼개미 매집 포착]</b>\n누군가 수십억대 지분을 몰래 매집 중인 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/stock/{raw_code}'>앱에서 정답 확인하기</a>"
                                         send_telegram_teaser(teaser_msg)
                                     elif is_insider:
-                                        teaser_msg = f"🚨 <b>[내부자 거래 포착]</b>\n회사 임원/주요주주가 몰래 매수/매도한 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/weekend-whale'>앱에서 정답 확인하기</a>"
+                                        teaser_msg = f"🚨 <b>[내부자 거래 포착]</b>\n회사 임원/주요주주가 몰래 매수/매도한 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/stock/{raw_code}'>앱에서 정답 확인하기</a>"
                                         send_telegram_teaser(teaser_msg)
                                 except Exception as e:
                                     logger.error(f"[WhaleSiren] Telegram error: {e}")
@@ -742,19 +742,29 @@ async def auto_blog_scheduler_loop():
             now = datetime.now(kst)
             current_date = now.strftime("%Y-%m-%d")
             
-            # 오후 16시 정각 (한국장 마감 포스팅)
+            # 오후 16시 정각 (한국장 마감 포스팅 & 장마감 텔레그램 브리핑)
             if now.hour == 16 and state.get("last_run_date_kor") != current_date:
                 if not is_holiday("kor"):
-                    logger.info("[AutoBlog] Triggering KOR market blog post...")
+                    logger.info("[AutoBlog] Triggering KOR market blog post & Telegram Closing Summary...")
                     await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "kor"])
+                    try:
+                        from social_bot import generate_closing_summary, send_telegram_message
+                        send_telegram_message(generate_closing_summary())
+                    except Exception as e:
+                        logger.error(f"[Telegram] Failed to send closing summary: {e}")
                 state["last_run_date_kor"] = current_date
                 save_state(state)
             
-            # 오전 07시 정각 (미국장 마감 포스팅)
-            if now.hour == 7 and state.get("last_run_date_us") != current_date:
+            # 오전 08시 정각 (미국장 마감/한국장 시작전 포스팅 & 아침 텔레그램 브리핑)
+            if now.hour == 8 and state.get("last_run_date_us") != current_date:
                 if not is_holiday("us"):
-                    logger.info("[AutoBlog] Triggering US market blog post...")
+                    logger.info("[AutoBlog] Triggering US market blog post & Telegram Morning Briefing...")
                     await asyncio.to_thread(subprocess.run, [sys.executable, script_path, "us"])
+                    try:
+                        from social_bot import generate_morning_briefing, send_telegram_message
+                        send_telegram_message(generate_morning_briefing())
+                    except Exception as e:
+                        logger.error(f"[Telegram] Failed to send morning briefing: {e}")
                 state["last_run_date_us"] = current_date
                 save_state(state)
 
@@ -1030,12 +1040,13 @@ async def whale_alert_scheduler_loop():
             )
 
             if is_market_hours:
-                logger.info("[Whale KR] Checking foreign net buying rank...")
+                logger.info("[Whale KR] Checking foreign net buying rank & upper limits...")
                 try:
-                    from whale_alerts import check_whale_alerts
+                    from whale_alerts import check_whale_alerts, check_upper_limit_alerts
                     check_whale_alerts()
+                    check_upper_limit_alerts()
                 except Exception as e:
-                    logger.error(f"[Whale KR] check_whale_alerts error: {e}")
+                    logger.error(f"[Whale KR] check_alerts error: {e}")
             else:
                 logger.debug(f"[Whale KR] Outside market hours ({hour}:{minute:02d} KST), skipping.")
 
