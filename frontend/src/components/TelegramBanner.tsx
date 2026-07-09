@@ -24,7 +24,12 @@ export default function TelegramBanner() {
 
     // 팝업: 20초 후 표시 (스트립 무시한 유저 타겟)
     const popupTimer = setTimeout(() => {
-      if (!localStorage.getItem(POPUP_KEY) && !localStorage.getItem(DISMISS_KEY)) {
+      const popupDismissedAt = localStorage.getItem(POPUP_KEY);
+      const isDismissedForDay = popupDismissedAt && (Date.now() - parseInt(popupDismissedAt) < 24 * 60 * 60 * 1000);
+      const isSessionDismissed = sessionStorage.getItem('tg_popup_session');
+      const isPermanentlyDismissed = localStorage.getItem(DISMISS_KEY);
+
+      if (!isDismissedForDay && !isSessionDismissed && !isPermanentlyDismissed) {
         setShowPopup(true);
       }
     }, POPUP_DELAY_MS);
@@ -41,7 +46,12 @@ export default function TelegramBanner() {
     localStorage.setItem(DISMISS_KEY, Date.now().toString());
   };
 
-  const dismissPopup = () => {
+  const dismissPopupSession = () => {
+    setShowPopup(false);
+    sessionStorage.setItem('tg_popup_session', 'true');
+  };
+
+  const dismissPopupForToday = () => {
     setShowPopup(false);
     localStorage.setItem(POPUP_KEY, Date.now().toString());
   };
@@ -49,9 +59,8 @@ export default function TelegramBanner() {
   const handleJoin = () => {
     window.open(TELEGRAM_URL, "_blank", "noopener,noreferrer");
     dismissStrip();
-    dismissPopup();
+    setShowPopup(false);
     localStorage.setItem(DISMISS_KEY, Date.now().toString());
-    localStorage.setItem(POPUP_KEY, Date.now().toString());
   };
 
   return (
@@ -107,7 +116,7 @@ export default function TelegramBanner() {
             
             {/* 닫기 버튼 */}
             <button
-              onClick={dismissPopup}
+              onClick={dismissPopupSession}
               className="absolute right-4 top-4 z-10 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -161,12 +170,22 @@ export default function TelegramBanner() {
                 텔레그램 채널 무료 구독하기
                 <ChevronRight className="w-5 h-5" />
               </button>
-              <button
-                onClick={dismissPopup}
-                className="w-full text-gray-500 text-sm hover:text-gray-400 transition-colors py-2"
-              >
-                나중에 볼게요
-              </button>
+              
+              <div className="flex items-center justify-center gap-4 pt-2">
+                <button
+                  onClick={dismissPopupForToday}
+                  className="text-gray-500 text-sm hover:text-gray-300 transition-colors py-2 px-4"
+                >
+                  오늘 하루 안 보기
+                </button>
+                <span className="text-gray-700">|</span>
+                <button
+                  onClick={dismissPopupSession}
+                  className="text-gray-500 text-sm hover:text-gray-300 transition-colors py-2 px-4"
+                >
+                  닫기
+                </button>
+              </div>
             </div>
           </div>
         </div>
