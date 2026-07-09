@@ -98,7 +98,7 @@ export default function SettingsPage() {
         const token = localStorage.getItem('fcm_token_value');
         if (token) {
             setFcmToken(token);
-            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}&_t=${Date.now()}`)
+            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${encodeURIComponent(token)}&_t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
