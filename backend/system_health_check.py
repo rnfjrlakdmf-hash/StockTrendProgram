@@ -31,7 +31,17 @@ def run_system_health_check():
         user_count = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM fcm_tokens")
         token_count = cursor.fetchone()[0]
+        
+        # Check today's error logs
+        cursor.execute("SELECT COUNT(*) FROM system_logs WHERE level='ERROR' AND created_at >= date('now')")
+        error_count = cursor.fetchone()[0]
+        
         db_stats = f"총 가입자 수: {user_count}명 / 알림 설정 기기: {token_count}대"
+        if error_count > 0:
+            db_stats += f"\n- ⚠️ 금일 시스템 에러 로그: {error_count}건 감지!"
+        else:
+            db_stats += f"\n- 🟢 금일 시스템 에러 로그: 0건 (안정적)"
+            
         conn.close()
     except Exception as e:
         errors.append(f"❌ 데이터베이스 연결 실패: {str(e)}")
