@@ -727,38 +727,43 @@ export default function SettingsPage() {
                                             const isMobile = isAndroid || isIOS;
 
                                             if (isMobile) {
-                                                if (isAndroid) {
+                                                const isNativeApp = typeof window !== 'undefined' && (window as any).Capacitor?.isNative;
+                                                const storeUrl = isAndroid ? broker.androidStore : broker.iosStore;
+                                                
+                                                let targetUrl = broker.deepLink;
+                                                
+                                                // 일반 안드로이드 웹 브라우저일 때만 intent 스킴 사용 (Capacitor 환경은 기본 딥링크 사용)
+                                                if (isAndroid && !isNativeApp) {
                                                     const packageName = broker.androidStore.split('id=')[1];
                                                     const fallbackUrl = encodeURIComponent(broker.androidStore);
-                                                    const deepLink = broker.deepLink;
-                                                    
-                                                    const scheme = deepLink.split('://')[0];
-                                                    const hostAndPath = deepLink.split('://')[1] || "";
-                                                    
-                                                    const intentUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
-                                                    
-                                                    // 모바일 앱(Capacitor) 또는 일반 브라우저 모두 location.href 로 인텐트 실행
-                                                    window.location.href = intentUrl;
-                                                } else {
-                                                    // iOS 처리: 커스텀 딥링크 시도 후 미설치 시 앱스토어 이동 타이머 작동
-                                                    const storeUrl = broker.iosStore;
-                                                    window.location.href = broker.deepLink;
-                                                    
-                                                    const start = Date.now();
-                                                    const t = setTimeout(() => {
-                                                        if (Date.now() - start < 1800 && !document.hidden) {
-                                                            window.location.href = storeUrl;
-                                                        }
-                                                    }, 1200);
-
-                                                    const onVisibilityChange = () => {
-                                                        if (document.hidden) {
-                                                            clearTimeout(t);
-                                                            document.removeEventListener('visibilitychange', onVisibilityChange);
-                                                        }
-                                                    };
-                                                    document.addEventListener('visibilitychange', onVisibilityChange);
+                                                    const scheme = broker.deepLink.split('://')[0];
+                                                    const hostAndPath = broker.deepLink.split('://')[1] || "";
+                                                    targetUrl = `intent://${hostAndPath}#Intent;scheme=${scheme};package=${packageName};S.browser_fallback_url=${fallbackUrl};end`;
                                                 }
+                                                
+                                                // 강제 클릭 방식으로 더욱 확실하게 실행
+                                                const link = document.createElement('a');
+                                                link.href = targetUrl;
+                                                link.target = '_top';
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                
+                                                // 앱 미설치 시 스토어로 이동시키는 타이머 폴백 (모바일 공통 적용)
+                                                const start = Date.now();
+                                                const t = setTimeout(() => {
+                                                    if (Date.now() - start < 1800 && !document.hidden) {
+                                                        window.location.href = storeUrl;
+                                                    }
+                                                }, 1200);
+
+                                                const onVisibilityChange = () => {
+                                                    if (document.hidden) {
+                                                        clearTimeout(t);
+                                                        document.removeEventListener('visibilitychange', onVisibilityChange);
+                                                    }
+                                                };
+                                                document.addEventListener('visibilitychange', onVisibilityChange);
 
                                             } else {
                                                 // PC: 웹 HTS 새 탭으로 오픈 & Best-effort 딥링크 시도 (Windows 11 안드로이드 앱 지원용 등)
