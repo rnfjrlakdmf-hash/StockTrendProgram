@@ -103,6 +103,13 @@ export default function SettingsPage() {
                 .then(data => {
                     if (data.status === 'success') {
                         setPrefs(data.data);
+                    } else {
+                        // Live server token missing fallback: register it silently
+                        fetch(`${API_BASE_URL}/api/system/fcm/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: token, device_type: 'web', device_name: 'auto-recovered' })
+                        });
                     }
                 })
                 .catch(err => console.error("Failed to fetch preferences:", err));
@@ -148,6 +155,13 @@ export default function SettingsPage() {
 
         try {
             const updatedPrefs = { ...prefs, [prefKey]: newVal };
+            // Ensure token is registered on the live server just in case
+            await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: fcmToken, device_type: 'web', device_name: 'force-recovered' })
+            });
+
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
