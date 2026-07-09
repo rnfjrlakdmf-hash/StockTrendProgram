@@ -30,6 +30,19 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
     const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
     const [attendanceStreak, setAttendanceStreak] = useState(user?.attendance_streak || 0);
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // 메뉴 바깥 클릭 시 닫기
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsProfileMenuOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // 유저 객체가 변경될 때 연속 출석일 동기화
     useEffect(() => {
@@ -303,95 +316,127 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
             )}
 
-            <div className="flex items-center gap-4 w-full md:w-auto justify-end flex-shrink-0">
+            <div className="flex items-center gap-4 w-full md:w-auto justify-end min-w-0">
                 {/* Search Bar Removed as per user request */}
 
-                <div className="flex items-center gap-2">
-
-                    {/* [New] Telegram Mobile Icon */}
-                    <div className="md:hidden flex items-center">
-                        <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] relative">
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-black"></span>
-                            </span>
-                            <Send className="h-5 w-5 -ml-0.5" />
-                        </Link>
-                    </div>
-
-                    <Link href="/alerts" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
-                        <Bell className="h-5 w-5" />
-                        {unreadAlertsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115]">
-                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
-                            </span>
-                        )}
-                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">알림 센터</span>
-                    </Link>
-
-                    {/* Discord Join Button */}
-                    <a href="https://discord.com/invite/gQrUXaaqB" target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl border border-[#5865F2]/30 bg-[#5865F2]/10 text-[#5865F2] hover:text-white hover:bg-[#5865F2] transition-all group relative flex items-center justify-center">
-                        <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
-                        </svg>
-                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#5865F2] text-[10px] font-bold text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg shadow-[#5865F2]/20">주식 오픈채팅 (디스코드)</span>
-                    </a>
-
-                    <Link href="/guide" className="p-2 rounded-xl border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative">
-                        <HelpCircle className="h-5 w-5" />
-                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">이용 가이드</span>
-                    </Link>
-
-                    {/* [Admin Only] 관리자 계정으로 로그인 시에만 노출 */}
-                    {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
-                        <Link href="/admin" className="p-2 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/30 text-fuchsia-400 hover:text-fuchsia-200 hover:bg-fuchsia-900/40 transition-all group relative">
-                            <Users className="h-5 w-5" />
-                            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/80 text-[10px] text-white px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">관리자 센터</span>
-                        </Link>
-                    )}
-
-                    {/* [New] 코인 & 출석체크 UI */}
-                    {user && (
-                        <div className="flex items-center gap-2 mr-2">
-                            <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-                                <span className="text-base">🪙</span>
-                                <span>{coins} C</span>
-                            </div>
-                            <button 
-                                onClick={handleAttendance}
-                                disabled={isAttendanceLoading}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-                            >
-                                ✅ 출석
-                            </button>
-                        </div>
-                    )}
-
-                    <button className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors">
-                        {user ? (
-                            <>
-                                {user.picture ? (
-                                    <img
-                                        src={user.picture}
-                                        alt={user.name}
-                                        className="h-8 w-8 rounded-lg object-cover border border-white/10"
-                                    />
-                                ) : (
+                <div className="flex items-center justify-end" ref={dropdownRef}>
+                    <div className="relative">
+                        <button 
+                            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                            className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors shrink-0 relative"
+                        >
+                            {/* Alert Badge on Profile Button */}
+                            {user && unreadAlertsCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115] z-10 shadow-lg">
+                                    {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                                </span>
+                            )}
+                            
+                            {user ? (
+                                <>
+                                    {user.picture ? (
+                                        <img
+                                            src={user.picture}
+                                            alt={user.name}
+                                            className="h-8 w-8 rounded-lg object-cover border border-white/10"
+                                        />
+                                    ) : (
+                                        <div className="rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 p-1.5">
+                                            <User className="h-4 w-4 text-white" />
+                                        </div>
+                                    )}
+                                    <span className="text-sm font-medium text-gray-300 hidden md:block">{user.name}</span>
+                                </>
+                            ) : (
+                                <>
                                     <div className="rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 p-1.5">
                                         <User className="h-4 w-4 text-white" />
                                     </div>
+                                    <span className="text-sm font-medium text-gray-300 hidden md:block">메뉴</span>
+                                </>
+                            )}
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isProfileMenuOpen && (
+                            <div className="absolute right-0 mt-3 w-64 bg-[#0f1115]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 z-50">
+                                
+                                {user ? (
+                                    <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-400 text-sm font-medium">보유 코인</span>
+                                            <div className="flex items-center gap-1.5 text-yellow-400 font-bold bg-yellow-500/10 px-2.5 py-1 rounded-lg border border-yellow-500/20">
+                                                <span>🪙</span>
+                                                <span>{coins} C</span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                handleAttendance();
+                                                setIsProfileMenuOpen(false);
+                                            }}
+                                            disabled={isAttendanceLoading}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                                        >
+                                            ✅ 출석체크 하기
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
+                                        <div className="text-sm text-gray-400 text-center mb-1">로그인하고 혜택을 받아보세요!</div>
+                                        <button 
+                                            onClick={() => {
+                                                setShowLoginModal(true);
+                                                setIsProfileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95"
+                                        >
+                                            로그인 / 회원가입
+                                        </button>
+                                    </div>
                                 )}
-                                <span className="text-sm font-medium text-gray-300 hidden md:block">{user.name}</span>
-                            </>
-                        ) : (
-                            <>
-                                <div className="rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 p-1.5">
-                                    <User className="h-4 w-4 text-white" />
+
+                                {/* Menu Links */}
+                                <div className="flex flex-col gap-1">
+                                    <Link href="/alerts" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white group">
+                                        <div className="flex items-center gap-3">
+                                            <Bell className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+                                            <span className="font-medium text-sm">알림 센터</span>
+                                        </div>
+                                        {unreadAlertsCount > 0 && (
+                                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center">
+                                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                                            </span>
+                                        )}
+                                    </Link>
+
+                                    <a href="https://discord.com/invite/gQrUXaaqB" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#5865F2]/10 transition-colors text-gray-300 hover:text-[#5865F2] group">
+                                        <svg className="w-5 h-5 text-gray-400 group-hover:text-[#5865F2] transition-colors" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
+                                        </svg>
+                                        <span className="font-medium text-sm">주식 오픈채팅 (디스코드)</span>
+                                    </a>
+
+                                    <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="md:hidden flex items-center gap-3 p-3 rounded-xl hover:bg-blue-500/10 transition-colors text-gray-300 hover:text-blue-400 group">
+                                        <Send className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                                        <span className="font-medium text-sm">텔레그램 실시간 속보</span>
+                                    </Link>
+
+                                    <Link href="/guide" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white group">
+                                        <HelpCircle className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+                                        <span className="font-medium text-sm">이용 가이드</span>
+                                    </Link>
+
+                                    {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
+                                        <Link href="/admin" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-fuchsia-500/10 transition-colors text-gray-300 hover:text-fuchsia-400 group mt-2 border-t border-white/5 pt-3">
+                                            <Users className="h-5 w-5 text-gray-400 group-hover:text-fuchsia-400 transition-colors" />
+                                            <span className="font-medium text-sm">관리자 센터</span>
+                                        </Link>
+                                    )}
                                 </div>
-                                <span className="text-sm font-medium text-gray-300 hidden md:block">투자자</span>
-                            </>
+                            </div>
                         )}
-                    </button>
+                    </div>
                 </div>
             </div>
         </header>
