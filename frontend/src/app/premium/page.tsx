@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Lock, Unlock, Gem, AlertCircle } from 'lucide-react';
+import { Lock, Unlock, Gem, AlertCircle, Timer } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -169,9 +169,10 @@ export default function PremiumPage() {
                                 </div>
                             )}
                             {timeLeft && (
-                                <div className="flex items-center gap-1.5 text-xs font-mono bg-black/60 px-2.5 py-1 rounded-md border border-white/10 text-gray-300 shadow-inner">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                                    {timeLeft} 후 마감
+                                <div className="flex items-center gap-2 text-xs md:text-sm font-mono tabular-nums bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-yellow-500/30 text-yellow-100 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                    <Timer className="w-3.5 h-3.5 text-yellow-500 animate-pulse" />
+                                    <span className="font-semibold tracking-wider drop-shadow-md">{timeLeft}</span>
+                                    <span className="text-[10px] text-yellow-500/80 ml-0.5 font-sans">남음</span>
                                 </div>
                             )}
                         </div>
