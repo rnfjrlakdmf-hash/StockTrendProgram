@@ -553,22 +553,7 @@ export default function AdminPage() {
 
                 {/* 3x2 Grid for Standard Tools */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Premium Management */}
-                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/10 flex flex-col h-full group hover:border-blue-500/30 transition-all">
-                        <div className="flex-grow">
-                            <UserCheck className="w-10 h-10 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
-                            <h3 className="text-xl font-bold text-white mb-2">프리미엄 권한 부여</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed mb-6">사용자들에게 Pro 등급을 제공합니다. 위 회원 리스트에서 토글을 클릭하면 즉시 동기화됩니다.</p>
-                        </div>
-                        <div className="pt-4 border-t border-blue-500/10 mt-auto">
-                            <button
-                                onClick={() => window.scrollTo({top: 500, behavior: 'smooth'})}
-                                className="flex items-center justify-center w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3.5 px-6 rounded-2xl transition-all text-sm"
-                            >
-                                👆 위 회원 리스트에서 설정
-                            </button>
-                        </div>
-                    </div>
+
 
                     {/* SNS Marketing Bot */}
                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-orange-600/10 to-transparent border border-orange-500/10 flex flex-col h-full group hover:border-orange-500/30 transition-all">
