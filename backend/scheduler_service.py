@@ -945,13 +945,26 @@ def run_market_scheduler():
                     run_market_scheduler.last_run_whale_alert = current_time
             
             # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅
-            if now.hour == 8 and 30 <= now.minute <= 35 and current_date != last_run_daily_theory:
+            _state = load_state()
+            last_theory = _state.get("last_run_daily_theory", "")
+            if (now.hour > 8 or (now.hour == 8 and now.minute >= 30)) and current_date != last_theory:
                 try:
                     from daily_theory_bot import post_daily_theory
                     post_daily_theory()
                 except Exception as e:
                     print(f"[Scheduler] Daily Theory Bot error: {e}")
-                last_run_daily_theory = current_date
+                
+                _state["last_run_daily_theory"] = current_date
+                save_state(_state)
+                
+            # [평일 실행] 오후 4:30 초대량 롱테일 키워드 SEO 공장 (수해전술 봇)
+            if not is_holiday("kor") and now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_mass_seo", None):
+                try:
+                    import mass_seo_bot
+                    mass_seo_bot.main()
+                except Exception as e:
+                    print(f"[Scheduler] Mass SEO Bot error: {e}")
+                run_market_scheduler.last_run_mass_seo = current_date
 
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
