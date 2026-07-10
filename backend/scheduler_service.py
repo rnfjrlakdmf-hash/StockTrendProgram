@@ -56,6 +56,7 @@ def calculate_watchlist_performance(user_id: str, market: str):
         sym = row[0]
         added_price = float(row[1] or 0)
         quantity = float(row[2] or 1) # 기본값 1주
+        purchases = row[3] if len(row) > 3 else []
         
         # Throttling: 봇 차단 회피를 위한 0.2초 지연
         time.sleep(0.2)
@@ -96,27 +97,43 @@ def calculate_watchlist_performance(user_id: str, market: str):
             curr_p = float(str(quote.get('price', 0)).replace(',', ''))
             change_p = float(str(quote.get('change', '0')).replace('%', '').replace('+', ''))
             
+            total_item_profit = 0
+            total_item_buy_value = 0
+            total_item_qty = 0
+            
+            if purchases and len(purchases) > 0:
+                for p in purchases:
+                    try:
+                        p_qty = float(p.get("quantity", 0))
+                        p_bp = float(p.get("buy_price", 0))
+                        if p_qty > 0 and p_bp > 0:
+                            total_item_qty += p_qty
+                            total_item_buy_value += (p_bp * p_qty)
+                            total_item_profit += (curr_p - p_bp) * p_qty
+                    except: pass
+            else:
+                if added_price and added_price > 0:
+                    total_item_qty = quantity
+                    total_item_buy_value = added_price * quantity
+                    total_item_profit = (curr_p - added_price) * quantity
+
             item = {
                 "symbol": sym,
                 "name": get_korean_stock_name(sym) or quote.get('name', sym),
                 "current_price": curr_p,
                 "daily_change": change_p,
-                "added_price": added_price,
-                "quantity": quantity
+                "added_price": (total_item_buy_value / total_item_qty) if total_item_qty > 0 else added_price,
+                "quantity": total_item_qty if total_item_qty > 0 else quantity
             }
             
             # 수량을 반영한 누적 수익 및 가치 계산
-            if added_price and added_price > 0:
-                diff_per_share = curr_p - added_price
-                total_item_profit = diff_per_share * quantity
-                perf_pct = (diff_per_share / added_price) * 100
-                
-                item["price_diff"] = total_item_profit # 수량 반영된 수익금
-                item["added_perf"] = perf_pct
+            if total_item_buy_value > 0:
+                item["price_diff"] = total_item_profit
+                item["added_perf"] = (total_item_profit / total_item_buy_value) * 100
                 
                 total_profit_amt += total_item_profit
-                total_buy_value += (added_price * quantity)
-                total_current_value += (curr_p * quantity)
+                total_buy_value += total_item_buy_value
+                total_current_value += (curr_p * total_item_qty)
                 
             items_perf.append(item)
             total_daily_change += change_p
