@@ -191,9 +191,17 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                         {isUSD ? p.buy_price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : p.buy_price.toLocaleString()}
                                                         {currencyUnit}
                                                     </span>
-                                                    <span className={diffColor}>
-                                                        {!isNaN(curP) && p.buy_price > 0 ? `${isPositive ? '+' : ''}${pct.toFixed(2)}%` : '-'}
-                                                    </span>
+                                                    <div className={`flex flex-col items-end justify-center ${diffColor}`}>
+                                                        <span>{!isNaN(curP) && p.buy_price > 0 ? `${isPositive ? '+' : ''}${pct.toFixed(2)}%` : '-'}</span>
+                                                        {p.buy_price > 0 && !isNaN(curP) && (
+                                                            <span className="text-[9px] md:text-[10px] opacity-80 font-medium leading-none mt-0.5">
+                                                                {isPositive ? '+' : (isNegative ? '-' : '')}
+                                                                {currencySign}
+                                                                {Math.abs(p.quantity > 0 ? (curP - p.buy_price) * p.quantity : (curP - p.buy_price)).toLocaleString(undefined, { minimumFractionDigits: isUSD ? 2 : 0, maximumFractionDigits: isUSD ? 2 : 0 })}
+                                                                {currencyUnit}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     {isPositive && (
                                                         <div 
                                                             onClick={(e) => e.stopPropagation()} 
@@ -267,18 +275,28 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     <span translate="no">
                                         {(() => {
                                             const rawChange = String(item.change || '');
-                                            const cleanStrForParse = rawChange.replace(/^\[[^\]]+\]\s*/, "");
-                                            const numericVal = Math.abs(parseFloat(cleanStrForParse.replace(/[+%\-▲▼,]/g, '')));
+                                            const rawPct = String(item.change_percent || '');
                                             
-                                            let cleanValue = cleanStrForParse;
-                                            if (isNaN(numericVal)) {
-                                                cleanValue = cleanStrForParse;
-                                            } else if (numericVal > 500 && item.change_percent) {
-                                                cleanValue = String(item.change_percent).replace(/^\[[^\]]+\]\s*/, "");
+                                            // Extract absolute numeric values
+                                            const amountMatch = rawChange.match(/[0-9,.]+/);
+                                            const pctMatch = rawPct.match(/[0-9,.]+/);
+                                            
+                                            const amountStr = amountMatch ? amountMatch[0] : '';
+                                            let pctStr = pctMatch ? pctMatch[0] : '';
+                                            
+                                            // Fallback if change_percent is missing but change has %
+                                            if (!pctStr && rawChange.includes('%')) {
+                                                pctStr = amountStr;
+                                                return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${pctStr}%`;
                                             }
                                             
-                                            const finalDisplay = cleanValue.replace(/[+%\-▲▼]/g, '');
-                                            return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${finalDisplay}%`;
+                                            // If we have both amount and percent, show both
+                                            if (amountStr && pctStr && amountStr !== pctStr) {
+                                                return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${amountStr} (${pctStr}%)`;
+                                            }
+                                            
+                                            // Default single display
+                                            return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${pctStr || amountStr}%`;
                                         })()}
                                     </span>
                                 </div>
