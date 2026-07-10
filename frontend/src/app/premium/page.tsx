@@ -14,6 +14,7 @@ export default function PremiumPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isUnlocking, setIsUnlocking] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<string>("");
 
     useEffect(() => {
         const fetchReport = async () => {
@@ -38,6 +39,31 @@ export default function PremiumPage() {
             setIsLoading(false);
         }
     }, [user]);
+
+    // Timer Logic for Countdown to Midnight
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date();
+            const midnight = new Date();
+            midnight.setHours(23, 59, 59, 999);
+            const diff = midnight.getTime() - now.getTime();
+            
+            if (diff <= 0) return "00:00:00";
+            
+            const h = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            const s = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+            
+            return `${h}:${m}:${s}`;
+        };
+
+        setTimeLeft(calculateTimeLeft());
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, []);
 
     const handleUnlock = async () => {
         if (!user) {
@@ -130,22 +156,25 @@ export default function PremiumPage() {
                 <div className="bg-[#1a1d24] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-gray-900 to-[#1a1d24] p-6 border-b border-white/5 relative">
-                        {report.locked && (
-                            <div className="absolute top-0 right-0 p-4">
-                                <div className="bg-red-500/10 text-red-400 text-xs font-bold px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-1.5">
+                        <div className="absolute top-0 right-0 p-4 flex flex-col items-end gap-2">
+                            {report.locked ? (
+                                <div className="bg-red-500/10 text-red-400 text-xs font-bold px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-1.5 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                                     <Lock className="w-3 h-3" />
                                     잠금됨
                                 </div>
-                            </div>
-                        )}
-                        {!report.locked && (
-                            <div className="absolute top-0 right-0 p-4">
-                                <div className="bg-green-500/10 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/20 flex items-center gap-1.5">
+                            ) : (
+                                <div className="bg-green-500/10 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/20 flex items-center gap-1.5 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
                                     <Unlock className="w-3 h-3" />
                                     열람 가능
                                 </div>
-                            </div>
-                        )}
+                            )}
+                            {timeLeft && (
+                                <div className="flex items-center gap-1.5 text-xs font-mono bg-black/60 px-2.5 py-1 rounded-md border border-white/10 text-gray-300 shadow-inner">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                    {timeLeft} 후 마감
+                                </div>
+                            )}
+                        </div>
                         <h2 className="text-xl md:text-2xl font-bold text-white mt-2 pr-24">
                             {report.data.title}
                         </h2>
