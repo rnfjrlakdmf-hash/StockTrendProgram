@@ -5,10 +5,10 @@ import { useAuth } from '@/context/AuthContext';
 import LoginModal from './LoginModal';
 
 export default function PremiumContent({ children }: { children: React.ReactNode }) {
-    const { user, isLoaded } = useAuth();
+    const { user, isLoading } = useAuth();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-    if (!isLoaded) {
+    if (isLoading) {
         // 인증 상태 로딩 중에는 아무것도 안 보여주거나 뼈대(Skeleton) 렌더링
         return <div className="animate-pulse bg-slate-800 h-64 rounded-xl"></div>;
     }
