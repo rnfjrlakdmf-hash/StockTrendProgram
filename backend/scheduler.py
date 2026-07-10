@@ -1135,31 +1135,55 @@ async def premium_report_scheduler_loop():
     평일 15:45 KST (장 마감 직후) 1회 실행
     """
     import pytz
+    import json
+    import os
     from datetime import datetime
+    
     kst = pytz.timezone('Asia/Seoul')
-    logger.info("[Premium Report] Scheduler Active. Runs at 15:45 KST.")
+    logger.info("[Premium Report] Scheduler Active. Runs after 15:45 KST.")
+    
+    state_file = os.path.join(os.path.dirname(__file__), "premium_report_state.json")
+    
+    def load_state():
+        if os.path.exists(state_file):
+            try:
+                with open(state_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                pass
+        return {}
+        
+    def save_state(state):
+        try:
+            with open(state_file, 'w', encoding='utf-8') as f:
+                json.dump(state, f)
+        except:
+            pass
 
     while True:
         try:
             now = datetime.now(kst)
             weekday = now.weekday()
-            hour = now.hour
-            minute = now.minute
-
-            # 평일 15:45 에만 실행
-            if weekday < 5 and hour == 15 and minute == 45:
-                logger.info("[Premium Report] Generating today's objective report...")
-                try:
-                    from daily_premium_generator import generate_objective_report
-                    generate_objective_report()
-                except Exception as e:
-                    logger.error(f"[Premium Report] Generation error: {e}")
+            current_date = now.strftime("%Y-%m-%d")
+            
+            # 평일 15:45 이후 실행
+            if weekday < 5 and (now.hour > 15 or (now.hour == 15 and now.minute >= 45)):
+                state = load_state()
+                last_run = state.get("last_run_date", "")
                 
-                # 중복 실행 방지 (1분 대기)
-                await asyncio.sleep(60)
-            else:
-                # 1분 단위 체크
-                await asyncio.sleep(60)
+                if last_run != current_date:
+                    logger.info("[Premium Report] Generating today's objective report...")
+                    try:
+                        from daily_premium_generator import generate_objective_report
+                        generate_objective_report()
+                        
+                        state["last_run_date"] = current_date
+                        save_state(state)
+                    except Exception as e:
+                        logger.error(f"[Premium Report] Generation error: {e}")
+            
+            # 1분 단위 체크
+            await asyncio.sleep(60)
                 
         except Exception as e:
             logger.error(f"[Premium Report] Loop error: {e}")
