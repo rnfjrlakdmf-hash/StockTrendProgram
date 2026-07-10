@@ -260,6 +260,32 @@ def init_db():
         )
     ''')
     
+    # [NEW] Watchlist Purchases Table (Multiple buys for averaging down)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS watchlist_purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            buy_price REAL DEFAULT 0,
+            quantity REAL DEFAULT 0,
+            purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # [Migration] Move existing watchlist items into watchlist_purchases to initialize history
+    try:
+        cursor.execute("""
+            INSERT INTO watchlist_purchases (user_id, symbol, buy_price, quantity, purchase_date)
+            SELECT w.user_id, w.symbol, w.added_price, w.quantity, w.created_at
+            FROM watchlist w
+            WHERE w.quantity > 0 AND NOT EXISTS (
+                SELECT 1 FROM watchlist_purchases wp 
+                WHERE wp.user_id = w.user_id AND wp.symbol = w.symbol
+            )
+        """)
+    except Exception as e:
+        print(f"Error migrating to watchlist_purchases: {e}")
+    
     # [Migration] Add added_price and quantity to watchlist if not exists
     try:
         cursor.execute("SELECT added_price FROM watchlist LIMIT 1")
@@ -1294,6 +1320,86 @@ def get_prediction_report():
         report["success_rate"] = int((report["success_count"] / report["total_count"]) * 100)
         
     return report
+
+def _recalculate_watchlist_average(conn, user_id: str, symbol: str):
+    """지정된 관심종목의 모든 구매 내역을 바탕으로 가중 평균단가와 총 수량을 재계산하여 watchlist 메인 테이블에 반영합니다."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT buy_price, quantity FROM watchlist_purchases WHERE user_id = ? AND symbol = ?", (user_id, symbol))
+    rows = cursor.fetchall()
+    
+    total_qty = sum(r[1] for r in rows)
+    if total_qty > 0:
+        avg_price = sum(r[0] * r[1] for r in rows) / total_qty
+    else:
+        avg_price = 0
+        total_qty = 0
+        
+    # 1. watchlist 메인 테이블 업데이트
+    cursor.execute("UPDATE watchlist SET added_price = ?, quantity = ? WHERE user_id = ? AND symbol = ?", (avg_price, total_qty, user_id, symbol))
+    if cursor.rowcount == 0:
+        cursor.execute("INSERT INTO watchlist (user_id, symbol, added_price, quantity) VALUES (?, ?, ?, ?)", (user_id, symbol, avg_price, total_qty))
+        
+    # 2. watchlist_backup 업데이트
+    cursor.execute("""
+        INSERT INTO watchlist_backup (user_id, symbol, added_price, quantity, is_deleted, updated_at)
+        VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, symbol) DO UPDATE SET
+            added_price = ?,
+            quantity = ?,
+            is_deleted = 0,
+            updated_at = CURRENT_TIMESTAMP
+    """, (user_id, symbol, avg_price, total_qty, avg_price, total_qty))
+    
+    return avg_price, total_qty
+
+def get_watchlist_purchases(user_id: str, symbol: str):
+    """특정 관심종목의 매수(물타기) 상세 내역 리스트 반환"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, buy_price, quantity, purchase_date FROM watchlist_purchases WHERE user_id = ? AND symbol = ? ORDER BY purchase_date ASC", (user_id, symbol))
+        rows = cursor.fetchall()
+        return [{"id": r[0], "buy_price": r[1], "quantity": r[2], "purchase_date": r[3]} for r in rows]
+    except Exception as e:
+        print(f"Error getting watchlist purchases: {e}")
+        return []
+    finally:
+        conn.close()
+
+def add_watchlist_purchase_record(user_id: str, symbol: str, buy_price: float, quantity: float):
+    """관심종목 다중 매수 내역 추가 및 평단가 자동 재계산"""
+    conn = get_db_connection()
+    try:
+        u_id = user_id.strip() if user_id else "guest"
+        s_sym = symbol.strip() if symbol else ""
+        
+        # 1. 구매 내역 추가
+        conn.execute("INSERT INTO watchlist_purchases (user_id, symbol, buy_price, quantity) VALUES (?, ?, ?, ?)", (u_id, s_sym, buy_price, quantity))
+        
+        # 2. 평균단가 재계산 및 업데이트
+        _recalculate_watchlist_average(conn, u_id, s_sym)
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error adding watchlist purchase: {e}")
+        return False
+    finally:
+        conn.close()
+
+def delete_watchlist_purchase_record(user_id: str, symbol: str, purchase_id: int):
+    """특정 매수 내역 1건 삭제 및 평단가 재계산"""
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM watchlist_purchases WHERE id = ? AND user_id = ? AND symbol = ?", (purchase_id, user_id, symbol))
+        _recalculate_watchlist_average(conn, user_id, symbol)
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error deleting watchlist purchase: {e}")
+        return False
+    finally:
+        conn.close()
 
 def add_watchlist(user_id: str, symbol: str, added_price: float = 0, quantity: float = 0):
     conn = get_db_connection()

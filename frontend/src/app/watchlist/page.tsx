@@ -6,6 +6,7 @@ import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
 import PriceAlertSetup from "@/components/PriceAlertSetup";
+import WatchlistPurchaseModal from "@/components/WatchlistPurchaseModal";
 import AdBanner from "@/components/AdBanner";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +33,7 @@ export default function WatchlistPage() {
     
     // Alert Modal State
     const [alertStock, setAlertStock] = useState<{ symbol: string; price: number; addedPrice?: number } | null>(null);
+    const [purchaseModalSymbol, setPurchaseModalSymbol] = useState<string | null>(null);
 
     // Alerts List States
     const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -477,45 +479,8 @@ export default function WatchlistPage() {
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
                                     onDelete={handleRemoveItem}
                                     onAlertClick={(symbol, price, addedPrice) => { setAlertStock({ symbol, price, addedPrice }); }}
-                                    onEditAddedPrice={async (symbol, currentAddedPrice, currentQuantity) => {
-                                        if (!user) return;
-                                        const priceInput = prompt(`${symbol}의 실제 매수 단가를 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentAddedPrice > 0 ? currentAddedPrice.toString() : "");
-                                        if (priceInput === null) return;
-                                        
-                                        const price = parseFloat(priceInput.replace(/[^0-9.]/g, ''));
-                                        if (isNaN(price)) {
-                                            alert("유효한 단가를 입력해주세요.");
-                                            return;
-                                        }
-
-                                        const qtyInput = prompt(`${symbol}의 보유 수량을 입력해주세요.\n(숫자만 입력, 0 입력시 초기화)`, currentQuantity > 0 ? currentQuantity.toString() : "");
-                                        if (qtyInput === null) return;
-
-                                        const quantity = parseFloat(qtyInput.replace(/[^0-9.]/g, ''));
-                                        if (isNaN(quantity)) {
-                                            alert("유효한 수량을 입력해주세요.");
-                                            return;
-                                        }
-
-                                        try {
-                                            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    "X-User-ID": user.id || (user as any).uid
-                                                },
-                                                body: JSON.stringify({ symbol, price, quantity })
-                                            });
-                                            const data = await res.json();
-                                            if (data.status === 'success') {
-                                                fetchWatchlist(); // 목록 새로고침
-                                            } else {
-                                                alert("수정에 실패했습니다.");
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                            alert("서버 오류가 발생했습니다.");
-                                        }
+                                    onEditAddedPrice={(symbol) => {
+                                        setPurchaseModalSymbol(symbol);
                                     }}
                                 />
                             </div>
@@ -735,6 +700,15 @@ export default function WatchlistPage() {
                         <PriceAlertSetup symbol={alertStock.symbol} currentPrice={alertStock.price} buyPrice={alertStock.addedPrice} alertsCount={alerts.length} />
                     </div>
                 </div>
+            )}
+
+            {purchaseModalSymbol && (
+                <WatchlistPurchaseModal
+                    isOpen={true}
+                    symbol={purchaseModalSymbol}
+                    onClose={() => setPurchaseModalSymbol(null)}
+                    onSuccess={() => fetchWatchlist()}
+                />
             )}
         </div>
     );

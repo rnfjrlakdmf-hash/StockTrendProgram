@@ -173,6 +173,40 @@ def delete_watchlist(symbol: str, x_user_id: str = Header(None)):
     invalidate_today_briefing(user_id)
     return {"status": "success"}
 
+@router.get("/watchlist/purchases")
+def get_watchlist_purchases_api(symbol: str, x_user_id: str = Header(None)):
+    from db_manager import get_watchlist_purchases
+    user_id = x_user_id or "guest"
+    decoded_symbol = urllib.parse.unquote(symbol)
+    data = get_watchlist_purchases(user_id, decoded_symbol)
+    return {"status": "success", "data": data}
+
+class WatchlistPurchaseRequest(BaseModel):
+    symbol: str
+    buy_price: float
+    quantity: float
+
+@router.post("/watchlist/purchases")
+def add_watchlist_purchase_api(req: WatchlistPurchaseRequest, x_user_id: str = Header(None)):
+    from db_manager import add_watchlist_purchase_record
+    user_id = x_user_id or "guest"
+    success = add_watchlist_purchase_record(user_id, req.symbol, req.buy_price, req.quantity)
+    if success:
+        from utils.briefing_store import invalidate_today_briefing
+        invalidate_today_briefing(user_id)
+    return {"status": "success" if success else "error"}
+
+@router.delete("/watchlist/purchases/{purchase_id}")
+def delete_watchlist_purchase_api(purchase_id: int, symbol: str, x_user_id: str = Header(None)):
+    from db_manager import delete_watchlist_purchase_record
+    user_id = x_user_id or "guest"
+    decoded_symbol = urllib.parse.unquote(symbol)
+    success = delete_watchlist_purchase_record(user_id, decoded_symbol, purchase_id)
+    if success:
+        from utils.briefing_store import invalidate_today_briefing
+        invalidate_today_briefing(user_id)
+    return {"status": "success" if success else "error"}
+
 @router.get("/portfolio")
 def read_user_portfolio(x_user_id: str = Header(None)):
     from db_manager import get_user_portfolio

@@ -298,6 +298,14 @@ def send_push_notification(
 
 from firebase_admin import messaging, firestore
 
+def get_db():
+    try:
+        return firestore.client()
+    except Exception:
+        return None
+
+db = get_db()
+
 def send_multicast_notification(
     tokens: List[str],
     title: str,

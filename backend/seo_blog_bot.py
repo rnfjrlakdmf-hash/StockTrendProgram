@@ -111,7 +111,9 @@ def generate_seo_post():
     - 일반 텍스트: `<p class="text-gray-300 text-lg">`
     - 소제목: `<h3 class="text-2xl font-bold text-blue-400 mt-10 mb-4 border-l-4 border-blue-500 pl-4">`
     - 강조: `<strong class="text-blue-400">` 또는 `<strong class="text-white bg-blue-900/30 px-1 rounded">`
-    - 순수한 HTML 텍스트 문자열만 반환하고, markdown 코드 블록(```html)은 제거하세요.
+    - 강렬한 요약 박스: `<div class="my-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-2xl">...</div>`
+    - 순수한 HTML 텍스트만 반환하고 markdown 틱(```html)은 제외하세요.
+    - **주의사항**: 절대로 `<!DOCTYPE>`, `<html>`, `<head>`, `<style>`, `<body>` 태그를 포함하지 마세요. 오직 본문에 들어갈 내용물(태그)만 반환하세요.
     """
     
     try:

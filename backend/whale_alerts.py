@@ -88,7 +88,7 @@ def check_whale_alerts():
             return
 
         if top_stock_name not in state.get("alerted_stocks", []):
-            title = f"🚨 [세력 포착] 외국인 폭풍 매수 1위: {top_stock_name}"
+            title = f"[세력 포착] 외국인 폭풍 매수 1위: {top_stock_name}"
             body = "지금 장중에 외국인이 가장 많이 담고 있는 종목입니다. 실시간 수급을 확인하세요!"
             print(f"[Whale] Alert Triggered: {title}")
 
