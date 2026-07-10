@@ -281,17 +281,33 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             const amountMatch = rawChange.match(/[0-9,.]+/);
                                             const pctMatch = rawPct.match(/[0-9,.]+/);
                                             
-                                            const amountStr = amountMatch ? amountMatch[0] : '';
+                                            let amountStr = amountMatch ? amountMatch[0] : '';
                                             let pctStr = pctMatch ? pctMatch[0] : '';
                                             
                                             // Fallback if change_percent is missing but change has %
                                             if (!pctStr && rawChange.includes('%')) {
                                                 pctStr = amountStr;
-                                                return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${pctStr}%`;
+                                            }
+                                            
+                                            // If backend provided same value for both (i.e. only percentage was given),
+                                            // we calculate the absolute change amount ourselves.
+                                            if (amountStr === pctStr && pctStr && !isNaN(curP)) {
+                                                const pctVal = parseFloat(pctStr) / 100;
+                                                // curP = prevP * (1 +- pctVal) -> prevP = curP / (1 +- pctVal)
+                                                const prevP = isPositive ? (curP / (1 + pctVal)) : (curP / (1 - pctVal));
+                                                let calcAmount = Math.abs(curP - prevP);
+                                                
+                                                // format amount
+                                                if (isUSD) {
+                                                    amountStr = calcAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                } else {
+                                                    // KRW is integer
+                                                    amountStr = Math.round(calcAmount).toLocaleString();
+                                                }
                                             }
                                             
                                             // If we have both amount and percent, show both
-                                            if (amountStr && pctStr && amountStr !== pctStr) {
+                                            if (amountStr && pctStr) {
                                                 return `${hideLabels ? '' : label}${isPositive ? '▲' : isNegative ? '▼' : ''}${amountStr} (${pctStr}%)`;
                                             }
                                             
