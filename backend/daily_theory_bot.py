@@ -331,14 +331,28 @@ def generate_theory_post():
     topic = get_topic_today()
     use_chart = is_chart_topic(topic)
     
-    # 모든 주제 공통 (깨지기 쉬운 표, 차트, 그리드 대신 안전한 가로 막대그래프 사용)
-    visual_section = """
-    2. 시각화 자료 (안전한 막대그래프): 텍스트로만 설명하면 지루하므로, 개념 비교나 트렌드를 보여줄 때 **오직 Tailwind CSS의 가로 막대 그래프(Progress Bar)** 형태를 사용하여 시각적으로 표현하세요. (SVG, Table, Grid/Flex 레이아웃 생성은 화면이 깨지므로 절대 금지합니다.)
+    if use_chart:
+        visual_section = """
+    2. 시각화 자료 (안전한 SVG 차트 허용): 차트나 캔들스틱 패턴을 설명할 때는 이해를 돕기 위해 반드시 예쁜 형태의 다크모드 SVG 캔들 차트나 선 차트를 직접 코딩해서 삽입하세요. 
+       (주의: 표(Table)나 너무 복잡한 텍스트 덩어리를 SVG로 그리면 화면이 깨집니다. SVG는 '오직 캔들스틱/선 차트' 그래픽을 그릴 때만 사용하세요.)
+       - 캔들 차트 SVG 디자인 예시 템플릿:
+         <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
+         <svg viewBox="0 0 800 400" class="w-full max-w-[700px] h-auto font-sans">
+             <!-- 배경/축 -->
+             <rect width="800" height="400" fill="#111827" rx="16"/>
+             <line x1="50" y1="350" x2="750" y2="350" stroke="#374151" stroke-width="2"/>
+             <!-- 캔들(양봉: fill="#ef4444", 음봉: fill="#3b82f6")과 이동평균선 등을 아름답게 좌표에 맞게 그리고 라벨 텍스트(fill="#9ca3af") 배치 -->
+         </svg>
+         </div>
+    3. 본론: 차트 패턴을 보는 방법과 실전 매수/매도 타이밍을 핵심 포인트로 정리.
+    4. 실전 꿀팁 & 주의사항: 초보자가 당하기 쉬운 함정(속임수 패턴)과 리스크 관리 팁."""
+    else:
+        visual_section = """
+    2. 시각화 자료 (안전한 막대그래프): 텍스트로만 설명하면 지루하므로, 개념 비교나 트렌드를 보여줄 때 **오직 Tailwind CSS의 가로 막대 그래프(Progress Bar)** 형태를 사용하여 시각적으로 표현하세요. (일반 이론에서 SVG나 Table 레이아웃 생성은 절대 금지합니다.)
        - 안전한 시각화 예시 1: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">상승장 수익률 비교 (레버리지 2X)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-red-500 h-8" style="width: 80%"></div></div><span class="text-red-400 font-bold w-16">+80%</span></div></div>
        - 안전한 시각화 예시 2: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">하락장 손실 (일반 ETF)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-blue-500 h-8" style="width: 20%"></div></div><span class="text-blue-400 font-bold w-16">-20%</span></div></div>
-       이처럼 넓이나 높이, 색상을 활용한 직관적인 막대그래프를 강의 중간중간 적극 활용하여 초보자의 이해를 도우세요.
     3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 언제 매수/매도해야 하는지 핵심 포인트로 정리.
-    4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것, 당하기 쉬운 함정, 그리고 바로 써먹을 수 있는 실전 팁."""
+    4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것과 바로 써먹을 수 있는 실전 팁."""
 
     prompt = f"""
     당신은 주식 투자를 처음 시작하는 초보자들에게 주식·경제·투자 이론을 아주 쉽고 친절하게, 재미있게 알려주는 1타 강사입니다.
@@ -355,7 +369,7 @@ def generate_theory_post():
     3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
     4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
     5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 whitespace-nowrap"> (단어가 세로로 쪼개지지 않도록 whitespace-nowrap 필수)
-    6. 시각화 (막대그래프): 복잡한 표나 SVG는 절대 쓰지 말고, 위 가이드라인에 있는 Tailwind CSS 가로 막대 그래프(width 비율 조정)를 사용하여 수치나 비교를 시각적으로 예쁘게 표현하세요.
+    6. 시각화: 주제에 따라 위 가이드라인(visual_section)에 명시된 예쁘고 안전한 SVG 차트(캔들차트)나 CSS 가로 막대 그래프를 적극 활용하세요. 단, 글씨가 겹치는 SVG 표(Table)나 복잡한 레이아웃은 절대 생성 금지.
     7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
     8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
     9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
