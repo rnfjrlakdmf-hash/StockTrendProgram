@@ -466,6 +466,7 @@ export default function WatchlistPage() {
                                             badge: item.badge,
                                             added_price: item.added_price,
                                             quantity: item.quantity,
+                                            purchases: item.purchases,
                                             // [v2] 세션 배지 (장 상태 표시)
                                             sessionBadge: sessionBadge || undefined,
                                             // [v2] 프리/에프터 가격

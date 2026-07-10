@@ -65,7 +65,8 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
             "symbol": sym, 
             "name": name, 
             "added_price": row[1] if len(row) > 1 else 0,
-            "quantity": row[2] if len(row) > 2 else 0
+            "quantity": row[2] if len(row) > 2 else 0,
+            "purchases": row[3] if len(row) > 3 else []
         })
 
     # 2단계: 누락된 종목 이름 병렬 조회 (최초 1회만 느리고 이후엔 빠름)

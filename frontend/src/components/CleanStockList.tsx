@@ -23,6 +23,7 @@ export interface CleanStockItem {
     quantGrade?: string;
     added_price?: number;
     quantity?: number;
+    purchases?: { id: number; buy_price: number; quantity: number; purchase_date: string }[];
     // [v2] 세션 배지
     sessionBadge?: { label: string; color: string; dot: string };
     extendedPrice?: string | number | null;
@@ -154,6 +155,52 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 )}
                             </div>
 
+                            {/* [NEW] 나열식 보유 리스트 (중앙) */}
+                            {((item.purchases && item.purchases.length > 0) || (item.added_price ? true : false)) && (
+                                <div className="flex flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide px-2 md:px-4 pb-2 md:pb-0 min-w-0 max-w-[50vw]">
+                                    {(item.purchases && item.purchases.length > 0 ? item.purchases : [{ id: 0, buy_price: item.added_price || 0, quantity: item.quantity || 0, purchase_date: '' }]).map((p, idx) => {
+                                        const isUSD = item.currency && item.currency !== 'KRW';
+                                        const currencySign = isUSD ? '$' : '';
+                                        const currencyUnit = isUSD ? '' : '원';
+                                        
+                                        // 수익률 계산
+                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                        const pct = p.buy_price > 0 ? ((curP - p.buy_price) / p.buy_price) * 100 : 0;
+                                        const isPositive = pct > 0;
+                                        const isNegative = pct < 0;
+                                        const diffColor = isPositive ? 'text-red-400' : isNegative ? 'text-blue-400' : 'text-gray-400';
+                                        const bgDiffColor = isPositive ? 'bg-red-500/10 border-red-500/20' : isNegative ? 'bg-blue-500/10 border-blue-500/20' : 'bg-white/5 border-white/10';
+
+                                        return (
+                                            <div 
+                                                key={p.id || idx} 
+                                                className={`flex flex-col gap-0.5 px-3 py-1.5 rounded-xl border shrink-0 cursor-pointer hover:opacity-80 transition-opacity ${bgDiffColor}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onEditAddedPrice) onEditAddedPrice(item.symbol, p.buy_price, p.quantity);
+                                                }}
+                                                title="클릭하여 매수 내역 관리"
+                                            >
+                                                <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-gray-400 font-bold">
+                                                    <span className="text-gray-500">{item.purchases && item.purchases.length > 1 ? `${idx+1}차 매수` : '매수단가'}</span>
+                                                    <span>{p.quantity > 0 ? `${p.quantity.toLocaleString()}주` : ''}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 font-black text-[11px] md:text-[13px]">
+                                                    <span className="text-white">
+                                                        {currencySign}
+                                                        {isUSD ? p.buy_price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : p.buy_price.toLocaleString()}
+                                                        {currencyUnit}
+                                                    </span>
+                                                    <span className={diffColor}>
+                                                        {!isNaN(curP) && p.buy_price > 0 ? `${isPositive ? '+' : ''}${pct.toFixed(2)}%` : '-'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Price Area */}
                             <div 
                                 className="flex flex-col items-end gap-0.5 shrink-0 cursor-pointer"
@@ -199,104 +246,6 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     </div>
                                 )}
 
-                                {/* Entry Price & Yield Display */}
-                                {(item.added_price !== undefined || item.quantity !== undefined) && (
-                                    <div 
-                                        className="flex flex-col items-end mt-0.5 cursor-pointer hover:opacity-80 transition-opacity"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onEditAddedPrice) onEditAddedPrice(item.symbol, item.added_price || 0, item.quantity || 0);
-                                        }}
-                                        title="진입가 및 수량 설정/수정"
-                                    >
-                                        {(item.added_price || 0) > 0 || (item.quantity && item.quantity > 0) ? (
-                                            <>
-                                                {(() => {
-                                                    const isUSD = item.currency && item.currency !== 'KRW';
-                                                    const currencySign = isUSD ? '$' : '';
-                                                    const currencyUnit = isUSD ? '' : '원';
-                                                    const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                    const addedP = item.added_price || 0;
-                                                    
-                                                    const perShareDiff = !isNaN(curP) ? (curP - addedP) : 0;
-                                                    const totalDiff = perShareDiff * (item.quantity && item.quantity > 0 ? item.quantity : 1);
-                                                    const pct = addedP > 0 ? ((curP - addedP) / addedP) * 100 : 0;
-                                                    
-                                                    const isDiffPositive = perShareDiff > 0;
-                                                    const isDiffNegative = perShareDiff < 0;
-                                                    const diffColorClass = isDiffPositive ? 'text-red-400' : isDiffNegative ? 'text-blue-400' : 'text-gray-400';
-
-                                                    // 해외 주식이고 환율 정보(price_krw)가 있는 경우, 원화 환산 손익도 계산
-                                                    let krwDiffStr = "";
-                                                    if (isUSD && item.price_krw && !isNaN(curP) && curP > 0) {
-                                                        const rawKrwPrice = parseFloat(String(item.price_krw).replace(/[^0-9.]/g, ''));
-                                                        if (!isNaN(rawKrwPrice)) {
-                                                            const exchangeRate = rawKrwPrice / curP;
-                                                            const totalDiffKrw = totalDiff * exchangeRate;
-                                                            krwDiffStr = ` (≈ ₩${Math.round(totalDiffKrw).toLocaleString()})`;
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <>
-                                                            <div className="text-[9px] md:text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                                                                <span className="bg-blue-600/30 text-blue-300 px-1 rounded text-[8px]">보유</span>
-                                                                <span className="font-mono">
-                                                                    {currencySign}
-                                                                    {isUSD 
-                                                                        ? addedP.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                                                        : addedP.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                                    {currencyUnit}
-                                                                    {item.quantity && item.quantity > 0 ? ` (${item.quantity.toLocaleString()}주)` : ''} 
-                                                                    <span className="text-[8px] text-gray-500 ml-1">✎</span>
-                                                                </span>
-                                                            </div>
-                                                            {addedP > 0 && (
-                                                                <div className={`text-[10px] md:text-[12px] font-black flex items-center gap-0.5 ${diffColorClass}`}>
-                                                                    {isNaN(curP) ? "로딩중..." : (
-                                                                        `${totalDiff > 0 ? '+' : ''}${currencySign}${
-                                                                            isUSD
-                                                                                ? totalDiff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                                                                : totalDiff.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                                                                        }${currencyUnit} (${pct > 0 ? '+' : ''}${pct.toFixed(2)}%)${krwDiffStr}`
-                                                                    )}
-                                                                    
-                                                                    {/* 자랑하기 버튼 (수익 중일 때만 표시) */}
-                                                                    {pct > 0 && (
-                                                                        <div onClick={(e) => e.stopPropagation()} className="ml-2 inline-block">
-                                                                            {(() => {
-                                                                                const shareUrl = new URL(`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
-                                                                                shareUrl.searchParams.set('title', item.name || item.symbol);
-                                                                                shareUrl.searchParams.set('subtitle', '세력 포착 라이브 알림 덕분!');
-                                                                                shareUrl.searchParams.set('theme', '내 수익률 인증');
-                                                                                shareUrl.searchParams.set('change', `+${pct.toFixed(2)}%`);
-                                                                                
-                                                                                return (
-                                                                                    <KakaoShareButton 
-                                                                                        title={`[수익인증] ${item.name} +${pct.toFixed(2)}%`}
-                                                                                        description="제가 보유한 종목의 수익률을 확인해보세요! 스톡 트렌드 프로그램의 무료 프리미엄 알림 덕분입니다."
-                                                                                        url={`${API_BASE_URL === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/stock/${item.symbol.split('.')[0]}`}
-                                                                                        imageUrl={shareUrl.toString()}
-                                                                                        customIcon={<span className="text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded shadow">자랑하기 🔥</span>}
-                                                                                    />
-                                                                                );
-                                                                            })()}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
-                                            </>
-                                        ) : (
-                                            <div className="text-[9px] md:text-[10px] text-gray-500 font-bold flex items-center gap-1 mt-1">
-                                                <span className="bg-gray-800 px-1 rounded text-[8px]">보유 미설정</span>
-                                                <span className="font-mono hover:text-blue-400 transition-colors text-[9px]">입력 ✎</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
 
                                 <div className={`flex items-center gap-0.5 text-[11px] md:text-[14px] font-black ${textColorClass} bg-white/10 px-2 py-0.25 rounded-full shadow-lg mt-0.5`}>

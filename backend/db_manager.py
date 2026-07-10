@@ -1575,9 +1575,24 @@ def get_watchlist(user_id):
     cursor = conn.cursor()
     cursor.execute("SELECT symbol, added_price, quantity FROM watchlist WHERE user_id = ?", (u_id,))
     res = cursor.fetchall()
+    
+    enhanced_res = []
+    for row in res:
+        symbol, added_price, quantity = row
+        cursor.execute("SELECT id, buy_price, quantity, purchase_date FROM watchlist_purchases WHERE user_id = ? AND symbol = ? ORDER BY purchase_date ASC", (u_id, symbol))
+        purchases = []
+        for p in cursor.fetchall():
+            purchases.append({
+                "id": p[0],
+                "buy_price": p[1],
+                "quantity": p[2],
+                "purchase_date": p[3]
+            })
+        enhanced_res.append((symbol, added_price, quantity, purchases))
+        
     conn.close()
-    print(f"[DB_WATCHLIST] user_id='{u_id}' found {len(res)} items")
-    return res
+    print(f"[DB_WATCHLIST] user_id='{u_id}' found {len(enhanced_res)} items")
+    return enhanced_res
 
 def migrate_watchlist(from_id, to_id):
     """guest 등의 임시 ID에서 실제 로그인 ID로 관심종목 이동 및 백업"""
