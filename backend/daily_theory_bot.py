@@ -331,22 +331,11 @@ def generate_theory_post():
     topic = get_topic_today()
     use_chart = is_chart_topic(topic)
     
-    if use_chart:
-        # 차트·기술적 분석 주제용 프롬프트
-        visual_section = """
-    2. 시각화 도표: 차트의 흐름이나 매매 시그널을 시각적으로 잘 보여줄 수 있는 깔끔한 표(Table)나 비교 카드를 HTML과 Tailwind CSS를 사용하여 만드세요. **SVG 차트 생성은 절대 금지합니다 (화면 깨짐 방지).**
-       - 예시 1 (그리드 카드): <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><div class="bg-green-900/30 p-6 rounded-2xl border border-green-500/40"><h4 class="text-green-400 font-black text-2xl mb-3">상승 시그널 (매수)</h4>...</div><div class="bg-red-900/30 p-6 rounded-2xl border border-red-500/40">...</div></div>
-       - 예시 2 (테이블): <div class="overflow-x-auto mb-8 shadow-2xl rounded-2xl"><table class="w-full text-left border-collapse min-w-[500px]"><thead class="bg-gray-800 text-blue-400 text-xl"><tr><th class="p-5 font-black border-b border-blue-500/50">패턴</th>...</tr></thead><tbody class="text-gray-200 text-lg"><tr><td class="p-5 border-b border-gray-700/50 bg-gray-900/50">...</td></tr></tbody></table></div>
-    3. 본론: 지표나 차트 패턴을 보는 방법과 실전 매수/매도 타이밍을 잡는 방법을 3가지 포인트로 정리.
-    4. 주의할 점 (리스크 관리): 이 지표의 맹점이나 속임수에 당하지 않는 팁."""
-    else:
-        # 일반 주식 이론·경제·전략 주제용 프롬프트
-        visual_section = """
-    2. 핵심 개념 비교 도표: 주제를 한눈에 이해할 수 있는 깔끔한 비교 표(Table) 또는 요약 카드(Grid)를 HTML과 Tailwind CSS를 사용하여 작성하세요. **SVG 코드를 직접 그리는 것은 절대 금지합니다 (화면 깨짐 방지).**
-       - 예시 1 (테이블): <div class="overflow-x-auto mb-10 shadow-xl rounded-2xl border border-gray-700"><table class="w-full min-w-[600px] text-left border-collapse"><thead class="bg-blue-900/40 text-blue-300 text-xl"><tr><th class="p-5 font-extrabold border-b border-blue-500/50">비교 항목</th><th class="p-5 font-extrabold border-b border-blue-500/50">A 개념</th><th class="p-5 font-extrabold border-b border-blue-500/50">B 개념</th></tr></thead><tbody class="text-gray-100 text-lg"><tr><td class="p-5 border-b border-gray-700/50 bg-gray-800/30 font-bold">...</td><td class="p-5 border-b border-gray-700/50">...</td><td class="p-5 border-b border-gray-700/50">...</td></tr></tbody></table></div>
-       - 예시 2 (그리드): <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10"><div class="bg-blue-900/20 border border-blue-500/30 p-8 rounded-2xl"><h4 class="text-blue-400 font-extrabold text-2xl mb-4">장점 및 특징</h4><ul class="space-y-3">...</ul></div>...</div>
-    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지 3가지 핵심 포인트로 정리.
-    4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것과 바로 써먹을 수 있는 실전 팁."""
+    # 모든 주제 공통 (표, 차트, 그리드 등 복잡한 HTML 레이아웃 생성 절대 금지)
+    visual_section = """
+    2. 핵심 포인트 정리: 개념을 이해하기 쉽게 텍스트로 풀어 설명하세요. (표, 다이어그램, SVG, Grid/Flex 레이아웃 생성 **절대 금지**. 화면이 깨집니다. 오직 텍스트와 리스트 태그(<ul><li>)만 사용할 것)
+    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 언제 매수/매도해야 하는지 3가지 핵심 포인트로 정리.
+    4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것, 당하기 쉬운 함정, 그리고 바로 써먹을 수 있는 실전 팁."""
 
     prompt = f"""
     당신은 주식 투자를 처음 시작하는 초보자들에게 주식·경제·투자 이론을 아주 쉽고 친절하게, 재미있게 알려주는 1타 강사입니다.
@@ -363,7 +352,7 @@ def generate_theory_post():
     3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
     4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
     5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400">
-    6. 테이블/카드 삽입: 개념 비교나 시그널 정리는 위 visual_section에서 안내한 Tailwind CSS 표 또는 그리드 카드를 적극 활용하세요.
+    6. 표(Table)나 Grid 생성 절대 금지. 레이아웃이 꼬이므로 오직 텍스트 단락과 7~9번 항목(요약 박스)만 사용할 것.
     7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5">✓</span><span>내용</span></li>
     8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
     9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
