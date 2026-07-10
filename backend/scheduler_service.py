@@ -948,14 +948,18 @@ def run_market_scheduler():
             _state = load_state()
             last_theory = _state.get("last_run_daily_theory", "")
             if (now.hour > 8 or (now.hour == 8 and now.minute >= 30)) and current_date != last_theory:
+                success = False
                 try:
                     from daily_theory_bot import post_daily_theory
-                    post_daily_theory()
+                    success = post_daily_theory()
                 except Exception as e:
                     print(f"[Scheduler] Daily Theory Bot error: {e}")
                 
-                _state["last_run_daily_theory"] = current_date
-                save_state(_state)
+                if success:
+                    _state["last_run_daily_theory"] = current_date
+                    save_state(_state)
+                else:
+                    print("[Scheduler] Daily Theory Bot failed to generate content, will retry in next cycle.")
                 
             # [평일 실행] 오후 4:30 초대량 롱테일 키워드 SEO 공장 (수해전술 봇)
             if not is_holiday("kor") and now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_mass_seo", None):

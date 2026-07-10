@@ -409,13 +409,13 @@ def post_daily_theory():
         db = firestore.client()
     except ValueError:
         print("Firestore 초기화 실패")
-        return
+        return False
         
     print("오늘의 주식 이론/차트 스터디 콘텐츠 생성 중...")
     title, content, tags = generate_theory_post()
     if not content:
         print("콘텐츠 생성 실패.")
-        return
+        return False
         
     timestamp = datetime.now().strftime("%Y%m%d")
     slug = f"theory-{timestamp}"
@@ -477,8 +477,11 @@ def post_daily_theory():
         except Exception as e:
             print(f"Google Indexing API 실패: {e}")
             
+        return True
+            
     except Exception as e:
         print(f"Firestore 저장 에러: {e}")
+        return False
 
 if __name__ == "__main__":
     post_daily_theory()
