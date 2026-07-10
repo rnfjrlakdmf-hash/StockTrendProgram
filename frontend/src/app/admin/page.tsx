@@ -296,91 +296,91 @@ export default function AdminPage() {
                 {/* Analytics Grid Section */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                     {/* Real-time Active Users */}
-                    <div className="bg-gradient-to-br from-green-500/10 via-transparent to-transparent border border-green-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-green-500/10 via-transparent to-transparent border border-green-500/20 rounded-[2rem] p-6 relative overflow-hidden group flex flex-col h-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-green-500/20 transition-all"></div>
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3.5">
-                                <span className="relative flex h-3.5 w-3.5">
+                                <span className="relative flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                                 </span>
-                                <h3 className="text-xl font-bold text-white">현재 접속</h3>
+                                <h3 className="text-lg font-bold text-white">현재 접속</h3>
                             </div>
                             <Activity className="w-5 h-5 text-green-400" />
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black tracking-tight text-white">{analytics?.active_users_5m ?? 0}</span>
-                            <span className="text-gray-400 font-bold">명 접속 중</span>
+                        <div className="flex items-baseline gap-1 mb-2">
+                            <span className="text-4xl font-black tracking-tighter text-white">{analytics?.active_users_5m ?? 0}</span>
+                            <span className="text-gray-400 font-bold text-sm whitespace-nowrap">명</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">최근 5분 동안 활발히 서비스를 이용하고 있는 사용자 수입니다.</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed mt-auto">최근 5분 동안 활발히 서비스를 이용하고 있는 사용자 수입니다.</p>
                     </div>
 
                     {/* Total Registered Members */}
-                    <div className="bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent border border-yellow-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent border border-yellow-500/20 rounded-[2rem] p-6 relative overflow-hidden group flex flex-col h-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-yellow-500/20 transition-all"></div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-white">누적 가입 회원</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-white">누적 가입 회원</h3>
                             <Users className="w-5 h-5 text-yellow-400" />
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black tracking-tight text-white">{users.length.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold">명</span>
+                        <div className="flex items-baseline gap-1 mb-2">
+                            <span className="text-4xl font-black tracking-tighter text-white">{users.length.toLocaleString()}</span>
+                            <span className="text-gray-400 font-bold text-sm whitespace-nowrap">명</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">현재까지 서비스에 가입한 총 누적 회원수입니다.</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed mt-auto">현재까지 서비스에 가입한 총 누적 회원수입니다.</p>
                     </div>
 
                     {/* Today's Stats (1-Day) */}
-                    <div className="bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent border border-blue-500/20 rounded-[2rem] p-6 relative overflow-hidden group flex flex-col h-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-white">오늘의 방문 (1일)</h3>
-                            <div className="flex items-center gap-1 bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">TODAY</div>
+                            <h3 className="text-lg font-bold text-white">오늘의 방문</h3>
+                            <div className="flex items-center gap-1 bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">TODAY</div>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2 mb-2 flex-grow flex flex-col justify-center">
                             <div className="flex justify-between items-baseline">
-                                <span className="text-gray-400 text-xs font-bold">오늘 조회수 (PV)</span>
+                                <span className="text-gray-400 text-xs font-bold">조회수 (PV)</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-black text-blue-400">{todayPV.toLocaleString()}</span>
-                                    <span className="text-[10px] text-gray-500 font-bold">회</span>
+                                    <span className="text-2xl font-black text-blue-400 tracking-tighter">{todayPV.toLocaleString()}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">회</span>
                                 </div>
                             </div>
                             <div className="flex justify-between items-baseline border-t border-white/5 pt-2">
-                                <span className="text-gray-400 text-xs font-bold">오늘 방문자 (UV)</span>
+                                <span className="text-gray-400 text-xs font-bold">방문자 (UV)</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-black text-purple-400">{todayUV.toLocaleString()}</span>
-                                    <span className="text-[10px] text-gray-500 font-bold">명</span>
+                                    <span className="text-2xl font-black text-purple-400 tracking-tighter">{todayUV.toLocaleString()}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">명</span>
                                 </div>
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">오늘 자정(KST)부터 집계된 페이지 뷰와 순 방문자입니다.</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed mt-auto">오늘 자정부터 집계된 페이지 뷰와 순 방문자입니다.</p>
                     </div>
 
                     {/* Total Cumulative PV */}
-                    <div className="bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-white/5 rounded-[2rem] p-8 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-white/5 rounded-[2rem] p-6 relative overflow-hidden group flex flex-col h-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-white">누적 조회수 (PV)</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-white">누적 조회수 (PV)</h3>
                             <Eye className="w-5 h-5 text-blue-400" />
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black tracking-tight text-white">{totalPV.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold">회 클릭</span>
+                        <div className="flex items-baseline gap-1 mb-2">
+                            <span className="text-4xl font-black tracking-tighter text-white">{totalPV.toLocaleString()}</span>
+                            <span className="text-gray-400 font-bold text-sm whitespace-nowrap">회</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">최근 30일 동안 발생한 총 페이지뷰 카운트입니다.</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed mt-auto">최근 30일 동안 발생한 총 페이지뷰 카운트입니다.</p>
                     </div>
 
                     {/* Total Cumulative UV */}
-                    <div className="bg-gradient-to-br from-purple-500/10 via-transparent to-transparent border border-white/5 rounded-[2rem] p-8 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-purple-500/10 via-transparent to-transparent border border-white/5 rounded-[2rem] p-6 relative overflow-hidden group flex flex-col h-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] pointer-events-none group-hover:bg-purple-500/20 transition-all"></div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-white">누적 순방문자 (UV)</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-white">누적 순방문 (UV)</h3>
                             <UserPlus className="w-5 h-5 text-purple-400" />
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black tracking-tight text-white">{totalUV.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold">명 유입</span>
+                        <div className="flex items-baseline gap-1 mb-2">
+                            <span className="text-4xl font-black tracking-tighter text-white">{totalUV.toLocaleString()}</span>
+                            <span className="text-gray-400 font-bold text-sm whitespace-nowrap">명</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-4">최근 30일 동안 중복을 제외하고 방문한 유저 수입니다.</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed mt-auto">최근 30일 동안 중복을 제외하고 방문한 유저 수입니다.</p>
                     </div>
                 </div>
 
