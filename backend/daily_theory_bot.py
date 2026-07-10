@@ -331,10 +331,13 @@ def generate_theory_post():
     topic = get_topic_today()
     use_chart = is_chart_topic(topic)
     
-    # 모든 주제 공통 (표, 차트, 그리드 등 복잡한 HTML 레이아웃 생성 절대 금지)
+    # 모든 주제 공통 (깨지기 쉬운 표, 차트, 그리드 대신 안전한 가로 막대그래프 사용)
     visual_section = """
-    2. 핵심 포인트 정리: 개념을 이해하기 쉽게 텍스트로 풀어 설명하세요. (표, 다이어그램, SVG, Grid/Flex 레이아웃 생성 **절대 금지**. 화면이 깨집니다. 오직 텍스트와 리스트 태그(<ul><li>)만 사용할 것)
-    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 언제 매수/매도해야 하는지 3가지 핵심 포인트로 정리.
+    2. 시각화 자료 (안전한 막대그래프): 텍스트로만 설명하면 지루하므로, 개념 비교나 트렌드를 보여줄 때 **오직 Tailwind CSS의 가로 막대 그래프(Progress Bar)** 형태를 사용하여 시각적으로 표현하세요. (SVG, Table, Grid/Flex 레이아웃 생성은 화면이 깨지므로 절대 금지합니다.)
+       - 안전한 시각화 예시 1: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">상승장 수익률 비교 (레버리지 2X)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-red-500 h-8" style="width: 80%"></div></div><span class="text-red-400 font-bold w-16">+80%</span></div></div>
+       - 안전한 시각화 예시 2: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">하락장 손실 (일반 ETF)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-blue-500 h-8" style="width: 20%"></div></div><span class="text-blue-400 font-bold w-16">-20%</span></div></div>
+       이처럼 넓이나 높이, 색상을 활용한 직관적인 막대그래프를 강의 중간중간 적극 활용하여 초보자의 이해를 도우세요.
+    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 언제 매수/매도해야 하는지 핵심 포인트로 정리.
     4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것, 당하기 쉬운 함정, 그리고 바로 써먹을 수 있는 실전 팁."""
 
     prompt = f"""
@@ -352,7 +355,7 @@ def generate_theory_post():
     3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
     4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
     5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400">
-    6. 표(Table)나 Grid 생성 절대 금지. 레이아웃이 꼬이므로 오직 텍스트 단락과 7~9번 항목(요약 박스)만 사용할 것.
+    6. 시각화 (막대그래프): 복잡한 표나 SVG는 절대 쓰지 말고, 위 가이드라인에 있는 Tailwind CSS 가로 막대 그래프(width 비율 조정)를 사용하여 수치나 비교를 시각적으로 예쁘게 표현하세요.
     7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5">✓</span><span>내용</span></li>
     8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
     9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
