@@ -64,14 +64,21 @@ def ping_push(req: MasterKeyRequest):
     body = "마스터 컨트롤 룸에서 보낸 테스트 알림이 정상적으로 수신되었습니다. (수신증 토큰 정상 동작 중)"
     
     try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        
         # [BugFix] is_global=False로 설정하고 target_users를 본인으로 제한하여 일반 유저 알림센터 노출 방지
-        send_multicast_notification(
+        result = send_multicast_notification(
             tokens, 
             title, 
             body, 
             {"type": "ping_test", "is_global": "false"}, 
             target_users=[req.user_id]
         )
+        
+        if result and not result.get("success"):
+            return {"status": "error", "message": result.get("error", "Unknown push error")}
+            
         return {"status": "success", "message": f"{len(tokens)}개의 기기로 테스트 알림을 발송했습니다!"}
     except Exception as e:
         return {"status": "error", "message": f"푸시 발송 중 오류: {str(e)}"}
