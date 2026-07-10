@@ -291,18 +291,23 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             
                                             // If backend provided same value for both (i.e. only percentage was given),
                                             // we calculate the absolute change amount ourselves.
-                                            if (amountStr === pctStr && pctStr && !isNaN(curP)) {
-                                                const pctVal = parseFloat(pctStr) / 100;
-                                                // curP = prevP * (1 +- pctVal) -> prevP = curP / (1 +- pctVal)
-                                                const prevP = isPositive ? (curP / (1 + pctVal)) : (curP / (1 - pctVal));
-                                                let calcAmount = Math.abs(curP - prevP);
+                                            if (amountStr === pctStr && pctStr) {
+                                                const curP_main = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                const isUSD_main = item.currency && item.currency !== 'KRW';
                                                 
-                                                // format amount
-                                                if (isUSD) {
-                                                    amountStr = calcAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                                } else {
-                                                    // KRW is integer
-                                                    amountStr = Math.round(calcAmount).toLocaleString();
+                                                if (!isNaN(curP_main)) {
+                                                    const pctVal = parseFloat(pctStr) / 100;
+                                                    // curP_main = prevP * (1 +- pctVal) -> prevP = curP_main / (1 +- pctVal)
+                                                    const prevP = isPositive ? (curP_main / (1 + pctVal)) : (curP_main / (1 - pctVal));
+                                                    let calcAmount = Math.abs(curP_main - prevP);
+                                                    
+                                                    // format amount
+                                                    if (isUSD_main) {
+                                                        amountStr = calcAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                    } else {
+                                                        // KRW is integer
+                                                        amountStr = Math.round(calcAmount).toLocaleString();
+                                                    }
                                                 }
                                             }
                                             
