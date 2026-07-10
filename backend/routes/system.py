@@ -226,25 +226,36 @@ def register_fcm_token(req: FCMTokenRequest, x_user_id: str = Header(None)):
         return {"status": "error", "message": str(e), "user_id": user_id}
 
 @router.get("/fcm/preferences")
-def get_preferences(token: str):
-    from db_manager import get_fcm_preferences
-    prefs = get_fcm_preferences(token)
-    if prefs is None:
-        # Return default preferences instead of error, so frontend doesn't break
-        return {"status": "success", "data": {
-            "pref_morning": True,
-            "pref_closing": True,
-            "pref_price": True,
-            "pref_news": True,
-            "pref_watch_compact": False,
-            "pref_ipo": True,
-            "pref_dividend": True,
-            "pref_whale_alert": True,
-            "pref_insider_alert": True,
-            "pref_watchlist_live": True,
-            "user_id": "guest"
-        }}
-    return {"status": "success", "data": prefs}
+def get_preferences(token: str = None, user_id: str = None, x_user_id: str = Header(None)):
+    from db_manager import get_fcm_preferences, get_user_fcm_preferences_by_user_id
+    
+    # user_id 기반으로 우선 조회 (기기 간 통합 설정)
+    resolved_user_id = user_id or x_user_id
+    if resolved_user_id and resolved_user_id != "guest":
+        prefs = get_user_fcm_preferences_by_user_id(resolved_user_id)
+        if prefs:
+            return {"status": "success", "data": prefs}
+    
+    # 토큰 기반 조회 (fallback)
+    if token:
+        prefs = get_fcm_preferences(token)
+        if prefs:
+            return {"status": "success", "data": prefs}
+    
+    # 기본값 반환
+    return {"status": "success", "data": {
+        "pref_morning": True,
+        "pref_closing": True,
+        "pref_price": True,
+        "pref_news": True,
+        "pref_watch_compact": False,
+        "pref_ipo": True,
+        "pref_dividend": True,
+        "pref_whale_alert": True,
+        "pref_insider_alert": True,
+        "pref_watchlist_live": True,
+        "user_id": resolved_user_id or "guest"
+    }}
 
 class FCMPreferencesRequest(BaseModel):
     token: str
@@ -261,15 +272,10 @@ class FCMPreferencesRequest(BaseModel):
 
 @router.post("/fcm/preferences")
 def update_preferences(req: FCMPreferencesRequest, x_user_id: str = Header(None)):
-    from db_manager import update_fcm_preferences, get_fcm_preferences, save_fcm_token
+    from db_manager import update_fcm_preferences, get_fcm_preferences, save_fcm_token, update_all_user_fcm_preferences
     
-    # Auto-recover token if it was somehow deleted from DB
-    existing = get_fcm_preferences(req.token)
-    if not existing:
-        user_id = x_user_id if x_user_id else "guest"
-        save_fcm_token(user_id, req.token, "web", "auto-recovered")
-        
-    success = update_fcm_preferences(req.token, {
+    user_id = x_user_id if x_user_id else "guest"
+    prefs_dict = {
         "pref_morning": req.pref_morning,
         "pref_closing": req.pref_closing,
         "pref_price": req.pref_price,
@@ -280,7 +286,18 @@ def update_preferences(req: FCMPreferencesRequest, x_user_id: str = Header(None)
         "pref_whale_alert": req.pref_whale_alert,
         "pref_insider_alert": req.pref_insider_alert,
         "pref_watchlist_live": req.pref_watchlist_live
-    })
+    }
+    
+    # user_id가 있으면 해당 유저의 모든 토큰에 동시 저장 (기기 간 동기화)
+    if user_id and user_id != "guest":
+        update_all_user_fcm_preferences(user_id, prefs_dict)
+    
+    # 현재 토큰에도 저장 (Auto-recover 포함)
+    existing = get_fcm_preferences(req.token)
+    if not existing:
+        save_fcm_token(user_id, req.token, "web", "auto-recovered")
+        
+    success = update_fcm_preferences(req.token, prefs_dict)
     if success:
         return {"status": "success", "message": "Preferences updated"}
     return {"status": "error", "message": "Update failed"}

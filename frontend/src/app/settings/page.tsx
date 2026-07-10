@@ -94,29 +94,24 @@ export default function SettingsPage() {
                 setIsKisCollapsed(true); // 연동되어 있지 않아도 기본적으로 접은 상태로 유지합니다.
             }
 
-        // 알림 설정 불러오기
+        // 알림 설정 불러오기 (user_id 우선, 기기 간 동기화)
         const token = localStorage.getItem('fcm_token_value');
-        if (token) {
-            setFcmToken(token);
-            fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${encodeURIComponent(token)}&_t=${Date.now()}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        setPrefs(data.data);
-                    } else {
-                        // Live server token missing fallback: register it silently
-                        fetch(`${API_BASE_URL}/api/system/fcm/register`, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'x-user-id': user?.id || 'guest'
-                            },
-                            body: JSON.stringify({ token: token, device_type: 'web', device_name: 'auto-recovered' })
-                        });
-                    }
-                })
-                .catch(err => console.error("Failed to fetch preferences:", err));
-        }
+        const userId = localStorage.getItem('user_id');
+        if (token) setFcmToken(token);
+
+        // user_id 기반으로 설정 불러오기 (모바일/PC 모두 동일하게)
+        const queryParts: string[] = [`_t=${Date.now()}`];
+        if (userId && userId !== 'guest') queryParts.push(`user_id=${encodeURIComponent(userId)}`);
+        if (token) queryParts.push(`token=${encodeURIComponent(token)}`);
+
+        fetch(`${API_BASE_URL}/api/system/fcm/preferences?${queryParts.join('&')}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    setPrefs(data.data);
+                }
+            })
+            .catch(err => console.error("Failed to fetch preferences:", err));
         }
     }, []);
 
@@ -147,7 +142,10 @@ export default function SettingsPage() {
     };
 
     const handleTogglePref = async (prefKey: keyof typeof prefs) => {
-        if (!fcmToken) {
+        const userId = user?.id || localStorage.getItem('user_id') || 'guest';
+        const token = fcmToken || localStorage.getItem('fcm_token_value');
+
+        if (!token && userId === 'guest') {
             setMsg({ type: 'error', text: '알림 토큰이 없습니다. 먼저 메인 화면에서 알림 권한을 허용해주세요.' });
             return;
         }
@@ -158,24 +156,21 @@ export default function SettingsPage() {
 
         try {
             const updatedPrefs = { ...prefs, [prefKey]: newVal };
-            // Ensure token is registered on the live server just in case
-            await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-user-id': user?.id || 'guest'
-                },
-                body: JSON.stringify({ token: fcmToken, device_type: 'web', device_name: 'force-recovered' })
-            });
+            
+            // 토큰이 없으면 user_id만으로 저장 시도 (dummy token 사용)
+            const saveToken = token || 'no_token';
 
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: fcmToken, ...updatedPrefs })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId
+                },
+                body: JSON.stringify({ token: saveToken, ...updatedPrefs })
             });
             const data = await res.json();
             if (data.status !== 'success') throw new Error();
-            setMsg({ type: 'success', text: '알림 설정이 변경되었습니다.' });
+            setMsg({ type: 'success', text: '✅ 알림 설정이 저장되었습니다.' });
             setTimeout(() => setMsg(null), 2000);
         } catch (error) {
             // Revert on fail

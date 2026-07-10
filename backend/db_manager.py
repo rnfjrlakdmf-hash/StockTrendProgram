@@ -1673,6 +1673,76 @@ def update_fcm_preferences(token: str, prefs: dict):
         conn.close()
 
 
+def get_user_fcm_preferences_by_user_id(user_id: str):
+    """
+    user_id 기반으로 가장 최근에 사용한 토큰의 알림 설정을 가져옵니다.
+    기기 간 설정 동기화를 위해 사용합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact,
+               pref_ipo, pref_dividend, pref_whale_alert, pref_insider_alert, pref_watchlist_live
+        FROM fcm_tokens
+        WHERE user_id = ?
+        ORDER BY last_used DESC
+        LIMIT 1
+    """, (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "pref_morning": bool(row[0]),
+        "pref_closing": bool(row[1]),
+        "pref_price": bool(row[2]),
+        "pref_news": bool(row[3]),
+        "pref_watch_compact": bool(row[4]),
+        "pref_ipo": bool(row[5]),
+        "pref_dividend": bool(row[6]),
+        "pref_whale_alert": bool(row[7]),
+        "pref_insider_alert": bool(row[8]),
+        "pref_watchlist_live": bool(row[9]),
+        "user_id": user_id
+    }
+
+
+def update_all_user_fcm_preferences(user_id: str, prefs: dict):
+    """
+    해당 user_id의 모든 FCM 토큰에 동일한 알림 설정을 저장합니다.
+    모바일/PC 기기 간 설정 동기화를 위해 사용합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE fcm_tokens
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?,
+                pref_watch_compact = ?, pref_ipo = ?, pref_dividend = ?,
+                pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
+            WHERE user_id = ?
+        """, (
+            1 if prefs.get('pref_morning', True) else 0,
+            1 if prefs.get('pref_closing', True) else 0,
+            1 if prefs.get('pref_price', True) else 0,
+            1 if prefs.get('pref_news', True) else 0,
+            1 if prefs.get('pref_watch_compact', False) else 0,
+            1 if prefs.get('pref_ipo', True) else 0,
+            1 if prefs.get('pref_dividend', True) else 0,
+            1 if prefs.get('pref_whale_alert', True) else 0,
+            1 if prefs.get('pref_insider_alert', True) else 0,
+            1 if prefs.get('pref_watchlist_live', True) else 0,
+            user_id
+        ))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"[DB] update_all_user_fcm_preferences error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
 def delete_fcm_token(token: str):
     """FCM 토큰 삭제"""
     conn = get_db_connection()
