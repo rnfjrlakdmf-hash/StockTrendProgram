@@ -348,10 +348,19 @@ def generate_theory_post():
     4. 실전 꿀팁 & 주의사항: 초보자가 당하기 쉬운 함정(속임수 패턴)과 리스크 관리 팁."""
     else:
         visual_section = """
-    2. 시각화 자료 (안전한 막대그래프): 텍스트로만 설명하면 지루하므로, 개념 비교나 트렌드를 보여줄 때 **오직 Tailwind CSS의 가로 막대 그래프(Progress Bar)** 형태를 사용하여 시각적으로 표현하세요. (일반 이론에서 SVG나 Table 레이아웃 생성은 절대 금지합니다.)
-       - 안전한 시각화 예시 1: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">상승장 수익률 비교 (레버리지 2X)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-red-500 h-8" style="width: 80%"></div></div><span class="text-red-400 font-bold w-16">+80%</span></div></div>
-       - 안전한 시각화 예시 2: <div class="mb-6"><p class="text-gray-100 font-bold mb-2">하락장 손실 (일반 ETF)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-blue-500 h-8" style="width: 20%"></div></div><span class="text-blue-400 font-bold w-16">-20%</span></div></div>
-    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 언제 매수/매도해야 하는지 핵심 포인트로 정리.
+    2. 시각화 자료 (안전한 SVG 다이어그램/막대그래프): 텍스트로만 설명하면 초보자가 이해하기 어려우므로, 핵심 개념(비율, 흐름, 구조 등)을 설명할 때 **SVG를 활용한 직관적인 모식도(다이어그램)나 가로 막대 그래프**를 반드시 그려서 삽입하세요.
+       (주의: HTML 표(Table)나 너무 긴 문장을 SVG 안에 넣으면 모바일 화면에서 깨집니다. 동그라미, 선, 화살표, 도형과 간단한 핵심 단어 위주의 '도식화/인포그래픽'만 예쁘게 그리세요.)
+       - 다이어그램 SVG 디자인 예시 템플릿:
+         <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
+         <svg viewBox="0 0 800 400" class="w-full max-w-[700px] h-auto font-sans">
+             <!-- 배경 -->
+             <rect width="800" height="400" fill="#111827" rx="16"/>
+             <!-- 화살표, 원(circle), 사각형(rect) 등 도형과 짧은 텍스트(text-anchor="middle", fill="#e5e7eb")를 사용하여 개념의 흐름, 비교, 구조를 아름답게 도식화하세요 -->
+         </svg>
+         </div>
+       - 또는 수치 비교 시 Tailwind CSS 가로 막대 그래프 적극 활용:
+         <div class="mb-6"><p class="text-gray-100 font-bold mb-2">상승장 수익률 비교 (레버리지 2X)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-red-500 h-8" style="width: 80%"></div></div><span class="text-red-400 font-bold w-16">+80%</span></div></div>
+    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 투자 시 팁을 핵심 포인트로 정리.
     4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것과 바로 써먹을 수 있는 실전 팁."""
 
     prompt = f"""
