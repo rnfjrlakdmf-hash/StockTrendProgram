@@ -160,6 +160,18 @@ export default function FCMTokenManager() {
             const data = await res.json();
             if (data.status === 'success') {
                 setPrefs(data.data);
+            } else if (data.status === 'error' && data.message === 'Token not found') {
+                // Auto-heal: Register token if missing from backend DB
+                console.log('[FCM] Token missing in backend DB, auto-registering...');
+                await registerTokenToBackend(token, userId);
+                // Try fetching again once
+                const res2 = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`, {
+                    headers: { 'X-User-Id': userId }
+                });
+                const data2 = await res2.json();
+                if (data2.status === 'success') {
+                    setPrefs(data2.data);
+                }
             }
         } catch (e) {
             console.error('[FCM] Fetch prefs failed:', e);
@@ -172,6 +184,9 @@ export default function FCMTokenManager() {
         setPrefs(newPrefs); // Optimistic UI
         try {
             const userId = getReliableUserId();
+            // Ensure token is registered before updating prefs to prevent silent failures
+            await registerTokenToBackend(currentToken, userId);
+            
             await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
                 headers: { 
