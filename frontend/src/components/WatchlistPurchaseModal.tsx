@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/config';
 
 interface PurchaseRecord {
     id: number;
@@ -21,6 +22,7 @@ interface WatchlistPurchaseModalProps {
 export default function WatchlistPurchaseModal({ isOpen, onClose, symbol, onSuccess }: WatchlistPurchaseModalProps) {
     const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
     
     const [newPrice, setNewPrice] = useState('');
     const [newQty, setNewQty] = useState('');
@@ -35,13 +37,12 @@ export default function WatchlistPurchaseModal({ isOpen, onClose, symbol, onSucc
     const fetchPurchases = async () => {
         setLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token || "";
+            const userId = user?.id || (user as any)?.uid || 'guest';
             const encodedSymbol = encodeURIComponent(symbol);
             
-            const res = await fetch(`/api/watchlist/purchases?symbol=${encodedSymbol}`, {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist/purchases?symbol=${encodedSymbol}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'X-User-ID': userId
                 }
             });
             const result = await res.json();
@@ -67,14 +68,13 @@ export default function WatchlistPurchaseModal({ isOpen, onClose, symbol, onSucc
 
         setIsSubmitting(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token || "";
+            const userId = user?.id || (user as any)?.uid || 'guest';
             
-            const res = await fetch(`/api/watchlist/purchases`, {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist/purchases`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'X-User-ID': userId
                 },
                 body: JSON.stringify({
                     symbol,
@@ -103,14 +103,13 @@ export default function WatchlistPurchaseModal({ isOpen, onClose, symbol, onSucc
         if (!confirm('이 매수 내역을 삭제하시겠습니까?')) return;
         
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token || "";
+            const userId = user?.id || (user as any)?.uid || 'guest';
             const encodedSymbol = encodeURIComponent(symbol);
             
-            const res = await fetch(`/api/watchlist/purchases/${id}?symbol=${encodedSymbol}`, {
+            const res = await fetch(`${API_BASE_URL}/api/watchlist/purchases/${id}?symbol=${encodedSymbol}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'X-User-ID': userId
                 }
             });
             
