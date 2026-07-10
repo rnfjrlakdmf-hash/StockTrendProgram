@@ -1066,7 +1066,6 @@ function DiscoveryContent() {
                                                 )}
                                             </span>
                                             <div className="ml-auto flex items-center gap-2">
-                                                <CalendarSyncButton stockName={stock.name} />
                                                 <KakaoShareButton 
                                                     title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
                                                     description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
