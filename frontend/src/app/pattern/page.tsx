@@ -407,43 +407,49 @@ export default function PatternPage() {
                 // [NEW] Highest/Lowest Price Annotations
                 ...(result?.history && result.history.length > 0 ? [
                     (() => {
-                        const highest = [...result.history].sort((a, b) => b.high - a.high)[0];
+                        const isLine = chartType === 'line';
+                        const highest = [...result.history].sort((a, b) => isLine ? (b.close - a.close) : (b.high - a.high))[0];
                         const idx = result.history.indexOf(highest);
                         const n = result.history.length;
                         const isStart = idx < n * 0.15;
                         const isEnd = idx > n * 0.85;
                         const d = new Date(highest.date);
                         const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+                        const targetVal = isLine ? highest.close : highest.high;
                         return {
                             x: new Date(highest.date).getTime(),
-                            y: highest.high,
+                            y: targetVal,
                             marker: { size: 0 },
                             label: {
-                                text: `최고 ${formatPrice(highest.high)} (${dateStr}) ↓`,
+                                text: `최고 ${formatPrice(targetVal)} (${dateStr}) ↓`,
                                 borderColor: '#ef4444',
-                                offsetX: isStart ? +60 : (isEnd ? -60 : 0),
-                                style: { color: '#fff', background: '#ef4444' }
+                                textAnchor: isStart ? 'start' : (isEnd ? 'end' : 'middle'),
+                                offsetX: isStart ? 10 : (isEnd ? -10 : 0),
+                                style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 600 }
                             }
                         };
                     })(),
                     (() => {
-                        const lowest = [...result.history].sort((a, b) => a.low - b.low)[0];
+                        const isLine = chartType === 'line';
+                        const lowest = [...result.history].sort((a, b) => isLine ? (a.close - b.close) : (a.low - b.low))[0];
                         const idx = result.history.indexOf(lowest);
                         const n = result.history.length;
                         const isStart = idx < n * 0.15;
                         const isEnd = idx > n * 0.85;
                         const d = new Date(lowest.date);
                         const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+                        const targetVal = isLine ? lowest.close : lowest.low;
                         return {
                             x: new Date(lowest.date).getTime(),
-                            y: lowest.low,
+                            y: targetVal,
                             marker: { size: 0 },
                             label: {
-                                text: `↑ 최저 ${formatPrice(lowest.low)} (${dateStr})`,
+                                text: `↑ 최저 ${formatPrice(targetVal)} (${dateStr})`,
                                 borderColor: '#3b82f6',
                                 offsetY: 40,
-                                offsetX: isStart ? +60 : (isEnd ? -60 : 0),
-                                style: { color: '#fff', background: '#3b82f6' }
+                                textAnchor: isStart ? 'start' : (isEnd ? 'end' : 'middle'),
+                                offsetX: isStart ? 10 : (isEnd ? -10 : 0),
+                                style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 600 }
                             }
                         };
                     })()
