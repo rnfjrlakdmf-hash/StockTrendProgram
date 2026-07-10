@@ -153,7 +153,10 @@ export default function FCMTokenManager() {
 
     const fetchPreferences = async (token: string) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`);
+            const userId = getReliableUserId();
+            const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences?token=${token}`, {
+                headers: { 'X-User-Id': userId }
+            });
             const data = await res.json();
             if (data.status === 'success') {
                 setPrefs(data.data);
@@ -168,9 +171,13 @@ export default function FCMTokenManager() {
         const newPrefs = { ...prefs, [key]: !prefs[key] };
         setPrefs(newPrefs); // Optimistic UI
         try {
+            const userId = getReliableUserId();
             await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
                 body: JSON.stringify({
                     token: currentToken,
                     ...newPrefs
