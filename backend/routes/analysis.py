@@ -236,8 +236,22 @@ async def read_stock(symbol: str, skip_ai: bool = False):
                     })
                     print(f"[★ AI-Cache] DB Cache HIT for {symbol} - Skipping Gemini API call")
                 else:
-                    # [2단계] DB 캐시 없음 → Gemini API 호출 (3~15초)
-                    ai_result = await asyncio.to_thread(analyze_stock, data)
+                    # [2단계] DB 캐시 없음 → Gemini API 호출 (최대 75초 timeout)
+                    try:
+                        ai_result = await asyncio.wait_for(
+                            asyncio.to_thread(analyze_stock, data),
+                            timeout=75
+                        )
+                    except asyncio.TimeoutError:
+                        print(f"[TIMEOUT] AI Analysis timed out for {symbol}")
+                        ai_result = {
+                            "score": 50,
+                            "metrics": {"supplyDemand": 50, "financials": 50, "news": 50},
+                            "analysis_summary": f"{data.get('name', symbol)}에 대한 AI 분석 처리에 시간이 초과되었습니다. 기본 데이터는 정상 제공되며, AI 분석은 잠시 후 재시도해 주세요.",
+                            "rationale": {},
+                            "related_stocks": [],
+                            "is_error": True
+                        }
                     data.update({
                         "score": ai_result.get("score", 50),
                         "metrics": ai_result.get("metrics", {"supplyDemand": 50, "financials": 50, "news": 50}),
