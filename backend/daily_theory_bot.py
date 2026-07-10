@@ -97,6 +97,7 @@ def generate_theory_post():
     5. 중요 강조: `<strong class="text-white bg-blue-900/30 px-1 rounded">`
     6. SVG 차트를 감싸는 박스: `<div class="my-10 p-6 bg-white/5 border border-white/10 rounded-2xl flex justify-center w-full overflow-x-auto"> SVG코드 </div>`
     7. **SEO 내부 링크**: 설명 중 '삼성전자', 'SK하이닉스' 등 한국 주식 종목명이 등장하면 반드시 해당 종목을 <a> 태그로 감싸서 링크를 걸어주세요. 예: `<a href="/stock/005930" class="text-blue-400 font-bold hover:underline">삼성전자</a>`. (종목 코드를 정확히 아는 경우에만)
+    8. **주의사항**: 절대로 `<!DOCTYPE>`, `<html>`, `<head>`, `<style>`, `<body>` 태그를 포함하지 마세요. CSS 코드를 텍스트로 적지 마세요. 오직 본문에 들어갈 내용물(태그)만 반환하세요.
     
     순수한 HTML 텍스트만 반환하고 markdown 틱(```html)은 제외하세요.
     """
@@ -150,11 +151,40 @@ def post_daily_theory():
         doc_ref = db.collection("theory_posts").document(slug)
         doc_ref.set(post_data)
         
-        print(f"[SUCCESS] 글 작성 완료! (ID: {post_id})")
-        new_url = f"https://stock-trend-program.co.kr/theory/{post_id}"
+        print(f"[SUCCESS] 글 작성 완료! (ID: {slug})")
+        new_url = f"https://stock-trend-program.co.kr/theory/{slug}"
         print(f"URL: {new_url}")
         
-        post_to_discord(title, new_url, tags)
+        # User requested no discord notifications
+        # post_to_discord(title, new_url, tags)
+        
+        clean_title = title.replace('[오늘의 차트 스터디]', '').strip()
+        
+        # 텔레그램 발송
+        try:
+            from telegram_service import send_telegram_teaser
+            teaser_msg = f"📚 <b>[주식 1타 강사] 오늘의 차트 스터디 업로드!</b>\n\n주식 초보 탈출을 위한 필수 이론!\n오늘의 주제: <b>{clean_title}</b>\n\n👉 <a href='{new_url}'>무료 강의 보러가기</a>"
+            send_telegram_teaser(teaser_msg)
+            print("[Telegram] 스터디 알림 발송 완료")
+        except Exception as e:
+            print(f"[Telegram] 발송 실패: {e}")
+            
+        # 앱 푸시 알림 발송
+        try:
+            from firebase_config import send_multicast_notification
+            from db_manager import get_all_fcm_tokens
+            tokens = get_all_fcm_tokens()
+            if tokens:
+                push_title = "📚 오늘의 주식 스터디"
+                push_body = f"{clean_title} - 초보 탈출 1타 강의가 업로드 되었습니다!"
+                push_data = {
+                    "type": "theory",
+                    "url": f"/theory/{slug}"
+                }
+                send_multicast_notification(tokens, push_title, push_body, push_data)
+                print(f"[FCM] 스터디 푸시 알림 {len(tokens)}명 발송 완료")
+        except Exception as e:
+            print(f"[FCM] 발송 실패: {e}")
         
         # Google Indexing API 실시간 핑
         try:
