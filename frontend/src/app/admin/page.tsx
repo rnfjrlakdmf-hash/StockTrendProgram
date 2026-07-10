@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, UserCheck, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
