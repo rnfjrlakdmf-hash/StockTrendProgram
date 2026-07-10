@@ -359,17 +359,17 @@ def generate_theory_post():
     {visual_section}
     5. SEO 메타데이터: 문서 제일 상단에 <title-seo>검색 엔진용 20자 이내 핵심 제목</title-seo>를 포함해주세요.
     
-    **HTML 포맷팅 규칙** (반드시 준수):
+    **HTML 포맷팅 규칙** (반드시 준수, 모바일 가독성 최우선):
     1. 전체 내용은 HTML 태그로 구성하세요 (Markdown 사용 절대 금지).
-    2. 큰 제목: <h2 class="text-3xl font-black text-white pb-2 border-b border-gray-700 mb-8">
-    3. 소제목: <h3 class="text-2xl font-bold text-blue-400 mt-10 mb-4 border-l-4 border-blue-500 pl-4">
-    4. 일반 텍스트: <p class="text-gray-300 text-lg leading-relaxed mb-6">
-    5. 중요 강조: <strong class="text-white bg-blue-900/30 px-1 rounded">
-    6. 인포그래픽/차트 감싸는 박스: <div class="my-10 p-6 bg-white/5 border border-white/10 rounded-2xl flex justify-center w-full overflow-x-auto"> SVG코드 </div>
-    7. 목록(리스트): <ul class="list-none space-y-3 mb-6"> + <li class="flex items-start gap-2 text-gray-300 text-lg"><span class="text-blue-400 mt-1">✓</span><span>내용</span></li>
-    8. 핵심 요약 박스: <div class="bg-blue-900/20 border border-blue-500/30 rounded-xl p-6 my-6"><p class="text-blue-200 text-lg">내용</p></div>
-    9. 경고/주의 박스: <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-6 my-6"><p class="text-red-200 text-lg">⚠️ 내용</p></div>
-    10. **SEO 내부 링크**: 설명 중 '삼성전자', 'SK하이닉스' 등 주요 종목명이 나오면 반드시 링크를 걸어주세요. 예: <a href="/stock/005930" class="text-blue-400 font-bold hover:underline">삼성전자</a>
+    2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
+    3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
+    4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
+    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400">
+    6. 인포그래픽/차트 감싸는 박스: <div class="my-12 p-4 md:p-8 bg-black/40 border border-white/20 rounded-2xl flex justify-center w-full overflow-x-auto shadow-2xl"> SVG코드 </div>
+    7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5">✓</span><span>내용</span></li>
+    8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
+    9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
+    10. **SEO 내부 링크**: 설명 중 '삼성전자', 'SK하이닉스' 등 주요 종목명이 나오면 반드시 링크를 걸어주세요. 예: <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>
     11. **절대 금지**: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그, CSS 코드 텍스트. 오직 본문 내용(태그)만 반환.
     
     순수한 HTML만 반환하고 마크다운 틱(```html)은 사용하지 마세요.
