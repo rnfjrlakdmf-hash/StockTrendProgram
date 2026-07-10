@@ -14,9 +14,15 @@ export default function TelegramBanner() {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
+    // 공통: 팝업 하루 안보기 체크
+    const checkIsDismissedForDay = () => {
+      const popupDismissedAt = localStorage.getItem(POPUP_KEY);
+      return popupDismissedAt && (Date.now() - parseInt(popupDismissedAt) < 24 * 60 * 60 * 1000);
+    };
+
     // 스트립 배너: 5초 후 표시
     const stripTimer = setTimeout(() => {
-      if (!localStorage.getItem(DISMISS_KEY)) {
+      if (!localStorage.getItem(DISMISS_KEY) && !checkIsDismissedForDay()) {
         setShowStrip(true);
         setIsAnimating(true);
       }
@@ -24,8 +30,7 @@ export default function TelegramBanner() {
 
     // 팝업: 20초 후 표시 (스트립 무시한 유저 타겟)
     const popupTimer = setTimeout(() => {
-      const popupDismissedAt = localStorage.getItem(POPUP_KEY);
-      const isDismissedForDay = popupDismissedAt && (Date.now() - parseInt(popupDismissedAt) < 24 * 60 * 60 * 1000);
+      const isDismissedForDay = checkIsDismissedForDay();
       const isSessionDismissed = sessionStorage.getItem('tg_popup_session');
       const isPermanentlyDismissed = localStorage.getItem(DISMISS_KEY);
 
@@ -53,6 +58,8 @@ export default function TelegramBanner() {
 
   const dismissPopupForToday = () => {
     setShowPopup(false);
+    setIsAnimating(false);
+    setTimeout(() => setShowStrip(false), 300);
     localStorage.setItem(POPUP_KEY, Date.now().toString());
   };
 
