@@ -194,6 +194,21 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                     <span className={diffColor}>
                                                         {!isNaN(curP) && p.buy_price > 0 ? `${isPositive ? '+' : ''}${pct.toFixed(2)}%` : '-'}
                                                     </span>
+                                                    {isPositive && (
+                                                        <div 
+                                                            onClick={(e) => e.stopPropagation()} 
+                                                            title="수익 자랑하기"
+                                                            className="ml-0.5"
+                                                        >
+                                                            <KakaoShareButton 
+                                                                title={`🔥 ${item.name} 수익 인증!`}
+                                                                description={`내가 산 ${item.name}, 지금 +${pct.toFixed(2)}% 수익 중이에요! 부럽지? 😎`}
+                                                                url={`https://stock-trend-program.co.kr/discovery?q=${item.symbol}`}
+                                                                buttonText=""
+                                                                className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#FEE500] text-[#191919] hover:bg-[#FEE500]/80 transition-colors shadow-sm p-0.5"
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
