@@ -58,8 +58,7 @@ export default function OnDemandAiAnalysis({ ticker, stockName }: { ticker: stri
         const timeoutId = setTimeout(() => controller.abort(), 90000); // 90초 timeout
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
-            const res = await fetch(`${apiUrl}/api/analysis/stock/${ticker}`, {
+            const res = await fetch(`/api/analysis/stock/${ticker}`, {
                 signal: controller.signal,
             });
 
