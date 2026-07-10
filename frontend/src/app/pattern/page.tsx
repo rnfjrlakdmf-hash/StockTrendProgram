@@ -677,8 +677,7 @@ export default function PatternPage() {
                                             { label: '3개월', value: '3개월' },
                                             { label: '1년', value: '1년' },
                                             { label: '3년', value: '3년' },
-                                            { label: '5년', value: '5년' },
-                                            { label: '10년', value: '10년' }
+                                            { label: '5년', value: '5년' }
                                         ].map((p) => (
                                             <button key={p.value} onClick={() => setLinePeriod(p.value)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{p.label}</button>
                                         ))
