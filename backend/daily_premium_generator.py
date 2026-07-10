@@ -15,13 +15,13 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     
-def get_naver_net_buying(market_code="0", investor_code="9000", limit=10):
+def get_naver_net_buying(market_code="01", investor_code="9000", limit=10):
     """
     네이버 금융에서 순매수 데이터를 크롤링합니다.
-    market_code: 0(코스피), 1(코스닥)
+    market_code: 01(코스피), 02(코스닥)
     investor_code: 9000(외국인), 8000(기관)
     """
-    url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={market_code}&investor_ill={investor_code}"
+    url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={market_code}&investor_gubun={investor_code}&type=buy"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     }
@@ -31,17 +31,7 @@ def get_naver_net_buying(market_code="0", investor_code="9000", limit=10):
         res.encoding = 'euc-kr'
         soup = BeautifulSoup(res.text, 'html.parser')
         
-        boxes = soup.find_all("div", class_="box_type_l")
-        target_box = None
-        for box in boxes:
-            if "순매수" in box.text:
-                target_box = box
-                break
-                
-        if not target_box:
-            return []
-            
-        table = target_box.find("table", class_="type_1")
+        table = soup.find("table", class_="type_1")
         if not table:
             return []
             
@@ -55,7 +45,7 @@ def get_naver_net_buying(market_code="0", investor_code="9000", limit=10):
                     continue
                 name = name_tag.text.strip()
                 try:
-                    vol_str = cols[1].text.strip().replace(",", "")
+                    vol_str = cols[2].text.strip().replace(",", "")  # 3번째 컬럼이 순매수 금액(백만) / 4번째가 순매수량
                     vol = int(vol_str) if vol_str.isdigit() else 0
                     if vol > 0:
                         results.append({"name": name, "volume": vol})
@@ -72,10 +62,10 @@ def generate_objective_report():
     today_str = now.strftime('%Y-%m-%d')
     
     # 1. 데이터 수집
-    kospi_foreign = get_naver_net_buying(market_code="0", investor_code="9000", limit=10)
-    kosdaq_foreign = get_naver_net_buying(market_code="1", investor_code="9000", limit=10)
-    kospi_inst = get_naver_net_buying(market_code="0", investor_code="8000", limit=10)
-    kosdaq_inst = get_naver_net_buying(market_code="1", investor_code="8000", limit=10)
+    kospi_foreign = get_naver_net_buying(market_code="01", investor_code="9000", limit=10)
+    kosdaq_foreign = get_naver_net_buying(market_code="02", investor_code="9000", limit=10)
+    kospi_inst = get_naver_net_buying(market_code="01", investor_code="8000", limit=10)
+    kosdaq_inst = get_naver_net_buying(market_code="02", investor_code="8000", limit=10)
     
     if not kospi_foreign and not kosdaq_foreign and not kospi_inst and not kosdaq_inst:
         print("Warning: No market data today (Naver API issue or holiday). Generating report with empty data.")
