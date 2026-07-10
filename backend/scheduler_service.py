@@ -100,22 +100,38 @@ def calculate_watchlist_performance(user_id: str, market: str):
             total_item_profit = 0
             total_item_buy_value = 0
             total_item_qty = 0
+            purchases_details = []
             
             if purchases and len(purchases) > 0:
-                for p in purchases:
+                for idx, p in enumerate(purchases):
                     try:
                         p_qty = float(p.get("quantity", 0))
                         p_bp = float(p.get("buy_price", 0))
                         if p_qty > 0 and p_bp > 0:
                             total_item_qty += p_qty
                             total_item_buy_value += (p_bp * p_qty)
-                            total_item_profit += (curr_p - p_bp) * p_qty
+                            p_profit = (curr_p - p_bp) * p_qty
+                            total_item_profit += p_profit
+                            purchases_details.append({
+                                "idx": idx + 1,
+                                "qty": p_qty,
+                                "buy_price": p_bp,
+                                "profit": p_profit,
+                                "perf": (p_profit / (p_bp * p_qty)) * 100
+                            })
                     except: pass
             else:
                 if added_price and added_price > 0:
                     total_item_qty = quantity
                     total_item_buy_value = added_price * quantity
                     total_item_profit = (curr_p - added_price) * quantity
+                    purchases_details.append({
+                        "idx": 1,
+                        "qty": quantity,
+                        "buy_price": added_price,
+                        "profit": total_item_profit,
+                        "perf": (total_item_profit / total_item_buy_value) * 100
+                    })
 
             item = {
                 "symbol": sym,
@@ -123,7 +139,8 @@ def calculate_watchlist_performance(user_id: str, market: str):
                 "current_price": curr_p,
                 "daily_change": change_p,
                 "added_price": (total_item_buy_value / total_item_qty) if total_item_qty > 0 else added_price,
-                "quantity": total_item_qty if total_item_qty > 0 else quantity
+                "quantity": total_item_qty if total_item_qty > 0 else quantity,
+                "purchases_details": purchases_details
             }
             
             # 수량을 반영한 누적 수익 및 가치 계산
@@ -479,6 +496,22 @@ def send_closing_notification(market: str):
                     else:
                         diff_str = f"{diff:+,.0f}"
                     line += f"\n  ↳ 💰총 수익: {diff_str}{unit} ({added_perf:+.1f}%)"
+                    
+                    # 다중 매수 건일 경우 세부 내역 추가
+                    pd_list = item.get("purchases_details", [])
+                    if len(pd_list) > 1:
+                        for p in pd_list:
+                            p_diff = p['profit']
+                            p_perf = p['perf']
+                            if market == "US":
+                                p_krw_diff = p_diff * fx_rate
+                                p_sign = "+" if p_krw_diff > 0 else "-" if p_krw_diff < 0 else ""
+                                p_krw_str = f"{p_sign}{abs(p_krw_diff)/10000:,.1f}만원" if abs(p_krw_diff) >= 10000 else f"{p_sign}{abs(p_krw_diff):,.0f}원"
+                                p_diff_str = f"{p_diff:+,.2f} (약 {p_krw_str})"
+                            else:
+                                p_diff_str = f"{p_diff:+,.0f}"
+                            line += f"\n      [{p['idx']}차] {p['qty']:g}주: {p_diff_str}{unit} ({p_perf:+.1f}%)"
+                            
                 price_list.append(line)
                 
             body_market = market_summary.strip()
