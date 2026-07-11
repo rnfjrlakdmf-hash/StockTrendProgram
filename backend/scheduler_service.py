@@ -1094,10 +1094,11 @@ def run_market_scheduler():
                     print(f"[Scheduler-Error] Failed to run Google Indexer: {e}")
                 run_market_scheduler.last_run_google_indexer = current_date
             
-            # [매일 발송] AI 모닝 브리핑 (KR)
-            if now.hour == 8 and 0 <= now.minute <= 5 and current_date != last_run_morning_kr:
-                asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
-                last_run_morning_kr = current_date
+            # [평일 발송] AI 모닝 브리핑 (KR)
+            if day_of_week <= 4 and not is_market_holiday("KR"):
+                if now.hour == 8 and 0 <= now.minute <= 5 and current_date != last_run_morning_kr:
+                    asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                    last_run_morning_kr = current_date
 
             # [매일 발송] 공모주 청약 일정 알림
             if day_of_week <= 4:
@@ -1128,10 +1129,11 @@ def run_market_scheduler():
                         print(f"[Scheduler-Error] Failed to send Morning Theme Briefing push: {e}")
                     run_market_scheduler.last_run_morning_theme_push = current_date
             
-            # [매일 발송] AI 모닝 브리핑 (US)
-            if now.hour == 21 and 30 <= now.minute <= 35 and current_date != last_run_morning_us:
-                asyncio.run(morning_briefing_service.run_daily_briefing("US"))
-                last_run_morning_us = current_date
+            # [평일 발송] AI 모닝 브리핑 (US)
+            if day_of_week <= 4 and not is_market_holiday("US"):
+                if now.hour == 21 and 30 <= now.minute <= 35 and current_date != last_run_morning_us:
+                    asyncio.run(morning_briefing_service.run_daily_briefing("US"))
+                    last_run_morning_us = current_date
 
             # 1. 국내 장시작 시가 알림
             if day_of_week <= 4:
