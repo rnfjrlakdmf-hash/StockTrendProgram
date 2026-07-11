@@ -21,7 +21,7 @@ export default function PremiumPage() {
             if (!user) return;
             try {
                 const userId = (user as any).uid || (user as any).id;
-                const res = await fetch(`${API_BASE_URL}/api/auth/reports/premium?user_id=${userId}`);
+                const res = await fetch(`${API_BASE_URL}/api/auth/reports/premium?user_id=${userId}&t=${Date.now()}`, { cache: "no-store" });
                 const data = await res.json();
                 if (data.status === "success") {
                     setReport(data);
