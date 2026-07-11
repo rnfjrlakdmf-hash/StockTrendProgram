@@ -90,7 +90,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                         className="relative group border-b border-white/5 last:border-0 border-l-4 border-orange-500 shadow-[inset_4px_0_10px_-4px_rgba(249,115,22,0.3)] hover:bg-white/[0.03] transition-all"
                     >
                         {/* Main Content Area */}
-                        <div className="flex items-center justify-between gap-2 md:gap-4 py-4 md:py-6 px-3 md:px-6">
+                        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-2 md:gap-4 py-4 md:py-6 px-3 md:px-6">
                             {/* Stock Info */}
                             <div 
                                 className="flex flex-col gap-1 min-w-0 flex-1 cursor-pointer active:opacity-50"
@@ -157,7 +157,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
 
                             {/* [NEW] 나열식 보유 리스트 (중앙) */}
                             {((item.purchases && item.purchases.length > 0) || (item.added_price ? true : false)) && (
-                                <div className="flex flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide px-2 md:px-4 pb-2 md:pb-0 min-w-0 max-w-[50vw]">
+                                <div className="order-last md:order-none w-full md:w-auto flex md:flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide px-1 md:px-4 pb-1 md:pb-0 min-w-0 md:max-w-[50vw]">
                                     {(item.purchases && item.purchases.length > 0 ? item.purchases : [{ id: 0, buy_price: item.added_price || 0, quantity: item.quantity || 0, purchase_date: '' }]).map((p, idx) => {
                                         const isUSD = item.currency && item.currency !== 'KRW';
                                         const currencySign = isUSD ? '$' : '';
