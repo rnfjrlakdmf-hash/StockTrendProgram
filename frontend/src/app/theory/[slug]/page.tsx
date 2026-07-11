@@ -7,14 +7,15 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import KakaoAdFit from "@/components/KakaoAdFit";
 
-export const revalidate = 60; // ISR 60초
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // ISR 60초
 
 async function getTheoryPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
         
         const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts/${encodeURIComponent(decodedSlug)}`;
-        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
+        const res = await fetch(apiUrl, { cache: 'no-store' });
         
         if (!res.ok) {
             console.error(`API error: ${res.status}`);

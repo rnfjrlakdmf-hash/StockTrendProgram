@@ -9,12 +9,13 @@ export const metadata: Metadata = {
     description: "초보자를 위한 매일매일 올라오는 알기 쉬운 주식 이론과 차트 분석 강의",
 };
 
-export const revalidate = 60; // ISR 60초 캐시
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getTheoryPosts(page: number, limitPerPage: number) {
     try {
         const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts?page=${page}&limit=${limitPerPage}`;
-        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
+        const res = await fetch(apiUrl, { cache: 'no-store' });
         
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         
