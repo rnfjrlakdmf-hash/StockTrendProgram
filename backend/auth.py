@@ -295,7 +295,9 @@ def get_premium_report(user_id: str):
     import pytz
     
     kst = pytz.timezone('Asia/Seoul')
-    today_str = datetime.now(kst).strftime('%Y-%m-%d')
+    now = datetime.now(kst)
+    today_str = now.strftime('%Y-%m-%d')
+    day_of_week = now.weekday()
     
     import os
     import json
@@ -304,12 +306,20 @@ def get_premium_report(user_id: str):
     report_path = os.path.join(os.path.dirname(__file__), "premium_report_today.json")
     
     # 기본 폴백 데이터 (아직 리포트가 생성되지 않았을 때)
-    premium_data = {
-        "report_date": today_str,
-        "title": f"[{today_str}] 기관/외인 순매수 상위 종목 통계",
-        "preview": "현재 데이터 수집 및 분석 중입니다. 장 마감 후 업데이트됩니다.",
-        "content": "아직 오늘의 리포트가 생성되지 않았습니다.\n(보통 오후 3시 45분 이후 업데이트됩니다.)"
-    }
+    if day_of_week >= 5: # 토, 일요일
+        premium_data = {
+            "report_date": today_str,
+            "title": f"[{today_str}] VIP 리포트 주말 휴간 안내",
+            "preview": "주말(토/일)에는 주식 시장 휴장으로 인하여 수급 데이터가 수집되지 않습니다.",
+            "content": "주식 시장이 열리지 않는 주말에는 VIP 트렌드 리포트가 발간되지 않습니다.\n평일(월~금) 장 마감 이후에 새로운 리포트로 다시 찾아뵙겠습니다.\n\n이전 리포트를 열람하시려면 날짜를 이전 평일(금요일 등)로 선택해 주세요."
+        }
+    else:
+        premium_data = {
+            "report_date": today_str,
+            "title": f"[{today_str}] 기관/외인 순매수 상위 종목 통계",
+            "preview": "현재 데이터 수집 및 분석 중입니다. 장 마감 후 업데이트됩니다.",
+            "content": "아직 오늘의 리포트가 생성되지 않았습니다.\n(보통 오후 3시 45분 이후 업데이트됩니다.)"
+        }
 
     if os.path.exists(report_path):
         try:
