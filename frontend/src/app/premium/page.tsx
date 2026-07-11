@@ -155,8 +155,11 @@ export default function PremiumPage() {
             ) : report && report.data ? (
                 <div className="bg-[#1a1d24] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-gray-900 to-[#1a1d24] p-6 border-b border-white/5 relative">
-                        <div className="absolute top-0 right-0 p-4 flex flex-col items-end gap-2">
+                    <div className="bg-gradient-to-r from-gray-900 to-[#1a1d24] p-6 border-b border-white/5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <h2 className="text-xl md:text-2xl font-bold text-white sm:pr-4 flex-1 order-2 sm:order-1">
+                            {report.data.title}
+                        </h2>
+                        <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-2 shrink-0 order-1 sm:order-2">
                             {report.locked ? (
                                 <div className="bg-red-500/10 text-red-400 text-xs font-bold px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-1.5 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                                     <Lock className="w-3 h-3" />
@@ -176,9 +179,6 @@ export default function PremiumPage() {
                                 </div>
                             )}
                         </div>
-                        <h2 className="text-xl md:text-2xl font-bold text-white mt-2 pr-24">
-                            {report.data.title}
-                        </h2>
                     </div>
 
                     {/* Content Area */}
