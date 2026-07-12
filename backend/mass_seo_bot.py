@@ -125,7 +125,7 @@ def main():
     init_firebase()
     db = firestore.client()
     
-    stocks = get_surging_stocks(limit=20)
+    stocks = get_surging_stocks(limit=3)
     if not stocks:
         print("포착된 급등주가 없습니다.")
         return
