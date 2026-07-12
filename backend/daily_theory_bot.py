@@ -349,13 +349,21 @@ def generate_theory_post():
     else:
         visual_section = """
     2. 시각화 자료 (안전한 SVG 다이어그램/막대그래프): 텍스트로만 설명하면 초보자가 이해하기 어려우므로, 핵심 개념(비율, 흐름, 구조 등)을 설명할 때 **SVG를 활용한 직관적인 모식도(다이어그램)나 가로 막대 그래프**를 반드시 그려서 삽입하세요.
-       (주의: HTML 표(Table)나 너무 긴 문장을 SVG 안에 넣으면 모바일 화면에서 깨집니다. 동그라미, 선, 화살표, 도형과 간단한 핵심 단어 위주의 '도식화/인포그래픽'만 예쁘게 그리세요.)
+
+       ⚠️ SVG 다이어그램 필수 규칙 (반드시 지켜야 함):
+       - 각 rect(사각형) 박스의 높이는 내부 텍스트가 절대 넘치지 않도록 충분히 크게 설정하세요 (한 줄당 최소 30px, 줄 수에 맞게 높이 계산).
+       - 텍스트가 2줄 이상일 경우, 반드시 <tspan dy="28"> 등을 이용해 줄 바꿈하고, 박스 높이도 그에 맞게 넉넉히 키우세요.
+       - 텍스트는 반드시 박스(rect) 내부 중앙에 위치시키세요. (text x=박스 중앙, y=박스 중앙)
+       - 텍스트 글씨는 font-size 최대 16px 이하로 유지해서 박스 안에 여유 있게 들어오도록 하세요.
+       - 절대로 텍스트가 박스 경계선을 넘거나 다른 요소와 겹치면 안 됩니다.
+       - SVG 전체 viewBox 높이도 모든 요소가 들어올 만큼 충분히 설정하세요.
+
        - 다이어그램 SVG 디자인 예시 템플릿:
          <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
          <svg viewBox="0 0 800 400" class="w-full max-w-[700px] h-auto font-sans">
              <!-- 배경 -->
              <rect width="800" height="400" fill="#111827" rx="16"/>
-             <!-- 화살표, 원(circle), 사각형(rect) 등 도형과 짧은 텍스트(text-anchor="middle", fill="#e5e7eb")를 사용하여 개념의 흐름, 비교, 구조를 아름답게 도식화하세요 -->
+             <!-- 화살표, 원(circle), 사각형(rect) 등 도형과 짧은 텍스트(text-anchor="middle", fill="#e5e7eb")를 사용하여 개념의 흐름, 비교, 구조를 아름답게 도식화하세요. 텍스트는 반드시 rect 안에 여유 있게 들어오도록 박스를 충분히 크게 만드세요 -->
          </svg>
          </div>
        - 또는 수치 비교 시 Tailwind CSS 가로 막대 그래프 적극 활용:
