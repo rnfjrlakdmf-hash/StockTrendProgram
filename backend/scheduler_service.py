@@ -650,12 +650,7 @@ def send_daily_analytics_report():
     # 1. 일일 및 30일 누적 통계 조회
     stats_list = get_site_analytics(30)
     
-    # 🌟 구글 시트 동기화 (보고서 발송과 함께 항상 실행)
-    try:
-        from google_sheets_sync import sync_analytics_to_sheet
-        sync_analytics_to_sheet()
-    except Exception as e:
-        print(f"[Scheduler] Google Sheets sync error: {e}")
+    # 🌟 구글 시트 동기화 (기존에는 여기서 했으나 이제 매시간 정각에 별도로 실행됨)
     unique_visitors = 0
     pageviews = 0
     if stats_list:
@@ -1114,10 +1109,19 @@ def run_market_scheduler():
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date
 
-            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins) 및 구글 시트 동기화
+            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
             if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
                 send_daily_analytics_report()
                 last_run_daily_report = current_date
+                
+            # [매시간 실행] 구글 시트 통계 동기화 (불사조 모드: 누락 방지)
+            if now.minute == 0 and getattr(run_market_scheduler, "last_run_sheets_sync_hour", None) != now.hour:
+                try:
+                    from google_sheets_sync import sync_analytics_to_sheet
+                    sync_analytics_to_sheet()
+                    run_market_scheduler.last_run_sheets_sync_hour = now.hour
+                except Exception as e:
+                    print(f"[Scheduler] Google Sheets sync error: {e}")
             
             # [매일 실행] 새벽 3시 구글 색인(Indexing) 봇 자동 실행 (최신 종목/테마 페이지 강제 푸시)
             if now.hour == 3 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
