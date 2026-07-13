@@ -74,17 +74,17 @@ def generate_objective_report():
         kospi_inst = [{"name": "데이터없음", "volume": 0}]
         kosdaq_inst = [{"name": "데이터없음", "volume": 0}]
         
-    kospi_f_names = [d['name'] for d in kospi_foreign[:5]]
-    kosdaq_f_names = [d['name'] for d in kosdaq_foreign[:5]]
-    kospi_i_names = [d['name'] for d in kospi_inst[:5]]
-    kosdaq_i_names = [d['name'] for d in kosdaq_inst[:5]]
+    kospi_f_list = [f"{d['name']} ({d['volume']:,}주)" for d in kospi_foreign[:5]]
+    kosdaq_f_list = [f"{d['name']} ({d['volume']:,}주)" for d in kosdaq_foreign[:5]]
+    kospi_i_list = [f"{d['name']} ({d['volume']:,}주)" for d in kospi_inst[:5]]
+    kosdaq_i_list = [f"{d['name']} ({d['volume']:,}주)" for d in kosdaq_inst[:5]]
     
     raw_data_summary = f"""
 [오늘의 수급 통계 원시 데이터]
-- 코스피 외국인 순매수 상위: {', '.join(kospi_f_names) if kospi_f_names else '없음'}
-- 코스닥 외국인 순매수 상위: {', '.join(kosdaq_f_names) if kosdaq_f_names else '없음'}
-- 코스피 기관 순매수 상위: {', '.join(kospi_i_names) if kospi_i_names else '없음'}
-- 코스닥 기관 순매수 상위: {', '.join(kosdaq_i_names) if kosdaq_i_names else '없음'}
+- 코스피 외국인 순매수 상위: {', '.join(kospi_f_list) if kospi_f_list else '없음'}
+- 코스닥 외국인 순매수 상위: {', '.join(kosdaq_f_list) if kosdaq_f_list else '없음'}
+- 코스피 기관 순매수 상위: {', '.join(kospi_i_list) if kospi_i_list else '없음'}
+- 코스닥 기관 순매수 상위: {', '.join(kosdaq_i_list) if kosdaq_i_list else '없음'}
     """
     
     prompt = f"""
@@ -97,17 +97,18 @@ def generate_objective_report():
 [작성 규칙 및 자본시장법 준수]
 1. 절대로 '추천', '매수 타이밍', '공략', '목표가', '사라/팔라' 등의 직접적인 매수/매도 추천 단어를 사용하지 마세요. (법적 리스크 방지)
 2. 단순히 "~종목에 포함되었습니다"라는 기계적이고 단조로운 문장을 절대 반복하지 마세요!
-3. 각 종목별로 해당 종목이 속한 테마, 최근 시장 이슈, 그리고 외국인이나 기관이 '왜 이 종목을 집중 매집했을까?'에 대한 전문가적인 인사이트와 분석 코멘트를 1~2줄로 깊이 있게 덧붙이세요.
-4. 리포트는 다음 구조로 작성하세요 (반드시 마크다운 문법을 사용하여 가독성을 극대화하세요):
+3. 원시 데이터에 제공된 **순매수 수량(주수)**을 반드시 본문에 포함하여 분석하세요. (예: "삼성전자 1,500,000주 대량 매집")
+4. 각 종목별로 해당 종목이 속한 테마, 최근 시장 이슈, 그리고 외국인이나 기관이 '왜 이 엄청난 수량을 집중 매집했을까?'에 대한 전문가적인 인사이트와 분석 코멘트를 1~2줄로 깊이 있게 덧붙이세요.
+5. 리포트는 다음 구조로 작성하세요 (반드시 마크다운 문법을 사용하여 가독성을 극대화하세요):
 
 ### 📊 오늘의 수급 특징 요약
 (오늘 기관/외국인 수급이 어느 섹터/테마로 쏠렸는지, 시장의 전체적인 수급 흐름을 전문가의 날카로운 시선으로 총평해주세요.)
 
 ### 🌐 외국인 순매수 상위 팩트 체크
-(각 종목마다 글머리 기호 `-` 를 사용하고, 종목명은 **굵게(Bold)** 처리하세요. 예: `- **삼성전자**: [최근 반도체 업황 턴어라운드 기대감과 함께 외국인의 저점 매수세가 강하게 유입된 것으로 분석됩니다...]`)
+(각 종목마다 글머리 기호 `-` 를 사용하고, 종목명은 **굵게(Bold)** 처리하세요. 예: `- **삼성전자**: [1,500,000주 대량 매집] 최근 반도체 업황 턴어라운드 기대감과 함께 외국인의 저점 매수세가 강하게 유입된 것으로 분석됩니다...`)
 
 ### 🏢 기관 순매수 상위 팩트 체크
-(위와 동일하게 각 종목마다 글머리 기호 `-` 와 **종목명**을 사용하고, 기관이 매집한 이유와 인사이트를 분석해 주세요.)
+(위와 동일하게 각 종목마다 글머리 기호 `-` 와 **종목명**, **매수 수량**을 포함하고, 기관이 매집한 이유와 인사이트를 분석해 주세요.)
 
 [출력 형식 제한]
 - 미리보기용 짧은 요약(Preview, 1~2문장)과 전체 본문(Content)을 구분해서 작성합니다.
