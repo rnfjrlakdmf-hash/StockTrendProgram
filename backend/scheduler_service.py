@@ -1081,6 +1081,23 @@ def run_market_scheduler():
                     print(f"[Scheduler] Mass SEO Bot error: {e}")
                 run_market_scheduler.last_run_mass_seo = current_date
 
+            # [매일 실행] 오후 1:30 주식 기초 Q&A 롱테일 봇
+            if now.hour == 13 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_qa_seo", None):
+                try:
+                    import qa_seo_bot
+                    qa_seo_bot.main()
+                except Exception as e:
+                    print(f"[Scheduler] QA SEO Bot error: {e}")
+                run_market_scheduler.last_run_qa_seo = current_date
+
+            # [평일 실행] 오후 5:30 오늘의 테마주 싹쓸이 봇
+            if not is_holiday("kor") and now.hour == 17 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_theme_seo", None):
+                try:
+                    import theme_seo_bot
+                    theme_seo_bot.main()
+                except Exception as e:
+                    print(f"[Scheduler] Theme SEO Bot error: {e}")
+                run_market_scheduler.last_run_theme_seo = current_date
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
                 try:
