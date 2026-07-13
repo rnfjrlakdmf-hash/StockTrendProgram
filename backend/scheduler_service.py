@@ -1029,48 +1029,7 @@ def run_market_scheduler():
                         print(f"[Scheduler] Whale alert error: {e}")
                     run_market_scheduler.last_run_whale_alert = current_time
             
-            # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅 (최대 3회 자동 재시도)
-            _state = load_state()
-            last_theory = _state.get("last_run_daily_theory", "")
-            theory_retry_count = _state.get("theory_retry_count", 0)
-            theory_retry_date = _state.get("theory_retry_date", "")
-            # 날짜가 바뀌면 재시도 카운터 초기화
-            if theory_retry_date != current_date:
-                theory_retry_count = 0
-            if (now.hour > 8 or (now.hour == 8 and now.minute >= 30)) and current_date != last_theory and theory_retry_count < 3:
-                success = False
-                try:
-                    from daily_theory_bot import post_daily_theory
-                    success = post_daily_theory()
-                except Exception as e:
-                    print(f"[Scheduler] Daily Theory Bot error: {e}")
-                
-                if success:
-                    _state["last_run_daily_theory"] = current_date
-                    _state["theory_retry_count"] = 0
-                    _state["theory_retry_date"] = current_date
-                    save_state(_state)
-                    print(f"[Scheduler] Daily Theory Bot succeeded on attempt #{theory_retry_count + 1}")
-                else:
-                    theory_retry_count += 1
-                    _state["theory_retry_count"] = theory_retry_count
-                    _state["theory_retry_date"] = current_date
-                    save_state(_state)
-                    print(f"[Scheduler] Daily Theory Bot failed (attempt {theory_retry_count}/3). Will retry in next cycle.")
-                    # 3회 모두 실패 시 관리자 텔레그램 알림 발송
-                    if theory_retry_count >= 3:
-                        try:
-                            import os, requests as _req
-                            _bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-                            _chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-                            if _bot_token and _chat_id:
-                                _req.post(
-                                    f"https://api.telegram.org/bot{_bot_token}/sendMessage",
-                                    json={"chat_id": _chat_id, "text": f"⚠️ [자동 알림] {current_date} 주식 이론 강의 자동 포스팅이 3회 연속 실패했습니다. 관리자 확인이 필요합니다."},
-                                    timeout=10
-                                )
-                        except Exception as _te:
-                            print(f"[Scheduler] Admin alert failed: {_te}")
+            # 중복된 예전 스케줄러 블록 제거됨
                 
             # [평일 실행] 오후 4:30 초대량 롱테일 키워드 SEO 공장 (수해전술 봇)
             if not is_holiday("kor") and now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_mass_seo", None):
