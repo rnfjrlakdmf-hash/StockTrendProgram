@@ -27,30 +27,16 @@ def init_firebase():
         except Exception as e:
             print(f"Firebase 초기화 에러: {e}")
 
-def get_surging_stocks(limit=20):
-    print("국내 증시 거래량/급등주 탐색 중...")
+def get_surging_stocks(limit=5):
+    print("국내 증시 실시간 인기 검색 종목 탐색 중...")
     try:
-        # KOSPI 거래량 상위
-        kospi_quant = fetch_naver_ranking_data('KOR', 'quantTop')
+        # 네이버페이 증권 실시간 인기 검색 종목 1~5위
+        search_top = fetch_naver_ranking_data('KOR', 'searchTop')
         
-        all_stocks = kospi_quant[:100]
-        
-        surging = []
-        for s in all_stocks:
-            try:
-                rate = float(s.get('prevChangeRate', 0))
-                # 5% 이상 상승한 종목만 필터링
-                if rate >= 5.0:
-                    surging.append(s)
-            except:
-                pass
-                
-        # 상승률 순으로 정렬
-        surging = sorted(surging, key=lambda x: float(x.get('prevChangeRate', 0)), reverse=True)
-        
-        return surging[:limit]
+        # 필터링 없이 그대로 최상위 인기 종목 반환
+        return search_top[:limit]
     except Exception as e:
-        print(f"급등주 탐색 실패: {e}")
+        print(f"인기 종목 탐색 실패: {e}")
         return []
 
 def get_compliance_prompt(stock_name, ticker):
@@ -71,7 +57,6 @@ def get_compliance_prompt(stock_name, ticker):
 def generate_seo_post(stock):
     name = stock.get('itemname')
     ticker = stock.get('itemcode')
-    rate = stock.get('prevChangeRate')
     
     print(f"[{name}] 데이터 수집 및 글 작성 중...")
     
@@ -85,7 +70,7 @@ def generate_seo_post(stock):
     
     prompt = f"""
     당신은 SEO 전문 카피라이터이자 주식 애널리스트입니다.
-    오늘({today_str}) 주가가 {rate}% 상승하며 시장의 주목을 받은 '{name}'에 대한 정보성 포스팅을 작성하세요.
+    오늘({today_str}) 실시간 인기 검색어로 시장의 뜨거운 관심을 받고 있는 '{name}'에 대한 정보성 포스팅을 작성하세요.
 
     [최신 뉴스 요약]
     {news_text}
@@ -125,7 +110,7 @@ def main():
     init_firebase()
     db = firestore.client()
     
-    stocks = get_surging_stocks(limit=3)
+    stocks = get_surging_stocks(limit=5)
     if not stocks:
         print("포착된 급등주가 없습니다.")
         return
