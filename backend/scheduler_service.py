@@ -972,6 +972,41 @@ def run_market_scheduler():
                         print(f"[Scheduler] Watchlist news error: {e}")
                     run_market_scheduler.last_run_watchlist_news = current_time
 
+            # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅 (최대 3회 자동 재시도)
+            # 날짜가 바뀌면 재시도 카운터 초기화
+            if getattr(run_market_scheduler, "theory_retry_date", "") != current_date:
+                run_market_scheduler.theory_retry_count = 0
+                run_market_scheduler.theory_retry_date = current_date
+            
+            retry_count = getattr(run_market_scheduler, "theory_retry_count", 0)
+            
+            if (now.hour > 8 or (now.hour == 8 and now.minute >= 30)) and current_date != last_run_daily_theory and retry_count < 3:
+                success = False
+                try:
+                    from daily_theory_bot import post_daily_theory
+                    success = post_daily_theory()
+                except Exception as e:
+                    print(f"[Scheduler] Daily Theory Bot error: {e}")
+                
+                if success:
+                    last_run_daily_theory = current_date
+                    run_market_scheduler.theory_retry_count = 0
+                    print(f"[Scheduler] Daily Theory Bot succeeded on attempt #{retry_count + 1}")
+                else:
+                    run_market_scheduler.theory_retry_count = retry_count + 1
+                    print(f"[Scheduler] Daily Theory Bot failed attempt #{retry_count + 1}")
+                    
+                    if run_market_scheduler.theory_retry_count >= 3:
+                        try:
+                            import os, requests as _req
+                            _bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+                            _chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+                            if _bot_token and _chat_id:
+                                _msg = f"⚠️ [에러 경고]\n오늘({current_date}) 주식 이론 강의 자동 작성이 3회 연속 실패했습니다. 서버 로그를 확인해주세요."
+                                _req.post(f"https://api.telegram.org/bot{_bot_token}/sendMessage", json={"chat_id": _chat_id, "text": _msg}, timeout=10)
+                        except Exception as te:
+                            print(f"[Scheduler] Telegram alert error: {te}")
+
             # [장중+애프터마켓] 관심종목 가격 급등락 감시 (5분 간격, 20:00까지 연장)
             if not is_holiday("kor") and 9 <= now.hour <= 19 and now.minute % 5 == 0:
                 current_time = now.strftime('%H:%M')
