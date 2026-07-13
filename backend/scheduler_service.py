@@ -980,7 +980,7 @@ def run_market_scheduler():
             
             retry_count = getattr(run_market_scheduler, "theory_retry_count", 0)
             
-            if (now.hour > 8 or (now.hour == 8 and now.minute >= 30)) and current_date != last_run_daily_theory and retry_count < 3:
+            if now.hour == 8 and now.minute >= 30 and current_date != last_run_daily_theory and retry_count < 3:
                 success = False
                 try:
                     from daily_theory_bot import post_daily_theory
