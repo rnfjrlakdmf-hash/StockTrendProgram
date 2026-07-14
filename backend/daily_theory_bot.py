@@ -439,7 +439,8 @@ def post_daily_theory():
         print("콘텐츠 생성 실패.")
         return False
         
-    timestamp = datetime.now().strftime("%Y%m%d")
+    kst = timezone(timedelta(hours=9))
+    timestamp = datetime.now(kst).strftime("%Y%m%d")
     slug = f"theory-{timestamp}"
     
     post_data = {
