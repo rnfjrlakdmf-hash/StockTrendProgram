@@ -150,8 +150,12 @@ export default async function TheoryListPage(props: Props) {
                 </div>
             )}
             
-            <div className="w-full flex justify-center mt-12 mb-8">
+            <div className="w-full flex justify-center mt-12 mb-4">
                 <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
+            </div>
+            {/* 하단 직사각형 배너 광고 (320x100) */}
+            <div className="w-full flex justify-center mb-8">
+                <KakaoAdFit adUnit="DAN-8TxTsrWjI6Q4SOt0" adWidth="320" adHeight="100" />
             </div>
         </div>
     );
