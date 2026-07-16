@@ -486,20 +486,37 @@ def send_multicast_notification(
                 except Exception as e:
                     print(f"[Firebase] Failed to delete unregistered token from DB: {e}")
             except Exception as token_err:
-                failure_count += 1
-                print(f"[Firebase] Failed to send to token {idx}: {token_err}")
                 error_msg = str(token_err)
-                print(f"[Firebase] Error sending to token {idx}: {error_msg}")
-                try:
-                    from db_manager import add_system_log
-                    add_system_log(
-                        level="ERROR", 
-                        component="PushNotification", 
-                        message=f"Failed to send alert '{title}' to a token.", 
-                        details=error_msg
-                    )
-                except Exception as log_err:
-                    pass
+                # invalid-registration-token, registration-token-not-registered 등 죽은 토큰 자동 삭제
+                dead_token_keywords = [
+                    'invalid-registration-token',
+                    'registration-token-not-registered',
+                    'invalid argument',
+                    'requested entity was not found',
+                    'senderId mismatch',
+                    'invalid-recipient'
+                ]
+                if any(kw in error_msg.lower() for kw in dead_token_keywords):
+                    unregistered_count += 1
+                    print(f"[Firebase] Token {idx} is invalid/dead ({error_msg[:60]}). Deleting from DB.")
+                    try:
+                        from db_manager import delete_fcm_token
+                        delete_fcm_token(token)
+                    except Exception as e:
+                        print(f"[Firebase] Failed to delete dead token from DB: {e}")
+                else:
+                    failure_count += 1
+                    print(f"[Firebase] Failed to send to token {idx}: {error_msg}")
+                    try:
+                        from db_manager import add_system_log
+                        add_system_log(
+                            level="ERROR", 
+                            component="PushNotification", 
+                            message=f"Failed to send alert '{title}' to a token.", 
+                            details=error_msg
+                        )
+                    except Exception as log_err:
+                        pass
 
         # 전체 발송 요약 로그 기록
         try:
