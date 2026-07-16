@@ -906,7 +906,16 @@ def run_market_scheduler():
     last_run_analytics = ""
     last_run_fomo = ""
     last_run_dormant = ""
-    last_run_daily_theory = ""
+    # [핵심 수정] 서버 재시작 시 오늘 날짜를 기준으로 초기화
+    # 오전 8:30 이후 재시작이면 "오늘은 이미 실행됨" 처리 → 중복 방지
+    # 오전 8:30 이전 재시작이면 "" 유지 → 정시에 정상 실행
+    _init_kst = pytz.timezone('Asia/Seoul')
+    _init_now = datetime.now(_init_kst)
+    _init_today = _init_now.strftime('%Y-%m-%d')
+    if _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
+        last_run_daily_theory = _init_today  # 이미 실행했거나 실행 시간 이후이므로 오늘 날짜로 마킹
+    else:
+        last_run_daily_theory = ""  # 아직 실행 전이므로 정상 실행 허용
     last_spike_alert_time = None
 
     last_cleanup_date = ""
