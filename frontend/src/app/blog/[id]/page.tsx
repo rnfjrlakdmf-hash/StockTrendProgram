@@ -167,7 +167,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
-                                weekday: 'long'
+                                weekday: 'long',
+                                timeZone: 'Asia/Seoul'
                             })}
                         </time>
                     </div>

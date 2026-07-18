@@ -94,7 +94,8 @@ export default async function TheoryListPage(props: Props) {
                                             {new Date(post.createdAt).toLocaleDateString('ko-KR', {
                                                 year: 'numeric',
                                                 month: 'long',
-                                                day: 'numeric'
+                                                day: 'numeric',
+                                                timeZone: 'Asia/Seoul'
                                             })}
                                             <Eye className="w-3.5 h-3.5 ml-4 mr-1 text-gray-500" />
                                             <span>{post.viewCount} 읽음</span>

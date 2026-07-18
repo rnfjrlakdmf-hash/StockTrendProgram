@@ -161,7 +161,8 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
-                                weekday: 'long'
+                                weekday: 'long',
+                                timeZone: 'Asia/Seoul'
                             })}
                         </time>
                     </div>

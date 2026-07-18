@@ -8,6 +8,7 @@ import KakaoShareButton from "@/components/KakaoShareButton";
 import ReportDownloadButton from "@/components/ReportDownloadButton";
 import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
 import PremiumContent from "@/components/PremiumContent";
+import RiskGaugeWidget from "@/components/RiskGaugeWidget";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -177,6 +178,7 @@ export default async function StockSeoPage({ params }: Props) {
             />
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-12">
+                <RiskGaugeWidget symbol={decodedTicker} />
                 <div id="ai-report-capture" className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="mb-2 w-full">

@@ -297,6 +297,54 @@ def gather_naver_stock_data(symbol: str):
 
         if not info or not info.get('regularMarketPrice'):
             print(f"[yfinance-KOR] Failed to fetch data for both .KS and .KQ: {code}")
+            
+            # --- Fallback to Naver Polling API ---
+            try:
+                import requests
+                polling_url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{code}"
+                res = requests.get(polling_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                if res.status_code == 200:
+                    data = res.json()
+                    areas = data.get('result', {}).get('areas', [])
+                    if areas and areas[0].get('datas'):
+                        stock_data = areas[0]['datas'][0]
+                        price = stock_data.get('nv')
+                        prev_close = stock_data.get('pcv') or stock_data.get('ov') or price
+                        
+                        info = {
+                            'regularMarketPrice': price,
+                            'currentPrice': price,
+                            'previousClose': prev_close,
+                            'open': stock_data.get('ov'),
+                            'dayHigh': stock_data.get('hv'),
+                            'dayLow': stock_data.get('lv'),
+                            'volume': stock_data.get('aq'),
+                            'longName': stock_data.get('nm'),
+                            'shortName': stock_data.get('nm'),
+                            'symbol': f"{code}.KS",
+                            'marketCap': 0,
+                            'trailingEps': stock_data.get('eps'),
+                            'bookValue': stock_data.get('bps'),
+                            'quoteType': 'EQUITY'
+                        }
+                        
+                        # fetch market cap from integration API as secondary fallback
+                        try:
+                            m_res = requests.get(f"https://m.stock.naver.com/api/stock/{code}/integration", headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+                            if m_res.status_code == 200:
+                                m_data = m_res.json()
+                                if m_data.get('marketValue'):
+                                    mv_str = str(m_data.get('marketValue', '')).replace(',', '')
+                                    if mv_str.isdigit():
+                                        info['marketCap'] = int(mv_str) * 1000000
+                        except:
+                            pass
+
+                        print(f"[yfinance-KOR] Fallback to Naver Polling API succeeded for {code}")
+            except Exception as e:
+                print(f"[yfinance-KOR] Fallback also failed for {code}: {e}")
+
+        if not info or not info.get('regularMarketPrice'):
             return None
 
         # ── 데이터 매핑 및 가공 ──────────────────────────────────

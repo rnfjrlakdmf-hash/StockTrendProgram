@@ -8,6 +8,17 @@ from turbo_engine import turbo_cache, turbo_engine
 
 router = APIRouter()
 
+@router.get("/stock/{symbol}/risk")
+@turbo_cache(ttl_seconds=3600)
+def get_stock_risk(symbol: str):
+    """신용잔고 및 대차잔고 위험 스코어 분석"""
+    from risk_analyzer import analyze_risk
+    try:
+        data = analyze_risk(symbol)
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.get("/stock/{symbol}/overview")
 @turbo_cache(ttl_seconds=3600)
 def stock_company_overview(symbol: str):

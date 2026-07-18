@@ -206,9 +206,53 @@ def is_chart_topic(topic: str) -> bool:
                       "쌍바닥", "쌍봉", "엘리어트", "파라볼릭", "도지", "망치형", "잉걸불"]
     return any(kw in topic for kw in chart_keywords)
 
-def get_topic_today() -> str:
-    day_of_year = datetime.now().timetuple().tm_yday
-    return THEORY_TOPICS[day_of_year % len(THEORY_TOPICS)]
+def get_topic_today(db=None) -> str:
+    """
+    Firestore에서 최근 90일간 이미 발행된 강의 주제를 조회하여 겹치지 않는 주제를 선택합니다.
+    차트 주제를 70% 확률로 우선 선택합니다.
+    DB 연결이 없는 경우 day_of_year 방식으로 폴백(fallback)합니다.
+    """
+    used_titles = set()
+    if db:
+        try:
+            # 최근 90일치 발행 글의 제목 수집
+            docs = db.collection("theory_posts").order_by(
+                "createdAt", direction=firestore.Query.DESCENDING
+            ).limit(90).stream()
+            for doc in docs:
+                data = doc.to_dict()
+                title = data.get("title", "")
+                if title:
+                    used_titles.add(title.strip())
+        except Exception as e:
+            print(f"[Theory Bot] 발행 이력 조회 실패 (폴백 사용): {e}")
+
+    # 사용되지 않은 주제 후보 필터링
+    available_chart = [t for t in CHART_TOPICS if t not in used_titles]
+    available_general = [t for t in GENERAL_TOPICS if t not in used_titles]
+
+    # 모든 주제 소진 시 순환
+    if not available_chart:
+        print("[Theory Bot] 차트 주제 소진 - 차트 전체 목록에서 재선택")
+        available_chart = CHART_TOPICS
+    if not available_general:
+        print("[Theory Bot] 일반 주제 소진 - 일반 전체 목록에서 재선택")
+        available_general = GENERAL_TOPICS
+
+    # 날짜 시드 랜덤 (하루 동안 같은 결과 보장)
+    kst = timezone(timedelta(hours=9))
+    seed_str = datetime.now(kst).strftime("%Y%m%d")
+    rand = random.Random(int(seed_str))
+
+    # 차트 70%, 일반 30% 가중치 선택
+    if rand.random() < 0.7:
+        selected = rand.choice(available_chart)
+        print(f"[Theory Bot] 차트 주제 선택 (70% 가중치): {selected[:30]}...")
+    else:
+        selected = rand.choice(available_general)
+        print(f"[Theory Bot] 일반 주제 선택 (30% 가중치): {selected[:30]}...")
+
+    return selected
 
 if __name__ == '__main__' and False:  # placeholder to keep original main block
     THEORY_TOPICS = CHART_TOPICS + GENERAL_TOPICS
@@ -327,36 +371,62 @@ Dummy = [
     "장기투자 vs 단기매매 - 나에게 맞는 투자 방식 선택하는 법",
 ]
 
-def generate_theory_post():
-    topic = get_topic_today()
+def generate_theory_post(db=None):
+    topic = get_topic_today(db=db)
     use_chart = is_chart_topic(topic)
     
     if use_chart:
         visual_section = """
-    2. 시각화 자료 (안전한 SVG 차트 허용): 차트나 캔들스틱 패턴을 설명할 때는 이해를 돕기 위해 반드시 예쁜 형태의 다크모드 SVG 캔들 차트나 선 차트를 직접 코딩해서 삽입하세요. 
-       (주의: 표(Table)나 너무 복잡한 텍스트 덩어리를 SVG로 그리면 화면이 깨집니다. SVG는 '오직 캔들스틱/선 차트' 그래픽을 그릴 때만 사용하세요.)
-       - 캔들 차트 SVG 디자인 예시 템플릿:
-         <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
-         <svg viewBox="0 0 800 400" class="w-full max-w-[700px] h-auto font-sans">
-             <!-- 배경/축 -->
-             <rect width="800" height="400" fill="#111827" rx="16"/>
-             <line x1="50" y1="350" x2="750" y2="350" stroke="#374151" stroke-width="2"/>
-             <!-- 캔들(양봉: fill="#ef4444", 음봉: fill="#3b82f6")과 이동평균선 등을 아름답게 좌표에 맞게 그리고 라벨 텍스트(fill="#9ca3af") 배치 -->
-         </svg>
-         </div>
-    3. 본론: 차트 패턴을 보는 방법과 실전 매수/매도 타이밍을 핵심 포인트로 정리.
-    4. 실전 꿀팁 & 주의사항: 초보자가 당하기 쉬운 함정(속임수 패턴)과 리스크 관리 팁."""
+    2. 📊 실전 차트 시각화 (SVG 캔들차트 필수 포함):
+       차트 주제이므로 반드시 아름다운 다크모드 SVG 캔들차트를 그려서 삽입하세요.
+       
+       ✅ SVG 차트 제작 필수 조건:
+       - ⚠️ 짤림 방지 필수: 그림이나 글씨(특히 x축, y축 라벨)가 화면에서 잘리지 않도록 viewBox 여백을 상하좌우 최소 50px 이상 넉넉하게 확보하세요.
+       - 텍스트나 도형이 전체 SVG 크기(820x420 등)의 경계 밖으로 나가지 않도록 x, y 좌표를 신중히 계산하세요.
+       - 최소 15~20개 캔들로 구성된 현실감 있는 주가 흐름을 표현하세요.
+       - 양봉(fill="#ef4444" 빨간색)과 음봉(fill="#3b82f6" 파란색)을 혼합하여 실제 HTS처럼 표현하세요.
+       - 각 캔들에 위아래 꼬리(wick)를 반드시 포함하세요 (line 태그 활용).
+       - 설명 중인 핵심 패턴 구간에는 반드시 형광 노란색 반투명 박스(rect fill="#fbbf24" opacity="0.15")로 하이라이트 처리하세요.
+       - 매수 포인트에는 초록 삼각형 화살표(▲)와 'BUY' 텍스트, 매도 포인트에는 빨간 화살표(▼)와 'SELL' 텍스트를 넉넉한 위치에 명시하세요.
+       - 이동평균선(5일: #f59e0b 노란선, 20일: #60a5fa 파란선)을 polyline으로 표현하세요.
+       - x축(날짜), y축(가격) 라벨을 반드시 포함하되 끝부분이 잘리지 않도록 텍스트 앵커(text-anchor)를 고려하세요. 눈금선(grid)은 회색으로 그리세요.
+       - 차트 우상단 여백에 범례(legend)를 작게 표시하세요 (양봉/음봉/5일선/20일선).
+
+       캔들차트 SVG 구조 예시:
+       <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl">
+       <p class="text-gray-400 text-sm mb-3 text-center">📊 [패턴명] 실전 예시 차트</p>
+       <svg viewBox="0 0 820 420" class="w-full h-auto font-sans">
+           <rect width="820" height="420" fill="#0f172a" rx="12"/>
+           <!-- y축 눈금선 (fill="#1e293b") -->
+           <!-- x축/y축 라벨 (fill="#64748b", font-size="11") 외곽 여백 주의! -->
+           <!-- 캔들 몸통(rect)과 꼬리(line), 이평선(polyline) -->
+           <!-- 하이라이트 박스, BUY/SELL 화살표 및 텍스트 -->
+           <!-- 범례 -->
+       </svg>
+       </div>
+
+    3. 📖 단계별 설명 (초보자도 이해할 수 있게):
+       ① 이 패턴/지표가 뭔지 한 줄 정의
+       ② 차트에서 어떻게 생겼는지 특징 묘사 (위 SVG와 연결해서 설명)
+       ③ 왜 이 패턴이 발생하는지 심리적 원인 (매도세 소진, 매수 세력 진입 등)
+       ④ 실전 매수 타이밍과 매도 타이밍을 구체적으로 설명
+       ⑤ 이 패턴과 함께 확인해야 할 보조지표(거래량, RSI 등)도 반드시 언급
+
+    4. ⚠️ 실전 꿀팁 & 함정 주의:
+       - 초보자가 가장 자주 당하는 '가짜 시그널(속임수 패턴)' 사례 설명
+       - 이 패턴을 신뢰할 수 있는 조건 vs 신뢰하면 안 되는 조건
+       - 손절 기준선 설정 방법"""
     else:
         visual_section = """
     2. 시각화 자료 (안전한 SVG 다이어그램/막대그래프): 텍스트로만 설명하면 초보자가 이해하기 어려우므로, 핵심 개념(비율, 흐름, 구조 등)을 설명할 때 **SVG를 활용한 직관적인 모식도(다이어그램)나 가로 막대 그래프**를 반드시 그려서 삽입하세요.
 
        ⚠️ SVG 다이어그램 필수 규칙 (반드시 지켜야 함):
-       - 각 rect(사각형) 박스의 높이는 내부 텍스트가 절대 넘치지 않도록 충분히 크게 설정하세요 (한 줄당 최소 30px, 줄 수에 맞게 높이 계산).
+       - ⚠️ 짤림 방지 필수: 어떤 글씨나 도형도 SVG 화면 밖으로 잘리지 않도록 viewBox의 width/height를 실제 도형들이 차지하는 공간보다 사방으로 50px 이상 넉넉하게 설정하세요.
+       - 각 rect(사각형) 박스의 너비와 높이는 내부 텍스트가 절대 넘치지 않도록 충분히 크게 설정하세요 (한 줄당 최소 30px, 줄 수에 맞게 높이 계산).
        - 텍스트가 2줄 이상일 경우, 반드시 <tspan dy="28"> 등을 이용해 줄 바꿈하고, 박스 높이도 그에 맞게 넉넉히 키우세요.
        - 텍스트는 반드시 박스(rect) 내부 중앙에 위치시키세요. (text x=박스 중앙, y=박스 중앙)
        - 텍스트 글씨는 font-size 최대 16px 이하로 유지해서 박스 안에 여유 있게 들어오도록 하세요.
-       - 절대로 텍스트가 박스 경계선을 넘거나 다른 요소와 겹치면 안 됩니다.
-       - SVG 전체 viewBox 높이도 모든 요소가 들어올 만큼 충분히 설정하세요.
+       - 절대로 텍스트가 박스 경계선을 넘거나 다른 도형/글씨와 겹치면 안 됩니다.
 
        - 다이어그램 SVG 디자인 예시 템플릿:
          <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
@@ -371,7 +441,52 @@ def generate_theory_post():
     3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 투자 시 팁을 핵심 포인트로 정리.
     4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것과 바로 써먹을 수 있는 실전 팁."""
 
-    prompt = f"""
+    # 차트 주제일 경우 전문적이고 디테일한 프롬프트, 일반 주제는 기존 프롬프트
+    if use_chart:
+        prompt = f"""
+    당신은 국내 최고 수준의 주식 차트 분석 전문가이자, 초보 투자자들이 가장 좋아하는 1타 강사입니다.
+    오늘의 강의 주제는 '{topic}' 입니다.
+
+    [강의 제작 철학]
+    - 어려운 개념도 '비유'와 '실제 차트 예시'로 누구나 이해할 수 있게 가르칩니다.
+    - 이론만 나열하지 않고, 실전에서 어떻게 쓰는지 구체적인 매수/매도 시점과 함께 설명합니다.
+    - 초보자가 자주 빠지는 '함정(가짜 시그널)'을 꼭 짚어줍니다.
+    - A4 4~5장 분량의 충실하고 전문적인 강의를 작성합니다.
+
+    아래 구성으로 강의 콘텐츠를 작성해주세요:
+
+    1. 🎯 도입부 (왜 이걸 알아야 하나?):
+       - 이 패턴/지표를 모르고 투자하면 어떤 손해를 보는지 실감나는 사례로 시작
+       - "저도 처음엔 이걸 몰라서..." 처럼 공감가는 스토리텔링
+       - 이 강의를 다 읽으면 뭘 할 수 있는지 명확히 예고
+
+    {visual_section}
+
+    5. 📌 실전 체크리스트:
+       이 강의를 읽고 나서 실제 종목 차트에서 확인해야 할 체크포인트를 번호로 정리
+       (예: ① 캔들 3개 연속 확인 ② 거래량이 전일 대비 1.5배 이상인지 ③ RSI가 30 이하인지 등)
+
+    6. SEO 메타데이터: 문서 제일 상단에 <title-seo>검색 엔진용 20자 이내 핵심 제목</title-seo>를 포함해주세요.
+
+    **HTML 포맷팅 규칙** (반드시 준수):
+    1. 전체 내용은 HTML 태그로 구성 (Markdown 절대 금지)
+    2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
+    3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
+    4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
+    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 whitespace-nowrap">
+    6. 목록: <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
+    7. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
+    8. 경고 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
+    9. 꿀팁 박스: <div class="bg-green-900/30 border-l-4 border-r-4 border-green-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-green-100 text-xl font-bold leading-loose mb-0">💡 내용</p></div>
+    10. 체크리스트 박스: <div class="bg-gray-800/60 border border-gray-600 rounded-2xl p-8 my-10"><p class="text-yellow-300 text-2xl font-black mb-4">✅ 실전 체크리스트</p>...<p class="text-gray-100 text-xl">내용</p></div>
+    11. SEO 내부 링크: 삼성전자 → <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>
+    12. 법적 준수: 특정 종목 매수/매도 추천 절대 금지. 마지막에 <p class="text-gray-500 text-sm mt-10">본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다.</p>
+    13. 절대 금지: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그. 오직 본문 HTML만 반환.
+
+    순수한 HTML만 반환하고 마크다운 틱(```html)은 사용하지 마세요.
+    """
+    else:
+        prompt = f"""
     당신은 주식 투자를 처음 시작하는 초보자들에게 주식·경제·투자 이론을 아주 쉽고 친절하게, 재미있게 알려주는 1타 강사입니다.
     오늘의 강의 주제는 '{topic}' 입니다.
 
@@ -432,9 +547,21 @@ def post_daily_theory():
     except ValueError:
         print("Firestore 초기화 실패")
         return False
+
+    # [중복 방지] 오늘 이미 발행된 글이 있으면 중단
+    kst_check = timezone(timedelta(hours=9))
+    today_slug = f"theory-{datetime.now(kst_check).strftime('%Y%m%d')}"
+    try:
+        existing_doc = db.collection("theory_posts").document(today_slug).get()
+        if existing_doc.exists:
+            existing_title = existing_doc.to_dict().get("title", "(제목 없음)")
+            print(f"[Theory Bot] 오늘({today_slug}) 이미 발행된 강의가 있습니다: '{existing_title}' - 중복 발행 방지로 건너뜁니다.")
+            return True  # 성공으로 처리하여 재시도 루프 방지
+    except Exception as e:
+        print(f"[Theory Bot] 중복 체크 중 오류: {e}")
         
     print("오늘의 주식 이론/차트 스터디 콘텐츠 생성 중...")
-    title, content, tags = generate_theory_post()
+    title, content, tags = generate_theory_post(db=db)
     if not content:
         print("콘텐츠 생성 실패.")
         return False

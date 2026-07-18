@@ -494,7 +494,8 @@ def send_multicast_notification(
                     'invalid argument',
                     'requested entity was not found',
                     'senderId mismatch',
-                    'invalid-recipient'
+                    'invalid-recipient',
+                    'not a valid fcm registration token'
                 ]
                 if any(kw in error_msg.lower() for kw in dead_token_keywords):
                     unregistered_count += 1
