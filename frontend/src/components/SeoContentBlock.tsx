@@ -1,11 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
-import { Send, BookOpen, Bell, BarChart3, Shield, HelpCircle, ExternalLink } from "lucide-react";
+import { Send, BookOpen, Bell, BarChart3, Shield, HelpCircle, ExternalLink, TrendingUp, Globe } from "lucide-react";
 
 // ─────────────────────────────────────────────
-// SeoContentBlock v3
+// SeoContentBlock v4
 // 목적: 구글 애드센스 승인 + 텔레그램 구독 유도
-// 디자인: 깔끔한 카드 그리드 + 접이식 FAQ
+// details 태그 완전 제거 - 항상 표시
 // ─────────────────────────────────────────────
 
 const FEATURES = [
@@ -26,6 +26,22 @@ const FEATURES = [
     desc: "이동평균선, RSI, 볼린저 밴드, MACD 등 필수 기술적 분석 이론을 매일 무료로 학습할 수 있습니다.",
   },
   {
+    icon: TrendingUp,
+    color: "text-green-400",
+    bg: "bg-green-400/10",
+    border: "border-green-400/20",
+    title: "종목 상세 분석",
+    desc: "PER, PBR, ROE, 배당수익률 등 재무 지표와 외국인·기관 수급 동향을 한눈에 파악합니다.",
+  },
+  {
+    icon: Globe,
+    color: "text-cyan-400",
+    bg: "bg-cyan-400/10",
+    border: "border-cyan-400/20",
+    title: "글로벌 증시 모니터",
+    desc: "나스닥, S&P 500, 코스피, 코스닥, 달러/원 환율을 실시간으로 한 화면에서 비교 분석합니다.",
+  },
+  {
     icon: Send,
     color: "text-[#0088cc]",
     bg: "bg-[#0088cc]/10",
@@ -35,9 +51,9 @@ const FEATURES = [
   },
   {
     icon: Shield,
-    color: "text-green-400",
-    bg: "bg-green-400/10",
-    border: "border-green-400/20",
+    color: "text-orange-400",
+    bg: "bg-orange-400/10",
+    border: "border-orange-400/20",
     title: "투자 면책 원칙",
     desc: "본 서비스는 투자 참고용 정보만을 제공하며, 투자 자문이 아닙니다. 최종 투자 판단은 본인에게 있습니다.",
   },
@@ -60,6 +76,14 @@ const FAQ = [
     q: "주가 알림(가격 알림)은 어떻게 설정하나요?",
     a: "종목 상세 페이지에서 목표 가격을 입력하면 해당 가격 도달 시 스마트폰 잠금화면에 즉시 푸시 알림이 전송됩니다. 로그인 후 무료로 이용 가능합니다.",
   },
+  {
+    q: "매일 차트 스터디는 어떤 내용으로 구성되나요?",
+    a: "이동평균선(5일·20일·60일선), RSI, MACD, 볼린저밴드, 캔들 패턴(도지, 망치형 등), 거래량 분석 등 실전 기술 분석 이론을 쉬운 예시와 함께 매일 업데이트합니다.",
+  },
+  {
+    q: "포트폴리오 진단 서비스란 무엇인가요?",
+    a: "보유 종목을 입력하면 AI가 수익률, 섹터 집중도, 리스크 점수를 분석하고 포트폴리오 다각화 방향을 제안합니다. 로그인 후 무료로 이용할 수 있습니다.",
+  },
 ];
 
 export default function SeoContentBlock() {
@@ -73,15 +97,15 @@ export default function SeoContentBlock() {
         {/* ── 상단 헤딩 (SEO용 h2) ── */}
         <div className="text-center space-y-2">
           <h2 className="text-xl font-bold text-white/80 tracking-tight">
-            스마트 투자 비서 (STOCK AI) — 서비스 안내
+            스마트 투자 비서 — 서비스 핵심 기능 안내
           </h2>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto">
-            인공지능 기반 주식 수급 분석, 실시간 공시 알림, AI 차트 스터디를 무료로 제공합니다.
+            인공지능 기반 주식 수급 분석, 실시간 공시 알림, AI 차트 스터디, 글로벌 증시 모니터를 무료로 제공합니다.
           </p>
         </div>
 
-        {/* ── 4개 특징 카드 ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* ── 6개 특징 카드 ── */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {FEATURES.map(({ icon: Icon, color, bg, border, title, desc }) => (
             <div
               key={title}
@@ -96,13 +120,40 @@ export default function SeoContentBlock() {
           ))}
         </div>
 
-        {/* ── 텔레그램 구독 CTA (작고 깔끔하게) ── */}
+        {/* ── 투자 가이드 링크 모음 ── */}
+        <div className="space-y-3">
+          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+            <BookOpen className="w-4 h-4" /> 주요 투자 가이드
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {[
+              { href: '/guide/per', label: 'PER 완전 정복' },
+              { href: '/guide/rsi', label: 'RSI 실전 활용' },
+              { href: '/guide/macd', label: 'MACD 지표 해부' },
+              { href: '/guide/moving-average', label: '이동평균선 전략' },
+              { href: '/guide/golden-cross', label: '골든크로스 매매법' },
+              { href: '/guide/dividend', label: '배당주 투자 가이드' },
+              { href: '/guide/short-selling', label: '공매도 이해하기' },
+              { href: '/guide/bollinger-band', label: '볼린저밴드 활용' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 text-center"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ── 텔레그램 구독 CTA ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0088cc]/10 border border-[#0088cc]/20 rounded-2xl px-6 py-4">
           <div className="flex items-center gap-3">
             <Send className="w-5 h-5 text-[#0088cc] shrink-0" />
             <div>
               <p className="text-white text-sm font-semibold">실시간 주식 속보 텔레그램 채널</p>
-              <p className="text-gray-400 text-xs">세력 포착 · 상한가 · 미국증시 속보 — 무료</p>
+              <p className="text-gray-400 text-xs">세력 포착 · 상한가 · 미국증시 속보 — 완전 무료</p>
             </div>
           </div>
           <a
@@ -115,7 +166,7 @@ export default function SeoContentBlock() {
           </a>
         </div>
 
-        {/* ── FAQ (접이식 없이 심플하게) ── */}
+        {/* ── FAQ ── */}
         <div className="space-y-3">
           <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
             <HelpCircle className="w-4 h-4" /> 자주 묻는 질문

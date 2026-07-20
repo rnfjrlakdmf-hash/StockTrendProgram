@@ -829,20 +829,20 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
         f_price = 0.0
         if currency == 'KRW':
             try:
-                if current_price and current_price != "확인불가":
+                if current_price and current_price != "-":
                     f_price = float(str(current_price).replace(',', ''))
                     price_str = f"{f_price:,.0f}"
                 else:
-                    price_str = "확인불가"
+                    price_str = "-"
             except:
                 price_str = str(current_price)
         else:
             try:
-                if current_price and current_price != "확인불가":
+                if current_price and current_price != "-":
                     f_price = float(str(current_price).replace(',', ''))
                     price_str = f"{f_price:,.2f}"
                 else:
-                    price_str = "확인불가"
+                    price_str = "-"
             except:
                 price_str = str(current_price)
 
@@ -1298,7 +1298,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
             return {
                 "symbol": symbol,
                 "name": symbol,
-                "price": "확인불가",
+                "price": "-",
                 "change": "0.00%",
                 "up": True,
                 "currency": "USD" if is_us_stock else "KRW",
@@ -1309,7 +1309,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
     return {
         "symbol": symbol,
         "name": symbol,
-        "price": "확인불가",
+        "price": "-",
         "change": "0.00%",
         "up": True,
         "currency": "USD" if is_us_stock else "KRW",

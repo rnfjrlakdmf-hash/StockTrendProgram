@@ -79,7 +79,7 @@ def calculate_watchlist_performance(user_id: str, market: str):
             if cached_data:
                 print(f"[Scheduler-Fallback] yfinance/Naver failed for {sym}. Using memory cache.")
                 quote = {
-                    "price": cached_data.get("price", "확인불가"),
+                    "price": cached_data.get("price", "-"),
                     "change": cached_data.get("change", "0.00%"),
                     "change_percent": cached_data.get("change_percent", "0.00%"),
                     "name": cached_data.get("name", sym)
@@ -88,7 +88,7 @@ def calculate_watchlist_performance(user_id: str, market: str):
                 # 최후의 수단: 데이터베이스(added_price) 정보 대입
                 print(f"[Scheduler-Fallback] No memory cache for {sym}. Using fallback values.")
                 quote = {
-                    "price": added_price if added_price > 0 else "확인불가",
+                    "price": added_price if added_price > 0 else "-",
                     "change": "0.00%",
                     "name": sym
                 }
@@ -180,7 +180,7 @@ def send_opening_notification(market: str):
     if market == "US":
         try:
             fx_quote = get_simple_quote("USDKRW=X")
-            if fx_quote and fx_quote.get('price') and fx_quote['price'] != "확인불가":
+            if fx_quote and fx_quote.get('price') and fx_quote['price'] != "-":
                 fx_rate = float(str(fx_quote['price']).replace(',', ''))
         except Exception as e:
             print(f"[Scheduler] Failed to fetch fx_rate: {e}")
@@ -301,13 +301,13 @@ def send_closing_notification(market: str):
         print(f"[Scheduler-Error] Failed to get KR market indices: {e}")
     
     # 안전 지표 조회 헬퍼 (차단 대비)
-    def get_safe_quote(sym: str, default_price="확인불가", default_change="0.00%", default_change_val="0.00"):
+    def get_safe_quote(sym: str, default_price="-", default_change="0.00%", default_change_val="0.00"):
         try:
             import time
             # 봇 필터 회피 지연
             time.sleep(0.1)
             quote = get_simple_quote(sym)
-            if quote and quote.get("price") and quote["price"] != "확인불가":
+            if quote and quote.get("price") and quote["price"] != "-":
                 return quote
         except Exception as e:
             print(f"[Scheduler-SafeQuote] Error fetching {sym}: {e}")
@@ -334,7 +334,7 @@ def send_closing_notification(market: str):
     kosdaq_info = kr_indices.get("kosdaq", {}) if isinstance(kr_indices, dict) else {}
     
     def _format_index(idx_info, default_name):
-        if not idx_info: return f"{default_name}: 확인불가"
+        if not idx_info: return f"{default_name}: -"
         val = idx_info.get("value", "0.00")
         chg = idx_info.get("change", "0.00")
         pct = idx_info.get("percent", "0.00%")
@@ -353,11 +353,11 @@ def send_closing_notification(market: str):
         # 1. 우선적으로 안정적인 get_market_data() 결과 사용
         if md_label and md_label in md_dict:
             data = md_dict[md_label]
-            if data.get("value") not in ["준비중", "확인불가", "0.00"]:
+            if data.get("value") not in ["준비중", "-", "0.00"]:
                 return f"{default_name}: {data['value']} ({data['change']})"
         
         # 2. 실패 시 개별 yfinance 호출 (get_safe_quote)
-        if not quote or quote.get("price") == "확인불가": return f"{default_name}: 확인불가"
+        if not quote or quote.get("price") == "-": return f"{default_name}: -"
         val = quote.get("price", "0.00")
         pct = quote.get("change_percent", quote.get("change", "0.00%"))
         chg_val = quote.get("regular_change", 0)
@@ -372,9 +372,9 @@ def send_closing_notification(market: str):
     def _get_raw_val(quote, fallback, md_label):
         if md_label and md_label in md_dict:
             d = md_dict[md_label]
-            if d.get("value") not in ["준비중", "확인불가", "0.00"]:
+            if d.get("value") not in ["준비중", "-", "0.00"]:
                 return {"price": str(d["value"]), "change": str(d.get("change", "0.00%"))}
-        if not quote or quote.get("price") == "확인불가":
+        if not quote or quote.get("price") == "-":
             return {"price": fallback, "change": "0.00%"}
         return quote
 

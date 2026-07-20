@@ -9,8 +9,21 @@ export default function PremiumContent({ children }: { children: React.ReactNode
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
     if (isLoading) {
-        // 인증 상태 로딩 중에는 아무것도 안 보여주거나 뼈대(Skeleton) 렌더링
-        return <div className="animate-pulse bg-slate-800 h-64 rounded-xl"></div>;
+        // 인증 상태 로딩 중(주로 SSR 시점)에도 SEO를 위해 뼈대(Skeleton) 대신 
+        // 실제 콘텐츠(children)를 블러 처리하여 DOM에 렌더링해야 구글 봇이 크롤링할 수 있습니다.
+        return (
+            <div className="relative overflow-hidden rounded-2xl">
+                <div className="filter blur-md select-none opacity-50 pointer-events-none transition-all duration-500">
+                    {children}
+                </div>
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-b from-transparent via-slate-900/80 to-slate-900 p-6">
+                    <div className="bg-slate-800/90 p-8 rounded-2xl text-center max-w-md w-full border border-slate-700/50 backdrop-blur-md shadow-2xl">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        <h3 className="text-xl font-bold text-white mb-2">프리미엄 데이터 로딩 중...</h3>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (user) {

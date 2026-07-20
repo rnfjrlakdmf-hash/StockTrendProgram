@@ -360,7 +360,7 @@ def get_multi_quotes(symbols: str = Query(...)):
             data = get_simple_quote(sym)
             if data:
                 currency = data.get("currency", "KRW")
-                price_str = data.get("price", "확인불가")
+                price_str = data.get("price", "-")
                 
                 # [v3] 원화 환산가 계산 (해외 주식 전용)
                 price_krw = None
@@ -392,7 +392,7 @@ def get_multi_quotes(symbols: str = Query(...)):
                 }
         except Exception as e:
             print(f"[MarketAPI] Failed to get multi-quote for {sym}: {e}")
-        return sym, {"price": "확인불가", "change": "0.00%", "market_status": "장마감"}
+        return sym, {"price": "-", "change": "0.00%", "market_status": "장마감"}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_sym = {executor.submit(fetch_q, sym): sym for sym in symbol_list}

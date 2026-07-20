@@ -4,7 +4,8 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "StockTrend 서비스 소개 | AI 기반 주식 분석 플랫폼",
   description:
-    "StockTrend는 인공지능이 매일 국내외 증시를 분석하여 투자자들에게 맞춤형 시황 브리핑, 주가 알림, 종목 분석 정보를 무료로 제공하는 주식 분석 플랫폼입니다. RSI, PER, 공시 팩트 알림, 배당락일 알림까지 모두 무료.",
+    "StockTrend는 인공지능이 매일 국내외 증시를 분석하여 투자자들에게 맞춤형 시황 브리핑, 주가 알림, 종목 분석 정보를 무료로 제공하는 주식 분석 플랫폼입니다.",
+  alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {

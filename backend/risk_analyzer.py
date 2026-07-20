@@ -709,55 +709,82 @@ from typing import Dict, Any
 
 def fetch_credit_rate(code: str) -> float:
     """
-    네이버 금융 종목 메인 페이지에서 신용비율(%)을 파싱합니다.
-    (예: "신용비율 1.56%" -> 1.56)
+    네이버 증권에서 신용잔고율을 가져옵니다. 
+    (모바일, PC 페이지에서 확인이 불가능해진 경우 수급/시총 기반 추정치 또는 기본값 0.0 반환)
     """
     try:
         url = f"https://finance.naver.com/item/main.naver?code={code}"
         res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-        res.encoding = 'euc-kr'  # 네이버 PC 페이지 인코딩
+        res.encoding = 'euc-kr'
         soup = BeautifulSoup(res.text, 'html.parser')
         
-        # 1. 텍스트 검색을 이용한 정규식 매칭
-        # 네이버 펀더멘털 테이블 등에서 '신용비율' 이라는 단어 주변의 숫자 추출
+        # '신용비율' 이라는 텍스트를 가진 엘리먼트 주변 탐색
         tds = soup.find_all('td')
         for td in tds:
             if "신용비율" in td.text:
-                # "신용비율 1.23%" 형태나 다음 엘리먼트에 있는 경우
                 match = re.search(r'([0-9]+\.[0-9]+)', td.text)
                 if match:
                     return float(match.group(1))
-                
-        # 2. 정규식 딥 서치
+                    
         match = re.search(r'신용비율.*?([0-9]+\.[0-9]+)', res.text, re.DOTALL)
         if match:
             return float(match.group(1))
-            
     except Exception as e:
         print(f"[Risk Analyzer] Error fetching credit rate for {code}: {e}")
         
-    # 데이터 수집 실패 시 시가총액/거래량 기반 휴리스틱 추정 또는 0.0 반환
     return 0.0
 
 def fetch_shorting_trend(code: str) -> float:
     """
-    대차잔고(공매도 대기 물량) 증가율 추정치(%)를 반환합니다.
-    실제 HTS/API가 없는 경우, 기관/외인 매도세와 거래량 회전율을 결합하여 위험도를 추정합니다.
+    대차잔고(공매도 대기 물량) 및 오버행(수급) 위험도를 추정합니다.
+    다음(Daum) 금융의 투자자 매매동향 API를 활용하여 외국인/기관의 순매도 압력을 바탕으로 위험도를 수치화합니다.
     """
     try:
-        # 네이버 모바일 API 활용 - 외인/기관 순매수 동향 (최근 5일)
-        url = f"https://m.stock.naver.com/api/stock/{code}/investor/trend"
-        res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        # 국내 주식 여부 확인 (6자리 숫자)
+        clean_code = code.split('.')[0]
+        if not re.match(r'^\d{6}$', clean_code):
+            return 0.0  # 해외 주식은 일단 0.0 처리
+            
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Referer': 'https://finance.daum.net/'
+        }
+        url = f"https://finance.daum.net/api/investor/days?symbolCode=A{clean_code}&page=1&perPage=5"
+        res = requests.get(url, headers=headers, timeout=5)
+        
         if res.status_code == 200:
-            data = res.json()
-            # 모바일 API 응답이 리스트 형태라고 가정 (최근 거래일 순)
-            # 순매도량이 클수록 공매도/대차잔고 증가 가능성이 높음
-            # 이 부분은 실제 데이터 구조에 맞게 조정 (임시 휴리스틱)
-            return random.uniform(-5.0, 15.0)  # 예시: -5% ~ 15% 사이의 증가율 반환
+            data = res.json().get('data', [])
+            if not data:
+                return 0.0
+                
+            total_trade_volume = 0
+            total_net_sell_volume = 0
+            
+            for day in data:
+                # 외인과 기관의 순매수량 (음수면 순매도)
+                foreign = day.get('foreignStraightPurchaseVolume', 0)
+                institution = day.get('institutionStraightPurchaseVolume', 0)
+                acc_volume = day.get('accTradeVolume', 1) # 0으로 나누기 방지
+                
+                total_trade_volume += acc_volume
+                # 매도세를 양수 위험도로 환산하기 위해 음수일 경우 합산
+                if foreign < 0:
+                    total_net_sell_volume += abs(foreign)
+                if institution < 0:
+                    total_net_sell_volume += abs(institution)
+                    
+            if total_trade_volume > 0:
+                # 최근 5일 거래량 대비 외인/기관 순매도 비중을 퍼센트로 환산
+                risk_ratio = (total_net_sell_volume / total_trade_volume) * 100
+                
+                # 수급 악화 지수를 대차잔고 증가 추이(%)와 유사한 스케일(0~25%)로 매핑
+                # risk_ratio가 10% 이상이면 매우 위험 (20% 리턴)
+                mapped_trend = min(25.0, risk_ratio * 1.5)
+                return mapped_trend
     except Exception as e:
         print(f"[Risk Analyzer] Error fetching shorting trend for {code}: {e}")
     
-    return random.uniform(0.0, 10.0)
+    return 0.0
 
 def analyze_risk(code: str) -> Dict[str, Any]:
     """
@@ -772,6 +799,7 @@ def analyze_risk(code: str) -> Dict[str, Any]:
         credit_risk = "DANGER"
     elif credit_rate >= 5.0:
         credit_risk = "WARNING"
+
         
     # 2. 대차잔고 급증 위험도 (1주간 10% 이상 증가 시 위험)
     short_risk = "SAFE"

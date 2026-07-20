@@ -7,6 +7,9 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 export const metadata: Metadata = {
     title: "매일 차트 스터디 | 주식이론방",
     description: "초보자를 위한 매일매일 올라오는 알기 쉬운 주식 이론과 차트 분석 강의",
+    alternates: {
+        canonical: '/theory',
+    },
 };
 
 export const dynamic = 'force-dynamic';

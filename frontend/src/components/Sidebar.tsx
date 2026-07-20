@@ -850,7 +850,6 @@ export default function Sidebar() {
 
 
 
-                    {/* 5. About & Contact links */}
                     <div className="flex justify-center gap-4 pt-1">
                         <Link
                             href="/about"
@@ -866,6 +865,31 @@ export default function Sidebar() {
                             className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
                         >
                             문의하기
+                        </Link>
+                        <span className="text-gray-700 text-[10px]">|</span>
+                        <Link
+                            href="/privacy-policy"
+                            onClick={() => setIsMobileOpen(false)}
+                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
+                        >
+                            개인정보
+                        </Link>
+                    </div>
+                    <div className="flex justify-center gap-4 pt-0.5">
+                        <Link
+                            href="/terms"
+                            onClick={() => setIsMobileOpen(false)}
+                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
+                        >
+                            이용약관
+                        </Link>
+                        <span className="text-gray-700 text-[10px]">|</span>
+                        <Link
+                            href="/disclaimer"
+                            onClick={() => setIsMobileOpen(false)}
+                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
+                        >
+                            면책조항
                         </Link>
                     </div>
 

@@ -9,6 +9,9 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 export const metadata: Metadata = {
     title: "전문가 마켓 리포트 | StockTrendProgram",
     description: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트",
+    alternates: {
+        canonical: '/blog',
+    },
 };
 
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
