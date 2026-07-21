@@ -150,7 +150,7 @@ def generate_market_post(market_type):
         2. 본문 첫 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
         3. "코스피 (KOSPI) 마감 분석: {kospi}" 와 "코스닥 (KOSDAQ) 마감 분석: {kosdaq}" 라는 명확한 섹션 구분을 두고 분석을 적으세요. 또한, 원/달러 환율({fx_rate}) 변동이 증시나 테마에 미쳤을 영향도 살짝 언급해 전문성을 높이세요.
         4. 핵심 테마 분석은 뉴스 헤드라인을 바탕으로 최소 2~3개의 소주제로 나누어 깊이 있게 설명하세요.
-        5. [거미줄 내부 링크] 본문 내용 중에 자연스럽게 사이트 내부로 연결되는 유도 링크를 최소 2개 이상 삽입하세요. (예: `<a href="/discovery" class="text-blue-400 hover:underline">오늘의 실시간 특징주 분석 보러가기</a>`)
+        5. [거미줄 내부 링크] 본문 내용 중에 사이트 내부로 연결되는 유도 링크를 삽입하세요. 단, 링크(href) 주소는 반드시 다음 중 하나만 사용해야 합니다 (절대 임의의 링크를 만들지 마세요): `/discovery` (특징주 분석), `/theory` (주식 강의), `/theme` (테마주 분석), `/premium` (프리미엄 리포트). (예: `<a href="/discovery" class="text-blue-400 hover:underline">오늘의 실시간 특징주 분석 보러가기</a>`)
         6. [검색결과 면적 장악] 본문 마지막에 무조건 `<h3 class="text-2xl font-bold mt-8 mb-4">💡 오늘의 증시 관련 자주 묻는 질문 (FAQ)</h3>` 제목과 함께, 투자자들이 궁금해할 만한 질문과 답변(Q&A) 3세트를 구체적으로 작성하세요.
         
         **HTML 포맷팅 규칙 및 주의사항**:
@@ -195,7 +195,7 @@ def generate_market_post(market_type):
         2. 본문 첫 제목은 `<h2 class="text-2xl font-bold text-white pb-2 border-b border-gray-700 mb-6">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
         3. "S&P 500 마감 분석: {sp500}" 와 "나스닥 마감 분석: {nasdaq}" 섹션을 나누고, 최근 미국 국채 금리 동향이 증시에 미치는 영향을 전문가 시선으로 한 줄 추가하세요.
         4. 뉴스 헤드라인을 바탕으로 뉴욕 증시 특징주와 글로벌 이슈를 3가지 소주제로 깊이 있게 정리하세요.
-        5. [거미줄 내부 링크] 본문 내용 중에 자연스럽게 사이트 내부로 연결되는 유도 링크를 최소 2개 이상 삽입하세요. (예: `<a href="/discovery" class="text-blue-400 hover:underline">오늘의 실시간 특징주 분석 보러가기</a>`)
+        5. [거미줄 내부 링크] 본문 내용 중에 사이트 내부로 연결되는 유도 링크를 삽입하세요. 단, 링크(href) 주소는 반드시 다음 중 하나만 사용해야 합니다 (절대 임의의 링크를 만들지 마세요): `/discovery` (특징주 분석), `/theory` (주식 강의), `/theme` (테마주 분석), `/premium` (프리미엄 리포트). (예: `<a href="/discovery" class="text-blue-400 hover:underline">오늘의 실시간 특징주 분석 보러가기</a>`)
         6. [검색결과 면적 장악] 본문 마지막에 무조건 `<h3 class="text-2xl font-bold mt-8 mb-4">💡 미국 증시 관련 자주 묻는 질문 (FAQ)</h3>` 제목과 함께, 투자자들이 궁금해할 만한 질문과 답변(Q&A) 3세트를 구체적으로 작성하세요.
         
         **HTML 포맷팅 규칙 및 주의사항**:

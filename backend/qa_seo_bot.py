@@ -63,7 +63,7 @@ def generate_qa_post(topic):
        (예: "{topic} 완벽 정리! 초보자도 이해하기 쉬운 핵심 가이드")
     2. 본문 제목은 `<h2 class="text-3xl font-black text-white pb-2 border-b border-gray-700 mb-8">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
     3. 본문은 1) 개념 설명(무엇인가요?), 2) 실제 사례나 계산법, 3) 투자 시 주의사항 3가지 파트로 나눠서 깊이 있고 친절하게 작성하세요.
-    4. [거미줄 내부 링크] 본문 내용 중에 자연스럽게 사이트 내부로 연결되는 유도 링크를 최소 2개 이상 삽입하세요.
+    4. [거미줄 내부 링크] 본문 내용 중에 사이트 내부로 연결되는 유도 링크를 삽입하세요. 단, 링크(href) 주소는 반드시 다음 중 하나만 사용해야 합니다 (절대 임의의 링크를 만들지 마세요): `/discovery` (특징주 분석), `/theory` (주식 강의), `/theme` (테마주 분석), `/premium` (프리미엄 리포트).
        (예: `<a href="https://stock-trend-program.co.kr/theory" class="text-blue-400 hover:underline">더 많은 주식 기초 이론 보러가기</a>`)
     5. [검색결과 면적 장악] 본문 마지막에 무조건 `<h3 class="text-2xl font-bold mt-8 mb-4">💡 {topic} 관련 추가 Q&A</h3>` 제목과 함께, 이 주제에 대해 사람들이 흔히 착각하거나 더 궁금해할 질문과 답변(Q&A) 3세트를 구체적으로 작성하세요.
     

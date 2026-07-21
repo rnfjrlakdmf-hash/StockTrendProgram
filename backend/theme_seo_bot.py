@@ -55,7 +55,7 @@ def generate_theme_post(theme):
        (예: "2026년 {theme_name} 관련주 대장주 총정리 및 향후 전망")
     2. 본문 제목은 `<h2 class="text-3xl font-black text-white pb-2 border-b border-gray-700 mb-8">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
     3. 본문은 1) 이 테마가 뜨는 이유, 2) 대표적인 대장주 3~5개 소개 및 특징, 3) 향후 투자 전망 3가지 파트로 나눠서 깊이 있게 작성하세요.
-    4. [거미줄 내부 링크] 본문 내용 중에 자연스럽게 사이트 내부로 연결되는 유도 링크를 최소 2개 이상 삽입하세요.
+    4. [거미줄 내부 링크] 본문 내용 중에 사이트 내부로 연결되는 유도 링크를 삽입하세요. 단, 링크(href) 주소는 반드시 다음 중 하나만 사용해야 합니다 (절대 임의의 링크를 만들지 마세요): `/discovery` (특징주 분석), `/theory` (주식 강의), `/theme` (테마주 분석), `/premium` (프리미엄 리포트).
        (예: `<a href="https://stock-trend-program.co.kr/discovery" class="text-blue-400 hover:underline">오늘의 실시간 특징주 분석 보러가기</a>`)
     5. [검색결과 면적 장악] 본문 마지막에 무조건 `<h3 class="text-2xl font-bold mt-8 mb-4">💡 {theme_name} 관련 자주 묻는 질문 (FAQ)</h3>` 제목과 함께, 투자자들이 궁금해할 만한 질문과 답변(Q&A) 3세트를 구체적으로 작성하세요.
     

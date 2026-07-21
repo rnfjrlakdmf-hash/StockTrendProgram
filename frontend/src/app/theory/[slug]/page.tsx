@@ -176,7 +176,12 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             {/* Content Section (HTML Rendered, includes SVG charts) */}
             <div 
                 className="theory-content leading-loose"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ 
+                    __html: post.content
+                        .replace(/href="\/market-report"/g, 'href="/discovery"')
+                        .replace(/href="\/market"/g, 'href="/discovery"')
+                        .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>') 
+                }}
             />
             
             {/* 뷰 카운터 증가용 클라이언트 사이드 스크립트 */}
