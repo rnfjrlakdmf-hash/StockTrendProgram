@@ -161,9 +161,9 @@ def get_cached_stock_info(ticker: str):
         if all_stocks_res["status"] == "success":
             import random
             stocks_list = all_stocks_res["data"]
-            # Pick 4 random stocks to link to
-            if len(stocks_list) > 4:
-                random_picks = random.sample(stocks_list, 4)
+            # Pick 8 random stocks to link to for maximizing SEO crawl depth
+            if len(stocks_list) > 8:
+                random_picks = random.sample(stocks_list, 8)
                 related_stocks = [{"ticker": s["ticker"], "name": s["name"]} for s in random_picks]
 
         if price == 0 and not ticker.isdigit():

@@ -1061,6 +1061,24 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler] Theme SEO Bot error: {e}")
                 run_market_scheduler.last_run_theme_seo = current_date
+
+            # [매일 실행] 오전 8:45 SEO 자동 블로그 포스팅 (조간)
+            if now.hour == 8 and 45 <= now.minute <= 50 and current_date != getattr(run_market_scheduler, "last_run_seo_blog_morning", None):
+                try:
+                    import seo_blog_bot
+                    seo_blog_bot.post_seo_blog()
+                except Exception as e:
+                    print(f"[Scheduler] SEO Blog Morning Bot error: {e}")
+                run_market_scheduler.last_run_seo_blog_morning = current_date
+
+            # [매일 실행] 오후 4:30 SEO 자동 블로그 포스팅 (장마감)
+            if now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_seo_blog_afternoon", None):
+                try:
+                    import seo_blog_bot
+                    seo_blog_bot.post_seo_blog()
+                except Exception as e:
+                    print(f"[Scheduler] SEO Blog Afternoon Bot error: {e}")
+                run_market_scheduler.last_run_seo_blog_afternoon = current_date
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
                 try:
