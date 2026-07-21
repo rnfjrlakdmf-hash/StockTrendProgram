@@ -71,11 +71,23 @@ def generate_seo_post():
     today_dt = datetime.now(kst)
     today_str = today_dt.strftime("%Y년 %m월 %d일")
     
-    # 구글 검색량이 많은 인기 종목 리스트 (롱테일 키워드용)
-    target_stocks = [
-        "삼성전자", "SK하이닉스", "카카오", "네이버", "에코프로", "포스코홀딩스", 
-        "현대차", "기아", "LG에너지솔루션", "셀트리온", "한화에어로스페이스", "HLB"
-    ]
+    # 구글/네이버 실시간 검색량이 가장 많은 상위 30위 주식 중 하나를 자동으로 선택 (롱테일 키워드 + 트렌드 캐칭)
+    try:
+        from rank_data import fetch_naver_search_top_api
+        search_top = fetch_naver_search_top_api("KOR")
+        if search_top and len(search_top) > 0:
+            top_30 = search_top[:30]
+            stock = random.choice(top_30)["name"]
+        else:
+            raise Exception("검색 랭킹 데이터를 가져오지 못했습니다.")
+    except Exception as e:
+        print(f"[SEO Bot] 실시간 검색어 가져오기 실패, 기본값 사용 ({e})")
+        target_stocks = [
+            "삼성전자", "SK하이닉스", "카카오", "네이버", "에코프로", "포스코홀딩스", 
+            "현대차", "기아", "LG에너지솔루션", "셀트리온", "한화에어로스페이스", "HLB"
+        ]
+        stock = random.choice(target_stocks)
+
     topics = [
         "배당금 지급일 및 수익률 분석",
         "향후 주가 전망 및 목표가 분석",
@@ -83,7 +95,6 @@ def generate_seo_post():
         "외국인/기관 수급 동향 및 호재 분석"
     ]
     
-    stock = random.choice(target_stocks)
     topic = random.choice(topics)
     
     print(f"[SEO Bot] 타겟 선정: {stock} - {topic}")
