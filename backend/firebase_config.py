@@ -387,6 +387,12 @@ def send_multicast_notification(
     title, body = sanitize_notification_text(title, body)
     
     try:
+        # data의 모든 값을 문자열로 강제 변환 (FCM 정책)
+        safe_data = {}
+        if data:
+            for k, v in data.items():
+                safe_data[k] = str(v)
+                
         # 알림 메시지 구성
         notification = messaging.Notification(
             title=title,
@@ -469,7 +475,7 @@ def send_multicast_notification(
             try:
                 msg = messaging.Message(
                     notification=notification,
-                    data=data or {},
+                    data=safe_data,
                     token=token,
                     android=android_config,
                     apns=apns_config,

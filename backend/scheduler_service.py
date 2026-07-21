@@ -1184,7 +1184,7 @@ def run_market_scheduler():
                     try:
                         conn = get_db_connection()
                         cursor = conn.cursor()
-                        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens WHERE fcm_token IS NOT NULL")
+                        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL")
                         tokens = [row[0] for row in cursor.fetchall() if row[0]]
                         conn.close()
                         
