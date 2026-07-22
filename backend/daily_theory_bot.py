@@ -476,7 +476,7 @@ def generate_theory_post(db=None):
     2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
     3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
     4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
-    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 whitespace-nowrap">
+    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 break-keep">
     6. 목록: <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
     7. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
     8. 경고 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
@@ -503,7 +503,7 @@ def generate_theory_post(db=None):
     2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
     3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
     4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
-    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 whitespace-nowrap"> (단어가 세로로 쪼개지지 않도록 whitespace-nowrap 필수)
+    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 break-keep"> (단어가 쪼개지지 않고 줄바꿈 되도록 break-keep 필수)
     6. 시각화: 주제에 따라 위 가이드라인(visual_section)에 명시된 예쁘고 안전한 SVG 차트(캔들차트)나 CSS 가로 막대 그래프를 적극 활용하세요. 단, 글씨가 겹치는 SVG 표(Table)나 복잡한 레이아웃은 절대 생성 금지.
     7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
     8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
