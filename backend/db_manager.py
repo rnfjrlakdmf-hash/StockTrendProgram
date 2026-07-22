@@ -885,16 +885,22 @@ def decrement_free_trial(user_id):
         conn.close()
 
 def get_all_users():
-    """Admin: 모든 사용자 목록 조회"""
+    """Admin: 모든 사용자 목록 조회 (FCM 토큰 유무 포함)"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, created_at FROM users ORDER BY created_at DESC")
+        cursor.execute("""
+            SELECT u.id, u.email, u.name, u.picture, u.is_pro, u.free_trial_count, u.created_at,
+                   (SELECT COUNT(*) FROM fcm_tokens f WHERE f.user_id = u.id AND f.token IS NOT NULL) as fcm_count
+            FROM users u
+            ORDER BY u.created_at DESC
+        """)
         rows = cursor.fetchall()
         return [
             {
                 "id": r[0], "email": r[1], "name": r[2], "picture": r[3],
-                "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6]
+                "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6],
+                "has_fcm_token": int(r[7] or 0) > 0
             } for r in rows
         ]
     except Exception as e:

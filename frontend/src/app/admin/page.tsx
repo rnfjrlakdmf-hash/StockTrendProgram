@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick, Bell } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ interface UserData {
     is_pro: boolean;
     free_trial_count: number;
     created_at: string;
+    has_fcm_token?: boolean;
 }
 
 interface DailyStat {
@@ -472,7 +473,7 @@ export default function AdminPage() {
                             <thead>
                                 <tr className="bg-white/5 border-b border-white/5">
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">사용자</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">이메일</th>
+                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">이메일 / 알림</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-center">등급 (PRO)</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-center">가입일</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-right">관리</th>
@@ -491,9 +492,17 @@ export default function AdminPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-gray-300 text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <Mail className="w-3.5 h-3.5 text-gray-600" />
-                                                {user.email}
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <Mail className="w-3.5 h-3.5 text-gray-600" />
+                                                    {user.email}
+                                                </div>
+                                                {user.has_fcm_token && (
+                                                    <div className="flex items-center gap-1.5 w-fit bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold border border-blue-500/20">
+                                                        <Bell className="w-3 h-3" />
+                                                        알림 ON
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
