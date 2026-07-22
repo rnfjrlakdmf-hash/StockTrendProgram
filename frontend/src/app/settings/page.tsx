@@ -168,7 +168,7 @@ export default function SettingsPage() {
             const updatedPrefs = { ...prefs, [prefKey]: newVal };
             
             // 토큰이 없으면 user_id만으로 저장 시도 (dummy token 사용)
-            const saveToken = token || 'no_token';
+            const saveToken = token || `dummy_${userId}`;
 
             const res = await fetch(`${API_BASE_URL}/api/system/fcm/preferences`, {
                 method: 'POST',
