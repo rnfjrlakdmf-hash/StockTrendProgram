@@ -173,6 +173,11 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 </div>
             </header>
 
+            {/* 본문 최상단 광고 (Above the Fold - 300x250) */}
+            <div className="w-full flex justify-center mt-8 mb-10">
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+            </div>
+
             {/* Content Section (HTML Rendered, includes SVG charts) */}
             <div 
                 className="theory-content leading-loose"
@@ -191,10 +196,6 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                     fetch('/api/theory/${post.slug}/view', { method: 'POST' }).catch(console.error);
                 `
             }} />
-
-            <div className="w-full flex justify-center my-8">
-                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
-            </div>
 
             <div className="mt-16 mb-4">
                 <PushSubscribeButton />
@@ -215,7 +216,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             </div>
 
             <div className="w-full flex justify-center mb-12">
-                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
             
             <style dangerouslySetInnerHTML={{

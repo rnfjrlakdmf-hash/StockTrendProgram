@@ -179,6 +179,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 </div>
             </header>
 
+            {/* 본문 최상단 광고 (Above the Fold - 300x250) */}
+            <div className="w-full flex justify-center mt-8 mb-10">
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+            </div>
+
             {/* Content Section (HTML Rendered) */}
             <div 
                 className="blog-content leading-loose"
@@ -190,19 +195,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 }}
             />
             
-            {/* 본문 중간 광고 (상단) */}
-            <div className="w-full flex justify-center my-8">
-                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
-            </div>
-
             {/* 푸시 알림 구독 버튼 (본문 끝난 후) */}
             <div className="mt-16 mb-8">
                 <PushSubscribeButton />
             </div>
 
-            {/* 본문 하단 광고 */}
+            {/* 본문 하단 광고 (300x250) */}
             <div className="w-full flex justify-center mb-12">
-                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
+                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
             
             {/* Global Styles specific to Blog Content */}
