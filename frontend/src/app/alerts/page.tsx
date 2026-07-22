@@ -6,10 +6,9 @@ import { collection, query, orderBy, getDocs, limit, where } from "firebase/fire
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, TrendingUp, TrendingDown, Eye, Calendar, Building2, Tag, Info, Database, BellRing } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
-import SeoContentBlock from "@/components/SeoContentBlock";
 
 interface AlertItem {
     id: string;
@@ -433,10 +432,6 @@ export default function AlertCenterPage() {
                         )}
                     </div>
                 )}
-
-                <div className="mt-8">
-                    <SeoContentBlock />
-                </div>
             </div>
         </div>
     );
