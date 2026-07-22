@@ -10,8 +10,9 @@ if os.environ.get("VERCEL"):
     ALERTS_FILE = "/tmp/alerts.json"
 else:
     ALERTS_FILE = "alerts.json"
-TELEGRAM_TOKEN = "8771605551:AAHY9lewbnAXtvoXsOGDotKLStL-hW3yGRM"
-
+from dotenv import load_dotenv
+load_dotenv()
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 def load_alerts():
     if not os.path.exists(ALERTS_FILE):
         return []
