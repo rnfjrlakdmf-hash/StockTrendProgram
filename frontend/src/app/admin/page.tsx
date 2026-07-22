@@ -15,6 +15,7 @@ interface UserData {
     is_pro: boolean;
     free_trial_count: number;
     created_at: string;
+    last_login_at?: string;
     has_fcm_token?: boolean;
 }
 
@@ -47,6 +48,14 @@ export default function AdminPage() {
     const [reportSending, setReportSending] = useState(false);
     const [autoHealEnabled, setAutoHealEnabled] = useState(false);
     const [pingSending, setPingSending] = useState(false);
+
+    // Push Modal States
+    const [showPushModal, setShowPushModal] = useState(false);
+    const [pushTarget, setPushTarget] = useState<'inactive' | UserData | null>(null);
+    const [pushTitle, setPushTitle] = useState("");
+    const [pushBody, setPushBody] = useState("");
+    const [inactiveDays, setInactiveDays] = useState(7);
+    const [pushSending, setPushSending] = useState(false);
 
     const fetchMasterStatus = async () => {
         if (!currentUser) return;
@@ -239,6 +248,57 @@ export default function AdminPage() {
             }
         } catch (err) {
             alert("상태 변경에 실패했습니다.");
+        }
+    };
+
+    const handleSendPush = async () => {
+        if (!currentUser || !pushTarget) return;
+        if (!pushTitle.trim() || !pushBody.trim()) {
+            alert("제목과 내용을 입력해주세요.");
+            return;
+        }
+
+        setPushSending(true);
+        try {
+            let res;
+            if (pushTarget === 'inactive') {
+                res = await fetch(`${API_BASE_URL}/api/master/send-push/inactive`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        email: currentUser.email,
+                        inactive_days: inactiveDays,
+                        title: pushTitle,
+                        body: pushBody
+                    })
+                });
+            } else {
+                res = await fetch(`${API_BASE_URL}/api/master/send-push/user`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        email: currentUser.email,
+                        target_user_id: (pushTarget as UserData).id,
+                        title: pushTitle,
+                        body: pushBody
+                    })
+                });
+            }
+            const json = await res.json();
+            if (json.status === "success") {
+                alert(json.message);
+                setShowPushModal(false);
+                setPushTitle("");
+                setPushBody("");
+            } else {
+                alert(`발송 실패: ${json.message}`);
+            }
+        } catch (e) {
+            alert("서버와 통신할 수 없습니다.");
+        } finally {
+            setPushSending(false);
         }
     };
 
@@ -453,16 +513,25 @@ export default function AdminPage() {
                         </h2>
                         <p className="text-xs text-gray-500 mt-1">회원 목록 및 권한 부여를 관리할 수 있습니다.</p>
                     </div>
-                    {/* Search Bar */}
-                    <div className="relative group w-full max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="이름 또는 이메일로 검색..."
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    {/* Search Bar & Actions */}
+                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl">
+                        <button
+                            onClick={() => { setPushTarget('inactive'); setShowPushModal(true); }}
+                            className="flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl font-bold transition-all shadow-lg text-sm"
+                        >
+                            <Bell className="w-4 h-4" />
+                            미접속자 일괄 발송
+                        </button>
+                        <div className="relative group w-full">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="이름 또는 이메일로 검색..."
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -475,7 +544,7 @@ export default function AdminPage() {
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">사용자</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">이메일 / 알림</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-center">등급 (PRO)</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-center">가입일</th>
+                                    <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-center">가입/접속일</th>
                                     <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest text-right">관리</th>
                                 </tr>
                             </thead>
@@ -523,11 +592,18 @@ export default function AdminPage() {
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex flex-col items-center gap-1">
                                                 <span className="text-gray-300 text-sm">{new Date(user.created_at).toLocaleDateString()}</span>
-                                                <span className="text-[10px] text-gray-600 font-mono lowercase">verified</span>
+                                                <span className="text-[10px] text-gray-600 font-mono">접속: {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '-'}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <button 
+                                                    onClick={() => { setPushTarget(user); setShowPushModal(true); }}
+                                                    className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:text-white hover:bg-blue-500/20 transition-all"
+                                                    title="푸시 알림 보내기"
+                                                >
+                                                    <Bell className="w-4 h-4" />
+                                                </button>
                                                 <button 
                                                     onClick={() => alert('특별 회원 표시 기능은 준비 중입니다.')}
                                                     className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all"
@@ -744,6 +820,71 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Push Notification Modal */}
+            {showPushModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+                        <h3 className="text-xl font-bold text-white mb-4">
+                            {pushTarget === 'inactive' ? '미접속자 일괄 알림 발송' : `개별 알림 발송 (${(pushTarget as UserData)?.name})`}
+                        </h3>
+                        
+                        {pushTarget === 'inactive' && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-bold text-gray-400 mb-2">미접속 기간 기준 (일)</label>
+                                <select 
+                                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                    value={inactiveDays}
+                                    onChange={e => setInactiveDays(Number(e.target.value))}
+                                >
+                                    <option value={3}>3일 이상 미접속자</option>
+                                    <option value={7}>7일 이상 미접속자</option>
+                                    <option value={14}>14일 이상 미접속자</option>
+                                    <option value={30}>30일 이상 미접속자</option>
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-gray-400 mb-2">알림 제목</label>
+                            <input 
+                                type="text"
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                placeholder="예: [안내] 오랜만에 오셨네요!"
+                                value={pushTitle}
+                                onChange={e => setPushTitle(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="mb-6">
+                            <label className="block text-sm font-bold text-gray-400 mb-2">알림 내용</label>
+                            <textarea 
+                                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white h-32 resize-none focus:outline-none focus:border-blue-500"
+                                placeholder="알림톡처럼 보낼 메시지를 작성하세요."
+                                value={pushBody}
+                                onChange={e => setPushBody(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setShowPushModal(false)}
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-white rounded-xl py-3 font-bold transition-colors"
+                            >
+                                취소
+                            </button>
+                            <button 
+                                onClick={handleSendPush}
+                                disabled={pushSending}
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl py-3 font-bold transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
+                                {pushSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                                발송하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

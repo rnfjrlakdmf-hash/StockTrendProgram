@@ -89,3 +89,73 @@ def get_master_status(user_id: str, email: str):
     verify_admin(user_id, email)
     import system_watchdog
     return {"status": "success", "auto_heal_enabled": system_watchdog.AUTO_HEAL_ENABLED}
+
+class PushUserRequest(BaseModel):
+    user_id: str
+    email: str
+    target_user_id: str
+    title: str
+    body: str
+
+class PushInactiveRequest(BaseModel):
+    user_id: str
+    email: str
+    inactive_days: int
+    title: str
+    body: str
+
+@router.post("/send-push/user")
+def send_push_user(req: PushUserRequest):
+    verify_admin(req.user_id, req.email)
+    from db_manager import get_user_fcm_tokens
+    from firebase_config import send_multicast_notification
+    tokens_data = get_user_fcm_tokens(req.target_user_id)
+    tokens = [t["token"] for t in tokens_data if t.get("token")]
+    if not tokens:
+        return {"status": "error", "message": "해당 유저의 푸시 토큰이 없습니다."}
+    try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        result = send_multicast_notification(
+            tokens, req.title, req.body, 
+            {"type": "admin_message", "is_global": "false"}, 
+            target_users=[req.target_user_id]
+        )
+        return {"status": "success", "message": "유저에게 알림을 발송했습니다!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/send-push/inactive")
+def send_push_inactive(req: PushInactiveRequest):
+    verify_admin(req.user_id, req.email)
+    from db_manager import get_db_connection
+    from firebase_config import send_multicast_notification
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f'''
+            SELECT f.token, f.user_id 
+            FROM fcm_tokens f
+            JOIN users u ON f.user_id = u.id
+            WHERE u.last_login_at < datetime('now', '-{req.inactive_days} days')
+               OR (u.last_login_at IS NULL AND u.created_at < datetime('now', '-{req.inactive_days} days'))
+        ''')
+        rows = cursor.fetchall()
+        if not rows:
+            return {"status": "error", "message": "해당 조건의 미접속자(토큰 보유자)가 없습니다."}
+        
+        tokens = list(set([r[0] for r in rows if r[0]]))
+        target_users = list(set([r[1] for r in rows if r[1]]))
+        
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        result = send_multicast_notification(
+            tokens, req.title, req.body, 
+            {"type": "admin_message", "is_global": "false"}, 
+            target_users=target_users
+        )
+        return {"status": "success", "message": f"{len(target_users)}명의 미접속자에게 알림을 발송했습니다!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()

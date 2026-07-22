@@ -218,6 +218,16 @@ def init_db():
             except Exception as e:
                 pass # Already exists or other error
 
+    # [Migration] Add last_login_at
+    try:
+        cursor.execute("SELECT last_login_at FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating users table (adding last_login_at)...")
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP")
+        except Exception as e:
+            print(f"Migration Warning: {e}")
+
     # [Migration] Add User Rankings Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_rankings (
@@ -890,7 +900,7 @@ def get_all_users():
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT u.id, u.email, u.name, u.picture, u.is_pro, u.free_trial_count, u.created_at,
+            SELECT u.id, u.email, u.name, u.picture, u.is_pro, u.free_trial_count, u.created_at, u.last_login_at,
                    (SELECT COUNT(*) FROM fcm_tokens f WHERE f.user_id = u.id AND f.token IS NOT NULL) as fcm_count
             FROM users u
             ORDER BY u.created_at DESC
@@ -899,8 +909,8 @@ def get_all_users():
         return [
             {
                 "id": r[0], "email": r[1], "name": r[2], "picture": r[3],
-                "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6],
-                "has_fcm_token": int(r[7] or 0) > 0
+                "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6], "last_login_at": r[7],
+                "has_fcm_token": int(r[8] or 0) > 0
             } for r in rows
         ]
     except Exception as e:

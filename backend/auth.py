@@ -43,7 +43,7 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     Even if DB fails, we return success to allow the user into the dashboard.
     """
     # [Lazy Imports]
-    from db_manager import create_user_if_not_exists, get_user, migrate_watchlist
+    from db_manager import create_user_if_not_exists, get_user, migrate_watchlist, update_last_login
     from utils.briefing_store import invalidate_today_briefing
     
     user_data = {
@@ -85,6 +85,7 @@ def google_login(req: GoogleLoginRequest, bg_tasks: BackgroundTasks):
     # 3. Background tasks (Fire-and-forget for speed)
     bg_tasks.add_task(migrate_watchlist, "guest", req.id)
     bg_tasks.add_task(invalidate_today_briefing, req.id)
+    bg_tasks.add_task(update_last_login, req.id)
     
     return {
         "status": "success",
@@ -170,6 +171,7 @@ def kakao_login(req: KakaoLoginRequest, bg_tasks: BackgroundTasks):
     # 4. Background tasks
     bg_tasks.add_task(migrate_watchlist, "guest", kakao_id)
     bg_tasks.add_task(invalidate_today_briefing, kakao_id)
+    bg_tasks.add_task(update_last_login, kakao_id)
 
     return {
         "status": "success",
@@ -239,12 +241,13 @@ def delete_account(req: DeleteAccountRequest):
         raise HTTPException(status_code=500, detail=f"Database deletion error: {str(e)}")
 
 @router.get("/user/{user_id}/profile")
-def get_user_profile(user_id: str):
+def get_user_profile(user_id: str, bg_tasks: BackgroundTasks):
     """유저의 최신 코인, 출석, 프로 정보를 반환합니다."""
     try:
-        from db_manager import get_user
+        from db_manager import get_user, update_last_login
         user = get_user(user_id)
         if user:
+            bg_tasks.add_task(update_last_login, user_id)
             return {"status": "success", "user": user}
         return {"status": "error", "message": "User not found"}
     except Exception as e:
