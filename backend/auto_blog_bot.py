@@ -289,12 +289,24 @@ def post_to_firestore(market_type):
         print("Firestore 클라이언트를 가져오지 못했습니다. 키 설정을 확인해주세요.")
         return False
 
-    date_id, title, content, tags = generate_market_post(market_type)
+    kst = timezone(timedelta(hours=9))
+    date_id = datetime.now(kst).strftime("%Y%m%d")
+    
+    # 중복 발행 방지 로직: 오늘 날짜의 슬러그가 이미 존재하는지 확인
+    slug_prefix = f"{date_id}-"
+    slug_suffix = f"-{market_type}-market-view"
+    
+    # 동일한 날짜와 마켓 타입의 글이 있는지 검사
+    existing_posts = db.collection("blog_posts").where("slug", ">=", slug_prefix).where("slug", "<", slug_prefix + u"\uf8ff").get()
+    for doc in existing_posts:
+        if doc.id.endswith(slug_suffix):
+            print(f"[INFO] 이미 오늘({date_id}) {market_type.upper()} 마감 리포트가 존재합니다. 중복 발행을 취소합니다. (ID: {doc.id})")
+            return True
+
+    date_id_gen, title, content, tags = generate_market_post(market_type)
     
     timestamp = datetime.now().strftime("%H%M%S")
-    slug = f"{date_id}-{timestamp}-{market_type}-market-view"
-    
-
+    slug = f"{date_id_gen}-{timestamp}-{market_type}-market-view"
 
     post_data = {
         "title": title,
