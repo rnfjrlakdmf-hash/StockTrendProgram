@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // ISR 60초
@@ -173,9 +174,12 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 </div>
             </header>
 
-            {/* 본문 최상단 광고 (Above the Fold - 300x250) */}
+            {/* 본문 최상단 광고 (Above the Fold - 반응형) */}
             <div className="w-full flex justify-center mt-8 mb-10">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                <ResponsiveKakaoAd 
+                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
+                    pcAdUnit="DAN-eeR4RhnpmQaeIlYm" pcAdWidth="728" pcAdHeight="90" 
+                />
             </div>
 
             {/* Content Section (HTML Rendered, includes SVG charts) */}
@@ -216,7 +220,10 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             </div>
 
             <div className="w-full flex justify-center mb-12">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                <ResponsiveKakaoAd 
+                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
+                    pcAdUnit="DAN-kfR4SXJubdA0vEcm" pcAdWidth="728" pcAdHeight="90" 
+                />
             </div>
             
             <style dangerouslySetInnerHTML={{

@@ -7,6 +7,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR) - 백엔드 배포 후 캐시 무효화를 위한 재배포 트리거
@@ -179,9 +180,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 </div>
             </header>
 
-            {/* 본문 최상단 광고 (Above the Fold - 300x250) */}
+            {/* 본문 최상단 광고 (Above the Fold - 반응형) */}
             <div className="w-full flex justify-center mt-8 mb-10">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                <ResponsiveKakaoAd 
+                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
+                    pcAdUnit="DAN-eeR4RhnpmQaeIlYm" pcAdWidth="728" pcAdHeight="90" 
+                />
             </div>
 
             {/* Content Section (HTML Rendered) */}
@@ -200,9 +204,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 <PushSubscribeButton />
             </div>
 
-            {/* 본문 하단 광고 (300x250) */}
+            {/* 본문 하단 광고 (반응형) */}
             <div className="w-full flex justify-center mb-12">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                <ResponsiveKakaoAd 
+                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
+                    pcAdUnit="DAN-kfR4SXJubdA0vEcm" pcAdWidth="728" pcAdHeight="90" 
+                />
             </div>
             
             {/* Global Styles specific to Blog Content */}
