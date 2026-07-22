@@ -66,13 +66,13 @@ export default function PopularSearchWidget() {
           <Link 
             href={item.symbol ? `/stock/${item.symbol}` : "#"} 
             key={idx}
-            className="flex items-center justify-between p-2 md:p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+            className="flex items-center justify-between p-2 md:p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer min-w-0"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className={`text-base md:text-lg font-black w-5 md:w-6 shrink-0 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
                 {idx + 1}
               </span>
-              <span className="text-white font-bold text-[13px] md:text-sm hover:text-red-300 transition-colors whitespace-nowrap tracking-tighter overflow-visible">
+              <span className="text-white font-bold text-[13px] md:text-sm hover:text-red-300 transition-colors truncate tracking-tighter">
                 {item.name}
               </span>
             </div>
