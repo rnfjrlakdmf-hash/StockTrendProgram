@@ -221,6 +221,9 @@ def get_topic_today(db=None) -> str:
             ).limit(90).stream()
             for doc in docs:
                 data = doc.to_dict()
+                orig = data.get("originalTopic", "")
+                if orig:
+                    used_titles.add(orig.strip())
                 title = data.get("title", "")
                 if title:
                     used_titles.add(title.strip())
@@ -535,10 +538,10 @@ def generate_theory_post(db=None):
             base_tags += ["투자전략", "주식기초"]
         tags = base_tags + ([words[0]] if words else [])
         
-        return title, content, tags
+        return title, content, tags, topic
     except Exception as e:
         print(f"Gemini API 에러: {e}")
-        return None, None, None
+        return None, None, None, None
 
 def post_daily_theory():
     init_firebase()
@@ -561,7 +564,7 @@ def post_daily_theory():
         print(f"[Theory Bot] 중복 체크 중 오류: {e}")
         
     print("오늘의 주식 이론/차트 스터디 콘텐츠 생성 중...")
-    title, content, tags = generate_theory_post(db=db)
+    title, content, tags, topic = generate_theory_post(db=db)
     if not content:
         print("콘텐츠 생성 실패.")
         return False
@@ -577,6 +580,7 @@ def post_daily_theory():
         "createdAt": firestore.SERVER_TIMESTAMP,
         "author": "StockTrend 차트 마스터",
         "tags": tags,
+        "originalTopic": topic,
         "viewCount": random.randint(100, 300)
     }
     
