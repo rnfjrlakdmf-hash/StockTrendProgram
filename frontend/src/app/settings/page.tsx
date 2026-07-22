@@ -16,6 +16,9 @@ export default function SettingsPage() {
     const [freeMode, setFreeMode] = useState(false);
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+    const [isIOS, setIsIOS] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
+
     const handleDeleteAccount = async () => {
         if (!user || !user.id) return;
         
@@ -78,6 +81,13 @@ export default function SettingsPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            // Detect iOS & PWA
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+            setIsIOS(isIosDevice);
+            const isStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+            setIsStandalone(!!isStandaloneMode);
+
             setFreeMode(sessionStorage.getItem('admin_free_mode') === 'true');
             // 저장된 KIS 키 불러오기 (sessionStorage: 탭 닫으면 자동 삭제)
             const stored = sessionStorage.getItem('user_kis_keys');
@@ -417,51 +427,79 @@ export default function SettingsPage() {
                         <div className="p-6 pt-2 animate-in fade-in slide-in-from-top-3 duration-250">
                                 <div className="space-y-4">
                                     {!fcmToken && (
-                                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                            <div className="flex items-center gap-3">
-                                                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                                                <div>
-                                                    <p className="text-sm font-bold text-red-400">알림 권한이 허용되지 않았습니다.</p>
-                                                    <p className="text-xs text-red-300/80 mt-1">아래 알림을 켜려면 브라우저 권한을 허용해주세요.</p>
+                                        isIOS && !isStandalone ? (
+                                            <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex flex-col gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400">
+                                                        <Smartphone className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-base font-black text-blue-400">아이폰에서 알림 켜는 방법</p>
+                                                        <p className="text-xs text-blue-300 mt-1">아이폰은 앱을 홈 화면에 추가해야 알림을 받을 수 있습니다.</p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-black/40 rounded-xl p-4 border border-white/5 space-y-3 mt-2 text-sm text-gray-300 font-medium">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-6 h-6 shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">1</span>
+                                                        <p>사파리 화면 하단의 <span className="font-bold text-white bg-white/10 px-1.5 py-0.5 rounded">공유하기 ⍗</span> 아이콘을 누릅니다.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-6 h-6 shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">2</span>
+                                                        <p>메뉴에서 <span className="font-bold text-white bg-white/10 px-1.5 py-0.5 rounded">홈 화면에 추가 ➕</span>를 누릅니다.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-6 h-6 shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">3</span>
+                                                        <p>바탕화면에 생긴 <strong className="text-blue-400">앱 아이콘</strong>으로 접속하면 알림을 켤 수 있습니다!</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <button 
-                                                onClick={async () => {
-                                                    try {
-                                                            const { requestFCMToken } = await import('@/lib/firebase');
-                                                            const token = await requestFCMToken();
-                                                            if (token) {
-                                                                localStorage.setItem('fcm_token_value', token);
-                                                                setFcmToken(token);
-                                                                
-                                                                let uid = localStorage.getItem('uuid') || localStorage.getItem('user_id');
-                                                                if (!uid) {
-                                                                    uid = localStorage.getItem('guest_id');
+                                        ) : (
+                                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-bold text-red-400">알림 권한이 허용되지 않았습니다.</p>
+                                                        <p className="text-xs text-red-300/80 mt-1">아래 알림을 켜려면 브라우저 권한을 허용해주세요.</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={async () => {
+                                                        try {
+                                                                const { requestFCMToken } = await import('@/lib/firebase');
+                                                                const token = await requestFCMToken();
+                                                                if (token) {
+                                                                    localStorage.setItem('fcm_token_value', token);
+                                                                    setFcmToken(token);
+                                                                    
+                                                                    let uid = localStorage.getItem('uuid') || localStorage.getItem('user_id');
                                                                     if (!uid) {
-                                                                        uid = 'guest_' + Math.random().toString(36).substring(2, 15);
-                                                                        localStorage.setItem('guest_id', uid);
+                                                                        uid = localStorage.getItem('guest_id');
+                                                                        if (!uid) {
+                                                                            uid = 'guest_' + Math.random().toString(36).substring(2, 15);
+                                                                            localStorage.setItem('guest_id', uid);
+                                                                        }
                                                                     }
-                                                                }
-                                                                
-                                                                await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ token: token, user_id: uid, source: 'settings_auto_prompt' })
-                                                                });
-                                                                window.location.reload();
-                                                        } else {
-                                                            alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
+                                                                    
+                                                                    await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ token: token, user_id: uid, source: 'settings_auto_prompt' })
+                                                                    });
+                                                                    window.location.reload();
+                                                            } else {
+                                                                alert('알림 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림 권한을 허용해주세요.');
+                                                            }
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                            alert('알림 권한 요청 중 오류가 발생했습니다.');
                                                         }
-                                                    } catch (e) {
-                                                        console.error(e);
-                                                        alert('알림 권한 요청 중 오류가 발생했습니다.');
-                                                    }
-                                                }}
-                                                className="w-full sm:w-auto px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors text-center"
-                                            >
-                                                권한 허용하기
-                                            </button>
-                                        </div>
+                                                    }}
+                                                    className="w-full sm:w-auto px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-colors text-center shrink-0"
+                                                >
+                                                    권한 허용하기
+                                                </button>
+                                            </div>
+                                        )
                                     )}
                                     <div className="relative">
                                         {!fcmToken && (

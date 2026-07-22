@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send } from "lucide-react";
+import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
@@ -419,6 +419,12 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                                 {/* Menu Links */}
                                 <div className="flex flex-col gap-1">
+                                    <Link href="/settings" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl hover:bg-blue-500/10 transition-colors text-gray-300 hover:text-blue-400 group border border-transparent hover:border-blue-500/20 mb-1">
+                                        <div className="flex items-center gap-3">
+                                            <BellRing className="h-5 w-5 text-blue-400 group-hover:text-blue-400 transition-colors" />
+                                            <span className="font-bold text-sm text-blue-400">🔔 푸시 알림 설정</span>
+                                        </div>
+                                    </Link>
                                     <Link href="/alerts" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white group">
                                         <div className="flex items-center gap-3">
                                             <Bell className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />

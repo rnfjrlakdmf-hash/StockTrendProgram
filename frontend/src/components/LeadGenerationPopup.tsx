@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BellRing, X, ArrowRight, ShieldCheck } from "lucide-react";
 import { getToken } from "firebase/messaging";
 import { app } from "@/lib/firebase";
+import { API_BASE_URL } from "@/lib/config";
 
 export default function LeadGenerationPopup() {
     const { user } = useAuth();
@@ -23,7 +24,7 @@ export default function LeadGenerationPopup() {
         localStorage.setItem("userActionCount", actionCount.toString());
 
         // 3번 이상 액션(페이지 뷰 등)을 한 경우에만 팝업 표시
-        if (actionCount >= 3 && !user) {
+        if (actionCount >= 3) {
             const timer = setTimeout(() => {
                 setShowPopup(true);
             }, 5000); // 페이지 진입 5초 후
@@ -51,11 +52,28 @@ export default function LeadGenerationPopup() {
                     });
                     if (token) {
                         localStorage.setItem("pushSubscribed", "true");
-                        alert("구독이 완료되었습니다! 매일 아침 유망 종목 리포트를 보내드릴게요.");
+                        localStorage.setItem("fcm_token_value", token);
+                        
+                        let uid = localStorage.getItem('uuid') || localStorage.getItem('user_id');
+                        if (!uid) {
+                            uid = localStorage.getItem('guest_id');
+                            if (!uid) {
+                                uid = 'guest_' + Math.random().toString(36).substring(2, 15);
+                                localStorage.setItem('guest_id', uid);
+                            }
+                        }
+                        
+                        await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: token, user_id: uid, source: 'soft_prompt' })
+                        }).catch(console.error);
+
+                        alert("알림 설정이 완료되었습니다! 매일 아침 유용한 정보를 보내드릴게요.");
                         setShowPopup(false);
                     }
                 } else {
-                    alert("알림 권한이 차단되었습니다. 브라우저 설정에서 알림을 허용해주세요.");
+                    alert("알림 권한이 차단되었습니다. 브라우저 설정에서 알림을 직접 허용해주세요.");
                 }
             }
         } catch (error) {
@@ -87,11 +105,11 @@ export default function LeadGenerationPopup() {
                     </div>
                     
                     <h3 className="text-2xl font-black text-white mb-2">
-                        종목 분석이 유용하신가요?
+                        실시간 알림 설정
                     </h3>
                     
                     <p className="text-gray-300 text-sm mb-6 leading-relaxed">
-                        상위 1% 투자자들은 <strong className="text-white">매일 아침 8시</strong>에 AI가 분석한 당일 핵심 주도주 리포트를 미리 받고 있습니다.
+                        매일 아침 8시 50분, <strong className="text-white">돈이 되는 아침 시황</strong>을 푸시로 받아보시겠어요?
                     </p>
 
                     <button
@@ -101,7 +119,7 @@ export default function LeadGenerationPopup() {
                     >
                         {loading ? "처리중..." : (
                             <>
-                                지금 바로 무료 구독하기
+                                네, 알림을 받겠습니다
                                 <ArrowRight className="w-5 h-5" />
                             </>
                         )}
