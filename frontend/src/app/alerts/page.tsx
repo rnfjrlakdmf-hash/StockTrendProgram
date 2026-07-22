@@ -245,8 +245,6 @@ export default function AlertCenterPage() {
     // 탭 구성
     const tabs = [
         { id: "all", label: "전체" },
-        { id: "watchlist_news", label: "관심종목 뉴스" },
-        { id: "watchlist_disclosure", label: "관심종목 공시" },
         { id: "disclosure", label: "공시" },
         { id: "portfolio", label: "내 관심종목" }
     ];
@@ -279,19 +277,13 @@ export default function AlertCenterPage() {
             }
         }
 
-        if (activeTab === "watchlist_news") {
-            if (!isNews) return false;
-            return symbolMatch;
-        }
-        
-        if (activeTab === "watchlist_disclosure") {
-            if (!isDisclosure) return false;
-            return symbolMatch;
-        }
-
         if (activeTab === "disclosure") return isDisclosure;
         
-        if (activeTab === "portfolio") return ['portfolio_summary', 'price_alert', 'dividend_alert', 'morning_briefing'].includes(alert.type);
+        if (activeTab === "portfolio") {
+            const isPortfolioAlert = ['portfolio_summary', 'price_alert', 'dividend_alert', 'morning_briefing'].includes(alert.type);
+            // 내 관심종목 탭에서는 포트폴리오 기본 알림 + 내 관심종목 관련 뉴스 및 공시를 모두 표시
+            return isPortfolioAlert || ((isNews || isDisclosure) && symbolMatch);
+        }
         
         return true;
     });
