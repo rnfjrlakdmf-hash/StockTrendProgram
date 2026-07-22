@@ -77,12 +77,14 @@ export default function PopularSearchWidget() {
               </span>
             </div>
             
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-gray-400 text-[11px] md:text-xs tabular-nums tracking-tighter">{Number(item.price).toLocaleString()}원</span>
-              <div className={`flex items-center gap-0.5 text-xs md:text-sm font-bold w-12 md:w-14 justify-end tabular-nums tracking-tighter ${
+            <div className="flex flex-col items-end shrink-0 ml-1.5">
+              <span className={`text-[12px] md:text-[13px] font-bold tabular-nums tracking-tighter ${item.change_percent > 0 ? 'text-red-400' : item.change_percent < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                {Number(item.price).toLocaleString()}원
+              </span>
+              <div className={`flex items-center gap-0.5 text-[10px] md:text-[11px] mt-0.5 tabular-nums tracking-tighter ${
                 item.change_percent > 0 ? "text-red-400" : item.change_percent < 0 ? "text-blue-400" : "text-gray-400"
               }`}>
-                {item.change_percent > 0 ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4" /> : item.change_percent < 0 ? <ChevronDown className="w-3 h-3 md:w-4 md:h-4" /> : <Minus className="w-3 h-3 md:w-4 md:h-4" />}
+                {item.change_percent > 0 ? <ChevronUp className="w-3 h-3" /> : item.change_percent < 0 ? <ChevronDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                 {Math.abs(item.change_percent)}%
               </div>
             </div>
