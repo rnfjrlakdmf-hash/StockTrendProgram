@@ -133,7 +133,7 @@ export default function AlertCenterPage() {
     const renderAlertCard = (alert: AlertItem) => {
         let targetUrl = (alert as any).url || (alert as any).link;
         const symbol = (alert as any).symbol;
-        const isDisclosure = alert.type === 'disclosure_alert' || alert.type === 'large_holding';
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
 
         if ((alert as any).news_url) {
             const params = new URLSearchParams();
@@ -152,22 +152,22 @@ export default function AlertCenterPage() {
                                 ? 'bg-orange-500/20 text-orange-400' 
                                 : alert.type === 'whale_accumulation' 
                                 ? 'bg-purple-500/20 text-purple-400'
-                                : (alert.type === 'disclosure_alert' || alert.type === 'large_holding')
+                                : ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type)
                                 ? 'bg-indigo-500/20 text-indigo-400'
                                 : alert.type === 'ipo_alert'
                                 ? 'bg-pink-500/20 text-pink-400'
                                 : alert.type === 'admin_report'
                                 ? 'bg-red-500/20 text-red-400'
-                                : ['news_alert', 'news_naver', 'news_google'].includes(alert.type)
+                                : ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type)
                                 ? 'bg-blue-500/20 text-blue-400'
                                 : 'bg-emerald-500/20 text-emerald-400'
                         }`}>
                             {alert.type === 'crypto_bull' ? '🔥 코인 불장' : 
                              alert.type === 'whale_accumulation' ? '🐳 세력 포착' : 
-                             (alert.type === 'disclosure_alert' || alert.type === 'large_holding') ? '📢 공시' :
+                             ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type) ? '📢 공시' :
                              alert.type === 'ipo_alert' ? '🎯 공모주' :
                              alert.type === 'admin_report' ? '👑 관리자' :
-                             ['news_alert', 'news_naver', 'news_google'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
+                             ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
                         </span>
                         <span className="text-xs text-gray-500 font-medium">
                             {alert.timestamp && alert.timestamp.seconds
@@ -257,8 +257,8 @@ export default function AlertCenterPage() {
         // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
         if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
-        const isNews = ['news_alert', 'news_naver', 'news_google'].includes(alert.type);
-        const isDisclosure = alert.type === 'disclosure_alert';
+        const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
 
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
