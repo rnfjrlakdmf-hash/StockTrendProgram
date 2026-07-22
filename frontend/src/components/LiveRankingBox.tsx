@@ -126,17 +126,17 @@ export default function LiveRankingBox() {
                                     </div>
                                     
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-[13px] md:text-[14px] text-white truncate tracking-tighter group-hover:text-indigo-300 transition-colors">
+                                        <span className="font-bold text-[12px] xl:text-[13px] leading-tight break-all whitespace-normal line-clamp-2 text-white tracking-tighter group-hover:text-indigo-300 transition-colors">
                                             {item.name}
                                         </span>
-                                        <span className="text-[10px] text-gray-500 tracking-wider truncate">
+                                        <span className="text-[10px] text-gray-500 tracking-wider truncate mt-0.5">
                                             {item.symbol}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col items-end flex-shrink-0 ml-1.5">
-                                    <div className={`tabular-nums tracking-tighter font-black text-[13px] md:text-[15px] flex items-center gap-0.5 ${colorClass}`}>
+                                    <div className={`tabular-nums tracking-tighter font-black text-[12px] xl:text-[13px] flex items-center gap-0.5 ${colorClass}`}>
                                         {market === "US" && <span>$</span>}
                                         <AnimatedNumber value={item.price_num || item.price} isPrice={true} />
                                         {market === "KR" && <span>원</span>}

@@ -72,13 +72,13 @@ export default function PopularSearchWidget() {
               <span className={`text-base md:text-lg font-black w-5 md:w-6 shrink-0 text-center ${idx < 3 ? 'text-red-400' : 'text-gray-500'}`}>
                 {idx + 1}
               </span>
-              <span className="text-white font-bold text-[13px] md:text-sm hover:text-red-300 transition-colors truncate tracking-tighter">
+              <span className="text-white font-bold text-[12px] xl:text-[13px] leading-tight break-all whitespace-normal line-clamp-2 hover:text-red-300 transition-colors tracking-tighter">
                 {item.name}
               </span>
             </div>
             
             <div className="flex flex-col items-end shrink-0 ml-1.5">
-              <span className={`text-[12px] md:text-[13px] font-bold tabular-nums tracking-tighter ${item.change_percent > 0 ? 'text-red-400' : item.change_percent < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+              <span className={`text-[12px] xl:text-[13px] font-bold tabular-nums tracking-tighter ${item.change_percent > 0 ? 'text-red-400' : item.change_percent < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
                 {Number(item.price).toLocaleString()}원
               </span>
               <div className={`flex items-center gap-0.5 text-[10px] md:text-[11px] mt-0.5 tabular-nums tracking-tighter ${
