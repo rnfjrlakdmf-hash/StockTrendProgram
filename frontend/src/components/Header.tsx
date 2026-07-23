@@ -160,6 +160,8 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     
                     if (json.bonus && json.bonus > 0) {
                         alert(`🎉 자동 출석: ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 획득했습니다! (총 ${json.coins} 코인)`);
+                    } else {
+                        alert(`🎉 자동 출석 완료! 10 코인을 획득했습니다. (총 ${json.coins} 코인)`);
                     }
                     
                     // 성공 시 달력 팝업을 띄워줌
@@ -205,6 +207,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 setIsAttendanceModalOpen(true);
             } else if (json.status === "already") {
                 if (json.streak !== undefined) setAttendanceStreak(json.streak);
+                alert(`이미 출석체크를 완료했습니다! (현재 ${json.coins} 코인)`);
                 setIsAttendanceModalOpen(true);
             } else {
                 alert("❌ 오류: " + json.message);
