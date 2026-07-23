@@ -1,4 +1,4 @@
-﻿import os
+import os
 import random
 import re
 from datetime import datetime, timezone, timedelta
@@ -208,31 +208,57 @@ def is_chart_topic(topic: str) -> bool:
 
 def get_topic_today(db=None) -> str:
     """
-    Firestore에서 최근 90일간 이미 발행된 강의 주제를 조회하여 겹치지 않는 주제를 선택합니다.
-    차트 주제를 70% 확률로 우선 선택합니다.
-    DB 연결이 없는 경우 day_of_year 방식으로 폴백(fallback)합니다.
+    Firestore에서 최근 200개 발행된 강의 주제를 조회하여 겹치지 않는 주제를 선택합니다.
+    - originalTopic 정확 일치 체크
+    - title 키워드 퍼지 매칭 (originalTopic 없는 과거 글 대응)
+    - 차트 주제를 70% 확률로 우선 선택합니다.
     """
+    import re as _re
     used_titles = set()
+    used_keywords = set()  # 핵심 키워드 집합 (과거 글 제목에서도 추출)
+
     if db:
         try:
-            # 최근 90일치 발행 글의 제목 수집
+            # 최근 200개 발행 글 조회 (90→200으로 확대)
             docs = db.collection("theory_posts").order_by(
                 "createdAt", direction=firestore.Query.DESCENDING
-            ).limit(90).stream()
+            ).limit(200).stream()
             for doc in docs:
                 data = doc.to_dict()
                 orig = data.get("originalTopic", "")
                 if orig:
                     used_titles.add(orig.strip())
+                    # 핵심 키워드 추출 (괄호/조사 앞 단어)
+                    key = orig.split('(')[0].split('란')[0].split('이란')[0].strip()
+                    if len(key) >= 2:
+                        used_keywords.add(key)
                 title = data.get("title", "")
                 if title:
                     used_titles.add(title.strip())
+                    # 제목에서도 키워드 추출 (originalTopic 없는 과거 글 대응)
+                    clean = _re.sub(r'[\[\]【】\(\)]', ' ', title)
+                    for part in _re.split(r'[/과와]', clean):
+                        kw = part.strip().split()[0] if part.strip() else ''
+                        if len(kw) >= 2:
+                            used_keywords.add(kw)
         except Exception as e:
             print(f"[Theory Bot] 발행 이력 조회 실패 (폴백 사용): {e}")
 
+    def is_topic_used(topic: str) -> bool:
+        """정확 일치 + 키워드 퍼지 매칭으로 중복 여부 판별"""
+        if topic in used_titles:
+            return True
+        key = topic.split('(')[0].split('란')[0].split('이란')[0].strip()
+        if key and key in used_keywords:
+            print(f"[Theory Bot] 키워드 중복 감지: '{key}'")
+            return True
+        return False
+
     # 사용되지 않은 주제 후보 필터링
-    available_chart = [t for t in CHART_TOPICS if t not in used_titles]
-    available_general = [t for t in GENERAL_TOPICS if t not in used_titles]
+    available_chart = [t for t in CHART_TOPICS if not is_topic_used(t)]
+    available_general = [t for t in GENERAL_TOPICS if not is_topic_used(t)]
+
+    print(f"[Theory Bot] 사용 가능: 차트 {len(available_chart)}/{len(CHART_TOPICS)}개, 일반 {len(available_general)}/{len(GENERAL_TOPICS)}개")
 
     # 모든 주제 소진 시 순환
     if not available_chart:
@@ -242,18 +268,16 @@ def get_topic_today(db=None) -> str:
         print("[Theory Bot] 일반 주제 소진 - 일반 전체 목록에서 재선택")
         available_general = GENERAL_TOPICS
 
-    # 날짜 시드 랜덤 (하루 동안 같은 결과 보장)
-    kst = timezone(timedelta(hours=9))
-    seed_str = datetime.now(kst).strftime("%Y%m%d")
-    rand = random.Random(int(seed_str))
+    # 진짜 랜덤 선택 (날짜 시드 제거 → 재시도 시 다른 주제 가능)
+    rand = random.Random()
 
     # 차트 70%, 일반 30% 가중치 선택
     if rand.random() < 0.7:
         selected = rand.choice(available_chart)
-        print(f"[Theory Bot] 차트 주제 선택 (70% 가중치): {selected[:30]}...")
+        print(f"[Theory Bot] 차트 주제 선택 (70%): {selected[:40]}...")
     else:
         selected = rand.choice(available_general)
-        print(f"[Theory Bot] 일반 주제 선택 (30% 가중치): {selected[:30]}...")
+        print(f"[Theory Bot] 일반 주제 선택 (30%): {selected[:40]}...")
 
     return selected
 
