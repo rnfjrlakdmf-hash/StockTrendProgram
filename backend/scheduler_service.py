@@ -1,4 +1,4 @@
-﻿import time
+import time
 import threading
 from datetime import datetime
 import pytz
@@ -907,15 +907,28 @@ def run_market_scheduler():
     last_run_fomo = ""
     last_run_dormant = ""
     # [핵심 수정] 서버 재시작 시 오늘 날짜를 기준으로 초기화
-    # 오전 8:30 이후 재시작이면 "오늘은 이미 실행됨" 처리 → 중복 방지
-    # 오전 8:30 이전 재시작이면 "" 유지 → 정시에 정상 실행
+    # Firestore에서 오늘 이미 발행된 글이 있으면 무조건 오늘 날짜로 마킹 → 중복 절대 방지
     _init_kst = pytz.timezone('Asia/Seoul')
     _init_now = datetime.now(_init_kst)
     _init_today = _init_now.strftime('%Y-%m-%d')
-    if _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
-        last_run_daily_theory = _init_today  # 이미 실행했거나 실행 시간 이후이므로 오늘 날짜로 마킹
-    else:
-        last_run_daily_theory = ""  # 아직 실행 전이므로 정상 실행 허용
+    try:
+        from firebase_admin import firestore as _fs
+        _db = _fs.client()
+        _today_slug = f"theory-{_init_now.strftime('%Y%m%d')}"
+        _existing = _db.collection("theory_posts").document(_today_slug).get()
+        if _existing.exists:
+            last_run_daily_theory = _init_today
+            print(f"[Scheduler] 서버 재시작 감지: 오늘({_init_today}) 이미 강의 발행됨 → 중복 방지 마킹")
+        elif _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
+            last_run_daily_theory = _init_today  # 실행 시간 이후지만 글이 없으면 실행 허용 안함(재시작 시 안전)
+        else:
+            last_run_daily_theory = ""  # 아직 실행 전이므로 정상 실행 허용
+    except Exception as _e:
+        print(f"[Scheduler] 초기화 중 Firestore 확인 실패: {_e}")
+        if _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
+            last_run_daily_theory = _init_today
+        else:
+            last_run_daily_theory = ""
     last_spike_alert_time = None
 
     last_cleanup_date = ""
@@ -983,14 +996,18 @@ def run_market_scheduler():
                 run_market_scheduler.theory_retry_date = current_date
             
             retry_count = getattr(run_market_scheduler, "theory_retry_count", 0)
+            theory_is_running = getattr(run_market_scheduler, "theory_is_running", False)
             
-            if now.hour == 8 and now.minute >= 30 and current_date != last_run_daily_theory and retry_count < 3:
+            if now.hour == 8 and now.minute >= 30 and current_date != last_run_daily_theory and retry_count < 3 and not theory_is_running:
+                run_market_scheduler.theory_is_running = True  # 동시 실행 방지 락
                 success = False
                 try:
                     from daily_theory_bot import post_daily_theory
                     success = post_daily_theory()
                 except Exception as e:
                     print(f"[Scheduler] Daily Theory Bot error: {e}")
+                finally:
+                    run_market_scheduler.theory_is_running = False  # 락 해제
                 
                 if success:
                     last_run_daily_theory = current_date
