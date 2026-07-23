@@ -425,6 +425,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                 </div>
                                             )}
                                         </div>
+                                    )}
                                     <div className="absolute inset-0 -m-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite]" />
                                     <div className="absolute inset-0 -m-20 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
                                 </div>
