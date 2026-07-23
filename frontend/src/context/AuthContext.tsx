@@ -19,7 +19,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (googleUser: any) => Promise<boolean>;
+    login: (userData: any, provider?: "google" | "kakao") => Promise<boolean>;
     logout: () => void;
     isLoading: boolean;
     isMigrating: boolean;

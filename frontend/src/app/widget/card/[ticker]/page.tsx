@@ -74,7 +74,7 @@ export default function BloggerCardWidget({ params }: { params: Promise<{ ticker
 
       {/* Footer / CTA */}
       <a 
-        href={`https://stock-trend-program.co.kr/stock/${params.ticker}`} 
+        href={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`} 
         target="_blank" 
         rel="noopener noreferrer"
         className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm py-3 px-4 text-center transition-colors flex items-center justify-center gap-2 group"

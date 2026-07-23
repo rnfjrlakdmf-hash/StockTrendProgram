@@ -10,11 +10,10 @@ export const metadata: Metadata = {
 
 export const revalidate = 86400; // 24 hours
 
-export default async function DirectoryPage({
-    searchParams,
-}: {
-    searchParams: { page?: string; market?: string };
+export default async function DirectoryPage(props: {
+    searchParams: Promise<{ page?: string; market?: string }>;
 }) {
+    const searchParams = await props.searchParams;
     let allStocks: any[] = [];
     try {
         const res = await fetch(`${API_BASE_URL}/api/seo/stocks`, { next: { revalidate: 86400 } });
