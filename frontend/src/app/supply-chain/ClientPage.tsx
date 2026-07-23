@@ -350,22 +350,23 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                     ))}
                                                                 </div>
                                                             )}
-                                                        </div>
-                                                    </div>
-                                                    {/* Event Flag */}
-                                                    {node.event && (
-                                                        <div className="absolute bottom-full left-0 md:left-auto md:right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
-                                                            <div>🚩 {node.event.d_day}</div>
-                                                            <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
-                                                                {node.event.name}
-                                                            </div>
-                                                            {node.event.date && node.event.date !== 'Unknown' && (
-                                                                <div className="text-[8px] text-red-100 mt-0.5 border-t border-white/20 pt-0.5">
-                                                                    {node.event.date}
+                                                            {/* Event Flag (Inline) */}
+                                                            {node.event && (
+                                                                <div className="mt-3 bg-red-600/20 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/30">
+                                                                    <div className="flex items-center gap-1.5 font-bold text-red-400">
+                                                                        <span className="text-xs">🚩</span>
+                                                                        <span>{node.event.d_day}</span>
+                                                                    </div>
+                                                                    <div className="mt-1 font-semibold">{node.event.name}</div>
+                                                                    {node.event.date && node.event.date !== 'Unknown' && (
+                                                                        <div className="text-[9px] text-red-200/70 mt-1 border-t border-red-500/20 pt-1">
+                                                                            {node.event.date}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -522,23 +523,24 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                     ))}
                                                                 </div>
                                                             )}
-                                                        </div>
-                                                        <div className={`mt-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] flex-shrink-0 ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
-                                                    </div>
-                                                    {/* Event Flag */}
-                                                    {node.event && (
-                                                        <div className="absolute bottom-full right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
-                                                            <div>🚩 {node.event.d_day}</div>
-                                                            <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
-                                                                {node.event.name}
-                                                            </div>
-                                                            {node.event.date && node.event.date !== 'Unknown' && (
-                                                                <div className="text-[8px] text-red-100 mt-0.5 border-t border-white/20 pt-0.5">
-                                                                    {node.event.date}
+                                                            {/* Event Flag (Inline) */}
+                                                            {node.event && (
+                                                                <div className="mt-3 bg-red-600/20 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/30">
+                                                                    <div className="flex items-center gap-1.5 font-bold text-red-400">
+                                                                        <span className="text-xs">🚩</span>
+                                                                        <span>{node.event.d_day}</span>
+                                                                    </div>
+                                                                    <div className="mt-1 font-semibold">{node.event.name}</div>
+                                                                    {node.event.date && node.event.date !== 'Unknown' && (
+                                                                        <div className="text-[9px] text-red-200/70 mt-1 border-t border-red-500/20 pt-1">
+                                                                            {node.event.date}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    )}
+                                                        <div className={`mt-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] flex-shrink-0 ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
