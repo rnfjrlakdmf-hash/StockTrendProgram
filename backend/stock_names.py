@@ -1,8 +1,9 @@
-﻿# backend/stock_names.py
+# backend/stock_names.py
 # [v3.0.0] Stock Name to Code Mapping for Top 200 Korean Stocks
 # This provides 100% success for major stocks even if external search fails.
 
 STOCK_MAP = {
+    "이수스페셜티케미컬": "457190",
     # KOSPI Top 100
     "삼성전자": "005930",
     "SK하이닉스": "000660",
