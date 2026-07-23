@@ -20,6 +20,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
 
       const ins = document.createElement("ins");
       ins.className = "kakao_ad_area";
+      ins.style.display = "none"; // 카카오 애드핏 공식 가이드: 필수 속성
       ins.setAttribute("data-ad-unit", adUnit);
       ins.setAttribute("data-ad-width", adWidth);
       ins.setAttribute("data-ad-height", adHeight);
@@ -38,10 +39,11 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
   }, [adUnit, adWidth, adHeight]);
 
   return (
-    <div className="w-full flex justify-center my-4 overflow-hidden">
+    <div className="w-full flex justify-center my-6 overflow-hidden transition-all duration-300">
       <div 
         ref={adRef} 
-        className="relative flex items-center justify-center rounded-xl"
+        style={{ minWidth: `${adWidth}px`, minHeight: `${adHeight}px` }}
+        className="relative flex items-center justify-center bg-transparent"
       >
         {(!adUnit || adUnit === "DAN-PLACEHOLDER") && (
           <div className="flex flex-col items-center p-4">
