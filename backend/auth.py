@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Header, Query, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Header, Query, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 import time
@@ -244,10 +244,9 @@ def delete_account(req: DeleteAccountRequest):
 def get_user_profile(user_id: str, bg_tasks: BackgroundTasks):
     """유저의 최신 코인, 출석, 프로 정보를 반환합니다."""
     try:
-        from db_manager import get_user, update_last_login
+        from db_manager import get_user
         user = get_user(user_id)
         if user:
-            bg_tasks.add_task(update_last_login, user_id)
             return {"status": "success", "user": user}
         return {"status": "error", "message": "User not found"}
     except Exception as e:
