@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -124,8 +124,8 @@ def main():
         }
         
         try:
-            db.collection("blog_posts").document(slug).set(post_data)
-            post_url = f"https://stock-trend-program.co.kr/blog/{slug}"
+            db.collection("theory_posts").document(slug).set(post_data)
+            post_url = f"https://stock-trend-program.co.kr/theory/{slug}"
             published_urls.append(post_url)
             print(f"[SUCCESS] Q&A 포스팅 완료! ({post_url})")
             
