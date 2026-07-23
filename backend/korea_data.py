@@ -1,4 +1,4 @@
-﻿import aiohttp
+import aiohttp
 import asyncio
 import requests
 from bs4 import BeautifulSoup
@@ -650,48 +650,93 @@ def get_naver_daily_prices(symbol: str):
 @turbo_cache(ttl_seconds=300)
 def get_naver_theme_rank():
     """
-    [대체 방법 1] 트렌드 키워드 자동 셔플
-    기존 네이버 테마 크롤링이 막힘에 따라, 현재 시장을 주도하는 메가 트렌드 키워드를
-    랜덤하게 섞어서 제공합니다.
+    네이버 금융 테마별 시세 페이지를 크롤링하여 실시간 테마 순위를 가져옵니다.
     """
+    import requests
+    from bs4 import BeautifulSoup
+
+    mega_themes = {
+        "온디바이스AI": "기기 내장형 AI 구동",
+        "비만치료제": "글로벌 체중감량 신약",
+        "전력기기": "AI 데이터센터 전력망",
+        "자율주행": "로보택시 및 FSD 기대감",
+        "K-푸드": "K-푸드 글로벌 수출 호조",
+        "화장품": "K-뷰티 수출 급증",
+        "로봇": "휴머노이드 및 스마트 팩토리",
+        "원전": "SMR 및 글로벌 원전 수주",
+        "HBM": "차세대 AI 핵심 메모리",
+        "CXL": "차세대 메모리 인터페이스",
+        "유리기판": "AI 반도체 패키징 혁신",
+        "전고체배터리": "꿈의 배터리 상용화 기대",
+        "우주항공": "우주항공청 및 우주산업",
+        "데이터센터": "빅테크 AI 인프라 투자",
+        "양자암호": "차세대 보안 및 양자컴퓨팅",
+        "핵융합": "무한 청정에너지 상용화",
+        "저PBR": "정부 밸류업 프로그램",
+        "가상화폐": "비트코인 등 가상자산 이슈",
+        "신재생에너지": "글로벌 탄소중립 및 RE100",
+        "비대면진료": "규제 완화 및 헬스케어",
+        "웹툰": "글로벌 IP 확장 및 콘텐츠",
+        "방위산업": "K-방산 글로벌 수출 수주",
+        "미용기기": "홈뷰티 기기 글로벌 수요"
+    }
+
+    try:
+        url = "https://finance.naver.com/sise/theme.naver"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Referer": "https://finance.naver.com/"
+        }
+        res = requests.get(url, headers=headers, timeout=5)
+        res.encoding = 'euc-kr'
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        trs = soup.select("table.type_1 tr")
+        themes = []
+        for tr in trs:
+            col_type1 = tr.select_one(".col_type1 a")
+            if not col_type1:
+                continue
+                
+            name = col_type1.text.strip()
+            if name == "테마명":
+                continue
+                
+            tds = tr.select("td")
+            change = "0.00%"
+            for td in tds:
+                if "%" in td.text:
+                    change = td.text.strip()
+                    break
+            
+            # Find description
+            desc = mega_themes.get(name, f"{name} 관련주 테마")
+            
+            themes.append({
+                "name": name,
+                "desc": desc,
+                "change": change,
+                "is_new": False
+            })
+            
+            if len(themes) >= 10:
+                break
+        
+        if themes:
+            return themes
+    except Exception as e:
+        print(f"[Theme Scraper Error] {e}")
+
+    # Fallback if scraper fails
     import random
-    mega_themes = [
-        {"name": "온디바이스AI", "desc": "기기 내장형 AI 구동"},
-        {"name": "비만치료제", "desc": "글로벌 체중감량 신약"},
-        {"name": "전력기기", "desc": "AI 데이터센터 전력망"},
-        {"name": "자율주행", "desc": "로보택시 및 FSD 기대감"},
-        {"name": "K-푸드", "desc": "K-푸드 글로벌 수출 호조"},
-        {"name": "화장품", "desc": "K-뷰티 수출 급증"},
-        {"name": "로봇", "desc": "휴머노이드 및 스마트 팩토리"},
-        {"name": "원전", "desc": "SMR 및 글로벌 원전 수주"},
-        {"name": "HBM", "desc": "차세대 AI 핵심 메모리"},
-        {"name": "CXL", "desc": "차세대 메모리 인터페이스"},
-        {"name": "유리기판", "desc": "AI 반도체 패키징 혁신"},
-        {"name": "전고체배터리", "desc": "꿈의 배터리 상용화 기대"},
-        {"name": "우주항공", "desc": "우주항공청 및 우주산업"},
-        {"name": "데이터센터", "desc": "빅테크 AI 인프라 투자"},
-        {"name": "양자암호", "desc": "차세대 보안 및 양자컴퓨팅"},
-        {"name": "핵융합", "desc": "무한 청정에너지 상용화"},
-        {"name": "저PBR", "desc": "정부 밸류업 프로그램"},
-        {"name": "가상화폐", "desc": "비트코인 등 가상자산 이슈"},
-        {"name": "신재생에너지", "desc": "글로벌 탄소중립 및 RE100"},
-        {"name": "비대면진료", "desc": "규제 완화 및 헬스케어"},
-        {"name": "웹툰", "desc": "글로벌 IP 확장 및 콘텐츠"},
-        {"name": "방위산업", "desc": "K-방산 글로벌 수출 수주"},
-        {"name": "미용기기", "desc": "홈뷰티 기기 글로벌 수요"}
-    ]
-    selected_themes = random.sample(mega_themes, random.randint(7, 10))
-    themes = []
-    for theme in selected_themes:
-        change_val = round(random.uniform(0.1, 5.9), 1)
-        themes.append({
-            "name": theme["name"],
-            "desc": theme["desc"],
-            "change": f"+{change_val}%",
-            "is_new": random.random() > 0.8
-        })
-    themes.sort(key=lambda x: float(x["change"].replace("+", "").replace("%", "")), reverse=True)
-    return themes
+    fallback_themes = list(mega_themes.keys())
+    selected = random.sample(fallback_themes, 10)
+    return [{
+        "name": t,
+        "desc": mega_themes[t],
+        "change": "+0.00%",
+        "is_new": False
+    } for t in selected]
 
 @turbo_cache(ttl_seconds=300)
 def get_naver_flash_news():
