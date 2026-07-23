@@ -99,8 +99,27 @@ def main():
     init_firebase()
     db = firestore.client()
     
+    # 중복 방지 로직: 이미 작성된 주제 필터링
+    existing_docs = db.collection("theory_posts").where("slug", ">=", "qa-seo-").where("slug", "<", "qa-seo-" + "\uf8ff").stream()
+    published_topics = set()
+    for doc in existing_docs:
+        data = doc.to_dict()
+        title = data.get("title", "")
+        # 제목이 "{topic} 완벽 정리" 형식으로 저장됨을 활용하여 원본 topic 유추
+        # 또는 단순히 QA_TOPICS 내의 주제가 제목에 포함되어 있는지 확인
+        for topic in QA_TOPICS:
+            if topic in title:
+                published_topics.add(topic)
+
+    available_topics = [t for t in QA_TOPICS if t not in published_topics]
+    
+    if len(available_topics) < 2:
+        print(f"작성 가능한 새로운 주제가 부족합니다. (남은 주제: {len(available_topics)}개). 초기화하거나 스킵합니다.")
+        # 만약 전부 작성했다면 다시 전체 풀에서 시작 (또는 종료)
+        available_topics = QA_TOPICS
+        
     # 2개의 주제를 랜덤으로 선택
-    selected_topics = random.sample(QA_TOPICS, 2)
+    selected_topics = random.sample(available_topics, 2)
     print(f"선정된 Q&A 주제: {selected_topics}")
     
     published_urls = []
