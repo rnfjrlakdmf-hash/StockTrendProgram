@@ -198,6 +198,9 @@ async def check_and_notify_disclosures():
                                     elif is_insider:
                                         teaser_msg = f"🚨 <b>[내부자 거래 포착]</b>\n회사 임원/주요주주가 몰래 매수/매도한 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/stock/{raw_code}'>앱에서 정답 확인하기</a>"
                                         send_telegram_teaser(teaser_msg)
+                                    else:
+                                        teaser_msg = f"🔔 <b>[세력포착라이브]</b>\n세력이 반응할 초특급 핵심 공시가 뜬 이 종목은?\n\n👉 <a href='https://stock-trend-program.co.kr/stock/{raw_code}'>앱에서 정답 확인하기</a>"
+                                        send_telegram_teaser(teaser_msg)
                                 except Exception as e:
                                     logger.error(f"[WhaleSiren] Telegram error: {e}")
                                 
