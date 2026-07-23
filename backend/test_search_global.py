@@ -1,4 +1,4 @@
-
+﻿
 from stock_data import search_yahoo_finance, get_stock_info
 
 def test_search(query):

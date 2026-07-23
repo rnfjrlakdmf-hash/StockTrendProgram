@@ -1,4 +1,4 @@
-import requests
+﻿import requests
 import json
 
 token = "8177986686:AAEk89GeI327ftFLgGN8IZHnUQJK9TiArV0"

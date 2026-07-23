@@ -1,4 +1,4 @@
-
+﻿
 import os
 
 filepath = r'c:\Users\rnfjr\StockTrendProgram\backend\korea_data.py'

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -27,11 +27,11 @@ else:
 
 def get_json_model():
     """JSON 출력을 강제하는 Gemini 모델 반환 (기본값)"""
-    return genai.GenerativeModel('gemini-2.5-flash-lite', generation_config={"response_mime_type": "application/json"})
+    return genai.GenerativeModel('gemini-3.5-flash-lite', generation_config={"response_mime_type": "application/json"})
 
 def get_text_model():
     """일반 텍스트 출력을 위한 Gemini 모델 반환"""
-    return genai.GenerativeModel('gemini-2.5-flash-lite')
+    return genai.GenerativeModel('gemini-3.5-flash-lite')
 
 def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 40, temperature: float = 0.1, models_to_try: list = None):
     """
@@ -43,9 +43,9 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 40, 
     import concurrent.futures
     
     if models_to_try is None:
-        # [Cost-Optimized] gemini-2.5-flash-lite 단일 사용 (비용 폭탄 방지)
+        # [Cost-Optimized] gemini-3.5-flash-lite 단일 사용 (비용 폭탄 방지)
         models_to_try = [
-            "gemini-2.5-flash-lite"
+            "gemini-3.5-flash-lite"
         ]
     
     last_error = None
@@ -957,9 +957,9 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
     
     try:
         # Temperature 1.0 to break strong probability associations
-        # [Cost-Optimized] gemini-2.5-flash-lite 사용 (비용 절감)
+        # [Cost-Optimized] gemini-3.5-flash-lite 사용 (비용 절감)
         temp = 1.0 if target_symbol else 0.4
-        models = ["gemini-2.5-flash-lite"] if target_symbol else None
+        models = ["gemini-3.5-flash-lite"] if target_symbol else None
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=40)

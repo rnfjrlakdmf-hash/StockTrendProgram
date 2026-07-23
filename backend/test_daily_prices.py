@@ -1,4 +1,4 @@
-
+﻿
 from stock_data import get_stock_info
 import json
 

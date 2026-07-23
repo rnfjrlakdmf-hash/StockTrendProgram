@@ -1,4 +1,4 @@
-
+﻿
 import urllib.parse
 
 def clean_link(link):

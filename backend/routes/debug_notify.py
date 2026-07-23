@@ -1,4 +1,4 @@
-"""
+﻿"""
 뉴스/공시 백그라운드 모니터 상태 진단 API
 GET /api/system/notify-status
 """

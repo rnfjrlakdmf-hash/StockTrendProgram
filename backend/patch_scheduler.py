@@ -1,4 +1,4 @@
-import codecs
+﻿import codecs
 
 with codecs.open('scheduler.py', 'r', 'utf-8') as f:
     text = f.read()

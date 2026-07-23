@@ -1,4 +1,4 @@
-import json
+﻿import json
 import urllib.parse
 import re
 from typing import Dict, Any, List

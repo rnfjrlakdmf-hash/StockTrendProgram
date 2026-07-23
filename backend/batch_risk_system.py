@@ -1,4 +1,4 @@
-import time
+﻿import time
 import datetime
 from db_manager import get_db_connection, get_watchlist, get_user_fcm_tokens
 from firebase_config import send_multicast_notification

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -88,8 +88,8 @@ def generate_seo_post(stock):
     """
     
     try:
-        # 모델은 초고속/가성비인 gemini-2.5-flash-lite 사용
-        response = generate_with_retry(prompt, json_mode=False, timeout=60, models_to_try=["gemini-2.5-flash-lite"])
+        # 모델은 초고속/가성비인 gemini-3.5-flash-lite 사용
+        response = generate_with_retry(prompt, json_mode=False, timeout=60, models_to_try=["gemini-3.5-flash-lite"])
         content = response.text.replace("```html", "").replace("```", "").strip()
         
         title = f"{name} 주가 분석 리포트"

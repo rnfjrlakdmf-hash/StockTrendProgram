@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, Query, HTTPException
+﻿from fastapi import APIRouter, Header, Query, HTTPException
 from typing import Optional, List, Dict
 from price_alerts import get_user_alerts, save_price_alert, delete_price_alert, get_alert_history
 

@@ -1,4 +1,4 @@
-# backend/stock_names.py
+﻿# backend/stock_names.py
 # [v3.0.0] Stock Name to Code Mapping for Top 200 Korean Stocks
 # This provides 100% success for major stocks even if external search fails.
 

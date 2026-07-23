@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import sys
 import traceback
 sys.path.append('c:\\Users\\rnfjr\\StockTrendProgram\\backend')

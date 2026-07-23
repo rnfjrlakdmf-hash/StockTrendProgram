@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 
 def diag():
     conn = sqlite3.connect("stock_app.db")

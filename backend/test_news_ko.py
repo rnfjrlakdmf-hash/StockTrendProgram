@@ -1,4 +1,4 @@
-from GoogleNews import GoogleNews
+﻿from GoogleNews import GoogleNews
 import sys
 import io
 

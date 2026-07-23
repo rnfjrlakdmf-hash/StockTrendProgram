@@ -1,4 +1,4 @@
-from rank_data import get_realtime_top10
+﻿from rank_data import get_realtime_top10
 import time
 
 print("Testing KR Market...")

@@ -1,4 +1,4 @@
-import time
+﻿import time
 import hashlib
 from db_manager import get_unique_watched_symbols, get_watchers_by_symbol, check_and_record_alert
 from stock_data import fetch_global_breaking_news, fetch_batch_realtime_prices

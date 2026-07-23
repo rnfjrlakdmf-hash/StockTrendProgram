@@ -1,4 +1,4 @@
-
+﻿
 import requests
 
 def debug_ords(symbol):

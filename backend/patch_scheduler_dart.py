@@ -1,4 +1,4 @@
-import os
+﻿import os
 import re
 
 file_path = "backend/scheduler.py"

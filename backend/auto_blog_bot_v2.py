@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import uuid
 import yfinance as yf
@@ -103,7 +103,7 @@ def main():
         # 3. AI 글 작성
         try:
             import json
-            response_text = generate_with_retry(prompt, models_to_try=["gemini-2.5-flash-lite"], temperature=0.7)
+            response_text = generate_with_retry(prompt, models_to_try=["gemini-3.5-flash-lite"], temperature=0.7)
             clean_text = response_text.replace("```json", "").replace("```html", "").replace("```", "").strip()
             result = json.loads(clean_text)
             title = result['title']

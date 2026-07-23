@@ -1,4 +1,4 @@
-from korea_data import get_naver_sise_data
+﻿from korea_data import get_naver_sise_data
 import json
 
 try:

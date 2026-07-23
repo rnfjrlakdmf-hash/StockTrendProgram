@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import time
 import logging
 from stock_data import GLOBAL_KOREAN_NAMES

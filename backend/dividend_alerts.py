@@ -1,4 +1,4 @@
-import os
+﻿import os
 import yfinance as yf
 from datetime import datetime, timedelta, date
 from db_manager import get_db_connection

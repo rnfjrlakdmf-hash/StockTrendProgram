@@ -1,4 +1,4 @@
-from korea_data import get_ipo_data
+﻿from korea_data import get_ipo_data
 import requests
 from bs4 import BeautifulSoup
 

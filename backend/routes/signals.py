@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, Query, BackgroundTasks, Response
+﻿from fastapi import APIRouter, Header, Query, BackgroundTasks, Response
 from typing import Optional, List, Dict, Any
 from smart_signals import scan_watchlist_signals, scan_all_signals
 from db_manager import get_recent_signals, get_watchlist

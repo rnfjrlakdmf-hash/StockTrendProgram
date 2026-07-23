@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed

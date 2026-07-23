@@ -1,4 +1,4 @@
-import re
+﻿import re
 
 content = open('rank_data.py', 'r', encoding='utf-8').read()
 

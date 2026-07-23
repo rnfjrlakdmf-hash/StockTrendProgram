@@ -1,4 +1,4 @@
-import urllib.request
+﻿import urllib.request
 import webbrowser
 
 print("="*50)

@@ -1,4 +1,4 @@
-import bs4
+﻿import bs4
 
 def parse_tables(filename):
     with open(filename, 'r', encoding='euc-kr', errors='ignore') as f:

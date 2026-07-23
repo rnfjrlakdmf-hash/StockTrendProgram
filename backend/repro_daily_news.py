@@ -1,4 +1,4 @@
-
+﻿
 from korea_data import get_naver_daily_prices, get_naver_stock_info
 import sys
 

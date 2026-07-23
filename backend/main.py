@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 try:
     if sys.stdout.encoding != 'utf-8':
         sys.stdout.reconfigure(encoding='utf-8')

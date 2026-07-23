@@ -1,4 +1,4 @@
-"""
+﻿"""
 Disclosure Data (공시 정보)
 Fetch disclosure information from Naver Finance
 """

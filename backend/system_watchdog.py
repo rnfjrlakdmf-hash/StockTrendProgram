@@ -1,4 +1,4 @@
-import time
+﻿import time
 import requests
 import yfinance as yf
 from firebase_admin import firestore, messaging

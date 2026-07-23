@@ -1,4 +1,4 @@
-from stock_data import get_stock_info
+﻿from stock_data import get_stock_info
 import sys
 
 # Force UTF-8 output for Windows console

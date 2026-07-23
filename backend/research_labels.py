@@ -1,4 +1,4 @@
-import requests
+﻿import requests
 import json
 
 def fetch_raw_sector_data(symbol="005930"):

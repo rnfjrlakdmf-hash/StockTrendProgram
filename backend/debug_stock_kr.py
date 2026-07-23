@@ -1,4 +1,4 @@
-from stock_data import get_stock_info
+﻿from stock_data import get_stock_info
 import sys
 
 # Test with Daeduck Electronics code (without .KS to test auto-append)

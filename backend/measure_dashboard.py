@@ -1,4 +1,4 @@
-
+﻿
 import time
 import json
 from korea_data import get_naver_market_dashboard

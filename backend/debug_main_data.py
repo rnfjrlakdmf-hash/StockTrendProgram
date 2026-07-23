@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import os
 sys.path.append(os.getcwd())
 from backend.korea_data import get_naver_main_data

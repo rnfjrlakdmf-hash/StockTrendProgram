@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 import FinanceDataReader as fdr
 import yfinance as yf
 import logging

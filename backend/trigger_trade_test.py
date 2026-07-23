@@ -1,4 +1,4 @@
-from firebase_config import send_multicast_notification, initialize_firebase
+﻿from firebase_config import send_multicast_notification, initialize_firebase
 from db_manager import get_all_fcm_tokens
 
 def trigger_test():

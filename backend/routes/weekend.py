@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 from datetime import datetime, timedelta
 import pytz
 from utils.weekend_report import get_latest_weekend_report

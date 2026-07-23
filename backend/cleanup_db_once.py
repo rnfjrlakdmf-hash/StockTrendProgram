@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 import os
 
 # DB 경로 설정

@@ -1,4 +1,4 @@
-
+﻿
 import xml.etree.ElementTree as ET
 
 xml_data = """<?xml version="1.0" encoding="EUC-KR" ?>
