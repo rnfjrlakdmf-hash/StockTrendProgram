@@ -171,7 +171,7 @@ export default function PremiumPage() {
                                     열람 가능
                                 </div>
                             )}
-                            {timeLeft && (
+                            {!report.locked && timeLeft && (
                                 <div className="flex items-center gap-2 text-xs md:text-sm font-mono tabular-nums bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-yellow-500/30 text-yellow-100 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                                     <Timer className="w-3.5 h-3.5 text-yellow-500 animate-pulse" />
                                     <span className="font-semibold tracking-wider drop-shadow-md">{timeLeft}</span>
