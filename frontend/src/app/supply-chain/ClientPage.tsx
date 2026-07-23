@@ -327,8 +327,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                 </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
-                                                                        <span className="text-white">{node.price_display}</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
+                                                                        <span>{node.price_display}</span>
                                                                         <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                             {node.change_display}
                                                                         </span>
@@ -352,14 +352,14 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                             )}
                                                             {/* Event Flag (Inline) */}
                                                             {node.event && (
-                                                                <div className="mt-3 bg-red-600/20 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/30">
+                                                                <div className="mt-3 inline-flex flex-col w-fit max-w-[220px] bg-red-900/40 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/50 shadow-sm">
                                                                     <div className="flex items-center gap-1.5 font-bold text-red-400">
                                                                         <span className="text-xs">🚩</span>
                                                                         <span>{node.event.d_day}</span>
                                                                     </div>
-                                                                    <div className="mt-1 font-semibold">{node.event.name}</div>
+                                                                    <div className="mt-1 font-semibold leading-snug">{node.event.name}</div>
                                                                     {node.event.date && node.event.date !== 'Unknown' && (
-                                                                        <div className="text-[9px] text-red-200/70 mt-1 border-t border-red-500/20 pt-1">
+                                                                        <div className="text-[9px] text-red-300 mt-1 border-t border-red-500/30 pt-1">
                                                                             {node.event.date}
                                                                         </div>
                                                                     )}
@@ -414,7 +414,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
 
                                     {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
                                     {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
-                                        <div className="absolute -top-24 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
+                                        <div className="absolute -top-12 -right-8 md:-top-16 md:-right-12 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <span className="text-sm">🚩</span>
                                                 <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
@@ -451,8 +451,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                             </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
-                                                                <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
-                                                                    <span className="text-white">{node.price_display}</span>
+                                                                <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
+                                                                    <span>{node.price_display}</span>
                                                                     <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                         {node.change_display}
                                                                     </span>
@@ -501,8 +501,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                 </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
-                                                                        <span className="text-white">{node.price_display}</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
+                                                                        <span>{node.price_display}</span>
                                                                         <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                             {node.change_display}
                                                                         </span>
@@ -525,14 +525,14 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                             )}
                                                             {/* Event Flag (Inline) */}
                                                             {node.event && (
-                                                                <div className="mt-3 bg-red-600/20 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/30">
+                                                                <div className="mt-3 inline-flex flex-col w-fit max-w-[220px] bg-red-900/40 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/50 shadow-sm">
                                                                     <div className="flex items-center gap-1.5 font-bold text-red-400">
                                                                         <span className="text-xs">🚩</span>
                                                                         <span>{node.event.d_day}</span>
                                                                     </div>
-                                                                    <div className="mt-1 font-semibold">{node.event.name}</div>
+                                                                    <div className="mt-1 font-semibold leading-snug">{node.event.name}</div>
                                                                     {node.event.date && node.event.date !== 'Unknown' && (
-                                                                        <div className="text-[9px] text-red-200/70 mt-1 border-t border-red-500/20 pt-1">
+                                                                        <div className="text-[9px] text-red-300 mt-1 border-t border-red-500/30 pt-1">
                                                                             {node.event.date}
                                                                         </div>
                                                                     )}
