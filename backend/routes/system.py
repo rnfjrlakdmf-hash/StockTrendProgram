@@ -635,7 +635,7 @@ def cleanup_stale_tokens():
             "message": f"정리 완료: guest 토큰 {guest_deleted}개 삭제, 30일 미사용 토큰 {stale_deleted}개 삭제"
         }
     except Exception as e:
-        return {\"status\": \"error\", \"message\": str(e)}
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/admin/gemini-cost")
