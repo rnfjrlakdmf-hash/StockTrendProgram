@@ -684,6 +684,14 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         data["links"] = data.get("links") or []
         data["commodities"] = data.get("commodities") or []
 
+        # Normalize node groups to singular forms (AI sometimes hallucinates plural forms)
+        for node in data["nodes"]:
+            if "group" in node:
+                g = node["group"].lower()
+                if g.startswith("supplier"): node["group"] = "supplier"
+                elif g.startswith("customer") or g.startswith("client"): node["group"] = "customer"
+                elif g.startswith("competitor") or g.startswith("rival"): node["group"] = "competitor"
+
         # Ensure summary is always a string to prevent frontend split errors
         summary_raw = data.get("summary", "")
         if isinstance(summary_raw, list):
