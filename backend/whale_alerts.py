@@ -76,15 +76,18 @@ def check_whale_alerts():
         first_table = tables[0]
         rows = first_table.find_all('tr')
 
-        top_stock_name = None
+        top_stock_code = None
         for row in rows:
             name_cell = row.find('a', class_='company')
             if name_cell:
                 top_stock_name = name_cell.text.strip()
+                href = name_cell.get('href', '')
+                if 'code=' in href:
+                    top_stock_code = href.split('code=')[-1].split('&')[0]
                 break
 
-        if not top_stock_name:
-            print("[Whale] No stock name found in table")
+        if not top_stock_name or not top_stock_code:
+            print("[Whale] No stock name or code found in table")
             return
 
         if top_stock_name not in state.get("alerted_stocks", []):
@@ -99,7 +102,7 @@ def check_whale_alerts():
                     push_data = {
                         "type": "whale_accumulation",
                         "symbol": top_stock_name,
-                        "url": f"/stock/{top_stock_name}",
+                        "url": f"/stock/{top_stock_code}",
                         "market": "KR",
                     }
                     send_multicast_notification(tokens, title, body, push_data)
