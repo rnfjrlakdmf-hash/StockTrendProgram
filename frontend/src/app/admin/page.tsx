@@ -345,7 +345,9 @@ export default function AdminPage() {
 
         // 10초마다 실시간 동시접속자수 및 방문통계 동기화
         const interval = setInterval(fetchAnalytics, 10000);
-        return () => clearInterval(interval);
+        // 30초마다 Gemini API 비용 자동 갱신
+        const costInterval = setInterval(fetchGeminiCost, 30000);
+        return () => { clearInterval(interval); clearInterval(costInterval); };
     }, [currentUser]);
 
     const filteredUsers = users.filter(u => 
