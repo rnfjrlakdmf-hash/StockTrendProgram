@@ -36,6 +36,24 @@ interface AnalyticsStats {
     daily_stats: DailyStat[];
 }
 
+interface GeminiDayStat {
+    date: string;
+    input_tokens: number;
+    output_tokens: number;
+    calls: number;
+    cost_krw: number;
+    cost_usd: number;
+}
+
+interface GeminiCostData {
+    today: { date: string; input_tokens: number; output_tokens: number; calls: number; cost_krw: number; cost_usd: number };
+    this_month: { month: string; input_tokens: number; output_tokens: number; cost_krw: number; cost_usd: number; budget_limit_krw: number; budget_used_pct: number };
+    daily: GeminiDayStat[];
+    total_calls: number;
+    total_cost_krw: number;
+    model: string;
+}
+
 export default function AdminPage() {
     const { user: currentUser, isLoading: authLoading } = useAuth();
     const router = useRouter();
@@ -56,6 +74,20 @@ export default function AdminPage() {
     const [pushBody, setPushBody] = useState("");
     const [inactiveDays, setInactiveDays] = useState(7);
     const [pushSending, setPushSending] = useState(false);
+    const [geminiCost, setGeminiCost] = useState<GeminiCostData | null>(null);
+    const [geminiCostLoading, setGeminiCostLoading] = useState(false);
+
+    const fetchGeminiCost = async () => {
+        setGeminiCostLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/gemini-cost?days=30`, {
+                headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
+            });
+            const json = await res.json();
+            if (json.status === "success") setGeminiCost(json.data);
+        } catch (e) { console.error("gemini cost fetch error", e); }
+        finally { setGeminiCostLoading(false); }
+    };
 
     const fetchMasterStatus = async () => {
         if (!currentUser) return;
@@ -305,6 +337,7 @@ export default function AdminPage() {
     useEffect(() => {
         fetchUsers();
         fetchAnalytics();
+        fetchGeminiCost();
         
         if (currentUser && (currentUser.email?.toLowerCase() === "rnfjr@gmail.com" || currentUser.email?.toLowerCase() === "rnfjrlakdmf@gmail.com")) {
             fetchMasterStatus();
@@ -502,6 +535,116 @@ export default function AdminPage() {
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* ============================================================ */}
+                {/* Gemini API 비용 대시보드 */}
+                {/* ============================================================ */}
+                <div className="pt-4 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                            <DollarSign className="w-6 h-6 text-emerald-400" />
+                            Gemini AI API 비용 모니터링
+                        </h2>
+                        <button
+                            onClick={fetchGeminiCost}
+                            disabled={geminiCostLoading}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-gray-300 transition-all"
+                        >
+                            {geminiCostLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            새로고침
+                        </button>
+                    </div>
+
+                    {geminiCost ? (
+                        <>
+                            {/* 요약 카드 3개 */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {/* 오늘 비용 */}
+                                <div className="bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-2xl p-6 flex flex-col gap-2">
+                                    <p className="text-[11px] font-black uppercase text-emerald-400 tracking-widest">오늘 사용 비용</p>
+                                    <p className="text-3xl font-black text-white">{geminiCost.today.cost_krw.toLocaleString()}원</p>
+                                    <p className="text-xs text-gray-500">(${geminiCost.today.cost_usd} USD) · API 호출 {geminiCost.today.calls}회</p>
+                                    <p className="text-xs text-gray-600 mt-1">입력 {geminiCost.today.input_tokens.toLocaleString()} 토큰 / 출력 {geminiCost.today.output_tokens.toLocaleString()} 토큰</p>
+                                </div>
+
+                                {/* 이번달 비용 + 예산 게이지 */}
+                                <div className="bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-2xl p-6 flex flex-col gap-2">
+                                    <p className="text-[11px] font-black uppercase text-blue-400 tracking-widest">이번 달 누적 비용</p>
+                                    <p className="text-3xl font-black text-white">{geminiCost.this_month.cost_krw.toLocaleString()}원</p>
+                                    <p className="text-xs text-gray-500">예산 한도: {geminiCost.this_month.budget_limit_krw.toLocaleString()}원</p>
+                                    <div className="mt-2">
+                                        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                                            <span>예산 사용률</span>
+                                            <span className={geminiCost.this_month.budget_used_pct >= 80 ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>{geminiCost.this_month.budget_used_pct}%</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all ${
+                                                    geminiCost.this_month.budget_used_pct >= 80 ? "bg-red-500" :
+                                                    geminiCost.this_month.budget_used_pct >= 50 ? "bg-yellow-500" : "bg-emerald-500"
+                                                }`}
+                                                style={{ width: `${Math.min(geminiCost.this_month.budget_used_pct, 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 30일 총계 */}
+                                <div className="bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 rounded-2xl p-6 flex flex-col gap-2">
+                                    <p className="text-[11px] font-black uppercase text-purple-400 tracking-widest">30일 총 비용</p>
+                                    <p className="text-3xl font-black text-white">{geminiCost.total_cost_krw.toLocaleString()}원</p>
+                                    <p className="text-xs text-gray-500">총 API 호출 {geminiCost.total_calls.toLocaleString()}회</p>
+                                    <p className="text-xs text-gray-600 mt-1">모델: {geminiCost.model}</p>
+                                </div>
+                            </div>
+
+                            {/* 일별 바 차트 */}
+                            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+                                <h3 className="text-base font-bold text-white mb-4">일별 API 비용 내역 (최근 30일)</h3>
+                                {geminiCost.daily.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                        <p className="text-sm">아직 기록된 비용 데이터가 없습니다.</p>
+                                        <p className="text-xs mt-1">API 호출이 발생하면 자동으로 기록됩니다.</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <div className="flex items-end gap-1 min-w-max" style={{ height: '160px' }}>
+                                            {(() => {
+                                                const maxKrw = Math.max(...geminiCost.daily.map(d => d.cost_krw), 1);
+                                                return geminiCost.daily.map((d) => (
+                                                    <div key={d.date} className="flex flex-col items-center gap-1 group cursor-pointer" style={{ width: '32px' }}>
+                                                        <div className="relative flex items-end w-full" style={{ height: '130px' }}>
+                                                            <div
+                                                                className="w-full rounded-t-lg bg-emerald-500/60 group-hover:bg-emerald-400 transition-all"
+                                                                style={{ height: `${Math.max((d.cost_krw / maxKrw) * 100, 2)}%` }}
+                                                                title={`${d.date}\n${d.cost_krw}원 (${d.calls}회 호출)`}
+                                                            />
+                                                            {/* 툴팁 */}
+                                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-20">
+                                                                <div className="bg-gray-900 border border-white/20 rounded-xl px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
+                                                                    <p className="text-white font-bold">{d.date}</p>
+                                                                    <p className="text-emerald-400">{d.cost_krw}원</p>
+                                                                    <p className="text-gray-400">{d.calls}회 호출</p>
+                                                                </div>
+                                                                <div className="w-2 h-2 bg-gray-900 border-r border-b border-white/20 rotate-45 -mt-1" />
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[8px] text-gray-600 rotate-45 origin-left mt-1 whitespace-nowrap">{d.date.slice(5)}</p>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-8 flex items-center justify-center gap-3 text-gray-500">
+                            {geminiCostLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>비용 데이터 로딩 중...</span></> : <span>비용 데이터를 불러올 수 없습니다.</span>}
+                        </div>
+                    )}
                 </div>
 
                 {/* Section Header for User Table */}

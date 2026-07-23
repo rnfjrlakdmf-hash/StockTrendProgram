@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Header, Query, HTTPException
+from fastapi import APIRouter, Header, Query, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
@@ -635,5 +635,103 @@ def cleanup_stale_tokens():
             "message": f"정리 완료: guest 토큰 {guest_deleted}개 삭제, 30일 미사용 토큰 {stale_deleted}개 삭제"
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {\"status\": \"error\", \"message\": str(e)}
 
+
+@router.get("/admin/gemini-cost")
+def get_gemini_cost(x_admin_key: Optional[str] = Header(None), days: int = 30):
+    """
+    Gemini API 일별 비용 통계 조회
+    - Gemini 3.5 Flash Lite 가격: 입력 $0.10/1M, 출력 $0.40/1M
+    - USD -> KRW 환율: 1380원 적용
+    """
+    check_admin_auth(x_admin_key=x_admin_key)
+    try:
+        from firebase_admin import firestore
+        from datetime import datetime, timedelta
+        import pytz
+
+        kst = pytz.timezone('Asia/Seoul')
+        now = datetime.now(kst)
+        start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
+
+        db = firestore.client()
+        docs = db.collection('gemini_usage') \
+                 .where('date', '>=', start_date) \
+                 .stream()
+
+        daily: Dict[str, Any] = {}
+        total_input = 0
+        total_output = 0
+        total_calls = 0
+
+        for doc in docs:
+            d = doc.to_dict()
+            date = d.get('date', '')
+            inp = d.get('input_tokens', 0) or 0
+            out = d.get('output_tokens', 0) or 0
+            if date not in daily:
+                daily[date] = {'date': date, 'input_tokens': 0, 'output_tokens': 0, 'calls': 0}
+            daily[date]['input_tokens'] += inp
+            daily[date]['output_tokens'] += out
+            daily[date]['calls'] += 1
+            total_input += inp
+            total_output += out
+            total_calls += 1
+
+        # 비용 계산 (Gemini 3.5 Flash Lite 기준)
+        USD_TO_KRW = 1380
+        INPUT_PRICE = 0.10 / 1_000_000
+        OUTPUT_PRICE = 0.40 / 1_000_000
+
+        daily_list = []
+        for date in sorted(daily.keys()):
+            entry = daily[date]
+            cost_usd = entry['input_tokens'] * INPUT_PRICE + entry['output_tokens'] * OUTPUT_PRICE
+            entry['cost_usd'] = round(cost_usd, 6)
+            entry['cost_krw'] = round(cost_usd * USD_TO_KRW)
+            daily_list.append(entry)
+
+        total_cost_usd = total_input * INPUT_PRICE + total_output * OUTPUT_PRICE
+        total_cost_krw = round(total_cost_usd * USD_TO_KRW)
+
+        today = now.strftime('%Y-%m-%d')
+        today_data = daily.get(today, {'input_tokens': 0, 'output_tokens': 0, 'calls': 0})
+        today_cost_usd = today_data['input_tokens'] * INPUT_PRICE + today_data['output_tokens'] * OUTPUT_PRICE
+        today_cost_krw = round(today_cost_usd * USD_TO_KRW)
+
+        this_month = now.strftime('%Y-%m')
+        month_input = sum(d['input_tokens'] for d in daily_list if d['date'].startswith(this_month))
+        month_output = sum(d['output_tokens'] for d in daily_list if d['date'].startswith(this_month))
+        month_cost_usd = month_input * INPUT_PRICE + month_output * OUTPUT_PRICE
+        month_cost_krw = round(month_cost_usd * USD_TO_KRW)
+        budget_limit = 15000
+
+        return {
+            "status": "success",
+            "data": {
+                "today": {
+                    "date": today,
+                    "input_tokens": today_data['input_tokens'],
+                    "output_tokens": today_data['output_tokens'],
+                    "calls": today_data.get('calls', 0),
+                    "cost_krw": today_cost_krw,
+                    "cost_usd": round(today_cost_usd, 4)
+                },
+                "this_month": {
+                    "month": this_month,
+                    "input_tokens": month_input,
+                    "output_tokens": month_output,
+                    "cost_krw": month_cost_krw,
+                    "cost_usd": round(month_cost_usd, 4),
+                    "budget_limit_krw": budget_limit,
+                    "budget_used_pct": round(month_cost_krw / budget_limit * 100, 1) if budget_limit > 0 else 0
+                },
+                "daily": daily_list,
+                "total_calls": total_calls,
+                "total_cost_krw": total_cost_krw,
+                "model": "gemini-3.5-flash-lite"
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

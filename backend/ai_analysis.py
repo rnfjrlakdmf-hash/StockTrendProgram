@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -63,6 +63,29 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 40, 
                 future = executor.submit(_generate, model_name)
                 try:
                     response = future.result(timeout=timeout)
+                    # [비용 추적] 토큰 사용량을 Firestore에 비동기 기록
+                    def _save_usage(resp=response, m=model_name):
+                        try:
+                            import pytz
+                            from datetime import datetime
+                            from firebase_admin import firestore as fs
+                            kst = pytz.timezone('Asia/Seoul')
+                            now = datetime.now(kst)
+                            usage = resp.usage_metadata
+                            input_tokens = getattr(usage, 'prompt_token_count', 0) or 0
+                            output_tokens = getattr(usage, 'candidates_token_count', 0) or 0
+                            db = fs.client()
+                            db.collection('gemini_usage').add({
+                                'date': now.strftime('%Y-%m-%d'),
+                                'model': m,
+                                'input_tokens': input_tokens,
+                                'output_tokens': output_tokens,
+                                'timestamp': fs.SERVER_TIMESTAMP
+                            })
+                        except Exception:
+                            pass
+                    import threading
+                    threading.Thread(target=_save_usage, daemon=True).start()
                     return response
                 except concurrent.futures.TimeoutError:
                     print(f"[WARNING] Model {model_name} timed out after {timeout}s")
