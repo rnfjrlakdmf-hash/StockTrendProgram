@@ -413,7 +413,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
 
                                     {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
                                     {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
-                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
+                                        <div className="absolute -top-24 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <span className="text-sm">🚩</span>
                                                 <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
