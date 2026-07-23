@@ -425,9 +425,6 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-
-                                    {/* Orbit Rings (Visual) */}
                                     <div className="absolute inset-0 -m-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite]" />
                                     <div className="absolute inset-0 -m-20 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
                                 </div>
@@ -437,80 +434,86 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                             <div className="z-10 w-full lg:w-1/3 flex flex-col justify-between gap-6">
                                 {/* Competitors */}
                                 <div className="p-4 md:p-6 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 backdrop-blur-sm">
-                                    <h3 className="text-red-400 font-bold mb-4 flex items-center justify-end gap-2">경쟁사 (Rivals) <div className="w-2 h-2 rounded-full bg-red-500"></div></h3>
+                                    <h3 className="text-red-400 font-bold mb-4 flex items-center justify-between gap-2"><span>경쟁사 (Rivals)</span> <div className="w-2 h-2 rounded-full bg-red-500"></div></h3>
                                     <div className="space-y-6">
                                         {(data.nodes || []).filter((n: any) => n.group === 'competitor').map((node: any) => (
-                                            <div key={node.id} className="flex flex-col items-end gap-1 group relative">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <span 
-                                                        onClick={() => handleNodeClick(node)}
-                                                        className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-red-500/50 underline-offset-4"
-                                                    >
-                                                        {node.label}
-                                                    </span>
-                                                    <div className={`w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] ${node.sentiment === 'Negative' ? 'animate-pulse bg-orange-500 ring-orange-500 shadow-orange-500' : ''}`}></div>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                    {node.market_share && <span className="bg-white/10 px-1.5 rounded text-white">{node.market_share}</span>}
-                                                    <span>{(data.links || []).find((l: any) => l.target === node.id)?.value}</span>
-                                                </div>
-                                                {/* Price Badge */}
-                                                {node.price_display && (
-                                                    <div className="flex items-center gap-2 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5">
-                                                        <span className="text-gray-300">{node.price_display}</span>
-                                                        <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                            {node.change_display}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {/* [NEW] Themes */}
-                                                {node.themes && (
-                                                    <div className="flex flex-wrap justify-end gap-1 mt-1">
-                                                        {node.themes.map((t: string, i: number) => (
-                                                            <span key={i} className="text-[9px] bg-red-500/10 text-red-400/80 px-1.5 py-0.5 rounded-full border border-red-500/20">
-                                                                {t}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Customers */}
-                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm text-right">
-                                    <h3 className="text-blue-400 font-bold mb-4 flex items-center justify-end gap-2"><ArrowRight className="w-4 h-4" /> 고객사 (Clients)</h3>
-                                    <div className="space-y-6">
-                                        {(data.nodes || []).filter((n: any) => n.group === 'customer').map((node: any) => {
-                                            const link = (data.links || []).find((l: any) => l.target === node.id);
-                                            const isArtery = link?.width_type === 'artery';
-                                            return (
-                                                <div key={node.id} className="relative group">
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <div className="flex-1 flex flex-col items-end">
+                                            <div key={node.id} className="relative group">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-center">
                                                             <span 
                                                                 onClick={() => handleNodeClick(node)}
-                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
+                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-red-500/50 underline-offset-4"
                                                             >
                                                                 {node.label}
                                                             </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
-                                                                <div className="flex items-center justify-end gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap mt-1">
+                                                                <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
                                                                     <span className="text-gray-300">{node.price_display}</span>
                                                                     <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                         {node.change_display}
                                                                     </span>
                                                                 </div>
                                                             )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                                            {node.market_share && <span className="bg-white/10 px-1.5 rounded text-white">{node.market_share}</span>}
+                                                            <span>{(data.links || []).find((l: any) => l.target === node.id)?.value || "Compete"}</span>
+                                                        </div>
+                                                        {/* Themes */}
+                                                        {node.themes && (
+                                                            <div className="flex flex-wrap justify-start gap-1 mt-2">
+                                                                {node.themes.map((t: string, i: number) => (
+                                                                    <span key={i} className="text-[9px] bg-red-500/10 text-red-400/80 px-1.5 py-0.5 rounded-full border border-red-500/20">
+                                                                        {t}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className={`mt-1.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] flex-shrink-0 ${node.sentiment === 'Negative' ? 'animate-pulse bg-orange-500 ring-orange-500 shadow-orange-500' : ''}`}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Customers */}
+                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
+                                    <h3 className="text-blue-400 font-bold mb-4 flex items-center justify-between gap-2"><span>고객사 (Clients)</span> <ArrowRight className="w-4 h-4 text-blue-400" /></h3>
+                                    <div className="space-y-6">
+                                        {(data.nodes || []).filter((n: any) => n.group === 'customer').map((node: any) => {
+                                            const link = (data.links || []).find((l: any) => l.target === node.id);
+                                            const isArtery = link?.width_type === 'artery';
+                                            return (
+                                                <div key={node.id} className="relative group">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-center">
+                                                                <span 
+                                                                    onClick={() => handleNodeClick(node)}
+                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
+                                                                >
+                                                                    {node.label}
+                                                                </span>
+                                                                {/* Price Badge */}
+                                                                {node.price_display && (
+                                                                    <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
+                                                                        <span className="text-gray-300">{node.price_display}</span>
+                                                                        <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                                            {node.change_display}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                             <div className={`text-xs mt-1 flex items-center gap-1 ${isArtery ? 'text-blue-300 font-bold' : 'text-gray-500'}`}>
                                                                 {isArtery && <span className="text-[10px] bg-blue-900/50 px-1 rounded">Major Deal</span>}
-                                                                <span>{link?.value}</span>
+                                                                <span>{link?.value || "Sales"}</span>
                                                             </div>
-                                                            {/* [NEW] Themes */}
+                                                            {/* Themes */}
                                                             {node.themes && (
-                                                                <div className="flex flex-wrap justify-end gap-1 mt-2">
+                                                                <div className="flex flex-wrap justify-start gap-1 mt-2">
                                                                     {node.themes.map((t: string, i: number) => (
                                                                         <span key={i} className="text-[9px] bg-blue-500/10 text-blue-400/80 px-1.5 py-0.5 rounded-full border border-blue-500/20">
                                                                             {t}
@@ -519,11 +522,11 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className={`rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
+                                                        <div className={`mt-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] flex-shrink-0 ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
                                                     </div>
                                                     {/* Event Flag */}
                                                     {node.event && (
-                                                        <div className="absolute bottom-full right-0 md:right-auto md:left-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
+                                                        <div className="absolute bottom-full right-0 mb-1 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce shadow-lg z-20 border border-white/20 min-w-max text-center">
                                                             <div>🚩 {node.event.d_day}</div>
                                                             <div className="text-[9px] font-normal opacity-90 leading-tight mt-0.5 max-w-[120px] whitespace-normal break-keep">
                                                                 {node.event.name}
