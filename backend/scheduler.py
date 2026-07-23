@@ -1042,9 +1042,8 @@ async def whale_alert_scheduler_loop():
             if is_market_hours:
                 logger.info("[Whale KR] Checking foreign net buying rank & upper limits...")
                 try:
-                    from whale_alerts import check_whale_alerts, check_upper_limit_alerts
+                    from whale_alerts import check_whale_alerts
                     check_whale_alerts()
-                    check_upper_limit_alerts()
                 except Exception as e:
                     logger.error(f"[Whale KR] check_alerts error: {e}")
             else:
