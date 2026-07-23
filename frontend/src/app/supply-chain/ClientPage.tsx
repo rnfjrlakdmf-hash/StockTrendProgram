@@ -327,8 +327,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                 </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
-                                                                        <span className="text-gray-300">{node.price_display}</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
+                                                                        <span className="text-white">{node.price_display}</span>
                                                                         <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                             {node.change_display}
                                                                         </span>
@@ -403,9 +403,9 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                         )}
                                         {/* Price */}
                                         {(data.nodes || []).find((n: any) => n.group === 'target')?.price_display && (
-                                            <div className="mt-2 bg-black/40 px-3 py-1 rounded-full text-sm font-mono border border-white/20 backdrop-blur-md relative z-10">
+                                            <div className="mt-2 bg-white/10 px-4 py-1.5 rounded-full text-base md:text-lg font-bold font-mono border border-white/20 backdrop-blur-md relative z-10 shadow-md">
                                                 <span className="text-white mr-2">{(data.nodes || []).find((n: any) => n.group === 'target')?.price_display}</span>
-                                                <span className={(data.nodes || []).find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                <span className={(data.nodes || []).find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-300 drop-shadow-sm" : "text-blue-300 drop-shadow-sm"}>
                                                     {(data.nodes || []).find((n: any) => n.group === 'target')?.change_display || ""}
                                                 </span>
                                             </div>
@@ -451,8 +451,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                             </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
-                                                                <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
-                                                                    <span className="text-gray-300">{node.price_display}</span>
+                                                                <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
+                                                                    <span className="text-white">{node.price_display}</span>
                                                                     <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                         {node.change_display}
                                                                     </span>
@@ -501,8 +501,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                                 </span>
                                                                 {/* Price Badge */}
                                                                 {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-[10px] font-mono bg-black/40 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap ml-2">
-                                                                        <span className="text-gray-300">{node.price_display}</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-white/10 px-2.5 py-1 rounded-md border border-white/20 whitespace-nowrap ml-2 shadow-sm">
+                                                                        <span className="text-white">{node.price_display}</span>
                                                                         <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
                                                                             {node.change_display}
                                                                         </span>
