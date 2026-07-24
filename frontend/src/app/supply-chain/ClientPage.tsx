@@ -318,7 +318,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                     <div className="flex items-center gap-3">
                                                         <div className={`rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-green-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
                                                         <div className="flex-1">
-                                                            <div className="flex justify-between items-center">
+                                                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
                                                                 <span 
                                                                     onClick={() => handleNodeClick(node)}
                                                                     className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer hover:underline decoration-green-500/50 underline-offset-4 text-sm md:text-base"
@@ -375,8 +375,8 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                             </div>
 
                             {/* Center: Target Stock */}
-                            <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-8 lg:py-0 order-first lg:order-none">
-                                <div className="relative">
+                            <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-12 lg:py-4 order-first lg:order-none">
+                                <div className="relative mt-4 mb-4">
                                     {/* Target Node */}
                                     <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative">
                                         {/* Animated Polish effect moved inside a sub-div to keep border/shape if needed, but removed overflow-hidden from parent to show flag */}
@@ -414,7 +414,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
 
                                     {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
                                     {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
-                                        <div className="absolute -top-12 -right-8 md:-top-16 md:-right-12 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] min-w-max text-center">
+                                        <div className="absolute -top-14 right-0 sm:-right-8 md:-top-16 md:-right-12 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] w-max max-w-[220px] text-center break-keep">
                                             <div className="flex items-center justify-center gap-1">
                                                 <span className="text-sm">🚩</span>
                                                 <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
@@ -442,7 +442,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                             <div key={node.id} className="relative group">
                                                 <div className="flex items-start gap-3">
                                                     <div className="flex-1">
-                                                        <div className="flex justify-between items-center">
+                                                        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
                                                             <span 
                                                                 onClick={() => handleNodeClick(node)}
                                                                 className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-red-500/50 underline-offset-4"
@@ -492,7 +492,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                 <div key={node.id} className="relative group">
                                                     <div className="flex items-start gap-3">
                                                         <div className="flex-1">
-                                                            <div className="flex justify-between items-center">
+                                                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
                                                                 <span 
                                                                     onClick={() => handleNodeClick(node)}
                                                                     className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
