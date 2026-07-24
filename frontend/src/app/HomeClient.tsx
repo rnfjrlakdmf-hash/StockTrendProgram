@@ -14,7 +14,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
 
-import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
@@ -348,11 +348,12 @@ export default function HomeClient() {
               );
             })()}
 
-            {/* 글로벌 시장 인덱스 및 주요 지표 (안전한 공식/TradingView 데이터) */}
             <div className="space-y-6">
               <MarketIndicators limit={10} />
             </div>
 
+            {/* Recent Theory Posts Widget (AdSense SEO) */}
+            <RecentTheoryWidget />
 
             {/* SEO Text Rich Links (AdSense Approval Priority) */}
             <div className="mt-8 space-y-6">
@@ -501,6 +502,71 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function RecentTheoryWidget() {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentPosts = async () => {
+      try {
+        const res = await fetch('/api/theory/posts?page=1&limit=3');
+        if (!res.ok) {
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (data.status === 'ok' && data.posts) {
+          setPosts(data.posts);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecentPosts();
+  }, []);
+
+  if (loading || posts.length === 0) return null;
+
+  return (
+    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex items-center justify-between mb-4 ml-2">
+        <h2 className="text-xl font-bold text-gray-200 flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-green-400" /> 최근 올라온 주식 스터디 📚
+        </h2>
+        <Link href="/theory" className="text-sm font-semibold text-gray-500 hover:text-green-400 flex items-center gap-1 transition-colors">
+          전체보기 <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {posts.map((post) => (
+          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 transition-all group flex flex-col h-full relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 group-hover:bg-green-500/10 blur-2xl rounded-full transition-colors" />
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {post.tags?.slice(0, 2).map((tag: string, idx: number) => (
+                  <span key={idx} className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-green-400 mb-2 line-clamp-2 leading-snug">{post.title}</h3>
+              <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 mb-4 flex-1">
+                {post.content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim()}
+              </p>
+              <div className="mt-auto flex justify-between items-center text-[10px] text-gray-500">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {new Date(post.createdAt).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1 text-green-500 font-bold group-hover:text-green-400 transition-colors">바로가기 <ChevronRight className="w-3 h-3" /></span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

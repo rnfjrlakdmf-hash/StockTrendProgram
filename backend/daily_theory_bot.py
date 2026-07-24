@@ -488,7 +488,7 @@ def generate_theory_post(db=None):
     - 어려운 개념도 '비유'와 '실제 차트 예시'로 누구나 이해할 수 있게 가르칩니다.
     - 이론만 나열하지 않고, 실전에서 어떻게 쓰는지 구체적인 매수/매도 시점과 함께 설명합니다.
     - 초보자가 자주 빠지는 '함정(가짜 시그널)'을 꼭 짚어줍니다.
-    - A4 4~5장 분량의 충실하고 전문적인 강의를 작성합니다.
+    - A4 4~5장 분량, 최소 1,500자 이상의 매우 길고 상세한 강의를 작성합니다. (내용이 짧으면 안 됩니다)
 
     아래 구성으로 강의 콘텐츠를 작성해주세요:
 
@@ -516,7 +516,8 @@ def generate_theory_post(db=None):
     8. 경고 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
     9. 꿀팁 박스: <div class="bg-green-900/30 border-l-4 border-r-4 border-green-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-green-100 text-xl font-bold leading-loose mb-0">💡 내용</p></div>
     10. 체크리스트 박스: <div class="bg-gray-800/60 border border-gray-600 rounded-2xl p-8 my-10"><p class="text-yellow-300 text-2xl font-black mb-4">✅ 실전 체크리스트</p>...<p class="text-gray-100 text-xl">내용</p></div>
-    11. SEO 내부 링크: 삼성전자 → <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>
+    11. SEO 내부 링크: 종목명 링크 외에도, 우리 사이트의 핵심 기능 링크를 글 중간중간에 최소 2회 이상 아주 자연스럽게 삽입하세요.
+        - 링크 예시: <a href="/discovery" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">AI 종목 발굴</a>, <a href="/theme" class="...">실시간 테마 분석</a>, <a href="/ranking" class="...">AI 실시간 랭킹</a>, <a href="/calendar" class="...">주요 증시 캘린더</a>
     12. 법적 준수: 특정 종목 매수/매도 추천 절대 금지. 마지막에 <p class="text-gray-500 text-sm mt-10">본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다.</p>
     13. 절대 금지: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그. 오직 본문 HTML만 반환.
 
@@ -527,7 +528,7 @@ def generate_theory_post(db=None):
     당신은 주식 투자를 처음 시작하는 초보자들에게 주식·경제·투자 이론을 아주 쉽고 친절하게, 재미있게 알려주는 1타 강사입니다.
     오늘의 강의 주제는 '{topic}' 입니다.
 
-    아래의 가이드라인에 따라 강의 콘텐츠를 작성해주세요 (A4 2~3장 분량, 충실하게 작성):
+    아래의 가이드라인에 따라 강의 콘텐츠를 작성해주세요 (A4 4~5장 분량, 최소 1,500자 이상, 상세한 예시와 설명을 아주 충실하게 덧붙여서 길게 작성):
     1. 도입부: 왜 이것을 알아야 하는지, 모르면 어떤 손해를 보는지 초보자 눈높이에서 흥미롭게 설명. 실제 사례나 비유를 들어주세요.
     {visual_section}
     5. SEO 메타데이터: 문서 제일 상단에 <title-seo>검색 엔진용 20자 이내 핵심 제목</title-seo>를 포함해주세요.
@@ -542,7 +543,8 @@ def generate_theory_post(db=None):
     7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
     8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
     9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
-    10. **SEO 내부 링크**: 설명 중 '삼성전자', 'SK하이닉스' 등 주요 종목명이 나오면 반드시 링크를 걸어주세요. 예: <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>
+    10. **SEO 내부 링크**: 종목명(예: <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>) 외에도, 사이트 주요 기능에 대한 내부 링크를 글 내용과 문맥에 맞춰 **최소 2회 이상** 자연스럽게 삽입하세요.
+        - 예: "관련 종목을 찾고 싶다면 👉 <a href="/discovery" class="...">AI 종목 발굴</a>을 활용해보세요", 혹은 <a href="/theme" class="...">실시간 테마 분석</a>, <a href="/ranking" class="...">AI 실시간 랭킹</a>, <a href="/calendar" class="...">증시 캘린더</a>
     11. **법적 준수 (유사투자자문업 위반 방지)**: **절대로 특정 종목에 대한 매수/매도 추천, 목표가 제시, 종목 리딩, '지금 사야 한다'는 등의 직접적인 투자 권유를 하지 마세요.** 오직 객관적 사실, 차트/경제 이론, 일반적인 지식을 전달하는 '학술적이고 교육적인' 톤앤매너를 철저히 유지해야 합니다. 본문 마지막에는 항상 "본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다."라는 문구를 조그맣게(<p class="text-gray-500 text-sm mt-10">) 추가하세요.
     12. **절대 금지**: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그, CSS 코드 텍스트. 오직 본문 내용(태그)만 반환.
     
