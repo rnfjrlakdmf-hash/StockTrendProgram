@@ -248,10 +248,20 @@ def get_topic_today(db=None) -> str:
         """정확 일치 + 키워드 퍼지 매칭으로 중복 여부 판별"""
         if topic in used_titles:
             return True
+        # 기본 괄호 기반 키워드 추출
         key = topic.split('(')[0].split('란')[0].split('이란')[0].strip()
         if key and key in used_keywords:
-            print(f"[Theory Bot] 키워드 중복 감지: '{key}'")
+            print(f"[Theory Bot] 키워드 중복 감지(기본): '{key}'")
             return True
+        
+        # 좀 더 세밀한 단어 단위 키워드 추출 (조사 제거)
+        clean_topic = _re.sub(r'[\[\]【】\(\)]', ' ', topic)
+        for part in _re.split(r'[/과와]', clean_topic):
+            kw = part.strip().split()[0] if part.strip() else ''
+            if len(kw) >= 2 and kw in used_keywords:
+                print(f"[Theory Bot] 세부 키워드 중복 감지: '{kw}'")
+                return True
+                
         return False
 
     # 사용되지 않은 주제 후보 필터링
