@@ -430,17 +430,6 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                             <span className="font-bold text-sm text-blue-400">🔔 푸시 알림 설정</span>
                                         </div>
                                     </Link>
-                                    <Link href="/alerts" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white group">
-                                        <div className="flex items-center gap-3">
-                                            <Bell className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
-                                            <span className="font-medium text-sm">알림 센터</span>
-                                        </div>
-                                        {unreadAlertsCount > 0 && (
-                                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center">
-                                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
-                                            </span>
-                                        )}
-                                    </Link>
 
                                     <a href="https://discord.com/invite/gQrUXaaqB" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#5865F2]/10 transition-colors text-gray-300 hover:text-[#5865F2] group">
                                         <svg className="w-5 h-5 text-gray-400 group-hover:text-[#5865F2] transition-colors" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
