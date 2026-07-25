@@ -355,15 +355,53 @@ export default function AlertCenterPage() {
                         </p>
                     </div>
                 ) : filteredAlerts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-32 text-center bg-white/5 border border-white/10 rounded-3xl">
-                        <span className="text-4xl mb-4">📭</span>
-                        <h3 className="text-lg font-semibold text-gray-300">
-                            해당 분류의 알림이 없습니다.
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-2">
-                            중요한 소식이 발생하면 가장 먼저 알려드릴게요!
-                        </p>
-                    </div>
+                    activeTab === "portfolio" && (!user || (user as any).is_guest) ? (
+                        <div className="flex flex-col items-center justify-center py-24 px-4 text-center bg-gradient-to-br from-blue-900/20 via-black to-black border border-blue-500/30 rounded-3xl shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+                                <BellRing className="w-48 h-48 text-blue-500 -rotate-12 transform translate-x-10 -translate-y-10" />
+                            </div>
+                            
+                            <div className="w-20 h-20 mb-6 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)] relative z-10">
+                                <span className="text-4xl">⭐️</span>
+                            </div>
+                            
+                            <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 mb-4 relative z-10 tracking-tight">
+                                나만의 관심종목 알림을 받아보세요!
+                            </h3>
+                            <p className="text-sm md:text-base text-gray-400 max-w-md mx-auto leading-relaxed relative z-10 mb-8">
+                                로그인하고 관심종목을 등록하시면,<br/>
+                                <strong className="text-blue-400 font-bold">목표가 돌파, 대규모 수급 포착, 핵심 공시</strong>를<br/>
+                                누구보다 빠르게 알려드립니다.
+                            </p>
+                            
+                            <div className="relative z-10 flex flex-col items-center">
+                                <Link href="/login" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/30 hover:shadow-blue-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2">
+                                    3초만에 로그인하고 시작하기 <ChevronRight className="w-5 h-5" />
+                                </Link>
+                                
+                                <div className="flex items-center justify-center gap-2 mt-4">
+                                    <span className="flex items-center gap-1.5 text-xs font-semibold text-yellow-400/90 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div> 카카오톡 1초 로그인
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div> 구글 계정 연동
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-32 text-center bg-[#0a0a0c] border border-white/5 rounded-3xl shadow-inner">
+                            <div className="w-16 h-16 mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-gray-700/50">
+                                <span className="text-3xl">📭</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-300 mb-1">
+                                해당 분류의 알림이 없습니다.
+                            </h3>
+                            <p className="text-sm text-gray-500 font-medium">
+                                중요한 소식이 발생하면 가장 먼저 알려드릴게요!
+                            </p>
+                        </div>
+                    )
                 ) : (
                     <div className="space-y-4">
                         {paginatedAlerts.map((alert, idx) => {
