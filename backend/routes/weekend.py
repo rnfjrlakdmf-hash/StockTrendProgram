@@ -55,12 +55,12 @@ async def get_weekend_whale_report():
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     
-    # 주말 한정판 오픈 시간: 토요일 오전 10시 ~ 일요일 자정(23:59)
+    # 주말(금 18:00 ~ 월 08:00) 동안 활성화
     day = now.weekday()
     hour = now.hour
     
-    # day: 5 = 토요일, 6 = 일요일
-    is_weekend = (day == 5 and hour >= 10) or (day == 6)
+    # day: 4 = 금요일, 5 = 토요일, 6 = 일요일, 0 = 월요일
+    is_weekend = (day == 4 and hour >= 18) or day == 5 or day == 6 or (day == 0 and hour < 8)
     
     if is_weekend:
         report = get_latest_whale_report()
@@ -71,8 +71,8 @@ async def get_weekend_whale_report():
                 "countdown_seconds": 0
             }
         return {"is_open": True, "report": report}
-    next_saturday = now + timedelta(days=(5 - day) if day < 5 else (12 - day))
-    next_open = next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
+    next_friday = now + timedelta(days=(4 - day) if day < 4 else (11 - day))
+    next_open = next_friday.replace(hour=18, minute=0, second=0, microsecond=0)
     
     return {
         "is_open": False,
