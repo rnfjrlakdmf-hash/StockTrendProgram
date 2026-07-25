@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
 import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData, fetchStockFast } from "@/lib/api";
@@ -24,6 +25,7 @@ import { getTickerFromKorean } from "@/lib/stockMapping";
 
 
 export default function HomeClient() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stockData, setStockData] = useState<StockData | null>(null);
@@ -36,45 +38,7 @@ export default function HomeClient() {
 
   const handleSearch = async (term: string) => {
     if (!term) return;
-    setLoading(true);
-    setError(null);
-    setStockData(null);
-    setThemeResult(null);
-    setAiAnswer(null);
-
-    // 1. Try Stock Search (주식 종목 검색) - FAST Mode first
-    const ticker = getTickerFromKorean(term);
-    const fastData = await fetchStockFast(ticker.toUpperCase());
-
-    if (fastData) {
-      setStockData(fastData);
-      setLoading(false); // Stop main loading instantly
-      setIsAiLoading(true); // Start AI loading spinner in widgets
-      
-      // Load AI analysis in background
-      fetchStockAnalysis(ticker.toUpperCase()).then(fullData => {
-         if (fullData) {
-             setStockData(fullData);
-         }
-         setIsAiLoading(false);
-      });
-    } else {
-      // 2. If Stock Search fails, Try Theme Search (테마/관련주 검색)
-      // Use original term for theme search
-      const themeData = await fetchThemeAnalysis(term);
-      if (themeData) {
-        setThemeResult(themeData);
-      } else {
-        // 3. If Theme Search fails, Try General AI Chat (만능 검색)
-        const chatReply = await fetchChatResponse(term);
-        if (chatReply) {
-          setAiAnswer(chatReply);
-        } else {
-          setError(`'${term}'에 대한 정보를 찾을 수 없습니다. 조금 더 구체적으로 질문해주세요.`);
-        }
-      }
-      setLoading(false);
-    }
+    router.push(`/discovery?q=${encodeURIComponent(term)}`);
   };
 
   return (
