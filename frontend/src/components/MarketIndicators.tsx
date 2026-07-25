@@ -132,7 +132,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
         const hasMore = limit ? items.length > limit : false;
 
         return (
-            <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col h-full overflow-hidden transition-all hover:border-white/10 shadow-lg">
+            <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-3xl border border-white/5 flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-white/10 shadow-lg hover:scale-[1.01] hover:shadow-cyan-500/10">
                 <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
                     <h4 className="text-sm font-bold text-gray-200 flex items-center gap-2">
                         {icon} <span className="tracking-tight">{title}</span>

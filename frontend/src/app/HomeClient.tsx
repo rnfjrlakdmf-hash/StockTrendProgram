@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import GaugeChart from "@/components/GaugeChart";
-import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData, fetchStockFast } from "@/lib/api";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
@@ -26,12 +25,6 @@ import { getTickerFromKorean } from "@/lib/stockMapping";
 
 export default function HomeClient() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stockData, setStockData] = useState<StockData | null>(null);
-  const [themeResult, setThemeResult] = useState<any>(null);
-  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
 
 
 
@@ -156,145 +149,8 @@ export default function HomeClient() {
           </div>
         </div>
 
-        {/* Search Loading/Error State */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center p-12 text-blue-400">
-            <Loader2 className="h-10 w-10 animate-spin mb-4" />
-            <p className="text-lg font-medium animate-pulse">시장 데이터를 정밀 분석 중입니다...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="p-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
-            <AlertCircle className="h-6 w-6" />
-            {error}
-          </div>
-        )}
-
-        {/* Main Content: Analysis Result or Default View */}
-        {stockData ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-150">
-            <div className="flex items-end justify-between mb-6">
-              <div>
-                <h2 className="text-4xl font-black text-white tracking-tight mb-2">{stockData.name} <span className="text-blue-500">({stockData.symbol})</span></h2>
-                <p className="text-gray-400 text-lg">{stockData.sector} | {stockData.currency}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-5xl font-bold text-white mb-1">{stockData.price}</p>
-                <div className={`flex items-center justify-end gap-2 text-xl font-bold ${stockData.change.includes('+') ? 'text-red-400' : 'text-blue-400'}`}>
-                  <span>{stockData.change.includes('+') ? "▲" : stockData.change.includes('-') ? "▼" : ""}</span>
-                  <span>{stockData.change}</span>
-                </div>
-                {(stockData.is_extended_hours || stockData.market_status?.includes('시간외') || stockData.market_status?.includes('프리') || stockData.market_status?.includes('NXT') || stockData.market_status?.includes('애프터')) && (
-                   <div className="mt-2 inline-flex flex-col items-end border-t border-white/10 pt-2">
-                     <span className={`text-xs font-bold px-2 py-0.5 rounded-md mb-1 uppercase ${stockData.market_status?.includes('프리') || stockData.market_status?.includes('PRE') ? 'bg-amber-500/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
-                       {stockData.market_status?.includes('프리') || stockData.market_status?.includes('PRE') ? 'PRE-MARKET 프리마켓' : 'AFTER-MARKET 애프터마켓'}
-                     </span>
-                     <p className="text-2xl font-bold text-gray-300">
-                        {(() => {
-                           const nxt = (stockData.market_status?.includes('야간') || stockData.market_status?.includes('NXT')) ? stockData.nxt_data : stockData.after_market_data;
-                           const extPrice = stockData.extended_price || nxt?.price;
-                           if (!extPrice) return '';
-                           return Number(String(extPrice).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stockData.currency === 'KRW' ? 0 : 2});
-                        })()}
-                     </p>
-                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Actions for Stock */}
-            {/* Quick Actions for Stock */}
-
-
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 relative">
-              <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Score Card */}
-                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-blue-900/20 to-black p-6 backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Activity className="h-32 w-32 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-300 mb-2 z-10">종합 투자 매력도</h3>
-                  {isAiLoading ? (
-                    <div className="flex flex-col items-center justify-center py-8 z-10">
-                      <Loader2 className="h-8 w-8 text-blue-400 animate-spin mb-3" />
-                      <p className="text-xs text-gray-400 animate-pulse font-medium">데이터를 다각도로 분석 중입니다...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <GaugeChart score={stockData.score || 0} label="종합 점수" color={(stockData.score || 0) > 70 ? "#4ade80" : (stockData.score || 0) > 40 ? "#facc15" : "#f87171"} />
-                      <p className="text-center text-sm text-gray-400 mt-2 z-10 max-w-[200px]">
-                        종합적인 재무, 수급, 뉴스 분석을 토대로 산출된 점수입니다.
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {/* Metrics Grid */}
-                <div className="rounded-3xl border border-white/5 bg-black/40 p-6 backdrop-blur-md grid grid-cols-3 gap-2">
-                  {isAiLoading ? (
-                    <div className="col-span-3 flex items-center justify-center py-10">
-                      <Loader2 className="h-6 w-6 text-purple-400 animate-spin" />
-                    </div>
-                  ) : (
-                    <>
-                      <GaugeChart score={stockData.metrics?.supplyDemand || 0} label="수급" subLabel="Technical" color="#60a5fa" />
-                      <GaugeChart score={stockData.metrics?.financials || 0} label="재무" subLabel="Fundamental" color="#c084fc" />
-                      <GaugeChart score={stockData.metrics?.news || 0} label="심리" subLabel="Sentiment" color="#f472b6" />
-                    </>
-                  )}
-                </div>
-
-                {/* Expert Summary */}
-                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-purple-900/20 to-black p-6 backdrop-blur-md relative overflow-hidden">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Zap className="h-6 w-6 text-yellow-400" />
-                    <h3 className="text-xl font-bold text-white">핵심 요약 브리핑</h3>
-                  </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed min-h-[150px] relative">
-                    {isAiLoading && (
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
-                        <Loader2 className="h-6 w-6 text-yellow-400 animate-spin mb-2" />
-                        <span className="text-xs text-yellow-500/80 animate-pulse font-bold">최신 뉴스 및 실적 분석 중...</span>
-                      </div>
-                    )}
-                    {stockData.summary || "분석 데이터를 불러오는 중입니다..."}
-                  </div>
-                </div>
-              </div>
-              
-              {/* 우측 사이드바 광고 영역 (검색 결과 페이지 전용, PC에서만 표시) */}
-              <div className="hidden xl:block relative">
-                <div className="sticky top-24 flex justify-center">
-                  <KakaoAdFit adUnit="DAN-t0pQeZMZ4NvClxXn" adWidth="320" adHeight="480" />
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : themeResult ? (
-          <ThemeResultView result={themeResult} />
-        ) : aiAnswer ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-150">
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/20 to-black p-8 backdrop-blur-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <MessageSquare className="h-32 w-32 text-indigo-400" />
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
-                    <Zap className="h-6 w-6" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white">종합 분석 결과</h2>
-                </div>
-                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed text-lg whitespace-pre-wrap">
-                  {aiAnswer}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : !loading && !error && (
-          // Default Dashboard Content
-          <div className="space-y-8 animate-in fade-in duration-1000">
+        {/* Default Dashboard Content */}
+        <div className="space-y-8 animate-in fade-in duration-1000">
 
 
             {/* 코인 핫트렌드 대시보드 (상시 노출) */}
@@ -559,7 +415,7 @@ function RecentTheoryWidget() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {posts.map((post) => (
-          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 transition-all group flex flex-col h-full relative overflow-hidden">
+          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 group-hover:bg-green-500/10 blur-2xl rounded-full transition-colors" />
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex flex-wrap gap-2 mb-3">

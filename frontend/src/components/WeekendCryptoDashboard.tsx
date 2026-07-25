@@ -65,7 +65,7 @@ export default function WeekendCryptoDashboard() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-[1.01] hover:shadow-yellow-500/10 transition-all">
       <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
       
       <div className="relative bg-black/60 backdrop-blur-xl rounded-[22px] p-6">

@@ -16,6 +16,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
+import { Toaster } from "sonner";
 import type { Viewport } from 'next';
 
 export const viewport: Viewport = {
@@ -84,6 +85,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="AI Stock Analyst" />
         <link rel="apple-touch-icon" href="/icon.png" />
         <link rel="apple-touch-startup-image" href="/icon.png" />
+        
+        {/* 프리텐다드 폰트 */}
+        <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
       </head>
       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
         <KakaoScript />
@@ -121,6 +125,7 @@ export default function RootLayout({
         {/* [v4] isPro 강제 삭제 - 결제 기능 완전 폐지로 인한 캐시 초기화 */}
         <script dangerouslySetInnerHTML={{ __html: `try { localStorage.removeItem('isPro'); localStorage.removeItem('proExpiry'); } catch(e) {}` }} />
         <AuthProvider>
+          <Toaster theme="dark" position="bottom-right" richColors />
           <AnalyticsTracker />
           <div className="flex min-h-screen">
             <Sidebar />

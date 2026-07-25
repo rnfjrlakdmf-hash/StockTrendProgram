@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import AttendanceModal from './AttendanceModal';
 import LoginModal from './LoginModal';
 
@@ -159,9 +160,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     if (json.streak !== undefined) setAttendanceStreak(json.streak);
                     
                     if (json.bonus && json.bonus > 0) {
-                        alert(`🎉 자동 출석: ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 획득했습니다! (총 ${json.coins} 코인)`);
+                        toast.success(`🎉 자동 출석: ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 획득했습니다! (총 ${json.coins} 코인)`);
                     } else {
-                        alert(`🎉 자동 출석 완료! 10 코인을 획득했습니다. (총 ${json.coins} 코인)`);
+                        toast.success(`🎉 자동 출석 완료! 10 코인을 획득했습니다. (총 ${json.coins} 코인)`);
                     }
                     
                     // 성공 시 달력 팝업을 띄워줌
@@ -182,7 +183,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     const handleAttendance = async () => {
         if (!user) {
-            alert("로그인이 필요합니다.");
+            toast.error("로그인이 필요합니다.");
             return;
         }
         setIsAttendanceLoading(true);
@@ -200,21 +201,21 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 if (json.streak !== undefined) setAttendanceStreak(json.streak);
                 
                 if (json.bonus && json.bonus > 0) {
-                    alert(`🎉 ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 추가 획득했습니다! (총 ${json.coins} 코인)`);
+                    toast.success(`🎉 ${json.streak}일 연속 출석 달성! 보너스 ${json.bonus} 코인을 추가 획득했습니다! (총 ${json.coins} 코인)`);
                 } else {
-                    alert(json.message || "10 코인 획득!");
+                    toast.success(json.message || "10 코인 획득!");
                 }
                 setIsAttendanceModalOpen(true);
             } else if (json.status === "already") {
                 if (json.streak !== undefined) setAttendanceStreak(json.streak);
-                alert(`이미 출석체크를 완료했습니다! (현재 ${json.coins} 코인)`);
+                toast.info(`이미 출석체크를 완료했습니다! (현재 ${json.coins} 코인)`);
                 setIsAttendanceModalOpen(true);
             } else {
-                alert("❌ 오류: " + json.message);
+                toast.error("❌ 오류: " + json.message);
             }
         } catch (err) {
             console.error(err);
-            alert("출석체크 중 오류가 발생했습니다.");
+            toast.error("출석체크 중 오류가 발생했습니다.");
         } finally {
             setIsAttendanceLoading(false);
         }
@@ -270,14 +271,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                             console.error("Audio block", e);
                         }
 
-                        // Browser Notification (Toast style via window.alert for now, simplest to force attention)
-                        // In a real app we would use a Toast component, but alert() is effective for forcing user to see it.
-                        // Or we can just log it if we want to be less intrusive, but user asked for ALERTS.
-
-                        // Let's use simple alert for v1
+                        // Browser Notification (Toast style)
                         const msg = `🚨 [가격 알림] ${newTriggers[0].symbol} 목표가 도달!\n현재가: ${newTriggers[0].triggered_price}\n목표가: ${newTriggers[0].target_price}`;
-                        // We use setTimeout to let UI render/sound play before blocking with alert
-                        setTimeout(() => alert(msg), 100);
+                        toast.success(msg, { duration: 5000 });
 
                         // Mark as seen
                         const updatedSeen = [...lastSeen, ...newTriggers.map((a: any) => a.id + "_" + a.triggered_at)];
