@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import os
 from datetime import datetime
 
@@ -559,18 +559,18 @@ def create_user_if_not_exists(user_data):
         
         if not row:
             cursor.execute('''
-                INSERT INTO users (id, email, name, picture, is_pro, free_trial_count)
-                VALUES (?, ?, ?, ?, ?, 2)
+                INSERT INTO users (id, email, name, picture, is_pro, free_trial_count, last_login_at)
+                VALUES (?, ?, ?, ?, ?, 2, CURRENT_TIMESTAMP)
             ''', (user_data['id'], user_data['email'], user_data['name'], user_data['picture'], is_pro_val))
         else:
             # Update info
             if is_admin:
                 cursor.execute('''
-                    UPDATE users SET name = ?, picture = ?, is_pro = 1, pro_expires_at = NULL WHERE id = ?
+                    UPDATE users SET name = ?, picture = ?, is_pro = 1, pro_expires_at = NULL, last_login_at = CURRENT_TIMESTAMP WHERE id = ?
                 ''', (user_data['name'], user_data['picture'], user_data['id']))
             else:
                 cursor.execute('''
-                    UPDATE users SET name = ?, picture = ? WHERE id = ?
+                    UPDATE users SET name = ?, picture = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?
                 ''', (user_data['name'], user_data['picture'], user_data['id']))
             
         conn.commit()
