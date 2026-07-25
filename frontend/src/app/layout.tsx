@@ -15,7 +15,7 @@ import WhaleSiren from "@/components/WhaleSiren";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 import CookieConsent from "@/components/CookieConsent";
-import TelegramBanner from "@/components/TelegramBanner";
+import BottomTabBar from "@/components/BottomTabBar";
 import type { Viewport } from 'next';
 
 export const viewport: Viewport = {
@@ -124,7 +124,7 @@ export default function RootLayout({
           <AnalyticsTracker />
           <div className="flex min-h-screen">
             <Sidebar />
-            <main className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">
+            <main className="flex-1 relative overflow-hidden pb-16 md:pb-0 bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">
               {/* Background Glow Effects */}
               <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
@@ -171,16 +171,11 @@ export default function RootLayout({
 
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
-            <WhaleSiren />
-            <FomoWidget />
             
-            {/* Mobile Sticky Ad Banner */}
-            <div className="fixed bottom-0 left-0 w-full z-[999] bg-[#0a0a0a] border-t border-white/10 flex justify-center pb-safe sm:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.8)]">
-              <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-            </div>
+            {/* Mobile Bottom Tab Bar */}
+            <BottomTabBar />
 
             <CookieConsent />
-            <TelegramBanner />
           </div>
         </AuthProvider>
         <Analytics />

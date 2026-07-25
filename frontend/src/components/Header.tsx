@@ -322,18 +322,20 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             <div className="flex items-center gap-4 w-full md:w-auto justify-end min-w-0">
                 {/* Search Bar Removed as per user request */}
 
-                <div className="flex items-center justify-end" ref={dropdownRef}>
+                <div className="flex items-center justify-end gap-3" ref={dropdownRef}>
+                    <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <Bell className="w-5 h-5 text-gray-300 hover:text-white" />
+                        {user && unreadAlertsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115] z-10 shadow-lg">
+                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                            </span>
+                        )}
+                    </Link>
                     <div className="relative">
                         <button 
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                             className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors shrink-0 relative"
                         >
-                            {/* Alert Badge on Profile Button */}
-                            {user && unreadAlertsCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115] z-10 shadow-lg">
-                                    {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
-                                </span>
-                            )}
                             
                             {user && !user.is_guest ? (
                                 <>

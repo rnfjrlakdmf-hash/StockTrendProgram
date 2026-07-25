@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight } from "lucide-react";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -11,130 +11,68 @@ import { useAuth } from "@/context/AuthContext";
 import LoginModal from "./LoginModal";
 import AdRewardModal from "./AdRewardModal"; // Import Modal
 
-const navigation = [
-    { 
-        name: "통합 대시보드", 
-        href: "/", 
-        icon: LayoutDashboard,
-        desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다."
+const navigationGroups = [
+    {
+        groupName: "홈 & 대시보드",
+        items: [
+            { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다." },
+            { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다." },
+            { name: "테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 하루 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다." },
+        ]
     },
-    { 
-        name: "💎 VIP 프리미엄 리포트", 
-        href: "/premium", 
-        icon: Gem,
-        desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다. (출석 코인 소모)"
+    {
+        groupName: "프리미엄 & 인사이트",
+        items: [
+            { name: "💎 VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다. (출석 코인 소모)" },
+            { name: "🔒 주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "토/일 주말에만 열람 가능한 프리미엄 마켓 요약 리포트입니다." },
+            { name: "🔒 주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 몰래 매집한 TOP 10 종목을 파헤치는 주말 한정 프리미엄 리포트입니다." },
+            { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다." },
+        ]
     },
-    { 
-        name: "🔒 주말 마켓 인사이트", 
-        href: "/weekend-report", 
-        icon: Newspaper,
-        desc: "토/일 주말에만 열람 가능한 프리미엄 마켓 요약 리포트입니다."
+    {
+        groupName: "발굴 & 분석",
+        items: [
+            { name: "AI 퀀트 종목 발굴", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
+            { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사가 돈은 잘 버는지, 빚은 없는지, 부도 위험은 없는지 재무 구조를 철저히 검사해 줍니다." },
+            { name: "AI 기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스나 캔들 차트 모양을 AI가 자동으로 읽어 지금이 살 타이밍인지 쉽게 알려줍니다." },
+            { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity, desc: "개별 주식 투자가 불안할 때 시장 전체나 유망 산업 분야에 묶음 투자할 수 있는 ETF를 비교합니다." },
+            { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network, desc: "이 회사는 어디서 부품을 사오고 완성품은 어디에 납품하는지, 얽힌 기업 인맥도를 지도로 보여줍니다." },
+        ]
     },
-    { 
-        name: "🔒 주말 고래 수급 리포트", 
-        href: "/weekend-whale", 
-        icon: Crown,
-        desc: "세력과 외국인이 몰래 매집한 TOP 10 종목을 파헤치는 주말 한정 프리미엄 리포트입니다."
+    {
+        groupName: "마이 트레이딩",
+        items: [
+            { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 산 주식들의 투자 비중을 분석하여 특정 종목에 몰리지 않고 안전하게 분산되어 있는지 진단합니다." },
+            { name: "스마트 워치리스트", href: "/watchlist", icon: Star, desc: "내가 찜한 종목들의 최신 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다." },
+            { name: "🧮 물타기 생존 계산기", href: "/calculator", icon: Activity, desc: "내 불쌍한 계좌 살려낼 물타기 금액은? 친구들과 공유하며 재미있게 평단가를 계산해보세요!" },
+        ]
     },
-    { 
-        name: "🧮 물타기 생존 계산기", 
-        href: "/calculator", 
-        icon: Activity,
-        desc: "내 불쌍한 계좌 살려낼 물타기 금액은? 친구들과 공유하며 재미있게 평단가를 계산해보세요!"
-    },
-
-    { 
-        name: "매일 차트 스터디 (이론방)", 
-        href: "/theory", 
-        icon: BookOpen,
-        desc: "매일매일 새롭게 올라오는 차트 보는 법과 주식 기초 이론을 쉽고 재미있게 공부하세요."
-    },
-    { 
-        name: "주식 투자 용어 사전", 
-        href: "/guide", 
-        icon: HelpCircle,
-        desc: "주식 초보자를 위한 필수 투자 용어, 지표, 분석법 및 기초 이론을 완벽하게 정리한 백과사전입니다."
-    },
-    { 
-        name: "전문가 마켓 리포트", 
-        href: "/blog", 
-        icon: Newspaper,
-        desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다."
-    },
-    { 
-        name: "글로벌 마켓 시그널", 
-        href: "/signals", 
-        icon: Activity,
-        desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다."
-    },
-    { 
-        name: "AI 퀀트 종목 발굴", 
-        href: "/discovery", 
-        icon: Compass,
-        desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다."
-    },
-    { 
-        name: "기업 펀더멘탈 분석", 
-        href: "/analysis", 
-        icon: BarChart3,
-        desc: "회사가 돈은 잘 버는지, 빚은 없는지, 부도 위험은 없는지 재무 구조를 철저히 검사해 줍니다."
-    },
-    { 
-        name: "테마 트래커", 
-        href: "/theme", 
-        icon: Sparkles,
-        desc: "오늘 하루 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다."
-    },
-    { 
-        name: "AI 기술적 패턴 분석", 
-        href: "/pattern", 
-        icon: LineChart,
-        desc: "골든크로스나 캔들 차트 모양을 AI가 자동으로 읽어 지금이 살 타이밍인지 쉽게 알려줍니다."
-    },
-    { 
-        name: "ETF 포트폴리오 분석", 
-        href: "/etf", 
-        icon: Activity,
-        desc: "개별 주식 투자가 불안할 때 시장 전체나 유망 산업 분야에 묶음 투자할 수 있는 ETF를 비교합니다."
-    },
-    { 
-        name: "글로벌 서플라이 체인", 
-        href: "/supply-chain", 
-        icon: Network,
-        desc: "이 회사는 어디서 부품을 사오고 완성품은 어디에 납품하는지, 얽힌 기업 인맥도를 지도로 보여줍니다."
-    },
-
-    { 
-        name: "포트폴리오 자산 진단", 
-        href: "/portfolio", 
-        icon: Shield,
-        desc: "내가 산 주식들의 투자 비중을 분석하여 특정 종목에 몰리지 않고 안전하게 분산되어 있는지 진단합니다."
-    },
-    { 
-        name: "스마트 워치리스트", 
-        href: "/watchlist", 
-        icon: Star,
-        desc: "내가 찜한 종목들의 최신 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다."
-    },
-    { 
-        name: "종목 디렉토리 (전체 종목)", 
-        href: "/directory", 
-        icon: List,
-        desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다.",
-        hidden: true // 봇 크롤러용이므로 일반 유저 사이드바에서는 숨김 처리
-    },
-    { 
-        name: "연동 설정 및 시스템 관리", 
-        href: "/settings", 
-        icon: Settings,
-        desc: "증권사 계좌 연동을 위한 보안 키 등록 및 화면 다크모드, 알림 등 시스템 환경을 조율합니다."
-    },
+    {
+        groupName: "스터디 & 설정",
+        items: [
+            { name: "매일 차트 스터디 (이론방)", href: "/theory", icon: BookOpen, desc: "매일매일 새롭게 올라오는 차트 보는 법과 주식 기초 이론을 쉽고 재미있게 공부하세요." },
+            { name: "주식 투자 용어 사전", href: "/guide", icon: HelpCircle, desc: "주식 초보자를 위한 필수 투자 용어, 지표, 분석법 및 기초 이론을 완벽하게 정리한 백과사전입니다." },
+            { name: "종목 디렉토리 (전체 종목)", href: "/directory", icon: List, desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다.", hidden: true },
+            { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings, desc: "증권사 계좌 연동을 위한 보안 키 등록 및 화면 다크모드, 알림 등 시스템 환경을 조율합니다." },
+        ]
+    }
 ];
 
 export default function Sidebar() {
     const { user, logout, isMigrating } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+        "홈 & 대시보드": true,
+        "프리미엄 & 인사이트": true,
+        "발굴 & 분석": false,
+        "마이 트레이딩": false,
+        "스터디 & 설정": false
+    });
+
+    const toggleGroup = (groupName: string) => {
+        setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+    };
 
     const [clocks, setClocks] = useState({
         korTime: "", usaTime: "", jpnTime: "", ukTime: "",
@@ -257,6 +195,13 @@ export default function Sidebar() {
         const handleOpenLogin = () => setShowLoginModal(true);
         window.addEventListener('open-login-modal', handleOpenLogin);
         return () => window.removeEventListener('open-login-modal', handleOpenLogin);
+    }, []);
+
+    // [New] Mobile Sidebar Trigger Listener
+    useEffect(() => {
+        const handleOpenMobileSidebar = () => setIsMobileOpen(true);
+        window.addEventListener('open-mobile-sidebar', handleOpenMobileSidebar);
+        return () => window.removeEventListener('open-mobile-sidebar', handleOpenMobileSidebar);
     }, []);
     const [showProModal, setShowProModal] = useState(false);
     const [showAdRewardModal, setShowAdRewardModal] = useState(false); // [New] Modal State
@@ -630,86 +575,107 @@ export default function Sidebar() {
                         </Link>
                     </div>
 
-                    <nav className="space-y-1.5">
-                        {navigation.filter(item => {
-                            if ((item as any).hidden) return false; // 숨김 처리된 탭 제외
-                            return true;
-                        }).map((item) => {
-                            let isWeekend = true;
-                            if (mounted) {
-                                const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-                                isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
-                            }
-                            const isWeekendItem = item.href === '/weekend-report' || item.href === '/weekend-whale';
-                            const isDisabled = isWeekendItem && !isWeekend;
-
+                    <nav className="space-y-4">
+                        {navigationGroups.map((group) => {
+                            const isOpen = openGroups[group.groupName];
                             return (
-                                <div 
-                                    key={item.name} 
-                                    className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 bg-white/5' : 'hover:bg-white/5'}`}
-                                >
-                                    <div className="flex items-center justify-between pr-2 w-full">
-                                        <Link
-                                            href={isDisabled ? "#" : item.href}
-                                            onClick={(e) => {
-                                                if (isDisabled) {
-                                                    e.preventDefault();
-                                                    alert("주말(토/일)에만 열람 가능한 프리미엄 메뉴입니다. 카운트다운이 끝나면 열립니다!");
-                                                } else {
-                                                    setIsMobileOpen(false);
-                                                }
-                                            }}
-                                            className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-200 hover:text-white active:scale-98'}`}
-                                    >
-                                        <item.icon className={`h-5 w-5 ${isDisabled ? 'text-gray-500' : 'text-blue-400 group-hover/menu:text-blue-300'} transition-colors`} />
-                                        <div className="flex flex-col">
-                                            <span>{item.name}</span>
-                                            {isDisabled && weekendCountdown && (
-                                                <span className="text-[10px] text-amber-400 font-mono mt-0.5 tracking-wider animate-pulse">
-                                                    ⏳ {weekendCountdown}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </Link>
-                                    
-                                    {/* ℹ️ Info Trigger Button */}
+                                <div key={group.groupName} className="flex flex-col gap-1.5">
                                     <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setActiveTooltip(activeTooltip === item.name ? null : item.name);
-                                        }}
-                                        onMouseEnter={() => setActiveTooltip(item.name)}
-                                        onMouseLeave={() => setActiveTooltip(null)}
-                                        className="p-2 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
-                                        title={`${item.name} 설명 보기`}
+                                        onClick={() => toggleGroup(group.groupName)}
+                                        className="flex items-center justify-between px-3 py-1.5 w-full text-left group"
                                     >
-                                        <HelpCircle className="h-4 w-4" />
+                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">
+                                            {group.groupName}
+                                        </span>
+                                        {isOpen ? (
+                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                        ) : (
+                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                        )}
                                     </button>
-                                </div>
+                                    
+                                    {isOpen && (
+                                        <div className="space-y-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                                            {group.items.filter(item => !(item as any).hidden).map((item) => {
+                                                let isWeekend = true;
+                                                if (mounted) {
+                                                    const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+                                                    isWeekend = kstDate.getDay() === 0 || kstDate.getDay() === 6;
+                                                }
+                                                const isWeekendItem = item.href === '/weekend-report' || item.href === '/weekend-whale';
+                                                const isDisabled = isWeekendItem && !isWeekend;
 
-                                {/* Universal Inline Accordion Tooltip (Fixes clipping issue on Desktop) */}
-                                {activeTooltip === item.name && (
-                                    <div className="w-full px-4 pb-3 text-xs animate-in slide-in-from-top-2 duration-200 fade-in">
-                                        <div className="p-3.5 bg-black/60 backdrop-blur-md border border-blue-500/40 rounded-xl space-y-1.5 shadow-lg">
-                                            <p className="font-bold text-[11px] text-blue-300 flex items-center gap-1.5">
-                                                <item.icon className="w-3.5 h-3.5" />
-                                                {item.name}란?
-                                            </p>
-                                            <p className="text-[11px] leading-relaxed text-white font-semibold">
-                                                {item.desc}
-                                            </p>
+                                                return (
+                                                    <div 
+                                                        key={item.name} 
+                                                        className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 bg-white/5' : 'hover:bg-white/5'}`}
+                                                    >
+                                                        <div className="flex items-center justify-between pr-2 w-full">
+                                                            <Link
+                                                                href={isDisabled ? "#" : item.href}
+                                                                onClick={(e) => {
+                                                                    if (isDisabled) {
+                                                                        e.preventDefault();
+                                                                        alert("주말(토/일)에만 열람 가능한 프리미엄 메뉴입니다. 카운트다운이 끝나면 열립니다!");
+                                                                    } else {
+                                                                        setIsMobileOpen(false);
+                                                                    }
+                                                                }}
+                                                                className={`flex-1 flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold transition-all ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-300 hover:text-white active:scale-98'}`}
+                                                            >
+                                                                <item.icon className={`h-4 w-4 ${isDisabled ? 'text-gray-500' : 'text-blue-400 group-hover/menu:text-blue-300'} transition-colors`} />
+                                                                <div className="flex flex-col">
+                                                                    <span>{item.name}</span>
+                                                                    {isDisabled && weekendCountdown && (
+                                                                        <span className="text-[10px] text-amber-400 font-mono mt-0.5 tracking-wider animate-pulse">
+                                                                            ⏳ {weekendCountdown}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </Link>
+                                                            
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setActiveTooltip(activeTooltip === item.name ? null : item.name);
+                                                                }}
+                                                                onMouseEnter={() => setActiveTooltip(item.name)}
+                                                                onMouseLeave={() => setActiveTooltip(null)}
+                                                                className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
+                                                                title={`${item.name} 설명 보기`}
+                                                            >
+                                                                <HelpCircle className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+
+                                                        {activeTooltip === item.name && (
+                                                            <div className="w-full px-4 pb-3 text-xs animate-in slide-in-from-top-2 duration-200 fade-in">
+                                                                <div className="p-3 bg-black/60 backdrop-blur-md border border-blue-500/30 rounded-xl space-y-1 shadow-lg">
+                                                                    <p className="font-bold text-[11px] text-blue-300 flex items-center gap-1.5">
+                                                                        <item.icon className="w-3.5 h-3.5" />
+                                                                        {item.name}란?
+                                                                    </p>
+                                                                    <p className="text-[11px] leading-relaxed text-gray-300 font-medium">
+                                                                        {item.desc}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
                             );
                         })}
+
                         {(user?.email?.toLowerCase() === "rnfjr@gmail.com" || user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com") && (
                             <Link
                                 href="/admin"
                                 onClick={() => setIsMobileOpen(false)}
-                                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 hover:scale-105 active:scale-95 group"
+                                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 hover:scale-105 active:scale-95 group mt-4"
                             >
                                 <Shield className="h-5 w-5 text-fuchsia-400 transition-colors group-hover:text-fuchsia-300" />
                                 <span>관리자 센터 👑</span>

@@ -14,7 +14,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
 
-import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock, Search } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
@@ -100,6 +100,56 @@ export default function HomeClient() {
           </div>
         </div>
         
+        {/* Hero Search Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-transparent border border-white/10 p-8 md:p-12 flex flex-col items-center justify-center text-center mb-6">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent pointer-events-none" />
+          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4 z-10 drop-shadow-lg">
+            어떤 종목을 분석해드릴까요?
+          </h1>
+          <p className="text-gray-400 text-sm md:text-base mb-8 max-w-lg z-10 mx-auto">
+            주식 종목명, 관련 테마, 또는 투자 질문을 자유롭게 입력해보세요. AI가 다각도로 분석하여 즉시 답변해 드립니다.
+          </p>
+          
+          <div className="w-full max-w-2xl relative z-10 mx-auto">
+            <form onSubmit={(e) => { e.preventDefault(); const term = (e.target as any).search.value; handleSearch(term); }} className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <Search className="h-6 w-6 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
+              </div>
+              <input
+                type="text"
+                name="search"
+                className="w-full bg-[#050505]/80 backdrop-blur-xl border-2 border-white/10 focus:border-blue-500/50 rounded-2xl py-4 md:py-5 pl-14 pr-28 md:pr-32 text-base md:text-xl text-white placeholder-gray-500 shadow-2xl focus:outline-none transition-all"
+                placeholder="예: 삼성전자, AI 반도체 관련주"
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                className="absolute inset-y-2 right-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-4 md:px-6 rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95 text-sm md:text-base"
+              >
+                AI 분석
+              </button>
+            </form>
+            
+            {/* 핫 키워드 */}
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs md:text-sm">
+              <span className="text-gray-500 font-medium mr-1">🔥 인기 검색어:</span>
+              {['엔비디아', '삼성전자', '비트코인', '이차전지', '테슬라'].map(kw => (
+                <button
+                  key={kw}
+                  onClick={() => {
+                    const input = document.querySelector('input[name="search"]') as HTMLInputElement;
+                    if(input) input.value = kw;
+                    handleSearch(kw);
+                  }}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-gray-300 hover:text-white transition-colors"
+                >
+                  {kw}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* 텔레그램 구독 유도 카드 - 메인 CTA */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0088cc]/20 via-[#005f8f]/10 to-transparent border border-[#0088cc]/30 p-6 md:p-8">
           <div className="absolute top-0 right-0 w-40 h-40 bg-[#0088cc]/10 blur-3xl rounded-full pointer-events-none" />
