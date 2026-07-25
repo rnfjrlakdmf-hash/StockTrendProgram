@@ -91,7 +91,7 @@ export default function WeekendWhalePage() {
                     <h1 className="text-3xl font-bold mb-3 tracking-tight">주말 한정 매집 리포트</h1>
                     <p className="text-gray-400 mb-8 leading-relaxed">
                         세력과 외국인의 수급 데이터 분석은<br/>
-                        주말(금요일 오후 6시 ~ 월요일 오전 8시)에만 공개됩니다.
+                        주말(토요일 오전 10시 ~ 일요일 자정)에만 공개됩니다.
                     </p>
                     
                     <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 w-full shadow-2xl">
