@@ -14,6 +14,7 @@ import FomoWidget from "@/components/FomoWidget";
 import WhaleSiren from "@/components/WhaleSiren";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
+import GlobalBroadcastListener from "@/components/GlobalBroadcastListener";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
 import FloatingQuickMenu from "@/components/FloatingQuickMenu";
@@ -183,6 +184,9 @@ export default function RootLayout({
 
             {/* Smart Floating Quick Menu */}
             <FloatingQuickMenu />
+
+            {/* Global Broadcast Popup (Kakao Style) */}
+            <GlobalBroadcastListener />
 
             <CookieConsent />
           </div>
