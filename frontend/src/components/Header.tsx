@@ -307,7 +307,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
     return (
         <>
         <header className="flex flex-row items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#0a0a0c]/60 backdrop-blur-2xl sticky top-0 z-[100] transition-all duration-300">
-            <div className="flex items-center gap-2 md:gap-8 flex-shrink-0 min-w-0 mr-2 md:mr-0">
+            <div className="hidden sm:flex items-center gap-2 md:gap-8 flex-shrink-0 min-w-0 mr-2 md:mr-0">
                 <div className="flex flex-col min-w-0">
                     <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                         {title}
@@ -331,8 +331,8 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
             <div className="flex items-center gap-2 md:gap-4 justify-end min-w-0 flex-1">
                 {/* Global Search Bar */}
-                <div className="flex relative w-full max-w-[140px] sm:max-w-[200px] md:max-w-[280px] group transition-all duration-300 focus-within:max-w-[180px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[320px]">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="flex relative w-full flex-1 sm:max-w-[200px] md:max-w-[280px] group transition-all duration-300 focus-within:flex-1 sm:focus-within:max-w-[240px] md:focus-within:max-w-[320px] pl-10 sm:pl-0">
+                    <div className="absolute inset-y-0 left-10 sm:left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
                     </div>
                     <input
