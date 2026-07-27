@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { Star, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
@@ -59,6 +60,7 @@ const navigationGroups = [
 ];
 
 export default function Sidebar() {
+    const pathname = usePathname();
     const { user, logout, isMigrating } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
