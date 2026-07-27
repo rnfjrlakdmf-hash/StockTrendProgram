@@ -39,11 +39,10 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProp
   }, [adUnit, adWidth, adHeight]);
 
   return (
-    <div className="w-full flex justify-center my-6 overflow-hidden transition-all duration-300">
+    <div className="w-full flex justify-center my-2 overflow-hidden transition-all duration-300 empty:hidden">
       <div 
         ref={adRef} 
-        style={{ minWidth: `${adWidth}px`, minHeight: `${adHeight}px` }}
-        className="relative flex items-center justify-center bg-transparent"
+        className="relative flex items-center justify-center bg-transparent empty:hidden"
       >
         {(!adUnit || adUnit === "DAN-PLACEHOLDER") && (
           <div className="flex flex-col items-center p-4">

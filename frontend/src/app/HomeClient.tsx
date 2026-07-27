@@ -251,7 +251,7 @@ export default function HomeClient() {
             </div>
 
             {/* 하단 통합 배너 광고 (모바일: 320x480 세로형, PC: 728x90 가로형) */}
-            <div className="my-8 flex justify-center">
+            <div className="my-2 flex justify-center">
               {/* 모바일 전용 대형 배너 */}
               <div className="block md:hidden">
                 <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
