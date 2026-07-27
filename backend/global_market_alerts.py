@@ -32,7 +32,7 @@ def send_global_market_alert(title: str, body: str, symbol: str = None, url: str
     print(f"[Global Market Alert] 총 {len(all_tokens)}대의 기기에 발송 시작...")
     
     push_data = {
-        "type": "global_market_alert",
+        "type": "price_alert",
         "is_global": "true"  # 프론트엔드 GlobalBroadcastListener가 수신하기 위한 플래그
     }
     
