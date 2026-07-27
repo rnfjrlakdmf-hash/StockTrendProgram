@@ -267,9 +267,6 @@ export default function HomeClient() {
           </div>
 
       </div>
-      
-      {/* 구글 애드센스 승인 및 SEO를 위한 통합 텍스트 블록 (최하단 배치로 UI 깔끔함 유지) */}
-      <SeoContentBlock />
     </div>
   );
 }
