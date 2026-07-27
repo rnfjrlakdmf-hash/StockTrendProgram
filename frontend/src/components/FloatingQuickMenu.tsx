@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Zap, ChevronUp, Search, Star, Home, X, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
+import { Zap, ChevronUp, Search, Star, Home, X, TrendingUp, TrendingDown, RefreshCw, Bell } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
@@ -10,6 +10,8 @@ import { useAuth } from "@/context/AuthContext";
 export default function FloatingQuickMenu() {
     const [isOpen, setIsOpen] = useState(false);
     const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [watchlist, setWatchlist] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -60,8 +62,12 @@ export default function FloatingQuickMenu() {
     };
 
     const openSearch = () => {
-        // Trigger a custom event or navigate to discovery page for search
-        router.push("/discovery");
+        setIsSearchOpen(true);
+        setIsOpen(false);
+    };
+
+    const navSettings = () => {
+        router.push("/settings");
         setIsOpen(false);
     };
 
@@ -70,7 +76,73 @@ export default function FloatingQuickMenu() {
         setIsOpen(false);
     };
 
+    const handleSearchSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!searchQuery.trim()) return;
+        router.push(`/discovery?q=${encodeURIComponent(searchQuery)}`);
+        setIsSearchOpen(false);
+        setSearchQuery("");
+    };
+
     return (
+        <>
+        {/* Global Search Modal */}
+        {isSearchOpen && (
+            <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+                <div 
+                    className="absolute inset-0"
+                    onClick={() => setIsSearchOpen(false)}
+                />
+                <div className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform scale-100 animate-in fade-in zoom-in duration-200">
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                        <h3 className="text-white font-bold flex items-center gap-2">
+                            <Search className="w-5 h-5 text-cyan-400" />
+                            통합 종목 검색
+                        </h3>
+                        <button onClick={() => setIsSearchOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-5">
+                        <form onSubmit={handleSearchSubmit} className="relative">
+                            <input
+                                type="text"
+                                autoFocus
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="종목명 또는 코드 입력 (예: 삼성전자)"
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 pl-12 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-lg"
+                            />
+                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                            <button
+                                type="submit"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
+                            >
+                                검색
+                            </button>
+                        </form>
+                        <div className="mt-5">
+                            <p className="text-xs text-gray-500 mb-2 font-bold">인기 검색어</p>
+                            <div className="flex flex-wrap gap-2">
+                                {['삼성전자', '비트코인', '테슬라', '에코프로', '엔비디아'].map(term => (
+                                    <button
+                                        key={term}
+                                        onClick={() => {
+                                            router.push(`/discovery?q=${encodeURIComponent(term)}`);
+                                            setIsSearchOpen(false);
+                                        }}
+                                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/50 rounded-lg text-sm text-gray-300 transition-colors"
+                                    >
+                                        {term}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div ref={menuRef} className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[1000] flex flex-col items-end">
             {/* Mini Watchlist Panel */}
             <div 
@@ -182,6 +254,14 @@ export default function FloatingQuickMenu() {
                 </button>
 
                 <button 
+                    onClick={navSettings}
+                    className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white shadow-glass transition-all hover:scale-110"
+                    title="알림/설정"
+                >
+                    <Bell className="w-4 h-4" />
+                    <span className="absolute right-12 px-2 py-1 bg-black/80 text-[10px] rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">알림/설정</span>
+                </button>
+                <button 
                     onClick={navHome}
                     className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white shadow-glass transition-all hover:scale-110"
                     title="홈으로"
@@ -211,5 +291,6 @@ export default function FloatingQuickMenu() {
                 )}
             </button>
         </div>
+        </>
     );
 }
