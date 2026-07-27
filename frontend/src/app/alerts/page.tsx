@@ -26,6 +26,7 @@ export default function AlertCenterPage() {
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
     const [watchlistNames, setWatchlistNames] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [disclosureFilter, setDisclosureFilter] = useState<'all' | 'kr' | 'us'>('all');
     const ITEMS_PER_PAGE = 20;
 
     const { user } = useAuth();
@@ -277,7 +278,16 @@ export default function AlertCenterPage() {
             }
         }
 
-        if (activeTab === "disclosure") return isDisclosure;
+        if (activeTab === "disclosure") {
+            if (!isDisclosure) return false;
+            if (disclosureFilter === 'kr') {
+                return ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
+            }
+            if (disclosureFilter === 'us') {
+                return ['sec_insider_trading', 'sec_13f'].includes(alert.type);
+            }
+            return true;
+        }
         
         if (activeTab === "portfolio") {
             const isPortfolioAlert = ['portfolio_summary', 'price_alert', 'dividend_alert', 'morning_briefing'].includes(alert.type);
@@ -330,6 +340,41 @@ export default function AlertCenterPage() {
                         </button>
                     ))}
                 </div>
+
+                {activeTab === 'disclosure' && (
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+                        <button
+                            onClick={() => setDisclosureFilter('all')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                                disclosureFilter === 'all'
+                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                            }`}
+                        >
+                            전체 공시
+                        </button>
+                        <button
+                            onClick={() => setDisclosureFilter('kr')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                                disclosureFilter === 'kr'
+                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                            }`}
+                        >
+                            🇰🇷 국내 (DART)
+                        </button>
+                        <button
+                            onClick={() => setDisclosureFilter('us')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                                disclosureFilter === 'us'
+                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                            }`}
+                        >
+                            🇺🇸 해외 (SEC)
+                        </button>
+                    </div>
+                )}
 
                 {!user && (
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center justify-between mb-4">
