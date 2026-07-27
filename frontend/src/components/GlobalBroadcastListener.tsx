@@ -20,10 +20,10 @@ export default function GlobalBroadcastListener() {
 
         const now = new Date();
         const alertsRef = collection(db, "alerts");
-        // is_global이 true인 글로벌 브로드캐스트 알림 중, 지금 이후에 생성된 것만 실시간 수신
+        // 복합 인덱스(Composite Index) 에러 방지를 위해 timestamp 단일 조건만 쿼리하고,
+        // is_global 여부는 클라이언트(onSnapshot) 내부에서 필터링합니다.
         const q = query(
             alertsRef,
-            where("is_global", "==", true),
             where("timestamp", ">=", Timestamp.fromDate(now)),
             orderBy("timestamp", "desc"),
             limit(1)
@@ -33,12 +33,16 @@ export default function GlobalBroadcastListener() {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const data = change.doc.data();
-                    setPopupAlert({ id: change.doc.id, ...data });
                     
-                    // 5초 후 자동 닫힘
-                    setTimeout(() => {
-                        setPopupAlert(null);
-                    }, 5000);
+                    // 클라이언트 단에서 is_global 확인
+                    if (data.is_global === true) {
+                        setPopupAlert({ id: change.doc.id, ...data });
+                        
+                        // 5초 후 자동 닫힘
+                        setTimeout(() => {
+                            setPopupAlert(null);
+                        }, 5000);
+                    }
                 }
             });
         }, (error) => {

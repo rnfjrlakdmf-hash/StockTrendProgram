@@ -1,0 +1,367 @@
+﻿diff --git a/frontend/src/app/HomeClient.tsx b/frontend/src/app/HomeClient.tsx
+index 6b42d10..b72a090 100644
+--- a/frontend/src/app/HomeClient.tsx
++++ b/frontend/src/app/HomeClient.tsx
+@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
+ import { useRouter } from "next/navigation";
+ import Header from "@/components/Header";
+ import GaugeChart from "@/components/GaugeChart";
+-import { fetchStockAnalysis, fetchThemeAnalysis, fetchChatResponse, StockData, fetchStockFast } from "@/lib/api";
+ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
+ import NaverTopWidget from "@/components/NaverTopWidget";
+ import DashboardMarketClock from "@/components/DashboardMarketClock";
+@@ -26,12 +25,6 @@ import { getTickerFromKorean } from "@/lib/stockMapping";
+ 
+ export default function HomeClient() {
+   const router = useRouter();
+-  const [loading, setLoading] = useState(false);
+-  const [error, setError] = useState<string | null>(null);
+-  const [stockData, setStockData] = useState<StockData | null>(null);
+-  const [themeResult, setThemeResult] = useState<any>(null);
+-  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+-  const [isAiLoading, setIsAiLoading] = useState(false);
+ 
+ 
+ 
+@@ -156,145 +149,8 @@ export default function HomeClient() {
+           </div>
+         </div>
+ 
+-        {/* Search Loading/Error State */}
+-        {loading && (
+-          <div className="flex flex-col items-center justify-center p-12 text-blue-400">
+-            <Loader2 className="h-10 w-10 animate-spin mb-4" />
+-            <p className="text-lg font-medium animate-pulse">?쒖옣 ?곗씠?곕? ?뺣? 遺꾩꽍 以묒엯?덈떎...</p>
+-          </div>
+-        )}
+-
+-        {error && (
+-          <div className="p-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
+-            <AlertCircle className="h-6 w-6" />
+-            {error}
+-          </div>
+-        )}
+-
+-        {/* Main Content: Analysis Result or Default View */}
+-        {stockData ? (
+-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-150">
+-            <div className="flex items-end justify-between mb-6">
+-              <div>
+-                <h2 className="text-4xl font-black text-white tracking-tight mb-2">{stockData.name} <span className="text-blue-500">({stockData.symbol})</span></h2>
+-                <p className="text-gray-400 text-lg">{stockData.sector} | {stockData.currency}</p>
+-              </div>
+-              <div className="text-right">
+-                <p className="text-5xl font-bold text-white mb-1">{stockData.price}</p>
+-                <div className={`flex items-center justify-end gap-2 text-xl font-bold ${stockData.change.includes('+') ? 'text-red-400' : 'text-blue-400'}`}>
+-                  <span>{stockData.change.includes('+') ? "?? : stockData.change.includes('-') ? "?? : ""}</span>
+-                  <span>{stockData.change}</span>
+-                </div>
+-                {(stockData.is_extended_hours || stockData.market_status?.includes('?쒓컙??) || stockData.market_status?.includes('?꾨━') || stockData.market_status?.includes('NXT') || stockData.market_status?.includes('?좏봽??)) && (
+-                   <div className="mt-2 inline-flex flex-col items-end border-t border-white/10 pt-2">
+-                     <span className={`text-xs font-bold px-2 py-0.5 rounded-md mb-1 uppercase ${stockData.market_status?.includes('?꾨━') || stockData.market_status?.includes('PRE') ? 'bg-amber-500/20 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
+-                       {stockData.market_status?.includes('?꾨━') || stockData.market_status?.includes('PRE') ? 'PRE-MARKET ?꾨━留덉폆' : 'AFTER-MARKET ?좏봽?곕쭏耳?}
+-                     </span>
+-                     <p className="text-2xl font-bold text-gray-300">
+-                        {(() => {
+-                           const nxt = (stockData.market_status?.includes('?쇨컙') || stockData.market_status?.includes('NXT')) ? stockData.nxt_data : stockData.after_market_data;
+-                           const extPrice = stockData.extended_price || nxt?.price;
+-                           if (!extPrice) return '';
+-                           return Number(String(extPrice).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stockData.currency === 'KRW' ? 0 : 2});
+-                        })()}
+-                     </p>
+-                   </div>
+-                )}
+-              </div>
+-            </div>
+-
+-            {/* Quick Actions for Stock */}
+-            {/* Quick Actions for Stock */}
+-
+-
+-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 relative">
+-              <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+-                {/* Score Card */}
+-                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-blue-900/20 to-black p-6 backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden">
+-                  <div className="absolute top-0 right-0 p-4 opacity-10">
+-                    <Activity className="h-32 w-32 text-blue-400" />
+-                  </div>
+-                  <h3 className="text-xl font-bold text-gray-300 mb-2 z-10">醫낇빀 ?ъ옄 留ㅻ젰??/h3>
+-                  {isAiLoading ? (
+-                    <div className="flex flex-col items-center justify-center py-8 z-10">
+-                      <Loader2 className="h-8 w-8 text-blue-400 animate-spin mb-3" />
+-                      <p className="text-xs text-gray-400 animate-pulse font-medium">?곗씠?곕? ?ㅺ컖?꾨줈 遺꾩꽍 以묒엯?덈떎...</p>
+-                    </div>
+-                  ) : (
+-                    <>
+-                      <GaugeChart score={stockData.score || 0} label="醫낇빀 ?먯닔" color={(stockData.score || 0) > 70 ? "#4ade80" : (stockData.score || 0) > 40 ? "#facc15" : "#f87171"} />
+-                      <p className="text-center text-sm text-gray-400 mt-2 z-10 max-w-[200px]">
+-                        醫낇빀?곸씤 ?щТ, ?섍툒, ?댁뒪 遺꾩꽍???좊?濡??곗텧???먯닔?낅땲??
+-                      </p>
+-                    </>
+-                  )}
+-                </div>
+-
+-                {/* Metrics Grid */}
+-                <div className="rounded-3xl border border-white/5 bg-black/40 p-6 backdrop-blur-md grid grid-cols-3 gap-2">
+-                  {isAiLoading ? (
+-                    <div className="col-span-3 flex items-center justify-center py-10">
+-                      <Loader2 className="h-6 w-6 text-purple-400 animate-spin" />
+-                    </div>
+-                  ) : (
+-                    <>
+-                      <GaugeChart score={stockData.metrics?.supplyDemand || 0} label="?섍툒" subLabel="Technical" color="#60a5fa" />
+-                      <GaugeChart score={stockData.metrics?.financials || 0} label="?щТ" subLabel="Fundamental" color="#c084fc" />
+-                      <GaugeChart score={stockData.metrics?.news || 0} label="?щ━" subLabel="Sentiment" color="#f472b6" />
+-                    </>
+-                  )}
+-                </div>
+-
+-                {/* Expert Summary */}
+-                <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-purple-900/20 to-black p-6 backdrop-blur-md relative overflow-hidden">
+-                  <div className="flex items-center gap-2 mb-4">
+-                    <Zap className="h-6 w-6 text-yellow-400" />
+-                    <h3 className="text-xl font-bold text-white">?듭떖 ?붿빟 釉뚮━??/h3>
+-                  </div>
+-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed min-h-[150px] relative">
+-                    {isAiLoading && (
+-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
+-                        <Loader2 className="h-6 w-6 text-yellow-400 animate-spin mb-2" />
+-                        <span className="text-xs text-yellow-500/80 animate-pulse font-bold">理쒖떊 ?댁뒪 諛??ㅼ쟻 遺꾩꽍 以?..</span>
+-                      </div>
+-                    )}
+-                    {stockData.summary || "遺꾩꽍 ?곗씠?곕? 遺덈윭?ㅻ뒗 以묒엯?덈떎..."}
+-                  </div>
+-                </div>
+-              </div>
+-              
+-              {/* ?곗륫 ?ъ씠?쒕컮 愿묎퀬 ?곸뿭 (寃??寃곌낵 ?섏씠吏 ?꾩슜, PC?먯꽌留??쒖떆) */}
+-              <div className="hidden xl:block relative">
+-                <div className="sticky top-24 flex justify-center">
+-                  <KakaoAdFit adUnit="DAN-t0pQeZMZ4NvClxXn" adWidth="320" adHeight="480" />
+-                </div>
+-              </div>
+-            </div>
+-          </div>
+-        ) : themeResult ? (
+-          <ThemeResultView result={themeResult} />
+-        ) : aiAnswer ? (
+-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-150">
+-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/20 to-black p-8 backdrop-blur-md relative overflow-hidden">
+-              <div className="absolute top-0 right-0 p-8 opacity-10">
+-                <MessageSquare className="h-32 w-32 text-indigo-400" />
+-              </div>
+-              <div className="relative z-10">
+-                <div className="flex items-center gap-3 mb-6">
+-                  <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
+-                    <Zap className="h-6 w-6" />
+-                  </div>
+-                  <h2 className="text-2xl font-bold text-white">醫낇빀 遺꾩꽍 寃곌낵</h2>
+-                </div>
+-                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-gray-200 leading-relaxed text-lg whitespace-pre-wrap">
+-                  {aiAnswer}
+-                </div>
+-              </div>
+-            </div>
+-          </div>
+-        ) : !loading && !error && (
+-          // Default Dashboard Content
+-          <div className="space-y-8 animate-in fade-in duration-1000">
++        {/* Default Dashboard Content */}
++        <div className="space-y-8 animate-in fade-in duration-1000">
+ 
+ 
+             {/* 肄붿씤 ?ロ듃?뚮뱶 ??쒕낫??(?곸떆 ?몄텧) */}
+@@ -559,7 +415,7 @@ function RecentTheoryWidget() {
+       </div>
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         {posts.map((post) => (
+-          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 transition-all group flex flex-col h-full relative overflow-hidden">
++          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 group-hover:bg-green-500/10 blur-2xl rounded-full transition-colors" />
+             <div className="relative z-10 flex flex-col h-full">
+               <div className="flex flex-wrap gap-2 mb-3">
+diff --git a/frontend/src/app/globals.css b/frontend/src/app/globals.css
+index a39b5d4..343f72d 100644
+--- a/frontend/src/app/globals.css
++++ b/frontend/src/app/globals.css
+@@ -17,7 +17,7 @@
+ body {
+   background: var(--background);
+   color: var(--foreground);
+-  font-family: Arial, Helvetica, sans-serif;
++  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+ }
+ 
+ @layer utilities {
+diff --git a/frontend/src/app/layout.tsx b/frontend/src/app/layout.tsx
+index 3235a4f..7e4e28e 100644
+--- a/frontend/src/app/layout.tsx
++++ b/frontend/src/app/layout.tsx
+@@ -16,6 +16,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
+ import LeadGenerationPopup from "@/components/LeadGenerationPopup";
+ import CookieConsent from "@/components/CookieConsent";
+ import BottomTabBar from "@/components/BottomTabBar";
++import { Toaster } from "sonner";
+ import type { Viewport } from 'next';
+ 
+ export const viewport: Viewport = {
+@@ -84,6 +85,9 @@ export default function RootLayout({
+         <meta name="apple-mobile-web-app-title" content="AI Stock Analyst" />
+         <link rel="apple-touch-icon" href="/icon.png" />
+         <link rel="apple-touch-startup-image" href="/icon.png" />
++        
++        {/* ?꾨━?먮떎???고듃 */}
++        <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+       </head>
+       <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+         <KakaoScript />
+@@ -121,6 +125,7 @@ export default function RootLayout({
+         {/* [v4] isPro 媛뺤젣 ??젣 - 寃곗젣 湲곕뒫 ?꾩쟾 ?먯?濡??명븳 罹먯떆 珥덇린??*/}
+         <script dangerouslySetInnerHTML={{ __html: `try { localStorage.removeItem('isPro'); localStorage.removeItem('proExpiry'); } catch(e) {}` }} />
+         <AuthProvider>
++          <Toaster theme="dark" position="bottom-right" richColors />
+           <AnalyticsTracker />
+           <div className="flex min-h-screen">
+             <Sidebar />
+diff --git a/frontend/src/components/Header.tsx b/frontend/src/components/Header.tsx
+index 37fdf28..b464696 100644
+--- a/frontend/src/components/Header.tsx
++++ b/frontend/src/components/Header.tsx
+@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
+ import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
+ import { API_BASE_URL } from "@/lib/config";
+ import { useAuth } from "@/context/AuthContext";
++import { toast } from "sonner";
+ import AttendanceModal from './AttendanceModal';
+ import LoginModal from './LoginModal';
+ 
+@@ -159,9 +160,9 @@ export default function Header({ title = "??쒕낫??, subtitle = "?섏쁺??                     if (json.streak !== undefined) setAttendanceStreak(json.streak);
+                     
+                     if (json.bonus && json.bonus > 0) {
+-                        alert(`?럦 ?먮룞 異쒖꽍: ${json.streak}???곗냽 異쒖꽍 ?ъ꽦! 蹂대꼫??${json.bonus} 肄붿씤???띾뱷?덉뒿?덈떎! (珥?${json.coins} 肄붿씤)`);
++                        toast.success(`?럦 ?먮룞 異쒖꽍: ${json.streak}???곗냽 異쒖꽍 ?ъ꽦! 蹂대꼫??${json.bonus} 肄붿씤???띾뱷?덉뒿?덈떎! (珥?${json.coins} 肄붿씤)`);
+                     } else {
+-                        alert(`?럦 ?먮룞 異쒖꽍 ?꾨즺! 10 肄붿씤???띾뱷?덉뒿?덈떎. (珥?${json.coins} 肄붿씤)`);
++                        toast.success(`?럦 ?먮룞 異쒖꽍 ?꾨즺! 10 肄붿씤???띾뱷?덉뒿?덈떎. (珥?${json.coins} 肄붿씤)`);
+                     }
+                     
+                     // ?깃났 ???щ젰 ?앹뾽???꾩썙以?@@ -182,7 +183,7 @@ export default function Header({ title = "??쒕낫??, subtitle = "?섏쁺?? 
+     const handleAttendance = async () => {
+         if (!user) {
+-            alert("濡쒓렇?몄씠 ?꾩슂?⑸땲??");
++            toast.error("濡쒓렇?몄씠 ?꾩슂?⑸땲??");
+             return;
+         }
+         setIsAttendanceLoading(true);
+@@ -200,21 +201,21 @@ export default function Header({ title = "??쒕낫??, subtitle = "?섏쁺??                 if (json.streak !== undefined) setAttendanceStreak(json.streak);
+                 
+                 if (json.bonus && json.bonus > 0) {
+-                    alert(`?럦 ${json.streak}???곗냽 異쒖꽍 ?ъ꽦! 蹂대꼫??${json.bonus} 肄붿씤??異붽? ?띾뱷?덉뒿?덈떎! (珥?${json.coins} 肄붿씤)`);
++                    toast.success(`?럦 ${json.streak}???곗냽 異쒖꽍 ?ъ꽦! 蹂대꼫??${json.bonus} 肄붿씤??異붽? ?띾뱷?덉뒿?덈떎! (珥?${json.coins} 肄붿씤)`);
+                 } else {
+-                    alert(json.message || "10 肄붿씤 ?띾뱷!");
++                    toast.success(json.message || "10 肄붿씤 ?띾뱷!");
+                 }
+                 setIsAttendanceModalOpen(true);
+             } else if (json.status === "already") {
+                 if (json.streak !== undefined) setAttendanceStreak(json.streak);
+-                alert(`?대? 異쒖꽍泥댄겕瑜??꾨즺?덉뒿?덈떎! (?꾩옱 ${json.coins} 肄붿씤)`);
++                toast.info(`?대? 異쒖꽍泥댄겕瑜??꾨즺?덉뒿?덈떎! (?꾩옱 ${json.coins} 肄붿씤)`);
+                 setIsAttendanceModalOpen(true);
+             } else {
+-                alert("???ㅻ쪟: " + json.message);
++                toast.error("???ㅻ쪟: " + json.message);
+             }
+         } catch (err) {
+             console.error(err);
+-            alert("異쒖꽍泥댄겕 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.");
++            toast.error("異쒖꽍泥댄겕 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.");
+         } finally {
+             setIsAttendanceLoading(false);
+         }
+@@ -270,14 +271,9 @@ export default function Header({ title = "??쒕낫??, subtitle = "?섏쁺??                             console.error("Audio block", e);
+                         }
+ 
+-                        // Browser Notification (Toast style via window.alert for now, simplest to force attention)
+-                        // In a real app we would use a Toast component, but alert() is effective for forcing user to see it.
+-                        // Or we can just log it if we want to be less intrusive, but user asked for ALERTS.
+-
+-                        // Let's use simple alert for v1
++                        // Browser Notification (Toast style)
+                         const msg = `?슚 [媛寃??뚮┝] ${newTriggers[0].symbol} 紐⑺몴媛 ?꾨떖!\n?꾩옱媛: ${newTriggers[0].triggered_price}\n紐⑺몴媛: ${newTriggers[0].target_price}`;
+-                        // We use setTimeout to let UI render/sound play before blocking with alert
+-                        setTimeout(() => alert(msg), 100);
++                        toast.success(msg, { duration: 5000 });
+ 
+                         // Mark as seen
+                         const updatedSeen = [...lastSeen, ...newTriggers.map((a: any) => a.id + "_" + a.triggered_at)];
+diff --git a/frontend/src/components/LiveRankingBox.tsx b/frontend/src/components/LiveRankingBox.tsx
+index 0a5f802..26e6e87 100644
+--- a/frontend/src/components/LiveRankingBox.tsx
++++ b/frontend/src/components/LiveRankingBox.tsx
+@@ -61,7 +61,7 @@ export default function LiveRankingBox() {
+     }
+ 
+     return (
+-        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
++        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative hover:scale-[1.01] hover:shadow-indigo-500/10 transition-all duration-300">
+             {/* Header with Tabs */}
+             <div className="bg-indigo-900/40 border-b border-indigo-500/20 px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                 <div className="flex items-center gap-3">
+diff --git a/frontend/src/components/MarketIndicators.tsx b/frontend/src/components/MarketIndicators.tsx
+index 1fcecf4..0070dfe 100644
+--- a/frontend/src/components/MarketIndicators.tsx
++++ b/frontend/src/components/MarketIndicators.tsx
+@@ -132,7 +132,7 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
+         const hasMore = limit ? items.length > limit : false;
+ 
+         return (
+-            <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col h-full overflow-hidden transition-all hover:border-white/10 shadow-lg">
++            <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-3xl border border-white/5 flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-white/10 shadow-lg hover:scale-[1.01] hover:shadow-cyan-500/10">
+                 <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
+                     <h4 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                         {icon} <span className="tracking-tight">{title}</span>
+diff --git a/frontend/src/components/PopularSearchWidget.tsx b/frontend/src/components/PopularSearchWidget.tsx
+index acee234..019531b 100644
+--- a/frontend/src/components/PopularSearchWidget.tsx
++++ b/frontend/src/components/PopularSearchWidget.tsx
+@@ -41,7 +41,7 @@ export default function PopularSearchWidget() {
+   if (loading || items.length === 0) return null;
+ 
+   return (
+-    <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl relative overflow-hidden group">
++    <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl relative overflow-hidden group hover:scale-[1.01] hover:shadow-red-500/10 transition-all duration-300">
+       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+         <Flame className="w-48 h-48 text-red-500" />
+       </div>
+diff --git a/frontend/src/components/Skeleton.tsx b/frontend/src/components/Skeleton.tsx
+new file mode 100644
+index 0000000..39619d3
+--- /dev/null
++++ b/frontend/src/components/Skeleton.tsx
+@@ -0,0 +1,12 @@
++import React from "react";
++
++interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
++
++export function Skeleton({ className, ...props }: SkeletonProps) {
++  return (
++    <div
++      className={`animate-pulse rounded-md bg-white/10 ${className}`}
++      {...props}
++    />
++  );
++}
+diff --git a/frontend/src/components/WeekendCryptoDashboard.tsx b/frontend/src/components/WeekendCryptoDashboard.tsx
+index 71b2aa9..b4a1c3b 100644
+--- a/frontend/src/components/WeekendCryptoDashboard.tsx
++++ b/frontend/src/components/WeekendCryptoDashboard.tsx
+@@ -65,7 +65,7 @@ export default function WeekendCryptoDashboard() {
+   }
+ 
+   return (
+-    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
++    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-[1.01] hover:shadow-yellow-500/10 transition-all">
+       <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
+       
+       <div className="relative bg-black/60 backdrop-blur-xl rounded-[22px] p-6">

@@ -14,8 +14,8 @@ def send_global_market_alert(title: str, body: str, symbol: str = None, url: str
     모든 유저(비회원 포함)에게 글로벌 정보성 마켓 알림을 발송합니다.
     """
     print(f"========== [Global Market Alert] ==========")
-    print(f"Title: {title}")
-    print(f"Body: {body}")
+    print(f"Title: {title}".encode('utf-8', 'replace').decode('utf-8'))
+    print(f"Body: {body}".encode('utf-8', 'replace').decode('utf-8'))
     
     initialize_firebase()
     
