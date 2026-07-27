@@ -1,3 +1,36 @@
+
+def safe_json_loads(text: str):
+    import json
+    text = text.strip()
+    if text.startswith("```json"): text = text[7:]
+    elif text.startswith("```"): text = text[3:]
+    if text.endswith("```"): text = text[:-3]
+    text = text.strip()
+    start_idx = -1
+    for i, c in enumerate(text):
+        if c in "{[":
+            start_idx = i
+            break
+    if start_idx != -1: text = text[start_idx:]
+    end_idx = -1
+    for i in range(len(text)-1, -1, -1):
+        if text[i] in "}]":
+            end_idx = i
+            break
+    if end_idx != -1: text = text[:end_idx+1]
+    
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        import re
+        # try to fix common JSON errors (control characters)
+        cleaned = re.sub(r'[\x00-\x1f]', '', text)
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            # If it still fails, just raise the original error for transparency
+            raise e
+
 import os
 import json
 import warnings
@@ -133,7 +166,7 @@ def generate_realtime_summary(corp: str, title: str, content: str = "") -> tuple
         # JSON 모드로 호출하여 점수와 텍스트 추출
         response = generate_with_retry(prompt, json_mode=True, timeout=40, temperature=0.0)
         import json
-        data = json.loads(response.text.strip())
+        data = safe_json_loads(response.text)
         score = int(data.get("impact_score", 5))
         summary = data.get("summary", f"[핵심 공시] {title}")
         return (summary, score)
@@ -216,7 +249,7 @@ Return ONLY this JSON (no extra text):
         response = generate_with_retry(prompt, json_mode=True)
         _elapsed = _time.time() - _t0
         print(f"[Gemini] analyze_stock completed in {_elapsed:.2f}s for {stock_data.get('symbol')}")
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
 
     except Exception as e:
         print(f"AI Analysis Error: {e}")
@@ -291,7 +324,7 @@ def generate_market_briefing(market_data: Dict[str, Any], news_data: list, tech_
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Briefing Gen Error: {e}")
         return get_mock_briefing(error_msg=str(e))
@@ -358,7 +391,7 @@ def compare_stocks(stock1_data: Dict[str, Any], stock2_data: Dict[str, Any]) -> 
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Comparison Error: {e}")
         return {
@@ -472,7 +505,7 @@ def analyze_theme(theme_keyword: str):
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        result = json.loads(response.text)
+        result = safe_json_loads(response.text)
         # [Cost-Save] 결과를 DB에 저장해서 다음 24시간은 캐시에서 바로 제공
         save_theme_cache(theme_keyword, result)
         return result
@@ -543,7 +576,7 @@ def analyze_earnings_impact(symbol: str, news_list: list) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Earnings Analysis Error: {e}")
         return None
@@ -588,7 +621,7 @@ def analyze_node_detail(symbol: str, name: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True, timeout=60)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Node Detail Analysis Error: {e}")
         return None
@@ -677,7 +710,7 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True, timeout=60)
-        data = json.loads(response.text)
+        data = safe_json_loads(response.text)
 
         # 3. Ensure array properties exist to prevent frontend crashes
         data["nodes"] = data.get("nodes") or []
@@ -994,7 +1027,7 @@ def analyze_supply_chain_scenario(keyword: str, target_symbol: str = None) -> Di
         
         # Increase timeout for complex reasoning
         response = generate_with_retry(prompt, json_mode=True, temperature=temp, models_to_try=models, timeout=40)
-        result = json.loads(response.text)
+        result = safe_json_loads(response.text)
         # [Cost-Save] 결과 캐시에 저장 (다음 24시간은 캐시에서 즉시 반환)
         save_scenario_cache(keyword, target_symbol or "", result)
         return result
@@ -1075,7 +1108,7 @@ def analyze_chart_patterns(symbol: str) -> Dict[str, Any]:
 
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        result = json.loads(response.text)
+        result = safe_json_loads(response.text)
         
         # [New] 패턴 이름 한글화 (fallback)
         pattern_map = {
@@ -1142,7 +1175,7 @@ def analyze_trading_log(log_text: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Trading Coach Error: {e}")
         return None
@@ -1256,7 +1289,7 @@ def track_insider_trading(symbol: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Insider Analysis Error: {e}")
         return None
@@ -1332,7 +1365,7 @@ def analyze_market_weather() -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
          # 에러 시 fallback
         return {
@@ -1410,7 +1443,7 @@ def calculate_delisting_risk(symbol: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Risk Analysis Error: {e}")
         return None
@@ -1517,7 +1550,7 @@ def generate_stock_briefing(symbol: str) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True, timeout=40)
-        result = json.loads(response.text)
+        result = safe_json_loads(response.text)
         result["symbol"] = symbol
         result["price"] = price_data
         result["news_count"] = len(news_data)
@@ -1638,7 +1671,7 @@ def analyze_portfolio_data(portfolio_items: list[str]) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        result = json.loads(response.text)
+        result = safe_json_loads(response.text)
         
         # Inject the calculated data into the result for the frontend
         result["composition"] = composition_data
@@ -1717,7 +1750,7 @@ def analyze_node_detail(symbol: str, name: str = None) -> Dict[str, Any]:
     
     try:
         response = generate_with_retry(prompt, json_mode=True)
-        return json.loads(response.text)
+        return safe_json_loads(response.text)
     except Exception as e:
         print(f"Node Detail Analysis Error: {e}")
         return {
