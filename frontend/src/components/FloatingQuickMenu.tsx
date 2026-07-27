@@ -56,14 +56,8 @@ export default function FloatingQuickMenu() {
         setIsWatchlistOpen(!isWatchlistOpen);
     };
 
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setIsOpen(false);
-    };
-
-    const openSearch = () => {
-        setIsSearchOpen(true);
-        setIsOpen(false);
+    const toggleSearch = () => {
+        setIsSearchOpen(!isSearchOpen);
     };
 
     const navSettings = () => {
@@ -76,73 +70,22 @@ export default function FloatingQuickMenu() {
         setIsOpen(false);
     };
 
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setIsOpen(false);
+    };
+
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!searchQuery.trim()) return;
         router.push(`/discovery?q=${encodeURIComponent(searchQuery)}`);
         setIsSearchOpen(false);
         setSearchQuery("");
+        setIsOpen(false);
     };
 
     return (
         <>
-        {/* Global Search Modal */}
-        {isSearchOpen && (
-            <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
-                <div 
-                    className="absolute inset-0"
-                    onClick={() => setIsSearchOpen(false)}
-                />
-                <div className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform scale-100 animate-in fade-in zoom-in duration-200">
-                    <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <Search className="w-5 h-5 text-cyan-400" />
-                            통합 종목 검색
-                        </h3>
-                        <button onClick={() => setIsSearchOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                    <div className="p-5">
-                        <form onSubmit={handleSearchSubmit} className="relative">
-                            <input
-                                type="text"
-                                autoFocus
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="종목명 또는 코드 입력 (예: 삼성전자)"
-                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 pl-12 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-lg"
-                            />
-                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                            <button
-                                type="submit"
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
-                            >
-                                검색
-                            </button>
-                        </form>
-                        <div className="mt-5">
-                            <p className="text-xs text-gray-500 mb-2 font-bold">인기 검색어</p>
-                            <div className="flex flex-wrap gap-2">
-                                {['삼성전자', '비트코인', '테슬라', '에코프로', '엔비디아'].map(term => (
-                                    <button
-                                        key={term}
-                                        onClick={() => {
-                                            router.push(`/discovery?q=${encodeURIComponent(term)}`);
-                                            setIsSearchOpen(false);
-                                        }}
-                                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/50 rounded-lg text-sm text-gray-300 transition-colors"
-                                    >
-                                        {term}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
-
         <div ref={menuRef} className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[1000] flex flex-col items-end">
             {/* Mini Watchlist Panel */}
             <div 
@@ -231,14 +174,43 @@ export default function FloatingQuickMenu() {
                     <span className="absolute right-12 px-2 py-1 bg-black/80 text-[10px] rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">맨 위로</span>
                 </button>
                 
-                <button 
-                    onClick={openSearch}
-                    className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white shadow-glass transition-all hover:scale-110"
-                    title="검색"
-                >
-                    <Search className="w-4 h-4" />
-                    <span className="absolute right-12 px-2 py-1 bg-black/80 text-[10px] rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">종목 검색</span>
-                </button>
+                {/* Sliding Search Bar & Button */}
+                <div className="relative flex items-center justify-end w-full">
+                    <div 
+                        className={`absolute right-12 transition-all duration-300 overflow-hidden flex items-center ${
+                            isSearchOpen ? 'w-[200px] opacity-100 pointer-events-auto mr-2' : 'w-0 opacity-0 pointer-events-none'
+                        }`}
+                    >
+                        <form onSubmit={handleSearchSubmit} className="w-full">
+                            <input
+                                type="text"
+                                autoFocus={isSearchOpen}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="종목 검색..."
+                                className="w-full bg-black/80 backdrop-blur-md border border-cyan-500/50 rounded-full px-4 py-2 text-white placeholder-gray-300 text-xs font-bold focus:outline-none focus:border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
+                            />
+                        </form>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            if (isSearchOpen && searchQuery.trim()) {
+                                handleSearchSubmit();
+                            } else {
+                                toggleSearch();
+                            }
+                        }}
+                        className={`group relative flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border transition-all hover:scale-110 z-10 ${
+                            isSearchOpen ? 'bg-cyan-600 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white shadow-glass'
+                        }`}
+                        title="검색"
+                    >
+                        <Search className="w-4 h-4" />
+                        {!isSearchOpen && (
+                            <span className="absolute right-12 px-2 py-1 bg-black/80 text-[10px] rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">종목 검색</span>
+                        )}
+                    </button>
+                </div>
 
                 <button 
                     onClick={toggleWatchlist}
@@ -275,7 +247,10 @@ export default function FloatingQuickMenu() {
             <button
                 onClick={() => {
                     setIsOpen(!isOpen);
-                    if (isOpen) setIsWatchlistOpen(false); // Close watchlist if closing menu
+                    if (isOpen) {
+                        setIsWatchlistOpen(false);
+                        setIsSearchOpen(false);
+                    }
                 }}
                 className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 border shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] ${
                     isOpen 
