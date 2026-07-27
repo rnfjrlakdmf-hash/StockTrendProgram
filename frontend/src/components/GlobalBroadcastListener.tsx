@@ -17,19 +17,22 @@ export default function GlobalBroadcastListener() {
 
     useEffect(() => {
         if (!mounted || !db) return;
-
-        const now = new Date();
         const alertsRef = collection(db, "alerts");
-        // 복합 인덱스(Composite Index) 에러 방지를 위해 timestamp 단일 조건만 쿼리하고,
-        // is_global 여부는 클라이언트(onSnapshot) 내부에서 필터링합니다.
+        // 복합 인덱스 및 시간차(Clock Skew) 문제를 완벽히 회피하기 위해
+        // 가장 최근 1개만 구독하되, 첫 로딩(초기 데이터)은 무시하고 이후 새로 추가된 것만 팝업을 띄웁니다.
+        let isInitialLoad = true;
         const q = query(
             alertsRef,
-            where("timestamp", ">=", Timestamp.fromDate(now)),
             orderBy("timestamp", "desc"),
             limit(1)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                return; // 최초 로딩 시 팝업 방지
+            }
+            
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const data = change.doc.data();
