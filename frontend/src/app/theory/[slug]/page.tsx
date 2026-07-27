@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const desc = post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";
 
     return {
-        title: `${post.title} | StockTrend 매일 차트 스터디`,
+        title: `${post.title} | 스마트 투자비서`,
         description: desc,
         alternates: {
             canonical: `/theory/${resolvedParams.slug}`,
@@ -100,7 +100,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         },
         "publisher": {
             "@type": "Organization",
-            "name": "StockTrendProgram",
+            "name": "스마트 투자비서",
             "logo": {
                 "@type": "ImageObject",
                 "url": "https://stock-trend-program.co.kr/logo.png"
@@ -191,6 +191,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                         .replace(/href="\/market"/g, 'href="/discovery"')
                         .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>')
                         .replace(/whitespace-nowrap/g, 'break-keep')
+                        + '<br/><br/><p style="color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">본 포스팅은 <strong>스마트 투자비서</strong>가 제공하는 AI 기반 주식 분석 및 차트 스터디입니다. 스마트 투자비서와 함께 성공적인 투자를 이어나가세요.</p>'
                 }}
             />
             
