@@ -452,7 +452,7 @@ def diagnose_fcm(x_user_id: str = Header(None), user_id_param: str = Query(None,
     return {"status": "success", "data": result}
 
 @router.get("/fcm/test")
-@router.post("/fcm/test-global-alert")
+@router.api_route("/fcm/test-global-alert", methods=["GET", "POST"])
 async def test_global_alert(request: Request):
     """(테스트용) 글로벌 마켓 푸시 알림 수동 발송"""
     try:
