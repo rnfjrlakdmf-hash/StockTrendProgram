@@ -331,9 +331,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
             <div className="flex items-center gap-2 md:gap-4 justify-end min-w-0 flex-1">
                 {/* Global Search Bar */}
-                <div className="flex relative w-full flex-1 sm:max-w-[200px] md:max-w-[280px] group transition-all duration-300 focus-within:flex-1 sm:focus-within:max-w-[240px] md:focus-within:max-w-[320px] pl-10 sm:pl-0">
+                <div className="flex relative w-full flex-1 max-w-[130px] sm:max-w-[160px] md:max-w-[180px] group transition-all duration-500 ease-out hover:max-w-[200px] sm:hover:max-w-[240px] md:hover:max-w-[340px] focus-within:flex-1 focus-within:max-w-[200px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[340px] pl-10 sm:pl-0">
                     <div className="absolute inset-y-0 left-10 sm:left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
+                        <Search className="h-4 w-4 text-gray-400 group-hover:text-gray-200 group-focus-within:text-blue-400 transition-colors" />
                     </div>
                     <input
                         type="text"
