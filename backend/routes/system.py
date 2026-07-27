@@ -452,7 +452,21 @@ def diagnose_fcm(x_user_id: str = Header(None), user_id_param: str = Query(None,
     return {"status": "success", "data": result}
 
 @router.get("/fcm/test")
-@router.post("/fcm/test")
+@router.post("/fcm/test-global-alert")
+async def test_global_alert(request: Request):
+    """(테스트용) 글로벌 마켓 푸시 알림 수동 발송"""
+    try:
+        from global_market_alerts import send_global_market_alert
+        send_global_market_alert(
+            title="🇺🇸 오마이홈(OMH)",
+            body="🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]",
+            symbol="OMH"
+        )
+        return {"success": True, "message": "Global alert triggered"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@router.post("/fcm/send")
 def test_fcm_notification(x_user_id: str = Header(None)):
     """FCM 테스트 알림 발송 (GET/POST 모두 허용하여 405 에러 방지)"""
     # Lazy Imports
