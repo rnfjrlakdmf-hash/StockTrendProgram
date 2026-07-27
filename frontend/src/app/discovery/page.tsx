@@ -1086,65 +1086,74 @@ function DiscoveryContent() {
                                                      stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
                                                      'REGULAR MARKET 정규장 종가'}
                                                 </span>
-                                                <div className="flex flex-wrap items-center gap-4">
-                                                    <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter flex items-center">
-                                                        <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
-                                                            {stock.currency === 'KRW' ? '₩' : '$'}
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex flex-wrap items-center gap-4">
+                                                        <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter flex items-center">
+                                                            <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
+                                                                {stock.currency === 'KRW' ? '₩' : '$'}
+                                                            </span>
+                                                            <BlinkingPrice
+                                                                price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
+                                                                    (stock.currency === 'KRW'
+                                                                    ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                                    : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
+                                                                className="text-white bg-transparent"
+                                                            />
                                                         </span>
-                                                        <BlinkingPrice
-                                                            price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
-                                                                (stock.currency === 'KRW'
-                                                                ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                                : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
-                                                            className="text-white bg-transparent"
-                                                        />
-                                                    </span>
 
-                                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
-                                                        (() => {
-                                                            const val = extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                            return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                                   val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                                   'bg-gray-500/10 border-white/10 text-gray-400';
-                                                        })()
-                                                    }`}>
-                                                        <span className="flex items-center gap-1">
-                                                            {(() => {
+                                                        <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
+                                                            (() => {
                                                                 const val = extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                                return val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                            })()}
-                                                            {Math.abs(extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                        </span>
-                                                        <span className="text-sm md:text-base font-bold opacity-80 ml-1">
-                                                            ({(() => {
-                                                                if (extendedHours?.regular?.change_pct !== undefined) {
-                                                                    const pct = extendedHours.regular.change_pct;
-                                                                    return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
-                                                                }
-                                                                const pct = stock.regular_change_percent || stock.regular_change_pct;
-                                                                if (!pct || pct === 0) {
-                                                                    const raw = String(stock.change_percent || stock.change || '0.00%');
-                                                                    const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                    return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
-                                                                }
-                                                                const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
-                                                                return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
-                                                            })()})
-                                                        </span>
-                                                    </div>
+                                                                return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                                       val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                                       'bg-gray-500/10 border-white/10 text-gray-400';
+                                                            })()
+                                                        }`}>
+                                                            <span className="flex items-center gap-1">
+                                                                {(() => {
+                                                                    const val = extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
+                                                                    return val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                                })()}
+                                                                {Math.abs(extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                            </span>
+                                                            <span className="text-sm md:text-base font-bold opacity-80 ml-1">
+                                                                ({(() => {
+                                                                    if (extendedHours?.regular?.change_pct !== undefined) {
+                                                                        const pct = extendedHours.regular.change_pct;
+                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                                    }
+                                                                    const pct = stock.regular_change_percent || stock.regular_change_pct;
+                                                                    if (!pct || pct === 0) {
+                                                                        const raw = String(stock.change_percent || stock.change || '0.00%');
+                                                                        const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                        return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
+                                                                    }
+                                                                    const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
+                                                                    return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+                                                                })()})
+                                                            </span>
+                                                        </div>
 
-                                                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
-                                                        extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
-                                                        'bg-gray-500/10 text-gray-400 border-gray-500/30'
-                                                    }`}>
-                                                        <div className={`w-2 h-2 rounded-full ${
-                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
-                                                            'bg-gray-500'
-                                                        }`}></div>
-                                                        <span className="text-xs md:text-sm font-black uppercase tracking-tight">
-                                                            {extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}
-                                                        </span>
+                                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
+                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
+                                                            'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                                                        }`}>
+                                                            <div className={`w-2 h-2 rounded-full ${
+                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
+                                                                'bg-gray-500'
+                                                            }`}></div>
+                                                            <span className="text-xs md:text-sm font-black uppercase tracking-tight">
+                                                                {extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                    {stock.currency === 'USD' && exchangeRate > 0 && (
+                                                        <div className="text-sm font-bold text-gray-400 flex items-center gap-1.5 ml-1 mt-1">
+                                                            <span className="text-xs border border-gray-600 px-1.5 py-0.5 rounded text-gray-400 bg-gray-800/50">예상 원화</span>
+                                                            ₩{Math.round((extendedHours?.regular?.price ?? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, ''))) * exchangeRate).toLocaleString()}
+                                                            <span className="text-xs text-gray-600 font-normal ml-1">({exchangeRate.toLocaleString()}원 환율 적용)</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1187,58 +1196,71 @@ function DiscoveryContent() {
                                                             }
                                                         })()}
                                                     </div>
-                                                    <div className="flex items-center gap-4 mt-1.5">
-                                                        <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
-                                                            <span className="text-lg md:text-xl mr-0.5 text-gray-500 font-bold">{stock.currency === 'KRW' ? '₩' : '$'}</span>
-                                                            <BlinkingPrice
-                                                                price={extendedHours?.extended?.price ? extendedHours.extended.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
-                                                                    Number(String(
+                                                    <div className="flex flex-col gap-1 mt-1.5">
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
+                                                                <span className="text-lg md:text-xl mr-0.5 text-gray-500 font-bold">{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                                <BlinkingPrice
+                                                                    price={extendedHours?.extended?.price ? extendedHours.extended.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
+                                                                        Number(String(
+                                                                        stock.is_extended_hours && stock.extended_price ? stock.extended_price :
+                                                                        (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                            ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
+                                                                            : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
+                                                                    ).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                    className="text-white bg-transparent"
+                                                                />
+                                                            </span>
+                                                            {(() => {
+                                                                let val = extendedHours?.extended?.change;
+                                                                let pct = extendedHours?.extended?.change_pct;
+                                                                
+                                                                if (val === undefined) {
+                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                                    val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                                    pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                    
+                                                                    if (stock.currency === 'KRW' && nxt?.price) {
+                                                                        // 한국 주식의 경우 시간외 시세 변동을 전일 종가가 아닌 정규장 종가 대비로 재계산
+                                                                        const regPriceStr = String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, '');
+                                                                        const regPriceNum = Number(regPriceStr);
+                                                                        const aftPriceStr = String(nxt.price).replace(/,/g, '');
+                                                                        const aftPriceNum = Number(aftPriceStr);
+                                                                        if (regPriceNum > 0 && aftPriceNum > 0) {
+                                                                            val = aftPriceNum - regPriceNum;
+                                                                            pct = (val / regPriceNum) * 100;
+                                                                        }
+                                                                    } else if (val === 0 && pct !== 0) {
+                                                                        const priceStr = String(nxt?.price || '0').replace(/,/g, '');
+                                                                        const priceNum = Number(priceStr);
+                                                                        val = priceNum - (priceNum / (1 + (pct / 100)));
+                                                                    }
+                                                                }
+                                                                
+                                                                const colorClass = val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-gray-500/10 border-white/10 text-gray-400';
+                                                                const arrow = val > 0 ? '▲' : val < 0 ? '▼' : '';
+                                                                const valStr = Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
+                                                                const pctStr = isNaN(pct) ? "0.00%" : `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                                
+                                                                return (
+                                                                    <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${colorClass}`}>
+                                                                        <span>{arrow}{valStr}</span>
+                                                                        <span className="text-xs md:text-sm opacity-80">({pctStr})</span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                        {stock.currency === 'USD' && exchangeRate > 0 && (
+                                                            <div className="text-xs font-bold text-gray-400 flex items-center gap-1.5 ml-1 mt-0.5">
+                                                                <span className="text-[10px] border border-gray-600 px-1.5 py-0.5 rounded text-gray-400 bg-gray-800/50">예상 원화</span>
+                                                                ₩{Math.round((extendedHours?.extended?.price ?? Number(String(
                                                                     stock.is_extended_hours && stock.extended_price ? stock.extended_price :
                                                                     (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
                                                                         ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
                                                                         : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                                ).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                className="text-white bg-transparent"
-                                                            />
-                                                        </span>
-                                                        {(() => {
-                                                            let val = extendedHours?.extended?.change;
-                                                            let pct = extendedHours?.extended?.change_pct;
-                                                            
-                                                            if (val === undefined) {
-                                                                const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                                pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                
-                                                                if (stock.currency === 'KRW' && nxt?.price) {
-                                                                    // 한국 주식의 경우 시간외 시세 변동을 전일 종가가 아닌 정규장 종가 대비로 재계산
-                                                                    const regPriceStr = String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, '');
-                                                                    const regPriceNum = Number(regPriceStr);
-                                                                    const aftPriceStr = String(nxt.price).replace(/,/g, '');
-                                                                    const aftPriceNum = Number(aftPriceStr);
-                                                                    if (regPriceNum > 0 && aftPriceNum > 0) {
-                                                                        val = aftPriceNum - regPriceNum;
-                                                                        pct = (val / regPriceNum) * 100;
-                                                                    }
-                                                                } else if (val === 0 && pct !== 0) {
-                                                                    const priceStr = String(nxt?.price || '0').replace(/,/g, '');
-                                                                    const priceNum = Number(priceStr);
-                                                                    val = priceNum - (priceNum / (1 + (pct / 100)));
-                                                                }
-                                                            }
-                                                            
-                                                            const colorClass = val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-gray-500/10 border-white/10 text-gray-400';
-                                                            const arrow = val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                            const valStr = Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
-                                                            const pctStr = isNaN(pct) ? "0.00%" : `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
-                                                            
-                                                            return (
-                                                                <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${colorClass}`}>
-                                                                    <span>{arrow}{valStr}</span>
-                                                                    <span className="text-xs md:text-sm opacity-80">({pctStr})</span>
-                                                                </div>
-                                                            );
-                                                        })()}
+                                                                ).replace(/,/g, ''))) * exchangeRate).toLocaleString()}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
