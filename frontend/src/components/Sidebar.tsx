@@ -790,11 +790,11 @@ export default function Sidebar() {
                     {user && !user.is_guest ? (
                         <div className="rounded-xl bg-white/10 p-2.5 border border-white/10 flex items-center gap-2.5 shadow-lg">
                             <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-white/20">
-                                {user.name[0]}
+                                {user.name?.[0] || 'U'}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-white truncate">{user.name}</p>
-                                <p className="text-[9px] text-gray-300 truncate">{user.email}</p>
+                                <p className="text-xs font-bold text-white truncate">{user.name || '사용자'}</p>
+                                <p className="text-[9px] text-gray-300 truncate">{user.email || ''}</p>
                             </div>
                             <button onClick={logout} className="p-1 px-1.5 text-gray-300 hover:text-white transition-colors bg-white/5 rounded-lg">
                                 <span className="text-[9px] font-bold">로그아웃</span>

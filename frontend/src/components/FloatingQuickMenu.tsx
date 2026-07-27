@@ -109,8 +109,9 @@ export default function FloatingQuickMenu() {
                     ) : (
                         <div className="flex flex-col gap-1.5">
                             {watchlist.map((item, idx) => {
-                                const isUp = item.change_rate > 0;
-                                const isDown = item.change_rate < 0;
+                                const changeRate = typeof item.change_rate === 'number' ? item.change_rate : parseFloat(item.change_rate) || 0;
+                                const isUp = changeRate > 0;
+                                const isDown = changeRate < 0;
                                 return (
                                     <Link key={idx} href={`/analysis?code=${item.code}`} onClick={() => setIsWatchlistOpen(false)}>
                                         <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 cursor-pointer">
@@ -120,11 +121,11 @@ export default function FloatingQuickMenu() {
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className={`text-xs font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                    {Number(item.price).toLocaleString()}원
+                                                    {Number(item.price || 0).toLocaleString()}원
                                                 </span>
                                                 <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-400'}`}>
                                                     {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : isDown ? <TrendingDown className="w-2.5 h-2.5" /> : null}
-                                                    {isUp ? '+' : ''}{item.change_rate.toFixed(2)}%
+                                                    {isUp ? '+' : ''}{changeRate.toFixed(2)}%
                                                 </div>
                                             </div>
                                         </div>
