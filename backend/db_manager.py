@@ -1930,7 +1930,6 @@ def get_all_fcm_tokens(require_whale_alert=False, require_insider_alert=False) -
     cursor = conn.cursor()
     
     try:
-        # 중복 제거 (혹시 몰라서 DISTINCT)
         query = "SELECT DISTINCT token FROM fcm_tokens WHERE 1=1"
         if require_whale_alert:
             query += " AND pref_whale_alert = 1"
@@ -1938,6 +1937,12 @@ def get_all_fcm_tokens(require_whale_alert=False, require_insider_alert=False) -
             query += " AND pref_insider_alert = 1"
         cursor.execute(query)
         rows = cursor.fetchall()
+        
+        # [DEBUG]
+        cursor.execute("SELECT token, user_id, device_type FROM fcm_tokens")
+        debug_rows = cursor.fetchall()
+        print(f"[DEBUG-FCM] Total DB tokens details: {debug_rows}")
+        
         return [row[0] for row in rows]
     except Exception as e:
         print(f"[DB] Get all FCM tokens error: {e}")
