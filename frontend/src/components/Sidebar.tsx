@@ -433,7 +433,7 @@ export default function Sidebar() {
             )}
 
             <div className={`
-                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/10 bg-[#09090b] md:bg-black/40 backdrop-blur-xl text-white p-4 pt-24 md:pt-4 transition-transform duration-300 ease-in-out
+                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/5 bg-dark-900/80 md:bg-dark-900/40 backdrop-blur-2xl text-white p-4 pt-24 md:pt-4 transition-transform duration-300 ease-in-out
                 md:relative md:translate-x-0 md:flex
                 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
             `}>
@@ -458,7 +458,7 @@ export default function Sidebar() {
                                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black animate-ping" />
                                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
                                 </div>
-                                <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                                <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-indigo-300 to-purple-400">
                                     STOCK AI
                                 </span>
                             </div>
@@ -565,9 +565,9 @@ export default function Sidebar() {
                                             </span>
                                         </div>
                                         <span className="text-sm font-bold text-white whitespace-nowrap">🔥 실시간 세력 매집 알림</span>
-                                        <span className="text-xs text-blue-100 font-medium mt-0.5">텔레그램에서 가장 먼저 받기</span>
+                                        <span className="text-xs text-primary-100 font-medium mt-0.5">텔레그램에서 가장 먼저 받기</span>
                                     </div>
-                                    <div className="shrink-0 bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
+                                    <div className="shrink-0 bg-white/20 p-2 rounded-full group-hover:bg-white/30 group-hover:scale-110 transition-all shadow-lg shadow-white/10">
                                         <Send className="w-5 h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                     </div>
                                 </div>
@@ -582,9 +582,9 @@ export default function Sidebar() {
                                 <div key={group.groupName} className="flex flex-col gap-1.5">
                                     <button
                                         onClick={() => toggleGroup(group.groupName)}
-                                        className="flex items-center justify-between px-3 py-1.5 w-full text-left group"
+                                        className="flex items-center justify-between px-3 py-1.5 w-full text-left group hover:bg-white/5 rounded-lg transition-colors"
                                     >
-                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">
+                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-primary-400 transition-colors">
                                             {group.groupName}
                                         </span>
                                         {isOpen ? (
@@ -608,7 +608,7 @@ export default function Sidebar() {
                                                 return (
                                                     <div 
                                                         key={item.name} 
-                                                        className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 bg-white/5' : 'hover:bg-white/5'}`}
+                                                        className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 glass-card' : 'glass-button'}`}
                                                     >
                                                         <div className="flex items-center justify-between pr-2 w-full">
                                                             <Link

@@ -292,7 +292,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     return (
         <>
-        <header className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-50 transition-all duration-200">
+        <header className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-white/5 bg-dark-900/60 backdrop-blur-2xl sticky top-0 z-50 transition-all duration-300">
             <div className="flex items-center gap-8 w-full md:w-auto mb-4 md:mb-0 flex-shrink-0 min-w-[150px]">
                 <div className="flex flex-col">
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
@@ -322,7 +322,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                         <Bell className="w-5 h-5 text-gray-300 hover:text-white" />
                         {user && unreadAlertsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0f1115] z-10 shadow-lg">
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-dark-900 z-10 shadow-lg animate-pulse">
                                 {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
                             </span>
                         )}
@@ -330,7 +330,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     <div className="relative">
                         <button 
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors shrink-0 relative"
+                            className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors shrink-0 relative hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                         >
                             
                             {user && !user.is_guest ? (
@@ -360,7 +360,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                         {/* Dropdown Menu */}
                         {isProfileMenuOpen && (
-                            <div className="absolute right-0 mt-3 w-64 bg-[#0f1115]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 z-50">
+                            <div className="absolute right-0 mt-3 w-64 glass-panel rounded-2xl p-4 flex flex-col gap-2 z-50 animate-in slide-in-from-top-2 duration-200">
                                 
                                 {user ? (
                                     <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
@@ -377,7 +377,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                                 setIsProfileMenuOpen(false);
                                             }}
                                             disabled={isAttendanceLoading}
-                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                                            className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                                         >
                                             ✅ 출석체크 하기
                                         </button>

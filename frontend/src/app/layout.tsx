@@ -89,7 +89,7 @@ export default function RootLayout({
         {/* 프리텐다드 폰트 */}
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
       </head>
-      <body className="antialiased bg-[#050505] text-white" suppressHydrationWarning>
+      <body className="antialiased bg-dark-900 text-white selection:bg-primary-500/30" suppressHydrationWarning>
         <KakaoScript />
         
         {/* Microsoft Clarity */}
@@ -129,10 +129,10 @@ export default function RootLayout({
           <AnalyticsTracker />
           <div className="flex min-h-screen">
             <Sidebar />
-            <main className="flex-1 relative overflow-hidden pb-16 md:pb-0 bg-gradient-to-br from-[#050505] via-[#0a0a0a] to-[#111] text-foreground">
-              {/* Background Glow Effects */}
-              <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-              <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+            <main className="flex-1 relative overflow-hidden pb-16 md:pb-0 bg-dark-900 text-foreground">
+              {/* Premium Background Mesh Glow Effects */}
+              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-900/20 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
+              <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
 
               {children}
 
@@ -170,7 +170,7 @@ export default function RootLayout({
             </main>
 
             {/* 우측 사이드바 세로형 광고 (160x600) - 데스크톱 전용 */}
-            <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 bg-[#050505]/50">
+            <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 glass-panel">
               <KakaoAdFit adUnit="DAN-jbSl6i4k3YO3nNSl" adWidth="160" adHeight="600" />
             </aside>
 

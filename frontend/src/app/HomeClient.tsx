@@ -58,8 +58,8 @@ export default function HomeClient() {
         </div>
         
         {/* Hero Search Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-transparent border border-white/10 p-8 md:p-12 flex flex-col items-center justify-center text-center mb-6">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent pointer-events-none" />
+        <div className="relative overflow-hidden rounded-3xl glass-panel p-8 md:p-12 flex flex-col items-center justify-center text-center mb-6">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-500/10 via-transparent to-transparent pointer-events-none" />
           <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4 z-10 drop-shadow-lg">
             어떤 종목을 분석해드릴까요?
           </h1>
@@ -75,13 +75,13 @@ export default function HomeClient() {
               <input
                 type="text"
                 name="search"
-                className="w-full bg-[#050505]/80 backdrop-blur-xl border-2 border-white/10 focus:border-blue-500/50 rounded-2xl py-4 md:py-5 pl-14 pr-28 md:pr-32 text-base md:text-xl text-white placeholder-gray-500 shadow-2xl focus:outline-none transition-all"
+                className="w-full bg-dark-900/80 backdrop-blur-xl border-2 border-white/10 focus:border-primary-500/50 rounded-2xl py-4 md:py-5 pl-14 pr-28 md:pr-32 text-base md:text-xl text-white placeholder-gray-500 shadow-2xl focus:outline-none transition-all"
                 placeholder="예: 삼성전자, AI 반도체 관련주"
                 autoComplete="off"
               />
               <button
                 type="submit"
-                className="absolute inset-y-2 right-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-4 md:px-6 rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95 text-sm md:text-base"
+                className="absolute inset-y-2 right-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold px-4 md:px-6 rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95 text-sm md:text-base"
               >
                 AI 분석
               </button>
@@ -108,7 +108,7 @@ export default function HomeClient() {
         </div>
 
         {/* 텔레그램 구독 유도 카드 - 메인 CTA */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0088cc]/20 via-[#005f8f]/10 to-transparent border border-[#0088cc]/30 p-6 md:p-8">
+        <div className="relative overflow-hidden rounded-3xl glass-panel border-[#0088cc]/30 p-6 md:p-8">
           <div className="absolute top-0 right-0 w-40 h-40 bg-[#0088cc]/10 blur-3xl rounded-full pointer-events-none" />
           <div className="relative flex flex-col md:flex-row items-center gap-6">
             {/* 아이콘 */}
@@ -227,27 +227,7 @@ export default function HomeClient() {
 
             {/* SEO Text Rich Links (AdSense Approval Priority) */}
             <div className="mt-8 space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-gray-200 mb-4 ml-2 flex items-center gap-2">
-                  <Newspaper className="w-5 h-5 text-purple-400" /> 최신 마켓 리포트 및 투자 스터디
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link href="/theory" className="p-6 rounded-3xl bg-gradient-to-br from-indigo-900/20 to-black border border-indigo-500/20 hover:border-indigo-500/50 transition-colors group block">
-                    <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full mb-3">AI 차트 분석</span>
-                    <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 mb-2">매일 차트 스터디 (주식 이론방)</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">
-                      이동평균선, RSI, MACD, 캔들 패턴 등 주식 투자의 기초부터 심화까지! 매일 업데이트되는 예쁜 차트와 함께 실전 주식 이론을 무료로 학습해 보세요. 초보자도 쉽게 따라할 수 있는 완벽한 가이드가 제공됩니다.
-                    </p>
-                  </Link>
-                  <Link href="/blog" className="p-6 rounded-3xl bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 hover:border-blue-500/50 transition-colors group block">
-                    <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-full mb-3">마켓 뷰</span>
-                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 mb-2">오늘의 증시 마감 리포트</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">
-                      매일 장 마감 후 국내 코스피, 코스닥부터 미국 나스닥까지 글로벌 시황을 완벽하게 요약해 드립니다. 기관과 외국인의 수급 흐름, 시장을 주도한 핵심 테마와 특징주를 AI 애널리스트가 심층 분석하여 제공합니다.
-                    </p>
-                  </Link>
-                </div>
-              </div>
+
 
               <div>
                 <h2 className="text-lg font-bold text-gray-400 mb-3 ml-2 flex items-center gap-2">
@@ -287,6 +267,9 @@ export default function HomeClient() {
           </div>
 
       </div>
+      
+      {/* 구글 애드센스 승인 및 SEO를 위한 통합 텍스트 블록 (최하단 배치로 UI 깔끔함 유지) */}
+      <SeoContentBlock />
     </div>
   );
 }
@@ -329,7 +312,7 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
   }, [market]);
 
   return (
-    <div className="bg-black/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md flex flex-col h-[350px]">
+    <div className="glass-panel rounded-3xl p-6 flex flex-col h-[350px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={`p-2 rounded-lg ${market === 'KR' ? 'bg-blue-500/20 text-blue-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
@@ -351,7 +334,7 @@ function TopRankingWidget({ market, title }: { market: string, title: string }) 
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
           {data.map((item, idx) => (
-            <div key={`${item.symbol}-${idx}`} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+            <div key={`${item.symbol}-${idx}`} className="flex items-center justify-between p-3 rounded-xl glass-card group">
               <div className="flex items-center gap-3">
                 <span className={`w-6 text-center font-bold ${idx < 3 ? 'text-yellow-400' : 'text-gray-500'}`}>{item.rank}</span>
                 <div>
@@ -414,7 +397,7 @@ function RecentTheoryWidget() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {posts.map((post) => (
-          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl bg-gradient-to-br from-green-900/10 to-black border border-green-500/20 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full relative overflow-hidden">
+          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl glass-card border border-green-500/20 hover:border-green-500/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)] group flex flex-col h-full relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 group-hover:bg-green-500/10 blur-2xl rounded-full transition-colors" />
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex flex-wrap gap-2 mb-3">
