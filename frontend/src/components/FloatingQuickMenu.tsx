@@ -262,7 +262,13 @@ export default function FloatingQuickMenu() {
                 {isOpen ? (
                     <X className="w-6 h-6 text-white relative z-10" />
                 ) : (
-                    <Zap className="w-6 h-6 text-white relative z-10 fill-white" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white relative z-10">
+                        <rect x="6" y="2" width="12" height="20" rx="3" />
+                        <circle cx="12" cy="6.5" r="1.5" fill="currentColor" />
+                        <circle cx="12" cy="12" r="2.5" />
+                        <circle cx="9.5" cy="17" r="1" fill="currentColor" />
+                        <circle cx="14.5" cy="17" r="1" fill="currentColor" />
+                    </svg>
                 )}
             </button>
         </div>

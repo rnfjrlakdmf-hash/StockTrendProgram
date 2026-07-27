@@ -121,7 +121,7 @@ export default function FomoWidget() {
                     animate={{ opacity: 1, y: 0, x: 0 }}
                     exit={{ opacity: 0, y: 20, x: -50 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className="fixed bottom-24 md:bottom-6 left-6 md:left-[344px] z-[60] max-w-sm w-[calc(100%-3rem)] md:w-auto"
+                    className="fixed bottom-24 md:bottom-6 left-4 md:left-[344px] z-[60] max-w-[calc(100%-90px)] md:max-w-sm w-auto"
                 >
                     <Link 
                         href={currentItem.ticker === 'telegram' ? 'https://t.me/stocktrend_live' : (currentItem.ticker === 'theme' ? '/themes' : `/stock/${currentItem.ticker}`)}
