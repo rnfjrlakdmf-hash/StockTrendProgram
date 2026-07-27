@@ -9,6 +9,7 @@ import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { useRouter } from 'next/navigation';
 import AttendanceModal from './AttendanceModal';
 import LoginModal from './LoginModal';
 
@@ -24,8 +25,10 @@ interface HeaderProps {
 
 export default function Header({ title = "대시보드", subtitle = "환영합니다, 투자자님", onSearch }: HeaderProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, logout } = useAuth();
     const [unreadAlertsCount, setUnreadAlertsCount] = useState<number>(0);
+    const [searchQuery, setSearchQuery] = useState("");
     const [coins, setCoins] = useState<number>(0);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
@@ -221,9 +224,20 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
         }
     };
 
+    const handleSearchSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!searchQuery.trim()) return;
+        
+        if (onSearch) {
+            onSearch(searchQuery);
+        } else {
+            router.push(`/discovery?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && onSearch) {
-            onSearch(e.currentTarget.value);
+        if (e.key === 'Enter') {
+            handleSearchSubmit();
         }
     };
 
@@ -315,8 +329,21 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
             )}
 
-            <div className="flex items-center gap-4 w-full md:w-auto justify-end min-w-0">
-                {/* Search Bar Removed as per user request */}
+            <div className="flex items-center gap-4 w-full md:w-auto justify-end min-w-0 flex-1 md:flex-none">
+                {/* Global Search Bar */}
+                <div className="hidden md:flex relative max-w-[200px] xl:max-w-[250px] w-full">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="종목명 또는 테마 검색..."
+                        className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-xl bg-white/5 text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:bg-white/10 transition-colors"
+                    />
+                </div>
 
                 <div className="flex items-center justify-end gap-3" ref={dropdownRef}>
                     <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
