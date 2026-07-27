@@ -329,19 +329,19 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
             )}
 
-            <div className="flex items-center gap-4 w-full md:w-auto justify-end min-w-0 flex-1 md:flex-none">
+            <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-end min-w-0 flex-1 md:flex-none">
                 {/* Global Search Bar */}
-                <div className="hidden md:flex relative max-w-[200px] xl:max-w-[250px] w-full">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+                <div className="flex relative w-28 sm:w-40 md:w-48 xl:w-60">
+                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                        <Search className="h-3.5 w-3.5 text-gray-400" />
                     </div>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="종목명 또는 테마 검색..."
-                        className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-xl bg-white/5 text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:bg-white/10 transition-colors"
+                        placeholder="종목 검색..."
+                        className="block w-full pl-8 pr-2 py-1.5 md:py-2 border border-white/10 rounded-xl bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:bg-white/10 transition-colors"
                     />
                 </div>
 
