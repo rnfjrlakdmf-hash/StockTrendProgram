@@ -41,7 +41,7 @@ export default function PopularSearchWidget() {
   if (loading || items.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl relative overflow-hidden group hover:scale-[1.01] hover:shadow-red-500/10 transition-all duration-300">
+    <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/10 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-glass relative overflow-hidden group hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] transition-all duration-300">
       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
         <Flame className="w-48 h-48 text-red-500" />
       </div>

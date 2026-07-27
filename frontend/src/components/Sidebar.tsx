@@ -433,9 +433,9 @@ export default function Sidebar() {
             )}
 
             <div className={`
-                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/5 bg-dark-900/80 md:bg-dark-900/40 backdrop-blur-2xl text-white p-4 pt-24 md:pt-4 transition-transform duration-300 ease-in-out
+                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/5 bg-black/60 backdrop-blur-2xl text-white p-4 pt-24 md:pt-4 transition-transform duration-300 ease-in-out shadow-[4px_0_24px_rgba(0,0,0,0.5)]
                 md:relative md:translate-x-0 md:flex
-                ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+                ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 {/* Mobile Close Button */}
                 <button
@@ -552,23 +552,23 @@ export default function Sidebar() {
 
                     <div className="px-3 mb-6 relative">
                         <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer">
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0088cc] to-[#005f8f] p-4 shadow-[0_0_20px_rgba(0,136,204,0.3)] hover:shadow-[0_0_30px_rgba(0,136,204,0.5)] transition-all group cursor-pointer border border-[#00b2ff]/30">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0088cc]/30 to-black p-4 shadow-[0_0_30px_rgba(0,136,204,0.3)] hover:shadow-[0_0_40px_rgba(0,136,204,0.6)] transition-all group cursor-pointer border border-[#0088cc]/50 backdrop-blur-md">
                                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
                                 <div className="relative z-10 flex items-start justify-between gap-2">
                                     <div className="flex flex-col min-w-0">
                                         <div className="flex items-center gap-1.5 mb-1.5">
-                                            <span className="inline-flex items-center gap-1 bg-[#0088cc]/50 border border-[#00b2ff]/30 text-[#4fc3f7] text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap tracking-wider">
-                                                <Zap className="w-3 h-3" /> 실시간 속보 채널
+                                            <span className="inline-flex items-center gap-1 bg-black/20 border border-white/10 text-[#e1f5fe] text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap tracking-wider">
+                                                <Zap className="w-3 h-3 text-yellow-400" /> 실시간 속보 채널
                                             </span>
                                         </div>
                                         <h3 className="text-[13px] md:text-sm font-black text-white leading-tight mb-1">
                                             텔레그램 실시간 주식 속보
                                         </h3>
-                                        <p className="text-[10px] md:text-[11px] text-[#b3e5fc] leading-snug line-clamp-2 pr-2">
+                                        <p className="text-[10px] md:text-[11px] text-white/80 leading-snug line-clamp-2 pr-2">
                                             상한가, 외인수급, DART 공시, 미증시 속보를 1초만에 무료로 받으세요!
                                         </p>
                                     </div>
-                                    <div className="shrink-0 bg-white/20 p-2 rounded-xl group-hover:bg-white/30 group-hover:scale-110 transition-all shadow-lg mt-1">
+                                    <div className="shrink-0 bg-white/10 border border-white/10 p-2 rounded-xl group-hover:bg-white/20 group-hover:scale-110 transition-all shadow-glass mt-1">
                                         <Send className="w-4 h-4 md:w-5 md:h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                     </div>
                                 </div>
@@ -585,13 +585,13 @@ export default function Sidebar() {
                                         onClick={() => toggleGroup(group.groupName)}
                                         className="flex items-center justify-between px-3 py-1.5 w-full text-left group hover:bg-white/5 rounded-lg transition-colors"
                                     >
-                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-primary-400 transition-colors">
+                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-cyan-400 transition-colors drop-shadow-sm">
                                             {group.groupName}
                                         </span>
                                         {isOpen ? (
-                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
                                         ) : (
-                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
                                         )}
                                     </button>
                                     
@@ -605,11 +605,12 @@ export default function Sidebar() {
                                                 }
                                                 const isWeekendItem = item.href === '/weekend-report' || item.href === '/weekend-whale';
                                                 const isDisabled = isWeekendItem && !isWeekend;
+                                                const isActive = pathname === item.href;
 
                                                 return (
                                                     <div 
                                                         key={item.name} 
-                                                        className={`relative group/menu flex flex-col rounded-xl transition-all ${isDisabled ? 'opacity-75 glass-card' : 'glass-button'}`}
+                                                        className={`relative group/menu flex flex-col rounded-2xl transition-all duration-300 ${isDisabled ? 'opacity-75 glass-card' : 'hover:bg-white/5 hover:translate-x-1'} ${isActive ? 'bg-gradient-to-r from-cyan-600/30 to-blue-900/20 shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-cyan-500/50 backdrop-blur-md scale-[1.02] z-10' : 'border border-transparent'}`}
                                                     >
                                                         <div className="flex items-center justify-between pr-2 w-full">
                                                             <Link
@@ -622,9 +623,9 @@ export default function Sidebar() {
                                                                         setIsMobileOpen(false);
                                                                     }
                                                                 }}
-                                                                className={`flex-1 flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold transition-all ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-300 hover:text-white active:scale-98'}`}
+                                                                className={`flex-1 flex items-center gap-3 px-4 py-3 text-[13px] transition-all ${isDisabled ? 'text-gray-400 cursor-not-allowed font-bold' : isActive ? 'text-cyan-50 font-black tracking-wide drop-shadow-md' : 'text-gray-400 font-bold hover:text-gray-200'}`}
                                                             >
-                                                                <item.icon className={`h-4 w-4 ${isDisabled ? 'text-gray-500' : 'text-blue-400 group-hover/menu:text-blue-300'} transition-colors`} />
+                                                                <item.icon className={`h-4 w-4 ${isDisabled ? 'text-gray-500' : isActive ? 'text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,1)]' : 'text-gray-500 group-hover/menu:text-cyan-400'} transition-all`} />
                                                                 <div className="flex flex-col">
                                                                     <span>{item.name}</span>
                                                                     {isDisabled && weekendCountdown && (
@@ -643,7 +644,7 @@ export default function Sidebar() {
                                                                 }}
                                                                 onMouseEnter={() => setActiveTooltip(item.name)}
                                                                 onMouseLeave={() => setActiveTooltip(null)}
-                                                                className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-white/10 transition-all shrink-0"
+                                                                className={`p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-white/10 transition-all shrink-0 ${isActive ? 'text-cyan-500/50' : ''}`}
                                                                 title={`${item.name} 설명 보기`}
                                                             >
                                                                 <HelpCircle className="h-4 w-4" />

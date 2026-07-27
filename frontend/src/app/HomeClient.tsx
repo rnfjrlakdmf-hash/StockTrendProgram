@@ -35,15 +35,15 @@ export default function HomeClient() {
   };
 
   return (
-    <div className="min-h-screen pb-10">
+    <div className="min-h-screen pb-12">
       <Header onSearch={handleSearch} />
 
-      <div className="p-6 space-y-8">
+      <div className="p-4 md:p-8 space-y-10">
         
         {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) */}
-        <div className="flex flex-col xl:flex-row items-center justify-center gap-6 -mt-2 mb-4">
+        <div className="flex flex-col xl:flex-row items-center justify-center gap-8 -mt-2 mb-4">
           {/* 좌측/중앙 배너 (모바일: 320x50, PC: 728x90) */}
-          <div className="flex justify-center">
+          <div className="flex justify-center rounded-2xl overflow-hidden shadow-lg shadow-black/20">
             <div className="block md:hidden">
               <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
             </div>
@@ -52,7 +52,7 @@ export default function HomeClient() {
             </div>
           </div>
           {/* 우측 사각 배너 (PC에서만 상단에 나란히 배치) */}
-          <div className="hidden xl:block">
+          <div className="hidden xl:block rounded-2xl overflow-hidden shadow-lg shadow-black/20">
             <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
           </div>
         </div>
@@ -60,14 +60,14 @@ export default function HomeClient() {
 
 
         {/* Default Dashboard Content */}
-        <div className="space-y-8 animate-in fade-in duration-1000">
+        <div className="space-y-10 animate-in fade-in duration-1000">
 
 
             {/* 코인 핫트렌드 대시보드 (상시 노출) */}
             <WeekendCryptoDashboard />
 
             {/* 메인 대시보드 레이아웃: 좌측/우측 2단 구성 (사이드바 없음) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
               <LiveRankingBox />
               <PopularSearchWidget />
               
@@ -140,7 +140,7 @@ export default function HomeClient() {
 
 
               <div>
-                <h2 className="text-lg font-bold text-gray-400 mb-3 ml-2 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-400 mb-4 ml-2 flex items-center gap-2 tracking-tight">
                   <Layers className="w-5 h-5 text-cyan-400" /> 투자 전략 가이드
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -295,7 +295,7 @@ function RecentTheoryWidget() {
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between mb-4 ml-2">
-        <h2 className="text-xl font-bold text-gray-200 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-200 flex items-center gap-2 tracking-tight">
           <BookOpen className="w-5 h-5 text-green-400" /> 최근 올라온 주식 스터디 📚
         </h2>
         <Link href="/theory" className="text-sm font-semibold text-gray-500 hover:text-green-400 flex items-center gap-1 transition-colors">
@@ -304,7 +304,7 @@ function RecentTheoryWidget() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {posts.map((post) => (
-          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl glass-card border border-green-500/20 hover:border-green-500/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)] group flex flex-col h-full relative overflow-hidden">
+          <Link key={post.id} href={`/theory/${post.slug || post.id}`} className="p-5 rounded-3xl glass-card border border-green-500/10 hover:border-green-500/30 hover:shadow-[0_0_30px_rgba(34,197,94,0.15)] shadow-glass group flex flex-col h-full relative overflow-hidden transition-all duration-300">
             <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 group-hover:bg-green-500/10 blur-2xl rounded-full transition-colors" />
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex flex-wrap gap-2 mb-3">

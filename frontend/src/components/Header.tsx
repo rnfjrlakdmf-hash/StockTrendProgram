@@ -306,14 +306,14 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     return (
         <>
-        <header className="flex flex-row items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-[100] transition-all duration-300 shadow-md">
+        <header className="flex flex-row items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#0a0a0c]/60 backdrop-blur-2xl sticky top-0 z-[100] transition-all duration-300">
             <div className="flex items-center gap-2 md:gap-8 flex-shrink-0 min-w-0 mr-2 md:mr-0">
                 <div className="flex flex-col min-w-0">
-                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
+                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                         {title}
                     </h2>
                     {subtitle && (
-                        <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block whitespace-nowrap">
+                        <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block whitespace-nowrap tracking-tight">
                             {subtitle}
                         </p>
                     )}
@@ -333,7 +333,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 {/* Global Search Bar */}
                 <div className="flex relative w-full max-w-[140px] sm:max-w-[200px] md:max-w-[280px] group transition-all duration-300 focus-within:max-w-[180px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[320px]">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
                     </div>
                     <input
                         type="text"
@@ -341,15 +341,15 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="종목/테마 검색"
-                        className="block w-full pl-9 pr-3 py-1.5 md:py-2 border border-white/10 rounded-full bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-[#12141a] transition-all shadow-inner"
+                        className="block w-full pl-9 pr-3 py-1.5 md:py-2 border border-white/5 rounded-full bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-glass hover:bg-white/10"
                     />
                 </div>
 
                 <div className="flex items-center justify-end gap-3" ref={dropdownRef}>
-                    <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <Bell className="w-5 h-5 text-gray-300 hover:text-white" />
+                    <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all hover:shadow-glass group">
+                        <Bell className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
                         {user && unreadAlertsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-dark-900 z-10 shadow-lg animate-pulse">
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0a0a0c] z-10 shadow-lg animate-pulse">
                                 {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
                             </span>
                         )}
@@ -357,7 +357,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     <div className="relative">
                         <button 
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                            className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-colors shrink-0 relative hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                            className="rounded-xl border border-white/5 bg-white/5 p-1 flex items-center gap-2 pr-3 hover:bg-white/10 transition-all shrink-0 relative hover:shadow-glass group"
                         >
                             
                             {user && !user.is_guest ? (

@@ -61,7 +61,7 @@ export default function LiveRankingBox() {
     }
 
     return (
-        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative hover:scale-[1.01] hover:shadow-indigo-500/10 transition-all duration-300">
+        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/5 rounded-3xl overflow-hidden shadow-glass relative hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all duration-300">
             {/* Header with Tabs */}
             <div className="bg-indigo-900/40 border-b border-indigo-500/20 px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div className="flex items-center gap-3">

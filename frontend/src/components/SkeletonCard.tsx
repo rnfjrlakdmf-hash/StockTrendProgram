@@ -16,7 +16,7 @@ function Shimmer({ className = '' }: { className?: string }) {
 // ─── 랭킹 박스 스켈레톤 ────────────────────────────────────────
 export function RankingBoxSkeleton() {
     return (
-        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="w-full bg-gradient-to-b from-gray-900 to-black border border-white/5 rounded-3xl overflow-hidden shadow-glass">
             <div className="bg-indigo-900/30 border-b border-indigo-500/20 px-4 py-3 flex justify-between items-center">
                 <Shimmer className="h-5 w-32" />
                 <Shimmer className="h-5 w-20" />

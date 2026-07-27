@@ -16,6 +16,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
+import FloatingQuickMenu from "@/components/FloatingQuickMenu";
 import { Toaster } from "sonner";
 import type { Viewport } from 'next';
 
@@ -179,6 +180,9 @@ export default function RootLayout({
             
             {/* Mobile Bottom Tab Bar */}
             <BottomTabBar />
+
+            {/* Smart Floating Quick Menu */}
+            <FloatingQuickMenu />
 
             <CookieConsent />
           </div>

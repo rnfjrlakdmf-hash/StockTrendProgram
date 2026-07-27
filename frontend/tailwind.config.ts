@@ -44,6 +44,11 @@ const config: Config = {
           '0%': { boxShadow: '0 0 15px rgba(59, 130, 246, 0.2)' },
           '100%': { boxShadow: '0 0 25px rgba(59, 130, 246, 0.6)' },
         }
+      },
+      boxShadow: {
+        'neon': '0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1)',
+        'neon-emerald': '0 0 20px rgba(16, 185, 129, 0.3), 0 0 40px rgba(16, 185, 129, 0.1)',
+        'glass': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
       }
     },
   },

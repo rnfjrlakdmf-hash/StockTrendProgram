@@ -65,7 +65,7 @@ export default function WeekendCryptoDashboard() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-[1.01] hover:shadow-yellow-500/10 transition-all">
+    <div className="relative overflow-hidden rounded-3xl border border-yellow-500/10 bg-gradient-to-br from-yellow-900/20 via-black to-black p-1 animate-in fade-in slide-in-from-bottom-4 duration-500 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] shadow-glass transition-all">
       <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
       
       <div className="relative bg-black/60 backdrop-blur-xl rounded-[22px] p-6">
@@ -78,7 +78,7 @@ export default function WeekendCryptoDashboard() {
               </span>
               <span className="text-red-400 font-bold text-sm tracking-wider uppercase">Weekend Live</span>
             </div>
-            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+            <h2 className="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
               <Coins className="h-6 w-6 text-yellow-400" /> 주말 코인 핫트렌드
             </h2>
             <p className="text-gray-400 text-sm mt-1">주식 장이 닫힌 주말, 쉬지 않는 가상화폐 시장의 흐름을 확인하세요.</p>
@@ -95,7 +95,7 @@ export default function WeekendCryptoDashboard() {
             const changePercent = (coin.signed_change_rate * 100).toFixed(2);
             
             return (
-              <div key={coin.market} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
+              <div key={coin.market} className="bg-white/5 border border-white/5 rounded-xl p-4 hover:bg-white/10 hover:border-white/10 transition-colors shadow-glass">
                 <div className="text-sm font-bold text-gray-300 mb-1 flex justify-between items-start">
                   {coin.korean_name}
                   <span className="text-[10px] text-gray-600 font-normal">{coin.market.replace("KRW-", "")}</span>
