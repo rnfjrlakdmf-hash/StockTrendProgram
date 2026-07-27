@@ -306,9 +306,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     return (
         <>
-        <header className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-white/5 bg-dark-900/60 backdrop-blur-2xl sticky top-0 z-50 transition-all duration-300">
-            <div className="flex items-center gap-8 w-full md:w-auto mb-4 md:mb-0 flex-shrink-0 min-w-[150px]">
-                <div className="flex flex-col">
+        <header className="flex flex-row items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-[100] transition-all duration-300 shadow-md">
+            <div className="flex items-center gap-2 md:gap-8 flex-shrink-0 min-w-0 mr-2 md:mr-0">
+                <div className="flex flex-col min-w-0">
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                         {title}
                     </h2>
@@ -329,19 +329,19 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
             )}
 
-            <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-end min-w-0 flex-1 md:flex-none">
+            <div className="flex items-center gap-2 md:gap-4 justify-end min-w-0 flex-1">
                 {/* Global Search Bar */}
-                <div className="flex relative w-28 sm:w-40 md:w-48 xl:w-60">
-                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                        <Search className="h-3.5 w-3.5 text-gray-400" />
+                <div className="flex relative w-full max-w-[140px] sm:max-w-[200px] md:max-w-[280px] group transition-all duration-300 focus-within:max-w-[180px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[320px]">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
                     </div>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="종목 검색..."
-                        className="block w-full pl-8 pr-2 py-1.5 md:py-2 border border-white/10 rounded-xl bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:bg-white/10 transition-colors"
+                        placeholder="종목/테마 검색"
+                        className="block w-full pl-9 pr-3 py-1.5 md:py-2 border border-white/10 rounded-full bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-[#12141a] transition-all shadow-inner"
                     />
                 </div>
 
