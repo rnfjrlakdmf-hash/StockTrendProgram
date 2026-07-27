@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Star, Menu } from "lucide-react";
+import { LayoutDashboard, Search, Star, Menu, Users } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
 
 export default function BottomTabBar() {
     const pathname = usePathname();
+    const { user } = useAuth();
+    const isAdmin = user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '');
     
     const tabs = [
         { name: "홈", href: "/", icon: LayoutDashboard },
@@ -33,6 +38,15 @@ export default function BottomTabBar() {
                         </Link>
                     )
                 })}
+                {isAdmin && (
+                    <Link 
+                        href="/admin"
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${pathname === '/admin' ? 'text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        <Users className={`h-5 w-5 mb-1 ${pathname === '/admin' ? 'scale-110 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)] text-fuchsia-400' : ''} transition-transform`} />
+                        <span className="text-[10px] font-bold">관리자</span>
+                    </Link>
+                )}
                 <button 
                     onClick={openSidebar}
                     className="flex flex-col items-center justify-center p-2 rounded-xl text-gray-500 hover:text-gray-300 transition-all"
