@@ -550,25 +550,26 @@ export default function Sidebar() {
                         </div>
                     </div>
 
-                    {/* [New] Telegram Promotion Banner */}
-                    <div className="mb-6 px-1">
+                    <div className="px-3 mb-6 relative">
                         <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer">
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all group cursor-pointer border border-blue-400/30">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0088cc] to-[#005f8f] p-4 shadow-[0_0_20px_rgba(0,136,204,0.3)] hover:shadow-[0_0_30px_rgba(0,136,204,0.5)] transition-all group cursor-pointer border border-[#00b2ff]/30">
                                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-                                <div className="relative z-10 flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5 mb-1">
-                                            <span className="text-[10px] font-black uppercase text-blue-200 tracking-wider">OFFICIAL CHANNEL</span>
-                                            <span className="relative flex h-2 w-2">
-                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                <div className="relative z-10 flex items-start justify-between gap-2">
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex items-center gap-1.5 mb-1.5">
+                                            <span className="inline-flex items-center gap-1 bg-[#0088cc]/50 border border-[#00b2ff]/30 text-[#4fc3f7] text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap tracking-wider">
+                                                <Zap className="w-3 h-3" /> 실시간 속보 채널
                                             </span>
                                         </div>
-                                        <span className="text-sm font-bold text-white whitespace-nowrap">🔥 실시간 세력 매집 알림</span>
-                                        <span className="text-xs text-primary-100 font-medium mt-0.5">텔레그램에서 가장 먼저 받기</span>
+                                        <h3 className="text-[13px] md:text-sm font-black text-white leading-tight mb-1">
+                                            텔레그램 실시간 주식 속보
+                                        </h3>
+                                        <p className="text-[10px] md:text-[11px] text-[#b3e5fc] leading-snug line-clamp-2 pr-2">
+                                            상한가, 외인수급, DART 공시, 미증시 속보를 1초만에 무료로 받으세요!
+                                        </p>
                                     </div>
-                                    <div className="shrink-0 bg-white/20 p-2 rounded-full group-hover:bg-white/30 group-hover:scale-110 transition-all shadow-lg shadow-white/10">
-                                        <Send className="w-5 h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    <div className="shrink-0 bg-white/20 p-2 rounded-xl group-hover:bg-white/30 group-hover:scale-110 transition-all shadow-lg mt-1">
+                                        <Send className="w-4 h-4 md:w-5 md:h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                     </div>
                                 </div>
                             </div>
