@@ -125,7 +125,7 @@ export default function FlipIndexTicker() {
     }
 
     return (
-        <div className="relative w-full max-w-5xl overflow-hidden group">
+        <div className="relative w-full overflow-hidden group">
             {/* Inline CSS to guarantee implementation across all browsers & prevent Next.js PurgeCSS issues */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @keyframes ticker-h {
@@ -171,8 +171,8 @@ export default function FlipIndexTicker() {
             </div>
 
             {/* Fading Edges */}
-            <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black/80 to-transparent pointer-events-none z-10" />
-            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black/80 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent pointer-events-none z-10" />
         </div>
     );
 }
