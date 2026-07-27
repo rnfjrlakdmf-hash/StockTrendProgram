@@ -47,7 +47,7 @@ export default function AlertCenterPage() {
                 const userId = user?.id || (user as any)?.uid;
                 
                 // Fetch the latest 300 alerts regardless of type to avoid composite index errors
-                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(400));
+                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
                 const snapLatest = await getDocs(qLatest);
                 
                 const allAlertsMap = new Map();
@@ -85,7 +85,7 @@ export default function AlertCenterPage() {
                 }
                 
                 // 최종 노출
-                setAlerts(filtered.slice(0, 300)); // 탭 분류를 위해 전체 개수 증가
+                setAlerts(filtered.slice(0, 600)); // 탭 분류를 위해 전체 개수 증가
 
                 setErrorMsg(null);
             } catch (err: any) {
@@ -258,7 +258,7 @@ export default function AlertCenterPage() {
         if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
 
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
