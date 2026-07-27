@@ -693,10 +693,10 @@ export default function Sidebar() {
                                 <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">{watchlistPreview.length}</span>
                             </h4>
                             <div className="space-y-1">
-                                {watchlistPreview.map((stock) => (
+                                {watchlistPreview.map((stock, idx) => (
                                     <Link
-                                        key={stock.symbol}
-                                        href={`/discovery?q=${stock.symbol.split('.')[0]}`}
+                                        key={stock.code || idx}
+                                        href={`/discovery?q=${(stock.code || '').split('.')[0]}`}
                                         onClick={() => setIsMobileOpen(false)}
                                         className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer"
                                     >
@@ -705,7 +705,7 @@ export default function Sidebar() {
                                             <span className="truncate">{stock.name}</span>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-[9px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.symbol}</span>
+                                            <span className="text-[9px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.code}</span>
                                             <TrendingUp className="w-3 h-3 text-rose-500/50 group-hover:text-rose-500" />
                                         </div>
                                     </Link>
