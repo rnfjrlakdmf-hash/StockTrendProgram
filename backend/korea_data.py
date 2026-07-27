@@ -150,6 +150,8 @@ def search_stock_code(keyword: str):
         "Referer": "https://finance.naver.com/"}
 
     # 2. Naver Finance Auto-Complete API (Official mapping service)
+    # [DISABLED] ac.finance.naver.com is currently failing DNS resolution causing massive timeouts.
+    """
     try:
         print(f"[Search Tier 2] Trying Naver AC API for '{keyword_clean}'...")
         encoded_keyword = urllib.parse.quote(keyword_clean)
@@ -173,6 +175,7 @@ def search_stock_code(keyword: str):
                             return found_code
     except Exception as e:
         print(f"  !! AC API Stage failed: {e}. Moving to Tier 3.")
+    """
 
     # 3. Naver Finance Search List (Powerful Fallback for exact/partial name
     # matches)
