@@ -78,6 +78,10 @@ export default function FloatingQuickMenu() {
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!searchQuery.trim()) return;
+        
+        // 종목 검색 시 창이 바뀌면서 즉시 최상단으로 스크롤
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        
         router.push(`/discovery?q=${encodeURIComponent(searchQuery)}`);
         setIsSearchOpen(false);
         setSearchQuery("");
