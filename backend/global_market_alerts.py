@@ -31,24 +31,17 @@ def send_global_market_alert(title: str, body: str, symbol: str = None, url: str
         
     print(f"[Global Market Alert] 총 {len(all_tokens)}대의 기기에 발송 시작...")
     
-    push_data = {
-        "type": "price_alert",
-        "is_global": "true"  # 프론트엔드 GlobalBroadcastListener가 수신하기 위한 플래그
-    }
     
-    if symbol:
-        push_data["symbol"] = symbol
-        push_data["url"] = f"/discovery?q={symbol}"
-    
-    if url:
-        push_data["url"] = url
-        
     result = send_multicast_notification(
         tokens=all_tokens,
         title=title,
         body=body,
-        data=push_data,
-        target_users=None # 빈 리스트나 None이면 전체 발송으로 간주 (Firestore에 is_global=True로 저장됨)
+        data={
+            "type": "auto_price_alert",
+            "is_global": "true",
+            "symbol": symbol,
+            "url": url if url else f"/discovery?q={symbol}"
+        }
     )
     
     print(f"[Global Market Alert] 발송 완료: {result}")

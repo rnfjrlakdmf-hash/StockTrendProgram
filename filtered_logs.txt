@@ -1,62 +1,68 @@
-Jul 27 08:52:41 ip-172-31-34-224 stocktrend-backend[230660]: Global Exception: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
-Jul 27 08:52:41 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/preferences
-Jul 27 08:52:41 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/preferences -> 200
-Jul 27 08:52:41 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     100.48.51.221:58504 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
-Jul 27 08:53:56 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/test-global-alert
-Jul 27 08:53:56 ip-172-31-34-224 stocktrend-backend[230660]: ========== [Global Market Alert] ==========
-Jul 27 08:53:56 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 총 2대의 기기에 발송 시작...
-Jul 27 08:53:57 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
-Jul 27 08:53:57 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
-Jul 27 08:53:57 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/test-global-alert -> 200
-Jul 27 08:53:57 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     100.53.17.194:52442 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
-Jul 27 08:54:09 ip-172-31-34-224 stocktrend-backend[230660]: [Request] POST /api/system/fcm/register
-Jul 27 08:54:09 ip-172-31-34-224 stocktrend-backend[230660]: [FCM-Save] Token saved (Multiple devices allowed): user_id='guest_p4z2e4nua_1785134164309', token=elH7YcIelMdelub5SGcE...
-Jul 27 08:54:09 ip-172-31-34-224 stocktrend-backend[230660]: [Response] POST /api/system/fcm/register -> 200
-Jul 27 08:54:09 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     100.53.17.194:55284 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
-Jul 27 08:54:10 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/preferences
-Jul 27 08:54:10 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/preferences -> 200
-Jul 27 08:54:10 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     44.204.60.49:45662 - "GET /api/system/fcm/preferences?token=elH7YcIelMdelub5SGcEt9%3AAPA91bG9khrsja-EAxZQwgM2WRq7jsF4zkMRFW_9CpWAeHPGDcR46_F-k-iPN7x32dQNYYEoyu2DD3Xra-jm_ROb4IpMUlCTH-mxC6WrLE8_hhkcZxzT0uk HTTP/1.1" 200 OK
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/test-global-alert
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: ========== [Global Market Alert] ==========
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 총 2대의 기기에 발송 시작...
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/test-global-alert -> 200
-Jul 27 08:57:00 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     34.227.30.108:44748 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
-Jul 27 08:57:28 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 0
-Jul 27 08:57:28 ip-172-31-34-224 stocktrend-backend[230660]: INFO:scheduler:[WhaleSiren] FCM Zero-Cost Push sent to 1 devices for 서울평가정보
-Jul 27 08:57:30 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 0
-Jul 27 08:57:30 ip-172-31-34-224 stocktrend-backend[230660]: INFO:scheduler:[WhaleSiren] FCM Zero-Cost Push sent to 1 devices for 씨메스로보틱스
-Jul 27 08:57:31 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 0
-Jul 27 08:57:31 ip-172-31-34-224 stocktrend-backend[230660]: INFO:scheduler:[WhaleSiren] FCM Zero-Cost Push sent to 1 devices for 코오롱티슈진
-Jul 27 08:59:01 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/preferences
-Jul 27 08:59:01 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/preferences -> 200
-Jul 27 08:59:01 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     44.213.134.246:51318 - "GET /api/system/fcm/preferences?_t=1785142741310&user_id=110418985320259217419&token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/test-global-alert
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: ========== [Global Market Alert] ==========
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 총 2대의 기기에 발송 시작...
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/test-global-alert -> 200
-Jul 27 08:59:46 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     52.70.16.24:59840 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
-Jul 27 08:59:47 ip-172-31-34-224 stocktrend-backend[230660]: Global Exception: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
-Jul 27 08:59:47 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/preferences
-Jul 27 08:59:47 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/preferences -> 200
-Jul 27 08:59:47 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     3.94.161.59:34154 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
-Jul 27 09:02:28 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 0
-Jul 27 09:04:07 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/test-global-alert
-Jul 27 09:04:07 ip-172-31-34-224 stocktrend-backend[230660]: ========== [Global Market Alert] ==========
-Jul 27 09:04:07 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 총 2대의 기기에 발송 시작...
-Jul 27 09:04:08 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
-Jul 27 09:04:08 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
-Jul 27 09:04:08 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/test-global-alert -> 200
-Jul 27 09:04:08 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     3.89.56.255:52906 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: [Request] GET /api/system/fcm/test-global-alert
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: ========== [Global Market Alert] ==========
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 총 2대의 기기에 발송 시작...
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: [Response] GET /api/system/fcm/test-global-alert -> 200
-Jul 27 09:06:26 ip-172-31-34-224 stocktrend-backend[230660]: INFO:     54.90.193.139:40180 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
-Jul 27 09:07:36 ip-172-31-34-224 stocktrend-backend[230660]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 0
-Jul 27 09:07:36 ip-172-31-34-224 stocktrend-backend[230660]: INFO:scheduler:[WhaleSiren] FCM Zero-Cost Push sent to 1 devices for 다원시스
+Jul 27 23:57:01 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/test-global-alert
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: ========== [Global Market Alert] ==========
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: [Global Market Alert] 총 2대의 기기에 발송 시작...
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/test-global-alert -> 200
+Jul 27 23:57:02 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.211.128.140:58044 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
+Jul 27 23:57:09 ip-172-31-34-224 stocktrend-backend[374078]: [Request] POST /api/system/fcm/register
+Jul 27 23:57:09 ip-172-31-34-224 stocktrend-backend[374078]: [FCM-Save] Token saved (Multiple devices allowed): user_id='guest_ylvrir98c_1785196625503', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 27 23:57:09 ip-172-31-34-224 stocktrend-backend[374078]: [Response] POST /api/system/fcm/register -> 200
+Jul 27 23:57:09 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.211.128.140:33394 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 27 23:57:10 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:57:10 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:57:10 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     100.58.237.231:58528 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:57:37 ip-172-31-34-224 stocktrend-backend[374078]: [Request] POST /api/system/fcm/register
+Jul 27 23:57:37 ip-172-31-34-224 stocktrend-backend[374078]: Global Exception: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 27 23:57:37 ip-172-31-34-224 stocktrend-backend[374078]: [FCM-Save] Token saved (Multiple devices allowed): user_id='guest_ylvrir98c_1785196625503', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 27 23:57:37 ip-172-31-34-224 stocktrend-backend[374078]: [Response] POST /api/system/fcm/register -> 200
+Jul 27 23:57:37 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     44.221.65.20:41716 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.174.28.161:47898 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Request] POST /api/system/fcm/register
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Response] POST /api/system/fcm/register -> 200
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     18.206.12.88:53078 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:57:38 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     44.221.65.20:41716 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:57:39 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:57:39 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:57:39 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     98.94.67.25:34994 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:58:04 ip-172-31-34-224 stocktrend-backend[374078]: [Request] POST /api/system/fcm/register
+Jul 27 23:58:04 ip-172-31-34-224 stocktrend-backend[374078]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 27 23:58:04 ip-172-31-34-224 stocktrend-backend[374078]: [Response] POST /api/system/fcm/register -> 200
+Jul 27 23:58:04 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.175.195.74:34464 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 27 23:58:05 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:58:05 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:58:05 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     18.206.12.88:37752 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:59:04 ip-172-31-34-224 stocktrend-backend[374078]: [Request] POST /api/system/fcm/register
+Jul 27 23:59:04 ip-172-31-34-224 stocktrend-backend[374078]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 27 23:59:04 ip-172-31-34-224 stocktrend-backend[374078]: [Response] POST /api/system/fcm/register -> 200
+Jul 27 23:59:04 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.174.28.161:53256 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 27 23:59:05 ip-172-31-34-224 stocktrend-backend[374078]: [Request] GET /api/system/fcm/preferences
+Jul 27 23:59:05 ip-172-31-34-224 stocktrend-backend[374078]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 27 23:59:05 ip-172-31-34-224 stocktrend-backend[374078]: INFO:     54.174.28.161:53256 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 27 23:59:19 ip-172-31-34-224 stocktrend-backend[443032]: [DB] FCM tokens table created
+Jul 27 23:59:59 ip-172-31-34-224 stocktrend-backend[443032]: [BackgroundIndexer] Starting global stock indexing service...
+Jul 28 00:00:04 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Admin SDK initialized successfully from file
+Jul 28 00:00:05 ip-172-31-34-224 stocktrend-backend[443032]: [SignalPrecacheLoop] Global market signal precacher started
+Jul 28 00:00:05 ip-172-31-34-224 stocktrend-backend[443032]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('elH7YcIelMdelub5SGcEt9:APA91bG9khrsja-EAxZQwgM2WRq7jsF4zkMRFW_9CpWAeHPGDcR46_F-k-iPN7x32dQNYYEoyu2DD3Xra-jm_ROb4IpMUlCTH-mxC6WrLE8_hhkcZxzT0uk', 'guest_p4z2e4nua_1785134164309', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web')]
+Jul 28 00:00:05 ip-172-31-34-224 stocktrend-backend[443032]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('elH7YcIelMdelub5SGcEt9:APA91bG9khrsja-EAxZQwgM2WRq7jsF4zkMRFW_9CpWAeHPGDcR46_F-k-iPN7x32dQNYYEoyu2DD3Xra-jm_ROb4IpMUlCTH-mxC6WrLE8_hhkcZxzT0uk', 'guest_p4z2e4nua_1785134164309', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web')]
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Token 1 is unregistered. Deleting from DB.
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 1
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Whale] Sent multicast alert to 2 tokens.
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Token 1 is unregistered. Deleting from DB.
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Multicast completed. Success: 1, Failure: 0, Unregistered: 1
+Jul 28 00:00:07 ip-172-31-34-224 stocktrend-backend[443032]: [Whale] Sent multicast alert to 2 tokens.
+Jul 28 00:00:08 ip-172-31-34-224 stocktrend-backend[443032]: INFO:TurboEngine:💾 [Cache Set] v15:get_global_economy_calendar - Optimized for speed
+Jul 28 00:00:08 ip-172-31-34-224 stocktrend-backend[443032]: [Turbo] Global Ranking Cache Warmer Started in Safe Mode.
+Jul 28 00:01:38 ip-172-31-34-224 stocktrend-backend[443032]: [Request] GET /api/system/fcm/test-global-alert
+Jul 28 00:01:38 ip-172-31-34-224 stocktrend-backend[443032]: ========== [Global Market Alert] ==========
+Jul 28 00:01:38 ip-172-31-34-224 stocktrend-backend[443032]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web')]
+Jul 28 00:01:38 ip-172-31-34-224 stocktrend-backend[443032]: [Global Market Alert] 총 2대의 기기에 발송 시작...
+Jul 28 00:01:39 ip-172-31-34-224 stocktrend-backend[443032]: [Firebase] Multicast completed. Success: 2, Failure: 0, Unregistered: 0
+Jul 28 00:01:39 ip-172-31-34-224 stocktrend-backend[443032]: [Global Market Alert] 발송 완료: {'success': True, 'success_count': 2, 'failure_count': 0}
+Jul 28 00:01:39 ip-172-31-34-224 stocktrend-backend[443032]: [Response] GET /api/system/fcm/test-global-alert -> 200
+Jul 28 00:01:39 ip-172-31-34-224 stocktrend-backend[443032]: INFO:     3.84.163.66:33692 - "GET /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
