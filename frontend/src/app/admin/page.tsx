@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick, Bell } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick, Bell, Monitor, Smartphone } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ interface UserData {
     created_at: string;
     last_login_at?: string;
     has_fcm_token?: boolean;
+    fcm_devices?: string[];
 }
 
 interface DailyStat {
@@ -712,9 +713,23 @@ export default function AdminPage() {
                                                     {user.email}
                                                 </div>
                                                 {user.has_fcm_token && (
-                                                    <div className="flex items-center gap-1.5 w-fit bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold border border-blue-500/20">
-                                                        <Bell className="w-3 h-3" />
-                                                        알림 ON
+                                                    <div className="flex flex-col gap-1.5 w-fit mt-1">
+                                                        <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold border border-blue-500/20">
+                                                            <Bell className="w-3 h-3" />
+                                                            알림 ON
+                                                        </div>
+                                                        {user.fcm_devices && user.fcm_devices.length > 0 && (
+                                                            <div className="flex items-center gap-1">
+                                                                {user.fcm_devices.map((device, idx) => {
+                                                                    const isMobile = device.toLowerCase().includes('mobile') || device.toLowerCase().includes('android') || device.toLowerCase().includes('ios');
+                                                                    return (
+                                                                        <div key={idx} className="flex items-center justify-center w-5 h-5 bg-white/5 border border-white/10 rounded-full" title={device}>
+                                                                            {isMobile ? <Smartphone className="w-3 h-3 text-gray-400" /> : <Monitor className="w-3 h-3 text-gray-400" />}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

@@ -901,7 +901,8 @@ def get_all_users():
     try:
         cursor.execute("""
             SELECT u.id, u.email, u.name, u.picture, u.is_pro, u.free_trial_count, u.created_at, u.last_login_at,
-                   (SELECT COUNT(*) FROM fcm_tokens f WHERE f.user_id = u.id AND f.token IS NOT NULL) as fcm_count
+                   (SELECT COUNT(*) FROM fcm_tokens f WHERE f.user_id = u.id AND f.token IS NOT NULL) as fcm_count,
+                   (SELECT GROUP_CONCAT(f.device_type) FROM fcm_tokens f WHERE f.user_id = u.id AND f.token IS NOT NULL) as fcm_devices
             FROM users u
             ORDER BY u.created_at DESC
         """)
@@ -910,7 +911,8 @@ def get_all_users():
             {
                 "id": r[0], "email": r[1], "name": r[2], "picture": r[3],
                 "is_pro": bool(r[4]), "free_trial_count": r[5], "created_at": r[6], "last_login_at": r[7],
-                "has_fcm_token": int(r[8] or 0) > 0
+                "has_fcm_token": int(r[8] or 0) > 0,
+                "fcm_devices": r[9].split(',') if r[9] else []
             } for r in rows
         ]
     except Exception as e:
