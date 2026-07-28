@@ -260,6 +260,7 @@ export default function AlertCenterPage() {
 
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
+        const isPrice = ['price_alert', 'auto_price_alert', 'stock_price_alert'].includes(alert.type);
 
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
@@ -290,9 +291,9 @@ export default function AlertCenterPage() {
         }
         
         if (activeTab === "portfolio") {
-            const isPortfolioAlert = ['portfolio_summary', 'price_alert', 'dividend_alert', 'morning_briefing'].includes(alert.type);
-            // 내 관심종목 탭에서는 포트폴리오 기본 알림 + 내 관심종목 관련 뉴스 및 공시를 모두 표시
-            return isPortfolioAlert || ((isNews || isDisclosure) && symbolMatch);
+            const isPortfolioAlert = ['portfolio_summary', 'dividend_alert', 'morning_briefing'].includes(alert.type);
+            // 내 관심종목 탭에서는 포트폴리오 기본 알림 + 내 관심종목 관련 뉴스, 공시, 가격 알림을 모두 표시
+            return isPortfolioAlert || ((isNews || isDisclosure || isPrice) && symbolMatch);
         }
         
         return true;
