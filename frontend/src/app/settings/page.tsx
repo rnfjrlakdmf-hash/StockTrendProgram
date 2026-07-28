@@ -466,6 +466,8 @@ export default function SettingsPage() {
                                                     onClick={async () => {
                                                         try {
                                                                 const { requestFCMToken } = await import('@/lib/firebase');
+                                                                // 강제로 토큰 삭제해서 재발급 유도
+                                                                localStorage.removeItem('fcm_token_value');
                                                                 const token = await requestFCMToken();
                                                                 if (token) {
                                                                     localStorage.setItem('fcm_token_value', token);
@@ -500,6 +502,53 @@ export default function SettingsPage() {
                                                 </button>
                                             </div>
                                         )
+                                    )}
+                                    {fcmToken && (
+                                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-blue-500/20 rounded-full text-blue-400">
+                                                    <CheckCircle className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-blue-400">알림이 켜져 있습니다</p>
+                                                    <p className="text-[10px] text-blue-300/80 mt-0.5">최근 기기 변경이나 권한 설정을 바꾸셨다면 동기화를 눌러주세요.</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        alert("새로운 알림 주소를 서버로 동기화합니다... 잠시만 기다려주세요!");
+                                                        const { requestFCMToken } = await import('@/lib/firebase');
+                                                        localStorage.removeItem('fcm_token_value'); // 기존 토큰 강제 폐기
+                                                        const token = await requestFCMToken();
+                                                        if (token) {
+                                                            localStorage.setItem('fcm_token_value', token);
+                                                            setFcmToken(token);
+                                                            
+                                                            let uid = localStorage.getItem('uuid') || localStorage.getItem('user_id') || localStorage.getItem('guest_id');
+                                                            await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ token: token, user_id: uid, source: 'settings_sync' })
+                                                            });
+                                                            
+                                                            // 테스트 알림 직접 쏘기
+                                                            await fetch(`${API_BASE_URL}/api/system/fcm/test-global-alert`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' }
+                                                            });
+                                                            alert("✅ 갱신 완료! 상단바(또는 화면)에 🇺🇸테슬라 알림이 도착했는지 확인해 주세요!");
+                                                        }
+                                                    } catch (e) {
+                                                        alert('알림 동기화 실패 (설정에서 알림이 켜져 있는지 확인해주세요)');
+                                                    }
+                                                }}
+                                                className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30 text-white text-[11px] font-black tracking-wide rounded-lg transition-colors text-center shrink-0 flex items-center justify-center gap-1.5"
+                                            >
+                                                <Zap className="w-3.5 h-3.5" />
+                                                동기화 및 테스트 알림 발송
+                                            </button>
+                                        </div>
                                     )}
                                     <div className="relative">
                                         {!fcmToken && (
