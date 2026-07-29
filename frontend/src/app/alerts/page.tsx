@@ -246,6 +246,7 @@ export default function AlertCenterPage() {
     // 탭 구성
     const tabs = [
         { id: "all", label: "전체" },
+        { id: "news", label: "뉴스" },
         { id: "disclosure", label: "공시" },
         { id: "portfolio", label: "내 관심종목" }
     ];
@@ -264,6 +265,7 @@ export default function AlertCenterPage() {
 
         if (activeTab === "all") return true;
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
+        if (activeTab === "news") return isNews;
         
         let symbolMatch = false;
         if ((alert as any).symbol && watchlistSymbols.includes((alert as any).symbol)) {

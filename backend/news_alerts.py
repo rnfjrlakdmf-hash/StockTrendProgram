@@ -1,4 +1,4 @@
-﻿"""
+"""
 News Alert Monitor (관심종목 뉴스 알림 모니터)
 사용자의 관심종목에 새로운 뉴스나 특이 공시가 뜰 경우 푸시 알림을 발송합니다.
 국내 종목: 네이버 뉴스 + 구글 뉴스
@@ -484,17 +484,25 @@ class NewsAlertMonitor:
                 return
 
             # 여러 기기에 동시 발송
+            is_disclosure = (source == 'disclosure')
+            alert_type = "disclosure_alert" if is_disclosure else "news_alert"
+            
+            data_payload = {
+                "type": alert_type,
+                "symbol": str(clean_symbol),
+                "url": str(discovery_url),        # 클릭 시 종목발굴 페이지로 이동
+                "is_global": str(not is_korean).lower()
+            }
+            if is_disclosure:
+                data_payload["dart_url"] = str(news_url)
+            else:
+                data_payload["news_url"] = str(news_url)
+
             result = send_multicast_notification(
                 tokens=all_tokens,
                 title=push_title,
                 body=push_body,
-                data={
-                    "type": "news_alert",
-                    "symbol": str(clean_symbol),
-                    "url": str(discovery_url),        # 클릭 시 종목발굴 페이지로 이동
-                    "news_url": str(news_url),         # 실제 뉴스 URL (참조용)
-                    "is_global": str(not is_korean).lower()
-                },
+                data=data_payload,
                 target_users=users
             )
 
