@@ -1,4 +1,4 @@
-﻿"""
+"""
 🐳 SEC EDGAR 기반 미국 고래 알림 모듈
 ────────────────────────────────────────
 SEC EDGAR Full-Text Search API (무료, API 키 불필요)를 사용하여
@@ -160,7 +160,7 @@ def check_sec_form4_alerts():
     """
     try:
         from firebase_config import initialize_firebase, send_multicast_notification
-        from db_manager import get_all_fcm_tokens
+        from db_manager import get_all_fcm_tokens_with_user
     except ImportError as e:
         print(f"[SEC Whale Form4] Import error: {e}")
         return
@@ -190,15 +190,17 @@ def check_sec_form4_alerts():
 
         try:
             initialize_firebase()
-            tokens = get_all_fcm_tokens(require_insider_alert=True)
-            if tokens:
+            user_tokens = get_all_fcm_tokens_with_user(require_insider_alert=True)
+            if user_tokens:
+                target_uids = [u[0] for u in user_tokens]
+                tokens = [u[1] for u in user_tokens]
                 push_data = {
                     "type": "sec_insider_trading",
                     "symbol": ticker or entity_name,
                     "url": filing.get("link", "/discovery"),
                     "market": "US",
                 }
-                result = send_multicast_notification(tokens, title, body, push_data)
+                result = send_multicast_notification(tokens, title, body, push_data, target_users=target_uids)
                 print(f"[SEC Whale Form4] Sent to {len(tokens)} tokens. Result: {result}")
                 new_count += 1
             else:
@@ -224,7 +226,7 @@ def check_sec_13f_alerts():
     """
     try:
         from firebase_config import initialize_firebase, send_multicast_notification
-        from db_manager import get_all_fcm_tokens
+        from db_manager import get_all_fcm_tokens_with_user
     except ImportError as e:
         print(f"[SEC Whale 13F] Import error: {e}")
         return
@@ -254,15 +256,17 @@ def check_sec_13f_alerts():
 
         try:
             initialize_firebase()
-            tokens = get_all_fcm_tokens(require_whale_alert=True)
-            if tokens:
+            user_tokens = get_all_fcm_tokens_with_user(require_whale_alert=True)
+            if user_tokens:
+                target_uids = [u[0] for u in user_tokens]
+                tokens = [u[1] for u in user_tokens]
                 push_data = {
                     "type": "sec_13f",
                     "symbol": ticker or entity_name,
                     "url": filing.get("link", "/discovery"),
                     "market": "US",
                 }
-                result = send_multicast_notification(tokens, title, body, push_data)
+                result = send_multicast_notification(tokens, title, body, push_data, target_users=target_uids)
                 print(f"[SEC Whale 13F] Sent to {len(tokens)} tokens. Result: {result}")
                 new_count += 1
             else:

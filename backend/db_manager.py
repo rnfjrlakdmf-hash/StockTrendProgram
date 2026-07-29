@@ -1953,15 +1953,17 @@ def get_all_fcm_tokens(require_whale_alert=False, require_insider_alert=False) -
         conn.close()
 
 
-def get_all_fcm_tokens_with_user(require_whale_alert=False) -> list:
+def get_all_fcm_tokens_with_user(require_whale_alert=False, require_insider_alert=False) -> list:
     """모든 사용자의 유효한 FCM 토큰을 user_id와 함께 반환 (limit check용)"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        query = "SELECT DISTINCT user_id, token FROM fcm_tokens WHERE 1=1"
         if require_whale_alert:
-            cursor.execute("SELECT DISTINCT user_id, token FROM fcm_tokens WHERE pref_whale_alert = 1")
-        else:
-            cursor.execute("SELECT DISTINCT user_id, token FROM fcm_tokens")
+            query += " AND pref_whale_alert = 1"
+        if require_insider_alert:
+            query += " AND pref_insider_alert = 1"
+        cursor.execute(query)
         return cursor.fetchall()
     except Exception as e:
         print(f"[DB] Get all FCM tokens with user error: {e}")
