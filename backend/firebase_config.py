@@ -1,4 +1,4 @@
-﻿"""
+"""
 Firebase Cloud Messaging Configuration
 FCM 푸시 알림 설정 및 발송
 """
@@ -325,7 +325,7 @@ def send_multicast_notification(
     # 1. Firestore 알림 센터 저장
     try:
         db = firestore.client()
-        alert_type = data.get("type", "news_naver") if data else "news_naver"
+        alert_type = data.get("type", "system_alert") if data else "system_alert"
         if data and "is_global" in data:
             val = data["is_global"]
             is_global = str(val).lower() == "true" if isinstance(val, str) else bool(val)

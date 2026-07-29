@@ -69,24 +69,8 @@ export default function AlertCenterPage() {
                     const timeB = b.timestamp?.seconds || 0;
                     return timeB - timeA;
                 });
-
-                // ----------------- IMPORTANT -----------------
-                // 뉴스 속보 도배 방지: 뉴스는 최대 15개까지만 노출하여 중요한 장마감/포트폴리오 알림이 밀리지 않도록 함
-                let newsCount = 0;
-                const filtered = [];
-                for (const alert of sortedAlerts) {
-                    if (['news_alert', 'news_naver', 'news_google'].includes(alert.type)) {
-                        if (newsCount < 15) {
-                            filtered.push(alert);
-                            newsCount++;
-                        }
-                    } else {
-                        filtered.push(alert);
-                    }
-                }
-                
                 // 최종 노출
-                setAlerts(filtered.slice(0, 600)); // 탭 분류를 위해 전체 개수 증가
+                setAlerts(sortedAlerts.slice(0, 600)); // 탭 분류를 위해 전체 개수 증가
 
                 setErrorMsg(null);
             } catch (err: any) {
@@ -254,6 +238,7 @@ export default function AlertCenterPage() {
         tabs.push({ id: "admin", label: "관리자 메뉴" });
     }
 
+    let allTabNewsCount = 0;
     // 카테고리 필터링 적용
     const filteredAlerts = alerts.filter(alert => {
         // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
@@ -263,7 +248,16 @@ export default function AlertCenterPage() {
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'insider_trading'].includes(alert.type);
         const isPrice = ['price_alert', 'auto_price_alert', 'stock_price_alert'].includes(alert.type);
 
-        if (activeTab === "all") return true;
+        if (activeTab === "all") {
+            if (isNews) {
+                if (allTabNewsCount < 15) {
+                    allTabNewsCount++;
+                    return true;
+                }
+                return false;
+            }
+            return true;
+        }
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
         if (activeTab === "news") return isNews;
         
