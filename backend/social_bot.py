@@ -1,4 +1,4 @@
-﻿import os
+import os
 import requests
 from dotenv import load_dotenv
 
@@ -25,6 +25,25 @@ def send_telegram_message(message: str):
         response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
             print("[Telegram Bot] 메시지 발송 성공!")
+            try:
+                # 웹앱 알림 센터 연동 (시스템 알림으로 글로벌 발송)
+                from firebase_config import save_alert_to_firestore, initialize_firebase
+                initialize_firebase()
+                
+                # HTML 태그 제거
+                import re
+                clean_text = re.sub(r'<br\s*/?>', '\n', message)
+                clean_text = re.sub(r'<[^>]+>', '', clean_text)
+                
+                # 텔레그램 공지 제목 추출 (첫 번째 줄)
+                lines = clean_text.strip().split('\n')
+                title = lines[0] if lines else "📢 장 마감 / 시작 시황"
+                body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
+                
+                save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url="/")
+            except Exception as fe:
+                print(f"[Telegram-Firestore Sync Error] {fe}")
+
             return True
         else:
             print(f"[Telegram Bot] 발송 실패: {response.text}")
