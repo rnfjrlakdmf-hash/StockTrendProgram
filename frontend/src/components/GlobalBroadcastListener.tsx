@@ -37,8 +37,23 @@ export default function GlobalBroadcastListener() {
                 if (change.type === "added") {
                     const data = change.doc.data();
                     
-                    // 클라이언트 단에서 is_global 확인
-                    if (data.is_global === true) {
+                    // 클라이언트 단에서 is_global 및 타겟 여부 확인
+                    const isGlobal = data.is_global === true;
+                    
+                    let userId = typeof window !== 'undefined' ? localStorage.getItem('fcm_guest_id') : null;
+                    if (!userId && typeof window !== 'undefined') {
+                        try {
+                            const storedUser = localStorage.getItem('stock_user');
+                            if (storedUser) {
+                                const parsed = JSON.parse(storedUser);
+                                userId = parsed.id || parsed.uid;
+                            }
+                        } catch(e){}
+                    }
+
+                    const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
+
+                    if (isGlobal || isTargeted) {
                         setPopupAlert({ id: change.doc.id, ...data });
                         
                         // 5초 후 자동 닫힘

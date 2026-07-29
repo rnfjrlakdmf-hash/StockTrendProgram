@@ -45,7 +45,16 @@ export default function AlertCenterPage() {
                 const alertsRef = collection(db, "alerts");
                 
                 // 사용자 맞춤형 알림과 전체 알림을 각각 가져와 프론트엔드에서 병합 (읽기 비용 최소화 및 누락 방지)
-                const userId = user?.id || (user as any)?.uid;
+                let userId = user?.id || (user as any)?.uid || localStorage.getItem('fcm_guest_id');
+                if (!userId) {
+                    try {
+                        const storedUser = localStorage.getItem('stock_user');
+                        if (storedUser) {
+                            const parsed = JSON.parse(storedUser);
+                            userId = parsed.id || parsed.uid;
+                        }
+                    } catch(e){}
+                }
                 
                 // Fetch the latest 300 alerts regardless of type to avoid composite index errors
                 const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
