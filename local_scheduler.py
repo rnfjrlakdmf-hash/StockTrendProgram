@@ -117,8 +117,6 @@ async def check_and_notify_disclosures():
                 is_whale = any(kw in clean_title for kw in whale_keywords) or is_super_ant or is_insider
                 
                 fact_str = ""
-                whale_alerted_uids = set()
-                
                 if is_whale:
                     # [스마트 필터링] 단일판매ㆍ공급계약체결의 경우 매출액 대비 20% 이상인 초대형 계약만 발송
                     skip_whale_alert = False
@@ -163,35 +161,12 @@ async def check_and_notify_disclosures():
                             db.collection("live_events").add(event_data)
                             logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
                             
-                            # ✅ [글로벌 푸시 발송] 핵심 공시(세력/내부자/팩트)는 관심종목 여부와 관계없이 세력알림 켠 모두에게 발송
-                            if is_whale:
-                                try:
-                                    from db_manager import get_all_fcm_tokens_with_user
-                                    whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
-                                    if whale_users:
-                                        # fetchall() returns a list of tuples: (user_id, token)
-                                        w_tokens = [u[1] for u in whale_users]
-                                        w_uids = [u[0] for u in whale_users]
-                                        
-                                        # 관심종목 푸시에서 중복되지 않도록 UID 기록
-                                        whale_alerted_uids.update(w_uids)
-                                        
-                                        w_title = f"{prefix_title} {corp}"
-                                        w_body = f"{fact_str}\n\n[앱에서 즉시 확인하기]" if fact_str else f"{report_title}\n\n[앱에서 즉시 확인하기]"
-                                        w_data = {
-                                            "type": "whale_alert",
-                                            "url": f"/stock/{raw_code}",
-                                            "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
-                                            "symbol": raw_code
-                                        }
-                                        send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
-                                        logger.info(f"[WhaleSiren] Sent FCM to {len(w_tokens)} users for {corp}")
-                                except Exception as push_e:
-                                    logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
-
                         except Exception as e:
-                            logger.error(f"[WhaleSiren] Firestore error: {e}")
+                            logger.error(f"[WhaleSiren] Firestore/FCM error: {e}")
 
+                # ✅ [중복 알림 방지용] 이미 고래 알림(WhaleSiren)을 받은 사용자 UID 목록
+                # FCM 발송을 중단했으므로 빈 셋으로 처리
+                whale_alerted_uids = set()
                 # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
                 symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
                 tokens = []

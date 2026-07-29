@@ -35,6 +35,13 @@ def send_telegram_teaser(teaser_text: str):
             
             # HTML 태그 제거 (간단하게 <br> -> \n 변환 후 텍스트만)
             import re
+            
+            # URL 추출 (있다면)
+            url_target = "/"
+            link_match = re.search(r"href=['\"](.*?)['\"]", teaser_text)
+            if link_match:
+                url_target = link_match.group(1)
+                
             clean_text = re.sub(r'<br\s*/?>', '\n', teaser_text)
             clean_text = re.sub(r'<[^>]+>', '', clean_text)
             
@@ -43,7 +50,24 @@ def send_telegram_teaser(teaser_text: str):
             title = lines[0] if lines else "📢 텔레그램 알림"
             body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
             
-            save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url="/")
+            save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url=url_target)
+
+            # 스터디 관련 공지일 경우 FCM 푸시 발송 연동
+            if "스터디" in clean_text:
+                try:
+                    from firebase_config import send_multicast_notification
+                    from db_manager import get_all_fcm_tokens
+                    all_tokens = get_all_fcm_tokens()
+                    if all_tokens:
+                        push_data = {
+                            "type": "system_alert",
+                            "url": url_target
+                        }
+                        send_multicast_notification(all_tokens, title, body, push_data)
+                        print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공")
+                except Exception as push_e:
+                    print(f"[Telegram-FCM Sync] 스터디 공지 푸시 에러: {push_e}")
+
         except Exception as fe:
             print(f"[Telegram-Firestore Sync Error] {fe}")
 
