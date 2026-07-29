@@ -42,8 +42,8 @@ messaging.onBackgroundMessage((payload) => {
 
     const notificationOptions = {
         body: payload.notification?.body || '',
-        icon: '/icon.png',
-        badge: '/badge.png',
+        icon: 'https://stock-trend-program.co.kr/icon.png',
+        badge: 'https://stock-trend-program.co.kr/badge.png',
         vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: payload.data,
         tag: tag,

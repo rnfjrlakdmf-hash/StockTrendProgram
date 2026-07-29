@@ -434,8 +434,8 @@ def send_multicast_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='/icon.png',
-                badge='/badge.png',
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
                 renotify=True
