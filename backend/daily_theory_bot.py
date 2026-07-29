@@ -633,31 +633,14 @@ def post_daily_theory():
         
         clean_title = title.replace('[오늘의 차트 스터디]', '').strip()
         
-        # 텔레그램 발송
+        # 텔레그램 발송 (telegram_service 내부에서 FCM 푸시와 알림 센터 등록까지 모두 자동으로 처리함)
         try:
             from telegram_service import send_telegram_teaser
-            teaser_msg = f"📚 <b>[주식 1타 강사] 오늘의 차트 스터디 업로드!</b>\n\n주식 초보 탈출을 위한 필수 이론!\n오늘의 주제: <b>{clean_title}</b>\n\n👉 <a href='{new_url}'>무료 강의 보러가기</a>"
+            teaser_msg = f"📚 <b>[주식 1타 강사] 오늘의 스터디 업로드!</b>\n\n주식 초보 탈출을 위한 필수 이론!\n오늘의 주제: <b>{clean_title}</b>\n\n👉 <a href='{new_url}'>무료 강의 보러가기</a>"
             send_telegram_teaser(teaser_msg)
-            print("[Telegram] 스터디 알림 발송 완료")
+            print("[Telegram & FCM] 스터디 알림 통합 발송 완료")
         except Exception as e:
-            print(f"[Telegram] 발송 실패: {e}")
-            
-        # 앱 푸시 알림 발송
-        try:
-            from firebase_config import send_multicast_notification
-            from db_manager import get_all_fcm_tokens
-            tokens = get_all_fcm_tokens()
-            if tokens:
-                push_title = "📚 오늘의 주식 스터디"
-                push_body = f"{clean_title} - 초보 탈출 1타 강의가 업로드 되었습니다!"
-                push_data = {
-                    "type": "theory",
-                    "url": f"/theory/{slug}"
-                }
-                send_multicast_notification(tokens, push_title, push_body, push_data)
-                print(f"[FCM] 스터디 푸시 알림 {len(tokens)}명 발송 완료")
-        except Exception as e:
-            print(f"[FCM] 발송 실패: {e}")
+            print(f"[Telegram & FCM] 발송 실패: {e}")
         
         # Google Indexing API 실시간 핑
         try:
