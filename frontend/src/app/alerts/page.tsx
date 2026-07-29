@@ -134,7 +134,7 @@ export default function AlertCenterPage() {
     const renderAlertCard = (alert: AlertItem) => {
         let targetUrl = (alert as any).url || (alert as any).link;
         const symbol = (alert as any).symbol;
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
 
         if ((alert as any).news_url) {
             const params = new URLSearchParams();
@@ -148,12 +148,12 @@ export default function AlertCenterPage() {
             <div className={`bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left ${!isDisclosure ? 'group' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                             alert.type === 'crypto_bull' 
                                 ? 'bg-orange-500/20 text-orange-400' 
                                 : alert.type === 'whale_accumulation' 
                                 ? 'bg-purple-500/20 text-purple-400'
-                                : ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type)
+                                : isDisclosure
                                 ? 'bg-indigo-500/20 text-indigo-400'
                                 : alert.type === 'ipo_alert'
                                 ? 'bg-pink-500/20 text-pink-400'
@@ -165,7 +165,7 @@ export default function AlertCenterPage() {
                         }`}>
                             {alert.type === 'crypto_bull' ? '🔥 코인 불장' : 
                              alert.type === 'whale_accumulation' ? '🐳 세력 포착' : 
-                             ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type) ? '📢 공시' :
+                             isDisclosure ? '📢 공시' :
                              alert.type === 'ipo_alert' ? '🎯 공모주' :
                              alert.type === 'admin_report' ? '👑 관리자' :
                              ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
@@ -259,7 +259,7 @@ export default function AlertCenterPage() {
         if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'insider_trading'].includes(alert.type);
         const isPrice = ['price_alert', 'auto_price_alert', 'stock_price_alert'].includes(alert.type);
 
         if (activeTab === "all") return true;
@@ -282,7 +282,7 @@ export default function AlertCenterPage() {
         if (activeTab === "disclosure") {
             if (!isDisclosure) return false;
             if (disclosureFilter === 'kr') {
-                return ['disclosure_alert', 'large_holding', 'disclosure'].includes(alert.type);
+                return ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading'].includes(alert.type);
             }
             if (disclosureFilter === 'us') {
                 return ['sec_insider_trading', 'sec_13f'].includes(alert.type);
