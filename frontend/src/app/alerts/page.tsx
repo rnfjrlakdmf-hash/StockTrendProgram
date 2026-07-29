@@ -264,6 +264,7 @@ export default function AlertCenterPage() {
         if (activeTab === "news") return isNews;
         if (activeTab === "system") return isSystem;
         
+        const isPortfolioAlert = ['portfolio_summary', 'dividend_alert'].includes(alert.type);
         let symbolMatch = false;
         if ((alert as any).symbol && watchlistSymbols.includes((alert as any).symbol)) {
             symbolMatch = true;
