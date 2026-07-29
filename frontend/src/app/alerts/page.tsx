@@ -232,7 +232,8 @@ export default function AlertCenterPage() {
         { id: "all", label: "전체" },
         { id: "news", label: "뉴스" },
         { id: "disclosure", label: "공시" },
-        { id: "portfolio", label: "내 관심종목" }
+        { id: "portfolio", label: "내 관심종목" },
+        { id: "system", label: "운영 알림" }
     ];
     if (isAdmin) {
         tabs.push({ id: "admin", label: "관리자 메뉴" });
@@ -247,6 +248,7 @@ export default function AlertCenterPage() {
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'insider_trading'].includes(alert.type);
         const isPrice = ['price_alert', 'auto_price_alert', 'stock_price_alert'].includes(alert.type);
+        const isSystem = ['system_alert', 'market_summary', 'morning_briefing', 'whale_accumulation', 'global_market_alert', 'weekend_report', 'referral_invite'].includes(alert.type);
 
         if (activeTab === "all") {
             if (isNews) {
@@ -260,6 +262,7 @@ export default function AlertCenterPage() {
         }
         if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
         if (activeTab === "news") return isNews;
+        if (activeTab === "system") return isSystem;
         
         let symbolMatch = false;
         if ((alert as any).symbol && watchlistSymbols.includes((alert as any).symbol)) {
