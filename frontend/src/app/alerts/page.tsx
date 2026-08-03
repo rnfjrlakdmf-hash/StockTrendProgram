@@ -66,7 +66,10 @@ export default function AlertCenterPage() {
                     const isGlobal = data.is_global === true;
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
                     
-                    if (isGlobal || isTargeted) {
+                    // 공시, 세력, 뉴스 등 시장 전체 공용 데이터는 타겟(푸시 수신자)과 무관하게 알림 센터에 노출
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news'].includes(data.type);
+                    
+                    if (isGlobal || isTargeted || isPublicType) {
                         allAlertsMap.set(doc.id, { id: doc.id, ...data });
                     }
                 });
