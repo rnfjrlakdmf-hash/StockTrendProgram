@@ -225,22 +225,49 @@ export default async function StockSeoPage({ params }: Props) {
                         <div className="prose prose-invert max-w-none">
                             <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mb-4">📈 비즈니스 요약</h2>
                             <p className="text-slate-300 leading-relaxed text-lg">
-                                {data.summary}
+                                {data.summary && data.summary.length > 20 ? data.summary : `${name} 기업의 핵심 비즈니스 요약 및 주요 실적 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다.`}
                             </p>
                             
                             <h2 className="text-2xl font-bold border-b border-slate-800 pb-2 mt-10 mb-4">💡 주요 지표 브리핑 (Programmatic SEO)</h2>
                             <ul className="space-y-3 text-slate-300">
                                 <li className="flex items-start">
                                     <span className="text-blue-400 mr-2">✓</span>
-                                    <span>{name}의 현재가는 {price}원으로 직전 종가({prevClose}원) 대비 변동폭을 기록하고 있습니다.</span>
+                                    <span>
+                                        {name}의 현재가는 <strong>{price}원</strong>으로, 직전 종가({prevClose}원) 대비 
+                                        {data.price && data.previousClose 
+                                            ? (data.price > data.previousClose 
+                                                ? ` 상승 흐름을 보이며 강세를 나타내고 있습니다.` 
+                                                : (data.price < data.previousClose 
+                                                    ? ` 하락하며 숨고르기 양상을 보이고 있습니다.` 
+                                                    : ` 보합세를 유지 중입니다.`))
+                                            : ` 가격 변동성을 기록 중입니다.`}
+                                    </span>
                                 </li>
                                 <li className="flex items-start">
                                     <span className="text-blue-400 mr-2">✓</span>
-                                    <span>PER {per} 수준으로 해당 업종의 객관적인 밸류에이션 지표를 나타내고 있습니다.</span>
+                                    <span>
+                                        밸류에이션 측면에서 <strong>PER은 {per}</strong>, <strong>PBR은 {pbr}</strong>을 기록하고 있습니다. 
+                                        {data.per && data.per > 0 && data.per < 10 ? ' 이는 상대적으로 저평가 매력이 부각될 수 있는 구간입니다.' : ''}
+                                        {data.pbr && data.pbr > 0 && data.pbr < 1 ? ' 특히 장부 가치 대비 주가가 낮아 밸류업 관점에서 주목할 만합니다.' : ''}
+                                    </span>
                                 </li>
+                                {data.dividendYield && data.dividendYield > 0 ? (
+                                <li className="flex items-start">
+                                    <span className="text-emerald-400 mr-2">✓</span>
+                                    <span>
+                                        연간 예상 <strong>배당수익률은 {divYield}</strong> 수준으로, 배당 투자 관점에서도 유효한 현금 흐름 창출을 기대할 수 있습니다. 
+                                        {data.dividendYield >= 0.05 ? ' (고배당주 매력 부각)' : ''}
+                                    </span>
+                                </li>
+                                ) : (
                                 <li className="flex items-start">
                                     <span className="text-blue-400 mr-2">✓</span>
-                                    <span>본 페이지는 단순 정보 제공 목적이며, 투자를 권유하거나 특정 종목을 추천하지 않습니다.</span>
+                                    <span>현재 뚜렷한 배당 수익보다는 기업의 장기적인 비즈니스 성장성에 초점을 맞춘 펀더멘털 분석이 필요합니다.</span>
+                                </li>
+                                )}
+                                <li className="flex items-start">
+                                    <span className="text-purple-400 mr-2">✓</span>
+                                    <span>본 페이지의 분석 내용은 투자 참고용이며, 최종 투자 판단의 책임은 투자자 본인에게 있습니다.</span>
                                 </li>
                             </ul>
                         </div>
