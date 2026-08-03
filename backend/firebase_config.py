@@ -357,29 +357,6 @@ def send_multicast_notification(
     except Exception as e:
         print(f"[Firestore] Failed to save alert to center: {e}")
 
-def save_alert_to_firestore(title, body, alert_type="system_alert", url="/", is_global=True, target_users=None):
-    """
-    푸시 발송 없이 Firestore 알림 센터에만 기록을 남깁니다.
-    주로 텔레그램 공지사항 등을 웹앱 알림센터와 동기화할 때 사용합니다.
-    """
-    try:
-        db = firestore.client()
-        alert_doc = {
-            "title": title,
-            "body": body,
-            "type": alert_type,
-            "timestamp": firestore.SERVER_TIMESTAMP,
-            "is_global": is_global,
-            "target_users": target_users or [],
-            "url": url
-        }
-        db.collection("alerts").add(alert_doc)
-        print(f"[Firestore] Alert saved to center (No push): {title}")
-        return True
-    except Exception as e:
-        print(f"[Firestore] Failed to save alert to center: {e}")
-        return False
-
     # 중복 토큰 제거 (동일 기기 중복 발송 방지)
     if tokens:
         tokens = list(set(tokens))
@@ -738,3 +715,26 @@ def send_topic_push(
     except Exception as e:
         print(f"[Firebase] Error sending topic message: {e}")
         return {"success": False, "error": str(e)}
+
+def save_alert_to_firestore(title, body, alert_type="system_alert", url="/", is_global=True, target_users=None):
+    """
+    푸시 발송 없이 Firestore 알림 센터에만 기록을 남깁니다.
+    주로 텔레그램 공지사항 등을 웹앱 알림센터와 동기화할 때 사용합니다.
+    """
+    try:
+        db = firestore.client()
+        alert_doc = {
+            "title": title,
+            "body": body,
+            "type": alert_type,
+            "timestamp": firestore.SERVER_TIMESTAMP,
+            "is_global": is_global,
+            "target_users": target_users or [],
+            "url": url
+        }
+        db.collection("alerts").add(alert_doc)
+        print(f"[Firestore] Alert saved to center (No push): {title}")
+        return True
+    except Exception as e:
+        print(f"[Firestore] Failed to save alert to center: {e}")
+        return False
