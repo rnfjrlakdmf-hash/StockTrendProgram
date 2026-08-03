@@ -550,7 +550,7 @@ def send_multicast_notification(
         # [추가] 프론트엔드 알림 센터 표시를 위해 특정 타입은 Firestore에도 자동 저장
         try:
             alert_type = (data or {}).get('type', 'stock_alert')
-            if alert_type in ['market_summary', 'portfolio_summary', 'admin_report', 'ping_test']:
+            if alert_type in ['market_summary', 'portfolio_summary', 'admin_report', 'ping_test', 'news_alert', 'news_naver', 'news_google']:
                 db_client = firestore.client()
                 doc_data = {
                     "title": title,
