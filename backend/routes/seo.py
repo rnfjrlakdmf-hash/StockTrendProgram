@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 import FinanceDataReader as fdr
 import yfinance as yf
 import logging
@@ -212,7 +212,7 @@ def get_cached_stock_info(ticker: str):
             "pbr": 0.0,
             "dividendYield": 0.0,
             "marketCap": 0,
-            "summary": f"{fallback_name} 기업에 대한 핵심 비즈니스 정보 및 주가 동향 리포트입니다.",
+            "summary": f"[{fallback_name}] 현재 실시간 주가 연동 중이거나 데이터 검증 중입니다. 본 페이지는 {fallback_name} ({ticker}) 기업의 비즈니스 현황 및 투자 참고용 지표를 제공하기 위한 임시 안내 페이지입니다. 최신 주가 및 AI 분석 결과가 곧 업데이트됩니다.",
             "exDividendDate": None,
             "paymentDate": None,
             "relatedStocks": [{"ticker": "005930", "name": "삼성전자"}, {"ticker": "AAPL", "name": "Apple"}] # 최소한의 연결고리
