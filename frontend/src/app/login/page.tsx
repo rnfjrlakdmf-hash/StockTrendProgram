@@ -11,9 +11,9 @@ export default function MobileLoginPage() {
     const [status, setStatus] = useState<"idle" | "loading" | "error">("loading");
     const [errorMsg, setErrorMsg] = useState("");
 
-    // If already logged in, go back
+    // If already logged in (and not a guest), go back
     useEffect(() => {
-        if (user) {
+        if (user && !(user as any).is_guest) {
             window.location.href = "/";
         }
     }, [user]);
@@ -54,7 +54,7 @@ export default function MobileLoginPage() {
 
     useEffect(() => {
         // Automatically trigger on mount if not already logged in
-        if (!user) {
+        if (!user || (user as any).is_guest) {
             const timer = setTimeout(() => {
                 googleLogin();
             }, 500);
