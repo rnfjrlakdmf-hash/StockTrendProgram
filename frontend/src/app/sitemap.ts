@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
@@ -65,6 +66,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.5,
         },
     ];
+
+    // Add static high-quality SEO posts
+    STATIC_POSTS.forEach((post) => {
+        routes.push({
+            url: `${baseUrl}/blog/${encodeURIComponent(post.slug)}`,
+            lastModified: new Date(post.createdAt),
+            changeFrequency: 'daily',
+            priority: 1.0, // Highest priority for SEO content
+        });
+    });
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
 
