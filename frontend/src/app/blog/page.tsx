@@ -21,25 +21,35 @@ async function getBlogPosts(page: number, limitPerPage: number) {
         const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts?page=${page}&limit=${limitPerPage}`;
         const res = await fetch(apiUrl, { next: { revalidate: 60 } });
         
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        
-        const data = await res.json();
-        
-        if (data.status !== "ok" || !data.posts?.length) {
-            throw new Error("No posts from API");
+        let apiPosts = [];
+        let totalPages = 1;
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.status === "ok" && data.posts?.length) {
+                apiPosts = data.posts.map((p: any) => ({
+                    id: p.id,
+                    title: p.title,
+                    content: p.content,
+                    createdAt: new Date(p.createdAt),
+                    tags: p.tags || [],
+                    slug: p.slug || p.id,
+                    viewCount: p.viewCount || 0,
+                }));
+                totalPages = data.totalPages || 1;
+            }
         }
 
-        const posts = data.posts.map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            createdAt: new Date(p.createdAt),
-            tags: p.tags || [],
-            slug: p.slug || p.id,
-            viewCount: p.viewCount || 0,
-        }));
+        // 항상 STATIC_POSTS를 포함하여 콘텐츠 양을 늘림 (AdSense 승인 등 유리)
+        // 정적 포스트 10개를 최상단에 고정하거나 섞어줄 수 있음. 여기서는 첫 페이지에만 최상단 고정 노출
+        let combinedPosts = [];
+        if (page === 1) {
+            combinedPosts = [...STATIC_POSTS, ...apiPosts];
+        } else {
+            combinedPosts = apiPosts;
+        }
 
-        return { posts, totalPages: data.totalPages || 1 };
+        return { posts: combinedPosts, totalPages: totalPages };
     } catch (error) {
         console.error("블로그 포스트 로딩 에러:", error);
         const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
