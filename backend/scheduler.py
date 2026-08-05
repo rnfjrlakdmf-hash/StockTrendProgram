@@ -210,9 +210,6 @@ async def check_and_notify_disclosures():
                             matched_symbol = sym
                             break
 
-                if not tokens:
-                    continue  # 관심종목 등록 사용자 없음 -> 스킵
-
                 # 공시 유형별 이모지 결정
                 emoji = "📢"
                 if any(kw in report_title for kw in ["유상증자", "무상증자"]):
@@ -241,6 +238,26 @@ async def check_and_notify_disclosures():
                     "url": f"/discovery?q={raw_code}",
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                 }
+
+                # 1. 글로벌 알림 센터 무조건 저장 (모든 사용자가 볼 수 있도록)
+                try:
+                    from firebase_config import save_alert_to_firestore
+                    save_alert_to_firestore(
+                        title=noti_title,
+                        body=noti_body,
+                        alert_type="disclosure_alert",
+                        url=data_payload["url"],
+                        is_global=True,
+                        symbol=data_payload["symbol"],
+                        dart_url=data_payload["dart_url"]
+                    )
+                except Exception as save_e:
+                    logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
+
+                if not tokens:
+                    continue  # 관심종목 등록 사용자 없음 -> 푸시 스킵
+
+                data_payload["skip_db_save"] = True
 
                 logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
                 send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
@@ -430,9 +447,6 @@ async def check_and_notify_sec_disclosures():
                         # 중복 토큰 제거
                         all_tokens = list(set(all_tokens))
 
-                        if not all_tokens:
-                            continue
-                        
                         noti_title = f"📢 {ticker} SEC 공시"
                         noti_body = f"📋 {kor_title}"
                             
@@ -447,11 +461,31 @@ async def check_and_notify_sec_disclosures():
                                 pass
 
                         data_payload = {
-                            "type": "disclosure_alert",
+                            "type": "sec_disclosure",
                             "symbol": ticker,
                             "url": f"/discovery?q={ticker}",
                             "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
                         }
+
+                        # 1. 글로벌 알림 센터 무조건 저장
+                        try:
+                            from firebase_config import save_alert_to_firestore
+                            save_alert_to_firestore(
+                                title=noti_title,
+                                body=noti_body,
+                                alert_type="sec_disclosure",
+                                url=data_payload["url"],
+                                is_global=True,
+                                symbol=data_payload["symbol"],
+                                dart_url=data_payload["dart_url"]
+                            )
+                        except Exception as save_e:
+                            logger.error(f"[SEC Monitor] DB 저장 오류: {save_e}")
+
+                        if not all_tokens:
+                            continue
+
+                        data_payload["skip_db_save"] = True
 
                         logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
                         send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(target_uids))

@@ -7,7 +7,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-def send_telegram_teaser(teaser_text: str):
+def send_telegram_teaser(teaser_text: str, alert_type="system_alert"):
     """
     텔레그램 채널로 메시지(티저)를 발송합니다.
     """
@@ -50,7 +50,7 @@ def send_telegram_teaser(teaser_text: str):
             title = lines[0] if lines else "📢 텔레그램 알림"
             body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
             
-            save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url=url_target)
+            save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
 
             # 스터디 관련 공지일 경우 FCM 푸시 발송 연동
             if "스터디" in clean_text:
@@ -61,7 +61,8 @@ def send_telegram_teaser(teaser_text: str):
                     if all_tokens:
                         push_data = {
                             "type": "system_alert",
-                            "url": url_target
+                            "url": url_target,
+                            "skip_db_save": True
                         }
                         send_multicast_notification(all_tokens, title, body, push_data)
                         print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공")

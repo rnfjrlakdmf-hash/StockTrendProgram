@@ -336,7 +336,7 @@ async def startup_event():
             asyncio.create_task(weekend_report_scheduler_loop())
             asyncio.create_task(fomo_alert_scheduler_loop())
             asyncio.create_task(dormant_user_scheduler_loop())
-            asyncio.create_task(whale_alert_scheduler_loop())       # 🇰🇷 외국인 순매수 1위 (30분)
+            # asyncio.create_task(whale_alert_scheduler_loop())       # 🇰🇷 외국인 순매수 1위 (30분) - 중복 발송 버그로 인해 비활성화 (scheduler_service.py에서 통합 처리)
             # asyncio.create_task(dart_whale_scheduler_loop())        # 🇰🇷 DART 대량보유/임원거래 (5분) - 중복 발송 버그로 인해 비활성화 (scheduler.py의 disclosure_bot이 통합 처리함)
             asyncio.create_task(sec_whale_scheduler_loop())         # 🇺🇸 SEC Form4/13F (5분)
             asyncio.create_task(premium_report_scheduler_loop())    # 💎 VIP 프리미엄 리포트 (15:45)

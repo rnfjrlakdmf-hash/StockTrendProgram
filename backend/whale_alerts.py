@@ -101,7 +101,7 @@ def check_whale_alerts():
                 try:
                     from telegram_service import send_telegram_teaser
                     teaser_msg = f"🚨 <b>[외국인 폭풍 매수 포착!]</b>\n\n지금 외국인이 쓸어담고 있는 1위 종목은? 👉 <b>{top_stock_name}</b>\n\n👇 <b>실시간 수급 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/stock/{top_stock_code}'>앱에서 즉시 확인하기</a>"
-                    send_telegram_teaser(teaser_msg)
+                    send_telegram_teaser(teaser_msg, alert_type="whale_alert")
                 except Exception as e:
                     print(f"[Whale] Telegram teaser error: {e}")
 
@@ -207,7 +207,7 @@ def check_large_holding_alerts():
                     from telegram_service import send_telegram_teaser
                     import urllib.parse
                     teaser_msg = f"🚨 <b>[슈퍼개미 포착!]</b>\n\n지분 5% 이상 대량 매집이 포착되었습니다.\n종목명: 👉 <b>{corp_name}</b>\n\n👇 <b>공시 원문 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
-                    send_telegram_teaser(teaser_msg)
+                    send_telegram_teaser(teaser_msg, alert_type="whale_alert")
                 except Exception as e:
                     print(f"[Whale Large] Telegram teaser error: {e}")
                 if tokens:
@@ -317,7 +317,7 @@ def check_insider_trading_alerts():
                     from telegram_service import send_telegram_teaser
                     import urllib.parse
                     teaser_msg = f"🚨 <b>[내부자 거래 포착!]</b>\n\n회사 임원 또는 주요주주의 지분 변동이 발생했습니다.\n종목명: 👉 <b>{corp_name}</b>\n\n👇 <b>공시 원문 및 수급 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
-                    send_telegram_teaser(teaser_msg)
+                    send_telegram_teaser(teaser_msg, alert_type="whale_alert")
                 except Exception as e:
                     print(f"[Whale Insider] Telegram teaser error: {e}")
                 if tokens:

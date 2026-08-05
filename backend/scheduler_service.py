@@ -1297,12 +1297,13 @@ def start_scheduler():
 def delete_old_alerts():
     """3일 지난 알림(Firestore 및 DB) 삭제 (관리자 보고서 포함)"""
     try:
-        from firebase_config import initialize_firebase, db
+        from firebase_config import initialize_firebase, get_db
         from db_manager import get_db_connection
         from datetime import datetime, timedelta
         import pytz
         
         initialize_firebase()
+        db = get_db()
         
         kst = pytz.timezone('Asia/Seoul')
         three_days_ago = datetime.now(kst) - timedelta(days=3)
@@ -1327,7 +1328,8 @@ def delete_old_alerts():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute("DELETE FROM alert_history WHERE created_at < ?", (three_days_ago.strftime('%Y-%m-%d %H:%M:%S'),))
+        # 'alert_history' 테이블의 날짜 컬럼명(triggered_at)에 맞게 수정
+        cursor.execute("DELETE FROM alert_history WHERE triggered_at < ?", (three_days_ago.strftime('%Y-%m-%d %H:%M:%S'),))
         db_deleted = cursor.rowcount
         
         conn.commit()
