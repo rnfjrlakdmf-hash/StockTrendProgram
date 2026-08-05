@@ -145,7 +145,7 @@ async def check_and_notify_disclosures():
                             import urllib.parse
                             # 텔레그램 마케팅용 티저 메시지 복구
                             teaser_msg = f"🚨 <b>[{corp}] 세력 포착!</b>\n\n[{prefix_title}]\n{report_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}'>원문 바로가기</a>"
-                            send_telegram_teaser(teaser_msg)
+                            send_telegram_teaser(teaser_msg, skip_db_save=True)
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Telegram error: {e}")
 
@@ -405,7 +405,7 @@ async def check_and_notify_sec_disclosures():
                                 from telegram_service import send_telegram_teaser
                                 import urllib.parse
                                 teaser_msg = f"🚨 <b>[{ticker}] SEC 세력/내부자 포착!</b>\n\n[미국 SEC 공시 속보]\n{kor_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}'>원문 확인하기</a>"
-                                send_telegram_teaser(teaser_msg)
+                                send_telegram_teaser(teaser_msg, skip_db_save=True)
                             except Exception as e:
                                 logger.error(f"[SEC WhaleSiren] Telegram error: {e}")
 

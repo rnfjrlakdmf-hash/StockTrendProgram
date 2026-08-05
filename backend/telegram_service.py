@@ -7,7 +7,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-def send_telegram_teaser(teaser_text: str, alert_type="system_alert"):
+def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_save=False):
     """
     텔레그램 채널로 메시지(티저)를 발송합니다.
     """
@@ -50,7 +50,8 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert"):
             title = lines[0] if lines else "📢 텔레그램 알림"
             body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
             
-            save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
+            if not skip_db_save:
+                save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
 
             # 스터디 관련 공지일 경우 FCM 푸시 발송 연동
             if "스터디" in clean_text:
