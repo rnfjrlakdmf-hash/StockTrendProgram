@@ -42,8 +42,8 @@ messaging.onBackgroundMessage((payload) => {
 
     const notificationOptions = {
         body: payload.notification?.body || '',
-        icon: 'https://stock-trend-program.co.kr/icon.png',
-        badge: 'https://stock-trend-program.co.kr/badge.png',
+        icon: '/icon.png',
+        badge: '/badge.png',
         vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: payload.data,
         tag: tag,
@@ -84,8 +84,8 @@ self.addEventListener('notificationclick', (event) => {
 
     let targetUrl;
 
-    if (alertType === 'disclosure_alert') {
-        // 공시 알림: 버튼 클릭이든 본문 클릭이든 무조건 공시 중간 경유 페이지로 이동 (조회수 증가 및 원문 제공)
+    if (alertType === 'disclosure_alert' || alertType === 'whale_alert') {
+        // 공시 및 세력 알림: 버튼 클릭이든 본문 클릭이든 무조건 공시 중간 경유 페이지로 이동 (조회수 증가 및 원문 제공)
         if (dartUrl) {
             const params = new URLSearchParams();
             params.set('url', dartUrl);

@@ -87,21 +87,7 @@ export default function FCMTokenManager() {
             console.log('[FCM] Received foreground message (Web):', payload);
             const title = payload.notification?.title || '새 알림';
             const body = payload.notification?.body || '';
-            
-            // 네이티브 브라우저 푸시 표시
             showNotification(title, { body, data: payload.data });
-            
-            // 사이트 내장 토스트 알림 (PC에서 직관적인 확인용)
-            import('sonner').then(({ toast }) => {
-                toast(title, {
-                    description: body,
-                    duration: 5000,
-                    action: payload.data?.url ? {
-                        label: '확인',
-                        onClick: () => { window.location.href = payload.data.url; }
-                    } : undefined
-                });
-            });
         });
 
         // [Fix] 네이티브 푸시 알림 리스너 (앱이 켜져 있을 때 수신 처리)
@@ -111,18 +97,6 @@ export default function FCMTokenManager() {
                 showNotification(notification.title || '새 알림', { 
                     body: notification.body || '', 
                     data: notification.data 
-                });
-                
-                // 앱 내부에서도 토스트 띄우기
-                import('sonner').then(({ toast }) => {
-                    toast(notification.title || '새 알림', {
-                        description: notification.body || '',
-                        duration: 5000,
-                        action: notification.data?.url ? {
-                            label: '확인',
-                            onClick: () => { window.location.href = notification.data.url; }
-                        } : undefined
-                    });
                 });
             });
 
