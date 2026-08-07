@@ -670,16 +670,37 @@ def get_gemini_cost(x_admin_key: Optional[str] = Header(None), days: int = 30):
         start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
 
         db = firestore.client()
-        docs = db.collection('gemini_usage') \
-                 .where('date', '>=', start_date) \
-                 .stream()
+        docs_new = db.collection('gemini_usage_daily') \
+                     .where('date', '>=', start_date) \
+                     .stream()
+                     
+        docs_old = db.collection('gemini_usage') \
+                     .where('date', '>=', start_date) \
+                     .stream()
 
         daily: Dict[str, Any] = {}
         total_input = 0
         total_output = 0
         total_calls = 0
 
-        for doc in docs:
+        # Process new daily aggregated format
+        for doc in docs_new:
+            d = doc.to_dict()
+            date = d.get('date', '')
+            inp = d.get('input_tokens', 0) or 0
+            out = d.get('output_tokens', 0) or 0
+            calls = d.get('calls', 0) or 0
+            if date not in daily:
+                daily[date] = {'date': date, 'input_tokens': 0, 'output_tokens': 0, 'calls': 0}
+            daily[date]['input_tokens'] += inp
+            daily[date]['output_tokens'] += out
+            daily[date]['calls'] += calls
+            total_input += inp
+            total_output += out
+            total_calls += calls
+
+        # Process old format
+        for doc in docs_old:
             d = doc.to_dict()
             date = d.get('date', '')
             inp = d.get('input_tokens', 0) or 0

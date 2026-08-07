@@ -160,8 +160,11 @@ async def check_and_notify_disclosures():
                                 "url": dart_link,
                                 "timestamp": firestore.SERVER_TIMESTAMP
                             }
-                            db.collection("live_events").add(event_data)
-                            logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
+                            try:
+                                db.collection("live_events").add(event_data)
+                                logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
+                            except Exception as e:
+                                logger.error(f"[WhaleSiren] Failed to save live_events: {e}")
                             
                             # ✅ [글로벌 푸시 발송] 핵심 공시(세력/내부자/팩트)는 관심종목 여부와 관계없이 세력알림 켠 모두에게 발송
                             if is_whale:
@@ -177,7 +180,7 @@ async def check_and_notify_disclosures():
                                         whale_alerted_uids.update(w_uids)
                                         
                                         w_title = f"{prefix_title} {corp}"
-                                        w_body = f"{fact_str}\n\n[앱에서 즉시 확인하기]" if fact_str else f"{report_title}\n\n[앱에서 즉시 확인하기]"
+                                        w_body = f"{fact_str}" if fact_str else f"{report_title}"
                                         w_data = {
                                             "type": "whale_alert",
                                             "url": f"/stock/{raw_code}",

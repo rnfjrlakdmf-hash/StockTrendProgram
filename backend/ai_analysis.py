@@ -108,13 +108,16 @@ def generate_with_retry(prompt: str, json_mode: bool = True, timeout: int = 40, 
                             input_tokens = getattr(usage, 'prompt_token_count', 0) or 0
                             output_tokens = getattr(usage, 'candidates_token_count', 0) or 0
                             db = fs.client()
-                            db.collection('gemini_usage').add({
-                                'date': now.strftime('%Y-%m-%d'),
+                            today_str = now.strftime('%Y-%m-%d')
+                            doc_id = f"{today_str}_{m}"
+                            db.collection('gemini_usage_daily').document(doc_id).set({
+                                'date': today_str,
                                 'model': m,
-                                'input_tokens': input_tokens,
-                                'output_tokens': output_tokens,
-                                'timestamp': fs.SERVER_TIMESTAMP
-                            })
+                                'input_tokens': fs.Increment(input_tokens),
+                                'output_tokens': fs.Increment(output_tokens),
+                                'calls': fs.Increment(1),
+                                'last_updated': fs.SERVER_TIMESTAMP
+                            }, merge=True)
                         except Exception:
                             pass
                     import threading
