@@ -434,8 +434,6 @@ def send_multicast_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='/icon.png',
-                badge='/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
                 renotify=True
