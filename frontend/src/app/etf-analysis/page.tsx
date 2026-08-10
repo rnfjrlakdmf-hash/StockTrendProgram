@@ -683,9 +683,25 @@ function EtfAnalysisContent() {
                             <p className="text-gray-500 text-sm mt-2">입력하신 종목코드를 다시 한 번 확인해주세요.</p>
                         </div>
                     ) : (
-                        <div className="py-32 flex flex-col items-center justify-center text-center px-4">
+                        <div className="py-20 flex flex-col items-center justify-center text-center px-4 max-w-3xl mx-auto">
                             <Layers className="w-16 h-16 text-indigo-500/20 mb-6" />
-                            <p className="text-gray-400 font-bold">상단 검색창에 ETF 종목코드를 입력하시면<br />펀더멘탈 통계 분석을 시작합니다.</p>
+                            <h2 className="text-xl font-black text-white mb-4">ETF 펀더멘탈 분석 시스템</h2>
+                            <p className="text-gray-400 font-medium mb-8 leading-relaxed text-sm">
+                                상단 검색창에 분석을 원하는 ETF 종목코드(예: 069500, SPY, QQQ)를 입력하시면 상세 통계 분석을 시작합니다.<br/>
+                                데이터 수집 완료 시 자산 규모, 분배율, 기초 지수 등의 기본 정보부터 <strong className="text-gray-200">리스크 지표(변동성, 최대낙폭, 샤프 비율)</strong>와 구성 종목 비중까지 한눈에 파악하실 수 있습니다.
+                            </p>
+                            <div className="text-left bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-4">
+                                <h3 className="text-sm font-bold text-indigo-400">📊 퀀트 기반 ETF 분석 가이드</h3>
+                                <p className="text-gray-500 text-xs leading-relaxed">
+                                    저희 플랫폼은 주관적 편견을 배제하고 철저하게 과거 데이터를 바탕으로 한 정량적(Quantitative) 지표만을 제공합니다.
+                                    수익률의 단순 수치뿐만 아니라, 그 수익을 달성하기 위해 감내해야 했던 변동성(Volatility)과 샤프비율(Sharpe Ratio)을 함께 제시하여 
+                                    투자자가 리스크 대비 수익을 보다 입체적으로 평가할 수 있도록 돕습니다.
+                                </p>
+                                <p className="text-gray-500 text-xs leading-relaxed">
+                                    또한 유사한 카테고리에 속한 경쟁 ETF 상품들의 수수료(TER)와 배당률을 함께 비교함으로써, 
+                                    투자 포트폴리오를 다각화하고 자산 배분 전략을 수립하는 데 유용한 기초 참고 자료로 활용하실 수 있습니다.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>

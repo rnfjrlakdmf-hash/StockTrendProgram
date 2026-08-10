@@ -141,6 +141,24 @@ export default async function Home() {
             </div>
           </section>
 
+          {/* 추가 섹션: 정량 분석론 (SEO 보강) */}
+          <section aria-labelledby="methodology-heading">
+            <h2 id="methodology-heading" className="text-xl md:text-2xl font-black text-white mb-4">
+              StockTrend의 정량적 주식 분석 방법론
+            </h2>
+            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-4">
+              <p className="text-gray-400 text-sm leading-relaxed">
+                주식 시장에서 성공하기 위해서는 직감이나 소문에 의존하는 투자가 아닌, 명확한 <strong className="text-gray-200">데이터 기반의 정량적 분석(Quantitative Analysis)</strong>이 필수적입니다. 저희 스마트 투자 비서는 개별 기업의 펀더멘털을 나타내는 기본적 지표와, 시장 참여자들의 심리를 반영하는 기술적 지표를 융합하여 입체적인 시각을 제공합니다.
+              </p>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                <strong className="text-gray-200">기본적 분석(Fundamental Analysis)</strong> 측면에서는 기업의 내재 가치를 평가하기 위해 PER(주가수익비율), PBR(주가순자산비율), ROE(자기자본이익률) 및 배당수익률(Dividend Yield) 등의 핵심 재무 지표를 추적합니다. 이를 통해 현재 주가가 기업의 실제 가치 대비 고평가되었는지, 혹은 저평가되었는지를 통계적으로 판단할 수 있는 기준점을 제시합니다.
+              </p>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                <strong className="text-gray-200">기술적 분석(Technical Analysis)</strong> 측면에서는 주가의 역사적 흐름과 거래량 변화를 분석합니다. 이동평균선(Moving Average)의 정배열과 역배열, RSI(상대강도지수)를 통한 과매수·과매도 구간 포착, MACD(이동평균수렴확산지수) 및 볼린저밴드(Bollinger Bands)를 활용한 추세 전환 신호 등 실전 투자에 널리 쓰이는 지표들을 실시간으로 계산하여 시각화합니다. 이러한 종합적인 데이터 접근 방식은 시장의 노이즈를 걸러내고, 투자자들이 보다 객관적이고 이성적인 투자 결정을 내릴 수 있도록 돕습니다.
+              </p>
+            </div>
+          </section>
+
           {/* 섹션 6: 면책조항 & 법적 링크 푸터 */}
           <footer className="border-t border-white/[0.06] pt-10 space-y-4">
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">

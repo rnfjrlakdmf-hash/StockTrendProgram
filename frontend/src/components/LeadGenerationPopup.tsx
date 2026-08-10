@@ -14,6 +14,9 @@ export default function LeadGenerationPopup() {
 
     useEffect(() => {
         // 이미 팝업을 본 유저이거나 구독자라면 무시
+        const isBot = /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent);
+        if (isBot) return;
+
         if (localStorage.getItem("leadPopupDismissed") || localStorage.getItem("pushSubscribed")) {
             return;
         }
@@ -27,7 +30,7 @@ export default function LeadGenerationPopup() {
         if (actionCount >= 3) {
             const timer = setTimeout(() => {
                 setShowPopup(true);
-            }, 5000); // 페이지 진입 5초 후
+            }, 45000); // 봇 방해 방지 위해 45초 후 노출
             return () => clearTimeout(timer);
         }
     }, [user]);

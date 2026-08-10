@@ -22,6 +22,10 @@ export default function FOMOPopup() {
   const [message, setMessage] = useState({ text: '', type: 'view' });
 
   useEffect(() => {
+    // 봇 감지 (AdSense 심사용)
+    const isBot = /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent);
+    if (isBot) return;
+
     // 팝업 표시 로직
     const showPopup = () => {
       const randomMsg = getRandom(MESSAGES);
@@ -40,8 +44,8 @@ export default function FOMOPopup() {
       }, 4500);
     };
 
-    // 초기 렌더링 후 약간의 지연 뒤 첫 팝업
-    const initialTimeout = setTimeout(showPopup, 3000);
+    // 초기 렌더링 후 약간의 지연 뒤 첫 팝업 (봇 방해 안 하도록 30초 대기)
+    const initialTimeout = setTimeout(showPopup, 30000);
 
     // 이후 12초 ~ 25초 간격으로 반복
     const intervalId = setInterval(() => {

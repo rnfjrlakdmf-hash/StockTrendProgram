@@ -689,7 +689,16 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )
-                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 5축 퀀트 분석을 시작합니다</p> </div>}
+                            ) : (
+                                <div className="text-center py-16 px-4 bg-white/5 rounded-2xl border border-dashed border-white/10 max-w-2xl mx-auto">
+                                    <Activity className="w-12 h-12 text-indigo-400/30 mx-auto mb-4" />
+                                    <h3 className="text-lg font-bold text-white mb-2">5축 퀀트 분석(Quantitative Analysis) 대기 중</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                                        상단 검색창에 종목코드를 입력하시면, 해당 기업의 가치(Value), 성장성(Growth), 모멘텀(Momentum), 수익성(Quality), 재무 안정성(Stability)을 수치화하여 다각도로 평가한 5축 레이더 차트가 제공됩니다.
+                                        이 분석 시스템은 주관적인 견해를 배제하고 오직 시장 데이터와 재무제표를 바탕으로 계산된 객관적인 점수(Score)를 산출하여 보다 이성적인 투자를 지원합니다.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 {activeTab === "financial" && (
@@ -841,7 +850,16 @@ function AnalysisContent() {
                                         </div>
                                     </div>
                                 )
-                            ) : <div className="text-center py-16 bg-white/5 rounded-2xl border border-dashed border-white/10"> <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" /> <p className="text-gray-500">종목코드를 입력하면 재무 분석을 시작합니다</p> </div>}
+                            ) : (
+                                <div className="text-center py-16 px-4 bg-white/5 rounded-2xl border border-dashed border-white/10 max-w-2xl mx-auto">
+                                    <Shield className="w-12 h-12 text-emerald-400/30 mx-auto mb-4" />
+                                    <h3 className="text-lg font-bold text-white mb-2">재무 건전성 및 실적 분석 대기 중</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                                        종목코드를 입력하시면, 기업의 매출액, 영업이익, 순이익 흐름뿐만 아니라 ROE, 부채비율, 당좌비율 등 핵심 재무비율 지표를 한눈에 확인할 수 있습니다.
+                                        재무제표 데이터에 기반한 정밀한 분석을 통해 기업의 내재가치와 부도 위험성을 사전에 진단하고, 안정적인 장기 투자를 위한 기초 자료로 활용해 보세요.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1048,7 +1066,17 @@ function AnalysisContent() {
                                     })()}
                                 </div>
                                 )
-                            ) : <div className="text-center py-32 bg-white/5 rounded-[3rem] border border-dashed border-white/10"><PieChart className="w-20 h-20 text-red-500/20 mx-auto mb-6" /><p className="text-gray-400 font-black tracking-[0.3em] text-sm uppercase">Sector Matrix Stand-By</p></div>}
+                            ) : (
+                                <div className="text-center py-20 px-4 bg-white/5 rounded-[3rem] border border-dashed border-white/10 max-w-3xl mx-auto">
+                                    <PieChart className="w-16 h-16 text-red-500/20 mx-auto mb-4" />
+                                    <h3 className="text-xl font-black tracking-widest text-white mb-2 uppercase">Sector Matrix Stand-By</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                        종목코드를 입력하시면 해당 기업이 속한 섹터(산업군) 내에서의 상대적인 위치와 경쟁력을 분석합니다. 
+                                        동일 산업군 내에서의 시가총액 순위, 평균 PER/PBR 비교, 섹터 트렌드 점수 등을 종합적으로 계산하여,
+                                        개별 종목이 시장 전체 흐름 속에서 어떤 위상을 차지하고 있는지 입체적으로 조망할 수 있습니다.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
