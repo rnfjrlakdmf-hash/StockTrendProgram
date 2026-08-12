@@ -40,10 +40,21 @@ export default function HomeClient() {
 
       <div className="p-4 md:p-8 space-y-10">
         
-        {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) */}
-        <div className="flex flex-col xl:flex-row items-center justify-center gap-8 -mt-2 mb-4">
+        {/* SEO 최적화 및 봇 인식용 최상단 콘텐츠 (H1) */}
+        <div className="text-center pt-2 pb-6 max-w-3xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-black text-white mb-3 tracking-tight">
+            스마트 투자 비서 - AI 주식 분석 및 무료 알림
+          </h1>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            매일 업데이트되는 전문가 수준의 금융 데이터와 인공지능 분석 리포트를 무료로 제공합니다.<br className="hidden md:block" />
+            실시간 공시와 글로벌 경제 지표를 한눈에 파악하고 합리적인 투자 결정을 내리세요.
+          </p>
+        </div>
+
+        {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) - 여백(Padding) 추가하여 오클릭 방지 */}
+        <div className="flex flex-col xl:flex-row items-center justify-center gap-8 py-6 mb-4 border-y border-white/[0.05]">
           {/* 좌측/중앙 배너 (모바일: 320x50, PC: 728x90) */}
-          <div className="flex justify-center rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+          <div className="flex justify-center rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-black/20 p-2">
             <div className="block md:hidden">
               <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
             </div>
@@ -52,7 +63,7 @@ export default function HomeClient() {
             </div>
           </div>
           {/* 우측 사각 배너 (PC에서만 상단에 나란히 배치) */}
-          <div className="hidden xl:block rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+          <div className="hidden xl:block rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-black/20 p-2">
             <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
           </div>
         </div>
